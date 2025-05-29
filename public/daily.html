@@ -1,0 +1,1273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title data-i18n="page-title">📅 anicca - Activity Log</title>
+    <script src="/socket.io/socket.io.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .header h1 {
+            font-size: 3rem;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+
+        .language-selector {
+            margin-top: 15px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .lang-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-1px);
+        }
+
+        .lang-btn.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .nav-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .nav-btn.active {
+            background: rgba(255, 255, 255, 0.9);
+            color: #667eea;
+        }
+
+        .date-selector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+            color: white;
+        }
+
+        .date-input {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 15px;
+            border-radius: 10px;
+            font-size: 1rem;
+        }
+
+        .date-input::-webkit-calendar-picker-indicator {
+            filter: invert(1);
+        }
+
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            color: #666;
+            font-size: 0.9rem;
+        }
+
+        .highlights-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 25px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .section-title {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .highlight-period-selector {
+            display: flex;
+            gap: 8px;
+        }
+
+        .period-btn {
+            background: rgba(102, 126, 234, 0.1);
+            border: 2px solid rgba(102, 126, 234, 0.2);
+            color: #667eea;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            font-size: 0.9rem;
+        }
+
+        .period-btn:hover {
+            background: rgba(102, 126, 234, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .period-btn.active {
+            background: #667eea;
+            color: white;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .section-date {
+            color: #667eea;
+            font-weight: 600;
+        }
+
+        .activity-graph-section {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+            margin-bottom: 30px;
+        }
+
+        .graph-legend {
+            display: flex;
+            gap: 20px;
+            flex-wrap: wrap;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #666;
+        }
+
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border-radius: 3px;
+        }
+
+        .legend-color.work { background: #667eea; }
+        .legend-color.break { background: #4CAF50; }
+        .legend-color.study { background: #FF9800; }
+        .legend-color.communication { background: #E91E63; }
+        .legend-color.system { background: #9C27B0; }
+        .legend-color.browse { background: #00BCD4; }
+
+        .activity-graph {
+            margin-top: 20px;
+            min-height: 300px;
+            position: relative;
+            background: #fafafa;
+            border-radius: 12px;
+            padding: 20px;
+            overflow-x: auto;
+        }
+
+        .graph-container {
+            display: flex;
+            align-items: end;
+            height: 200px;
+            min-width: 800px;
+            position: relative;
+            border-bottom: 2px solid #e0e0e0;
+            border-left: 2px solid #e0e0e0;
+            margin-left: 60px;
+        }
+
+        .hour-column {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            position: relative;
+            margin: 0 1px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .hour-column:hover {
+            background: rgba(102, 126, 234, 0.05);
+            border-radius: 8px 8px 0 0;
+        }
+
+        .activity-stack {
+            display: flex;
+            flex-direction: column;
+            width: 100%;
+            height: 100%;
+            justify-content: end;
+            position: relative;
+        }
+
+        .activity-segment {
+            width: 100%;
+            transition: all 0.5s ease;
+            border-radius: 2px 2px 0 0;
+            position: relative;
+            min-height: 2px;
+        }
+
+        .activity-segment.work { 
+            background: linear-gradient(180deg, #667eea, #5a6fd8);
+            box-shadow: 0 2px 4px rgba(102, 126, 234, 0.3);
+        }
+        .activity-segment.break { 
+            background: linear-gradient(180deg, #4CAF50, #45a049);
+            box-shadow: 0 2px 4px rgba(76, 175, 80, 0.3);
+        }
+        .activity-segment.study { 
+            background: linear-gradient(180deg, #FF9800, #F57C00);
+            box-shadow: 0 2px 4px rgba(255, 152, 0, 0.3);
+        }
+        .activity-segment.communication { 
+            background: linear-gradient(180deg, #E91E63, #D5008F);
+            box-shadow: 0 2px 4px rgba(233, 30, 99, 0.3);
+        }
+        .activity-segment.system { 
+            background: linear-gradient(180deg, #9C27B0, #8E00A0);
+            box-shadow: 0 2px 4px rgba(156, 39, 176, 0.3);
+        }
+        .activity-segment.browse { 
+            background: linear-gradient(180deg, #00BCD4, #0097A7);
+            box-shadow: 0 2px 4px rgba(0, 188, 212, 0.3);
+        }
+
+        .hour-label {
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #666;
+            margin-top: 8px;
+            text-align: center;
+        }
+
+        .peak-hour .hour-label {
+            color: #667eea;
+            font-weight: 700;
+        }
+
+        .y-axis-label {
+            position: absolute;
+            left: -80px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .x-axis-label {
+            text-align: center;
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 600;
+        }
+
+        .y-axis-ticks {
+            position: absolute;
+            left: -60px;
+            top: 0;
+            bottom: 0;
+            width: 55px;
+            pointer-events: none;
+            z-index: 100;
+        }
+
+        .y-tick {
+            position: absolute;
+            right: 10px;
+            font-size: 0.8rem;
+            color: #666;
+            font-weight: 600;
+            transform: translateY(-50%);
+            background: rgba(255, 255, 255, 0.95);
+            padding: 3px 6px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .grid-lines {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            pointer-events: none;
+        }
+
+        .grid-line {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 1px;
+            background: rgba(224, 224, 224, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .graph-legend {
+                gap: 10px;
+            }
+            
+            .legend-item {
+                font-size: 0.8rem;
+            }
+            
+            .graph-container {
+                min-width: 600px;
+                margin-left: 50px;
+            }
+            
+            .y-axis-ticks {
+                left: -50px;
+                width: 45px;
+            }
+            
+            .y-axis-label {
+                left: -70px;
+            }
+            
+            .hour-label {
+                font-size: 0.7rem;
+            }
+            
+            .activity-graph {
+                padding: 15px;
+            }
+        }
+
+        .observation-item {
+            margin-bottom: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border-left: 4px solid #667eea;
+            position: relative;
+        }
+
+        .observation-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+
+        .observation-time {
+            font-weight: 600;
+            color: #667eea;
+            font-size: 1.1rem;
+        }
+
+        .observation-website {
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+        }
+
+        .observation-category {
+            background: #28a745;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 15px;
+            font-size: 0.8rem;
+            margin-left: 10px;
+        }
+
+        .observation-commentary {
+            margin-bottom: 15px;
+            line-height: 1.6;
+            color: #333;
+        }
+
+        .prediction-section {
+            background: rgba(103, 126, 234, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+        }
+
+        .prediction-title {
+            font-weight: 600;
+            color: #667eea;
+            margin-bottom: 8px;
+        }
+
+        .verification-section {
+            background: rgba(255, 193, 7, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 3px solid #FFC107;
+        }
+
+        .verification-title {
+            font-weight: 600;
+            color: #FF8F00;
+            margin-bottom: 8px;
+        }
+
+        .accuracy-badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-left: 10px;
+        }
+
+        .accuracy-true {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .accuracy-false {
+            background: #f44336;
+            color: white;
+        }
+
+        .accuracy-null {
+            background: #9E9E9E;
+            color: white;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 30px;
+            height: 30px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #666;
+        }
+
+        .empty-state h3 {
+            margin-bottom: 15px;
+            color: #333;
+        }
+
+        .back-to-live {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            background: #667eea;
+            color: white;
+            padding: 15px 25px;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .back-to-live:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 15px;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+            
+            .nav-buttons {
+                gap: 8px;
+            }
+            
+            .nav-btn {
+                padding: 10px 15px;
+                font-size: 0.9rem;
+            }
+            
+            .date-selector {
+                flex-direction: column;
+                gap: 10px;
+            }
+            
+            .observation-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 10px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📅 anicca</h1>
+            <div class="subtitle" data-i18n="subtitle">Daily Activity Analysis & Insights</div>
+            
+            <!-- 言語選択 -->
+            <div class="language-selector">
+                <button id="langEn" class="lang-btn active" onclick="setLanguage('en')">🇺🇸 English</button>
+                <button id="langJa" class="lang-btn" onclick="setLanguage('ja')">🇯🇵 日本語</button>
+            </div>
+        </div>
+
+        <div class="nav-buttons">
+            <a href="/" class="nav-btn" data-i18n="home-btn">🏠 Home</a>
+            <button class="nav-btn" onclick="loadDate('today')" data-i18n="today-btn">📅 Today</button>
+            <button class="nav-btn" onclick="loadDate('yesterday')" data-i18n="yesterday-btn">⏮️ Yesterday</button>
+            <button class="nav-btn" onclick="loadDate('week-ago')" data-i18n="week-btn">📅 1 Week Ago</button>
+            <button class="nav-btn" onclick="loadDate('month-ago')" data-i18n="month-btn">📅 1 Month Ago</button>
+        </div>
+
+        <div class="date-selector">
+            <label for="dateInput" data-i18n="select-date">📅 Select Date:</label>
+            <input type="date" id="dateInput" class="date-input" onchange="loadSelectedDate()">
+        </div>
+
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-number" id="accuracyRate">-</div>
+                <div class="stat-label" data-i18n="accuracy-label">anicca Prediction Accuracy</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="activeHours">-</div>
+                <div class="stat-label" data-i18n="active-hours-label">Active Hours</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="topCategory">-</div>
+                <div class="stat-label" data-i18n="top-category-label">Top Activity</div>
+            </div>
+        </div>
+
+        <div class="activity-graph-section">
+            <div class="section-header">
+                <div class="section-title" data-i18n="activity-graph-title">📊 Today's Activity Graph</div>
+                <div class="graph-legend">
+                    <span class="legend-item"><span class="legend-color work"></span><span data-i18n="work-category">Work</span></span>
+                    <span class="legend-item"><span class="legend-color break"></span><span data-i18n="break-category">Break</span></span>
+                    <span class="legend-item"><span class="legend-color study"></span><span data-i18n="study-category">Study</span></span>
+                    <span class="legend-item"><span class="legend-color communication"></span><span data-i18n="communication-category">Communication</span></span>
+                    <span class="legend-item"><span class="legend-color system"></span><span data-i18n="system-category">System Management</span></span>
+                    <span class="legend-item"><span class="legend-color browse"></span><span data-i18n="browse-category">Browsing</span></span>
+                </div>
+            </div>
+            <div id="activityGraph" class="activity-graph">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    Generating graph...
+                </div>
+            </div>
+        </div>
+
+        <div class="highlights-section">
+            <div class="section-header">
+                <div class="section-title" data-i18n="highlights-title">🌟 anicca Highlights</div>
+                <div class="highlight-period-selector">
+                    <button class="period-btn active" onclick="switchHighlightPeriod('daily')" data-i18n="daily-btn">Daily</button>
+                    <button class="period-btn" onclick="switchHighlightPeriod('weekly')" data-i18n="weekly-btn">Weekly</button>
+                    <button class="period-btn" onclick="switchHighlightPeriod('monthly')" data-i18n="monthly-btn">Monthly</button>
+                </div>
+                <div class="section-date" id="currentDate">-</div>
+            </div>
+            <div id="highlightsContent">
+                <div class="loading">
+                    <div class="spinner"></div>
+                    <span data-i18n="generating-highlights">Generating highlights...</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <a href="/" class="back-to-live" data-i18n="back-to-live">🔴 Return to Live</a>
+
+    <script>
+        let currentDate = '';
+        let currentHighlightPeriod = 'daily';
+
+        // 国際化対応
+        const translations = {
+            en: {
+                'page-title': '📅 anicca - Activity Log',
+                'subtitle': 'Daily Activity Analysis & Insights',
+                'home-btn': '🏠 Home',
+                'today-btn': '📅 Today',
+                'yesterday-btn': '⏮️ Yesterday',
+                'week-btn': '📅 1 Week Ago',
+                'month-btn': '📅 1 Month Ago',
+                'accuracy-label': 'anicca Prediction Accuracy',
+                'active-hours-label': 'Active Hours',
+                'top-category-label': 'Top Activity',
+                'highlights-title': '🌟 anicca Highlights',
+                'daily-btn': 'Daily',
+                'weekly-btn': 'Weekly',
+                'monthly-btn': 'Monthly',
+                'activity-graph-title': '📊 Today\'s Activity Graph',
+                'select-date': '📅 Select Date:',
+                'work-category': 'Work',
+                'break-category': 'Break',
+                'study-category': 'Study',
+                'communication-category': 'Communication',
+                'system-category': 'System Management',
+                'browse-category': 'Browsing',
+                'generating-highlights': 'Generating highlights...',
+                'back-to-live': '🔴 Return to Live',
+                'no-highlights': 'No Highlights Found',
+                'no-data-message': 'No observation data recorded for',
+                'start-broadcast': 'Start the live broadcast and let anicca observe your activities!',
+                'highlights-not-found': 'Highlights Not Found',
+                'couldnt-find': "anicca couldn't find special moments for you. Start the live broadcast and let anicca observe your activities!",
+                'generation-error': 'Highlight Generation Error',
+                'try-again': "anicca couldn't generate highlights. Please try again later."
+            },
+            ja: {
+                'page-title': '📅 anicca - 行動ログ',
+                'subtitle': '日々の行動分析とインサイト',
+                'home-btn': '🏠 ホーム',
+                'today-btn': '📅 今日',
+                'yesterday-btn': '⏮️ 昨日',
+                'week-btn': '📅 1週間前',
+                'month-btn': '📅 1ヶ月前',
+                'accuracy-label': 'anicca行動予知精度',
+                'active-hours-label': '活動時間',
+                'top-category-label': '主要行動',
+                'highlights-title': '🌟 aniccaハイライト',
+                'daily-btn': '今日',
+                'weekly-btn': '1週間',
+                'monthly-btn': '1ヶ月',
+                'activity-graph-title': '📊 今日の活動グラフ',
+                'select-date': '📅 日付を選択:',
+                'work-category': '作業',
+                'break-category': '休憩',
+                'study-category': '学習',
+                'communication-category': 'コミュニケーション',
+                'system-category': 'システム管理',
+                'browse-category': 'ブラウジング',
+                'generating-highlights': 'ハイライトを生成中...',
+                'back-to-live': '🔴 ライブに戻る',
+                'no-highlights': 'ハイライトが見つかりません',
+                'no-data-message': 'の観察データが記録されていません',
+                'start-broadcast': '実況を開始してaniccaにあなたの活動を観察させてください！',
+                'highlights-not-found': 'ハイライトが見つかりません',
+                'couldnt-find': 'aniccaはあなたの特別な瞬間を見つけることができませんでした。実況を開始してaniccaにあなたの活動を観察させてください！',
+                'generation-error': 'ハイライト生成エラー',
+                'try-again': 'aniccaはハイライトを生成できませんでした。後でもう一度お試しください。'
+            }
+        };
+
+        let currentLanguage = localStorage.getItem('language') || 'en';
+
+        function setLanguage(lang) {
+            currentLanguage = lang;
+            localStorage.setItem('language', lang);
+            
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`lang${lang.charAt(0).toUpperCase() + lang.slice(1)}`).classList.add('active');
+            
+            // テキストを更新
+            updateTexts();
+        }
+
+        function updateTexts() {
+            const texts = translations[currentLanguage];
+            document.querySelectorAll('[data-i18n]').forEach(element => {
+                const key = element.getAttribute('data-i18n');
+                if (texts[key]) {
+                    element.textContent = texts[key];
+                }
+            });
+        }
+
+        // 初期化
+        document.addEventListener('DOMContentLoaded', () => {
+            setLanguage(currentLanguage);
+            loadDate('today');
+        });
+
+        // 日付ボタンのクリック処理
+        function loadDate(type) {
+            const today = new Date();
+            let targetDate;
+
+            switch(type) {
+                case 'today':
+                    targetDate = today;
+                    break;
+                case 'yesterday':
+                    targetDate = new Date(today.getTime() - 24 * 60 * 60 * 1000);
+                    break;
+                case 'week-ago':
+                    targetDate = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                    break;
+                case 'month-ago':
+                    targetDate = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                    break;
+            }
+
+            const dateString = targetDate.toISOString().split('T')[0];
+            loadObservations(dateString);
+
+            // アクティブボタンの更新
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+        }
+
+        // 日付入力の変更処理
+        function loadSelectedDate() {
+            const dateInput = document.getElementById('dateInput');
+            loadObservations(dateInput.value);
+            
+            // ボタンのアクティブ状態をリセット
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active'));
+        }
+
+        // 観察データの読み込み
+        async function loadObservations(date) {
+            if (!date) return;
+
+            currentDate = date;
+            document.getElementById('currentDate').textContent = formatDate(date);
+            
+            const highlightsContent = document.getElementById('highlightsContent');
+            const texts = translations[currentLanguage];
+            highlightsContent.innerHTML = `<div class="loading"><div class="spinner"></div><span data-i18n="generating-highlights">${texts['generating-highlights']}</span></div>`;
+
+            try {
+                const response = await fetch(`/api/observations/${date}`);
+                const data = await response.json();
+
+                if (data.observations && data.observations.length > 0) {
+                    generateActivityGraph(data.observations);
+                    loadHighlights(currentHighlightPeriod, date);
+                    updateStats(data.observations);
+                } else {
+                    showEmptyActivityGraph();
+                    showEmptyState(date);
+                    resetStats();
+                }
+            } catch (error) {
+                console.error('Error loading observations:', error);
+                showEmptyActivityGraph();
+                highlightsContent.innerHTML = `
+                    <div class="empty-state">
+                        <h3>❌ Error Occurred</h3>
+                        <p>Failed to load data.</p>
+                    </div>
+                `;
+                resetStats();
+            }
+        }
+
+        // 活動グラフ生成（Apple風60分ベース）
+        function generateActivityGraph(observations) {
+            const activityGraph = document.getElementById('activityGraph');
+            
+            // カテゴリ分析を実行（デバッグ用）
+            analyzeCategories(observations);
+            
+            // 時間別データを集計
+            const hourlyData = {};
+            for (let hour = 0; hour < 24; hour++) {
+                hourlyData[hour] = {
+                    work: 0,
+                    break: 0,
+                    study: 0,
+                    communication: 0,
+                    system: 0,
+                    browse: 0,
+                    total: 0
+                };
+            }
+            
+            // 観察データを分類
+            observations.forEach(obs => {
+                const hour = obs.hour;
+                const category = categorizeActivity(obs.actionCategory);
+                hourlyData[hour][category]++;
+                hourlyData[hour].total++;
+            });
+            
+            // 60分を最大値として設定（1時間 = 12回観察 = 60分相当）
+            const maxObservationsPerHour = 12; // 5秒間隔 × 12 = 60秒 = 1分 × 60 = 60分
+            const maxHeight = 160; // 最大高さ（px）
+            
+            // 最も活動的な時間を特定
+            const peakHour = Object.keys(hourlyData).reduce((a, b) => 
+                hourlyData[a].total > hourlyData[b].total ? a : b);
+            
+            // Y軸目盛り生成（0分、30分、60分）
+            const yTicks = [
+                { value: 0, label: '0 min', position: 0 },
+                { value: 30, label: '30 min', position: 50 },
+                { value: 60, label: '60 min', position: 100 }
+            ];
+            
+            // グリッドライン生成（30分、60分）
+            const gridLines = [
+                `<div class="grid-line" style="bottom: 50%;"></div>`, // 30分
+                `<div class="grid-line" style="bottom: 100%;"></div>` // 60分
+            ];
+            
+            // 時間列生成
+            const hourColumns = Object.keys(hourlyData).map(hour => {
+                const data = hourlyData[hour];
+                const isPeak = hour == peakHour && data.total > 0;
+                
+                if (data.total === 0) {
+                    return `
+                        <div class="hour-column">
+                            <div class="activity-stack">
+                                <!-- 空の時間 -->
+                            </div>
+                            <div class="hour-label">${hour}</div>
+                        </div>
+                    `;
+                }
+                
+                // 各カテゴリの高さを計算（60分ベース）
+                const totalMinutes = Math.min(60, (data.total / maxObservationsPerHour) * 60);
+                const totalHeight = (totalMinutes / 60) * maxHeight;
+                
+                const workHeight = (data.work / data.total) * totalHeight;
+                const breakHeight = (data.break / data.total) * totalHeight;
+                const studyHeight = (data.study / data.total) * totalHeight;
+                const communicationHeight = (data.communication / data.total) * totalHeight;
+                const systemHeight = (data.system / data.total) * totalHeight;
+                const browseHeight = (data.browse / data.total) * totalHeight;
+                
+                const displayMinutes = Math.round(totalMinutes);
+                
+                return `
+                    <div class="hour-column ${isPeak ? 'peak-hour' : ''}">
+                        <div class="activity-stack">
+                            ${data.browse > 0 ? `<div class="activity-segment browse" style="height: ${browseHeight}px;" title="Browsing: ${Math.round((data.browse / data.total) * totalMinutes)} min"></div>` : ''}
+                            ${data.system > 0 ? `<div class="activity-segment system" style="height: ${systemHeight}px;" title="System Management: ${Math.round((data.system / data.total) * totalMinutes)} min"></div>` : ''}
+                            ${data.communication > 0 ? `<div class="activity-segment communication" style="height: ${communicationHeight}px;" title="Communication: ${Math.round((data.communication / data.total) * totalMinutes)} min"></div>` : ''}
+                            ${data.study > 0 ? `<div class="activity-segment study" style="height: ${studyHeight}px;" title="Study: ${Math.round((data.study / data.total) * totalMinutes)} min"></div>` : ''}
+                            ${data.break > 0 ? `<div class="activity-segment break" style="height: ${breakHeight}px;" title="Break: ${Math.round((data.break / data.total) * totalMinutes)} min"></div>` : ''}
+                            ${data.work > 0 ? `<div class="activity-segment work" style="height: ${workHeight}px;" title="Work: ${Math.round((data.work / data.total) * totalMinutes)} min"></div>` : ''}
+                        </div>
+                        <div class="hour-label">${hour}</div>
+                    </div>
+                `;
+            }).join('');
+            
+            const texts = translations[currentLanguage];
+            const yAxisLabel = currentLanguage === 'en' ? 'Activity' : '行動';
+            const xAxisLabel = currentLanguage === 'en' ? 'Time' : '時間';
+            
+            activityGraph.innerHTML = `
+                <div class="y-axis-label">${yAxisLabel}</div>
+                <div class="y-axis-ticks">
+                    ${yTicks.map(tick => `<div class="y-tick" style="bottom: ${tick.position}%;">${tick.label}</div>`).join('')}
+                </div>
+                <div class="graph-container">
+                    <div class="grid-lines">
+                        ${gridLines.join('')}
+                    </div>
+                    ${hourColumns}
+                </div>
+                <div class="x-axis-label">${xAxisLabel}</div>
+            `;
+        }
+        
+        // 活動カテゴリの動的クラスタリング
+        function categorizeActivity(actionCategory) {
+            // aniccaが生成したactionCategoryを6つの具体的なカテゴリにクラスタリング
+            const category = actionCategory.toLowerCase();
+            
+            // 作業系キーワード
+            const workKeywords = [
+                'コーディング', 'プログラミング', '開発', 'coding', 'programming', 'development',
+                'ドキュメント作成', '作業', 'work', 'エディタ', 'editor', 'vscode', 'terminal', 'ターミナル',
+                'エラー調査', 'デバッグ', 'debug', 'error', 'エラー', 'バグ修正',
+                'レビュー', 'review', 'テスト', 'test', 'ビルド', 'build', 'コンパイル', 'compile'
+            ];
+            
+            // 休憩・エンターテイメント系キーワード
+            const breakKeywords = [
+                '動画視聴', 'youtube', 'video', 'ビデオ', '映画', 'movie', 'netflix',
+                '音楽', 'music', 'spotify', 'ゲーム', 'game', 'gaming',
+                '休憩', 'break', 'リラックス', 'relax', 'エンターテイメント', 'entertainment',
+                'ショート動画', 'shorts', 'tiktok', 'reels'
+            ];
+            
+            // 学習・情報収集系キーワード
+            const studyKeywords = [
+                '記事閲読', 'article', '記事', 'ニュース', 'news', 'blog', 'ブログ',
+                '学習', 'study', 'learning', '調査', 'research', '研究',
+                'ドキュメント閲読', 'documentation', 'docs', 'マニュアル', 'manual',
+                '情報収集', 'information', 'stackoverflow', 'github', 'qiita', 'zenn', 'medium'
+            ];
+            
+            // コミュニケーション系キーワード
+            const communicationKeywords = [
+                'メール', 'email', 'mail', '会議', 'meeting', 'zoom', 'teams',
+                'チャット', 'chat', 'slack', 'discord', 'line', 'messenger',
+                'sns', 'twitter', 'facebook', 'instagram', 'linkedin',
+                'コミュニケーション', 'communication', '連絡', '相談', 'discussion'
+            ];
+            
+            // システム管理系キーワード
+            const systemKeywords = [
+                'ファイル管理', 'file', 'folder', 'フォルダ', 'finder', 'explorer',
+                'システム設定', 'settings', '設定', 'config', 'configuration',
+                'インストール', 'install', 'setup', 'セットアップ', 'update', 'アップデート',
+                'バックアップ', 'backup', 'sync', '同期', 'download', 'ダウンロード'
+            ];
+            
+            // ブラウジング系キーワード
+            const browseKeywords = [
+                '検索', 'search', 'google', 'bing', 'yahoo',
+                'ブラウジング', 'browsing', 'サイト閲覧', 'web', 'ウェブ',
+                'ショッピング', 'shopping', 'amazon', '楽天', 'メルカリ',
+                'ページ閲覧', 'page', 'サイト', 'website', 'portal'
+            ];
+            
+            // キーワードマッチングでクラスタリング（優先順位順）
+            if (workKeywords.some(keyword => category.includes(keyword))) {
+                return 'work';
+            } else if (breakKeywords.some(keyword => category.includes(keyword))) {
+                return 'break';
+            } else if (studyKeywords.some(keyword => category.includes(keyword))) {
+                return 'study';
+            } else if (communicationKeywords.some(keyword => category.includes(keyword))) {
+                return 'communication';
+            } else if (systemKeywords.some(keyword => category.includes(keyword))) {
+                return 'system';
+            } else if (browseKeywords.some(keyword => category.includes(keyword))) {
+                return 'browse';
+            } else {
+                // 最後の手段：一般的なブラウジングとして分類
+                return 'browse';
+            }
+        }
+
+        // 動的カテゴリ統計（デバッグ用）
+        function analyzeCategories(observations) {
+            const categoryStats = {};
+            const clusterStats = { work: 0, break: 0, study: 0, communication: 0, system: 0, browse: 0 };
+            
+            observations.forEach(obs => {
+                const original = obs.actionCategory;
+                const clustered = categorizeActivity(original);
+                
+                categoryStats[original] = (categoryStats[original] || 0) + 1;
+                clusterStats[clustered]++;
+            });
+            
+            console.log('📊 Category Analysis Result:');
+            console.log('Original categories:', categoryStats);
+            console.log('Clustered distribution:', clusterStats);
+            
+            return { categoryStats, clusterStats };
+        }
+
+        // 空のグラフ表示（Apple風）
+        function showEmptyActivityGraph() {
+            const activityGraph = document.getElementById('activityGraph');
+            
+            const emptyColumns = Array.from({length: 24}, (_, hour) => `
+                <div class="hour-column">
+                    <div class="activity-stack">
+                        <!-- 活動なし -->
+                    </div>
+                    <div class="hour-label">${hour}</div>
+                </div>
+            `).join('');
+            
+            const yTicks = [
+                { value: 0, label: '0 min', position: 0 },
+                { value: 30, label: '30 min', position: 50 },
+                { value: 60, label: '60 min', position: 100 }
+            ];
+            
+            const texts = translations[currentLanguage];
+            const yAxisLabel = currentLanguage === 'en' ? 'Activity' : '行動';
+            const xAxisLabel = currentLanguage === 'en' ? 'Time' : '時間';
+            const noDataMessage = currentLanguage === 'en' ? '📭 No activity data found for this day' : '📭 この日の活動データが見つかりません';
+            
+            activityGraph.innerHTML = `
+                <div class="y-axis-label">${yAxisLabel}</div>
+                <div class="y-axis-ticks">
+                    ${yTicks.map(tick => `<div class="y-tick" style="bottom: ${tick.position}%;">${tick.label}</div>`).join('')}
+                </div>
+                <div class="graph-container">
+                    <div class="grid-lines">
+                        <div class="grid-line" style="bottom: 50%;"></div>
+                        <div class="grid-line" style="bottom: 100%;"></div>
+                    </div>
+                    ${emptyColumns}
+                </div>
+                <div class="x-axis-label">${xAxisLabel}</div>
+                <div style="text-align: center; margin-top: 20px; color: #999; font-size: 0.9rem;">
+                    ${noDataMessage}
+                </div>
+            `;
+        }
+
+        // 空の状態表示
+        function showEmptyState(date) {
+            const highlightsContent = document.getElementById('highlightsContent');
+            const texts = translations[currentLanguage];
+            highlightsContent.innerHTML = `
+                <div class="empty-state">
+                    <h3>📭 ${texts['no-highlights']}</h3>
+                    <p>${texts['no-data-message']} ${formatDate(date)}.</p>
+                    <p>${texts['start-broadcast']}</p>
+                </div>
+            `;
+        }
+
+        // 統計情報の更新
+        function updateStats(observations) {
+            // 予測精度
+            const verifications = observations.filter(obs => obs.verification.accuracy !== null);
+            const correctPredictions = verifications.filter(obs => obs.verification.accuracy).length;
+            const accuracy = verifications.length > 0 ? Math.round((correctPredictions / verifications.length) * 100) : 0;
+            document.getElementById('accuracyRate').textContent = verifications.length > 0 ? `${accuracy}%` : '-';
+
+            // 活動時間
+            const hours = [...new Set(observations.map(obs => obs.hour))].length;
+            const texts = translations[currentLanguage];
+            const hoursText = currentLanguage === 'en' ? `${hours} hours` : `${hours}時間`;
+            document.getElementById('activeHours').textContent = hoursText;
+
+            // 主要行動
+            const categories = observations.map(obs => obs.actionCategory);
+            const categoryCount = categories.reduce((acc, cat) => {
+                acc[cat] = (acc[cat] || 0) + 1;
+                return acc;
+            }, {});
+            const topCategory = Object.keys(categoryCount).reduce((a, b) => 
+                categoryCount[a] > categoryCount[b] ? a : b, '');
+            document.getElementById('topCategory').textContent = topCategory || '-';
+        }
+
+        // 統計情報のリセット
+        function resetStats() {
+            document.getElementById('accuracyRate').textContent = '-';
+            document.getElementById('activeHours').textContent = '-';
+            document.getElementById('topCategory').textContent = '-';
+        }
+
+        // 日付のフォーマット
+        function formatDate(dateString) {
+            const date = new Date(dateString);
+            if (currentLanguage === 'ja') {
+                return date.toLocaleDateString('ja-JP', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long'
+                });
+            } else {
+                return date.toLocaleDateString('en-US', {
+                    year: 'numeric',
+                    month: 'long',
+                    day: 'numeric',
+                    weekday: 'long'
+                });
+            }
+        }
+
+        // ハイライト期間切り替え
+        function switchHighlightPeriod(period) {
+            currentHighlightPeriod = period;
+            
+            // ボタンのアクティブ状態を更新
+            document.querySelectorAll('.period-btn').forEach(btn => btn.classList.remove('active'));
+            if (event && event.target) {
+                event.target.classList.add('active');
+            }
+            
+            // ハイライトを再生成
+            loadHighlights(period, currentDate);
+        }
+
+        // ハイライト読み込み
+        async function loadHighlights(period, date) {
+            const highlightsContent = document.getElementById('highlightsContent');
+            const texts = translations[currentLanguage];
+            highlightsContent.innerHTML = `<div class="loading"><div class="spinner"></div><span data-i18n="generating-highlights">${texts['generating-highlights']}</span></div>`;
+            
+            try {
+                const response = await fetch(`/api/highlights/${period}/${date}?language=${currentLanguage}`);
+                const data = await response.json();
+                
+                const periodText = period === 'daily' ? texts['daily-btn'] : period === 'weekly' ? texts['weekly-btn'] : texts['monthly-btn'];
+                
+                if (data.highlights && data.highlights.length > 0) {
+                    const html = data.highlights.map((highlight, index) => {
+                        const categoryIcons = {
+                            '新挑戦': '🚀',
+                            '集中': '🎯',
+                            '学習': '📚',
+                            'バランス': '⚖️',
+                            '発見': '💡'
+                        };
+                        
+                        const icon = categoryIcons[highlight.category] || '✨';
+                        
+                        return `
+                            <div class="highlight-item" style="margin-bottom: 20px; padding: 25px; background: linear-gradient(135deg, rgba(102, 126, 234, 0.1), rgba(118, 75, 162, 0.1)); border-radius: 15px; border-left: 5px solid #667eea; position: relative;">
+                                <div class="highlight-rank" style="position: absolute; top: 15px; right: 20px; background: #667eea; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 0.9rem;">
+                                    ${highlight.rank}
+                                </div>
+                                <div style="display: flex; align-items: center; margin-bottom: 15px;">
+                                    <span style="font-size: 1.8rem; margin-right: 15px;">${icon}</span>
+                                    <div>
+                                        <h4 style="color: #333; margin: 0; font-size: 1.2rem;">${highlight.title}</h4>
+                                        <span style="background: rgba(102, 126, 234, 0.2); color: #667eea; padding: 3px 8px; border-radius: 12px; font-size: 0.8rem; margin-top: 5px; display: inline-block;">${highlight.category}</span>
+                                    </div>
+                                </div>
+                                <p style="color: #666; margin-bottom: 15px; line-height: 1.6;">${highlight.description}</p>
+                                <div style="background: rgba(102, 126, 234, 0.05); padding: 12px; border-radius: 8px; border-left: 3px solid #667eea;">
+                                    <div style="font-size: 0.9rem; color: #667eea; font-weight: 600; margin-bottom: 5px;">💬 anicca</div>
+                                    <div style="color: #555; font-style: italic;">"${highlight.anicca_comment}"</div>
+                                </div>
+                                <div style="margin-top: 10px; font-size: 0.8rem; color: #999;">
+                                    📅 ${highlight.timestamp}
+                                </div>
+                            </div>
+                        `;
+                    }).join('');
+                    
+                    highlightsContent.innerHTML = html;
+                } else {
+                    // ハイライトがない場合
+                    highlightsContent.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #666;">
+                            <div style="font-size: 3rem; margin-bottom: 15px;">🌟</div>
+                            <h3 style="margin-bottom: 10px; color: #333;">${texts['highlights-not-found']}</h3>
+                            <p>${texts['couldnt-find']}</p>
+                            <p style="margin-top: 15px; font-size: 0.9rem; color: #999;">${data.message || ''}</p>
+                        </div>
+                    `;
+                }
+            } catch (error) {
+                console.error('Error loading highlights:', error);
+                highlightsContent.innerHTML = `
+                    <div style="text-align: center; padding: 40px; color: #666;">
+                        <div style="font-size: 3rem; margin-bottom: 15px;">❌</div>
+                        <h3 style="margin-bottom: 10px; color: #333;">${texts['generation-error']}</h3>
+                        <p>${texts['try-again']}</p>
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html> 

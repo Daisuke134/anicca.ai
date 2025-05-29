@@ -1,6 +1,15 @@
-import { createClient, SupabaseClient } from '@supabase/supabase-js';
+// Supabaseサポートは将来的に削除予定です
+// 現在は後方互換性のためのみ保持されています
+let createClient: any, SupabaseClient: any;
+try {
+  const supabase = require('@supabase/supabase-js');
+  createClient = supabase.createClient;
+  SupabaseClient = supabase.SupabaseClient;
+} catch (e) {
+  console.warn('⚠️ Supabase library not found. Supabase mode disabled.');
+}
 
-interface ObservationData {
+export interface ObservationData {
   timestamp: string;
   date: string;
   hour: number;
@@ -12,17 +21,36 @@ interface ObservationData {
   currentUnderstanding: string;
 }
 
-interface HighlightsCacheData {
+export interface HighlightsCacheData {
   period: string;
   target_date: string;
   last_observation_id?: number;
   highlights_json: any;
 }
 
-export class DatabaseService {
-  private supabase: SupabaseClient;
+// 共通のデータベースインターフェース
+export interface DatabaseInterface {
+  init(): Promise<void>;
+  saveObservation(data: ObservationData): Promise<void>;
+  getObservationsByDate(date: string): Promise<any[]>;
+  getRecentObservations(limit?: number): Promise<any[]>;
+  getObservationCount(): Promise<number>;
+  getObservationsByDateRange(startDate: string, endDate: string): Promise<any[]>;
+  getLatestUnderstanding(): Promise<string | null>;
+  getHighlightsCache(period: string, targetDate: string): Promise<any | null>;
+  saveHighlightsCache(data: HighlightsCacheData): Promise<void>;
+  getLatestObservationId(): Promise<number | null>;
+  close(): Promise<void>;
+}
+
+export class DatabaseService implements DatabaseInterface {
+  private supabase: any; // SupabaseClient型は動的ロードのためany使用
 
   constructor() {
+    if (!createClient) {
+      throw new Error('Supabase library not available. Please use SQLite mode (USE_SQLITE=true)');
+    }
+    
     const supabaseUrl = process.env.SUPABASE_URL;
     const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 

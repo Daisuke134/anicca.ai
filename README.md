@@ -1,88 +1,146 @@
-# AI Screen Narrator
+# anicca - AI Screen Narrator
 
-An AI-powered real-time screen sharing application with live commentary using Google's Gemini Live API. This project provides intelligent, contextual narration of screen activities with sub-second latency.
+![anicca Banner](https://img.shields.io/badge/anicca-AI%20Screen%20Narrator-purple?style=for-the-badge)
+![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge)
+![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 
-## 🚀 Features
+**anicca** is an intelligent desktop application that provides real-time AI-powered commentary and analysis of your screen activities using Google's Gemini 2.0 Flash API.
 
-- **Real-time Screen Capture**: Continuous screen monitoring with intelligent frame analysis
-- **Live AI Commentary**: Sub-second latency narration using Gemini Live API
-- **Contextual Awareness**: AI maintains context across screen changes for coherent commentary
-- **WebSocket Communication**: Real-time bidirectional streaming
-- **Voice Output**: Natural speech synthesis with multiple voice options
-- **Session Management**: Persistent sessions with context compression
-- **Multi-language Support**: 30+ language support for commentary
+## ✨ Features
+
+- 🎯 **Real-time Screen Analysis**: 8-second interval intelligent screen capture and analysis
+- 🧠 **AI Commentary**: Contextual narration and psychological insights using Gemini 2.0 Flash
+- 🔮 **Prediction System**: AI predicts your next actions with accuracy tracking
+- 📊 **Daily Activity Logs**: Comprehensive analysis of your digital behavior patterns
+- 🌍 **Multi-language Support**: Japanese and English interface with real-time switching
+- 🔒 **Privacy-Focused**: Complete local data processing with SQLite storage
+- 📈 **Understanding Evolution**: AI builds and maintains understanding of your behavior patterns
 
 ## 🛠 Technology Stack
 
+- **Electron** - Cross-platform desktop framework
 - **TypeScript** - Type-safe development
-- **Gemini Live API** - Real-time multimodal AI processing
-- **WebSocket** - Real-time communication
-- **Express.js** - Web server framework
-- **Socket.IO** - Enhanced WebSocket functionality
-- **Screenshot Desktop** - Cross-platform screen capture
-- **JIMP** - Image processing
+- **SQLite** - Local data storage
+- **Gemini 2.0 Flash API** - Advanced AI analysis
+- **IPC Communication** - Secure inter-process messaging
 
-## 📋 Prerequisites
+## 📋 Requirements
 
-- Node.js 18+ 
-- Google Cloud Project with Vertex AI API enabled
-- Gemini API key
+- **macOS 10.15+** (Catalina or later)
+- **8GB RAM** recommended
+- **Active internet connection** for AI analysis
+- **Google Gemini API Key** ([Get one here](https://aistudio.google.com/))
 
-## ⚙️ Setup
+## 🚀 Quick Start
 
-1. Clone and install dependencies:
+### 1. Download
+
+#### For Apple Silicon Macs (M1/M2/M3):
+[⬇️ Download anicca for Apple Silicon](https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-1.0.0-arm64.dmg)
+
+#### For Intel Macs:
+[⬇️ Download anicca for Intel](https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-1.0.0.dmg)
+
+### 2. Install
+1. Open the downloaded `.dmg` file
+2. Drag **anicca** to your **Applications** folder
+3. Launch anicca from Applications
+
+### 3. Setup API Key
+1. Get your free Gemini API key from [Google AI Studio](https://aistudio.google.com/)
+2. Set it as an environment variable:
+   ```bash
+   export GOOGLE_API_KEY="your_api_key_here"
+   ```
+3. Restart anicca
+
+### 4. Grant Permissions
+- **Screen Recording**: Required for screen analysis
+- **Accessibility**: For optimal experience
+
+## 🎮 Usage
+
+1. **Start Analysis**: Click "Start Narration" to begin screen monitoring
+2. **View Insights**: Real-time commentary appears in the main interface
+3. **Check Daily Logs**: Access comprehensive activity analysis
+4. **Language Toggle**: Switch between Japanese and English instantly
+5. **Privacy Control**: All data stays local on your machine
+
+## 🏗 Development Setup
+
 ```bash
+# Clone repository
+git clone https://github.com/Daisuke134/anicca.ai.git
+cd anicca.ai
+
+# Install dependencies
 npm install
-```
 
-2. Create `.env` file:
-```bash
-GOOGLE_API_KEY=your_gemini_api_key
-PROJECT_ID=your_google_cloud_project_id
-LOCATION=us-central1
-```
+# Set up environment variables
+cp env.example .env
+# Edit .env with your GOOGLE_API_KEY
 
-3. Start the application:
-```bash
 # Development mode
-npm run dev
+npm run electron-dev
 
-# Production mode
-npm start
+# Build for production
+npm run build
+
+# Create distributable
+npm run dist:mac
 ```
 
-## 🏗 Project Structure
+## 📊 Architecture
 
 ```
-src/
-├── index.ts              # Main application entry
-├── services/
-│   ├── geminiLive.ts     # Gemini Live API integration
-│   ├── screenCapture.ts  # Screen capture service
-│   └── audioOutput.ts    # Audio synthesis service
-├── utils/
-│   ├── imageProcessor.ts # Image processing utilities
-│   └── contextManager.ts # Session context management
-└── types/
-    └── index.ts          # TypeScript type definitions
+┌─────────────────┐    ┌──────────────────┐    ┌─────────────────┐
+│   Frontend UI   │    │   Main Process   │    │  Gemini API     │
+│   (Renderer)    │◄──►│   (Electron)     │◄──►│  (Analysis)     │
+└─────────────────┘    └──────────────────┘    └─────────────────┘
+                               │
+                       ┌──────────────────┐
+                       │   SQLite DB      │
+                       │   (Local)        │
+                       └──────────────────┘
 ```
 
-## 🎯 Usage
+## 🔒 Privacy & Security
 
-1. Start the server: `npm run dev`
-2. Open browser at `http://localhost:3000`
-3. Grant screen capture permissions
-4. Enjoy real-time AI commentary of your screen activities!
+- **100% Local Processing**: Your screen data never leaves your device
+- **Encrypted Storage**: SQLite database with secure local storage
+- **API Privacy**: Only processed insights sent to Gemini API, not raw screenshots
+- **No Telemetry**: Zero data collection or tracking
 
-## 🤖 How It Works
+## 📈 Roadmap
 
-1. **Screen Capture**: Continuously captures screen at optimized intervals
-2. **Image Processing**: Processes and compresses images for API efficiency
-3. **Gemini Live API**: Sends visual data to Gemini for real-time analysis
-4. **Context Management**: Maintains conversation context for coherent commentary
-5. **Audio Output**: Converts AI responses to natural speech
-6. **WebSocket Streaming**: Delivers commentary with minimal latency
+- [ ] **Browser Control**: Direct webpage interaction capabilities
+- [ ] **Long-term Memory**: Extended context and learning
+- [ ] **Voice Mode**: Audio commentary and interaction
+- [ ] **Custom Plugins**: Extensible analysis modules
+- [ ] **Team Features**: Collaborative insights (optional)
 
-## 📝 License
+## 🤝 Contributing
 
-MIT 
+We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🆘 Support
+
+- 📧 **Email**: [contact@anicca.ai](mailto:contact@anicca.ai)
+- 🐛 **Issues**: [GitHub Issues](https://github.com/Daisuke134/anicca.ai/issues)
+- 💬 **Discussions**: [GitHub Discussions](https://github.com/Daisuke134/anicca.ai/discussions)
+
+## 🙏 Acknowledgments
+
+- **Google Gemini Team** for the powerful AI capabilities
+- **Electron Community** for the excellent desktop framework
+- **TypeScript Team** for type-safe development tools
+
+---
+
+**Made with ❤️ for productivity enthusiasts**
+
+*anicca - Understanding your digital journey* 

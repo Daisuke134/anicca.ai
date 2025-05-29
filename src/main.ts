@@ -7,6 +7,10 @@ import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
 
+// 🔑 Embedded API Key for production use
+// This allows users to use anicca without setting up environment variables
+const EMBEDDED_GEMINI_API_KEY = "AIzaSyDOzM9sZT3cQn6JD_wgNJFOFOyKUASbF8s";
+
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
   ? path.join(process.resourcesPath, 'app.asar', 'dist', '.env')
@@ -85,21 +89,23 @@ async function initializeServices() {
     console.log('🔧 Initializing ANICCA services...');
     
     // APIキーの確認（詳細エラーログ追加）
-    const apiKey = process.env.GOOGLE_API_KEY;
+    const apiKey = process.env.GOOGLE_API_KEY || EMBEDDED_GEMINI_API_KEY;
     if (!apiKey) {
-      console.error('❌ GOOGLE_API_KEY not found in environment variables');
-      console.error('Please set GOOGLE_API_KEY environment variable');
-      console.error('Current env vars:', Object.keys(process.env).filter(key => key.includes('GOOGLE')));
+      console.error('❌ No API key available (neither environment nor embedded)');
+      console.error('This should not happen in normal circumstances');
       
       // アプリを終了せず、エラーダイアログ表示
       const { dialog } = require('electron');
       await dialog.showErrorBox(
         'Configuration Error',
-        'GOOGLE_API_KEY not found.\n\nPlease set your Gemini API key in environment variables and restart the app.'
+        'No Gemini API key found.\n\nPlease contact support or restart the app.'
       );
       return; // 初期化を停止するが、アプリは終了しない
     }
-    console.log('🔑 API Key loaded:', apiKey.substring(0, 10) + '...');
+    
+    // APIキーのソースを表示
+    const usingEmbedded = !process.env.GOOGLE_API_KEY;
+    console.log(`🔑 API Key loaded from ${usingEmbedded ? 'embedded source' : 'environment'}:`, apiKey.substring(0, 10) + '...');
 
     // データベースサービスの初期化
     if (USE_SQLITE) {

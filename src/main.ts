@@ -3,13 +3,10 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { ScreenCaptureService } from './services/screenCapture';
 import { GeminiRestService } from './services/geminiRest';
+import { GeminiRestProxyService } from './services/geminiRestProxy';
 import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
-
-// 🔑 Embedded API Key for production use
-// This allows users to use anicca without setting up environment variables
-const EMBEDDED_GEMINI_API_KEY = "AIzaSyDOzM9sZT3cQn6JD_wgNJFOFOyKUASbF8s";
 
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
@@ -36,9 +33,15 @@ if (!process.env.GOOGLE_API_KEY) {
   }
 }
 
+// プロキシモードの設定（APIキーを隠蔽）
+const USE_PROXY = process.env.USE_PROXY !== 'false'; // デフォルトはプロキシモードを使用
+
+// 埋め込みAPIキー（レガシーモード用）
+const EMBEDDED_GEMINI_KEY = "AIzaSyALn2yS9h6GlR6weep2-ctEkMva0uP-je8";
+
 let mainWindow: BrowserWindow | null = null;
 let screenCapture: ScreenCaptureService;
-let geminiService: GeminiRestService;
+let geminiService: GeminiRestService | GeminiRestProxyService;
 let database: DatabaseInterface;
 let highlightsManager: HighlightsManager;
 let currentLanguage = 'ja'; // デフォルト言語
@@ -88,24 +91,29 @@ async function initializeServices() {
   try {
     console.log('🔧 Initializing ANICCA services...');
     
-    // APIキーの確認（詳細エラーログ追加）
-    const apiKey = process.env.GOOGLE_API_KEY || EMBEDDED_GEMINI_API_KEY;
-    if (!apiKey) {
-      console.error('❌ No API key available (neither environment nor embedded)');
-      console.error('This should not happen in normal circumstances');
+    // APIキーの取得（環境変数 → 埋め込みキーの順）
+    const apiKey = process.env.GOOGLE_API_KEY || EMBEDDED_GEMINI_KEY;
+    
+    if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
+      console.error('❌ No valid API key found');
+      console.error('Please set GOOGLE_API_KEY environment variable or update embedded key');
       
-      // アプリを終了せず、エラーダイアログ表示
+      // エラーダイアログ表示
       const { dialog } = require('electron');
       await dialog.showErrorBox(
         'Configuration Error',
-        'No Gemini API key found.\n\nPlease contact support or restart the app.'
+        'No valid Gemini API key found.\n\nPlease contact the developer or set GOOGLE_API_KEY environment variable.'
       );
       return; // 初期化を停止するが、アプリは終了しない
     }
     
-    // APIキーのソースを表示
-    const usingEmbedded = !process.env.GOOGLE_API_KEY;
-    console.log(`🔑 API Key loaded from ${usingEmbedded ? 'embedded source' : 'environment'}:`, apiKey.substring(0, 10) + '...');
+    // プロキシモードの選択
+    if (USE_PROXY) {
+      console.log('🔐 Using proxy mode (API key hidden on server)');
+    } else {
+      console.log('🔑 API Key loaded:', apiKey.substring(0, 10) + '...');
+      console.log('🔑 Source:', process.env.GOOGLE_API_KEY ? 'Environment Variable' : 'Embedded Key');
+    }
 
     // データベースサービスの初期化
     if (USE_SQLITE) {
@@ -142,8 +150,15 @@ async function initializeServices() {
     }
     
     screenCapture = new ScreenCaptureService(8000); // 8秒間隔
-    geminiService = new GeminiRestService(apiKey, database as any);
-    highlightsManager = new HighlightsManager(database as any, geminiService);
+    
+    // Geminiサービスの初期化（プロキシモードまたは直接モード）
+    if (USE_PROXY) {
+      geminiService = new GeminiRestProxyService(database as any);
+    } else {
+      geminiService = new GeminiRestService(apiKey, database as any);
+    }
+    
+    highlightsManager = new HighlightsManager(database as any, geminiService as any);
 
     console.log('✅ All services initialized successfully');
     
@@ -169,6 +184,35 @@ function setupScreenCaptureEvents() {
       if (!geminiService) {
         console.error('❌ GeminiService not initialized, skipping analysis');
         return;
+      }
+      
+      // 使用量制限チェック（SQLiteの場合のみ）
+      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+        const limitCheck = await database.checkDailyLimit(50); // 1日50回制限
+        
+        if (!limitCheck.allowed) {
+          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/50 requests used today`);
+          
+          // 制限到達メッセージをレンダラープロセスに送信
+          mainWindow?.webContents.send('daily-limit-reached', {
+            usage: limitCheck.usage,
+            limit: 50,
+            resetTime: '明日の0時'
+          });
+          
+          return; // APIリクエストをスキップ
+        }
+        
+        // 使用量をインクリメント
+        const newUsage = await database.incrementTodayUsage();
+        console.log(`📊 API usage: ${newUsage}/50 requests today`);
+        
+        // 使用量をレンダラープロセスに送信
+        mainWindow?.webContents.send('usage-update', {
+          usage: newUsage,
+          limit: 50,
+          remaining: limitCheck.remaining - 1
+        });
       }
       
       // Gemini APIで分析

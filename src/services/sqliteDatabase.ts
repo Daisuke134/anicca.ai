@@ -109,6 +109,15 @@ export class SQLiteDatabase implements DatabaseInterface {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // daily_usage テーブル (API使用量制限管理)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS daily_usage (
+        date TEXT PRIMARY KEY,
+        request_count INTEGER DEFAULT 0,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
   }
 
   private async createIndexes(): Promise<void> {
@@ -370,5 +379,52 @@ export class SQLiteDatabase implements DatabaseInterface {
       this.db = null;
       console.log('🔌 SQLite connection closed');
     }
+  }
+
+  // 使用量制限管理メソッド
+  async getTodayUsage(): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const dbGet = promisify(this.db.get.bind(this.db)) as (sql: string, params: any[]) => Promise<{ request_count: number } | undefined>;
+      
+      const result = await dbGet(`
+        SELECT request_count FROM daily_usage WHERE date = ?
+      `, [today]);
+
+      return result?.request_count || 0;
+    } catch (error) {
+      console.error('❌ Error getting today usage:', error);
+      return 0;
+    }
+  }
+
+  async incrementTodayUsage(): Promise<number> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+      const dbRun = promisify(this.db.run.bind(this.db)) as (sql: string, params: any[]) => Promise<sqlite3.RunResult>;
+      
+      await dbRun(`
+        INSERT OR REPLACE INTO daily_usage (date, request_count, updated_at) 
+        VALUES (?, COALESCE((SELECT request_count FROM daily_usage WHERE date = ?), 0) + 1, CURRENT_TIMESTAMP)
+      `, [today, today]);
+
+      // 更新後の使用回数を取得
+      return await this.getTodayUsage();
+    } catch (error) {
+      console.error('❌ Error incrementing today usage:', error);
+      return 0;
+    }
+  }
+
+  async checkDailyLimit(limit: number = 50): Promise<{ allowed: boolean; usage: number; remaining: number }> {
+    const usage = await this.getTodayUsage();
+    const remaining = Math.max(0, limit - usage);
+    const allowed = usage < limit;
+
+    return { allowed, usage, remaining };
   }
 } 

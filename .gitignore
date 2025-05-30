@@ -1,5 +1,6 @@
 # Dependencies
 node_modules/
+server/node_modules/
 npm-debug.log*
 
 # Environment variables
@@ -8,10 +9,13 @@ npm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.proxy
+server/.env
 
 # Build outputs
 dist/
 release/
+server/dist/
 
 # Logs
 logs
@@ -78,4 +82,8 @@ yarn-error.log
 
 # Local test files
 test-*.js
-test-*.ts 
+test-*.ts
+
+# Vercel
+.vercel
+server/.vercel 

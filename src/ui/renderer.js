@@ -196,6 +196,17 @@ class ANICCARenderer {
         window.aniccaAPI.onUnderstandingUpdate((data) => {
             this.updateCurrentUnderstanding(data.understanding);
         });
+
+        // 使用量制限到達
+        window.aniccaAPI.onEvent('daily-limit-reached', (data) => {
+            this.showDailyLimitReached(data);
+            this.stopNarration(); // 自動停止
+        });
+
+        // 使用量更新
+        window.aniccaAPI.onEvent('usage-update', (data) => {
+            this.updateUsageDisplay(data);
+        });
     }
 
     async startNarration() {
@@ -643,6 +654,113 @@ class ANICCARenderer {
             }
         } catch (error) {
             console.error('❌ Error loading language setting:', error);
+        }
+    }
+
+    // 使用量制限到達時の処理
+    showDailyLimitReached(data) {
+        const message = this.currentLanguage === 'ja' 
+            ? `今日の無料利用制限(${data.limit}回)に達しました。${data.resetTime}にリセットされます。`
+            : `Daily free limit (${data.limit} requests) reached. Resets at ${data.resetTime}.`;
+        
+        this.showNotification(message, 'error');
+        
+        // 制限到達ダイアログを表示
+        const dialog = document.createElement('div');
+        dialog.className = 'limit-dialog';
+        dialog.innerHTML = `
+            <div class="limit-dialog-content">
+                <h3>🚫 ${this.currentLanguage === 'ja' ? '利用制限到達' : 'Daily Limit Reached'}</h3>
+                <p>${message}</p>
+                <p style="margin-top: 15px; font-size: 0.9em; color: #666;">
+                    ${this.currentLanguage === 'ja' 
+                        ? 'aniccaをお使いいただき、ありがとうございます！明日も引き続きお楽しみください。' 
+                        : 'Thank you for using anicca! Please come back tomorrow for more insights.'}
+                </p>
+                <button onclick="this.parentElement.parentElement.remove()" class="limit-dialog-btn">
+                    ${this.currentLanguage === 'ja' ? 'OK' : 'OK'}
+                </button>
+            </div>
+        `;
+        
+        // ダイアログのスタイル
+        dialog.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10001;
+        `;
+        
+        dialog.querySelector('.limit-dialog-content').style.cssText = `
+            background: white;
+            padding: 30px;
+            border-radius: 12px;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        `;
+        
+        dialog.querySelector('.limit-dialog-btn').style.cssText = `
+            background: #2196F3;
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            cursor: pointer;
+            margin-top: 15px;
+        `;
+        
+        document.body.appendChild(dialog);
+    }
+
+    // 使用量表示の更新
+    updateUsageDisplay(data) {
+        // 使用量表示エリアを作成（存在しない場合）
+        let usageDisplay = document.getElementById('usage-display');
+        if (!usageDisplay) {
+            usageDisplay = document.createElement('div');
+            usageDisplay.id = 'usage-display';
+            usageDisplay.style.cssText = `
+                position: fixed;
+                bottom: 20px;
+                right: 20px;
+                background: rgba(33, 150, 243, 0.9);
+                color: white;
+                padding: 8px 15px;
+                border-radius: 20px;
+                font-size: 12px;
+                font-weight: 600;
+                z-index: 1000;
+                transition: all 0.3s ease;
+            `;
+            document.body.appendChild(usageDisplay);
+        }
+        
+        // 使用量に応じて色を変更
+        const percentage = (data.usage / data.limit) * 100;
+        let backgroundColor = 'rgba(33, 150, 243, 0.9)'; // 青（正常）
+        
+        if (percentage >= 90) {
+            backgroundColor = 'rgba(244, 67, 54, 0.9)'; // 赤（危険）
+        } else if (percentage >= 70) {
+            backgroundColor = 'rgba(255, 152, 0, 0.9)'; // オレンジ（警告）
+        }
+        
+        usageDisplay.style.backgroundColor = backgroundColor;
+        usageDisplay.textContent = `API使用量: ${data.usage}/${data.limit}`;
+        
+        // 制限が近い場合の警告
+        if (percentage >= 80 && percentage < 100) {
+            const warningMessage = this.currentLanguage === 'ja'
+                ? `残り${data.remaining}回で今日の利用制限に達します`
+                : `${data.remaining} requests remaining until daily limit`;
+            this.showNotification(warningMessage, 'info');
         }
     }
 }

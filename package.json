@@ -11,10 +11,14 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "build": "tsc && cp src/ui/*.html dist/ui/ && cp src/ui/*.js dist/ui/",
-    "build:env": "npm run build && echo 'USE_SQLITE=true' > dist/.env && echo 'GOOGLE_API_KEY='$GOOGLE_API_KEY >> dist/.env",
+    "clean": "rm -rf dist/",
+    "clean-build": "npm run clean && npm run build",
+    "build:env": "npm run build && echo 'USE_SQLITE=true' > dist/.env && echo 'USE_PROXY=true' >> dist/.env",
+    "build:env:legacy": "npm run build && echo 'USE_SQLITE=true' > dist/.env && echo 'USE_PROXY=false' >> dist/.env && echo 'GOOGLE_API_KEY='$GOOGLE_API_KEY >> dist/.env",
     "dist": "npm run build:env && electron-builder",
     "dist:mac": "npm run build:env && electron-builder --mac",
     "dist:all": "npm run build:env && electron-builder --mac --win --linux",
+    "dist:legacy": "npm run build:env:legacy && electron-builder --mac",
     "release": "npm run build:env && electron-builder --publish=never"
   },
   "keywords": [

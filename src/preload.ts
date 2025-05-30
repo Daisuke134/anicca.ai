@@ -42,6 +42,11 @@ contextBridge.exposeInMainWorld('aniccaAPI', {
   onUnderstandingUpdate: (callback: (data: any) => void) => {
     ipcRenderer.on('understanding-update', (_, data) => callback(data));
   },
+
+  // 汎用IPCイベントリスナー（使用量制限等で使用）
+  onEvent: (eventName: string, callback: (data: any) => void) => {
+    ipcRenderer.on(eventName, (_, data) => callback(data));
+  },
   
   // リスナーを削除
   removeAllListeners: (channel: string) => {
@@ -70,6 +75,7 @@ declare global {
       onCommentary: (callback: (data: any) => void) => void;
       onError: (callback: (data: any) => void) => void;
       onUnderstandingUpdate: (callback: (data: any) => void) => void;
+      onEvent: (eventName: string, callback: (data: any) => void) => void;
       removeAllListeners: (channel: string) => void;
     };
   }

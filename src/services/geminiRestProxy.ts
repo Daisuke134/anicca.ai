@@ -191,4 +191,11 @@ export class GeminiRestProxyService {
       console.error('❌ Error saving to database:', error);
     }
   }
+
+  // ハイライト生成（プロキシ経由では未実装）
+  async generateHighlights(observations: any[], period: string, startDate: string, endDate: string, language: string = 'ja'): Promise<any[]> {
+    console.warn('⚠️ Highlights generation not implemented in proxy mode yet');
+    // TODO: プロキシサーバーにハイライト生成エンドポイントを追加
+    return [];
+  }
 }

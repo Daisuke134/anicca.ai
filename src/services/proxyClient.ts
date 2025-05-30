@@ -47,15 +47,29 @@ export class ProxyClient {
         })
       });
 
-      const data = await response.json();
-
       if (!response.ok) {
-        return {
-          success: false,
-          error: data.error || 'Unknown error',
-          message: data.message
-        };
+        // エラーレスポンスのテキストを取得
+        const errorText = await response.text();
+        console.error('Proxy server error response:', errorText);
+        
+        // JSONとしてパースを試みる
+        try {
+          const errorData = JSON.parse(errorText);
+          return {
+            success: false,
+            error: errorData.error || 'Unknown error',
+            message: errorData.message || errorText
+          };
+        } catch {
+          return {
+            success: false,
+            error: 'Server error',
+            message: errorText
+          };
+        }
       }
+
+      const data = await response.json();
 
       return data;
     } catch (error) {

@@ -18,7 +18,7 @@ function checkRateLimit(clientId: string): boolean {
     return true;
   }
   
-  if (userLimit.count >= 50) { // 1日50回の制限
+  if (userLimit.count >= 100) { // 1日100回の制限
     return false;
   }
   
@@ -26,7 +26,7 @@ function checkRateLimit(clientId: string): boolean {
   return true;
 }
 
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse): Promise<void> {
   // CORSヘッダーの設定
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -48,7 +48,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     // クライアント認証（簡易版：クライアントキーで認証）
     const clientKey = req.headers['x-client-key'] as string;
-    if (!clientKey || clientKey !== process.env.CLIENT_SECRET_KEY) {
+    const expectedKey = process.env.CLIENT_SECRET_KEY;
+    
+    // デバッグ用ログ（本番環境では削除）
+    console.log('Client key received:', clientKey);
+    console.log('Expected key exists:', !!expectedKey);
+    
+    if (!clientKey || clientKey !== expectedKey) {
       return res.status(401).json({ error: 'Unauthorized' });
     }
 
@@ -57,12 +63,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (!checkRateLimit(clientId)) {
       return res.status(429).json({ 
         error: 'Daily limit reached',
-        message: 'You have reached the daily limit of 50 requests'
+        message: 'You have reached the daily limit of 100 requests'
       });
     }
 
     // リクエストボディの検証
-    const { image, language, prompt, previousUnderstanding } = req.body;
+    const { image, language, prompt } = req.body;
     if (!image || !language || !prompt) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -92,7 +98,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         commentary: text,
         timestamp: new Date().toISOString(),
         usage: {
-          remaining: 50 - (rateLimitStore.get(clientId)?.count || 0)
+          remaining: 100 - (rateLimitStore.get(clientId)?.count || 0)
         }
       }
     });

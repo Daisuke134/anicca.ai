@@ -420,7 +420,7 @@ export class SQLiteDatabase implements DatabaseInterface {
     }
   }
 
-  async checkDailyLimit(limit: number = 50): Promise<{ allowed: boolean; usage: number; remaining: number }> {
+  async checkDailyLimit(limit: number = 100): Promise<{ allowed: boolean; usage: number; remaining: number }> {
     const usage = await this.getTodayUsage();
     const remaining = Math.max(0, limit - usage);
     const allowed = usage < limit;

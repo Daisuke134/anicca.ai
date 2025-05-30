@@ -188,15 +188,15 @@ function setupScreenCaptureEvents() {
       
       // 使用量制限チェック（SQLiteの場合のみ）
       if (USE_SQLITE && database instanceof SQLiteDatabase) {
-        const limitCheck = await database.checkDailyLimit(50); // 1日50回制限
+        const limitCheck = await database.checkDailyLimit(100); // 1日50回制限
         
         if (!limitCheck.allowed) {
-          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/50 requests used today`);
+          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/100 requests used today`);
           
           // 制限到達メッセージをレンダラープロセスに送信
           mainWindow?.webContents.send('daily-limit-reached', {
             usage: limitCheck.usage,
-            limit: 50,
+            limit: 100,
             resetTime: '明日の0時'
           });
           
@@ -205,12 +205,12 @@ function setupScreenCaptureEvents() {
         
         // 使用量をインクリメント
         const newUsage = await database.incrementTodayUsage();
-        console.log(`📊 API usage: ${newUsage}/50 requests today`);
+        console.log(`📊 API usage: ${newUsage}/100 requests today`);
         
         // 使用量をレンダラープロセスに送信
         mainWindow?.webContents.send('usage-update', {
           usage: newUsage,
-          limit: 50,
+          limit: 100,
           remaining: limitCheck.remaining - 1
         });
       }

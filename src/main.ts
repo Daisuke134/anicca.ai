@@ -3,10 +3,10 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { ScreenCaptureService } from './services/screenCapture';
 import { GeminiRestService } from './services/geminiRest';
-import { GeminiRestProxyService } from './services/geminiRestProxy';
 import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
+import { EncryptionService } from './services/encryptionService';
 
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
@@ -33,15 +33,12 @@ if (!process.env.GOOGLE_API_KEY) {
   }
 }
 
-// プロキシモードの設定（APIキーを隠蔽）
-const USE_PROXY = process.env.USE_PROXY !== 'false'; // デフォルトはプロキシモードを使用
-
-// 埋め込みAPIキー（レガシーモード用）
-const EMBEDDED_GEMINI_KEY = "AIzaSyALn2yS9h6GlR6weep2-ctEkMva0uP-je8";
+// 暗号化サービス
+let encryptionService: EncryptionService;
 
 let mainWindow: BrowserWindow | null = null;
 let screenCapture: ScreenCaptureService;
-let geminiService: GeminiRestService | GeminiRestProxyService;
+let geminiService: GeminiRestService;
 let database: DatabaseInterface;
 let highlightsManager: HighlightsManager;
 let currentLanguage = 'ja'; // デフォルト言語
@@ -91,29 +88,36 @@ async function initializeServices() {
   try {
     console.log('🔧 Initializing ANICCA services...');
     
-    // APIキーの取得（環境変数 → 埋め込みキーの順）
-    const apiKey = process.env.GOOGLE_API_KEY || EMBEDDED_GEMINI_KEY;
+    // 暗号化サービスの初期化
+    encryptionService = new EncryptionService();
+    
+    // APIキーの取得（暗号化されたキー → 環境変数 → 埋め込みキーの順）
+    let apiKey = await encryptionService.getApiKey();
+    
+    if (!apiKey) {
+      // 暗号化されたキーがない場合、環境変数または埋め込みキーを使用
+      const defaultKey = "AIzaSyALn2yS9h6GlR6weep2-ctEkMva0uP-je8";
+      apiKey = process.env.GOOGLE_API_KEY || defaultKey;
+      
+      // 有効なキーがあれば暗号化して保存
+      if (apiKey && apiKey !== "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
+        await encryptionService.saveApiKey(apiKey);
+        console.log('🔐 API key encrypted and saved for future use');
+      }
+    }
     
     if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
       console.error('❌ No valid API key found');
-      console.error('Please set GOOGLE_API_KEY environment variable or update embedded key');
-      
-      // エラーダイアログ表示
       const { dialog } = require('electron');
       await dialog.showErrorBox(
         'Configuration Error',
-        'No valid Gemini API key found.\n\nPlease contact the developer or set GOOGLE_API_KEY environment variable.'
+        'No valid Gemini API key found.\n\nPlease set GOOGLE_API_KEY environment variable.'
       );
-      return; // 初期化を停止するが、アプリは終了しない
+      return;
     }
     
-    // プロキシモードの選択
-    if (USE_PROXY) {
-      console.log('🔐 Using proxy mode (API key hidden on server)');
-    } else {
-      console.log('🔑 API Key loaded:', apiKey.substring(0, 10) + '...');
-      console.log('🔑 Source:', process.env.GOOGLE_API_KEY ? 'Environment Variable' : 'Embedded Key');
-    }
+    console.log('🔑 API Key loaded successfully');
+    console.log('🔐 Using encrypted storage for API key');
 
     // データベースサービスの初期化
     if (USE_SQLITE) {
@@ -151,14 +155,10 @@ async function initializeServices() {
     
     screenCapture = new ScreenCaptureService(8000); // 8秒間隔
     
-    // Geminiサービスの初期化（プロキシモードまたは直接モード）
-    if (USE_PROXY) {
-      geminiService = new GeminiRestProxyService(database as any);
-    } else {
-      geminiService = new GeminiRestService(apiKey, database as any);
-    }
+    // Geminiサービスの初期化
+    geminiService = new GeminiRestService(apiKey, database as any);
     
-    highlightsManager = new HighlightsManager(database as any, geminiService as any);
+    highlightsManager = new HighlightsManager(database as any, geminiService);
 
     console.log('✅ All services initialized successfully');
     

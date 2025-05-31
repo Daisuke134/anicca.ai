@@ -1,9 +1,0 @@
-{
-  "functions": {
-    "api/analyze.ts": {
-      "maxDuration": 30
-    }
-  },
-  "buildCommand": "",
-  "outputDirectory": "."
-}

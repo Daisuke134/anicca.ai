@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Anicca - あなたのデジタルジャーニーを理解する</title>
+    <meta name="description" content="Aniccaは、プライバシーファーストのAI画面分析アプリです。あなたのデジタル活動を理解し、洞察を提供します。">
+    <link rel="icon" type="image/svg+xml" href="logo.svg">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <div class="nav-brand">
+                <img src="logo.svg" alt="Anicca Logo" style="width: 32px; height: 32px; vertical-align: middle; margin-right: 8px;">
+                Anicca
+            </div>
+            <div class="nav-links">
+                <a href="#features">機能</a>
+                <a href="#privacy">プライバシー</a>
+                <a href="#how-it-works">使い方</a>
+                <a href="#download">ダウンロード</a>
+                <button class="lang-switch" onclick="toggleLanguage()">EN</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <h1 class="hero-title">
+                    <span class="gradient-text">Anicca</span><br>
+                    <span data-ja="あなたのデジタルジャーニーを理解する" data-en="Understanding Your Digital Journey">あなたのデジタルジャーニーを理解する</span>
+                </h1>
+                <p class="hero-subtitle" data-ja="プライバシーファーストのAI画面分析アプリ。8秒ごとにあなたの活動を理解し、心理的洞察と次の行動予測を提供します。" data-en="Privacy-first AI screen analysis app. Understands your activities every 8 seconds, providing psychological insights and next action predictions.">
+                    プライバシーファーストのAI画面分析アプリ。8秒ごとにあなたの活動を理解し、心理的洞察と次の行動予測を提供します。
+                </p>
+                <div class="hero-actions">
+                    <a href="#download" class="btn btn-primary">
+                        <span data-ja="今すぐダウンロード" data-en="Download Now">今すぐダウンロード</span>
+                    </a>
+                    <p class="platform-note">macOS 10.15+ (Catalina以降)</p>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="screen-preview">
+                    <div class="screen-content">
+                        <div class="ai-commentary">
+                            <div class="ai-icon">🤖</div>
+                            <p data-ja="「プレゼンテーション資料を作成中ですね。デザインへのこだわりが見えます。次はスライド3の内容を追加するでしょう。」" data-en="&quot;You're creating presentation slides. I can see your attention to design details. You'll likely add content to slide 3 next.&quot;">
+                                「プレゼンテーション資料を作成中ですね。デザインへのこだわりが見えます。次はスライド3の内容を追加するでしょう。」
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Section -->
+    <section id="features" class="features">
+        <div class="container">
+            <h2 class="section-title" data-ja="主要機能" data-en="Key Features">主要機能</h2>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">🔍</div>
+                    <h3 data-ja="リアルタイム画面分析" data-en="Real-time Screen Analysis">リアルタイム画面分析</h3>
+                    <p data-ja="8秒ごとに画面を分析し、あなたの活動を理解します。" data-en="Analyzes your screen every 8 seconds to understand your activities.">
+                        8秒ごとに画面を分析し、あなたの活動を理解します。
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🧠</div>
+                    <h3 data-ja="心理的洞察" data-en="Psychological Insights">心理的洞察</h3>
+                    <p data-ja="AIがあなたの行動パターンから深い洞察を提供します。" data-en="AI provides deep insights from your behavior patterns.">
+                        AIがあなたの行動パターンから深い洞察を提供します。
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🔮</div>
+                    <h3 data-ja="次の行動予測" data-en="Next Action Prediction">次の行動予測</h3>
+                    <p data-ja="あなたの習慣を学習し、次の行動を予測します。" data-en="Learns your habits and predicts your next actions.">
+                        あなたの習慣を学習し、次の行動を予測します。
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">📊</div>
+                    <h3 data-ja="活動サマリー" data-en="Activity Summaries">活動サマリー</h3>
+                    <p data-ja="日次・週次・月次の活動レポートを自動生成します。" data-en="Automatically generates daily, weekly, and monthly activity reports.">
+                        日次・週次・月次の活動レポートを自動生成します。
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🌐</div>
+                    <h3 data-ja="多言語対応" data-en="Multi-language Support">多言語対応</h3>
+                    <p data-ja="日本語と英語に対応。お好みの言語で利用できます。" data-en="Supports Japanese and English. Use in your preferred language.">
+                        日本語と英語に対応。お好みの言語で利用できます。
+                    </p>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">🎯</div>
+                    <h3 data-ja="進化する理解" data-en="Evolving Understanding">進化する理解</h3>
+                    <p data-ja="使えば使うほど、AIがあなたをより深く理解します。" data-en="The more you use it, the deeper the AI understands you.">
+                        使えば使うほど、AIがあなたをより深く理解します。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Privacy Section -->
+    <section id="privacy" class="privacy">
+        <div class="container">
+            <h2 class="section-title" data-ja="完全なプライバシー保護" data-en="Complete Privacy Protection">完全なプライバシー保護</h2>
+            <div class="privacy-content">
+                <div class="privacy-features">
+                    <div class="privacy-item">
+                        <div class="check-icon">✓</div>
+                        <div>
+                            <h3 data-ja="完全ローカル処理" data-en="Fully Local Processing">完全ローカル処理</h3>
+                            <p data-ja="スクリーンショットはあなたのデバイスを離れません" data-en="Screenshots never leave your device">
+                                スクリーンショットはあなたのデバイスを離れません
+                            </p>
+                        </div>
+                    </div>
+                    <div class="privacy-item">
+                        <div class="check-icon">✓</div>
+                        <div>
+                            <h3 data-ja="データ収集なし" data-en="No Data Collection">データ収集なし</h3>
+                            <p data-ja="テレメトリーや分析データの収集は一切ありません" data-en="No telemetry or analytics data collection whatsoever">
+                                テレメトリーや分析データの収集は一切ありません
+                            </p>
+                        </div>
+                    </div>
+                    <div class="privacy-item">
+                        <div class="check-icon">✓</div>
+                        <div>
+                            <h3 data-ja="暗号化されたAPI キー" data-en="Encrypted API Keys">暗号化されたAPI キー</h3>
+                            <p data-ja="OSのキーチェーンで安全に保管されます" data-en="Securely stored in OS keychain">
+                                OSのキーチェーンで安全に保管されます
+                            </p>
+                        </div>
+                    </div>
+                    <div class="privacy-item">
+                        <div class="check-icon">✓</div>
+                        <div>
+                            <h3 data-ja="オフライン対応" data-en="Offline Ready">オフライン対応</h3>
+                            <p data-ja="初期設定後はオフラインでも動作します" data-en="Works offline after initial setup">
+                                初期設定後はオフラインでも動作します
+                            </p>
+                        </div>
+                    </div>
+                </div>
+                <div class="privacy-visual">
+                    <div class="lock-icon">🔒</div>
+                    <p class="privacy-message" data-ja="あなたのデータは、あなただけのもの" data-en="Your data belongs only to you">
+                        あなたのデータは、あなただけのもの
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- How It Works Section -->
+    <section id="how-it-works" class="how-it-works">
+        <div class="container">
+            <h2 class="section-title" data-ja="使い方" data-en="How It Works">使い方</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3 data-ja="ダウンロード＆インストール" data-en="Download & Install">ダウンロード＆インストール</h3>
+                    <p data-ja="DMGファイルをダウンロードし、Aniccaをアプリケーションフォルダにドラッグします。" data-en="Download the DMG file and drag Anicca to your Applications folder.">
+                        DMGファイルをダウンロードし、Aniccaをアプリケーションフォルダにドラッグします。
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3 data-ja="APIキーを設定" data-en="Set API Key">APIキーを設定</h3>
+                    <p data-ja="Google Gemini APIキーを入力。安全に暗号化されて保存されます。" data-en="Enter your Google Gemini API key. It will be securely encrypted and stored.">
+                        Google Gemini APIキーを入力。安全に暗号化されて保存されます。
+                    </p>
+                </div>
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3 data-ja="分析開始" data-en="Start Analysis">分析開始</h3>
+                    <p data-ja="「開始」ボタンをクリックして、AIによる画面分析を開始します。" data-en="Click 'Start' button to begin AI screen analysis.">
+                        「開始」ボタンをクリックして、AIによる画面分析を開始します。
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Technical Specs Section -->
+    <section class="tech-specs">
+        <div class="container">
+            <h2 class="section-title" data-ja="技術仕様" data-en="Technical Specifications">技術仕様</h2>
+            <div class="specs-grid">
+                <div class="spec-item">
+                    <h3 data-ja="対応OS" data-en="Supported OS">対応OS</h3>
+                    <p>macOS 10.15+ (Catalina以降)</p>
+                </div>
+                <div class="spec-item">
+                    <h3 data-ja="必要なもの" data-en="Requirements">必要なもの</h3>
+                    <p>Google Gemini API Key</p>
+                </div>
+                <div class="spec-item">
+                    <h3 data-ja="使用制限" data-en="Usage Limit">使用制限</h3>
+                    <p data-ja="100リクエスト/日" data-en="100 requests/day">100リクエスト/日</p>
+                </div>
+                <div class="spec-item">
+                    <h3 data-ja="データ保存場所" data-en="Data Storage">データ保存場所</h3>
+                    <p>~/.anicca/</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Download Section -->
+    <section id="download" class="download">
+        <div class="container">
+            <div class="download-content">
+                <h2 class="section-title" data-ja="今すぐ始めよう" data-en="Get Started Now">今すぐ始めよう</h2>
+                <p class="download-subtitle" data-ja="あなたのデジタル活動に新しい洞察を" data-en="Gain new insights into your digital activities">
+                    あなたのデジタル活動に新しい洞察を
+                </p>
+                <div class="download-buttons">
+                    <a href="https://github.com/Daisuke134/anicca.ai/releases" class="btn btn-primary btn-large">
+                        <span data-ja="macOS版をダウンロード" data-en="Download for macOS">macOS版をダウンロード</span>
+                    </a>
+                    <a href="https://github.com/Daisuke134/anicca.ai" class="btn btn-secondary">
+                        <span data-ja="GitHubで見る" data-en="View on GitHub">GitHubで見る</span>
+                    </a>
+                </div>
+                <p class="version-note" data-ja="バージョン 1.0.0 • macOS 10.15以降" data-en="Version 1.0.0 • macOS 10.15+">
+                    バージョン 1.0.0 • macOS 10.15以降
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>&copy; 2025 Anicca. All rights reserved.</p>
+            <p class="footer-links">
+                <a href="https://github.com/Daisuke134/anicca.ai" data-ja="GitHub" data-en="GitHub">GitHub</a>
+                <span class="separator">•</span>
+                <a href="https://github.com/Daisuke134/anicca.ai/issues" data-ja="問題を報告" data-en="Report Issue">問題を報告</a>
+            </p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>

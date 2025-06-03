@@ -6,7 +6,6 @@ import { GeminiRestService } from './services/geminiRest';
 import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
-import { EncryptionService } from './services/encryptionService';
 import { CommandExecutor } from './services/commandExecutor';
 
 // 環境変数を読み込み（パッケージ化対応）
@@ -15,27 +14,6 @@ const envPath = app.isPackaged
   : path.join(__dirname, '.env');
 dotenv.config({ path: envPath });
 
-// フォールバック: 複数の場所から.envを試行
-if (!process.env.GOOGLE_API_KEY) {
-  const fallbackPaths = [
-    path.join(__dirname, '.env'),
-    path.join(process.cwd(), '.env'),
-    path.join(app.getAppPath(), '.env'),
-    path.join(app.getAppPath(), 'dist', '.env')
-  ];
-  
-  for (const envPath of fallbackPaths) {
-    console.log('🔍 Trying .env path:', envPath);
-    dotenv.config({ path: envPath });
-    if (process.env.GOOGLE_API_KEY) {
-      console.log('✅ Found .env at:', envPath);
-      break;
-    }
-  }
-}
-
-// 暗号化サービス
-let encryptionService: EncryptionService;
 
 let mainWindow: BrowserWindow | null = null;
 let screenCapture: ScreenCaptureService;
@@ -88,36 +66,8 @@ async function initializeServices() {
   try {
     console.log('🔧 Initializing ANICCA services...');
     
-    // 暗号化サービスの初期化
-    encryptionService = new EncryptionService();
-    
-    // APIキーの取得（暗号化されたキー → 環境変数 → 埋め込みキーの順）
-    let apiKey = await encryptionService.getApiKey();
-    
-    if (!apiKey) {
-      // 暗号化されたキーがない場合、環境変数または埋め込みキーを使用
-      const defaultKey = "AIzaSyALn2yS9h6GlR6weep2-ctEkMva0uP-je8";
-      apiKey = process.env.GOOGLE_API_KEY || defaultKey;
-      
-      // 有効なキーがあれば暗号化して保存
-      if (apiKey && apiKey !== "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
-        await encryptionService.saveApiKey(apiKey);
-        console.log('🔐 API key encrypted and saved for future use');
-      }
-    }
-    
-    if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
-      console.error('❌ No valid API key found');
-      const { dialog } = require('electron');
-      await dialog.showErrorBox(
-        'Configuration Error',
-        'No valid Gemini API key found.\n\nPlease set GOOGLE_API_KEY environment variable.'
-      );
-      return;
-    }
-    
-    console.log('🔑 API Key loaded successfully');
-    console.log('🔐 Using encrypted storage for API key');
+    // プロキシサーバーを使用するためAPIキーは不要
+    console.log('🌐 Using external proxy server for API requests');
 
     // データベースサービスの初期化
     if (USE_SQLITE) {
@@ -155,8 +105,8 @@ async function initializeServices() {
     
     screenCapture = new ScreenCaptureService(8000); // 8秒間隔
     
-    // Geminiサービスの初期化
-    geminiService = new GeminiRestService(apiKey, database as any);
+    // Geminiサービスの初期化（APIキーは不要）
+    geminiService = new GeminiRestService('', database as any);
     
     highlightsManager = new HighlightsManager(database as any, geminiService);
     
@@ -219,8 +169,29 @@ function setupScreenCaptureEvents() {
         });
       }
       
-      // Gemini APIで分析
-      const commentary = await geminiService.analyzeScreen(frame, currentLanguage);
+      // Gemini APIで分析（リトライ機能付き）
+      let commentary;
+      let retryCount = 0;
+      const maxRetries = 2;
+      
+      while (retryCount <= maxRetries) {
+        try {
+          commentary = await geminiService.analyzeScreen(frame, currentLanguage);
+          break; // 成功したらループを抜ける
+        } catch (error) {
+          if (error instanceof Error && error.message.includes('Retryable error') && retryCount < maxRetries) {
+            retryCount++;
+            console.log(`🔄 Retrying analysis (attempt ${retryCount}/${maxRetries})...`);
+            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // 指数バックオフ
+          } else {
+            throw error; // リトライ不可能なエラーまたは最大リトライ数に達した
+          }
+        }
+      }
+      
+      if (!commentary) {
+        throw new Error('Failed to analyze screen after retries');
+      }
       
       // アクションがある場合は通知を表示（urgencyがhighの時のみ）
       if (commentary.action && commentary.action.message) {
@@ -686,57 +657,6 @@ function setupIpcHandlers() {
     }
   });
 
-  // Gemini APIプロキシハンドラー
-  ipcMain.handle('proxy-gemini-request', async (_, requestData: {
-    method: string;
-    endpoint: string;
-    data?: any;
-  }) => {
-    try {
-      // APIキーは暗号化サービスから取得（mainプロセスのみアクセス可能）
-      let apiKey = await encryptionService.getApiKey();
-      
-      if (!apiKey) {
-        const defaultKey = "AIzaSyALn2yS9h6GlR6weep2-ctEkMva0uP-je8";
-        apiKey = process.env.GOOGLE_API_KEY || defaultKey;
-      }
-      
-      if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
-        throw new Error('No valid API key found');
-      }
-      
-      // Gemini APIエンドポイント構築
-      const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
-      const fullUrl = `${baseUrl}${requestData.endpoint}?key=${apiKey}`;
-      
-      // APIリクエスト実行
-      const response = await fetch(fullUrl, {
-        method: requestData.method,
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: requestData.data ? JSON.stringify(requestData.data) : undefined,
-      });
-      
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
-      }
-      
-      const result = await response.json();
-      
-      return {
-        success: true,
-        data: result
-      };
-    } catch (error) {
-      console.error('❌ Proxy request error:', error);
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      };
-    }
-  });
 
   console.log('🔗 IPC handlers registered');
 }

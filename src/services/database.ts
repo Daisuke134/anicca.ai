@@ -1,10 +1,9 @@
 // Supabaseサポートは将来的に削除予定です
 // 現在は後方互換性のためのみ保持されています
-let createClient: any, SupabaseClient: any;
+let createClient: any;
 try {
   const supabase = require('@supabase/supabase-js');
   createClient = supabase.createClient;
-  SupabaseClient = supabase.SupabaseClient;
 } catch (e) {
   console.warn('⚠️ Supabase library not found. Supabase mode disabled.');
 }

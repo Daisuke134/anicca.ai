@@ -1,4 +1,4 @@
-import { app, BrowserWindow, ipcMain, screen } from 'electron';
+import { app, BrowserWindow, ipcMain, screen, Notification } from 'electron';
 import path from 'path';
 import dotenv from 'dotenv';
 import { ScreenCaptureService } from './services/screenCapture';
@@ -7,6 +7,7 @@ import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
 import { EncryptionService } from './services/encryptionService';
+import { CommandExecutor } from './services/commandExecutor';
 
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
@@ -41,12 +42,11 @@ let screenCapture: ScreenCaptureService;
 let geminiService: GeminiRestService;
 let database: DatabaseInterface;
 let highlightsManager: HighlightsManager;
+let commandExecutor: CommandExecutor;
 let currentLanguage = 'ja'; // デフォルト言語
 
-// データベースタイプの選択
-// 注意: Supabaseサポートは将来のバージョンで削除予定です
-// SQLiteモードの使用を強く推奨します
-const USE_SQLITE = process.env.USE_SQLITE === 'true' || process.env.USE_SQLITE === undefined; // デフォルトはSQLite
+// SQLiteを使用（Supabaseは非推奨）
+const USE_SQLITE = true;
 
 async function createWindow() {
   // 画面のサイズを取得
@@ -159,6 +159,10 @@ async function initializeServices() {
     geminiService = new GeminiRestService(apiKey, database as any);
     
     highlightsManager = new HighlightsManager(database as any, geminiService);
+    
+    // CommandExecutorの初期化
+    commandExecutor = new CommandExecutor();
+    await commandExecutor.initialize();
 
     console.log('✅ All services initialized successfully');
     
@@ -188,10 +192,10 @@ function setupScreenCaptureEvents() {
       
       // 使用量制限チェック（SQLiteの場合のみ）
       if (USE_SQLITE && database instanceof SQLiteDatabase) {
-        const limitCheck = await database.checkDailyLimit(100); // 1日50回制限
+        const limitCheck = await database.checkDailyLimit(300); // 1日300回制限
         
         if (!limitCheck.allowed) {
-          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/100 requests used today`);
+          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/300 requests used today`);
           
           // 制限到達メッセージをレンダラープロセスに送信
           mainWindow?.webContents.send('daily-limit-reached', {
@@ -205,18 +209,78 @@ function setupScreenCaptureEvents() {
         
         // 使用量をインクリメント
         const newUsage = await database.incrementTodayUsage();
-        console.log(`📊 API usage: ${newUsage}/100 requests today`);
+        console.log(`📊 API usage: ${newUsage}/300 requests today`);
         
         // 使用量をレンダラープロセスに送信
         mainWindow?.webContents.send('usage-update', {
           usage: newUsage,
-          limit: 100,
+          limit: 300,
           remaining: limitCheck.remaining - 1
         });
       }
       
       // Gemini APIで分析
       const commentary = await geminiService.analyzeScreen(frame, currentLanguage);
+      
+      // アクションがある場合は通知を表示（urgencyがhighの時のみ）
+      if (commentary.action && commentary.action.message) {
+        console.log(`🎯 Action proposed (urgency: ${commentary.action.urgency}):`, commentary.action.message);
+        
+        if (commentary.action.urgency === 'high') {
+          // Agent Mode設定を確認
+          let agentModeEnabled = false;
+          if (USE_SQLITE && database instanceof SQLiteDatabase) {
+            const agentModeSetting = await database.getSetting('agentMode');
+            agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
+          }
+          
+          console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
+          
+          if (agentModeEnabled) {
+            // Agent ModeがONの場合のみ通知とアクションを実行
+            const notification = new Notification({
+              title: 'ANICCA',
+              body: commentary.action.message,
+              icon: path.join(__dirname, '../assets/icon.png'), // アイコンパスは後で調整
+              silent: false, // 音を鳴らす
+              timeoutType: 'default' // デフォルトのタイムアウト
+            });
+            
+            notification.on('click', () => {
+              console.log('🖱️ Notification clicked');
+              // メインウィンドウをフォーカス
+              if (mainWindow && !mainWindow.isDestroyed()) {
+                if (mainWindow.isMinimized()) mainWindow.restore();
+                mainWindow.focus();
+              }
+            });
+            
+            notification.show();
+            console.log('🔔 Notification shown (HIGH urgency):', commentary.action.message);
+            
+            // コマンドを実行
+            if (commentary.action.commands && commentary.action.commands.length > 0) {
+              console.log('🤖 Executing commands...');
+              for (const command of commentary.action.commands) {
+                try {
+                  const result = await commandExecutor.execute(command as any);
+                  console.log('📊 Command result:', result);
+                  
+                  // 実行結果をGeminiサービスに保存（次回の観察で使用）
+                  geminiService.setLastActionResult({
+                    success: result.success,
+                    execution: result
+                  });
+                } catch (error) {
+                  console.error('❌ Command execution error:', error);
+                }
+              }
+            }
+          } else {
+            console.log('⏸️ Agent Mode is OFF - Skipping notification and actions');
+          }
+        }
+      }
       
       // レンダラープロセスに送信
       mainWindow?.webContents.send('commentary', {
@@ -600,6 +664,77 @@ function setupIpcHandlers() {
     } catch (error) {
       console.error('❌ Error setting multiple values:', error);
       return { success: false, error: error instanceof Error ? error.message : String(error) };
+    }
+  });
+
+  // ハイライト取得ハンドラー
+  ipcMain.handle('get-highlights', async (_, period: string, targetDate: string) => {
+    try {
+      const highlights = await highlightsManager.getHighlights(period, targetDate, currentLanguage);
+      console.log(`🌟 Retrieved ${highlights.length} highlights for ${period}/${targetDate}`);
+      return {
+        success: true,
+        highlights
+      };
+    } catch (error) {
+      console.error('❌ Error getting highlights:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error),
+        highlights: []
+      };
+    }
+  });
+
+  // Gemini APIプロキシハンドラー
+  ipcMain.handle('proxy-gemini-request', async (_, requestData: {
+    method: string;
+    endpoint: string;
+    data?: any;
+  }) => {
+    try {
+      // APIキーは暗号化サービスから取得（mainプロセスのみアクセス可能）
+      let apiKey = await encryptionService.getApiKey();
+      
+      if (!apiKey) {
+        const defaultKey = "AIzaSyALn2yS9h6GlR6weep2-ctEkMva0uP-je8";
+        apiKey = process.env.GOOGLE_API_KEY || defaultKey;
+      }
+      
+      if (!apiKey || apiKey === "YOUR_ACTUAL_GEMINI_API_KEY_HERE") {
+        throw new Error('No valid API key found');
+      }
+      
+      // Gemini APIエンドポイント構築
+      const baseUrl = 'https://generativelanguage.googleapis.com/v1beta';
+      const fullUrl = `${baseUrl}${requestData.endpoint}?key=${apiKey}`;
+      
+      // APIリクエスト実行
+      const response = await fetch(fullUrl, {
+        method: requestData.method,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: requestData.data ? JSON.stringify(requestData.data) : undefined,
+      });
+      
+      if (!response.ok) {
+        const errorText = await response.text();
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
+      }
+      
+      const result = await response.json();
+      
+      return {
+        success: true,
+        data: result
+      };
+    } catch (error) {
+      console.error('❌ Proxy request error:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
     }
   });
 

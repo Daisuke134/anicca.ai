@@ -30,6 +30,13 @@ contextBridge.exposeInMainWorld('aniccaAPI', {
   // 予測精度統計
   getPredictionStats: () => ipcRenderer.invoke('get-prediction-stats'),
   
+  // ハイライト取得
+  getHighlights: (period: string, targetDate: string) => ipcRenderer.invoke('get-highlights', period, targetDate),
+  
+  // Gemini APIプロキシ
+  proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => 
+    ipcRenderer.invoke('proxy-gemini-request', requestData),
+  
   // イベントリスナー
   onCommentary: (callback: (data: any) => void) => {
     ipcRenderer.on('commentary', (_, data) => callback(data));

@@ -179,6 +179,36 @@
             opacity: 0.9;
         }
 
+        /* 円グラフコンテナ */
+        .chart-container {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .chart-legend {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            gap: 15px;
+            margin-top: 20px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 8px;
+        }
+
         /* ハイライトセクション */
         .highlights-container {
             max-height: 600px;
@@ -412,6 +442,15 @@
                     </div>
                 </div>
 
+                <!-- 活動分布グラフ -->
+                <div class="card">
+                    <h3 data-i18n="activity-distribution">🍪 今日の活動分布</h3>
+                    <div class="chart-container">
+                        <canvas id="activity-chart"></canvas>
+                    </div>
+                    <div id="chart-legend" class="chart-legend"></div>
+                </div>
+
                 <!-- ハイライト -->
                 <div class="card">
                     <h3 data-i18n="daily-highlights">🌟 今日のハイライト</h3>
@@ -435,6 +474,8 @@
         </div>
     </div>
 
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
     <!-- Daily View用JavaScript -->
     <script src="daily.js"></script>
 </body>

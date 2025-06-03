@@ -14,6 +14,7 @@ const translations = {
         'prediction-accuracy-rate': '予測精度',
         'active-hours': '活動時間',
         'websites-visited': '訪問サイト数',
+        'activity-distribution': '🍪 今日の活動分布',
         'daily-highlights': '🌟 今日のハイライト',
         'detailed-log': '📝 詳細ログ',
         'understanding-evolution': '🧠 理解度の推移',
@@ -47,6 +48,7 @@ const translations = {
         'prediction-accuracy-rate': 'Prediction Accuracy',
         'active-hours': 'Active Hours',
         'websites-visited': 'Websites Visited',
+        'activity-distribution': '🍪 Today\'s Activity Distribution',
         'daily-highlights': '🌟 Today\'s Highlights',
         'detailed-log': '📝 Detailed Log',
         'understanding-evolution': '🧠 Understanding Evolution',
@@ -175,6 +177,7 @@ async function loadDailyData() {
         
         // 各セクションを更新
         updateStatistics();
+        updateActivityChart(); // 円グラフを更新
         updateHighlights();
         updateActivityLog();
         
@@ -191,6 +194,7 @@ function updateStatistics() {
         document.getElementById('prediction-accuracy').textContent = '0%';
         document.getElementById('active-hours').textContent = '0';
         document.getElementById('websites-visited').textContent = '0';
+        updateActivityChart(); // データがない場合もグラフを更新
         return;
     }
     
@@ -447,6 +451,125 @@ function getAccuracyColor(accuracy) {
     return '#f44336';
 }
 
+// 活動分布チャートを更新
+let activityChart = null;
+
+function updateActivityChart() {
+    const canvas = document.getElementById('activity-chart');
+    const ctx = canvas.getContext('2d');
+    
+    // 既存のチャートがあれば破棄
+    if (activityChart) {
+        activityChart.destroy();
+    }
+    
+    // データがない場合は空のグラフを表示
+    if (!dailyData || !dailyData.commentary || dailyData.commentary.length === 0) {
+        activityChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: [translations[currentLanguage]['no-data']],
+                datasets: [{
+                    data: [1],
+                    backgroundColor: ['#e0e0e0']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        enabled: false
+                    }
+                }
+            }
+        });
+        return;
+    }
+    
+    // アクティビティカテゴリを集計
+    const categoryCount = {};
+    dailyData.commentary.forEach(item => {
+        const category = item.action_category || 'その他';
+        categoryCount[category] = (categoryCount[category] || 0) + 1;
+    });
+    
+    // データを配列に変換してソート
+    const sortedCategories = Object.entries(categoryCount)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8); // 最大8カテゴリまで
+    
+    // カラーパレット
+    const colors = [
+        '#667eea', // 紫
+        '#f56565', // 赤
+        '#ed8936', // オレンジ
+        '#ecc94b', // 黄
+        '#48bb78', // 緑
+        '#38b2ac', // 青緑
+        '#4299e1', // 青
+        '#ed64a6'  // ピンク
+    ];
+    
+    // チャートデータを準備
+    const labels = sortedCategories.map(([category, _]) => category);
+    const data = sortedCategories.map(([_, count]) => count);
+    const backgroundColors = colors.slice(0, sortedCategories.length);
+    
+    // チャートを作成
+    activityChart = new Chart(ctx, {
+        type: 'doughnut',
+        data: {
+            labels: labels,
+            datasets: [{
+                data: data,
+                backgroundColor: backgroundColors,
+                borderWidth: 2,
+                borderColor: '#fff'
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    display: false // カスタム凡例を使用するため
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((context.parsed / total) * 100).toFixed(1);
+                            const hours = (context.parsed * 8 / 3600).toFixed(1); // 8秒ごとの観察から時間を計算
+                            return `${context.label}: ${percentage}% (${context.parsed}回, 約${hours}時間)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+    
+    // カスタム凡例を作成
+    const legendContainer = document.getElementById('chart-legend');
+    legendContainer.innerHTML = '';
+    
+    sortedCategories.forEach(([category, count], index) => {
+        const total = data.reduce((a, b) => a + b, 0);
+        const percentage = ((count / total) * 100).toFixed(1);
+        
+        const legendItem = document.createElement('div');
+        legendItem.className = 'legend-item';
+        legendItem.innerHTML = `
+            <div class="legend-color" style="background-color: ${backgroundColors[index]}"></div>
+            <span>${category} (${percentage}%)</span>
+        `;
+        legendContainer.appendChild(legendItem);
+    });
+}
+
 function showEmptyState() {
     const containers = ['highlights-container', 'activity-log'];
     containers.forEach(id => {
@@ -458,4 +581,7 @@ function showEmptyState() {
     document.getElementById('prediction-accuracy').textContent = '0%';
     document.getElementById('active-hours').textContent = '0';
     document.getElementById('websites-visited').textContent = '0';
+    
+    // チャートも更新
+    updateActivityChart();
 } 

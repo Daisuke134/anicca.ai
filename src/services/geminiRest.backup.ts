@@ -1,3 +1,4 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { ScreenFrame } from '../types';
 import { DatabaseService } from './database';
 
@@ -46,21 +47,20 @@ interface CommentaryResponse {
 }
 
 export class GeminiRestService {
-  private proxyUrl: string;
+  private genAI: GoogleGenerativeAI;
+  private model: any;
   private previousObservation: PreviousObservation | null = null;
   private previousActionResult: any = null;
   private currentUnderstanding: string = "ユーザーの行動パターンを学習中です。";
   private database: DatabaseService;
 
   constructor(apiKey: string, database: DatabaseService) {
-    // APIキーは使用しない（プロキシサーバー側で管理）
-    this.proxyUrl = 'https://anicca-proxy-ten.vercel.app/api/gemini';
+    this.genAI = new GoogleGenerativeAI(apiKey);
+    this.model = this.genAI.getGenerativeModel({ model: 'gemini-2.0-flash' });
     this.database = database;
     
     // 起動時に最新の理解を復元
     this.restoreLatestUnderstanding();
-    
-    console.log('🌐 Using proxy server for Gemini API');
   }
 
   private async restoreLatestUnderstanding(): Promise<void> {
@@ -90,63 +90,19 @@ export class GeminiRestService {
         }
       };
 
-      // プロキシサーバー経由でリクエスト
-      const response = await fetch(this.proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          endpoint: '/models/gemini-2.0-flash:generateContent',
-          data: {
-            contents: [{
-              parts: [
-                { text: prompt },
-                imagePart
-              ]
-            }],
-            generationConfig: {
-              responseMimeType: "application/json"
-            }
-          }
-        })
+      const result = await this.model.generateContent([
+        prompt,
+        imagePart
+      ], {
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       });
 
-      if (!response.ok) {
-        let errorMessage = `Proxy error: ${response.status} ${response.statusText}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = `Proxy error: ${errorData.error || response.statusText}`;
-        } catch (e) {
-          // JSONパースエラーの場合はテキストとして取得
-          try {
-            const errorText = await response.text();
-            errorMessage = `Proxy error: ${errorText}`;
-          } catch (e2) {
-            // それでも失敗したらステータスのみ
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      let result;
-      try {
-        result = await response.json();
-      } catch (error) {
-        console.error('❌ Failed to parse proxy response as JSON');
-        const responseText = await response.text();
-        console.error('Response text:', responseText.substring(0, 200));
-        throw new Error('Invalid JSON response from proxy');
-      }
+      const response = result.response;
+      const text = response.text();
       
-      // Gemini APIレスポンスから実際のコンテンツを抽出
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!text) {
-        throw new Error('No response text from Gemini');
-      }
-      
-      console.log('🤖 Gemini Response via Proxy:', text);
+      console.log('🤖 Gemini Response:', text);
       
       // マークダウンのコードブロックを除去してからJSONパース
       const jsonText = text.replace(/```json\n?/g, '').replace(/\n?```/g, '').trim();
@@ -179,17 +135,7 @@ export class GeminiRestService {
       return commentary;
       
     } catch (error) {
-      console.error('❌ Error analyzing screen:', error);
-      
-      // エラーが特定のタイプの場合、リトライ可能なエラーとして再スロー
-      if (error instanceof Error) {
-        if (error.message.includes('Request Entity Too Large') || 
-            error.message.includes('413') ||
-            error.message.includes('timeout')) {
-          throw new Error(`Retryable error: ${error.message}`);
-        }
-      }
-      
+      console.error('Error analyzing screen:', error);
       throw error;
     }
   }
@@ -399,12 +345,8 @@ ${previousActionResultText}
 }
 \`\`\`
 
-## 最優先ルール（例外なし）
-- **YouTubeを開いている → 必ずurgency: high → YouTubeタブを即座に閉じる**
-- これは時間経過に関係なく、YouTube画面が見えたら必ず実行
-
 ## 緊急度の判断基準
-- **high**: 介入が必要（YouTube視聴中、動画・SNS3分以上、明らかな逸脱、困難を感じている）
+- **high**: 介入が必要（動画・SNS3分以上、明らかな逸脱、困難を感じている）
 - **low**: 観察のみ（作業中、適度な活動）
 
 ## 出力の簡潔さ
@@ -554,56 +496,16 @@ ${JSON.stringify(observations.slice(0, 50), null, 2)} // 最大50件まで
 
 ${language === 'en' ? '重要：すべての回答を英語で行ってください。Please respond in English.' : ''}`;
 
-      // プロキシサーバー経由でリクエスト
-      const response = await fetch(this.proxyUrl, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          endpoint: '/models/gemini-2.0-flash:generateContent',
-          data: {
-            contents: [{
-              parts: [{ text: prompt }]
-            }],
-            generationConfig: {
-              responseMimeType: "application/json"
-            }
-          }
-        })
+      const result = await this.model.generateContent([prompt], {
+        generationConfig: {
+          responseMimeType: "application/json"
+        }
       });
 
-      if (!response.ok) {
-        let errorMessage = `Failed to generate highlights: ${response.status}`;
-        try {
-          const errorData = await response.json();
-          errorMessage = `Failed to generate highlights: ${errorData.error || response.statusText}`;
-        } catch (e) {
-          try {
-            const errorText = await response.text();
-            errorMessage = `Failed to generate highlights: ${errorText}`;
-          } catch (e2) {
-            // ステータスのみ使用
-          }
-        }
-        throw new Error(errorMessage);
-      }
-
-      let result;
-      try {
-        result = await response.json();
-      } catch (error) {
-        console.error('❌ Failed to parse highlights response as JSON');
-        throw new Error('Invalid JSON response from proxy for highlights');
-      }
+      const response = result.response;
+      const text = response.text();
       
-      const text = result.candidates?.[0]?.content?.parts?.[0]?.text;
-      
-      if (!text) {
-        throw new Error('No highlights generated');
-      }
-      
-      console.log('🌟 Highlights Response via Proxy:', text);
+      console.log('🌟 Highlights Response:', text);
       
       // マークダウンのコードブロックを除去してからJSONパース
       const jsonText = text.replace(/```json\n?/g, '').replace(/\n?```/g, '').trim();

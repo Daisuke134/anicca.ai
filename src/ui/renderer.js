@@ -48,7 +48,8 @@ class ANICCARenderer {
                 'accuracy-hit': '的中',
                 'accuracy-miss': '外れ',
                 'unknown': 'Unknown',
-                'other': 'その他'
+                'other': 'その他',
+                'agent-mode': 'Agent Mode'
             },
             en: {
                 'subtitle': 'AI Screen Narrator - Understanding and narrating your screen',
@@ -89,7 +90,8 @@ class ANICCARenderer {
                 'accuracy-hit': 'Correct',
                 'accuracy-miss': 'Wrong',
                 'unknown': 'Unknown',
-                'other': 'Other'
+                'other': 'Other',
+                'agent-mode': 'Agent Mode'
             }
         };
         
@@ -105,6 +107,7 @@ class ANICCARenderer {
             stopBtn: document.getElementById('stop-btn'),
             dailyViewBtn: document.getElementById('daily-view-btn'),
             languageSelect: document.getElementById('language-select'),
+            agentModeCheckbox: document.getElementById('agent-mode-checkbox'),
             statusIndicator: document.querySelector('.status-indicator'),
             statusText: document.getElementById('status-text'),
             connectionStatus: document.getElementById('connection-status'),
@@ -119,6 +122,9 @@ class ANICCARenderer {
 
         // 保存された言語設定を読み込み
         await this.loadLanguageSetting();
+        
+        // 保存されたAgent Mode設定を読み込み
+        await this.loadAgentModeSetting();
 
         // イベントリスナーの設定
         this.setupEventListeners();
@@ -160,6 +166,11 @@ class ANICCARenderer {
 
         // Daily viewボタン
         this.elements.dailyViewBtn?.addEventListener('click', () => this.openDailyView());
+        
+        // Agent Modeトグル
+        this.elements.agentModeCheckbox?.addEventListener('change', (e) => {
+            this.setAgentMode(e.target.checked);
+        });
         
         // ページがフォーカスされた際に理解度を再読み込み（Daily Viewからの戻り対応）
         document.addEventListener('visibilitychange', () => {
@@ -489,11 +500,17 @@ class ANICCARenderer {
         console.error('❌ Error:', error);
     }
 
-    showNotification(message, type = 'info') {
+    showNotification(message, type = 'info', description = '') {
         // 通知要素を作成
         const notification = document.createElement('div');
         notification.className = `notification notification-${type}`;
-        notification.textContent = message;
+        
+        // メッセージとオプションの説明を設定
+        if (description) {
+            notification.innerHTML = `<strong>${message}</strong><br><span style="font-size: 0.9em; opacity: 0.9;">${description}</span>`;
+        } else {
+            notification.textContent = message;
+        }
         
         // スタイル設定
         notification.style.cssText = `
@@ -654,6 +671,41 @@ class ANICCARenderer {
             }
         } catch (error) {
             console.error('❌ Error loading language setting:', error);
+        }
+    }
+    
+    async loadAgentModeSetting() {
+        try {
+            const agentMode = await window.aniccaAPI.getSetting('agentMode');
+            if (agentMode !== null && agentMode !== undefined) {
+                this.elements.agentModeCheckbox.checked = agentMode === 'true' || agentMode === true;
+            } else {
+                // デフォルトはOFF
+                this.elements.agentModeCheckbox.checked = false;
+                await window.aniccaAPI.setSetting('agentMode', false);
+            }
+            console.log('🤖 Loaded agent mode:', this.elements.agentModeCheckbox.checked ? 'ON' : 'OFF');
+        } catch (error) {
+            console.error('❌ Error loading agent mode setting:', error);
+        }
+    }
+    
+    async setAgentMode(enabled) {
+        try {
+            await window.aniccaAPI.setSetting('agentMode', enabled);
+            console.log('🤖 Agent Mode set to:', enabled ? 'ON' : 'OFF');
+            
+            // 視覚的フィードバック
+            const title = this.currentLanguage === 'ja' 
+                ? (enabled ? 'Agent Mode 有効化' : 'Agent Mode 無効化')
+                : (enabled ? 'Agent Mode Enabled' : 'Agent Mode Disabled');
+            const message = this.currentLanguage === 'ja'
+                ? (enabled ? 'AIが画面を観察し、必要に応じて通知とアクションを実行します' : '観察のみモードに切り替わりました')
+                : (enabled ? 'AI will observe and take actions when needed' : 'Switched to observation-only mode');
+            
+            this.showNotification(title, 'info', message);
+        } catch (error) {
+            console.error('❌ Error setting agent mode:', error);
         }
     }
 

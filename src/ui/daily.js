@@ -226,7 +226,7 @@ function updateStatistics() {
 }
 
 // ハイライトセクション更新
-function updateHighlights() {
+async function updateHighlights() {
     const container = document.getElementById('highlights-container');
     
     if (!dailyData || !dailyData.commentary || dailyData.commentary.length === 0) {
@@ -234,10 +234,31 @@ function updateHighlights() {
         return;
     }
     
-    // ハイライト生成（予測精度の高いものや興味深いパターンを選出）
-    const highlights = generateHighlights(dailyData.commentary);
-    
-    if (highlights.length === 0) {
+    try {
+        // highlightsManagerから本物のハイライトを取得
+        const result = await window.aniccaAPI.getHighlights('daily', currentDate);
+        
+        if (!result.success || !result.highlights || result.highlights.length === 0) {
+            // フォールバック：従来の方法でハイライトを生成
+            const highlights = generateHighlights(dailyData.commentary);
+            renderHighlights(container, highlights);
+            return;
+        }
+        
+        // Geminiが生成した本物のハイライトをレンダリング
+        renderHighlights(container, result.highlights);
+        
+    } catch (error) {
+        console.error('Error getting highlights:', error);
+        // エラー時は従来の方法でハイライトを生成
+        const highlights = generateHighlights(dailyData.commentary);
+        renderHighlights(container, highlights);
+    }
+}
+
+// ハイライトをレンダリング
+function renderHighlights(container, highlights) {
+    if (!highlights || highlights.length === 0) {
         container.innerHTML = `<div class="empty-state">${translations[currentLanguage]['no-data']}</div>`;
         return;
     }
@@ -245,14 +266,15 @@ function updateHighlights() {
     container.innerHTML = highlights.map((highlight, index) => `
         <div class="highlight-item">
             <div class="highlight-header">
-                <span class="highlight-rank">${index + 1}</span>
+                <span class="highlight-rank">${highlight.rank || (index + 1)}</span>
                 <span class="highlight-title">${highlight.title}</span>
             </div>
             <div class="highlight-description">${highlight.description}</div>
-            <div class="anicca-comment">${highlight.aiComment}</div>
+            ${highlight.anicca_comment ? `<div class="anicca-comment">${highlight.anicca_comment}</div>` : ''}
+            ${highlight.aiComment ? `<div class="anicca-comment">${highlight.aiComment}</div>` : ''}
             <div class="highlight-meta">
-                <span class="highlight-category">${translations[currentLanguage][highlight.category] || highlight.category}</span>
-                <span class="highlight-time">${formatTime(highlight.time)}</span>
+                <span class="highlight-category">${highlight.category || 'insight'}</span>
+                <span class="highlight-time">${formatTime(highlight.timestamp || highlight.time)}</span>
             </div>
         </div>
     `).join('');

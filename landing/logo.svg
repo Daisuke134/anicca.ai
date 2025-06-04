@@ -1,0 +1,45 @@
+<svg width="120" height="120" viewBox="0 0 120 120" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#6B46C1;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#EC4899;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Outer circle representing continuous monitoring -->
+  <circle cx="60" cy="60" r="50" stroke="url(#gradient)" stroke-width="4" fill="none" stroke-dasharray="8 4" opacity="0.8">
+    <animateTransform 
+      attributeName="transform"
+      attributeType="XML"
+      type="rotate"
+      from="0 60 60"
+      to="360 60 60"
+      dur="20s"
+      repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Inner circle -->
+  <circle cx="60" cy="60" r="40" fill="url(#gradient)" opacity="0.1"/>
+  
+  <!-- AI Eye symbol -->
+  <path d="M 30 60 Q 60 40, 90 60 Q 60 80, 30 60" stroke="url(#gradient)" stroke-width="3" fill="none"/>
+  
+  <!-- Center dot -->
+  <circle cx="60" cy="60" r="8" fill="url(#gradient)">
+    <animate attributeName="r" values="8;12;8" dur="2s" repeatCount="indefinite"/>
+  </circle>
+  
+  <!-- Scanning lines -->
+  <line x1="60" y1="20" x2="60" y2="35" stroke="url(#gradient)" stroke-width="2" opacity="0.6">
+    <animate attributeName="opacity" values="0;0.6;0" dur="3s" repeatCount="indefinite"/>
+  </line>
+  <line x1="60" y1="85" x2="60" y2="100" stroke="url(#gradient)" stroke-width="2" opacity="0.6">
+    <animate attributeName="opacity" values="0;0.6;0" dur="3s" begin="0.5s" repeatCount="indefinite"/>
+  </line>
+  <line x1="20" y1="60" x2="35" y2="60" stroke="url(#gradient)" stroke-width="2" opacity="0.6">
+    <animate attributeName="opacity" values="0;0.6;0" dur="3s" begin="1s" repeatCount="indefinite"/>
+  </line>
+  <line x1="85" y1="60" x2="100" y2="60" stroke="url(#gradient)" stroke-width="2" opacity="0.6">
+    <animate attributeName="opacity" values="0;0.6;0" dur="3s" begin="1.5s" repeatCount="indefinite"/>
+  </line>
+</svg>

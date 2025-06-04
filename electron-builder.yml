@@ -6,6 +6,7 @@ files:
   - dist/**/*
   - node_modules/**/*
   - package.json
+  - assets/**/*
 mac:
   category: public.app-category.productivity
   icon: assets/icon.png
@@ -13,8 +14,6 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
-  notarize:
-    teamId: "S5U8UH3JLJ"
 dmg:
   contents:
     - x: 130

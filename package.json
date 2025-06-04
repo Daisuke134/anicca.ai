@@ -56,52 +56,5 @@
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"
-  },
-  "build": {
-    "appId": "ai.anicca.app",
-    "productName": "anicca",
-    "directories": {
-      "output": "release"
-    },
-    "files": [
-      "dist/**/*",
-      "package.json"
-    ],
-    "mac": {
-      "category": "public.app-category.productivity",
-      "target": [
-        {
-          "target": "dmg",
-          "arch": [
-            "x64",
-            "arm64"
-          ]
-        }
-      ]
-    },
-    "dmg": {
-      "title": "anicca AI Screen Narrator",
-      "window": {
-        "width": 600,
-        "height": 400
-      },
-      "contents": [
-        {
-          "x": 180,
-          "y": 170,
-          "type": "file"
-        },
-        {
-          "x": 420,
-          "y": 170,
-          "type": "link",
-          "path": "/Applications"
-        }
-      ]
-    },
-    "nsis": {
-      "oneClick": false,
-      "allowToChangeInstallationDirectory": true
-    }
   }
 }

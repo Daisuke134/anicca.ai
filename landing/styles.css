@@ -534,13 +534,7 @@ body {
     transition: opacity 0.3s ease;
 }
 
-.lang-en [data-ja] {
-    display: none;
-}
-
-.lang-ja [data-en] {
-    display: none;
-}
+/* CSSでの言語切り替えを削除 - JavaScriptで制御 */
 
 /* Floating Animation */
 @keyframes float {

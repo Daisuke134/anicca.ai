@@ -2,14 +2,11 @@
 let currentLang = 'ja';
 
 function toggleLanguage() {
-    console.log('toggleLanguage called, current:', currentLang);
     currentLang = currentLang === 'ja' ? 'en' : 'ja';
-    console.log('switching to:', currentLang);
     updateLanguage();
 }
 
 function updateLanguage() {
-    console.log('updateLanguage called with:', currentLang);
     const body = document.body;
     const langButton = document.querySelector('.lang-switch');
     
@@ -21,7 +18,6 @@ function updateLanguage() {
         
         // Update page title
         document.title = 'Anicca - AI Agent that Watches, Guides & Transforms';
-        console.log('Switched to English');
     } else {
         body.classList.add('lang-ja');
         body.classList.remove('lang-en');
@@ -30,25 +26,17 @@ function updateLanguage() {
         
         // Update page title
         document.title = 'Anicca - あなたを見守り、導くAIエージェント';
-        console.log('Switched to Japanese');
     }
     
     // Update all elements with data-ja and data-en attributes
     const elements = document.querySelectorAll('[data-ja][data-en]');
-    console.log('Found elements with data attributes:', elements.length);
     
-    elements.forEach((element, index) => {
+    elements.forEach((element) => {
         const dataValue = element.getAttribute(`data-${currentLang}`);
-        console.log(`Element ${index}:`, element.tagName, 'data value:', dataValue);
         if (dataValue) {
             element.innerHTML = dataValue;
-            console.log('Updated element:', element.tagName, 'to:', dataValue);
-        } else {
-            console.log('No data value found for:', element.tagName);
         }
     });
-    
-    console.log('Language update completed');
 }
 
 // Smooth scrolling for navigation links

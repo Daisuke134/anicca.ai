@@ -79,3 +79,4 @@ yarn-error.log
 # Local test files
 test-*.js
 test-*.ts anicca-agent-s/
+anicca-agent-s/

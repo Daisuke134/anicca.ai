@@ -2,7 +2,6 @@
 
 ![anicca Banner](https://img.shields.io/badge/anicca-AI%20Screen%20Narrator-purple?style=for-the-badge)
 ![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge)
-![License](https://img.shields.io/badge/license-MIT-green?style=for-the-badge)
 
 **anicca** is an intelligent desktop application that provides real-time AI-powered commentary and analysis of your screen activities using Google's Gemini 2.0 Flash API.
 

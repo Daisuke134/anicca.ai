@@ -21,12 +21,6 @@ export interface SessionContext {
   contextHistory: string[];
 }
 
-export interface GeminiLiveSession {
-  sessionId: string;
-  websocket: any;
-  isActive: boolean;
-  context: SessionContext;
-}
 
 export interface AppConfig {
   port: number;

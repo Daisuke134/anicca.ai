@@ -33,6 +33,16 @@ contextBridge.exposeInMainWorld('aniccaAPI', {
   // ハイライト取得
   getHighlights: (period: string, targetDate: string) => ipcRenderer.invoke('get-highlights', period, targetDate),
   
+  // User Profile
+  getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
+  saveUserProfile: (profile: {
+    emailBehavior: string;
+    docsBehavior: string;
+    youtubeLimit: string;
+    workStyle: string;
+    goals: string;
+  }) => ipcRenderer.invoke('save-user-profile', profile),
+  
   // Gemini APIプロキシ
   proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => 
     ipcRenderer.invoke('proxy-gemini-request', requestData),
@@ -79,6 +89,16 @@ declare global {
       setMultipleSettings: (settings: Record<string, any>) => Promise<any>;
       getCurrentUnderstanding: () => Promise<any>;
       getPredictionStats: () => Promise<any>;
+      getHighlights: (period: string, targetDate: string) => Promise<any>;
+      getUserProfile: () => Promise<any>;
+      saveUserProfile: (profile: {
+        emailBehavior: string;
+        docsBehavior: string;
+        youtubeLimit: string;
+        workStyle: string;
+        goals: string;
+      }) => Promise<any>;
+      proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => Promise<any>;
       onCommentary: (callback: (data: any) => void) => void;
       onError: (callback: (data: any) => void) => void;
       onUnderstandingUpdate: (callback: (data: any) => void) => void;

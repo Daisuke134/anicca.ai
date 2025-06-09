@@ -413,6 +413,97 @@
             height: fit-content;
         }
 
+        /* User Profile Section */
+        .user-profile-section {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            height: fit-content;
+            margin-bottom: 20px;
+        }
+
+        .profile-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 10px;
+            color: #333;
+        }
+
+        .profile-description {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .profile-form {
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+        }
+
+        .profile-question {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-question label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.95rem;
+        }
+
+        .profile-input {
+            width: 100%;
+            min-height: 60px;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            resize: vertical;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+
+        .profile-input:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .profile-input::placeholder {
+            color: #999;
+            font-style: italic;
+        }
+
+        .profile-actions {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-top: 10px;
+        }
+
+        .save-status {
+            font-size: 0.9rem;
+            font-weight: 600;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .save-status.success {
+            color: #4CAF50;
+            opacity: 1;
+        }
+
+        .save-status.error {
+            color: #f44336;
+            opacity: 1;
+        }
+
         .understanding-title {
             font-size: 1.3rem;
             font-weight: 700;
@@ -569,8 +660,63 @@
                 </div>
             </div>
 
+            <!-- User Profile Section -->
+            <div class="user-profile-section">
+                <h2 class="profile-title" data-i18n="user-profile">👤 ユーザープロファイル</h2>
+                <div class="profile-description" data-i18n="profile-description">
+                    ANICCAがより良くサポートできるよう、あなたについて教えてください
+                </div>
+                
+                <div class="profile-form">
+                    <div class="profile-question">
+                        <label for="email-behavior" data-i18n="email-behavior-label">メール作成で止まった時、どうして欲しいですか？</label>
+                        <textarea id="email-behavior" class="profile-input" placeholder="例：下書きを作成して欲しい" data-i18n-placeholder="email-behavior-placeholder"></textarea>
+                    </div>
+                    
+                    <div class="profile-question">
+                        <label for="docs-behavior" data-i18n="docs-behavior-label">ドキュメント作成で詰まった時、どうして欲しいですか？</label>
+                        <textarea id="docs-behavior" class="profile-input" placeholder="例：まず書き始めて欲しい" data-i18n-placeholder="docs-behavior-placeholder"></textarea>
+                    </div>
+                    
+                    <div class="profile-question">
+                        <label for="youtube-limit" data-i18n="youtube-limit-label">YouTubeはどのくらいまで見てもOKですか？</label>
+                        <textarea id="youtube-limit" class="profile-input" placeholder="例：3分まで、その後は作業に戻して" data-i18n-placeholder="youtube-limit-placeholder"></textarea>
+                    </div>
+                    
+                    <div class="profile-question">
+                        <label for="work-style" data-i18n="work-style-label">あなたの作業スタイルを教えてください</label>
+                        <textarea id="work-style" class="profile-input" placeholder="例：集中したい時は邪魔しないで、困った時は積極的に助けて" data-i18n-placeholder="work-style-placeholder"></textarea>
+                    </div>
+                    
+                    <div class="profile-question">
+                        <label for="goals" data-i18n="goals-label">達成したい目標や、なりたい自分について</label>
+                        <textarea id="goals" class="profile-input" placeholder="例：もっと生産的になりたい、SNSの時間を減らしたい" data-i18n-placeholder="goals-placeholder"></textarea>
+                    </div>
+                    
+                    <h3 style="margin-top: 30px; margin-bottom: 20px; color: #667eea;">🔐 Googleアカウント情報（任意）</h3>
+                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">ANICCAがGmailやGoogle Docsにアクセスするために必要です。入力しない場合、これらのサービスは利用できません。</p>
+                    
+                    <div class="profile-question">
+                        <label for="gmail-address" data-i18n="gmail-address-label">Gmailアドレス</label>
+                        <input id="gmail-address" type="email" class="profile-input" style="min-height: 45px;" placeholder="例：your-email@gmail.com" data-i18n-placeholder="gmail-address-placeholder">
+                    </div>
+                    
+                    <div class="profile-question">
+                        <label for="gmail-password" data-i18n="gmail-password-label">Gmailパスワード</label>
+                        <input id="gmail-password" type="password" class="profile-input" style="min-height: 45px;" placeholder="パスワード" data-i18n-placeholder="gmail-password-placeholder">
+                    </div>
+                    
+                    <div class="profile-actions">
+                        <button id="save-profile-btn" class="btn btn-primary" data-i18n="save-profile">
+                            💾 プロファイルを保存
+                        </button>
+                        <span id="profile-save-status" class="save-status"></span>
+                    </div>
+                </div>
+            </div>
+
             <div class="understanding-section">
-                <h2 class="understanding-title" data-i18n="current-understanding">🧠 現在の理解</h2>
+                <h2 class="understanding-title" data-i18n="current-understanding">🧠 ANICCAの理解</h2>
                 <div class="current-understanding">
                     <div id="current-understanding" data-i18n="learning-patterns">
                         画面を分析して、あなたの活動を理解中です...

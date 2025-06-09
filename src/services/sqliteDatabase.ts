@@ -118,6 +118,37 @@ export class SQLiteDatabase implements DatabaseInterface {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // user_profiles テーブル (ユーザープロファイル)
+    await dbRun(`
+      CREATE TABLE IF NOT EXISTS user_profiles (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        email_behavior TEXT,
+        docs_behavior TEXT,
+        youtube_limit TEXT,
+        work_style TEXT,
+        goals TEXT,
+        gmail_address TEXT,
+        gmail_password TEXT,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // 既存のテーブルに新しいカラムを追加（マイグレーション）
+    try {
+      await dbRun(`ALTER TABLE user_profiles ADD COLUMN gmail_address TEXT`);
+      console.log('✅ Added gmail_address column to user_profiles');
+    } catch (error) {
+      // カラムが既に存在する場合はエラーを無視
+    }
+    
+    try {
+      await dbRun(`ALTER TABLE user_profiles ADD COLUMN gmail_password TEXT`);
+      console.log('✅ Added gmail_password column to user_profiles');
+    } catch (error) {
+      // カラムが既に存在する場合はエラーを無視
+    }
   }
 
   private async createIndexes(): Promise<void> {
@@ -426,5 +457,97 @@ export class SQLiteDatabase implements DatabaseInterface {
     const allowed = usage < limit;
 
     return { allowed, usage, remaining };
+  }
+
+  // User Profile methods
+  async getUserProfile(): Promise<any | null> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    try {
+      const dbGet = promisify(this.db.get.bind(this.db)) as (sql: string) => Promise<any | undefined>;
+      
+      const profile = await dbGet(`
+        SELECT * FROM user_profiles 
+        ORDER BY id DESC 
+        LIMIT 1
+      `);
+
+      if (profile && profile.gmail_password) {
+        // パスワードをデコード（Base64デコード）
+        try {
+          profile.gmail_password = Buffer.from(profile.gmail_password, 'base64').toString();
+        } catch (error) {
+          console.error('❌ Error decoding password:', error);
+          profile.gmail_password = '';
+        }
+      }
+
+      return profile || null;
+    } catch (error) {
+      console.error('❌ Error getting user profile:', error);
+      return null;
+    }
+  }
+
+  async saveUserProfile(profile: {
+    emailBehavior: string;
+    docsBehavior: string;
+    youtubeLimit: string;
+    workStyle: string;
+    goals: string;
+    gmailAddress: string;
+    gmailPassword: string;
+  }): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    try {
+      const dbRun = promisify(this.db.run.bind(this.db)) as (sql: string, params: any[]) => Promise<sqlite3.RunResult>;
+      
+      // 既存のプロファイルがあるか確認
+      const existing = await this.getUserProfile();
+      
+      if (existing) {
+        // 更新
+        await dbRun(`
+          UPDATE user_profiles 
+          SET email_behavior = ?, docs_behavior = ?, youtube_limit = ?, 
+              work_style = ?, goals = ?, gmail_address = ?, gmail_password = ?, 
+              updated_at = CURRENT_TIMESTAMP
+          WHERE id = ?
+        `, [
+          profile.emailBehavior,
+          profile.docsBehavior,
+          profile.youtubeLimit,
+          profile.workStyle,
+          profile.goals,
+          profile.gmailAddress,
+          // パスワードを簡単に暗号化（Base64エンコード）
+          profile.gmailPassword ? Buffer.from(profile.gmailPassword).toString('base64') : '',
+          existing.id
+        ]);
+        console.log('✅ User profile updated');
+      } else {
+        // 新規作成
+        await dbRun(`
+          INSERT INTO user_profiles (
+            email_behavior, docs_behavior, youtube_limit, work_style, goals, 
+            gmail_address, gmail_password
+          ) VALUES (?, ?, ?, ?, ?, ?, ?)
+        `, [
+          profile.emailBehavior,
+          profile.docsBehavior,
+          profile.youtubeLimit,
+          profile.workStyle,
+          profile.goals,
+          profile.gmailAddress,
+          // パスワードを簡単に暗号化（Base64エンコード）
+          profile.gmailPassword ? Buffer.from(profile.gmailPassword).toString('base64') : ''
+        ]);
+        console.log('✅ User profile created');
+      }
+    } catch (error) {
+      console.error('❌ Error saving user profile:', error);
+      throw error;
+    }
   }
 } 

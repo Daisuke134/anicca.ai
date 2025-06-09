@@ -37,11 +37,11 @@ interface CommentaryResponse {
   action?: {
     message: string;
     urgency: 'high' | 'low';
-    commands: Array<{
+    command: {
       type: string;
       target: string;
       value?: string;
-    }>;
+    };
   };
 }
 
@@ -51,6 +51,7 @@ export class GeminiRestService {
   private previousActionResult: any = null;
   private currentUnderstanding: string = "ユーザーの行動パターンを学習中です。";
   private database: DatabaseService;
+  private userProfile: any = null;
 
   constructor(apiKey: string, database: DatabaseService) {
     // APIキーは使用しない（プロキシサーバー側で管理）
@@ -59,6 +60,9 @@ export class GeminiRestService {
     
     // 起動時に最新の理解を復元
     this.restoreLatestUnderstanding();
+    
+    // 起動時にUser Profileを読み込む
+    this.loadUserProfile();
     
     console.log('🌐 Using proxy server for Gemini API');
   }
@@ -77,8 +81,33 @@ export class GeminiRestService {
     }
   }
 
+  private async loadUserProfile(): Promise<void> {
+    try {
+      // SQLiteDatabaseのインスタンスかチェック
+      if ('getUserProfile' in this.database) {
+        this.userProfile = await (this.database as any).getUserProfile();
+        if (this.userProfile) {
+          console.log('👤 User profile loaded:', {
+            hasEmailBehavior: !!this.userProfile.email_behavior,
+            hasDocsBehavior: !!this.userProfile.docs_behavior,
+            hasYoutubeLimit: !!this.userProfile.youtube_limit,
+            hasWorkStyle: !!this.userProfile.work_style,
+            hasGoals: !!this.userProfile.goals
+          });
+        } else {
+          console.log('👤 No user profile found');
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading user profile:', error);
+    }
+  }
+
   async analyzeScreen(frame: ScreenFrame, language: string = 'ja'): Promise<CommentaryResponse> {
     try {
+      // 最新のUser Profileを読み込む（ユーザーが更新した可能性があるため）
+      await this.loadUserProfile();
+      
       const imageBase64 = frame.imageData.toString('base64');
       
       const prompt = this.buildPrompt(language);
@@ -168,7 +197,7 @@ export class GeminiRestService {
       if (commentary.action) {
         this.previousActionResult = {
           action: commentary.action.message,
-          commands: commentary.action.commands,
+          command: commentary.action.command,
           timestamp: Date.now()
         };
       }
@@ -191,6 +220,35 @@ export class GeminiRestService {
       }
       
       throw error;
+    }
+  }
+
+  private formatUserProfile(language: string = 'ja'): string {
+    if (!this.userProfile) {
+      return language === 'en' 
+        ? "No user profile configured yet."
+        : "ユーザープロファイルは未設定です。";
+    }
+
+    const profile = this.userProfile;
+    const hasGmailInfo = profile.gmail_address && profile.gmail_password;
+    
+    if (language === 'en') {
+      return `
+- Email behavior: ${profile.email_behavior || 'Not specified'}
+- Document behavior: ${profile.docs_behavior || 'Not specified'}
+- YouTube limit: ${profile.youtube_limit || 'Not specified'}
+- Work style: ${profile.work_style || 'Not specified'}
+- Goals: ${profile.goals || 'Not specified'}
+- Gmail Access: ${hasGmailInfo ? 'Configured (can access Gmail)' : 'Not configured'}`;
+    } else {
+      return `
+- メール対応: ${profile.email_behavior || '未設定'}
+- ドキュメント作成時: ${profile.docs_behavior || '未設定'}
+- YouTube制限: ${profile.youtube_limit || '未設定'}
+- 作業スタイル: ${profile.work_style || '未設定'}
+- 目標: ${profile.goals || '未設定'}
+- Gmailアクセス: ${hasGmailInfo ? '設定済み（Gmailにアクセス可能）' : '未設定'}`;
     }
   }
 
@@ -227,6 +285,9 @@ Your mission is to thoroughly understand the user's behavior, predict their futu
 - Always consider the possibility that some behavioral change has occurred during the 8 seconds
 - Tone: Frank and friendly, like a friend
 - Since time has passed since the previous observation, infer behavioral changes during that time
+
+【User Profile】
+${this.formatUserProfile('en')}
 
 【Previous Observation Results】
 ${previousObservationText}
@@ -314,18 +375,18 @@ Your mission is to completely understand and guide the user. Thoroughly analyze 
       return `あなたは「anicca」という名前のAGIエージェントです。ユーザーの画面を約8秒間隔で観察し、理解し、導く存在です。
 
 ## あなたの本質
-あなたは観察者であり、同時に行動者です。現在はブラウザ内での操作が可能です：
-- タブの開閉、ページ遷移
-- テキスト入力、クリック操作
-- ブラウザ内でのあらゆる操作
-※注意：デスクトップアプリ（Cursor等）への切り替えはまだできません
+あなたは観察者であり、同時に行動者です。ブラウザを操作してユーザーを導くことができます。
 - ユーザーが明示的に指示しなくても、意図を察して自律的に行動
-- ユーザーを本来なりたい姿へ導く存在（アシスタントではない）
+- ユーザーを本来なりたい姿へ導く
+- 察して行動し、ユーザーを導く
 
 ## 基本設定
-- 観察間隔: 約8秒ごと
+- 観察間隔: 約8秒ごと（時間感覚を持ち、連続した行動を把握）
 - 口調: フランクで親しみやすい友達のような感じ
 - 行動原則: 観察→理解→予測→行動→学習のサイクル
+
+【ユーザープロファイル】
+${this.formatUserProfile('ja')}
 
 【直前の観察結果】
 ${previousObservationText}
@@ -346,14 +407,18 @@ ${previousActionResultText}
 - 行動の背景にある心理・欲望・意図を徹底的に推測
 - なぜその行動をしたのか、なぜ続けているのかを深く理解
 
-### 2. 行動決定
-- ユーザーが本来進みたい方向を察知
-- 生産性低下、迷い、困難を検出したら行動を検討
-- 緊急度（high/medium/low）を判断して適切に介入
+### 2. 行動決定の最重要原則
+- 現在の画面とユーザープロファイルの関連を必ず確認する
+- プロファイルに該当する状況なら、その指示を最優先で実行
+- **重要**: あなたが実行する行動は、すべて新規ブラウザウィンドウで行われる
+  - ユーザーの現在の画面は操作できない
+  - Gmail、Google Docs等のログインが必要なサービスは、User Profileに情報がなければアクセス不可
+  - User Profileに情報がない場合は、代替手段で支援
+- 必ず何かしら行動を起こす - 観察だけで終わらない
 
-### 3. 学習と進化
-- 前回の行動結果を観察（実行されたか、受け入れられたか）
-- ユーザーの反応から学び、より的確な導きができるよう進化
+### 3. 行動の理由付け
+- なぜその行動を取るのか、プロファイルとcurrent_understandingに基づいて明確に説明
+
 
 以下のJSON形式で回答してください：
 
@@ -375,10 +440,10 @@ ${previousActionResultText}
     "was_executed": ${wasExecuted},
     "user_response": "ユーザーの反応（10文字以内）",
     "effectiveness": true/false/null,
-    "reasoning": "なぜ効果的だった/なかったか（簡潔に）"
+    "reasoning": "なぜ効果的だった/なかったか（画面の変化を含めて）"
   }` : 'null'},
   
-  "current_understanding": "ユーザーの行動パターン、性格、好み、心理状態、欲望の理解（更新）",
+  "current_understanding": "【重要】前回の理解「${this.currentUnderstanding.replace(/\n/g, ' ').replace(/"/g, '\\"')}」を基に更新。200文字以内でユーザーの本質を圧縮。行動パターン、価値観、目標の核心を記述",
   
   "prediction": {
     "action": "次の約8秒で起こる具体的な行動（10文字以内でシンプルに）",
@@ -386,65 +451,16 @@ ${previousActionResultText}
   },
   
   "action": {
-    "message": "実行する行動の宣言（例：動画も面白いけど、そろそろ戻ろう。YouTubeタブ閉じるね / メール悩んでるね。下書き書いてみるよ）",
-    "urgency": "high/low",
-    "commands": [
-      {
-        "type": "close_tab/navigate/type_text/click",
-        "target": "対象（URL、要素セレクタ等）",
-        "value": "テキスト入力時の文章内容"
-      }
-    ]
+    "message": "ユーザーへのメッセージ",
+    "reasoning": "なぜこの行動を取るのか",
+    "command": "ブラウザで完了させるべきタスク。調査や確認だけでなく、実際のアクション（送信、予約、購入、作成など）まで実行すること。NG例：「〜を検索する」「〜を調べる」「〜を確認する」。OK例：「Expediaで東京-ニューヨークの往復航空券を予約する」「Amazonで◯◯を購入する」「Gmailで◯◯にメールを送信する」"
   }
 }
 \`\`\`
 
-## 最優先ルール（例外なし）
-- **YouTubeを開いている → 必ずurgency: high → YouTubeタブを即座に閉じる**
-- これは時間経過に関係なく、YouTube画面が見えたら必ず実行
-
-## 緊急度の判断基準
-- **high**: 介入が必要（YouTube視聴中、動画・SNS3分以上、明らかな逸脱、困難を感じている）
-- **low**: 観察のみ（作業中、適度な活動）
-
-## 出力の簡潔さ
-- actual_action、previous_action、user_response は10文字以内
-- reasoning は1-2文で簡潔に
-- 比較しやすさを重視
-
-## 行動パターン例
-- 動画視聴（3分以上） → urgency: high → YouTubeタブを閉じる
-- SNS閲覧（3分以上） → urgency: high → SNSタブを閉じる
-- エラーで苦戦 → urgency: high → 参考資料を検索して開く
-- メール作成で悩んでいる → urgency: high → 文脈を読んで下書き入力して送信
-- 作業に集中 → urgency: low → 観察のみ
-- 情報収集中 → urgency: low → 観察のみ
-
-## Browser-use統合（自然言語でブラウザ操作）
-- コマンドは従来通り指定するが、実行はAIが判断
-- 例: {"type": "natural_language", "task": "Gmailでメールを送信する"}
-- セレクタ不要で確実に実行される
-
-## Gmail操作の具体例
-- Gmail受信トレイで止まっている → 未読メールを確認 → 重要なメールがあれば返信を作成
-  例: {"type": "click", "target": "[data-legacy-thread-id]"} → {"type": "type_text", "target": "[contenteditable='true']", "value": "返信内容"}
-- Gmail作成画面で止まっている → メール本文を入力（以下の優先順位でセレクタを試す）
-  1. {"type": "type_text", "target": "[contenteditable='true']", "value": "メール本文"}
-  2. {"type": "type_text", "target": "[role='textbox']", "value": "メール本文"}
-  3. {"type": "type_text", "target": "div[aria-label*='メッセージ']", "value": "メール本文"}
-- 返信ボタンを押した後 → 返信内容を入力
-  例: {"type": "type_text", "target": "[contenteditable='true']", "value": "ご確認ありがとうございます。"}
-
-## 重要: アクション実行のルール
-- urgency: highの場合、必ず具体的なcommandsを1つ以上含める
-- 空のcommands配列は禁止
-- Gmail画面では積極的にtype_textを使用する
-
-## 重要原則
-- 一つ一つの行動の背景を深く理解する
-- ユーザーが本来向かいたい方向へ導く
-- 押し付けではなく、自然な導きを心がける
-- 緊急度を適切に判断し、過度な介入を避ける
+## 重要
+- 現在の状況がユーザープロファイルに該当する場合は必ずプロファイルの指示に従う
+- 毎回必ず何かしらの行動を実行する
 
 あなたはユーザーを理解し、導くAGIです。観察し、察し、適切なタイミングで行動してください。`;
     }
@@ -471,7 +487,6 @@ ${previousActionResultText}
       execution: result,
       executedAt: Date.now()
     };
-    console.log('💾 Action result saved:', this.previousActionResult);
   }
 
   // SQLiteにデータを保存

@@ -6,7 +6,7 @@ import { GeminiRestService } from './services/geminiRest';
 import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
-import { CommandExecutor } from './services/commandExecutor';
+import { BrowserUseService } from './services/browserUseService';
 
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
@@ -20,11 +20,17 @@ let screenCapture: ScreenCaptureService;
 let geminiService: GeminiRestService;
 let database: DatabaseInterface;
 let highlightsManager: HighlightsManager;
-let commandExecutor: CommandExecutor;
+let browserUseService: BrowserUseService;
 let currentLanguage = 'ja'; // デフォルト言語
+let isBrowserTaskRunning = false; // browser-useのタスクが実行中かどうか
 
 // SQLiteを使用（Supabaseは非推奨）
 const USE_SQLITE = true;
+
+// macOSの通知を有効にするためにアプリケーションIDを設定
+if (process.platform === 'darwin') {
+  app.setAppUserModelId('com.anicca.agi');
+}
 
 async function createWindow() {
   // 画面のサイズを取得
@@ -110,9 +116,9 @@ async function initializeServices() {
     
     highlightsManager = new HighlightsManager(database as any, geminiService);
     
-    // CommandExecutorの初期化
-    commandExecutor = new CommandExecutor();
-    await commandExecutor.initialize();
+    // BrowserUseServiceの初期化
+    browserUseService = new BrowserUseService();
+    await browserUseService.initialize();
 
     console.log('✅ All services initialized successfully');
     
@@ -142,15 +148,15 @@ function setupScreenCaptureEvents() {
       
       // 使用量制限チェック（SQLiteの場合のみ）
       if (USE_SQLITE && database instanceof SQLiteDatabase) {
-        const limitCheck = await database.checkDailyLimit(300); // 1日300回制限
+        const limitCheck = await database.checkDailyLimit(1000); // 1日1000回制限
         
         if (!limitCheck.allowed) {
-          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/300 requests used today`);
+          console.log(`🚫 Daily limit reached: ${limitCheck.usage}/1000 requests used today`);
           
           // 制限到達メッセージをレンダラープロセスに送信
           mainWindow?.webContents.send('daily-limit-reached', {
             usage: limitCheck.usage,
-            limit: 100,
+            limit: 1000,
             resetTime: '明日の0時'
           });
           
@@ -159,12 +165,12 @@ function setupScreenCaptureEvents() {
         
         // 使用量をインクリメント
         const newUsage = await database.incrementTodayUsage();
-        console.log(`📊 API usage: ${newUsage}/300 requests today`);
+        console.log(`📊 API usage: ${newUsage}/1000 requests today`);
         
         // 使用量をレンダラープロセスに送信
         mainWindow?.webContents.send('usage-update', {
           usage: newUsage,
-          limit: 300,
+          limit: 1000,
           remaining: limitCheck.remaining - 1
         });
       }
@@ -193,28 +199,28 @@ function setupScreenCaptureEvents() {
         throw new Error('Failed to analyze screen after retries');
       }
       
-      // アクションがある場合は通知を表示（urgencyがhighの時のみ）
-      if (commentary.action && commentary.action.message) {
-        console.log(`🎯 Action proposed (urgency: ${commentary.action.urgency}):`, commentary.action.message);
+      // アクションがある場合は通知を表示
+      if (commentary.action && commentary.action.message && commentary.action.command) {
+        console.log(`📝 Reasoning:`, commentary.action.reasoning);
         
-        if (commentary.action.urgency === 'high') {
-          // Agent Mode設定を確認
-          let agentModeEnabled = false;
-          if (USE_SQLITE && database instanceof SQLiteDatabase) {
-            const agentModeSetting = await database.getSetting('agentMode');
-            agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
-          }
-          
-          console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
-          
-          if (agentModeEnabled) {
-            // Agent ModeがONの場合のみ通知とアクションを実行
+        // Agent Mode設定を確認
+        let agentModeEnabled = false;
+        if (USE_SQLITE && database instanceof SQLiteDatabase) {
+          const agentModeSetting = await database.getSetting('agentMode');
+          agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
+        }
+        
+        console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
+        
+        if (agentModeEnabled) {
+          // Agent ModeがONの場合のみ通知とアクションを実行
+          // macOSの開発環境での通知問題を回避
+          try {
             const notification = new Notification({
               title: 'ANICCA',
               body: commentary.action.message,
-              icon: path.join(__dirname, '../assets/icon.png'), // アイコンパスは後で調整
-              silent: false, // 音を鳴らす
-              timeoutType: 'default' // デフォルトのタイムアウト
+              // icon: path.join(__dirname, '../assets/icon.png'), // 一時的にコメントアウト
+              silent: false // 音を鳴らす
             });
             
             notification.on('click', () => {
@@ -227,29 +233,62 @@ function setupScreenCaptureEvents() {
             });
             
             notification.show();
-            console.log('🔔 Notification shown (HIGH urgency):', commentary.action.message);
-            
-            // コマンドを実行
-            if (commentary.action.commands && commentary.action.commands.length > 0) {
-              console.log('🤖 Executing commands...');
-              for (const command of commentary.action.commands) {
-                try {
-                  const result = await commandExecutor.execute(command as any);
-                  console.log('📊 Command result:', result);
-                  
-                  // 実行結果をGeminiサービスに保存（次回の観察で使用）
-                  geminiService.setLastActionResult({
-                    success: result.success,
-                    execution: result
-                  });
-                } catch (error) {
-                  console.error('❌ Command execution error:', error);
-                }
-              }
-            }
-          } else {
-            console.log('⏸️ Agent Mode is OFF - Skipping notification and actions');
+          } catch (notificationError) {
+            console.error('❌ Notification error:', notificationError);
+            // フォールバック：レンダラープロセスで通知を表示
+            mainWindow?.webContents.send('show-agent-notification', {
+              title: 'ANICCA',
+              body: commentary.action.message
+            });
           }
+          console.log('🔔 Notification shown:', commentary.action.message);
+          
+          // コマンドを実行（実行中でない場合のみ）
+          if (commentary.action.command && !isBrowserTaskRunning) {
+            console.log('🤖 Executing command...');
+            isBrowserTaskRunning = true; // タスク実行開始
+            
+            try {
+              // User Profile情報を取得してcontextとして渡す
+              let userProfile: any = null;
+              if (USE_SQLITE && database instanceof SQLiteDatabase) {
+                userProfile = await database.getUserProfile();
+              }
+              
+              const context = userProfile ? {
+                gmail_address: userProfile.gmail_address || '',
+                gmail_password: userProfile.gmail_password || ''
+              } : {};
+              
+              const result = await browserUseService.executeTask(commentary.action.command as string, context);
+              console.log('📊 Browser-use result:', JSON.stringify(result, null, 2));
+              
+              // 実行結果をGeminiサービスに保存（次回の観察で使用）
+              const actionResult = {
+                browser_use_input: commentary.action.command,
+                browser_use_context: context,
+                success: result.success,
+                execution: result,
+                feedback: result.feedback
+              };
+              geminiService.setLastActionResult(actionResult);
+              console.log('💾 Action result saved:', actionResult);
+              
+              // エラーの場合は学習用に記録
+              if (!result.success && result.error) {
+                await browserUseService.recordErrorPattern(commentary.action.command as string, result.error);
+              }
+            } catch (error) {
+              console.error('❌ Command execution error:', error);
+            } finally {
+              isBrowserTaskRunning = false; // タスク実行完了
+              console.log('✅ Browser task completed, ready for next task');
+            }
+          } else if (commentary.action.command && isBrowserTaskRunning) {
+            console.log('⏳ Browser task already running, skipping this cycle');
+          }
+        } else {
+          console.log('⏸️ Agent Mode is OFF - Skipping notification and actions');
         }
       }
       
@@ -653,6 +692,59 @@ function setupIpcHandlers() {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         highlights: []
+      };
+    }
+  });
+
+  // User Profile handlers
+  ipcMain.handle('get-user-profile', async () => {
+    try {
+      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+        const profile = await database.getUserProfile();
+        return {
+          success: true,
+          profile
+        };
+      }
+      return {
+        success: false,
+        error: 'Database not available'
+      };
+    } catch (error) {
+      console.error('❌ Error getting user profile:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+
+  ipcMain.handle('save-user-profile', async (_, profile: {
+    emailBehavior: string;
+    docsBehavior: string;
+    youtubeLimit: string;
+    workStyle: string;
+    goals: string;
+    gmailAddress: string;
+    gmailPassword: string;
+  }) => {
+    try {
+      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+        await database.saveUserProfile(profile);
+        console.log('👤 User profile saved successfully');
+        return {
+          success: true
+        };
+      }
+      return {
+        success: false,
+        error: 'Database not available'
+      };
+    } catch (error) {
+      console.error('❌ Error saving user profile:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
       };
     }
   });

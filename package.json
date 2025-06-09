@@ -5,8 +5,11 @@
   "main": "dist/main.js",
   "homepage": "https://anicca.ai",
   "scripts": {
-    "electron": "npm run build && electron .",
-    "electron-dev": "npm run build && NODE_ENV=development electron .",
+    "preelectron": "npm run setup-python && npm run build",
+    "electron": "electron .",
+    "preelectron-dev": "npm run setup-python && npm run build",
+    "electron-dev": "NODE_ENV=development electron .",
+    "setup-python": "node scripts/setup-python.js",
     "test": "jest",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
@@ -38,7 +41,7 @@
     "axios": "^1.9.0",
     "dotenv": "^16.4.1",
     "jimp": "^0.22.10",
-    "playwright": "^1.52.0",
+    "python-shell": "^5.0.0",
     "screenshot-desktop": "^1.12.7",
     "sqlite3": "^5.1.7"
   },

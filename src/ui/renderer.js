@@ -49,7 +49,20 @@ class ANICCARenderer {
                 'accuracy-miss': '外れ',
                 'unknown': 'Unknown',
                 'other': 'その他',
-                'agent-mode': 'Agent Mode'
+                'agent-mode': 'Agent Mode',
+                'user-profile': '👤 ユーザープロファイル',
+                'profile-description': 'ANICCAがより良くサポートできるよう、あなたについて教えてください',
+                'email-behavior-label': 'メール作成で止まった時、どうして欲しいですか？',
+                'email-behavior-placeholder': '例：下書きを作成して欲しい',
+                'docs-behavior-label': 'ドキュメント作成で詰まった時、どうして欲しいですか？',
+                'docs-behavior-placeholder': '例：まず書き始めて欲しい',
+                'youtube-limit-label': 'YouTubeはどのくらいまで見てもOKですか？',
+                'youtube-limit-placeholder': '例：3分まで、その後は作業に戻して',
+                'work-style-label': 'あなたの作業スタイルを教えてください',
+                'work-style-placeholder': '例：集中したい時は邪魔しないで、困った時は積極的に助けて',
+                'goals-label': '達成したい目標や、なりたい自分について',
+                'goals-placeholder': '例：もっと生産的になりたい、SNSの時間を減らしたい',
+                'save-profile': '💾 プロファイルを保存'
             },
             en: {
                 'subtitle': 'AI Screen Narrator - Understanding and narrating your screen',
@@ -91,7 +104,20 @@ class ANICCARenderer {
                 'accuracy-miss': 'Wrong',
                 'unknown': 'Unknown',
                 'other': 'Other',
-                'agent-mode': 'Agent Mode'
+                'agent-mode': 'Agent Mode',
+                'user-profile': '👤 User Profile',
+                'profile-description': 'Tell us about yourself so ANICCA can better support you',
+                'email-behavior-label': 'What should I do when you\'re stuck with emails?',
+                'email-behavior-placeholder': 'e.g., Draft an email for me',
+                'docs-behavior-label': 'What should I do when you\'re stuck with documents?',
+                'docs-behavior-placeholder': 'e.g., Help me start writing',
+                'youtube-limit-label': 'How long is it OK to watch YouTube?',
+                'youtube-limit-placeholder': 'e.g., 3 minutes max, then get me back to work',
+                'work-style-label': 'Tell me about your work style',
+                'work-style-placeholder': 'e.g., Don\'t disturb when focused, actively help when stuck',
+                'goals-label': 'Your goals and who you want to become',
+                'goals-placeholder': 'e.g., Be more productive, reduce social media time',
+                'save-profile': '💾 Save Profile'
             }
         };
         
@@ -171,6 +197,9 @@ class ANICCARenderer {
         this.elements.agentModeCheckbox?.addEventListener('change', (e) => {
             this.setAgentMode(e.target.checked);
         });
+        
+        // User Profile関連の要素を追加
+        this.setupUserProfileElements();
         
         // ページがフォーカスされた際に理解度を再読み込み（Daily Viewからの戻り対応）
         document.addEventListener('visibilitychange', () => {
@@ -706,6 +735,92 @@ class ANICCARenderer {
             this.showNotification(title, 'info', message);
         } catch (error) {
             console.error('❌ Error setting agent mode:', error);
+        }
+    }
+
+    // User Profile関連のメソッド
+    setupUserProfileElements() {
+        // User Profile要素を取得
+        const saveProfileBtn = document.getElementById('save-profile-btn');
+        const profileInputs = {
+            emailBehavior: document.getElementById('email-behavior'),
+            docsBehavior: document.getElementById('docs-behavior'),
+            youtubeLimit: document.getElementById('youtube-limit'),
+            workStyle: document.getElementById('work-style'),
+            goals: document.getElementById('goals'),
+            gmailAddress: document.getElementById('gmail-address'),
+            gmailPassword: document.getElementById('gmail-password')
+        };
+        
+        // 保存ボタンのイベントリスナー
+        saveProfileBtn?.addEventListener('click', async () => {
+            await this.saveUserProfile(profileInputs);
+        });
+        
+        // 既存のプロファイルを読み込む
+        this.loadUserProfile(profileInputs);
+    }
+    
+    async loadUserProfile(inputs) {
+        try {
+            const result = await window.aniccaAPI.getUserProfile();
+            if (result.success && result.profile) {
+                // プロファイルが存在する場合、フォームに値を設定
+                const profile = result.profile;
+                if (inputs.emailBehavior) inputs.emailBehavior.value = profile.email_behavior || '';
+                if (inputs.docsBehavior) inputs.docsBehavior.value = profile.docs_behavior || '';
+                if (inputs.youtubeLimit) inputs.youtubeLimit.value = profile.youtube_limit || '';
+                if (inputs.workStyle) inputs.workStyle.value = profile.work_style || '';
+                if (inputs.goals) inputs.goals.value = profile.goals || '';
+                if (inputs.gmailAddress) inputs.gmailAddress.value = profile.gmail_address || '';
+                if (inputs.gmailPassword) inputs.gmailPassword.value = profile.gmail_password || '';
+                
+                console.log('👤 User profile loaded');
+            }
+        } catch (error) {
+            console.error('❌ Error loading user profile:', error);
+        }
+    }
+    
+    async saveUserProfile(inputs) {
+        try {
+            const profile = {
+                emailBehavior: inputs.emailBehavior?.value || '',
+                docsBehavior: inputs.docsBehavior?.value || '',
+                youtubeLimit: inputs.youtubeLimit?.value || '',
+                workStyle: inputs.workStyle?.value || '',
+                goals: inputs.goals?.value || '',
+                gmailAddress: inputs.gmailAddress?.value || '',
+                gmailPassword: inputs.gmailPassword?.value || ''
+            };
+            
+            const result = await window.aniccaAPI.saveUserProfile(profile);
+            
+            // 保存ステータスを表示
+            const saveStatus = document.getElementById('profile-save-status');
+            if (saveStatus) {
+                if (result.success) {
+                    saveStatus.textContent = this.currentLanguage === 'ja' 
+                        ? '✅ 保存しました' 
+                        : '✅ Saved successfully';
+                    saveStatus.className = 'save-status success';
+                } else {
+                    saveStatus.textContent = this.currentLanguage === 'ja' 
+                        ? '❌ 保存に失敗しました' 
+                        : '❌ Failed to save';
+                    saveStatus.className = 'save-status error';
+                }
+                
+                // 3秒後にメッセージを消す
+                setTimeout(() => {
+                    saveStatus.textContent = '';
+                    saveStatus.className = 'save-status';
+                }, 3000);
+            }
+            
+            console.log('👤 User profile saved');
+        } catch (error) {
+            console.error('❌ Error saving user profile:', error);
         }
     }
 

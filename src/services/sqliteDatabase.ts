@@ -174,12 +174,7 @@ export class SQLiteDatabase implements DatabaseInterface {
         ORDER BY timestamp ASC
       `, [date]);
 
-      // JSONフィールドをパース
-      return rows.map(row => ({
-        ...row,
-        prediction_data: row.prediction_data ? JSON.parse(row.prediction_data) : null,
-        verification_data: row.verification_data ? JSON.parse(row.verification_data) : null
-      }));
+      return rows.map(row => this.parseObservationRow(row));
     } catch (error) {
       console.error('❌ Error fetching observations by date:', error);
       throw error;
@@ -198,12 +193,7 @@ export class SQLiteDatabase implements DatabaseInterface {
         LIMIT ?
       `, [limit]);
 
-      // JSONフィールドをパース
-      return rows.map(row => ({
-        ...row,
-        prediction_data: row.prediction_data ? JSON.parse(row.prediction_data) : null,
-        verification_data: row.verification_data ? JSON.parse(row.verification_data) : null
-      }));
+      return rows.map(row => this.parseObservationRow(row));
     } catch (error) {
       console.error('❌ Error fetching recent observations:', error);
       throw error;
@@ -236,12 +226,7 @@ export class SQLiteDatabase implements DatabaseInterface {
         ORDER BY timestamp ASC
       `, [startDate, endDate]);
 
-      // JSONフィールドをパース
-      return rows.map(row => ({
-        ...row,
-        prediction_data: row.prediction_data ? JSON.parse(row.prediction_data) : null,
-        verification_data: row.verification_data ? JSON.parse(row.verification_data) : null
-      }));
+      return rows.map(row => this.parseObservationRow(row));
     } catch (error) {
       console.error('❌ Error fetching observations by date range:', error);
       throw error;
@@ -427,4 +412,21 @@ export class SQLiteDatabase implements DatabaseInterface {
 
     return { allowed, usage, remaining };
   }
-} 
+
+  private parseObservationRow(row: ObservationRow): any {
+    return {
+      ...row,
+      prediction_data: row.prediction_data ? this.parseJsonSafely(row.prediction_data) : null,
+      verification_data: row.verification_data ? this.parseJsonSafely(row.verification_data) : null
+    };
+  }
+
+  private parseJsonSafely(jsonString: string): any {
+    try {
+      return JSON.parse(jsonString);
+    } catch (error) {
+      console.error('❌ Error parsing JSON:', error);
+      return null;
+    }
+  }
+}  

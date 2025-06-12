@@ -9,7 +9,7 @@ files:
   - assets/**/*
 mac:
   category: public.app-category.productivity
-  icon: assets/app.icns
+  icon: icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist

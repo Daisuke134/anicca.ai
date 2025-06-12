@@ -126,35 +126,12 @@ async function initializeServices() {
     // SummaryAgentServiceをGeminiServiceに接続
     geminiService.setSummaryAgentService(summaryAgentService);
     
-    // Exa APIキーをセット（初回のみ）
+    // Exa APIキーを環境変数から取得して設定（初回のみ）
+    const EXA_API_KEY = process.env.EXA_API_KEY || '6d8e64c3-f369-4e6b-a501-aeee12a5d399';
     if (!encryptionService.hasExaApiKey()) {
-      console.log('🔑 Setting Exa API key for the first time...');
-      await encryptionService.saveExaApiKey('bab7464a-e478-4dba-8138-62ce5798db87');
+      console.log('🔑 Setting Exa API key from environment...');
+      await encryptionService.saveExaApiKey(EXA_API_KEY);
       console.log('✅ Exa API key saved');
-    }
-
-    // Exa MCP接続テスト
-    try {
-      console.log('🔌 Testing Exa MCP connection...');
-      
-      // Check for remote MCP server configuration
-      const remoteUrl = process.env.EXA_MCP_REMOTE_URL;
-      const connectionOptions = remoteUrl 
-        ? { mode: 'remote' as const, remoteUrl }
-        : { mode: 'local' as const };
-      
-      await exaMcpService.connectToExa(connectionOptions);
-      
-      // 利用可能なツールを確認
-      const tools = await exaMcpService.listTools();
-      console.log('📋 Available Exa tools:', tools.map(t => t.name));
-      
-      // 一旦切断（実際の使用時に再接続）
-      await exaMcpService.disconnect();
-      console.log('🔌 Exa MCP test completed, disconnected');
-    } catch (error) {
-      console.error('❌ Exa MCP test failed:', error);
-      // エラーでもアプリは継続
     }
     
     console.log('✅ All services initialized successfully');

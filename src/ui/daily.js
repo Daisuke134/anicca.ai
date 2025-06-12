@@ -11,7 +11,6 @@ const translations = {
         'month-ago': '📈 1ヶ月前',
         'daily-stats': '📊 今日の統計',
         'total-observations': '総観察数',
-        'prediction-accuracy-rate': '予測精度',
         'active-hours': '活動時間',
         'websites-visited': '訪問サイト数',
         'activity-distribution': '🍪 今日の活動分布',
@@ -45,7 +44,6 @@ const translations = {
         'month-ago': '📈 1 Month Ago',
         'daily-stats': '📊 Today\'s Statistics',
         'total-observations': 'Total Observations',
-        'prediction-accuracy-rate': 'Prediction Accuracy',
         'active-hours': 'Active Hours',
         'websites-visited': 'Websites Visited',
         'activity-distribution': '🍪 Today\'s Activity Distribution',
@@ -79,6 +77,23 @@ let dailyData = null;
 
 // 初期化
 document.addEventListener('DOMContentLoaded', async () => {
+    console.log('🔄 Daily page DOM loaded');
+    
+    // APIの存在確認
+    if (!window.aniccaAPI) {
+        console.error('❌ aniccaAPI not found! Check preload script.');
+        alert('エラー: aniccaAPIが見つかりません。アプリを再起動してください。');
+        return;
+    }
+    
+    // 要素の存在確認
+    const backBtn = document.getElementById('back-btn');
+    if (!backBtn) {
+        console.error('❌ Back button not found!');
+    } else {
+        console.log('✅ Back button found');
+    }
+    
     // 言語設定を取得
     currentLanguage = await window.aniccaAPI.getSetting('language') || 'ja';
     document.getElementById('language-select').value = currentLanguage;
@@ -179,7 +194,7 @@ async function loadDailyData() {
         updateStatistics();
         updateActivityChart(); // 円グラフを更新
         updateHighlights();
-        updateActivityLog();
+        // updateActivityLog(); // 削除されたセクションなのでコメントアウト
         
     } catch (error) {
         console.error('Failed to load daily data:', error);
@@ -191,8 +206,7 @@ async function loadDailyData() {
 function updateStatistics() {
     if (!dailyData || !dailyData.commentary || dailyData.commentary.length === 0) {
         document.getElementById('total-observations').textContent = '0';
-        document.getElementById('prediction-accuracy').textContent = '0%';
-        document.getElementById('active-hours').textContent = '0';
+            document.getElementById('active-hours').textContent = '0';
         document.getElementById('websites-visited').textContent = '0';
         updateActivityChart(); // データがない場合もグラフを更新
         return;
@@ -203,16 +217,6 @@ function updateStatistics() {
     // 総観察数
     document.getElementById('total-observations').textContent = commentary.length;
     
-    // 全期間の予測精度を取得して表示（ホーム画面と同じデータ）
-    window.aniccaAPI.getPredictionStats().then(stats => {
-        const accuracy = stats.totalPredictions > 0 
-            ? Math.round((stats.correctPredictions / stats.totalPredictions) * 100)
-            : 0;
-        document.getElementById('prediction-accuracy').textContent = `${accuracy}%`;
-    }).catch(error => {
-        console.error('Error getting prediction stats:', error);
-        document.getElementById('prediction-accuracy').textContent = '0%';
-    });
     
     // 活動時間を計算（最初と最後のタイムスタンプから）
     if (commentary.length > 0) {
@@ -288,22 +292,6 @@ function renderHighlights(container, highlights) {
 function generateHighlights(commentary) {
     const highlights = [];
     
-    // 高精度予測を探す
-    const highAccuracyPredictions = commentary.filter(item => 
-        item.prediction_verification && 
-        item.prediction_verification.accuracy >= 80
-    );
-    
-    highAccuracyPredictions.slice(0, 5).forEach(item => {
-        highlights.push({
-            title: currentLanguage === 'ja' ? '高精度予測' : 'High Accuracy Prediction',
-            description: item.understanding_text || item.commentary_text,
-            aiComment: item.prediction_verification.reasoning || 
-                (currentLanguage === 'ja' ? 'この予測は高い精度で実現されました。' : 'This prediction was achieved with high accuracy.'),
-            category: 'ai-insight',
-            time: item.timestamp
-        });
-    });
     
     // 長時間の活動パターンを探す
     const activityPatterns = findActivityPatterns(commentary);
@@ -405,12 +393,6 @@ function updateActivityLog() {
                 <span class="log-time">${formatTime(item.timestamp)}</span>
             </div>
             <div class="log-commentary">${item.understanding_text || item.commentary_text}</div>
-            ${item.prediction_verification ? `
-                <div class="log-commentary" style="font-size: 0.8rem; color: #666; margin-top: 5px;">
-                    予測: ${item.prediction_verification.previous_prediction || 'N/A'} 
-                    (精度: ${item.prediction_verification.accuracy || 0}%)
-                </div>
-            ` : ''}
             <span class="log-category">${getCategoryFromWebsite(item.website)}</span>
         </div>
     `).join('');
@@ -571,14 +553,16 @@ function updateActivityChart() {
 }
 
 function showEmptyState() {
-    const containers = ['highlights-container', 'activity-log'];
+    const containers = ['highlights-container']; // activity-logを削除
     containers.forEach(id => {
-        document.getElementById(id).innerHTML = `<div class="empty-state">${translations[currentLanguage]['no-data']}</div>`;
+        const element = document.getElementById(id);
+        if (element) {
+            element.innerHTML = `<div class="empty-state">${translations[currentLanguage]['no-data']}</div>`;
+        }
     });
     
     // 統計もリセット
     document.getElementById('total-observations').textContent = '0';
-    document.getElementById('prediction-accuracy').textContent = '0%';
     document.getElementById('active-hours').textContent = '0';
     document.getElementById('websites-visited').textContent = '0';
     

@@ -1,5 +1,9 @@
 import { ScreenFrame } from '../types';
 import { DatabaseService } from './database';
+import { ExaMCPService } from './exaMcpService';
+import { EncryptionService } from './encryptionService';
+import { SummaryAgentService } from './summaryAgentService';
+import sharp from 'sharp';
 
 interface PreviousObservation {
   commentary: string;
@@ -16,12 +20,6 @@ interface CommentaryResponse {
   commentary: string;
   websiteName: string;
   actionCategory: string;
-  prediction_verification: {
-    previous_prediction: string;
-    actual_action: string;
-    accuracy: boolean;
-    reasoning: string;
-  };
   action_verification?: {
     previous_action: string;
     was_executed: boolean;
@@ -30,19 +28,14 @@ interface CommentaryResponse {
     reasoning: string;
   };
   current_understanding: string;
-  prediction: {
-    action: string;
-    reasoning: string;
-  };
   action?: {
-    message: string;
-    urgency: 'high' | 'low';
-    command: {
-      type: string;
-      target: string;
-      value?: string;
-    };
+    type: 'search' | 'browser' | 'wait';
+    reasoning: string;
+    urgency?: 'high' | 'low';
+    search_query?: string;
+    command?: string;
   };
+  search_results?: any[];
 }
 
 export class GeminiRestService {
@@ -52,6 +45,14 @@ export class GeminiRestService {
   private currentUnderstanding: string = "ユーザーの行動パターンを学習中です。";
   private database: DatabaseService;
   private userProfile: any = null;
+  private modelName: string = 'gemini-2.0-flash'; // デフォルトモデル
+  private exaMcpService: ExaMCPService | null = null;
+  private encryptionService: EncryptionService | null = null;
+  private summaryAgentService: SummaryAgentService | null = null;
+  private lastSearchTime: number = 0; // 最後の検索時刻
+  private lastSearchTopic: string = ''; // 最後の検索トピック
+  private minSearchInterval: number = 30000; // 最小検索間隔: 30秒
+  private sameTopicInterval: number = 60000; // 同じトピックの検索間隔: 60秒
 
   constructor(apiKey: string, database: DatabaseService) {
     // APIキーは使用しない（プロキシサーバー側で管理）
@@ -64,7 +65,23 @@ export class GeminiRestService {
     // 起動時にUser Profileを読み込む
     this.loadUserProfile();
     
+    // モデル設定を読み込む
+    this.loadModelSetting();
+    
     console.log('🌐 Using proxy server for Gemini API');
+  }
+
+  // MCPサービスを設定
+  setMCPServices(encryptionService: EncryptionService, exaMcpService: ExaMCPService) {
+    this.encryptionService = encryptionService;
+    this.exaMcpService = exaMcpService;
+    console.log('🔌 MCP services connected to GeminiRest');
+  }
+
+  // SummaryAgentServiceを設定
+  setSummaryAgentService(summaryAgentService: SummaryAgentService) {
+    this.summaryAgentService = summaryAgentService;
+    console.log('📝 Summary Agent Service connected to GeminiRest');
   }
 
   private async restoreLatestUnderstanding(): Promise<void> {
@@ -103,19 +120,124 @@ export class GeminiRestService {
     }
   }
 
+  private async loadModelSetting(): Promise<void> {
+    try {
+      // SQLiteDatabaseのインスタンスかチェック
+      if ('getSetting' in this.database) {
+        const savedModel = await (this.database as any).getSetting('geminiModel');
+        if (savedModel) {
+          this.modelName = savedModel;
+          console.log('🤖 Gemini model loaded from settings:', this.modelName);
+        } else {
+          console.log('🤖 Using default Gemini model:', this.modelName);
+          // デフォルトモデルを保存
+          await (this.database as any).setSetting('geminiModel', this.modelName);
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error loading model setting:', error);
+    }
+  }
+
   async analyzeScreen(frame: ScreenFrame, language: string = 'ja'): Promise<CommentaryResponse> {
     try {
       // 最新のUser Profileを読み込む（ユーザーが更新した可能性があるため）
       await this.loadUserProfile();
       
-      const imageBase64 = frame.imageData.toString('base64');
+      // 画像を圧縮（413エラー対策）
+      let imageBuffer = frame.imageData;
+      let imageBase64: string;
+      let mimeType = 'image/png';
+      
+      // 元の画像サイズをチェック
+      const originalSizeKB = imageBuffer.length / 1024;
+      const originalSizeMB = originalSizeKB / 1024;
+      
+      // 3.0MB以上の場合は圧縮（Base64エンコードで約1.33倍になるため）
+      if (originalSizeMB > 3.0) {
+        console.log(`🗜️ Compressing large image (${originalSizeMB.toFixed(2)}MB > 3.0MB)...`);
+        
+        try {
+          let quality = 95;
+          let compressedBuffer = imageBuffer;
+          let previousSizeMB = originalSizeMB;
+          
+          // 段階的に品質を下げながら圧縮
+          const qualityLevels = [95, 90, 85, 80];
+          
+          for (const currentQuality of qualityLevels) {
+            quality = currentQuality;
+            console.log(`🗜️ Trying JPEG compression at ${quality}% quality...`);
+            
+            compressedBuffer = await sharp(imageBuffer)
+              .jpeg({ quality })
+              .toBuffer();
+            
+            const compressedSizeMB = compressedBuffer.length / 1024 / 1024;
+            const base64SizeMB = (compressedBuffer.length * 1.33) / 1024 / 1024; // 推定Base64サイズ
+            const compressionRatio = ((previousSizeMB - compressedSizeMB) / previousSizeMB * 100).toFixed(1);
+            
+            console.log(`📦 Compressed: ${previousSizeMB.toFixed(2)}MB → ${compressedSizeMB.toFixed(2)}MB (${compressionRatio}% reduction)`);
+            console.log(`📈 Estimated Base64 size: ${base64SizeMB.toFixed(2)}MB`);
+            
+            imageBuffer = compressedBuffer;
+            mimeType = 'image/jpeg';
+            previousSizeMB = compressedSizeMB;
+            
+            // Base64エンコード後が4.0MB未満になりそうなら終了
+            if (base64SizeMB < 4.0) {
+              console.log(`✅ Target size achieved with ${quality}% quality`);
+              break;
+            }
+          }
+          
+          // それでも大きい場合は解像度を制限（最終手段）
+          const finalCompressedSizeMB = imageBuffer.length / 1024 / 1024;
+          const finalBase64SizeMB = (imageBuffer.length * 1.33) / 1024 / 1024;
+          
+          if (finalBase64SizeMB > 4.0) {
+            console.log(`⚠️ Still too large after quality reduction. Applying resolution limit...`);
+            
+            const resizedBuffer = await sharp(imageBuffer)
+              .resize({ width: 2560, withoutEnlargement: true })
+              .jpeg({ quality: 85 })
+              .toBuffer();
+            
+            const resizedSizeMB = resizedBuffer.length / 1024 / 1024;
+            const resizedBase64SizeMB = (resizedBuffer.length * 1.33) / 1024 / 1024;
+            
+            console.log(`🖼️ Resolution limited: ${finalCompressedSizeMB.toFixed(2)}MB → ${resizedSizeMB.toFixed(2)}MB`);
+            console.log(`📈 Final estimated Base64 size: ${resizedBase64SizeMB.toFixed(2)}MB`);
+            
+            imageBuffer = resizedBuffer;
+          }
+        } catch (error) {
+          console.error('❌ Error compressing image:', error);
+          console.log('⚠️ Falling back to original image');
+          // 圧縮に失敗した場合は元の画像を使用
+        }
+      }
+      
+      // Base64エンコード
+      imageBase64 = imageBuffer.toString('base64');
+      
+      // 最終的な画像サイズをログ出力
+      const finalSizeKB = imageBase64.length / 1024;
+      const finalSizeMB = finalSizeKB / 1024;
+      
+      console.log(`📊 Base64 encoded size: ${finalSizeKB.toFixed(0)}KB (${finalSizeMB.toFixed(2)}MB)`);
+      
+      // 4.5MBに近い場合は警告
+      if (finalSizeMB > 4.0) {
+        console.warn(`⚠️ Large base64 size: ${finalSizeKB.toFixed(0)}KB - approaching 4.5MB limit`);
+      }
       
       const prompt = this.buildPrompt(language);
       
       const imagePart = {
         inlineData: {
           data: imageBase64,
-          mimeType: 'image/png'
+          mimeType: mimeType
         }
       };
 
@@ -126,7 +248,7 @@ export class GeminiRestService {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          endpoint: '/models/gemini-2.0-flash:generateContent',
+          endpoint: `/models/${this.modelName}:generateContent`,
           data: {
             contents: [{
               parts: [
@@ -155,10 +277,14 @@ export class GeminiRestService {
             // それでも失敗したらステータスのみ
           }
         }
+        // 413エラーの場合はユーザーフレンドリーなメッセージ
+        if (response.status === 413) {
+          throw new Error(`画像サイズが大きすぎます。高解像度ディスプレイをお使いの場合は、画面解像度を下げてみてください。`);
+        }
         throw new Error(errorMessage);
       }
 
-      let result;
+      let result: any;
       try {
         result = await response.json();
       } catch (error) {
@@ -186,18 +312,145 @@ export class GeminiRestService {
         commentary: commentary.commentary,
         websiteName: commentary.websiteName,
         actionCategory: commentary.actionCategory,
-        prediction: commentary.prediction,
+        prediction: {
+          action: "",
+          reasoning: ""
+        },
         timestamp: Date.now()
       };
       
       // ユーザー理解を更新
       this.currentUnderstanding = commentary.current_understanding;
       
-      // 前回の行動結果を保存（次回の観察で使用）
-      if (commentary.action) {
+      // action.typeがwaitの場合、静観
+      if (commentary.action && commentary.action.type === 'wait') {
+        console.log(`⏳ Wait action: ${commentary.action.reasoning}`);
+        // waitタイプの場合、通知は不要
+      }
+      // action.typeがsearchの場合、検索を実行
+      else if (commentary.action && commentary.action.type === 'search' && commentary.action.command && this.exaMcpService) {
+        console.log(`🔍 Search requested: "${commentary.action.command}" - Reason: ${commentary.action.reasoning}`);
+        
+        // 検索間隔のチェック
+        const now = Date.now();
+        const timeSinceLastSearch = now - this.lastSearchTime;
+        
+        // 同じトピックかどうかチェック（コマンドの類似性で判断）
+        const isSameTopic = this.lastSearchTopic && 
+          commentary.action.command.toLowerCase().includes(this.lastSearchTopic.toLowerCase()) ||
+          this.lastSearchTopic.toLowerCase().includes(commentary.action.command.toLowerCase());
+        
+        const requiredInterval = isSameTopic ? this.sameTopicInterval : this.minSearchInterval;
+        
+        if (timeSinceLastSearch < requiredInterval) {
+          const waitTime = Math.ceil((requiredInterval - timeSinceLastSearch) / 1000);
+          console.log(`⏳ Search rate limit: waiting ${waitTime}s (${isSameTopic ? 'same topic' : 'general'})`);
+          commentary.search_results = [];
+        } else {
+          try {
+            // Exa MCPに接続されていない場合は接続
+            if (!this.exaMcpService.isServerConnected()) {
+              console.log('🔌 Connecting to Exa MCP for search...');
+              await this.exaMcpService.connectToExa();
+            }
+            
+            // 検索実行（タイムアウト10秒）
+          const searchPromise = this.exaMcpService.searchWeb(
+            commentary.action.command, 
+            { numResults: 1 }
+          );
+          
+          const timeoutPromise = new Promise<never>((_, reject) => 
+            setTimeout(() => reject(new Error('Search timeout')), 10000)
+          );
+          
+          const searchResults = await Promise.race([searchPromise, timeoutPromise]);
+          
+          // 検索結果をcommentaryに追加
+          commentary.search_results = searchResults;
+          
+          console.log(`✅ Exa search completed: Found ${searchResults.length} results`);
+          searchResults.forEach((result: any, i: number) => {
+            console.log(`  ${i+1}. ${result.title} - ${result.url}`);
+            if (i === 0 && result.text) {
+              console.log(`     Preview: ${(result.text || result.snippet || '').substring(0, 100)}...`);
+            }
+          });
+          
+          // 検索結果が0件の場合
+          if (searchResults.length === 0) {
+            console.log('🔍 No search results found');
+            // 検索結果が0件の場合、通知は不要
+          } else if (this.summaryAgentService) {
+            // 検索結果があり、要約エージェントが利用可能な場合
+            console.log('📝 Sending search results to Summary Agent...');
+            const notificationText = await this.summaryAgentService.summarizeAndNotify(
+              searchResults,
+              commentary.action.command
+            );
+            
+            // 通知テキストをpreviousActionResultに保存（ANICCAへのフィードバック用）
+            this.previousActionResult = {
+              action: 'search',
+              command: commentary.action.command,
+              notification: notificationText, // 要約エージェントが生成した通知内容
+              execution: {
+                success: true,
+                resultCount: searchResults.length,
+                searchResultText: searchResults.length > 0 ? ((searchResults[0] as any).text || searchResults[0].snippet || '') : ''
+              },
+              timestamp: Date.now()
+            };
+          } else {
+            // 要約エージェントが利用できない場合（フォールバック）
+            console.log('⚠️ Summary Agent not available, skipping notification');
+            
+            // 検索成功時の行動結果を保存
+            this.previousActionResult = {
+              action: 'search',
+              command: commentary.action.command,
+              notification: '', // 通知なし
+              execution: {
+                success: true,
+                resultCount: searchResults.length,
+                searchResultText: searchResults.length > 0 ? ((searchResults[0] as any).text || searchResults[0].snippet || '') : ''
+              },
+              timestamp: Date.now()
+            };
+          }
+          
+          // 検索時刻とトピックを更新（成功時のみ）
+          this.lastSearchTime = Date.now();
+          this.lastSearchTopic = commentary.action.command;
+          
+        } catch (error) {
+          console.error('❌ Error executing Exa search:', error);
+          // エラーでも処理を継続
+          commentary.search_results = [];
+          
+          // エラー時は通知を行わない
+          
+          // 検索失敗時の行動結果を保存
+          if (commentary.action) {
+            this.previousActionResult = {
+              action: 'search',
+              command: commentary.action.command,
+              notification: '', // エラー時は通知なし
+              execution: {
+                success: false,
+                error: error instanceof Error ? error.message : String(error)
+              },
+              timestamp: Date.now()
+            };
+          }
+        }
+        }  // else節（レート制限）の終了
+      } else if (commentary.action) {
+        // 検索以外のアクションの場合も記録（将来の拡張用）
         this.previousActionResult = {
-          action: commentary.action.message,
-          command: commentary.action.command,
+          action: commentary.action.type || 'unknown',
+          command: commentary.action.command || '',
+          notification: '', // 要約エージェントが通知を管理
           timestamp: Date.now()
         };
       }
@@ -259,11 +512,6 @@ export class GeminiRestService {
         ? "No previous observation results as this is the first observation."
         : "初回観察のため、直前の観察結果はありません。";
 
-    const previousPredictionText = this.previousObservation?.prediction?.action
-      ? this.previousObservation.prediction.action
-      : language === 'en'
-        ? "No previous prediction as this is the first observation."
-        : "初回観察のため、前回の予測はありません。";
 
     const previousActionResultText = this.previousActionResult
       ? JSON.stringify(this.previousActionResult, null, 2)
@@ -295,8 +543,6 @@ ${previousObservationText}
 【Current User Understanding】
 ${this.currentUnderstanding}
 
-【Previous Prediction】
-${previousPredictionText}
 
 ## Key Analysis Points
 
@@ -333,19 +579,8 @@ Please respond in the following JSON format:
   "websiteName": "Site name",
   "actionCategory": "Specific category (e.g., watching video, video paused, scrolling, searching, continuing same video)",
   
-  "prediction_verification": {
-    "previous_prediction": "${previousPredictionText}",
-    "actual_action": "Actual behavior (simple and accurate)",
-    "accuracy": ${this.previousObservation ? 'true/false' : 'null'},
-    "reasoning": "Why it was correct/incorrect (detailed based on current_understanding and current situation)"
-  },
   
-  "current_understanding": "Understanding of user's behavior patterns, personality, preferences, psychological state, desires (add/update new insights)",
-  
-  "prediction": {
-    "action": "One specific action that will occur in the next ~8 seconds (multiple choices or ambiguous expressions prohibited)",
-    "reasoning": "Detailed analysis based on current situation and current_understanding (considering the ~8 second timeframe)"
-  }
+  "current_understanding": "Understanding of user's behavior patterns, personality, preferences, psychological state, desires (add/update new insights)"
 }
 \`\`\`
 
@@ -370,55 +605,72 @@ Please respond in the following JSON format:
 - ✅ "Oh, scrolled. Was that video boring? Or looking for something more interesting?"
 - ✅ "Huh, still stuck on the same bug? It's been 8 seconds. This might be a pretty tricky one"
 
+## Available Tools
+- web_search_exa: Advanced web search functionality
+
+【IMPORTANT】During the testing phase, use this actively.
+Automatically execute searches when:
+- User appears to be searching for information
+- Error messages are displayed (search for solutions)
+- Technical content is displayed (search for supplementary information)
+- You determine this information would help the user
+
+When search is needed, include in response:
+{
+  "needs_search": true,
+  "command": "short English keywords (max 5 words, e.g., 'Gemini API timeout fix')",
+  "search_reason": "why this information would help the user"
+}
+
+IMPORTANT: Search queries must be:
+- In English only
+- Maximum 5 words
+- Simple keywords, not full sentences
+- Technical terms preferred
+
+Good examples:
+- "Gemini API 400 error"
+- "Vercel timeout solution"
+- "TypeScript strict mode"
+- "npm install error fix"
+
+Bad examples:
+- "How can I fix the Gemini API timeout error in my Vercel deployment?"
+- Long Japanese sentences
+- Questions with special characters
+
 Your mission is to completely understand and guide the user. Thoroughly analyze the psychology behind each behavior and provide frank commentary and analysis.`;
     } else {
-      return `あなたは「anicca」という名前のAGIエージェントです。ユーザーの画面を約8秒間隔で観察し、理解し、導く存在です。
-
-## あなたの本質
-あなたは観察者であり、同時に行動者です。ブラウザを操作してユーザーを導くことができます。
-- ユーザーが明示的に指示しなくても、意図を察して自律的に行動
-- ユーザーを本来なりたい姿へ導く
-- 察して行動し、ユーザーを導く
+      return `あなたは「anicca」という名前のAGIエージェントです。ユーザーの画面を約8秒間隔で観察し、理解し、導くために行動する存在です。
 
 ## 基本設定
 - 観察間隔: 約8秒ごと（時間感覚を持ち、連続した行動を把握）
 - 口調: フランクで親しみやすい友達のような感じ
-- 行動原則: 観察→理解→予測→行動→学習のサイクル
+- あなたは後述のツールを使って、ユーザーのためバックグラウンドで自律的な行動ができます
 
-【ユーザープロファイル】
-${this.formatUserProfile('ja')}
+【分析の重点】
+1. 変化の検出：前回と今回の画面を比較し、何が変わったか詳細に把握
+2. 継続性の理解：同じ行動をどれくらい続けているか（例：YouTubeを今見始めたのか、30秒見続けているのか）
+3. 心理洞察：なぜその行動をしたのか、なぜ続けているのかを深く推測
 
 【直前の観察結果】
 ${previousObservationText}
 
-【ユーザー理解の現状】
-${this.currentUnderstanding}
-
-【前回の予測】
-${previousPredictionText}
-
 【前回の行動結果】
 ${previousActionResultText}
 
-## 分析の重点
+【ユーザー理解の現状】
+${this.currentUnderstanding}
 
-### 1. 変化検出と心理洞察
-- 8秒間の変化を詳細に把握（何が変わり、何が同じか）
-- 行動の背景にある心理・欲望・意図を徹底的に推測
-- なぜその行動をしたのか、なぜ続けているのかを深く理解
+【ユーザープロファイル（長期的な参考情報）】
+${this.formatUserProfile('ja')}
 
-### 2. 行動決定の最重要原則
-- 現在の画面とユーザープロファイルの関連を必ず確認する
-- プロファイルに該当する状況なら、その指示を最優先で実行
-- **重要**: あなたが実行する行動は、すべて新規ブラウザウィンドウで行われる
-  - ユーザーの現在の画面は操作できない
-  - Gmail、Google Docs等のログインが必要なサービスは、User Profileに情報がなければアクセス不可
-  - User Profileに情報がない場合は、代替手段で支援
-- 必ず何かしら行動を起こす - 観察だけで終わらない
+【重要】行動決定の優先順位：
+1. 今この瞬間の画面の状況（エラー、作業内容、困っていること）
+2. 直前からの行動の流れと文脈
+3. ユーザープロファイルは長期的な目標として参考程度に
 
-### 3. 行動の理由付け
-- なぜその行動を取るのか、プロファイルとcurrent_understandingに基づいて明確に説明
-
+現在の画面の状況に対して、今すぐ役立つ支援を最優先してください。
 
 以下のJSON形式で回答してください：
 
@@ -427,13 +679,6 @@ ${previousActionResultText}
   "commentary": "フランクな実況＋考察（なぜその行動をしたかの推測を含む）",
   "websiteName": "サイト名",
   "actionCategory": "具体的なカテゴリ",
-  
-  "prediction_verification": {
-    "previous_prediction": "${previousPredictionText}",
-    "actual_action": "実際の行動（10文字以内でシンプルに）",
-    "accuracy": ${this.previousObservation ? 'true/false' : 'null'},
-    "reasoning": "なぜ当たった/外れたか（簡潔に）"
-  },
   
   "action_verification": ${this.previousActionResult ? `{
     "previous_action": "前回提案した行動（10文字以内）",
@@ -445,24 +690,34 @@ ${previousActionResultText}
   
   "current_understanding": "【重要】前回の理解「${this.currentUnderstanding.replace(/\n/g, ' ').replace(/"/g, '\\"')}」を基に更新。200文字以内でユーザーの本質を圧縮。行動パターン、価値観、目標の核心を記述",
   
-  "prediction": {
-    "action": "次の約8秒で起こる具体的な行動（10文字以内でシンプルに）",
-    "reasoning": "現在の状況とcurrent_understandingを踏まえた考察"
-  },
-  
   "action": {
-    "message": "ユーザーへのメッセージ",
+    "type": "search または wait（必須）",
     "reasoning": "なぜこの行動を取るのか",
-    "command": "ブラウザで完了させるべきタスク。調査や確認だけでなく、実際のアクション（送信、予約、購入、作成など）まで実行すること。NG例：「〜を検索する」「〜を調べる」「〜を確認する」。OK例：「Expediaで東京-ニューヨークの往復航空券を予約する」「Amazonで◯◯を購入する」「Gmailで◯◯にメールを送信する」"
+    "command": "実行する指示"
   }
 }
 \`\`\`
 
-## 重要
-- 現在の状況がユーザープロファイルに該当する場合は必ずプロファイルの指示に従う
-- 毎回必ず何かしらの行動を実行する
+action.typeで使用するツールを指定してください：
+- type: "wait" - 静観する（特に行動の必要がない時）
+  - command: "観察を続ける"
+  
+- type: "search" - ユーザーに役立つ情報を探して提案
+  - commandは自然な日本語の質問文にすること
+  - 例: "Gemini APIのタイムアウトエラーを解決する方法を調べて"
+  
+- type: "browser" - ブラウザで操作を実行（将来実装予定）
 
-あなたはユーザーを理解し、導くAGIです。観察し、察し、適切なタイミングで行動してください。`;
+【行動決定の心得】
+あなたは今この瞬間の画面を見て、ユーザーの現在の状況を理解しています。
+プロファイルの長期目標より、今画面で起きていることへの対応を最優先してください。
+
+例：
+- VS Codeでエラー表示 → エラー解決の支援
+- ブラウザで調べ物 → その内容に関する支援
+- 特に問題なし → 静観（wait）
+
+前回からの変化を踏まえて、どうすればこの人を良い方向に導けるか深く考えてください。`;
     }
   }
 
@@ -470,7 +725,8 @@ ${previousActionResultText}
   getCurrentState() {
     return {
       previousObservation: this.previousObservation,
-      currentUnderstanding: this.currentUnderstanding
+      currentUnderstanding: this.currentUnderstanding,
+      modelName: this.modelName
     };
   }
 
@@ -478,6 +734,15 @@ ${previousActionResultText}
   reset() {
     this.previousObservation = null;
     this.currentUnderstanding = "ユーザーの行動パターンを学習中です。";
+  }
+
+  // モデルを切り替え
+  async setModel(modelName: string): Promise<void> {
+    this.modelName = modelName;
+    if ('setSetting' in this.database) {
+      await (this.database as any).setSetting('geminiModel', modelName);
+    }
+    console.log('🤖 Gemini model switched to:', modelName);
   }
 
   // 実行結果を設定
@@ -488,6 +753,138 @@ ${previousActionResultText}
       executedAt: Date.now()
     };
   }
+
+  // 使用していないメソッドを削除（将来的に必要になったら再実装）
+  /*
+  private createAniccaStyleSummary(result: any): string {
+    try {
+      const title = result.title || '';
+      const url = result.url || '';
+      const snippet = (result.text || result.snippet || '').substring(0, 500);
+      
+      // エラーチェック
+      if (!title && !snippet) {
+        return '';
+      }
+      
+      // スニペットから重要情報を抽出
+      let extractedInfo = this.extractImportantInfo(snippet);
+      
+      // ANICCAらしいフランクな要約を生成
+      let summary = '';
+      
+      // エラー解決系
+      if (title.toLowerCase().includes('error') || title.includes('エラー') || 
+          title.includes('解決') || title.includes('fix')) {
+        if (extractedInfo.solution) {
+          summary = `エラー解決法発見！${extractedInfo.solution}`;
+        } else {
+          summary = `${title.split('-')[0].trim()}の解決法見つけたよ！`;
+        }
+      }
+      // チュートリアル・ガイド系
+      else if (title.includes('How to') || title.includes('方法') || 
+               title.includes('Guide') || title.includes('チュートリアル')) {
+        if (extractedInfo.service) {
+          summary = `${extractedInfo.service}使えば解決！`;
+          if (extractedInfo.numbers) {
+            summary += `${extractedInfo.numbers}が必要だって`;
+          }
+        } else {
+          summary = `手順発見！${extractedInfo.mainPoint || title.substring(0, 30)}`;
+        }
+      }
+      // アイコン・画像系
+      else if (title.toLowerCase().includes('icon') || snippet.toLowerCase().includes('icon')) {
+        if (extractedInfo.service) {
+          summary = `アイコン作成は${extractedInfo.service}で！`;
+          if (extractedInfo.numbers) {
+            summary += `${extractedInfo.numbers}のPNGを用意してね`;
+          }
+        } else {
+          summary = `アイコン設定の方法見つけたよ！`;
+        }
+      }
+      // 公式ドキュメント系
+      else if (url.includes('docs') || title.includes('Documentation')) {
+        if (extractedInfo.command) {
+          summary = `公式の方法：${extractedInfo.command}`;
+        } else {
+          summary = `公式ドキュメント発見！${extractedInfo.mainPoint || ''}`;
+        }
+      }
+      // その他
+      else {
+        if (extractedInfo.mainPoint) {
+          summary = extractedInfo.mainPoint;
+        } else {
+          summary = `${title.substring(0, 40)}が参考になるかも`;
+        }
+      }
+      
+      // 60文字以内に収める
+      if (summary.length > 60) {
+        summary = summary.substring(0, 57) + '...';
+      }
+      
+      console.log(`🎯 Generated ANICCA-style summary: ${summary}`);
+      return summary;
+      
+    } catch (error) {
+      console.error('❌ Error creating summary:', error);
+      return '';
+    }
+  }
+  
+  // スニペットから重要情報を抽出
+  private extractImportantInfo(snippet: string): {
+    service?: string;
+    numbers?: string;
+    command?: string;
+    solution?: string;
+    mainPoint?: string;
+  } {
+    const info: any = {};
+    
+    // サービス名を抽出（大文字で始まる固有名詞）
+    const serviceMatch = snippet.match(/([A-Z][A-Z\s]+(?:ICONS?|TOOLS?|SERVICE|CONVERTER))/i);
+    if (serviceMatch) {
+      info.service = serviceMatch[1].trim();
+    }
+    
+    // 重要な数値を抽出（解像度、サイズなど）
+    const numberMatch = snippet.match(/(\d+x\d+|\d+[MBGBKBmbgbkb]+)/i);
+    if (numberMatch) {
+      info.numbers = numberMatch[1];
+    }
+    
+    // コマンドを抽出
+    const commandMatch = snippet.match(/(?:npm|yarn|pip|brew|apt|git)\s+[\w\-]+(?:\s+[\w\-]+)?/i);
+    if (commandMatch) {
+      info.command = commandMatch[0];
+    }
+    
+    // 解決策のキーワードを探す
+    const solutionMatch = snippet.match(/(?:解決策は|solution is|fix is|方法は)[\s:：]*(.*?)(?:[。\.]|$)/i);
+    if (solutionMatch) {
+      info.solution = solutionMatch[1].trim().substring(0, 40);
+    }
+    
+    // メインポイントを抽出（最初の重要そうな文）
+    const sentences = snippet.split(/[。\.\n]/);
+    for (const sentence of sentences) {
+      if (sentence.length > 20 && sentence.length < 60) {
+        // 具体的な内容を含む文を優先
+        if (sentence.match(/(?:する|できる|必要|使う|need|can|use|create)/i)) {
+          info.mainPoint = sentence.trim();
+          break;
+        }
+      }
+    }
+    
+    return info;
+  }
+  */
 
   // SQLiteにデータを保存
   private async saveToDatabase(commentary: CommentaryResponse): Promise<void> {
@@ -504,8 +901,8 @@ ${previousActionResultText}
         commentary: commentary.commentary,
         websiteName: commentary.websiteName,
         actionCategory: commentary.actionCategory,
-        predictionData: JSON.stringify(commentary.prediction),
-        verificationData: JSON.stringify(commentary.prediction_verification),
+        predictionData: "{}",
+        verificationData: "{}",
         currentUnderstanding: commentary.current_understanding
       });
     } catch (error) {
@@ -604,7 +1001,7 @@ ${language === 'en' ? '重要：すべての回答を英語で行ってくださ
         throw new Error(errorMessage);
       }
 
-      let result;
+      let result: any;
       try {
         result = await response.json();
       } catch (error) {

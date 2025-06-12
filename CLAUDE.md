@@ -55,7 +55,6 @@ ANICCA is an Electron desktop app that uses AI to analyze and narrate screen con
 
 - **Language Support**: Japanese (default) and English, persisted in SQLite
 - **Understanding Evolution**: AI maintains and updates understanding of user behavior across sessions
-- **Prediction System**: AI predicts next actions and verifies accuracy
 - **Privacy**: All data stored locally in `~/.anicca/`
 
 ### Environment Configuration

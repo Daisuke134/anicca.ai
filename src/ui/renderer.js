@@ -4,8 +4,6 @@ class ANICCARenderer {
         this.isNarrating = false;
         this.currentLanguage = 'ja';
         this.commentaryCount = 0;
-        this.totalPredictions = 0;
-        this.correctPredictions = 0;
         
         // 翻訳データ
         this.translations = {
@@ -24,9 +22,6 @@ class ANICCARenderer {
                 'connection': '接続状態:',
                 'connected': '接続済み',
                 'disconnected': '切断',
-                'prediction-accuracy': '🎯 予測精度',
-                'total-predictions': '総予測数:',
-                'correct-predictions': '的中数:',
                 'live-commentary': '💬 リアルタイム実況',
                 'total-count': '総数:',
                 'last-updated': '更新:',
@@ -37,16 +32,6 @@ class ANICCARenderer {
                 'narration-stopped': 'anicca実況システムが停止されました',
                 'daily-view-preparing': 'Daily View機能は準備中です',
                 'service-error': 'サービスエラー',
-                'verification-title': '📊 予測検証',
-                'previous-prediction': '前回の予測:',
-                'actual-action': '実際の行動:',
-                'result': '結果:',
-                'analysis': '分析:',
-                'prediction-title': '🔮 次の予測',
-                'action': '行動:',
-                'reasoning': '理由:',
-                'accuracy-hit': '的中',
-                'accuracy-miss': '外れ',
                 'unknown': 'Unknown',
                 'other': 'その他',
                 'agent-mode': 'Agent Mode',
@@ -79,9 +64,6 @@ class ANICCARenderer {
                 'connection': 'Connection:',
                 'connected': 'Connected',
                 'disconnected': 'Disconnected',
-                'prediction-accuracy': '🎯 Prediction Accuracy',
-                'total-predictions': 'Total Predictions:',
-                'correct-predictions': 'Correct:',
                 'live-commentary': '💬 Live Commentary',
                 'total-count': 'Total:',
                 'last-updated': 'Updated:',
@@ -92,16 +74,6 @@ class ANICCARenderer {
                 'narration-stopped': 'anicca narration system stopped',
                 'daily-view-preparing': 'Daily View feature is in preparation',
                 'service-error': 'Service Error',
-                'verification-title': '📊 Prediction Verification',
-                'previous-prediction': 'Previous Prediction:',
-                'actual-action': 'Actual Action:',
-                'result': 'Result:',
-                'analysis': 'Analysis:',
-                'prediction-title': '🔮 Next Prediction',
-                'action': 'Action:',
-                'reasoning': 'Reasoning:',
-                'accuracy-hit': 'Correct',
-                'accuracy-miss': 'Wrong',
                 'unknown': 'Unknown',
                 'other': 'Other',
                 'agent-mode': 'Agent Mode',
@@ -134,6 +106,7 @@ class ANICCARenderer {
             dailyViewBtn: document.getElementById('daily-view-btn'),
             languageSelect: document.getElementById('language-select'),
             agentModeCheckbox: document.getElementById('agent-mode-checkbox'),
+            modelSelect: document.getElementById('model-select'),
             statusIndicator: document.querySelector('.status-indicator'),
             statusText: document.getElementById('status-text'),
             connectionStatus: document.getElementById('connection-status'),
@@ -141,9 +114,6 @@ class ANICCARenderer {
             commentaryContainer: document.getElementById('commentary-container'),
             commentaryCount: document.getElementById('commentary-count'),
             lastUpdate: document.getElementById('last-update'),
-            totalPredictions: document.getElementById('total-predictions'),
-            correctPredictions: document.getElementById('correct-predictions'),
-            accuracyRate: document.getElementById('accuracy-rate')
         };
 
         // 保存された言語設定を読み込み
@@ -151,6 +121,9 @@ class ANICCARenderer {
         
         // 保存されたAgent Mode設定を読み込み
         await this.loadAgentModeSetting();
+        
+        // 保存されたモデル設定を読み込み
+        await this.loadModelSetting();
 
         // イベントリスナーの設定
         this.setupEventListeners();
@@ -164,8 +137,6 @@ class ANICCARenderer {
         // 現在の理解を取得・表示
         await this.loadCurrentUnderstanding();
         
-        // 予測精度統計を読み込み
-        await this.loadPredictionStats();
         
         // 初期言語設定
         this.updateTexts();
@@ -198,6 +169,11 @@ class ANICCARenderer {
             this.setAgentMode(e.target.checked);
         });
         
+        // モデル選択
+        this.elements.modelSelect?.addEventListener('change', (e) => {
+            this.setModel(e.target.value);
+        });
+        
         // User Profile関連の要素を追加
         this.setupUserProfileElements();
         
@@ -224,7 +200,6 @@ class ANICCARenderer {
         // 実況データ受信
         window.aniccaAPI.onCommentary((data) => {
             this.addCommentary(data);
-            this.updateAccuracy(data.prediction_verification);
         });
 
         // エラー受信
@@ -351,11 +326,6 @@ class ANICCARenderer {
             this.currentLanguage === 'ja' ? 'ja-JP' : 'en-US'
         );
         
-        // 予測検証セクションの作成
-        const verificationSection = this.createVerificationSection(data.prediction_verification);
-        
-        // 予測セクションの作成
-        const predictionSection = this.createPredictionSection(data.prediction);
         
         commentaryItem.innerHTML = `
             <div class="commentary-header-item">
@@ -363,8 +333,6 @@ class ANICCARenderer {
                 <span class="timestamp">${timestamp}</span>
             </div>
             <div class="commentary-text">${data.commentary}</div>
-            ${verificationSection}
-            ${predictionSection}
             <div class="commentary-meta">
                 <span class="category">${data.actionCategory || this.getText('other')}</span>
             </div>
@@ -394,81 +362,6 @@ class ANICCARenderer {
         console.log('💬 Commentary added:', data.commentary.substring(0, 50) + '...');
     }
 
-    createVerificationSection(verification) {
-        if (!verification || verification.accuracy === null) {
-            return '';
-        }
-
-        const accuracyClass = verification.accuracy ? 'accuracy-true' : 'accuracy-false';
-        const accuracyText = verification.accuracy ? this.getText('accuracy-hit') : this.getText('accuracy-miss');
-
-        return `
-            <div class="verification-section">
-                <div class="verification-title">${this.getText('verification-title')}</div>
-                <div class="verification-item"><strong>${this.getText('previous-prediction')}</strong> ${verification.previous_prediction}</div>
-                <div class="verification-item"><strong>${this.getText('actual-action')}</strong> ${verification.actual_action}</div>
-                <div class="verification-item">
-                    <strong>${this.getText('result')}</strong> 
-                    <span class="accuracy-indicator ${accuracyClass}">${accuracyText}</span>
-                </div>
-                <div class="verification-item"><strong>${this.getText('analysis')}</strong> ${verification.reasoning}</div>
-            </div>
-        `;
-    }
-
-    createPredictionSection(prediction) {
-        if (!prediction) {
-            return '';
-        }
-
-        return `
-            <div class="prediction-section">
-                <div class="prediction-title">${this.getText('prediction-title')}</div>
-                <div class="prediction-item"><strong>${this.getText('action')}</strong> ${prediction.action}</div>
-                <div class="prediction-item"><strong>${this.getText('reasoning')}</strong> ${prediction.reasoning}</div>
-            </div>
-        `;
-    }
-
-    updateAccuracy(verification) {
-        if (verification && verification.accuracy !== null) {
-            this.totalPredictions++;
-            if (verification.accuracy) {
-                this.correctPredictions++;
-            }
-            this.updateAccuracyStats();
-        }
-    }
-
-    updateAccuracyStats() {
-        // 統計を更新
-        if (this.elements.totalPredictions) {
-            this.elements.totalPredictions.textContent = this.totalPredictions;
-        }
-        if (this.elements.correctPredictions) {
-            this.elements.correctPredictions.textContent = this.correctPredictions;
-        }
-        
-        // 精度を計算・表示
-        if (this.elements.accuracyRate) {
-            if (this.totalPredictions > 0) {
-                const rate = ((this.correctPredictions / this.totalPredictions) * 100).toFixed(1);
-                this.elements.accuracyRate.textContent = `${rate}%`;
-                
-                // 精度に応じて色を変更
-                this.elements.accuracyRate.className = 'accuracy-number accuracy-percentage';
-                if (rate >= 70) {
-                    this.elements.accuracyRate.classList.add('high');
-                } else if (rate >= 50) {
-                    this.elements.accuracyRate.classList.add('medium');
-                } else {
-                    this.elements.accuracyRate.classList.add('low');
-                }
-            } else {
-                this.elements.accuracyRate.textContent = '-%';
-            }
-        }
-    }
 
     updateCurrentUnderstanding(understanding) {
         if (this.elements.currentUnderstanding && understanding) {
@@ -659,34 +552,6 @@ class ANICCARenderer {
         await this.loadCurrentUnderstanding();
     }
 
-    async loadPredictionStats() {
-        try {
-            const stats = await window.aniccaAPI.getPredictionStats();
-            if (this.elements.totalPredictions) {
-                this.elements.totalPredictions.textContent = stats.totalPredictions;
-            }
-            if (this.elements.correctPredictions) {
-                this.elements.correctPredictions.textContent = stats.correctPredictions;
-            }
-            if (this.elements.accuracyRate) {
-                const rate = ((stats.correctPredictions / stats.totalPredictions) * 100).toFixed(1);
-                this.elements.accuracyRate.textContent = `${rate}%`;
-                
-                // 精度に応じて色を変更
-                this.elements.accuracyRate.className = 'accuracy-number accuracy-percentage';
-                if (rate >= 70) {
-                    this.elements.accuracyRate.classList.add('high');
-                } else if (rate >= 50) {
-                    this.elements.accuracyRate.classList.add('medium');
-                } else {
-                    this.elements.accuracyRate.classList.add('low');
-                }
-            }
-        } catch (error) {
-            console.error('❌ Error loading prediction stats:', error);
-            this.showError('予測精度統計を読み込み中にエラーが発生しました');
-        }
-    }
 
     async loadLanguageSetting() {
         try {
@@ -737,19 +602,45 @@ class ANICCARenderer {
             console.error('❌ Error setting agent mode:', error);
         }
     }
+    
+    async loadModelSetting() {
+        try {
+            const savedModel = await window.aniccaAPI.getSetting('geminiModel');
+            if (savedModel && this.elements.modelSelect) {
+                this.elements.modelSelect.value = savedModel;
+                console.log('🤖 Loaded saved model:', savedModel);
+            }
+        } catch (error) {
+            console.error('❌ Error loading model setting:', error);
+        }
+    }
+    
+    async setModel(modelName) {
+        try {
+            await window.aniccaAPI.setModel(modelName);
+            console.log('🤖 Model set to:', modelName);
+            
+            // 視覚的フィードバック
+            const modelDisplayName = modelName === 'gemini-2.0-flash' ? 'Gemini 2.0 Flash' : 'Gemini 2.5 Flash';
+            const title = this.currentLanguage === 'ja' 
+                ? 'AIモデル変更' 
+                : 'AI Model Changed';
+            const message = this.currentLanguage === 'ja'
+                ? `${modelDisplayName} に切り替えました`
+                : `Switched to ${modelDisplayName}`;
+            
+            this.showNotification(title, 'info', message);
+        } catch (error) {
+            console.error('❌ Error setting model:', error);
+        }
+    }
 
     // User Profile関連のメソッド
     setupUserProfileElements() {
         // User Profile要素を取得
         const saveProfileBtn = document.getElementById('save-profile-btn');
         const profileInputs = {
-            emailBehavior: document.getElementById('email-behavior'),
-            docsBehavior: document.getElementById('docs-behavior'),
-            youtubeLimit: document.getElementById('youtube-limit'),
-            workStyle: document.getElementById('work-style'),
-            goals: document.getElementById('goals'),
-            gmailAddress: document.getElementById('gmail-address'),
-            gmailPassword: document.getElementById('gmail-password')
+            goals: document.getElementById('goals')
         };
         
         // 保存ボタンのイベントリスナー
@@ -767,13 +658,7 @@ class ANICCARenderer {
             if (result.success && result.profile) {
                 // プロファイルが存在する場合、フォームに値を設定
                 const profile = result.profile;
-                if (inputs.emailBehavior) inputs.emailBehavior.value = profile.email_behavior || '';
-                if (inputs.docsBehavior) inputs.docsBehavior.value = profile.docs_behavior || '';
-                if (inputs.youtubeLimit) inputs.youtubeLimit.value = profile.youtube_limit || '';
-                if (inputs.workStyle) inputs.workStyle.value = profile.work_style || '';
                 if (inputs.goals) inputs.goals.value = profile.goals || '';
-                if (inputs.gmailAddress) inputs.gmailAddress.value = profile.gmail_address || '';
-                if (inputs.gmailPassword) inputs.gmailPassword.value = profile.gmail_password || '';
                 
                 console.log('👤 User profile loaded');
             }
@@ -785,13 +670,13 @@ class ANICCARenderer {
     async saveUserProfile(inputs) {
         try {
             const profile = {
-                emailBehavior: inputs.emailBehavior?.value || '',
-                docsBehavior: inputs.docsBehavior?.value || '',
-                youtubeLimit: inputs.youtubeLimit?.value || '',
-                workStyle: inputs.workStyle?.value || '',
+                emailBehavior: '',
+                docsBehavior: '',
+                youtubeLimit: '',
+                workStyle: '',
                 goals: inputs.goals?.value || '',
-                gmailAddress: inputs.gmailAddress?.value || '',
-                gmailPassword: inputs.gmailPassword?.value || ''
+                gmailAddress: '',
+                gmailPassword: ''
             };
             
             const result = await window.aniccaAPI.saveUserProfile(profile);

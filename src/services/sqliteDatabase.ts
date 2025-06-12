@@ -3,7 +3,7 @@ import { promisify } from 'util';
 import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs';
-import { DatabaseInterface, ObservationData, HighlightsCacheData } from './database';
+import { DatabaseInterface, ObservationData, HighlightsCacheData } from './interfaces';
 
 // SQLite結果の型定義
 interface ObservationRow {

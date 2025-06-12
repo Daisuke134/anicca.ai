@@ -16,7 +16,7 @@
     "clean": "rm -rf dist/",
     "clean-build": "npm run clean && npm run build",
     "dist": "npm run build && electron-builder",
-    "dist:mac": "npm run build && electron-builder --mac --x64 --arm64",
+    "dist:mac": "npm run build && electron-builder --mac",
     "release": "npm run build && electron-builder --publish=never",
     "exa-mcp-server": "ts-node src/services/startExaRemoteMcp.ts"
   },

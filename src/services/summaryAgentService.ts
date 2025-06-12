@@ -24,17 +24,23 @@ export class SummaryAgentService {
         return '';
       }
 
-      // 最初の検索結果のテキストを取得
-      const firstResult = searchResults[0];
-      const contentText = (firstResult as any).text || firstResult.snippet || '';
+      // 複数の検索結果からテキストを収集
+      const contentTexts: string[] = [];
+      for (let i = 0; i < Math.min(3, searchResults.length); i++) {
+        const result = searchResults[i];
+        const text = (result as any).text || result.snippet || '';
+        if (text) {
+          contentTexts.push(`【結果${i + 1}】${result.title || ''}\n${text}`);
+        }
+      }
       
-      if (!contentText) {
-        console.log('📭 No text content in search result');
+      if (contentTexts.length === 0) {
+        console.log('📭 No text content in search results');
         return '';
       }
 
-      // 要約プロンプト
-      const prompt = this.buildSummaryPrompt(contentText, searchQuery);
+      // 要約プロンプト（複数結果対応）
+      const prompt = this.buildSummaryPrompt(contentTexts.join('\n\n'), searchQuery);
 
       // Gemini APIで要約
       const response = await fetch(this.proxyUrl, {
@@ -91,10 +97,11 @@ export class SummaryAgentService {
 ${searchQuery}
 
 【検索結果の内容】
-${contentText.substring(0, 2000)} // 最大2000文字
+${contentText.substring(0, 3000)} // 複数結果対応で最大3000文字
 
 【タスク】
-上記の検索結果から、ユーザーにとって最も価値のある情報を抽出し、60文字以内で要約してください。
+上記の検索結果（最大3件）から、ユーザーにとって最も価値のある情報を統合・抽出し、60文字以内で要約してください。
+複数の結果がある場合は、最も具体的で実用的な情報を優先してください。
 
 【要約の原則】
 - その場で価値が完結する具体的な情報のみ

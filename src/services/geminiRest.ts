@@ -357,7 +357,7 @@ export class GeminiRestService {
             // 検索実行（タイムアウト10秒）
           const searchPromise = this.exaMcpService.searchWeb(
             commentary.action.command, 
-            { numResults: 1 }
+            { numResults: 3 }
           );
           
           const timeoutPromise = new Promise<never>((_, reject) => 
@@ -699,12 +699,12 @@ ${this.formatUserProfile('ja')}
 \`\`\`
 
 action.typeで使用するツールを指定してください：
-- type: "wait" - 静観する（特に行動の必要がない時）
-  - command: "観察を続ける"
-  
 - type: "search" - ユーザーに役立つ情報を探して提案
   - commandは自然な日本語の質問文にすること
   - 例: "Gemini APIのタイムアウトエラーを解決する方法を調べて"
+  
+- type: "wait" - 静観する（特に行動の必要がない時）
+  - command: "観察を続ける"
   
 - type: "browser" - ブラウザで操作を実行（将来実装予定）
 

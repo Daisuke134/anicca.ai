@@ -300,95 +300,6 @@
             font-weight: 600;
         }
 
-        /* 予測検証セクション */
-        .verification-section {
-            background: rgba(255, 193, 7, 0.1);
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 12px;
-            border-left: 3px solid #FFC107;
-        }
-
-        .verification-title {
-            font-weight: 600;
-            color: #FF8F00;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        .verification-item {
-            margin-bottom: 5px;
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        .accuracy-indicator {
-            display: inline-block;
-            padding: 2px 8px;
-            border-radius: 10px;
-            font-size: 0.75rem;
-            font-weight: 600;
-            margin-left: 8px;
-        }
-
-        .accuracy-true {
-            background: #4CAF50;
-            color: white;
-        }
-
-        .accuracy-false {
-            background: #f44336;
-            color: white;
-        }
-
-        .accuracy-null {
-            background: #9E9E9E;
-            color: white;
-        }
-
-        /* 予測セクション */
-        .prediction-section {
-            background: rgba(103, 126, 234, 0.1);
-            padding: 12px;
-            border-radius: 8px;
-            border-left: 3px solid #667eea;
-        }
-
-        .prediction-title {
-            font-weight: 600;
-            color: #667eea;
-            margin-bottom: 8px;
-            font-size: 0.9rem;
-        }
-
-        .prediction-item {
-            margin-bottom: 5px;
-            font-size: 0.85rem;
-            line-height: 1.4;
-        }
-
-        /* 予測精度統計 */
-        .accuracy-stats {
-            text-align: center;
-        }
-
-        .accuracy-number {
-            font-size: 2.5rem;
-            font-weight: 700;
-            margin-bottom: 10px;
-        }
-
-        .accuracy-percentage {
-            color: #4CAF50;
-        }
-
-        .accuracy-percentage.medium {
-            color: #FF9800;
-        }
-
-        .accuracy-percentage.low {
-            color: #f44336;
-        }
 
         .stat-row {
             display: flex;
@@ -572,8 +483,7 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>🤖 anicca</h1>
-            <p data-i18n="subtitle">AI Screen Narrator - あなたの画面を理解し、実況します</p>
+            <h1>anicca</h1>
         </div>
 
         <div class="control-panel">
@@ -598,9 +508,13 @@
                     <label class="toggle-label">
                         <input type="checkbox" id="agent-mode-checkbox" />
                         <span data-i18n="agent-mode">Agent Mode</span>
-                        <span class="beta-badge">Beta</span>
                     </label>
                 </div>
+                
+                <select id="model-select" class="language-select" style="margin-left: 10px;">
+                    <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                    <option value="gemini-2.5-flash-preview-05-20">Gemini 2.5 Flash</option>
+                </select>
             </div>
 
             <div class="status-section">
@@ -611,35 +525,11 @@
 
         <div class="dashboard">
             <div class="main-content">
-                <div class="stats-row">
-                    <div class="card">
-                        <h3 data-i18n="system-status">📊 システム状態</h3>
-                        <div class="stat-row">
-                            <span class="stat-label" data-i18n="capture-interval">キャプチャ間隔:</span>
-                            <span class="stat-value" data-i18n="interval-8sec">約8秒</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label" data-i18n="ai-model">AI モデル:</span>
-                            <span class="stat-value">gemini-2.0-flash</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label" data-i18n="connection">接続状態:</span>
-                            <span id="connection-status" class="stat-value" data-i18n="connected">接続済み</span>
-                        </div>
-                    </div>
-
-                    <div class="card">
-                        <h3 data-i18n="prediction-accuracy">🎯 予測精度</h3>
-                        <div class="accuracy-stats">
-                            <div id="accuracy-rate" class="accuracy-number accuracy-percentage">-%</div>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label" data-i18n="total-predictions">総予測数:</span>
-                            <span id="total-predictions" class="stat-value">0</span>
-                        </div>
-                        <div class="stat-row">
-                            <span class="stat-label" data-i18n="correct-predictions">的中数:</span>
-                            <span id="correct-predictions" class="stat-value">0</span>
+                <div class="understanding-section">
+                    <h2 class="understanding-title" data-i18n="current-understanding">🧠 ANICCAの理解</h2>
+                    <div class="current-understanding">
+                        <div id="current-understanding" data-i18n="learning-patterns">
+                            画面を分析して、あなたの活動を理解中です...
                         </div>
                     </div>
                 </div>
@@ -669,41 +559,8 @@
                 
                 <div class="profile-form">
                     <div class="profile-question">
-                        <label for="email-behavior" data-i18n="email-behavior-label">メール作成で止まった時、どうして欲しいですか？</label>
-                        <textarea id="email-behavior" class="profile-input" placeholder="例：下書きを作成して欲しい" data-i18n-placeholder="email-behavior-placeholder"></textarea>
-                    </div>
-                    
-                    <div class="profile-question">
-                        <label for="docs-behavior" data-i18n="docs-behavior-label">ドキュメント作成で詰まった時、どうして欲しいですか？</label>
-                        <textarea id="docs-behavior" class="profile-input" placeholder="例：まず書き始めて欲しい" data-i18n-placeholder="docs-behavior-placeholder"></textarea>
-                    </div>
-                    
-                    <div class="profile-question">
-                        <label for="youtube-limit" data-i18n="youtube-limit-label">YouTubeはどのくらいまで見てもOKですか？</label>
-                        <textarea id="youtube-limit" class="profile-input" placeholder="例：3分まで、その後は作業に戻して" data-i18n-placeholder="youtube-limit-placeholder"></textarea>
-                    </div>
-                    
-                    <div class="profile-question">
-                        <label for="work-style" data-i18n="work-style-label">あなたの作業スタイルを教えてください</label>
-                        <textarea id="work-style" class="profile-input" placeholder="例：集中したい時は邪魔しないで、困った時は積極的に助けて" data-i18n-placeholder="work-style-placeholder"></textarea>
-                    </div>
-                    
-                    <div class="profile-question">
                         <label for="goals" data-i18n="goals-label">達成したい目標や、なりたい自分について</label>
                         <textarea id="goals" class="profile-input" placeholder="例：もっと生産的になりたい、SNSの時間を減らしたい" data-i18n-placeholder="goals-placeholder"></textarea>
-                    </div>
-                    
-                    <h3 style="margin-top: 30px; margin-bottom: 20px; color: #667eea;">🔐 Googleアカウント情報（任意）</h3>
-                    <p style="font-size: 0.9rem; color: #666; margin-bottom: 20px;">ANICCAがGmailやGoogle Docsにアクセスするために必要です。入力しない場合、これらのサービスは利用できません。</p>
-                    
-                    <div class="profile-question">
-                        <label for="gmail-address" data-i18n="gmail-address-label">Gmailアドレス</label>
-                        <input id="gmail-address" type="email" class="profile-input" style="min-height: 45px;" placeholder="例：your-email@gmail.com" data-i18n-placeholder="gmail-address-placeholder">
-                    </div>
-                    
-                    <div class="profile-question">
-                        <label for="gmail-password" data-i18n="gmail-password-label">Gmailパスワード</label>
-                        <input id="gmail-password" type="password" class="profile-input" style="min-height: 45px;" placeholder="パスワード" data-i18n-placeholder="gmail-password-placeholder">
                     </div>
                     
                     <div class="profile-actions">
@@ -711,15 +568,6 @@
                             💾 プロファイルを保存
                         </button>
                         <span id="profile-save-status" class="save-status"></span>
-                    </div>
-                </div>
-            </div>
-
-            <div class="understanding-section">
-                <h2 class="understanding-title" data-i18n="current-understanding">🧠 ANICCAの理解</h2>
-                <div class="current-understanding">
-                    <div id="current-understanding" data-i18n="learning-patterns">
-                        画面を分析して、あなたの活動を理解中です...
                     </div>
                 </div>
             </div>

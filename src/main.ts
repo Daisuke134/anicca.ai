@@ -7,6 +7,9 @@ import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
 import { BrowserUseService } from './services/browserUseService';
+import { ExaMCPService } from './services/exaMcpService';
+import { EncryptionService } from './services/encryptionService';
+import { SummaryAgentService } from './services/summaryAgentService';
 
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
@@ -21,6 +24,9 @@ let geminiService: GeminiRestService;
 let database: DatabaseInterface;
 let highlightsManager: HighlightsManager;
 let browserUseService: BrowserUseService;
+let exaMcpService: ExaMCPService;
+let encryptionService: EncryptionService;
+let summaryAgentService: SummaryAgentService;
 let currentLanguage = 'ja'; // デフォルト言語
 let isBrowserTaskRunning = false; // browser-useのタスクが実行中かどうか
 
@@ -111,15 +117,62 @@ async function initializeServices() {
     
     screenCapture = new ScreenCaptureService(8000); // 8秒間隔
     
+    // EncryptionServiceの初期化（最初に必要）
+    encryptionService = new EncryptionService();
+    
+    // ExaMCPServiceの初期化
+    exaMcpService = new ExaMCPService(encryptionService);
+    
     // Geminiサービスの初期化（APIキーは不要）
     geminiService = new GeminiRestService('', database as any);
+    
+    // MCPサービスをGeminiServiceに接続
+    geminiService.setMCPServices(encryptionService, exaMcpService);
     
     highlightsManager = new HighlightsManager(database as any, geminiService);
     
     // BrowserUseServiceの初期化
     browserUseService = new BrowserUseService();
     await browserUseService.initialize();
+    
+    // SummaryAgentServiceの初期化
+    summaryAgentService = new SummaryAgentService();
+    console.log('📝 Summary Agent Service initialized');
+    
+    // SummaryAgentServiceをGeminiServiceに接続
+    geminiService.setSummaryAgentService(summaryAgentService);
+    
+    // Exa APIキーをセット（初回のみ）
+    if (!encryptionService.hasExaApiKey()) {
+      console.log('🔑 Setting Exa API key for the first time...');
+      await encryptionService.saveExaApiKey('bab7464a-e478-4dba-8138-62ce5798db87');
+      console.log('✅ Exa API key saved');
+    }
 
+    // Exa MCP接続テスト
+    try {
+      console.log('🔌 Testing Exa MCP connection...');
+      
+      // Check for remote MCP server configuration
+      const remoteUrl = process.env.EXA_MCP_REMOTE_URL;
+      const connectionOptions = remoteUrl 
+        ? { mode: 'remote' as const, remoteUrl }
+        : { mode: 'local' as const };
+      
+      await exaMcpService.connectToExa(connectionOptions);
+      
+      // 利用可能なツールを確認
+      const tools = await exaMcpService.listTools();
+      console.log('📋 Available Exa tools:', tools.map(t => t.name));
+      
+      // 一旦切断（実際の使用時に再接続）
+      await exaMcpService.disconnect();
+      console.log('🔌 Exa MCP test completed, disconnected');
+    } catch (error) {
+      console.error('❌ Exa MCP test failed:', error);
+      // エラーでもアプリは継続
+    }
+    
     console.log('✅ All services initialized successfully');
     
     // スクリーンキャプチャのイベントリスナー設定
@@ -133,6 +186,48 @@ async function initializeServices() {
       `Failed to initialize ANICCA: ${error instanceof Error ? error.message : String(error)}`
     );
   }
+}
+
+// Electron標準通知を表示（作業を邪魔しない）
+function showCustomNotification(message: string) {
+  // 通知がサポートされているか確認
+  if (!Notification.isSupported()) {
+    console.error('❌ Notifications are not supported on this system');
+    return;
+  }
+  
+  // アイコンパスを設定
+  const iconPath = app.isPackaged 
+    ? path.join(process.resourcesPath, 'app.asar', 'assets', 'icon.png')
+    : path.join(__dirname, '../assets/icon.png');
+  
+  // Electron標準通知を作成
+  const notification = new Notification({
+    title: '🤖 ANICCA',
+    body: message,
+    icon: iconPath,
+    silent: false, // 通知音を鳴らす
+    timeoutType: 'default' // OSのデフォルト表示時間（5-10秒）
+  });
+  
+  // クリックイベントハンドラー
+  notification.on('click', () => {
+    console.log('🔔 Notification clicked');
+    
+    // メインウィンドウをフォーカス（オプション）
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+  
+  // 通知を表示
+  notification.show();
+  
+  console.log('📱 Electron notification shown:', message);
 }
 
 function setupScreenCaptureEvents() {
@@ -199,53 +294,26 @@ function setupScreenCaptureEvents() {
         throw new Error('Failed to analyze screen after retries');
       }
       
-      // アクションがある場合は通知を表示
-      if (commentary.action && commentary.action.message && commentary.action.command) {
-        console.log(`📝 Reasoning:`, commentary.action.reasoning);
-        
-        // Agent Mode設定を確認
-        let agentModeEnabled = false;
-        if (USE_SQLITE && database instanceof SQLiteDatabase) {
-          const agentModeSetting = await database.getSetting('agentMode');
-          agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
-        }
-        
-        console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
+      // Agent Mode設定を確認
+      let agentModeEnabled = false;
+      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+        const agentModeSetting = await database.getSetting('agentMode');
+        agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
+      }
+      
+      console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
+      
+      // アクションがある場合は処理を実行
+      if (commentary.action) {
+        console.log(`📝 Action type: ${commentary.action.type}, Reasoning: ${commentary.action.reasoning}`);
         
         if (agentModeEnabled) {
           // Agent ModeがONの場合のみ通知とアクションを実行
-          // macOSの開発環境での通知問題を回避
-          try {
-            const notification = new Notification({
-              title: 'ANICCA',
-              body: commentary.action.message,
-              // icon: path.join(__dirname, '../assets/icon.png'), // 一時的にコメントアウト
-              silent: false // 音を鳴らす
-            });
-            
-            notification.on('click', () => {
-              console.log('🖱️ Notification clicked');
-              // メインウィンドウをフォーカス
-              if (mainWindow && !mainWindow.isDestroyed()) {
-                if (mainWindow.isMinimized()) mainWindow.restore();
-                mainWindow.focus();
-              }
-            });
-            
-            notification.show();
-          } catch (notificationError) {
-            console.error('❌ Notification error:', notificationError);
-            // フォールバック：レンダラープロセスで通知を表示
-            mainWindow?.webContents.send('show-agent-notification', {
-              title: 'ANICCA',
-              body: commentary.action.message
-            });
-          }
-          console.log('🔔 Notification shown:', commentary.action.message);
+          // 通知は最後に統合して表示するため、ここでは表示しない
           
-          // コマンドを実行（実行中でない場合のみ）
-          if (commentary.action.command && !isBrowserTaskRunning) {
-            console.log('🤖 Executing command...');
+          // action.typeに基づいて処理を分岐
+          if (commentary.action.type === 'browser' && commentary.action.command && !isBrowserTaskRunning) {
+            console.log('🤖 Executing browser command...');
             isBrowserTaskRunning = true; // タスク実行開始
             
             try {
@@ -284,12 +352,18 @@ function setupScreenCaptureEvents() {
               isBrowserTaskRunning = false; // タスク実行完了
               console.log('✅ Browser task completed, ready for next task');
             }
-          } else if (commentary.action.command && isBrowserTaskRunning) {
+          } else if (commentary.action.type === 'browser' && isBrowserTaskRunning) {
             console.log('⏳ Browser task already running, skipping this cycle');
           }
+          // type: searchの場合は、geminiRest.tsで既に検索実行済み
         } else {
           console.log('⏸️ Agent Mode is OFF - Skipping notification and actions');
         }
+      }
+      
+      // Agent ModeがONでも通知は表示しない（全て要約エージェントが担当）
+      if (agentModeEnabled && commentary.action) {
+        console.log('📝 Action received - notification will be handled by summary agent');
       }
       
       // レンダラープロセスに送信
@@ -303,10 +377,15 @@ function setupScreenCaptureEvents() {
       
     } catch (error) {
       console.error('❌ Error processing frame:', error);
-      mainWindow?.webContents.send('error', { 
-        message: 'フレーム処理中にエラーが発生しました',
-        error: error instanceof Error ? error.message : String(error)
-      });
+      // 413エラーの場合はUIに通知しない（コンソールログのみ）
+      if (error instanceof Error && error.message.includes('413')) {
+        console.log('⏭️ Skipping UI notification for 413 error');
+      } else {
+        mainWindow?.webContents.send('error', { 
+          message: 'フレーム処理中にエラーが発生しました',
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
     }
   });
 
@@ -586,39 +665,6 @@ function setupIpcHandlers() {
     }
   });
 
-  // 予測精度統計取得
-  ipcMain.handle('get-prediction-stats', async () => {
-    try {
-      // データベースから全ての予測データを取得
-      const observations = await database.getRecentObservations(1000); // 直近1000件
-      
-      const predictions = observations.filter(obs => 
-        obs.verification_data && obs.verification_data.accuracy !== null
-      );
-      
-      const totalPredictions = predictions.length;
-      const correctPredictions = predictions.filter(pred => 
-        pred.verification_data.accuracy === true
-      ).length;
-      
-      const accuracy = totalPredictions > 0 
-        ? Math.round((correctPredictions / totalPredictions) * 100)
-        : 0;
-      
-      return {
-        totalPredictions,
-        correctPredictions,
-        accuracy
-      };
-    } catch (error) {
-      console.error('❌ Error getting prediction stats:', error);
-      return {
-        totalPredictions: 0,
-        correctPredictions: 0,
-        accuracy: 0
-      };
-    }
-  });
 
   // 全設定取得（Daily Viewなどで使用）
   ipcMain.handle('get-all-settings', async () => {
@@ -692,6 +738,109 @@ function setupIpcHandlers() {
         success: false,
         error: error instanceof Error ? error.message : String(error),
         highlights: []
+      };
+    }
+  });
+
+  // Gemini Model handler
+  ipcMain.handle('set-model', async (_, modelName: string) => {
+    try {
+      await geminiService.setModel(modelName);
+      return {
+        success: true
+      };
+    } catch (error) {
+      console.error('❌ Error setting model:', error);
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+
+  // MCP handlers
+  ipcMain.handle('mcp-set-exa-key', async (_, apiKey: string) => {
+    try {
+      await encryptionService.saveExaApiKey(apiKey);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error setting Exa API key:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      };
+    }
+  });
+
+  ipcMain.handle('mcp-connect-exa', async (_, options?: { mode: 'local' | 'remote', remoteUrl?: string }) => {
+    try {
+      // Check if Exa API key exists
+      const hasKey = encryptionService.hasExaApiKey();
+      if (!hasKey) {
+        return { 
+          success: false, 
+          error: 'Exa API key not found. Please set it first.' 
+        };
+      }
+      
+      await exaMcpService.connectToExa(options);
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error connecting to Exa MCP:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      };
+    }
+  });
+
+  ipcMain.handle('mcp-search-web', async (_, query: string, options?: any) => {
+    try {
+      if (!exaMcpService.isServerConnected()) {
+        // Try to connect first
+        await exaMcpService.connectToExa();
+      }
+      
+      const results = await exaMcpService.searchWeb(query, options);
+      return { success: true, data: results };
+    } catch (error) {
+      console.error('❌ Error searching with Exa:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      };
+    }
+  });
+
+  ipcMain.handle('mcp-list-tools', async () => {
+    try {
+      if (!exaMcpService.isServerConnected()) {
+        return { 
+          success: false, 
+          error: 'Not connected to MCP server' 
+        };
+      }
+      
+      const tools = await exaMcpService.listTools();
+      return { success: true, data: tools };
+    } catch (error) {
+      console.error('❌ Error listing MCP tools:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
+      };
+    }
+  });
+
+  ipcMain.handle('mcp-disconnect', async () => {
+    try {
+      await exaMcpService.disconnect();
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error disconnecting MCP:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
       };
     }
   });

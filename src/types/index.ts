@@ -50,4 +50,23 @@ export interface AppEvent {
   type: EventType;
   payload: any;
   timestamp: number;
+}
+
+// User Profile
+export interface UserProfile {
+  id?: number;
+  emailBehavior: string;
+  docsBehavior: string;
+  youtubeLimit: string;
+  workStyle: string;
+  goals: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface UserProfileQuestion {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: string;
 } 

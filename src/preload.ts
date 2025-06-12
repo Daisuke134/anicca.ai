@@ -27,15 +27,35 @@ contextBridge.exposeInMainWorld('aniccaAPI', {
   // 現在の理解
   getCurrentUnderstanding: () => ipcRenderer.invoke('get-current-understanding'),
   
-  // 予測精度統計
-  getPredictionStats: () => ipcRenderer.invoke('get-prediction-stats'),
   
   // ハイライト取得
   getHighlights: (period: string, targetDate: string) => ipcRenderer.invoke('get-highlights', period, targetDate),
   
+  // User Profile
+  getUserProfile: () => ipcRenderer.invoke('get-user-profile'),
+  saveUserProfile: (profile: {
+    emailBehavior: string;
+    docsBehavior: string;
+    youtubeLimit: string;
+    workStyle: string;
+    goals: string;
+  }) => ipcRenderer.invoke('save-user-profile', profile),
+  
+  // Gemini Model
+  setModel: (modelName: string) => ipcRenderer.invoke('set-model', modelName),
+  
   // Gemini APIプロキシ
   proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => 
     ipcRenderer.invoke('proxy-gemini-request', requestData),
+  
+  // MCP API
+  mcpAPI: {
+    setExaKey: (apiKey: string) => ipcRenderer.invoke('mcp-set-exa-key', apiKey),
+    connectExa: (options?: { mode?: 'local' | 'remote', remoteUrl?: string }) => ipcRenderer.invoke('mcp-connect-exa', options),
+    searchWeb: (query: string, options?: any) => ipcRenderer.invoke('mcp-search-web', query, options),
+    listTools: () => ipcRenderer.invoke('mcp-list-tools'),
+    disconnect: () => ipcRenderer.invoke('mcp-disconnect')
+  },
   
   // イベントリスナー
   onCommentary: (callback: (data: any) => void) => {
@@ -78,7 +98,24 @@ declare global {
       getAllSettings: () => Promise<any>;
       setMultipleSettings: (settings: Record<string, any>) => Promise<any>;
       getCurrentUnderstanding: () => Promise<any>;
-      getPredictionStats: () => Promise<any>;
+      getHighlights: (period: string, targetDate: string) => Promise<any>;
+      getUserProfile: () => Promise<any>;
+      saveUserProfile: (profile: {
+        emailBehavior: string;
+        docsBehavior: string;
+        youtubeLimit: string;
+        workStyle: string;
+        goals: string;
+      }) => Promise<any>;
+      setModel: (modelName: string) => Promise<any>;
+      proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => Promise<any>;
+      mcpAPI: {
+        setExaKey: (apiKey: string) => Promise<any>;
+        connectExa: () => Promise<any>;
+        searchWeb: (query: string, options?: any) => Promise<any>;
+        listTools: () => Promise<any>;
+        disconnect: () => Promise<any>;
+      };
       onCommentary: (callback: (data: any) => void) => void;
       onError: (callback: (data: any) => void) => void;
       onUnderstandingUpdate: (callback: (data: any) => void) => void;

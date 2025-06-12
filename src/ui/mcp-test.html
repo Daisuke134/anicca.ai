@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>MCP Integration Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+        }
+        .section {
+            margin: 20px 0;
+            padding: 15px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            border: none;
+            border-radius: 4px;
+            background: #667eea;
+            color: white;
+            cursor: pointer;
+        }
+        button:hover {
+            background: #5563d8;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        input {
+            padding: 8px;
+            margin: 5px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            width: 300px;
+        }
+        #results {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            margin-left: 10px;
+        }
+        .status.connected {
+            background: #4CAF50;
+            color: white;
+        }
+        .status.disconnected {
+            background: #f44336;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 MCP Integration Test - Exa Search</h1>
+        
+        <div class="section">
+            <h2>1. API Key Setup</h2>
+            <input type="password" id="apiKey" placeholder="Enter Exa API Key">
+            <button onclick="setApiKey()">Set API Key</button>
+            <p>Get your API key from <a href="https://exa.ai" target="_blank">https://exa.ai</a></p>
+        </div>
+        
+        <div class="section">
+            <h2>2. Connection <span id="connectionStatus" class="status disconnected">Disconnected</span></h2>
+            <button onclick="connectToExa()">Connect to Exa MCP</button>
+            <button onclick="disconnect()">Disconnect</button>
+            <button onclick="listTools()">List Available Tools</button>
+        </div>
+        
+        <div class="section">
+            <h2>3. Search Test</h2>
+            <input type="text" id="searchQuery" placeholder="Enter search query" value="latest AI developments 2025">
+            <br>
+            <button onclick="searchWeb()">Search Web</button>
+            <button onclick="searchPapers()">Search Research Papers</button>
+            <button onclick="searchWikipedia()">Search Wikipedia</button>
+        </div>
+        
+        <div id="results">Results will appear here...</div>
+    </div>
+
+    <script>
+        let isConnected = false;
+        
+        function log(message, isError = false) {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            results.textContent += `[${timestamp}] ${message}\n`;
+            if (isError) {
+                console.error(message);
+            } else {
+                console.log(message);
+            }
+        }
+        
+        async function setApiKey() {
+            const apiKey = document.getElementById('apiKey').value;
+            if (!apiKey) {
+                log('Please enter an API key', true);
+                return;
+            }
+            
+            try {
+                const result = await window.aniccaAPI.mcpAPI.setExaKey(apiKey);
+                if (result.success) {
+                    log('✅ API key saved successfully');
+                    document.getElementById('apiKey').value = '';
+                } else {
+                    log(`❌ Error setting API key: ${result.error}`, true);
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function connectToExa() {
+            try {
+                log('🔌 Connecting to Exa MCP server...');
+                const result = await window.aniccaAPI.mcpAPI.connectExa();
+                
+                if (result.success) {
+                    log('✅ Connected to Exa MCP server');
+                    isConnected = true;
+                    updateConnectionStatus(true);
+                } else {
+                    log(`❌ Connection failed: ${result.error}`, true);
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function disconnect() {
+            try {
+                const result = await window.aniccaAPI.mcpAPI.disconnect();
+                if (result.success) {
+                    log('✅ Disconnected');
+                    isConnected = false;
+                    updateConnectionStatus(false);
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function listTools() {
+            try {
+                log('📋 Listing available tools...');
+                const result = await window.aniccaAPI.mcpAPI.listTools();
+                
+                if (result.success) {
+                    log('Available tools:');
+                    result.data.forEach(tool => {
+                        log(`  - ${tool.name}: ${tool.description || 'No description'}`);
+                    });
+                } else {
+                    log(`❌ Error: ${result.error}`, true);
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        async function searchWeb() {
+            const query = document.getElementById('searchQuery').value;
+            if (!query) {
+                log('Please enter a search query', true);
+                return;
+            }
+            
+            try {
+                log(`🔍 Searching web for: "${query}"`);
+                const result = await window.aniccaAPI.mcpAPI.searchWeb(query, { numResults: 5 });
+                
+                if (result.success) {
+                    log(`\n✅ Found ${result.data.length} results:\n`);
+                    result.data.forEach((item, index) => {
+                        log(`${index + 1}. ${item.title}`);
+                        log(`   URL: ${item.url}`);
+                        if (item.snippet) {
+                            log(`   ${item.snippet}\n`);
+                        }
+                    });
+                } else {
+                    log(`❌ Search failed: ${result.error}`, true);
+                }
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, true);
+            }
+        }
+        
+        function updateConnectionStatus(connected) {
+            const status = document.getElementById('connectionStatus');
+            if (connected) {
+                status.textContent = 'Connected';
+                status.className = 'status connected';
+            } else {
+                status.textContent = 'Disconnected';
+                status.className = 'status disconnected';
+            }
+        }
+        
+        // Initialize
+        log('🚀 MCP Test Page Ready');
+        log('Please set your Exa API key first, then connect to the server.');
+    </script>
+</body>
+</html>

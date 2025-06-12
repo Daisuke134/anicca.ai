@@ -89,4 +89,59 @@ export class EncryptionService {
       throw error;
     }
   }
+
+  /**
+   * Exa APIキーを暗号化して保存
+   */
+  async saveExaApiKey(apiKey: string): Promise<void> {
+    try {
+      if (!safeStorage.isEncryptionAvailable()) {
+        throw new Error('Encryption is not available on this system');
+      }
+
+      const exaConfigFile = path.join(this.configPath, 'exa_encrypted.dat');
+      const encrypted = safeStorage.encryptString(apiKey);
+      fs.writeFileSync(exaConfigFile, encrypted);
+      
+      console.log('🔐 Exa API key encrypted and saved successfully');
+    } catch (error) {
+      console.error('❌ Failed to encrypt Exa API key:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * 暗号化されたExa APIキーを復号して取得
+   */
+  async getExaApiKey(): Promise<string | null> {
+    try {
+      const exaConfigFile = path.join(this.configPath, 'exa_encrypted.dat');
+      
+      if (!fs.existsSync(exaConfigFile)) {
+        console.log('🔍 No encrypted Exa API key found');
+        return null;
+      }
+
+      if (!safeStorage.isEncryptionAvailable()) {
+        throw new Error('Encryption is not available on this system');
+      }
+
+      const encrypted = fs.readFileSync(exaConfigFile);
+      const decrypted = safeStorage.decryptString(encrypted);
+      
+      console.log('🔓 Exa API key decrypted successfully');
+      return decrypted;
+    } catch (error) {
+      console.error('❌ Failed to decrypt Exa API key:', error);
+      return null;
+    }
+  }
+
+  /**
+   * 暗号化されたExa APIキーが存在するかチェック
+   */
+  hasExaApiKey(): boolean {
+    const exaConfigFile = path.join(this.configPath, 'exa_encrypted.dat');
+    return fs.existsSync(exaConfigFile);
+  }
 }

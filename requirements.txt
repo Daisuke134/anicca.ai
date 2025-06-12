@@ -1,6 +1,0 @@
-browser-use>=0.1.0
-langchain-google-genai>=2.0.0
-google-generativeai>=0.8.0
-python-dotenv>=1.0.0
-playwright>=1.40.0
-setuptools>=69.0.0

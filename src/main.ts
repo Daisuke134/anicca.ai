@@ -3,10 +3,8 @@ import path from 'path';
 import dotenv from 'dotenv';
 import { ScreenCaptureService } from './services/screenCapture';
 import { GeminiRestService } from './services/geminiRest';
-import { DatabaseService, DatabaseInterface } from './services/database';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
-import { BrowserUseService } from './services/browserUseService';
 import { ExaMCPService } from './services/exaMcpService';
 import { EncryptionService } from './services/encryptionService';
 import { SummaryAgentService } from './services/summaryAgentService';
@@ -21,17 +19,12 @@ dotenv.config({ path: envPath });
 let mainWindow: BrowserWindow | null = null;
 let screenCapture: ScreenCaptureService;
 let geminiService: GeminiRestService;
-let database: DatabaseInterface;
+let database: SQLiteDatabase;
 let highlightsManager: HighlightsManager;
-let browserUseService: BrowserUseService;
 let exaMcpService: ExaMCPService;
 let encryptionService: EncryptionService;
 let summaryAgentService: SummaryAgentService;
 let currentLanguage = 'ja'; // デフォルト言語
-let isBrowserTaskRunning = false; // browser-useのタスクが実行中かどうか
-
-// SQLiteを使用（Supabaseは非推奨）
-const USE_SQLITE = true;
 
 // macOSの通知を有効にするためにアプリケーションIDを設定
 if (process.platform === 'darwin') {
@@ -82,13 +75,8 @@ async function initializeServices() {
     console.log('🌐 Using external proxy server for API requests');
 
     // データベースサービスの初期化
-    if (USE_SQLITE) {
-      console.log('🗄️ Using SQLite database');
-      database = new SQLiteDatabase();
-    } else {
-      console.log('☁️ Using Supabase database');
-      database = new DatabaseService();
-    }
+    console.log('🗄️ Using SQLite database');
+    database = new SQLiteDatabase();
     
     try {
       await database.init();
@@ -103,7 +91,7 @@ async function initializeServices() {
     }
     
     // 言語設定の復元（SQLiteの場合のみ）
-    if (USE_SQLITE && database instanceof SQLiteDatabase) {
+    if (database instanceof SQLiteDatabase) {
       const savedLanguage = await database.getSetting('language');
       if (savedLanguage) {
         currentLanguage = savedLanguage;
@@ -124,16 +112,12 @@ async function initializeServices() {
     exaMcpService = new ExaMCPService(encryptionService);
     
     // Geminiサービスの初期化（APIキーは不要）
-    geminiService = new GeminiRestService('', database as any);
+    geminiService = new GeminiRestService('', database);
     
     // MCPサービスをGeminiServiceに接続
     geminiService.setMCPServices(encryptionService, exaMcpService);
     
-    highlightsManager = new HighlightsManager(database as any, geminiService);
-    
-    // BrowserUseServiceの初期化
-    browserUseService = new BrowserUseService();
-    await browserUseService.initialize();
+    highlightsManager = new HighlightsManager(database, geminiService);
     
     // SummaryAgentServiceの初期化
     summaryAgentService = new SummaryAgentService();
@@ -242,7 +226,7 @@ function setupScreenCaptureEvents() {
       }
       
       // 使用量制限チェック（SQLiteの場合のみ）
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         const limitCheck = await database.checkDailyLimit(1000); // 1日1000回制限
         
         if (!limitCheck.allowed) {
@@ -296,7 +280,7 @@ function setupScreenCaptureEvents() {
       
       // Agent Mode設定を確認
       let agentModeEnabled = false;
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         const agentModeSetting = await database.getSetting('agentMode');
         agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
       }
@@ -311,51 +295,8 @@ function setupScreenCaptureEvents() {
           // Agent ModeがONの場合のみ通知とアクションを実行
           // 通知は最後に統合して表示するため、ここでは表示しない
           
-          // action.typeに基づいて処理を分岐
-          if (commentary.action.type === 'browser' && commentary.action.command && !isBrowserTaskRunning) {
-            console.log('🤖 Executing browser command...');
-            isBrowserTaskRunning = true; // タスク実行開始
-            
-            try {
-              // User Profile情報を取得してcontextとして渡す
-              let userProfile: any = null;
-              if (USE_SQLITE && database instanceof SQLiteDatabase) {
-                userProfile = await database.getUserProfile();
-              }
-              
-              const context = userProfile ? {
-                gmail_address: userProfile.gmail_address || '',
-                gmail_password: userProfile.gmail_password || ''
-              } : {};
-              
-              const result = await browserUseService.executeTask(commentary.action.command as string, context);
-              console.log('📊 Browser-use result:', JSON.stringify(result, null, 2));
-              
-              // 実行結果をGeminiサービスに保存（次回の観察で使用）
-              const actionResult = {
-                browser_use_input: commentary.action.command,
-                browser_use_context: context,
-                success: result.success,
-                execution: result,
-                feedback: result.feedback
-              };
-              geminiService.setLastActionResult(actionResult);
-              console.log('💾 Action result saved:', actionResult);
-              
-              // エラーの場合は学習用に記録
-              if (!result.success && result.error) {
-                await browserUseService.recordErrorPattern(commentary.action.command as string, result.error);
-              }
-            } catch (error) {
-              console.error('❌ Command execution error:', error);
-            } finally {
-              isBrowserTaskRunning = false; // タスク実行完了
-              console.log('✅ Browser task completed, ready for next task');
-            }
-          } else if (commentary.action.type === 'browser' && isBrowserTaskRunning) {
-            console.log('⏳ Browser task already running, skipping this cycle');
-          }
           // type: searchの場合は、geminiRest.tsで既に検索実行済み
+          // type: browserは将来実装予定
         } else {
           console.log('⏸️ Agent Mode is OFF - Skipping notification and actions');
         }
@@ -409,7 +350,7 @@ function setupIpcHandlers() {
       console.log('🌍 Language set to:', currentLanguage);
       
       // SQLiteに言語設定を永続化
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         await database.setSetting('language', currentLanguage);
         console.log('🌍 Language setting persisted to SQLite');
       }
@@ -592,7 +533,7 @@ function setupIpcHandlers() {
   ipcMain.handle('get-setting', async (_, key: string) => {
     try {
       // SQLiteを使用している場合はデータベースから取得
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         const value = await database.getSetting(key);
         console.log(`⚙️ Setting retrieved from SQLite: ${key} = ${value}`);
         return value;
@@ -614,7 +555,7 @@ function setupIpcHandlers() {
   ipcMain.handle('set-setting', async (_, key: string, value: any) => {
     try {
       // SQLiteを使用している場合はデータベースに保存
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         await database.setSetting(key, String(value));
         console.log(`⚙️ Setting saved to SQLite: ${key} = ${value}`);
         
@@ -671,7 +612,7 @@ function setupIpcHandlers() {
     try {
       const settings: Record<string, any> = {};
       
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         // SQLiteから全設定を取得（将来の拡張のため）
         settings.language = await database.getSetting('language') || 'ja';
         // 他の設定項目もここで取得可能
@@ -695,7 +636,7 @@ function setupIpcHandlers() {
     try {
       let updatedCount = 0;
       
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         // SQLiteに一括保存
         for (const [key, value] of Object.entries(settingsObject)) {
           await database.setSetting(key, String(value));
@@ -848,7 +789,7 @@ function setupIpcHandlers() {
   // User Profile handlers
   ipcMain.handle('get-user-profile', async () => {
     try {
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         const profile = await database.getUserProfile();
         return {
           success: true,
@@ -878,7 +819,7 @@ function setupIpcHandlers() {
     gmailPassword: string;
   }) => {
     try {
-      if (USE_SQLITE && database instanceof SQLiteDatabase) {
+      if (database instanceof SQLiteDatabase) {
         await database.saveUserProfile(profile);
         console.log('👤 User profile saved successfully');
         return {

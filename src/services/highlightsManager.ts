@@ -1,11 +1,11 @@
-import { DatabaseService } from './database';
+import { DatabaseInterface } from './interfaces';
 import { GeminiRestService } from './geminiRest';
 
 export class HighlightsManager {
-  private database: DatabaseService;
+  private database: DatabaseInterface;
   private geminiService: GeminiRestService;
 
-  constructor(database: DatabaseService, geminiService: GeminiRestService) {
+  constructor(database: DatabaseInterface, geminiService: GeminiRestService) {
     this.database = database;
     this.geminiService = geminiService;
   }

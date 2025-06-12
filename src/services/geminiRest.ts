@@ -1,5 +1,5 @@
 import { ScreenFrame } from '../types';
-import { DatabaseService } from './database';
+import { DatabaseInterface } from './interfaces';
 import { ExaMCPService } from './exaMcpService';
 import { EncryptionService } from './encryptionService';
 import { SummaryAgentService } from './summaryAgentService';
@@ -43,7 +43,7 @@ export class GeminiRestService {
   private previousObservation: PreviousObservation | null = null;
   private previousActionResult: any = null;
   private currentUnderstanding: string = "ユーザーの行動パターンを学習中です。";
-  private database: DatabaseService;
+  private database: DatabaseInterface;
   private userProfile: any = null;
   private modelName: string = 'gemini-2.0-flash'; // デフォルトモデル
   private exaMcpService: ExaMCPService | null = null;
@@ -54,7 +54,7 @@ export class GeminiRestService {
   private minSearchInterval: number = 30000; // 最小検索間隔: 30秒
   private sameTopicInterval: number = 60000; // 同じトピックの検索間隔: 60秒
 
-  constructor(apiKey: string, database: DatabaseService) {
+  constructor(apiKey: string, database: DatabaseInterface) {
     // APIキーは使用しない（プロキシサーバー側で管理）
     this.proxyUrl = 'https://anicca-proxy-ten.vercel.app/api/gemini';
     this.database = database;

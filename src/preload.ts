@@ -44,6 +44,9 @@ contextBridge.exposeInMainWorld('aniccaAPI', {
   // Gemini Model
   setModel: (modelName: string) => ipcRenderer.invoke('set-model', modelName),
   
+  // SDK Logs
+  openSDKLogs: () => ipcRenderer.invoke('open-sdk-logs'),
+  
   // Gemini APIプロキシ
   proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => 
     ipcRenderer.invoke('proxy-gemini-request', requestData),
@@ -108,6 +111,7 @@ declare global {
         goals: string;
       }) => Promise<any>;
       setModel: (modelName: string) => Promise<any>;
+      openSDKLogs: () => Promise<any>;
       proxyGeminiRequest: (requestData: { method: string; endpoint: string; data?: any }) => Promise<any>;
       mcpAPI: {
         setExaKey: (apiKey: string) => Promise<any>;

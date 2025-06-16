@@ -36,6 +36,7 @@
 ## 🎮 How to Use
 
 - **No Setup Required**: ANICCA works out of the box - no API keys or configuration needed
+- **Claude Code SDK Included**: Advanced AI capabilities powered by Claude - create apps, solve problems, and automate tasks
 - **Real-time Analysis**: ANICCA continuously observes your screen and provides insights
 - **Activity Dashboard**: View your daily productivity patterns and highlights
 - **Agent Mode**: Enable proactive assistance to help maintain focus

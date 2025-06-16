@@ -2,7 +2,8 @@ import { app, BrowserWindow, ipcMain, screen, Notification } from 'electron';
 import path from 'path';
 import dotenv from 'dotenv';
 import { ScreenCaptureService } from './services/screenCapture';
-import { GeminiRestService } from './services/geminiRest';
+import { GeminiObserverService } from './services/geminiObserverService';
+import { ClaudeExecutorService } from './services/claudeExecutorService';
 import { SQLiteDatabase } from './services/sqliteDatabase';
 import { HighlightsManager } from './services/highlightsManager';
 import { ExaMCPService } from './services/exaMcpService';
@@ -17,8 +18,10 @@ dotenv.config({ path: envPath });
 
 
 let mainWindow: BrowserWindow | null = null;
+let sdkLogWindow: BrowserWindow | null = null;
 let screenCapture: ScreenCaptureService;
-let geminiService: GeminiRestService;
+let geminiObserver: GeminiObserverService;
+let claudeExecutor: ClaudeExecutorService;
 let database: SQLiteDatabase;
 let highlightsManager: HighlightsManager;
 let exaMcpService: ExaMCPService;
@@ -64,6 +67,41 @@ async function createWindow() {
 
   mainWindow.on('closed', () => {
     mainWindow = null;
+    // メインウィンドウが閉じられたらSDKログウィンドウも閉じる
+    if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+      sdkLogWindow.close();
+    }
+  });
+}
+
+// Claude SDK専用ログウィンドウを作成
+function createSDKLogWindow() {
+  if (!mainWindow) return;
+  
+  const mainBounds = mainWindow.getBounds();
+  
+  sdkLogWindow = new BrowserWindow({
+    width: 600,
+    height: 800,
+    x: mainBounds.x + mainBounds.width + 10,
+    y: mainBounds.y,
+    title: 'Claude SDK Logs',
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+      preload: path.join(__dirname, 'preload.js')
+    },
+    parent: mainWindow,
+    minimizable: true,
+    maximizable: true,
+    closable: true
+  });
+
+  // SDKログ用のHTMLを読み込み
+  sdkLogWindow.loadFile(path.join(__dirname, 'ui/sdk-logs.html'));
+  
+  sdkLogWindow.on('closed', () => {
+    sdkLogWindow = null;
   });
 }
 
@@ -103,7 +141,21 @@ async function initializeServices() {
       }
     }
     
-    screenCapture = new ScreenCaptureService(8000); // 8秒間隔
+    // スクリーンキャプチャの間隔を設定から取得（デフォルト8秒）
+    let captureInterval = 8000;
+    if (database instanceof SQLiteDatabase) {
+      const savedInterval = await database.getSetting('captureInterval');
+      if (savedInterval) {
+        captureInterval = parseInt(savedInterval, 10);
+        console.log('⏱️ Capture interval restored from SQLite:', captureInterval + 'ms');
+      } else {
+        // 初回起動時にデフォルト値を保存
+        await database.setSetting('captureInterval', String(captureInterval));
+        console.log('⏱️ Default capture interval saved to SQLite:', captureInterval + 'ms');
+      }
+    }
+    
+    screenCapture = new ScreenCaptureService(captureInterval);
     
     // EncryptionServiceの初期化（最初に必要）
     encryptionService = new EncryptionService();
@@ -111,28 +163,33 @@ async function initializeServices() {
     // ExaMCPServiceの初期化
     exaMcpService = new ExaMCPService(encryptionService);
     
-    // Geminiサービスの初期化（APIキーは不要）
-    geminiService = new GeminiRestService('', database);
+    // Gemini観察サービスの初期化
+    geminiObserver = new GeminiObserverService('', database);
+    console.log('👁️ Gemini Observer Service initialized');
     
-    // MCPサービスをGeminiServiceに接続
-    geminiService.setMCPServices(encryptionService, exaMcpService);
+    // Claude実行サービスの初期化
+    claudeExecutor = new ClaudeExecutorService(database);
+    console.log('🤖 Claude Executor Service initialized');
     
-    highlightsManager = new HighlightsManager(database, geminiService);
+    // SDKログイベントをリッスン
+    claudeExecutor.on('sdk-log', (logData) => {
+      // SDKログウィンドウが開いている場合は転送
+      if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+        sdkLogWindow.webContents.send('sdk-log', logData);
+      }
+    });
     
-    // SummaryAgentServiceの初期化
+    // デフォルトMCPサーバーをセットアップ
+    await claudeExecutor.setupDefaultMCPServers();
+    
+    // HighlightsManagerにはgeminiObserverを渡す
+    highlightsManager = new HighlightsManager(database, geminiObserver as any);
+    
+    // SummaryAgentServiceの初期化（将来的に必要であれば）
     summaryAgentService = new SummaryAgentService();
     console.log('📝 Summary Agent Service initialized');
     
-    // SummaryAgentServiceをGeminiServiceに接続
-    geminiService.setSummaryAgentService(summaryAgentService);
-    
-    // Exa APIキーを環境変数から取得して設定（初回のみ）
-    const EXA_API_KEY = process.env.EXA_API_KEY || '6d8e64c3-f369-4e6b-a501-aeee12a5d399';
-    if (!encryptionService.hasExaApiKey()) {
-      console.log('🔑 Setting Exa API key from environment...');
-      await encryptionService.saveExaApiKey(EXA_API_KEY);
-      console.log('✅ Exa API key saved');
-    }
+    // Exa MCPは無効化済み（パフォーマンス向上のため）
     
     console.log('✅ All services initialized successfully');
     
@@ -196,9 +253,9 @@ function setupScreenCaptureEvents() {
     try {
       console.log('📸 Frame captured, analyzing with anicca...');
       
-      // geminiServiceが初期化されているかチェック
-      if (!geminiService) {
-        console.error('❌ GeminiService not initialized, skipping analysis');
+      // 観察サービスが初期化されているかチェック
+      if (!geminiObserver) {
+        console.error('❌ GeminiObserver not initialized, skipping analysis');
         return;
       }
       
@@ -238,7 +295,7 @@ function setupScreenCaptureEvents() {
       
       while (retryCount <= maxRetries) {
         try {
-          commentary = await geminiService.analyzeScreen(frame, currentLanguage);
+          commentary = await geminiObserver.analyzeScreen(frame, currentLanguage as 'ja' | 'en');
           break; // 成功したらループを抜ける
         } catch (error) {
           if (error instanceof Error && error.message.includes('Retryable error') && retryCount < maxRetries) {
@@ -264,24 +321,93 @@ function setupScreenCaptureEvents() {
       
       console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
       
-      // アクションがある場合は処理を実行
-      if (commentary.action) {
-        console.log(`📝 Action type: ${commentary.action.type}, Reasoning: ${commentary.action.reasoning}`);
-        
-        if (agentModeEnabled) {
-          // Agent ModeがONの場合のみ通知とアクションを実行
-          // 通知は最後に統合して表示するため、ここでは表示しない
+      // アクションの処理
+      if (commentary.action && commentary.action.reasoning) {
+        // action: null but with reasoning
+        if (!commentary.action.request) {
+          console.log('🧘 Gemini decided to wait');
+          console.log(`💭 Reasoning: ${commentary.action.reasoning}`);
+        } else if (agentModeEnabled) {
+          // アクションを実行
+          console.log(`🎯 Action suggested by Gemini: general`);
+          console.log(`💡 Reasoning: ${commentary.action.reasoning}`);
           
-          // type: searchの場合は、geminiRest.tsで既に検索実行済み
-          // type: browserは将来実装予定
-        } else {
-          console.log('⏸️ Agent Mode is OFF - Skipping notification and actions');
+          // Claude Executorの現在の状態を確認
+          const executorState = claudeExecutor.getCurrentState();
+        
+        if (executorState.isExecuting) {
+          console.log('⏳ Claude is still executing a previous action');
+          console.log(`📋 Queue size: ${executorState.queueSize}`);
+          
+          // キューがいっぱいの場合はスキップ（キューサイズ0で実行中は全て破棄）
+          if (executorState.queueSize >= 0) {
+            console.log('🚫 Another action is executing, skipping this action');
+            mainWindow?.webContents.send('action-skipped', {
+              action: commentary.action,
+              reason: 'queue_full',
+              queueSize: executorState.queueSize,
+              timestamp: Date.now()
+            });
+            
+            // Geminiにフィードバックとしてアクションがスキップされたことを伝える
+            geminiObserver.setLastActionResult({
+              success: false,
+              error: 'Action queue is full',
+              skipped: true
+            });
+            return;
+          }
         }
-      }
-      
-      // Agent ModeがONでも通知は表示しない（全て要約エージェントが担当）
-      if (agentModeEnabled && commentary.action) {
-        console.log('📝 Action received - notification will be handled by summary agent');
+        
+        // Claude Executorにアクションを渡して実行
+        try {
+          const actionRequest = {
+            type: 'general' as const, // 一般的なリクエストとして扱う
+            reasoning: commentary.action.reasoning,
+            parameters: {
+              query: commentary.action.request // 新しいrequestフィールドを使用
+            },
+            context: commentary.commentary
+          };
+          
+          console.log('🤖 Sending action to Claude Executor...');
+          
+          // GeminiにpendingActionを設定
+          geminiObserver.setPendingAction(commentary.action);
+          
+          const result = await claudeExecutor.executeAction(actionRequest);
+          
+          if (result.success) {
+            console.log('✅ Action executed successfully');
+            // Claude SDK自身が通知を出すため、ここでの通知は一旦無効化
+            // if (result.result) {
+            //   showCustomNotification(`アクション完了: ${commentary.action.type}`);
+            // }
+          } else {
+            console.error('❌ Action execution failed:', result.error);
+            
+            // キューエラーの場合は特別な処理
+            if (result.error === 'Another action is being executed') {
+              console.log('📋 Action was queued for later execution');
+            }
+          }
+          
+          // 実行結果をUIに送信
+          mainWindow?.webContents.send('action-executed', {
+            action: commentary.action,
+            result: result,
+            timestamp: Date.now()
+          });
+          
+          // Geminiに実行結果をフィードバック
+          geminiObserver.setLastActionResult(result);
+          
+          } catch (error) {
+            console.error('❌ Error executing action:', error);
+          }
+        } else if (!agentModeEnabled) {
+          console.log('⏸️ Agent Mode is OFF - Action suggested but not executed');
+        }
       }
       
       // レンダラープロセスに送信
@@ -391,7 +517,10 @@ function setupIpcHandlers() {
 
   // 状態取得
   ipcMain.handle('get-state', async () => {
-    return geminiService.getCurrentState();
+    return {
+      observer: geminiObserver.getCurrentState(),
+      executor: claudeExecutor.getCurrentState()
+    };
   });
 
   // 健康状態チェック
@@ -562,8 +691,8 @@ function setupIpcHandlers() {
   // 現在の理解度取得
   ipcMain.handle('get-current-understanding', async () => {
     try {
-      // まずGeminiサービスから取得
-      const state = geminiService.getCurrentState();
+      // Gemini Observerから取得
+      const state = geminiObserver.getCurrentState();
       let currentUnderstanding = state.currentUnderstanding;
       
       // デフォルトメッセージの場合、データベースから最新の理解を試行
@@ -663,7 +792,7 @@ function setupIpcHandlers() {
   // Gemini Model handler
   ipcMain.handle('set-model', async (_, modelName: string) => {
     try {
-      await geminiService.setModel(modelName);
+      await geminiObserver.setModel(modelName);
       return {
         success: true
       };
@@ -672,6 +801,24 @@ function setupIpcHandlers() {
       return {
         success: false,
         error: error instanceof Error ? error.message : String(error)
+      };
+    }
+  });
+
+  // SDK Log handlers
+  ipcMain.handle('open-sdk-logs', async () => {
+    try {
+      if (!sdkLogWindow || sdkLogWindow.isDestroyed()) {
+        createSDKLogWindow();
+      } else {
+        sdkLogWindow.focus();
+      }
+      return { success: true };
+    } catch (error) {
+      console.error('❌ Error opening SDK log window:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : String(error) 
       };
     }
   });
@@ -829,7 +976,7 @@ app.whenReady().then(async () => {
     
     // 初期状態をレンダラーに送信
     setTimeout(() => {
-      const state = geminiService.getCurrentState();
+      const state = geminiObserver.getCurrentState();
       mainWindow?.webContents.send('understanding-update', {
         understanding: state.currentUnderstanding
       });

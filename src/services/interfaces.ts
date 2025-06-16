@@ -31,5 +31,11 @@ export interface DatabaseInterface {
   getHighlightsCache(period: string, targetDate: string): Promise<any | null>;
   saveHighlightsCache(data: HighlightsCacheData): Promise<void>;
   getLatestObservationId(): Promise<number | null>;
+  checkDailyLimit(limit: number): Promise<{ allowed: boolean; usage: number; remaining: number }>;
+  incrementTodayUsage(): Promise<number>;
+  getSetting(key: string): Promise<string | null>;
+  setSetting(key: string, value: string): Promise<void>;
+  getUserProfile(): Promise<any>;
+  saveUserProfile(profile: any): Promise<void>;
   close(): Promise<void>;
 }

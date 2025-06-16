@@ -36,6 +36,7 @@
   },
   "license": "MIT",
   "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.22",
     "@google/generative-ai": "^0.24.1",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@types/sqlite3": "^5.1.0",

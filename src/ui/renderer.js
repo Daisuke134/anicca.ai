@@ -104,6 +104,7 @@ class ANICCARenderer {
             startBtn: document.getElementById('start-btn'),
             stopBtn: document.getElementById('stop-btn'),
             dailyViewBtn: document.getElementById('daily-view-btn'),
+            sdkLogsBtn: document.getElementById('sdk-logs-btn'),
             languageSelect: document.getElementById('language-select'),
             agentModeCheckbox: document.getElementById('agent-mode-checkbox'),
             modelSelect: document.getElementById('model-select'),
@@ -163,6 +164,9 @@ class ANICCARenderer {
 
         // Daily viewボタン
         this.elements.dailyViewBtn?.addEventListener('click', () => this.openDailyView());
+        
+        // SDK Logsボタン
+        this.elements.sdkLogsBtn?.addEventListener('click', () => this.openSDKLogs());
         
         // Agent Modeトグル
         this.elements.agentModeCheckbox?.addEventListener('change', (e) => {
@@ -513,6 +517,19 @@ class ANICCARenderer {
             console.error('Error saving language before navigation:', error);
             window.location.href = 'daily.html';
         });
+    }
+    
+    async openSDKLogs() {
+        // SDK Logsウィンドウを開く
+        console.log('🤖 Opening SDK logs window...');
+        try {
+            const result = await window.aniccaAPI.openSDKLogs();
+            if (!result.success) {
+                console.error('Failed to open SDK logs:', result.error);
+            }
+        } catch (error) {
+            console.error('Error opening SDK logs:', error);
+        }
     }
 
     async loadCurrentUnderstanding() {

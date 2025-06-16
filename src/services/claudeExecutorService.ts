@@ -146,7 +146,7 @@ export class ClaudeExecutorService extends EventEmitter {
   private logSDKMessage(message: SDKMessage): void {
     const msg = message as any;
     let logContent = '';
-    let logType = message.type;
+    let logType: 'system' | 'assistant' | 'user' | 'result' | 'tool' | 'error' = message.type as any;
     
     switch (message.type) {
       case 'system':
@@ -216,8 +216,8 @@ export class ClaudeExecutorService extends EventEmitter {
         break;
         
       default:
-        logContent = `Message type: ${message.type}`;
-        console.log('📨 Message type:', message.type);
+        logContent = `Message type: ${(message as any).type}`;
+        console.log('📨 Message type:', (message as any).type);
     }
     
     // イベントを発火してログウィンドウに送信

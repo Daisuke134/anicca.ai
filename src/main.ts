@@ -29,10 +29,86 @@ let encryptionService: EncryptionService;
 let summaryAgentService: SummaryAgentService;
 let currentLanguage = 'ja'; // デフォルト言語
 
+// ログバッファ（SDK Logsウィンドウが開く前のログを保存）
+const logBuffer: Array<{
+  type: 'system' | 'error' | 'assistant' | 'user' | 'result' | 'tool';
+  content: string;
+  timestamp: number;
+}> = [];
+
 // macOSの通知を有効にするためにアプリケーションIDを設定
 if (process.platform === 'darwin') {
   app.setAppUserModelId('com.anicca.agi');
 }
+
+// メインプロセスのconsole.logをインターセプトしてSDK Logsウィンドウに転送
+const originalConsoleLog = console.log;
+const originalConsoleError = console.error;
+const originalConsoleWarn = console.warn;
+
+console.log = (...args: any[]) => {
+  originalConsoleLog.apply(console, args);
+  
+  const logMessage = args.map(arg => 
+    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+  ).join(' ');
+  
+  const logEntry = {
+    type: 'system' as const,
+    content: `[Main Process] ${logMessage}`,
+    timestamp: Date.now()
+  };
+  
+  // SDK Logsウィンドウが開いている場合は転送
+  if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+    sdkLogWindow.webContents.send('sdk-log', logEntry);
+  } else {
+    // ウィンドウがまだない場合はバッファに保存
+    logBuffer.push(logEntry);
+  }
+};
+
+console.error = (...args: any[]) => {
+  originalConsoleError.apply(console, args);
+  
+  const logMessage = args.map(arg => 
+    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+  ).join(' ');
+  
+  const logEntry = {
+    type: 'error' as const,
+    content: `[Main Process Error] ${logMessage}`,
+    timestamp: Date.now()
+  };
+  
+  if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+    sdkLogWindow.webContents.send('sdk-log', logEntry);
+  } else {
+    // ウィンドウがまだない場合はバッファに保存
+    logBuffer.push(logEntry);
+  }
+};
+
+console.warn = (...args: any[]) => {
+  originalConsoleWarn.apply(console, args);
+  
+  const logMessage = args.map(arg => 
+    typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
+  ).join(' ');
+  
+  const logEntry = {
+    type: 'system' as const,
+    content: `[Main Process Warning] ${logMessage}`,
+    timestamp: Date.now()
+  };
+  
+  if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+    sdkLogWindow.webContents.send('sdk-log', logEntry);
+  } else {
+    // ウィンドウがまだない場合はバッファに保存
+    logBuffer.push(logEntry);
+  }
+};
 
 async function createWindow() {
   // 画面のサイズを取得
@@ -60,10 +136,10 @@ async function createWindow() {
     mainWindow?.show();
   });
 
-  // 開発者ツール（開発時のみ）
-  if (process.env.NODE_ENV === 'development') {
-    mainWindow.webContents.openDevTools();
-  }
+  // 開発者ツール（開発時のみ）- 自動表示を無効化
+  // if (process.env.NODE_ENV === 'development') {
+  //   mainWindow.webContents.openDevTools();
+  // }
 
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -99,6 +175,21 @@ function createSDKLogWindow() {
 
   // SDKログ用のHTMLを読み込み
   sdkLogWindow.loadFile(path.join(__dirname, 'ui/sdk-logs.html'));
+  
+  // ウィンドウのコンテンツが読み込まれたら、バッファリングされたログを送信
+  sdkLogWindow.webContents.once('did-finish-load', () => {
+    console.log(`📋 Sending ${logBuffer.length} buffered logs to SDK Logs window`);
+    
+    // バッファに保存されたログを順番に送信
+    logBuffer.forEach(logEntry => {
+      if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+        sdkLogWindow.webContents.send('sdk-log', logEntry);
+      }
+    });
+    
+    // バッファをクリア
+    logBuffer.length = 0;
+  });
   
   sdkLogWindow.on('closed', () => {
     sdkLogWindow = null;
@@ -168,14 +259,24 @@ async function initializeServices() {
     console.log('👁️ Gemini Observer Service initialized');
     
     // Claude実行サービスの初期化
-    claudeExecutor = new ClaudeExecutorService(database);
-    console.log('🤖 Claude Executor Service initialized');
+    console.log('🔍 [DEBUG] Starting ClaudeExecutorService initialization...');
+    try {
+      claudeExecutor = new ClaudeExecutorService(database);
+      console.log('🤖 Claude Executor Service initialized');
+      console.log('🔍 [DEBUG] ClaudeExecutorService instance created successfully');
+    } catch (error) {
+      console.error('🔍 [DEBUG] Error initializing ClaudeExecutorService:', error);
+      throw error;
+    }
     
     // SDKログイベントをリッスン
     claudeExecutor.on('sdk-log', (logData) => {
       // SDKログウィンドウが開いている場合は転送
       if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
         sdkLogWindow.webContents.send('sdk-log', logData);
+      } else {
+        // ウィンドウがまだない場合はバッファに保存
+        logBuffer.push(logData);
       }
     });
     
@@ -810,6 +911,24 @@ function setupIpcHandlers() {
     try {
       if (!sdkLogWindow || sdkLogWindow.isDestroyed()) {
         createSDKLogWindow();
+        
+        // SDK Logsウィンドウが準備できたら、起動メッセージを送信
+        setTimeout(() => {
+          if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
+            sdkLogWindow.webContents.send('sdk-log', {
+              type: 'system',
+              content: '[Main Process] SDK Logs window opened - メインプロセスのログが表示されます',
+              timestamp: Date.now()
+            });
+            
+            // 重要な初期化ログを再送信
+            sdkLogWindow.webContents.send('sdk-log', {
+              type: 'system',
+              content: '[Main Process] 📊 ANICCA services status check...',
+              timestamp: Date.now()
+            });
+          }
+        }, 500);
       } else {
         sdkLogWindow.focus();
       }

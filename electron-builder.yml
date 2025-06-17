@@ -7,6 +7,8 @@ files:
   - node_modules/**/*
   - package.json
   - assets/**/*
+asarUnpack:
+  - "**/node_modules/@anthropic-ai/claude-code/**/*"
 mac:
   category: public.app-category.productivity
   icon: icon.icns

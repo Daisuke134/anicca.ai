@@ -1,14 +1,11 @@
 import { app, BrowserWindow, ipcMain, screen, Notification } from 'electron';
 import path from 'path';
 import dotenv from 'dotenv';
-import { ScreenCaptureService } from './services/screenCapture';
-import { GeminiObserverService } from './services/geminiObserverService';
+// import { ScreenCaptureService } from './services/screenCapture'; // 音声版では不要
 import { ClaudeExecutorService } from './services/claudeExecutorService';
 import { SQLiteDatabase } from './services/sqliteDatabase';
-import { HighlightsManager } from './services/highlightsManager';
-import { ExaMCPService } from './services/exaMcpService';
 import { EncryptionService } from './services/encryptionService';
-import { SummaryAgentService } from './services/summaryAgentService';
+import { AudioService } from './services/audioService';
 
 // 環境変数を読み込み（パッケージ化対応）
 const envPath = app.isPackaged 
@@ -19,14 +16,11 @@ dotenv.config({ path: envPath });
 
 let mainWindow: BrowserWindow | null = null;
 let sdkLogWindow: BrowserWindow | null = null;
-let screenCapture: ScreenCaptureService;
-let geminiObserver: GeminiObserverService;
+// let screenCapture: ScreenCaptureService; // 音声版では不要
 let claudeExecutor: ClaudeExecutorService;
 let database: SQLiteDatabase;
-let highlightsManager: HighlightsManager;
-let exaMcpService: ExaMCPService;
 let encryptionService: EncryptionService;
-let summaryAgentService: SummaryAgentService;
+let audioService: AudioService; // 音声処理サービス
 let currentLanguage = 'ja'; // デフォルト言語
 
 // ログバッファ（SDK Logsウィンドウが開く前のログを保存）
@@ -246,36 +240,22 @@ async function initializeServices() {
       }
     }
     
-    screenCapture = new ScreenCaptureService(captureInterval);
+    // screenCapture = new ScreenCaptureService(captureInterval); // 音声版では不要
     
     // EncryptionServiceの初期化（最初に必要）
     encryptionService = new EncryptionService();
     
-    // ExaMCPServiceの初期化
-    exaMcpService = new ExaMCPService(encryptionService);
     
-    // Gemini観察サービスの初期化
-    geminiObserver = new GeminiObserverService('', database);
-    console.log('👁️ Gemini Observer Service initialized');
     
-    // Claude実行サービスの初期化
-    console.log('🔍 [DEBUG] Starting ClaudeExecutorService initialization...');
-    try {
-      claudeExecutor = new ClaudeExecutorService(database);
-      console.log('🤖 Claude Executor Service initialized');
-      console.log('🔍 [DEBUG] ClaudeExecutorService instance created successfully');
-    } catch (error) {
-      console.error('🔍 [DEBUG] Error initializing ClaudeExecutorService:', error);
-      throw error;
-    }
+    // ExecutorServiceの初期化
+    console.log('🔧 Initializing ClaudeExecutorService...');
+    claudeExecutor = new ClaudeExecutorService(database);
     
     // SDKログイベントをリッスン
     claudeExecutor.on('sdk-log', (logData) => {
-      // SDKログウィンドウが開いている場合は転送
       if (sdkLogWindow && !sdkLogWindow.isDestroyed()) {
         sdkLogWindow.webContents.send('sdk-log', logData);
       } else {
-        // ウィンドウがまだない場合はバッファに保存
         logBuffer.push(logData);
       }
     });
@@ -283,12 +263,8 @@ async function initializeServices() {
     // デフォルトMCPサーバーをセットアップ
     await claudeExecutor.setupDefaultMCPServers();
     
-    // HighlightsManagerにはgeminiObserverを渡す
-    highlightsManager = new HighlightsManager(database, geminiObserver as any);
+    console.log('✨ ClaudeExecutorService initialized');
     
-    // SummaryAgentServiceの初期化（将来的に必要であれば）
-    summaryAgentService = new SummaryAgentService();
-    console.log('📝 Summary Agent Service initialized');
     
     // Exa MCPは無効化済み（パフォーマンス向上のため）
     
@@ -352,11 +328,11 @@ function showCustomNotification(message: string) {
 function setupScreenCaptureEvents() {
   screenCapture.on('frame', async (frame) => {
     try {
-      console.log('📸 Frame captured, analyzing with anicca...');
+      console.log('📸 Frame captured');
       
-      // 観察サービスが初期化されているかチェック
-      if (!geminiObserver) {
-        console.error('❌ GeminiObserver not initialized, skipping analysis');
+      // ExecutorServiceのチェック
+      if (!claudeExecutor) {
+        console.error('❌ ClaudeExecutor not initialized, skipping frame');
         return;
       }
       
@@ -389,136 +365,15 @@ function setupScreenCaptureEvents() {
         });
       }
       
-      // Gemini APIで分析（リトライ機能付き）
-      let commentary;
-      let retryCount = 0;
-      const maxRetries = 2;
+      // 画面分析機能は削除されました
+      // ExecutorServiceは音声コマンドまたは直接的なアクション要求のみを処理します
+      console.log('📸 Screen capture received, but automatic analysis is disabled');
       
-      while (retryCount <= maxRetries) {
-        try {
-          commentary = await geminiObserver.analyzeScreen(frame, currentLanguage as 'ja' | 'en');
-          break; // 成功したらループを抜ける
-        } catch (error) {
-          if (error instanceof Error && error.message.includes('Retryable error') && retryCount < maxRetries) {
-            retryCount++;
-            console.log(`🔄 Retrying analysis (attempt ${retryCount}/${maxRetries})...`);
-            await new Promise(resolve => setTimeout(resolve, 1000 * retryCount)); // 指数バックオフ
-          } else {
-            throw error; // リトライ不可能なエラーまたは最大リトライ数に達した
-          }
-        }
-      }
-      
-      if (!commentary) {
-        throw new Error('Failed to analyze screen after retries');
-      }
-      
-      // Agent Mode設定を確認
-      let agentModeEnabled = false;
-      if (database instanceof SQLiteDatabase) {
-        const agentModeSetting = await database.getSetting('agentMode');
-        agentModeEnabled = agentModeSetting === 'true' || String(agentModeSetting) === 'true';
-      }
-      
-      console.log('🤖 Agent Mode is:', agentModeEnabled ? 'ON' : 'OFF');
-      
-      // アクションの処理
-      if (commentary.action && commentary.action.reasoning) {
-        // action: null but with reasoning
-        if (!commentary.action.request) {
-          console.log('🧘 Gemini decided to wait');
-          console.log(`💭 Reasoning: ${commentary.action.reasoning}`);
-        } else if (agentModeEnabled) {
-          // アクションを実行
-          console.log(`🎯 Action suggested by Gemini: general`);
-          console.log(`💡 Reasoning: ${commentary.action.reasoning}`);
-          
-          // Claude Executorの現在の状態を確認
-          const executorState = claudeExecutor.getCurrentState();
-        
-        if (executorState.isExecuting) {
-          console.log('⏳ Claude is still executing a previous action');
-          console.log(`📋 Queue size: ${executorState.queueSize}`);
-          
-          // キューがいっぱいの場合はスキップ（キューサイズ0で実行中は全て破棄）
-          if (executorState.queueSize >= 0) {
-            console.log('🚫 Another action is executing, skipping this action');
-            mainWindow?.webContents.send('action-skipped', {
-              action: commentary.action,
-              reason: 'queue_full',
-              queueSize: executorState.queueSize,
-              timestamp: Date.now()
-            });
-            
-            // Geminiにフィードバックとしてアクションがスキップされたことを伝える
-            geminiObserver.setLastActionResult({
-              success: false,
-              error: 'Action queue is full',
-              skipped: true
-            });
-            return;
-          }
-        }
-        
-        // Claude Executorにアクションを渡して実行
-        try {
-          const actionRequest = {
-            type: 'general' as const, // 一般的なリクエストとして扱う
-            reasoning: commentary.action.reasoning,
-            parameters: {
-              query: commentary.action.request // 新しいrequestフィールドを使用
-            },
-            context: commentary.commentary
-          };
-          
-          console.log('🤖 Sending action to Claude Executor...');
-          
-          // GeminiにpendingActionを設定
-          geminiObserver.setPendingAction(commentary.action);
-          
-          const result = await claudeExecutor.executeAction(actionRequest);
-          
-          if (result.success) {
-            console.log('✅ Action executed successfully');
-            // Claude SDK自身が通知を出すため、ここでの通知は一旦無効化
-            // if (result.result) {
-            //   showCustomNotification(`アクション完了: ${commentary.action.type}`);
-            // }
-          } else {
-            console.error('❌ Action execution failed:', result.error);
-            
-            // キューエラーの場合は特別な処理
-            if (result.error === 'Another action is being executed') {
-              console.log('📋 Action was queued for later execution');
-            }
-          }
-          
-          // 実行結果をUIに送信
-          mainWindow?.webContents.send('action-executed', {
-            action: commentary.action,
-            result: result,
-            timestamp: Date.now()
-          });
-          
-          // Geminiに実行結果をフィードバック
-          geminiObserver.setLastActionResult(result);
-          
-          } catch (error) {
-            console.error('❌ Error executing action:', error);
-          }
-        } else if (!agentModeEnabled) {
-          console.log('⏸️ Agent Mode is OFF - Action suggested but not executed');
-        }
-      }
-      
-      // レンダラープロセスに送信
-      mainWindow?.webContents.send('commentary', {
-        ...commentary,
-        timestamp: Date.now(),
-        frameTimestamp: frame.timestamp
+      // フレームデータをレンダラープロセスに送信（表示用）
+      mainWindow?.webContents.send('frame-captured', {
+        timestamp: frame.timestamp,
+        message: 'Screen captured successfully'
       });
-      
-      console.log('💬 Commentary sent:', commentary.commentary.substring(0, 100) + '...');
       
     } catch (error) {
       console.error('❌ Error processing frame:', error);
@@ -596,10 +451,7 @@ function setupIpcHandlers() {
       console.log('⏹️ Stopping narration...');
       screenCapture.stopCapture();
       
-      // ハイライト更新（バックグラウンド）
-      highlightsManager.updateAllHighlights(currentLanguage).catch(err => {
-        console.error('❌ Error updating highlights after stop:', err);
-      });
+      // ハイライト更新は削除済み
       
       return {
         success: true,
@@ -619,7 +471,6 @@ function setupIpcHandlers() {
   // 状態取得
   ipcMain.handle('get-state', async () => {
     return {
-      observer: geminiObserver.getCurrentState(),
       executor: claudeExecutor.getCurrentState()
     };
   });
@@ -631,7 +482,7 @@ function setupIpcHandlers() {
       timestamp: Date.now(),
       services: {
         screenCapture: screenCapture.isActive(),
-        gemini: 'ready'
+        claude: 'ready'
       }
     };
   });
@@ -746,11 +597,6 @@ function setupIpcHandlers() {
         return value;
       }
       
-      // Supabaseの場合は従来の方法（現在は言語のみメモリから）
-      if (key === 'language') {
-        return currentLanguage;
-      }
-      
       return null;
     } catch (error) {
       console.error('❌ Error getting setting:', error);
@@ -775,14 +621,7 @@ function setupIpcHandlers() {
         return { success: true };
       }
       
-      // Supabaseの場合は従来の方法
-      if (key === 'language') {
-        currentLanguage = value || 'ja';
-        console.log('🌍 Language setting updated to:', currentLanguage);
-        return { success: true };
-      }
-      
-      return { success: false, error: 'Unknown setting key' };
+      return { success: false, error: 'SQLite database required' };
     } catch (error) {
       console.error('❌ Error setting value:', error);
       return { success: false, error: error instanceof Error ? error.message : String(error) };
@@ -792,18 +631,14 @@ function setupIpcHandlers() {
   // 現在の理解度取得
   ipcMain.handle('get-current-understanding', async () => {
     try {
-      // Gemini Observerから取得
-      const state = geminiObserver.getCurrentState();
-      let currentUnderstanding = state.currentUnderstanding;
+      let currentUnderstanding;
       
-      // デフォルトメッセージの場合、データベースから最新の理解を試行
-      if (!currentUnderstanding || currentUnderstanding === '画面を分析して、あなたの活動を理解中です...' || currentUnderstanding === 'ユーザーの行動パターンを学習中です。') {
-        console.log('🧠 Getting understanding from database...');
-        const latestUnderstanding = await database.getLatestUnderstanding();
-        if (latestUnderstanding) {
-          currentUnderstanding = latestUnderstanding;
-          console.log('🧠 Latest understanding retrieved from database');
-        }
+      // データベースから最新の理解を取得
+      console.log('🧠 Getting understanding from database...');
+      const latestUnderstanding = await database.getLatestUnderstanding();
+      if (latestUnderstanding) {
+        currentUnderstanding = latestUnderstanding;
+        console.log('🧠 Latest understanding retrieved from database');
       }
       
       return currentUnderstanding || '画面を分析して、あなたの活動を理解中です...';
@@ -825,9 +660,6 @@ function setupIpcHandlers() {
         // 他の設定項目もここで取得可能
         // settings.theme = await database.getSetting('theme') || 'light';
         // settings.notifications = await database.getSetting('notifications') || 'true';
-      } else {
-        // Supabaseの場合
-        settings.language = currentLanguage;
       }
       
       console.log('⚙️ All settings retrieved:', settings);
@@ -855,12 +687,6 @@ function setupIpcHandlers() {
             console.log('🌍 Current language updated:', currentLanguage);
           }
         }
-      } else {
-        // Supabaseの場合（現在は言語のみ）
-        if (settingsObject.language) {
-          currentLanguage = settingsObject.language || 'ja';
-          updatedCount = 1;
-        }
       }
       
       console.log(`⚙️ ${updatedCount} settings saved successfully`);
@@ -874,7 +700,9 @@ function setupIpcHandlers() {
   // ハイライト取得ハンドラー
   ipcMain.handle('get-highlights', async (_, period: string, targetDate: string) => {
     try {
-      const highlights = await highlightsManager.getHighlights(period, targetDate, currentLanguage);
+      // Highlights機能は削除済み
+      console.log('⚠️ Highlights feature has been removed');
+      const highlights: any[] = [];
       console.log(`🌟 Retrieved ${highlights.length} highlights for ${period}/${targetDate}`);
       return {
         success: true,
@@ -890,10 +718,11 @@ function setupIpcHandlers() {
     }
   });
 
-  // Gemini Model handler
+  // Model handler (統合モードのみ)
   ipcMain.handle('set-model', async (_, modelName: string) => {
     try {
-      await geminiObserver.setModel(modelName);
+      // 統合モードではモデル変更は現在サポートされていない
+      console.log('⚠️ Model switching not supported in unified mode');
       return {
         success: true
       };
@@ -956,77 +785,30 @@ function setupIpcHandlers() {
     }
   });
 
-  ipcMain.handle('mcp-connect-exa', async (_, options?: { mode: 'local' | 'remote', remoteUrl?: string }) => {
-    try {
-      // Check if Exa API key exists
-      const hasKey = encryptionService.hasExaApiKey();
-      if (!hasKey) {
-        return { 
-          success: false, 
-          error: 'Exa API key not found. Please set it first.' 
-        };
-      }
-      
-      await exaMcpService.connectToExa(options);
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error connecting to Exa MCP:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error) 
-      };
-    }
+  // MCP handlers are removed since the service has been deleted
+  ipcMain.handle('mcp-connect-exa', async () => {
+    return { 
+      success: false, 
+      error: 'MCP service has been removed' 
+    };
   });
 
-  ipcMain.handle('mcp-search-web', async (_, query: string, options?: any) => {
-    try {
-      if (!exaMcpService.isServerConnected()) {
-        // Try to connect first
-        await exaMcpService.connectToExa();
-      }
-      
-      const results = await exaMcpService.searchWeb(query, options);
-      return { success: true, data: results };
-    } catch (error) {
-      console.error('❌ Error searching with Exa:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error) 
-      };
-    }
+  ipcMain.handle('mcp-search-web', async () => {
+    return { 
+      success: false, 
+      error: 'MCP service has been removed' 
+    };
   });
 
   ipcMain.handle('mcp-list-tools', async () => {
-    try {
-      if (!exaMcpService.isServerConnected()) {
-        return { 
-          success: false, 
-          error: 'Not connected to MCP server' 
-        };
-      }
-      
-      const tools = await exaMcpService.listTools();
-      return { success: true, data: tools };
-    } catch (error) {
-      console.error('❌ Error listing MCP tools:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error) 
-      };
-    }
+    return { 
+      success: false, 
+      error: 'MCP service has been removed' 
+    };
   });
 
   ipcMain.handle('mcp-disconnect', async () => {
-    try {
-      await exaMcpService.disconnect();
-      return { success: true };
-    } catch (error) {
-      console.error('❌ Error disconnecting MCP:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : String(error) 
-      };
-    }
+    return { success: true };
   });
 
   // User Profile handlers
@@ -1094,11 +876,17 @@ app.whenReady().then(async () => {
     await createWindow();
     
     // 初期状態をレンダラーに送信
-    setTimeout(() => {
-      const state = geminiObserver.getCurrentState();
-      mainWindow?.webContents.send('understanding-update', {
-        understanding: state.currentUnderstanding
-      });
+    setTimeout(async () => {
+      try {
+        const currentUnderstanding = await database.getLatestUnderstanding();
+        if (currentUnderstanding) {
+          mainWindow?.webContents.send('understanding-update', {
+            understanding: currentUnderstanding
+          });
+        }
+      } catch (error) {
+        console.error('❌ Error getting initial understanding:', error);
+      }
     }, 1000);
     
     console.log('🎉 ANICCA application ready!');

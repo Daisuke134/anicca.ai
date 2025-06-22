@@ -67,3 +67,73 @@ The app uses minimal `.env` configuration:
 ### Build Output
 
 TypeScript compiles to `dist/` with CommonJS modules. The UI files (HTML/JS) are copied from `src/ui/` to `dist/ui/`.
+
+## プロジェクト構成とデプロイ（重要）
+
+### リポジトリ構成
+
+このプロジェクトは**2つの別々のリポジトリ**で管理されています：
+
+1. **メインアプリケーション**
+   - リポジトリ: https://github.com/Daisuke134/anicca.ai
+   - デプロイ: Netlify（mainブランチへのプッシュで自動デプロイ）
+   - 公開URL: https://aniccaai.com
+
+2. **プロキシサーバー（別リポジトリ）**
+   - リポジトリ: https://github.com/Daisuke134/anicca-proxy
+   - ローカルパス: `/Users/cbns03/Downloads/anicca-project/anicca-proxy-slack`
+   - デプロイ: Vercel
+   - 公開URL: https://anicca-proxy-ten.vercel.app
+   - **重要**: GitHubへのプッシュだけでは反映されません
+
+### Vercelデプロイの重要な注意点
+
+**プロキシの変更を本番環境に反映するには、必ず手動デプロイが必要です：**
+
+```bash
+cd /Users/cbns03/Downloads/anicca-project/anicca-proxy-slack
+vercel --prod
+```
+
+GitHubにプッシュしただけでは変更が反映されないので注意してください。
+
+### プロキシサーバーの役割
+
+プロキシサーバーは以下の重要な機能を提供しています：
+- Claude APIへのプロキシ（APIキーを隠蔽）
+- GitHubプライベートリポジトリからのDMGダウンロード（GITHUB_TOKEN使用）
+- Slack OAuth認証のプロキシ
+
+### ダウンロードの仕組み
+
+ユーザーがaniccaai.comでダウンロードボタンをクリックすると：
+1. Vercelプロキシにリクエスト
+2. プロキシがGITHUB_TOKENを使ってプライベートリポジトリにアクセス
+3. 最新リリース（latest）のDMGファイルを取得
+4. ユーザーにストリーミング配信
+
+これにより、GitHubリポジトリがプライベートでもユーザーはダウンロード可能です。
+
+## 音声版（v0.5）の開発
+
+### ビルドコマンド
+```bash
+# 開発・テスト
+npm run voice           # 音声版を開発モードで実行
+npm run build:voice     # TypeScript のビルド（音声版）
+
+# リリースビルド  
+npm run dist:voice      # 音声版専用のDMGビルド（electron-builder-voice.yml使用）
+```
+
+### 重要なファイル
+- `src/main-voice.ts`: 音声版のエントリーポイント（UIなし、システムトレイのみ）
+- `tsconfig.voice.json`: 音声版専用のTypeScript設定
+- `electron-builder-voice.yml`: 音声版専用のビルド設定
+
+### 音声版の特徴
+- UIなし、システムトレイのみで動作
+- "Hey Anicca"で音声認識起動
+- Slack MCP統合（プロキシ経由）
+- セッション永続化（~/.anicca/session.json）
+- VADとEnterキーのハイブリッド録音

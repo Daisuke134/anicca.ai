@@ -3,20 +3,25 @@ productName: Anicca
 directories:
   output: release
 files:
-  - dist/**/*
+  - dist/main-voice.js
+  - dist/services/**/*
   - node_modules/**/*
   - package.json
-  - assets/**/*
+  - assets/tray-icon-gpt.png
+  - assets/GPT.png
+  - assets/icon.icns
+  - server.key
+  - server.cert
   - "!anicca-*/**"
   - "!**/.git"
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
-  - "!src/ui/**/*"
-  - "!src/main.ts"
-  - "!src/services/gemini*.ts"
-  - "!src/services/summaryAgentService.ts"
-  - "!src/services/highlightsManager.ts"
-  - "!src/services/exaMcpService.ts"
+  - "!dist/main.js"
+  - "!dist/ui/**"
+  - "!dist/services/gemini*.js"
+  - "!dist/services/summaryAgentService.js"
+  - "!dist/services/highlightsManager.js"
+  - "!dist/services/exaMcpService.js"
 asarUnpack:
   - "**/node_modules/@anthropic-ai/claude-code/**/*"
 mac:
@@ -26,8 +31,17 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
 dmg:
-  artifactName: anicca.dmg
+  artifactName: anicca-${arch}.dmg
   contents:
     - x: 130
       y: 220

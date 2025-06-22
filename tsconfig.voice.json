@@ -1,0 +1,19 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "./dist"
+  },
+  "include": [
+    "src/main-voice.ts",
+    "src/services/**/*.ts",
+    "src/types/**/*.ts"
+  ],
+  "exclude": [
+    "src/main.ts",
+    "src/preload.ts",
+    "src/ui/**/*",
+    "node_modules",
+    "**/*.spec.ts",
+    "**/*.test.ts"
+  ]
+}

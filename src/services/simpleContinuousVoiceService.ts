@@ -6,11 +6,12 @@ import fetch from 'node-fetch';
 import FormData from 'form-data';
 
 interface SimpleContinuousVoiceConfig {
-  apiKey: string;
+  apiKey?: string;  // プロキシ使用時は不要
   hotwords?: string[];
   recordDuration?: number;
   checkInterval?: number;
   language?: 'en-US' | 'ja-JP';
+  useProxy?: boolean;  // プロキシ使用フラグ
 }
 
 /**
@@ -21,7 +22,7 @@ interface SimpleContinuousVoiceConfig {
  */
 export class SimpleContinuousVoiceService extends EventEmitter {
   private audioService: AudioService;
-  private apiKey: string;
+  private apiKey?: string;
   private hotwords: string[];
   private recordDuration: number;
   private checkInterval: number;
@@ -29,11 +30,13 @@ export class SimpleContinuousVoiceService extends EventEmitter {
   private isListening: boolean = false;
   private isInConversation: boolean = false;
   private listeningInterval: NodeJS.Timeout | null = null;
+  private useProxy: boolean;
   
   constructor(config: SimpleContinuousVoiceConfig) {
     super();
     this.audioService = new AudioService();
     this.apiKey = config.apiKey;
+    this.useProxy = config.useProxy ?? true;  // デフォルトでプロキシを使用
     this.hotwords = config.hotwords || ['Hey Anicca', 'Anicca', 'アニッチャ'];
     this.recordDuration = config.recordDuration || 2000; // 2秒
     this.checkInterval = config.checkInterval || 500; // 0.5秒間隔
@@ -41,6 +44,7 @@ export class SimpleContinuousVoiceService extends EventEmitter {
     
     console.log('🎤 Simple Continuous Voice Service initialized');
     console.log(`🎯 Listening for: ${this.hotwords.join(', ')}`);
+    console.log(`🌐 Using ${this.useProxy ? 'proxy' : 'direct API'} mode`);
   }
   
   /**
@@ -135,61 +139,107 @@ export class SimpleContinuousVoiceService extends EventEmitter {
           await new Promise(resolve => setTimeout(resolve, waitTime));
         }
         
-        // WAVデータをチェック（既にWAVフォーマットか確認）
+        // WebMまたはWAVデータをチェック
         const isWAV = audioData.slice(0, 4).toString() === 'RIFF';
-        const wavData = isWAV ? audioData : this.audioService['createWAVFromPCM'](audioData);
+        const isWebM = audioData.slice(0, 4).toString('hex') === '1a45dfa3';
         
         // ファイルサイズチェック（25MB制限）
-        const fileSizeMB = wavData.length / (1024 * 1024);
+        const fileSizeMB = audioData.length / (1024 * 1024);
         if (fileSizeMB > 25) {
           console.warn(`⚠️ Audio file too large: ${fileSizeMB.toFixed(2)}MB (max 25MB)`);
           return null;
         }
         
-        // FormDataを作成（メモリ上のBufferから直接）
-        const form = new FormData();
-        form.append('file', wavData, {
-          filename: `audio_${Date.now()}.wav`,
-          contentType: 'audio/wav'
-        });
-        form.append('model', 'whisper-1');
-        // 言語パラメータを削除して自動検出を有効化
-        form.append('prompt', this.hotwords.join(', '));
-      
-      // AbortControllerでタイムアウト設定
-      const controller = new AbortController();
-      const timeoutId = setTimeout(() => {
-        controller.abort();
-        console.log('⏰ Whisper API request timeout (30s)');
-      }, 30000); // 30秒タイムアウト
+        // プロキシ使用時はBase64エンコード
+        if (this.useProxy) {
+          const audioBase64 = audioData.toString('base64');
+          const proxyUrl = 'https://anicca-proxy-ten.vercel.app/api/whisper';
+          
+          // AbortControllerでタイムアウト設定
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            controller.abort();
+            console.log('⏰ Whisper API request timeout (30s)');
+          }, 30000); // 30秒タイムアウト
 
-      try {
-        // Whisper APIにリクエスト
-        const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.apiKey}`,
-            ...form.getHeaders()
-          },
-          body: form,
-          signal: controller.signal
-        });
+          try {
+            const response = await fetch(proxyUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({
+                audio: audioBase64,
+                language: this.language === 'ja-JP' ? 'ja' : 'en'
+              }),
+              signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            if (!response.ok) {
+              throw new Error(`Proxy API error: ${response.status}`);
+            }
+            
+            const result = await response.json() as { success: boolean; text: string };
+            if (!result.success) {
+              throw new Error('Proxy transcription failed');
+            }
+            return result.text.trim();
+            
+          } catch (fetchError) {
+            clearTimeout(timeoutId);
+            throw fetchError;
+          }
+          
+        } else {
+          // 直接API使用（従来の実装）
+          const form = new FormData();
+          const filename = isWebM ? `audio_${Date.now()}.webm` : `audio_${Date.now()}.wav`;
+          const contentType = isWebM ? 'audio/webm' : 'audio/wav';
+          
+          form.append('file', audioData, {
+            filename: filename,
+            contentType: contentType
+          });
+          form.append('model', 'whisper-1');
+          form.append('prompt', this.hotwords.join(', '));
         
-        // タイムアウトをクリア
-        clearTimeout(timeoutId);
-      
-      if (!response.ok) {
-        throw new Error(`Whisper API error: ${response.status}`);
-      }
-      
-        const result = await response.json() as { text: string };
-        return result.text.trim();
-        
-      } catch (fetchError) {
-        // タイムアウトの場合は再度クリア（念のため）
-        clearTimeout(timeoutId);
-        throw fetchError;
-      }
+          // AbortControllerでタイムアウト設定
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => {
+            controller.abort();
+            console.log('⏰ Whisper API request timeout (30s)');
+          }, 30000); // 30秒タイムアウト
+
+          try {
+            // Whisper APIにリクエスト
+            const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+              method: 'POST',
+              headers: {
+                'Authorization': `Bearer ${this.apiKey}`,
+                ...form.getHeaders()
+              },
+              body: form,
+              signal: controller.signal
+            });
+            
+            // タイムアウトをクリア
+            clearTimeout(timeoutId);
+          
+            if (!response.ok) {
+              throw new Error(`Whisper API error: ${response.status}`);
+            }
+          
+            const result = await response.json() as { text: string };
+            return result.text.trim();
+            
+          } catch (fetchError) {
+            // タイムアウトの場合は再度クリア（念のため）
+            clearTimeout(timeoutId);
+            throw fetchError;
+          }
+        }
       
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));

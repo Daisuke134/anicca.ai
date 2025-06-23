@@ -898,8 +898,8 @@ ${action.parameters.query || ''}`;
   async setupDefaultMCPServers(): Promise<void> {
     try {
       // EXA MCPサーバーを設定
-      // EXA APIキーを取得
-      const encryptionService = (await import('./encryptionService')).EncryptionService;
+      // EXA APIキーを取得（既に無効化済み）
+      // const encryptionService = (await import('./encryptionService')).EncryptionService;
       // EXA MCPサーバーは削除（遅いため）
       console.log('ℹ️ EXA MCP server disabled for performance')
       

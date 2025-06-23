@@ -75,6 +75,9 @@ export class HybridRecording {
       // Enterキー待機
       this.rl.on('line', this.enterKeyHandler);
 
+      // 開始音を再生
+      spawn('afplay', ['/System/Library/Sounds/Glass.aiff']);
+      
       // 音量監視を開始
       this.startVolumeMonitoring();
 

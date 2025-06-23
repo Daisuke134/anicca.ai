@@ -64,34 +64,52 @@ export class ClaudeSession {
       
       // 既存のセッションを読み込み
       if (fs.existsSync(this.sessionFile)) {
-        const sessionData: SessionData = JSON.parse(fs.readFileSync(this.sessionFile, 'utf8'));
-        this.sessionId = sessionData.sessionId;
-        this.sessionStartTime = sessionData.createdAt;
-        console.log(`
+        try {
+          const fileContent = fs.readFileSync(this.sessionFile, 'utf8');
+          const sessionData: SessionData = JSON.parse(fileContent);
+          
+          // セッションデータの妥当性チェック
+          if (sessionData.sessionId && sessionData.createdAt) {
+            this.sessionId = sessionData.sessionId;
+            this.sessionStartTime = sessionData.createdAt;
+            console.log(`
 ♻️ Resuming Claude Session`);
-        console.log(`📋 Session ID: ${this.sessionId}`);
-        console.log(`🕐 Created at: ${new Date(this.sessionStartTime).toLocaleString('ja-JP')}`);
-        console.log(`📊 Conversation count: ${sessionData.conversationCount || 0}`);
-        console.log('-'.repeat(50));
-        
-        // 最終使用時刻を更新
-        this.saveSession();
-      } else {
-        // 新規セッション作成
-        this.sessionId = this.generateSessionId();
-        console.log(`
-🎯 New Persistent Claude Session Created`);
-        console.log(`📋 Session ID: ${this.sessionId}`);
-        console.log(`🕐 Started at: ${new Date(this.sessionStartTime).toLocaleString('ja-JP')}`);
-        console.log('-'.repeat(50));
-        
-        // セッション情報を保存
-        this.saveSession();
+            console.log(`📋 Session ID: ${this.sessionId}`);
+            console.log(`🕐 Created at: ${new Date(this.sessionStartTime).toLocaleString('ja-JP')}`);
+            console.log(`📊 Conversation count: ${sessionData.conversationCount || 0}`);
+            console.log('-'.repeat(50));
+            
+            // 最終使用時刻を更新
+            this.saveSession();
+            return;
+          }
+        } catch (parseError) {
+          console.error('⚠️ Session file corrupted, creating new session:', parseError);
+          // 破損したファイルを削除
+          try {
+            fs.unlinkSync(this.sessionFile);
+            console.log('🗑️ Removed corrupted session file');
+          } catch (deleteError) {
+            console.error('Failed to delete corrupted file:', deleteError);
+          }
+        }
       }
+      
+      // 新規セッション作成
+      this.sessionId = this.generateSessionId();
+      console.log(`
+🎯 New Persistent Claude Session Created`);
+      console.log(`📋 Session ID: ${this.sessionId}`);
+      console.log(`🕐 Started at: ${new Date(this.sessionStartTime).toLocaleString('ja-JP')}`);
+      console.log('-'.repeat(50));
+      
+      // セッション情報を保存
+      this.saveSession();
     } catch (error) {
       console.error('❌ Failed to load session:', error);
       // エラー時は新規セッションとして扱う
       this.sessionId = this.generateSessionId();
+      this.saveSession();
     }
   }
   

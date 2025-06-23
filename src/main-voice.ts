@@ -8,7 +8,7 @@ import { SQLiteDatabase } from './services/sqliteDatabase';
 import { SlackOAuthServer } from './services/slackOAuthServer';
 import { SlackMCPManager } from './services/slackMCPManager';
 import { HybridRecording } from './services/hybridRecording';
-import * as textToSpeech from '@google-cloud/text-to-speech';
+// import * as textToSpeech from '@google-cloud/text-to-speech'; // プロキシ経由に変更
 import { SimpleEncryption } from './services/simpleEncryption';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -24,7 +24,7 @@ let claudeSession: ClaudeSession | null = null;
 let database: SQLiteDatabase | null = null;
 let slackOAuthServer: SlackOAuthServer | null = null;
 let slackMCPManager: SlackMCPManager | null = null;
-let ttsClient: textToSpeech.TextToSpeechClient | null = null;
+// let ttsClient: textToSpeech.TextToSpeechClient | null = null; // プロキシ経由に変更
 let localHttpsServer: any = null;  // ローカルHTTPSサーバー
 let isListening = false;
 let conversationActive = false;
@@ -39,13 +39,8 @@ async function initializeApp() {
     await database.init();
     console.log('✅ Database initialized');
     
-    // TTS初期化
-    try {
-      ttsClient = new textToSpeech.TextToSpeechClient();
-      console.log('✅ Google TTS initialized');
-    } catch (error) {
-      console.log('⚠️ Google TTS not available, using fallback');
-    }
+    // TTS初期化（プロキシ経由で使用するため、クライアント初期化不要）
+    console.log('✅ TTS ready (using proxy)');
     
     // Slack OAuth Server初期化（実際にはプロキシ経由で認証するのでダミー値）
     slackOAuthServer = new SlackOAuthServer('dummy-client-id', 'dummy-client-secret');
@@ -479,41 +474,52 @@ async function handleHttpRequest(req: any, res: any): Promise<void> {
 async function synthesizeSpeech(text: string): Promise<void> {
   console.log(`🔊 Speaking: "${text}"`);
   
-  if (!ttsClient) {
-    // フォールバック: macOSのsayコマンド
-    const { exec } = require('child_process');
-    return new Promise<void>((resolve) => {
-      exec(`say -v Kyoko "${text}"`, () => resolve());
-    });
-  }
-  
   try {
-    const request = {
-      input: { text },
-      voice: {
-        languageCode: detectLanguage(text) === 'en' ? 'en-US' : 'ja-JP',
-        name: detectLanguage(text) === 'en' ? 'en-US-Wavenet-F' : 'ja-JP-Wavenet-A'
+    // プロキシ経由でTTSを使用
+    const proxyUrl = 'https://anicca-proxy-ten.vercel.app/api/tts';
+    const languageCode = detectLanguage(text) === 'en' ? 'en-US' : 'ja-JP';
+    const voiceName = detectLanguage(text) === 'en' ? 'en-US-Wavenet-F' : 'ja-JP-Wavenet-A';
+    
+    const response = await fetch(proxyUrl, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
       },
-      audioConfig: { 
-        audioEncoding: 'MP3' as const,
-        pitch: 0.5
-      }
-    };
+      body: JSON.stringify({
+        text,
+        languageCode,
+        voiceName,
+        ssmlGender: 'FEMALE'
+      })
+    });
     
-    const [response] = await ttsClient.synthesizeSpeech(request);
+    if (!response.ok) {
+      throw new Error(`TTS API error: ${response.status}`);
+    }
     
-    if (response.audioContent) {
+    const result = await response.json();
+    
+    if (result.success && result.audio) {
+      // Base64をデコードしてMP3ファイルに保存
+      const audioBuffer = Buffer.from(result.audio, 'base64');
       const tempFile = path.join(os.tmpdir(), `tts_${Date.now()}.mp3`);
-      fs.writeFileSync(tempFile, response.audioContent as Buffer);
+      fs.writeFileSync(tempFile, audioBuffer);
       
       // 再生
       await playAudioFile(tempFile);
       
       // クリーンアップ
       fs.unlinkSync(tempFile);
+    } else {
+      throw new Error('No audio content in response');
     }
   } catch (error) {
     console.error('❌ TTS error:', error);
+    // フォールバック: macOSのsayコマンド
+    const { exec } = require('child_process');
+    return new Promise<void>((resolve) => {
+      exec(`say -v Kyoko "${text}"`, () => resolve());
+    });
   }
 }
 

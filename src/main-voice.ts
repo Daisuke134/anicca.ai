@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage } from 'electron';
+import { app, Tray, Menu, nativeImage, systemPreferences, BrowserWindow, ipcMain } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { SimpleContinuousVoiceService } from './services/simpleContinuousVoiceService';
@@ -28,19 +28,58 @@ let slackMCPManager: SlackMCPManager | null = null;
 let localHttpsServer: any = null;  // ローカルHTTPSサーバー
 let isListening = false;
 let conversationActive = false;
+let recorderWindow: BrowserWindow | null = null;  // MediaRecorder用の非表示ウィンドウ
 
 // アプリの初期化
 async function initializeApp() {
   console.log('🎩 Anicca Voice Assistant Starting...');
   
+  // ログファイルのパス設定
+  const logPath = path.join(os.homedir(), '.anicca', 'startup.log');
+  const logStream = fs.createWriteStream(logPath, { flags: 'a' });
+  
+  // ログ関数
+  const log = (message: string) => {
+    const timestamp = new Date().toISOString();
+    const logMessage = `[${timestamp}] ${message}\n`;
+    console.log(message);
+    logStream.write(logMessage);
+  };
+  
+  log('🎩 Anicca Voice Assistant Starting...');
+  log(`Platform: ${process.platform}`);
+  log(`App packaged: ${app.isPackaged}`);
+  log(`Resource path: ${process.resourcesPath || 'N/A'}`);
+  
   try {
     // データベース初期化
+    log('Initializing database...');
     database = new SQLiteDatabase();
     await database.init();
-    console.log('✅ Database initialized');
+    log('✅ Database initialized');
     
     // TTS初期化（プロキシ経由で使用するため、クライアント初期化不要）
-    console.log('✅ TTS ready (using proxy)');
+    log('✅ TTS ready (using proxy)');
+    
+    // マイク権限をチェック（要求はしない - 実際のマイクアクセス時に自動的にダイアログが表示される）
+    log('Checking microphone permission...');
+    if (process.platform === 'darwin') {
+      const micStatus = systemPreferences.getMediaAccessStatus('microphone');
+      log(`Microphone permission status: ${micStatus}`);
+      
+      if (micStatus === 'denied') {
+        log('❌ Microphone permission previously denied');
+        const { dialog } = require('electron');
+        dialog.showErrorBox('Microphone Permission Denied', 
+          'Anicca needs microphone access to work.\n\nPlease enable it in:\nSystem Preferences > Security & Privacy > Privacy > Microphone\n\nThen restart Anicca.');
+        app.quit();
+        return;
+      } else if (micStatus === 'not-determined') {
+        log('Microphone permission not yet determined - will request on first use');
+      } else if (micStatus === 'granted') {
+        log('✅ Microphone permission already granted');
+      }
+    }
     
     // Slack OAuth Server初期化（実際にはプロキシ経由で認証するのでダミー値）
     slackOAuthServer = new SlackOAuthServer('dummy-client-id', 'dummy-client-secret');
@@ -63,14 +102,10 @@ async function initializeApp() {
     claudeSession = new ClaudeSession(executorService);
     console.log('✅ Claude Session initialized');
     
-    // Voice Service初期化
-    const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      throw new Error('OPENAI_API_KEY not found');
-    }
-    
+    // Voice Service初期化（プロキシ経由）
+    log('Initializing voice service (proxy mode)...');
     voiceService = new SimpleContinuousVoiceService({
-      apiKey: apiKey,
+      useProxy: true,  // プロキシを使用
       hotwords: ['anicca', 'アニッチャ', 'あにっちゃ']
     });
     
@@ -80,16 +115,52 @@ async function initializeApp() {
       await handleConversation();
     });
     
-    // 音声サービス開始
+    // MediaRecorder用の非表示ウィンドウを作成（音声サービス開始前に準備）
+    log('Creating recorder window...');
+    await createRecorderWindow();
+    log('✅ Recorder window created');
+    
+    // 最初の録音でマイク権限をトリガー（音声サービス開始前）
+    if (process.platform === 'darwin') {
+      const micStatus = systemPreferences.getMediaAccessStatus('microphone');
+      if (micStatus === 'not-determined') {
+        log('Triggering initial microphone access...');
+        try {
+          // 非常に短い録音を一度だけ実行してすぐ停止
+          const audioService = voiceService?.getAudioService();
+          if (audioService) {
+            const recordingFile = await audioService.startRecording();
+            await new Promise(resolve => setTimeout(resolve, 100)); // 100msだけ録音
+            await audioService.stopRecording();
+            log('✅ Initial microphone trigger completed');
+            
+            // 権限ダイアログが表示される時間を待つ
+            await new Promise(resolve => setTimeout(resolve, 2000));
+          }
+        } catch (error) {
+          log(`Initial microphone trigger error: ${error}`);
+          // エラーは無視（通常の録音ループが権限をトリガーする）
+        }
+      }
+    }
+    
+    // 音声サービス開始（権限取得後）
     await voiceService.startListening();
     isListening = true;
-    console.log('✅ Voice service started - Say "Anicca" to begin!');
+    log('✅ Voice service started - Say "Anicca" to begin!');
     
     // ローカルHTTPSサーバーを起動（Slackトークン受信用）
     await startLocalHttpsServer();
     
     // システムトレイの初期化
-    createSystemTray();
+    log('Creating system tray...');
+    try {
+      createSystemTray();
+      log('✅ System tray created');
+    } catch (error) {
+      log(`❌ Failed to create system tray: ${error}`);
+      log(`Stack trace: ${error instanceof Error ? error.stack : 'N/A'}`);
+    }
     
     // ログイン項目の状態を表示
     const loginSettings = app.getLoginItemSettings();
@@ -99,9 +170,69 @@ async function initializeApp() {
     showNotification('Anicca Started', 'Say "Anicca" to begin!');
     
   } catch (error) {
-    console.error('❌ Initialization error:', error);
-    app.quit();
+    log(`❌ Initialization error: ${error}`);
+    log(`Stack trace: ${error instanceof Error ? error.stack : 'N/A'}`);
+    
+    // エラーダイアログを表示（パッケージ版の場合）
+    if (app.isPackaged) {
+      const { dialog } = require('electron');
+      dialog.showErrorBox('Anicca Startup Error', 
+        `Failed to start Anicca:\n\n${error}\n\nPlease check ~/.anicca/startup.log for details.`);
+    }
+    
+    logStream.end(() => {
+      app.quit();
+    });
   }
+}
+
+// MediaRecorder用の非表示ウィンドウを作成
+async function createRecorderWindow(): Promise<void> {
+  return new Promise((resolve) => {
+    recorderWindow = new BrowserWindow({
+      show: false,  // 最初は非表示
+      width: 300,
+      height: 200,
+      webPreferences: {
+        nodeIntegration: true,
+        contextIsolation: false,
+        webSecurity: false
+      }
+    });
+    
+    // HTMLファイルをロード
+    const htmlPath = app.isPackaged
+      ? path.join(process.resourcesPath, 'app.asar', 'dist', 'recorder.html')
+      : path.join(__dirname, '../src/recorder.html');
+    
+    recorderWindow.loadFile(htmlPath);
+    
+    // レンダラーからの準備完了通知を待つ
+    ipcMain.once('recorder-ready', () => {
+      console.log('✅ Recorder window ready');
+      
+      // マイク権限が未決定の場合のみ、ウィンドウを一瞬表示
+      if (process.platform === 'darwin') {
+        const micStatus = systemPreferences.getMediaAccessStatus('microphone');
+        if (micStatus === 'not-determined') {
+          console.log('🎤 Showing window briefly to trigger microphone permission...');
+          recorderWindow?.show();
+          // 500ms後に非表示に戻す
+          setTimeout(() => {
+            recorderWindow?.hide();
+            console.log('🎤 Window hidden again');
+          }, 500);
+        }
+      }
+      
+      resolve();
+    });
+    
+    // エラーハンドリング
+    recorderWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription) => {
+      console.error('❌ Failed to load recorder window:', errorDescription);
+    });
+  });
 }
 
 // システムトレイの作成

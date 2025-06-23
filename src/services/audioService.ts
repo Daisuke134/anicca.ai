@@ -36,6 +36,8 @@ export class AudioService extends EventEmitter {
   private bufferingComplete: boolean = false;
   private isStreaming: boolean = false;
   private streamFile: string | null = null;
+  private currentRecordingFile: string | null = null;
+  private currentRecordingData: Buffer | null = null;
   
   constructor(config: AudioConfig = {}) {
     super();
@@ -45,6 +47,30 @@ export class AudioService extends EventEmitter {
     
     console.log('🔊 Audio Service initialized');
     console.log(`📊 Format: ${this.format}, ${this.sampleRate}Hz, ${this.channels}ch`);
+    
+    // startup.logへの書き込み関数を設定
+    this.setupLogging();
+  }
+  
+  private logToFile(message: string): void {
+    try {
+      const logPath = path.join(require('os').homedir(), '.anicca', 'startup.log');
+      const timestamp = new Date().toISOString();
+      const logMessage = `[${timestamp}] [AudioService] ${message}\n`;
+      fs.appendFileSync(logPath, logMessage);
+    } catch (error) {
+      console.error('Failed to write to log file:', error);
+    }
+  }
+  
+  private setupLogging(): void {
+    // エラーイベントをログファイルに記録
+    this.on('recording-error', (error) => {
+      this.logToFile(`❌ Recording error: ${error.message}`);
+      if (error.stack) {
+        this.logToFile(`Stack trace: ${error.stack}`);
+      }
+    });
   }
   
   /**
@@ -52,49 +78,61 @@ export class AudioService extends EventEmitter {
    */
   async startRecording(): Promise<string> {
     if (this.isRecording) {
-      throw new Error('Already recording');
+      const error = new Error('Already recording');
+      this.logToFile(`⚠️ startRecording called while already recording`);
+      throw error;
     }
     
     const timestamp = Date.now();
-    const tempFile = path.join('/tmp', `anicca_recording_${timestamp}.wav`);
+    const tempFile = path.join('/tmp', `anicca_recording_${timestamp}.webm`);
+    
+    this.logToFile(`🎙️ Starting recording using MediaRecorder`);
     
     try {
-      // macOSのrec コマンドを使用（sox必要）
-      // まずsoxがインストールされているか確認
-      try {
-        await execAsync('which rec');
-      } catch {
-        console.log('⚠️ sox not found. Please install: brew install sox');
-        // 代替方法を使用（後で実装）
-        throw new Error('Audio recording requires sox. Please install: brew install sox');
+      this.isRecording = true;
+      this.audioQueue = [];  // 録音データをリセット
+      
+      // Electronのipcでレンダラープロセスに録音開始を指示
+      const { ipcMain, BrowserWindow } = require('electron');
+      const windows = BrowserWindow.getAllWindows();
+      const recorderWindow = windows.find(w => !w.isDestroyed());
+      
+      if (!recorderWindow) {
+        throw new Error('Recorder window not found');
       }
       
-      // 録音開始
-      const command = `rec -r ${this.sampleRate} -c ${this.channels} -b 16 ${tempFile}`;
-      
-      this.isRecording = true;
-      this.emit('recording-started');
-      
-      // バックグラウンドで録音プロセスを開始
-      const { spawn } = require('child_process');
-      this.recordingProcess = spawn('rec', [
-        '-r', this.sampleRate.toString(),
-        '-c', this.channels.toString(),
-        '-b', '16',
-        tempFile
-      ]);
-      
-      this.recordingProcess.on('error', (error: Error) => {
-        console.error('❌ Recording error:', error);
-        this.isRecording = false;
-        this.emit('recording-error', error);
+      // 録音完了時のハンドラを設定
+      return new Promise((resolve, reject) => {
+        const timeout = setTimeout(() => {
+          this.isRecording = false;
+          reject(new Error('Recording timeout'));
+        }, 30000); // 30秒タイムアウト
+        
+        // 録音開始成功
+        ipcMain.once('recording-started', () => {
+          this.logToFile('✅ MediaRecorder started successfully');
+          this.emit('recording-started');
+        });
+        
+        // 録音エラー
+        ipcMain.once('recording-error', (event, errorMessage) => {
+          clearTimeout(timeout);
+          this.isRecording = false;
+          this.logToFile(`❌ MediaRecorder error: ${errorMessage}`);
+          reject(new Error(errorMessage));
+        });
+        
+        // 録音データをキュー
+        this.currentRecordingFile = tempFile;
+        resolve(tempFile);
+        
+        // レンダラープロセスに録音開始を指示
+        recorderWindow.webContents.send('start-recording');
       });
-      
-      console.log('🎙️ Recording started:', tempFile);
-      return tempFile;
       
     } catch (error) {
       this.isRecording = false;
+      this.logToFile(`❌ Failed to start recording: ${error}`);
       throw error;
     }
   }
@@ -103,38 +141,45 @@ export class AudioService extends EventEmitter {
    * 音声録音を停止
    */
   async stopRecording(): Promise<Buffer> {
-    if (!this.isRecording || !this.recordingProcess) {
+    if (!this.isRecording) {
       throw new Error('Not recording');
     }
     
     return new Promise((resolve, reject) => {
-      // 録音ファイルパスを先に保存
-      const audioFile = this.recordingProcess.spawnargs[this.recordingProcess.spawnargs.length - 1];
+      const { ipcMain, BrowserWindow } = require('electron');
+      const windows = BrowserWindow.getAllWindows();
+      const recorderWindow = windows.find(w => !w.isDestroyed());
       
-      // 録音プロセスを終了
-      this.recordingProcess.kill('SIGTERM');
-      
-      this.recordingProcess.on('close', async () => {
+      if (!recorderWindow) {
         this.isRecording = false;
-        this.recordingProcess = null;
+        reject(new Error('Recorder window not found'));
+        return;
+      }
+      
+      // 録音データ受信ハンドラを設定
+      ipcMain.once('recording-complete', async (event, audioData: Buffer) => {
+        this.isRecording = false;
         this.emit('recording-stopped');
         
-        // 録音ファイルを読み込み
         try {
-          const audioData = await fs.promises.readFile(audioFile);
+          // WebM形式のデータをそのまま返す（Whisper APIはWebMも受け付ける）
+          this.currentRecordingData = audioData;
           
-          // WAVヘッダーを除去してPCMデータのみ取得
-          const pcmData = this.extractPCMFromWAV(audioData);
-          
-          // 一時ファイルを削除
-          await fs.promises.unlink(audioFile);
+          // ファイルとして保存（デバッグ用）
+          if (this.currentRecordingFile) {
+            await fs.promises.writeFile(this.currentRecordingFile, audioData);
+            this.logToFile(`✅ Recording saved to: ${this.currentRecordingFile}`);
+          }
           
           console.log('🛑 Recording stopped');
-          resolve(pcmData);
+          resolve(audioData);
         } catch (error) {
           reject(error);
         }
       });
+      
+      // レンダラープロセスに録音停止を指示
+      recorderWindow.webContents.send('stop-recording');
     });
   }
   

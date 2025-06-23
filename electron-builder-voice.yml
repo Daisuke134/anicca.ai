@@ -5,6 +5,7 @@ directories:
 files:
   - dist/main-voice.js
   - dist/services/**/*
+  - dist/recorder.html
   - node_modules/**/*
   - package.json
   - assets/tray-icon-gpt.png
@@ -31,6 +32,9 @@ mac:
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    LSUIElement: true
+    NSMicrophoneUsageDescription: "Aniccaは音声コマンドを認識するためにマイクを使用します。「Hey Anicca」と話しかけて操作できます。"
   target:
     - target: dmg
       arch:

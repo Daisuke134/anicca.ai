@@ -13,7 +13,7 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "build": "tsc && cp src/ui/*.html dist/ui/ && cp src/ui/*.js dist/ui/",
-    "build:voice": "tsc -p tsconfig.voice.json",
+    "build:voice": "tsc -p tsconfig.voice.json && cp src/recorder.html dist/",
     "clean": "rm -rf dist/",
     "clean-build": "npm run clean && npm run build",
     "voice": "npm run build:voice && NODE_ENV=development electron dist/main-voice.js",

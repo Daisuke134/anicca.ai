@@ -3,7 +3,7 @@ productName: Anicca
 directories:
   output: release
 files:
-  - dist/main-voice.js
+  - dist/main-voice-simple.js
   - dist/services/**/*
   - dist/recorder.html
   - node_modules/**/*
@@ -18,6 +18,8 @@ files:
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
   - "!dist/main.js"
+  - "!dist/main-voice.js"
+  - "!dist/main-voice-rtmcp.js"
   - "!dist/ui/**"
   - "!dist/services/gemini*.js"
   - "!dist/services/summaryAgentService.js"
@@ -44,6 +46,7 @@ mac:
       arch:
         - x64
         - arm64
+afterSign: notarize.js
 dmg:
   artifactName: anicca-${arch}.dmg
   contents:

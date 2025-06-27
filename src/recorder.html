@@ -7,7 +7,6 @@
 <body>
     <script>
         const { ipcRenderer } = require('electron');
-        const { systemPreferences } = require('@electron/remote');
         
         let mediaRecorder = null;
         let audioChunks = [];
@@ -15,26 +14,6 @@
         // メインプロセスからの録音開始要求を受信
         ipcRenderer.on('start-recording', async (event) => {
             try {
-                // まずmacOSのマイク許可を明示的に要求
-                if (process.platform === 'darwin') {
-                    const micStatus = systemPreferences.getMediaAccessStatus('microphone');
-                    console.log('Microphone status:', micStatus);
-                    
-                    if (micStatus === 'not-determined') {
-                        console.log('Requesting microphone access...');
-                        const granted = await systemPreferences.askForMediaAccess('microphone');
-                        console.log('Microphone permission:', granted ? 'granted' : 'denied');
-                        
-                        if (!granted) {
-                            ipcRenderer.send('recording-error', 'Microphone permission denied');
-                            return;
-                        }
-                    } else if (micStatus === 'denied') {
-                        ipcRenderer.send('recording-error', 'Microphone permission denied');
-                        return;
-                    }
-                }
-                
                 // マイクアクセスを要求（これがmacOSの許可ダイアログをトリガー）
                 const stream = await navigator.mediaDevices.getUserMedia({ 
                     audio: {
@@ -45,6 +24,7 @@
                         autoGainControl: true
                     }
                 });
+                
                 
                 // 録音開始
                 audioChunks = [];

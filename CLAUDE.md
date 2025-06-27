@@ -137,3 +137,28 @@ npm run dist:voice      # 音声版専用のDMGビルド（electron-builder-voic
 - Slack MCP統合（プロキシ経由）
 - セッション永続化（~/.anicca/session.json）
 - VADとEnterキーのハイブリッド録音
+
+## DMGビルドエラーの対処法
+
+DMGビルド時に「リソースが一時的に使用できません」エラーが発生した場合：
+
+```bash
+# マウントされているDMGボリュームを取り出す
+hdiutil detach /Volumes/Anicca* -force
+
+# 一時ファイルをクリーンアップ
+rm -rf /private/var/folders/*/T/t-*
+```
+
+## 重要な開発ルール
+
+### 動作確認前にコミット・プッシュしない
+- コード変更後は必ず動作確認を行う
+- DMGビルドして実際にテスト
+- 問題がないことを確認してからコミット
+
+### ビルド手順
+```bash
+npm run build:voice    # TypeScriptコンパイル
+npm run dist:voice     # DMGビルド
+```

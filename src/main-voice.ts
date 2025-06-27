@@ -121,6 +121,8 @@ async function initializeApp() {
     log('✅ Recorder window created');
     
     // 最初の録音でマイク権限をトリガー（音声サービス開始前）
+    // TODO: SimpleContinuousVoiceServiceにgetAudioServiceメソッドを追加するか、別の方法でマイク権限を取得
+    /*
     if (process.platform === 'darwin') {
       const micStatus = systemPreferences.getMediaAccessStatus('microphone');
       if (micStatus === 'not-determined') {
@@ -143,6 +145,7 @@ async function initializeApp() {
         }
       }
     }
+    */
     
     // 音声サービス開始（権限取得後）
     await voiceService.startListening();

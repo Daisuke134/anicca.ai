@@ -1,8 +1,8 @@
 {
   "name": "anicca-agi",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "anicca - AI Screen Narrator Desktop App",
-  "main": "dist/main-voice.js",
+  "main": "dist/main-voice-simple.js",
   "homepage": "https://anicca.ai",
   "scripts": {
     "preelectron": "npm run build",
@@ -18,6 +18,8 @@
     "clean-build": "npm run clean && npm run build",
     "voice": "npm run build:voice && NODE_ENV=development electron dist/main-voice.js",
     "voice:prod": "npm run build:voice && electron dist/main-voice.js",
+    "voice:rtmcp": "npm run build:voice && NODE_ENV=development electron dist/main-voice-rtmcp.js",
+    "voice:simple": "npm run build:voice && NODE_ENV=development electron dist/main-voice-simple.js",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:voice": "npm run build:voice && electron-builder --mac --config electron-builder-voice.yml",
@@ -49,6 +51,7 @@
     "@types/sqlite3": "^5.1.0",
     "@types/ws": "^8.18.1",
     "axios": "^1.9.0",
+    "cors": "^2.8.5",
     "dotenv": "^16.4.1",
     "express": "^5.1.0",
     "form-data": "^4.0.0",

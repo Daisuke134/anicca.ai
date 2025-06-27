@@ -5,6 +5,9 @@
   },
   "include": [
     "src/main-voice.ts",
+    "src/main-voice-rtmcp.ts",
+    "src/main-voice-simple.ts",
+    "src/preload-rtmcp.ts",
     "src/services/**/*.ts",
     "src/types/**/*.ts"
   ],

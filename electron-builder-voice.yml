@@ -1,0 +1,58 @@
+appId: com.anicca.app
+productName: Anicca
+directories:
+  output: release
+files:
+  - dist/main-voice-simple.js
+  - dist/services/**/*
+  - dist/recorder.html
+  - node_modules/**/*
+  - package.json
+  - assets/tray-icon-gpt.png
+  - assets/GPT.png
+  - assets/icon.icns
+  - server.key
+  - server.cert
+  - "!anicca-*/**"
+  - "!**/.git"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!dist/main.js"
+  - "!dist/main-voice.js"
+  - "!dist/main-voice-rtmcp.js"
+  - "!dist/ui/**"
+  - "!dist/services/gemini*.js"
+  - "!dist/services/summaryAgentService.js"
+  - "!dist/services/highlightsManager.js"
+  - "!dist/services/exaMcpService.js"
+asarUnpack:
+  - "**/node_modules/@anthropic-ai/claude-code/**/*"
+mac:
+  category: public.app-category.productivity
+  icon: assets/icon.icns
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
+  extendInfo:
+    LSUIElement: true
+    NSMicrophoneUsageDescription: "Aniccaは音声コマンドを認識するためにマイクを使用します。「Hey Anicca」と話しかけて操作できます。"
+  target:
+    - target: dmg
+      arch:
+        - x64
+        - arm64
+    - target: zip
+      arch:
+        - x64
+        - arm64
+afterSign: notarize.js
+dmg:
+  artifactName: anicca-${arch}.dmg
+  contents:
+    - x: 130
+      y: 220
+    - x: 410
+      y: 220
+      type: link
+      path: /Applications

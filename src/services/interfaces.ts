@@ -28,6 +28,7 @@ export interface DatabaseInterface {
   getObservationCount(): Promise<number>;
   getObservationsByDateRange(startDate: string, endDate: string): Promise<any[]>;
   getLatestUnderstanding(): Promise<string | null>;
+  saveUnderstanding(understanding: string): Promise<void>;
   getHighlightsCache(period: string, targetDate: string): Promise<any | null>;
   saveHighlightsCache(data: HighlightsCacheData): Promise<void>;
   getLatestObservationId(): Promise<number | null>;

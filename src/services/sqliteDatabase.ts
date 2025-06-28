@@ -298,6 +298,25 @@ export class SQLiteDatabase implements DatabaseInterface {
     }
   }
 
+  async saveUnderstanding(understanding: string): Promise<void> {
+    if (!this.db) throw new Error('Database not initialized');
+    
+    try {
+      // 理解度をsettingsテーブルに保存（履歴を保持）
+      const dbRun = promisify(this.db.run.bind(this.db)) as (sql: string, params: any[]) => Promise<sqlite3.RunResult>;
+      
+      await dbRun(`
+        INSERT OR REPLACE INTO settings (key, value, updated_at) 
+        VALUES ('latest_understanding', ?, CURRENT_TIMESTAMP)
+      `, [understanding]);
+
+      console.log('🧠 Understanding saved to database');
+    } catch (error) {
+      console.error('❌ Error saving understanding:', error);
+      throw error;
+    }
+  }
+
   // ハイライトキャッシュ関連
   async getHighlightsCache(period: string, targetDate: string): Promise<any | null> {
     if (!this.db) throw new Error('Database not initialized');

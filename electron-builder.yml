@@ -1,5 +1,5 @@
 appId: com.anicca.app
-productName: ANICCA
+productName: Anicca
 directories:
   output: release
 files:
@@ -7,16 +7,27 @@ files:
   - node_modules/**/*
   - package.json
   - assets/**/*
+  - "!anicca-*/**"
+  - "!**/.git"
+  - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
+  - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
+  - "!src/ui/**/*"
+  - "!src/main.ts"
+  - "!src/services/gemini*.ts"
+  - "!src/services/summaryAgentService.ts"
+  - "!src/services/highlightsManager.ts"
+  - "!src/services/exaMcpService.ts"
 asarUnpack:
   - "**/node_modules/@anthropic-ai/claude-code/**/*"
 mac:
   category: public.app-category.productivity
-  icon: icon.icns
+  icon: assets/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
 dmg:
+  artifactName: anicca.dmg
   contents:
     - x: 130
       y: 220

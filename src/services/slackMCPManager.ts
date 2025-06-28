@@ -8,11 +8,21 @@ export class SlackMCPManager {
   private oauthServer: SlackOAuthServer;
 
   constructor() {
-    this.configPath = path.join(process.env.HOME || '', '.anicca', 'mcp-config.json');
-    this.oauthServer = new SlackOAuthServer(
-      process.env.SLACK_CLIENT_ID || '',
-      process.env.SLACK_CLIENT_SECRET || ''
-    );
+    // Validate environment variables
+    const homeDir = process.env.HOME || process.env.USERPROFILE;
+    if (!homeDir) {
+      throw new Error('Cannot determine home directory: HOME or USERPROFILE environment variable not set');
+    }
+    
+    const clientId = process.env.SLACK_CLIENT_ID;
+    const clientSecret = process.env.SLACK_CLIENT_SECRET;
+    
+    if (!clientId || !clientSecret) {
+      throw new Error('Missing required environment variables: SLACK_CLIENT_ID and SLACK_CLIENT_SECRET must be set');
+    }
+    
+    this.configPath = path.join(homeDir, '.anicca', 'mcp-config.json');
+    this.oauthServer = new SlackOAuthServer(clientId, clientSecret);
   }
 
   /**
@@ -111,13 +121,33 @@ export class SlackMCPManager {
     await this.updateMCPConfig();
     
     // Claude SDKのMCP設定パスを取得
-    const claudeMCPPath = path.join(
-      process.env.HOME || '',
-      'Library',
-      'Application Support',
-      'Claude',
-      'claude_desktop_config.json'
-    );
+    let claudeMCPPath: string;
+    
+    if (process.platform === 'darwin') {
+      // macOS
+      claudeMCPPath = path.join(
+        process.env.HOME || '',
+        'Library',
+        'Application Support',
+        'Claude',
+        'claude_desktop_config.json'
+      );
+    } else if (process.platform === 'win32') {
+      // Windows
+      claudeMCPPath = path.join(
+        process.env.APPDATA || '',
+        'Claude',
+        'claude_desktop_config.json'
+      );
+    } else {
+      // Linux
+      claudeMCPPath = path.join(
+        process.env.HOME || '',
+        '.config',
+        'Claude',
+        'claude_desktop_config.json'
+      );
+    }
 
     if (fs.existsSync(claudeMCPPath)) {
       // 既存の設定を読み込み

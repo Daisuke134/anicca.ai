@@ -389,6 +389,8 @@ ${action.parameters.query}`;
       
       // 一時的なnode実行ファイルを作成（実際にはElectronを呼び出すシェルスクリプト）
       const tempNodePath = path.join(os.tmpdir(), 'anicca-node-wrapper');
+      const nodePath = path.join(os.tmpdir(), 'node');
+      
       try {
         const nodeWrapper = `#!/bin/sh
 ELECTRON_RUN_AS_NODE=1 "${process.execPath}" "$@"
@@ -399,13 +401,20 @@ ELECTRON_RUN_AS_NODE=1 "${process.execPath}" "$@"
         process.env.PATH = `${os.tmpdir()}:${process.env.PATH}`;
         
         // node wrapperをnodeという名前にリネーム
-        const nodePath = path.join(os.tmpdir(), 'node');
         if (fs.existsSync(nodePath)) {
           fs.unlinkSync(nodePath);
         }
         fs.renameSync(tempNodePath, nodePath);
       } catch (error) {
         console.error('❌ Failed to create node wrapper:', error);
+        // エラー時に一時ファイルをクリーンアップ
+        if (fs.existsSync(tempNodePath)) {
+          try {
+            fs.unlinkSync(tempNodePath);
+          } catch (cleanupError) {
+            console.error('❌ Failed to cleanup temp file:', cleanupError);
+          }
+        }
       }
       
       try {
@@ -928,8 +937,8 @@ ${action.parameters.query || ''}`;
   private async initializeMCPServers(): Promise<void> {
     this.mcpServers = {};
     
-    // ElevenLabs MCPの設定（常に有効）
-    const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY || 'sk_7e0c9adc133c149e3c4f953ba6d5e15bcbbd79bdb2395c08';
+    // ElevenLabs MCPの設定（環境変数が設定されている場合のみ有効）
+    const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
     if (elevenLabsApiKey) {
       this.mcpServers.elevenlabs = {
         command: "uvx",
@@ -939,6 +948,8 @@ ${action.parameters.query || ''}`;
         }
       };
       console.log('✅ ElevenLabs MCP server configured');
+    } else {
+      console.warn('⚠️ ElevenLabs API key not found. Set ELEVENLABS_API_KEY environment variable to enable ElevenLabs MCP.');
     }
     
     // Slackトークンの確認

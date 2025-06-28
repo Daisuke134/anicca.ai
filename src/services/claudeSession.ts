@@ -1,6 +1,7 @@
 import { ClaudeExecutorService } from './claudeExecutorService';
 import * as fs from 'fs';
 import * as path from 'path';
+import * as crypto from 'crypto';
 
 interface ConversationEntry {
   role: 'user' | 'assistant';
@@ -32,7 +33,14 @@ export class ClaudeSession {
   constructor(executorService: ClaudeExecutorService) {
     this.executorService = executorService;
     this.sessionStartTime = Date.now();
-    this.sessionFile = path.join(process.env.HOME || '', '.anicca', 'session.json');
+    
+    // クロスプラットフォーム対応のホームディレクトリ取得
+    const homeDir = process.env.HOME || process.env.USERPROFILE;
+    if (!homeDir) {
+      throw new Error('Cannot determine home directory: HOME or USERPROFILE environment variable not set');
+    }
+    
+    this.sessionFile = path.join(homeDir, '.anicca', 'session.json');
     
     // セッションを読み込むか新規作成
     this.loadOrCreateSession();
@@ -47,8 +55,54 @@ export class ClaudeSession {
    * セッションIDを生成
    */
   private generateSessionId(): string {
-    // 永続的なセッションIDを使用
-    return 'ANICCA-PERSISTENT-001';
+    // デバイスIDを取得または生成
+    const deviceId = this.getOrCreateDeviceId();
+    // デバイスIDベースのセッションIDを返す
+    return `ANICCA-${deviceId}`;
+  }
+  
+  /**
+   * デバイスIDを取得または生成
+   */
+  private getOrCreateDeviceId(): string {
+    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+    const deviceIdFile = path.join(homeDir, '.anicca', 'device-id.json');
+    
+    try {
+      // 既存のデバイスIDを読み込み
+      if (fs.existsSync(deviceIdFile)) {
+        const data = JSON.parse(fs.readFileSync(deviceIdFile, 'utf-8'));
+        if (data.deviceId) {
+          return data.deviceId;
+        }
+      }
+    } catch (error) {
+      console.warn('⚠️ Failed to read device ID:', error);
+    }
+    
+    // 新しいデバイスIDを生成
+    const deviceId = crypto.randomUUID();
+    
+    try {
+      // ディレクトリを作成
+      const dir = path.dirname(deviceIdFile);
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+      
+      // デバイスIDを保存
+      fs.writeFileSync(deviceIdFile, JSON.stringify({
+        deviceId,
+        createdAt: new Date().toISOString(),
+        platform: process.platform
+      }, null, 2));
+      
+      console.log('🆔 New device ID created:', deviceId);
+    } catch (error) {
+      console.error('❌ Failed to save device ID:', error);
+    }
+    
+    return deviceId;
   }
   
   /**
@@ -134,7 +188,7 @@ export class ClaudeSession {
   /**
    * メッセージを送信して応答を取得
    */
-  async sendMessage(userMessage: string): Promise<string> {
+  async sendMessage(userMessage: string, retryCount: number = 0): Promise<string> {
     console.log(`\n👤 User: "${userMessage}"`);
     
     // 会話履歴に追加
@@ -200,9 +254,14 @@ export class ClaudeSession {
         return cleanResponse;
       } else if (result.error === 'Another action is being executed') {
         // キューに入った場合は少し待ってリトライ
-        console.log('📋 Action was queued, waiting...');
+        const MAX_RETRIES = 3;
+        if (retryCount >= MAX_RETRIES) {
+          console.error(`❌ Max retries (${MAX_RETRIES}) exceeded`);
+          throw new Error('最大リトライ回数を超えました。しばらく待ってからもう一度お試しください。');
+        }
+        console.log(`📋 Action was queued, waiting... (retry ${retryCount + 1}/${MAX_RETRIES})`);
         await new Promise(resolve => setTimeout(resolve, 2000));
-        return this.sendMessage(userMessage); // リトライ
+        return this.sendMessage(userMessage, retryCount + 1); // リトライ
       } else {
         throw new Error(result.error || 'No response');
       }

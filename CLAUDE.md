@@ -2,6 +2,82 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## プロジェクト構成
+
+ANICCAプロジェクトは複数のコンポーネントで構成されています：
+
+### リポジトリ構成
+
+1. **メインリポジトリ** (このリポジトリ)
+   - パス: `/Users/cbns03/Downloads/anicca-project`
+   - 内容: デスクトップ版、ランディングページ、プロキシサーバー
+
+2. **プロキシサーバー** 
+   - パス: `/Users/cbns03/Downloads/anicca-project/anicca-proxy-slack`
+   - デプロイ: Railway (https://anicca-proxy-ten.vercel.app)
+   - 役割: APIキー管理、Slack OAuth、ダウンロード配信
+
+3. **Web版**
+   - パス: `/Users/cbns03/Downloads/anicca-project/anicca-web`
+   - デプロイ: Vercel (https://app.aniccaai.com)
+   - 役割: ブラウザベースの音声アシスタント
+
+4. **ランディングページ**
+   - パス: `/Users/cbns03/Downloads/anicca-project/landing`
+   - デプロイ: Netlify (https://aniccaai.com)
+   - 役割: 製品紹介とダウンロードリンク
+
+### デプロイ方法
+
+#### プロキシサーバー (Railway)
+```bash
+cd anicca-proxy-slack
+git push  # Railwayが自動デプロイ
+```
+
+#### Web版 (Vercel)
+```bash
+cd anicca-web
+git push  # Vercelが自動デプロイ（GitHub連携済み）
+```
+
+#### ランディングページ (Netlify)
+```bash
+netlify deploy --prod --dir=landing
+```
+
+### アーキテクチャの違い
+
+#### デスクトップ版
+- Electronベース
+- ローカルでAPIキーを暗号化保存
+- 直接API呼び出し（将来的にプロキシ統一予定）
+
+#### Web版
+- Next.jsベース
+- すべてのAPI呼び出しをプロキシ経由
+- APIキーはサーバー側で管理
+
+### 環境変数
+
+#### プロキシサーバー (Railway)
+- `ANTHROPIC_API_KEY`
+- `OPENAI_API_KEY`
+- `GOOGLE_API_KEY`
+- `ELEVENLABS_API_KEY`
+- `GITHUB_TOKEN`
+- `SLACK_CLIENT_ID`
+- `SLACK_CLIENT_SECRET`
+- `ANICCA_WEB_URL`
+
+#### Web版 (Vercel)
+- `NEXT_PUBLIC_API_URL` (プロキシのURL)
+
+### 今後の方針
+- デスクトップ版もプロキシ経由に統一
+- APIキー管理の一元化
+- コードベースの共通化
+
 ## Build and Development Commands
 
 ```bash

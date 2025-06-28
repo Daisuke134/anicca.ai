@@ -101,3 +101,6 @@ create-tray-icon.py
 session.json
 slack-config.json
 highlights_cache.json
+
+# Local Netlify folder
+.netlify

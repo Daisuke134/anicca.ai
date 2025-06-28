@@ -178,6 +178,24 @@ body {
     color: var(--primary-color);
 }
 
+.btn-web {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #DB2777 100%);
+    color: white;
+    box-shadow: var(--shadow-md);
+}
+
+.btn-web:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.web-app-link {
+    background: linear-gradient(135deg, var(--secondary-color) 0%, #DB2777 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    font-weight: 600;
+}
+
 .btn-large {
     padding: 1rem 2.5rem;
     font-size: 1.125rem;

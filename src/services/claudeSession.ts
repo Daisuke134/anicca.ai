@@ -28,6 +28,7 @@ export class ClaudeSession {
   private sessionStartTime: number;
   private isActive: boolean = true;
   private sessionId: string = '';
+  private inMemoryDeviceId: string | null = null;
   private sessionFile: string;
 
   constructor(executorService: ClaudeExecutorService) {
@@ -65,7 +66,17 @@ export class ClaudeSession {
    * デバイスIDを取得または生成
    */
   private getOrCreateDeviceId(): string {
-    const homeDir = process.env.HOME || process.env.USERPROFILE || '';
+    const homeDir = process.env.HOME || process.env.USERPROFILE;
+    
+    // ホームディレクトリが取得できない場合はメモリ内でのみ保持
+    if (!homeDir) {
+      console.warn('⚠️ Home directory not found, using in-memory device ID');
+      if (!this.inMemoryDeviceId) {
+        this.inMemoryDeviceId = crypto.randomBytes(16).toString('hex');
+      }
+      return this.inMemoryDeviceId;
+    }
+    
     const deviceIdFile = path.join(homeDir, '.anicca', 'device-id.json');
     
     try {

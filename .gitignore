@@ -8,6 +8,7 @@ npm-debug.log*
 .env.development.local
 .env.test.local
 .env.production.local
+.env.proxy
 
 # Build outputs
 dist/
@@ -78,5 +79,28 @@ yarn-error.log
 
 # Local test files
 test-*.js
-test-*.ts anicca-agent-s/
+test-*.ts
+
+# Worktrees and submodules
+anicca-*/
 anicca-agent-s/
+
+# Google Cloud credentials
+gen-lang-client-*.json
+*.json.keyfile
+
+# Temporary files
+haconiwa-reference/
+create-tray-icon.py
+
+# Audio files
+*.wav
+*.mp3
+
+# Session data
+session.json
+slack-config.json
+highlights_cache.json
+
+# Local Netlify folder
+.netlify

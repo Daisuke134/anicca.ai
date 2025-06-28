@@ -96,6 +96,7 @@ function createHiddenWindow() {
   // ページロード完了後、自動的に音声認識を開始
   hiddenWindow.webContents.on('did-finish-load', () => {
     // ページが完全に読み込まれるまで少し待つ
+    const isDev = process.env.NODE_ENV === 'development';
     setTimeout(() => {
       hiddenWindow?.webContents.executeJavaScript(`
         console.log('🎤 Starting voice assistant...');
@@ -110,7 +111,7 @@ function createHiddenWindow() {
             console.log('🚀 Starting voice session...');
             
             // Get session from server
-            const sessionUrl = '${process.env.NODE_ENV}' === 'development' 
+            const sessionUrl = ${isDev} 
               ? '/session'
               : 'https://anicca-proxy-ten.vercel.app/api/openai-proxy/session';
             const sessionResponse = await fetch(sessionUrl);
@@ -199,7 +200,7 @@ function createHiddenWindow() {
             console.log(\`🔧 Tool call: \${name}\`);
             
             // Call our server which proxies to appropriate API
-            const toolsUrl = '${process.env.NODE_ENV}' === 'development'
+            const toolsUrl = ${isDev}
               ? \`/tools/\${name}\`
               : \`https://anicca-proxy-ten.vercel.app/api/tools/\${name}\`;
             const response = await fetch(toolsUrl, {

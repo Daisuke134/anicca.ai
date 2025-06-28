@@ -1,7 +1,7 @@
 // Voice server service - runs in the same process
 import express, { Request, Response } from 'express';
-import { createServer } from 'http';
-import { WebSocketServer } from 'ws';
+import { createServer, Server } from 'http';
+import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import { ClaudeExecutorService } from './claudeExecutorService';
@@ -12,11 +12,11 @@ dotenv.config();
 
 export class VoiceServerService {
   private app: express.Application;
-  private httpServer: any;
-  private wss: any;
+  private httpServer: Server | null = null;
+  private wss: WebSocketServer | null = null;
   private database!: SQLiteDatabase;
   private claudeService!: ClaudeExecutorService;
-  private wsClients: Set<any> = new Set();
+  private wsClients: Set<WebSocket> = new Set();
   
   // Task execution state
   private taskState = {
@@ -24,6 +24,9 @@ export class VoiceServerService {
     currentTask: null as string | null,
     startedAt: null as number | null
   };
+  
+  // Lock for preventing race conditions
+  private taskLock = false;
 
   constructor() {
     this.app = express();
@@ -50,7 +53,7 @@ export class VoiceServerService {
 
     // Start server
     return new Promise((resolve) => {
-      this.httpServer.listen(port, 'localhost', () => {
+      this.httpServer!.listen(port, 'localhost', () => {
         console.log(`🎙️ Anicca Voice Server (Simple)`);
         console.log(`================================`);
         console.log(`🌐 Interface: http://localhost:${port}`);
@@ -62,7 +65,7 @@ export class VoiceServerService {
   }
 
   private setupWebSocket(): void {
-    this.wss.on('connection', (ws: any) => {
+    this.wss!.on('connection', (ws: WebSocket) => {
       this.wsClients.add(ws);
       console.log('Client connected');
       
@@ -266,23 +269,40 @@ Be friendly and helpful in any language.`,
           case 'think_with_claude':
             // Claude実行
             try {
-              // 実行状態をチェック
-              if (this.taskState.isExecuting) {
-                const elapsed = Date.now() - (this.taskState.startedAt || 0);
-                const elapsedSeconds = Math.floor(elapsed / 1000);
-                return res.json({
-                  success: false,
-                  error: 'busy',
-                  message: `現在「${this.taskState.currentTask}」を実行中です（${elapsedSeconds}秒経過）`,
-                  currentTask: this.taskState.currentTask,
-                  elapsedTime: elapsedSeconds
-                });
-              }
+              // Wait for lock to be available
+              const waitForLock = async () => {
+                while (this.taskLock) {
+                  await new Promise(resolve => setTimeout(resolve, 10));
+                }
+              };
               
-              // タスク実行開始
-              this.taskState.isExecuting = true;
-              this.taskState.currentTask = args.task;
-              this.taskState.startedAt = Date.now();
+              await waitForLock();
+              
+              // Acquire lock
+              this.taskLock = true;
+              
+              try {
+                // 実行状態をチェック
+                if (this.taskState.isExecuting) {
+                  const elapsed = Date.now() - (this.taskState.startedAt || 0);
+                  const elapsedSeconds = Math.floor(elapsed / 1000);
+                  return res.json({
+                    success: false,
+                    error: 'busy',
+                    message: `現在「${this.taskState.currentTask}」を実行中です（${elapsedSeconds}秒経過）`,
+                    currentTask: this.taskState.currentTask,
+                    elapsedTime: elapsedSeconds
+                  });
+                }
+                
+                // タスク実行開始
+                this.taskState.isExecuting = true;
+                this.taskState.currentTask = args.task;
+                this.taskState.startedAt = Date.now();
+              } finally {
+                // Release lock
+                this.taskLock = false;
+              }
               
               console.log(`🚀 Starting task: ${args.task}`);
               this.broadcast({ type: 'task_started', task: args.task });

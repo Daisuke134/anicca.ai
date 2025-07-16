@@ -19,7 +19,7 @@
     "voice": "npm run build:voice && NODE_ENV=development electron dist/main-voice.js",
     "voice:prod": "npm run build:voice && electron dist/main-voice.js",
     "voice:rtmcp": "npm run build:voice && NODE_ENV=development electron dist/main-voice-rtmcp.js",
-    "voice:simple": "npm run build:voice && NODE_ENV=development electron dist/main-voice-simple.js",
+    "voice:simple": "npm run build:voice && NODE_ENV=development DESKTOP_MODE=true electron dist/main-voice-simple.js",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:voice": "npm run build:voice && electron-builder --mac --config electron-builder-voice.yml",

@@ -113,7 +113,7 @@ function createHiddenWindow() {
             // Get session from server
             const sessionUrl = ${isDev} 
               ? '/session'
-              : 'https://anicca-proxy-ten.vercel.app/api/openai-proxy/session';
+              : 'https://anicca-proxy-staging.up.railway.app/api/openai-proxy/session';
             const sessionResponse = await fetch(sessionUrl);
             const session = await sessionResponse.json();
             console.log('📡 Session received:', session);
@@ -202,7 +202,7 @@ function createHiddenWindow() {
             // Call our server which proxies to appropriate API
             const toolsUrl = ${isDev}
               ? \`/tools/\${name}\`
-              : \`https://anicca-proxy-ten.vercel.app/api/tools/\${name}\`;
+              : \`https://anicca-proxy-staging.up.railway.app/api/tools/\${name}\`;
             const response = await fetch(toolsUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -280,7 +280,7 @@ function updateTrayMenu() {
       label: 'Connect Slack',
       click: async () => {
         const { shell } = require('electron');
-        shell.openExternal('https://anicca-proxy-ten.vercel.app/api/slack-oauth');
+        shell.openExternal('https://anicca-proxy-staging.up.railway.app/api/slack-oauth');
       }
     },
     {

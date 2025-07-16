@@ -17,6 +17,7 @@
     "src/ui/**/*",
     "node_modules",
     "**/*.spec.ts",
-    "**/*.test.ts"
+    "**/*.test.ts",
+    "anicca-proxy-slack/**/*"
   ]
 }

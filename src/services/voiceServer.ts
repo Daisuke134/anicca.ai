@@ -4,6 +4,7 @@ import { createServer, Server } from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
+import * as path from 'path';
 import { ClaudeExecutorService } from './claudeExecutorService';
 import { SQLiteDatabase } from './sqliteDatabase';
 
@@ -44,7 +45,7 @@ export class VoiceServerService {
 
     // Initialize ParentAgent for parallel execution using dynamic import
     // @ts-ignore
-    const ParentAgentModule = await import('./parallel-sdk/agents/ParentAgent');
+    const ParentAgentModule = await import(path.resolve(__dirname, '../../anicca-proxy-slack/services/parallel-sdk/agents/ParentAgent.js'));
     this.parentAgent = new ParentAgentModule.ParentAgent();
     await this.parentAgent.initialize();
     console.log('✅ ParentAgent initialized with 5 workers');
@@ -65,7 +66,7 @@ export class VoiceServerService {
         console.log(`🎙️ Anicca Voice Server (Simple)`);
         console.log(`================================`);
         console.log(`🌐 Interface: http://localhost:${port}`);
-        console.log(`🔗 API Base: https://anicca-proxy-ten.vercel.app/api/tools`);
+        console.log(`🔗 API Base: https://anicca-proxy-staging.up.railway.app/api/tools`);
         console.log(`\n✅ Ready!`);
         resolve();
       });
@@ -96,7 +97,7 @@ export class VoiceServerService {
   private setupRoutes(): void {
     const API_BASE_URL = 'https://anicca-proxy-staging.up.railway.app/api/tools';
     const PROXY_BASE_URL = 'https://anicca-proxy-staging.up.railway.app';
-    const useProxy = !process.env.OPENAI_API_KEY || process.env.NODE_ENV === 'production';
+    const useProxy = process.env.USE_PROXY !== 'false';
     
     console.log('🔑 OpenAI API Key status:', process.env.OPENAI_API_KEY ? 'Found' : 'Not found');
     console.log('🌍 Environment:', process.env.NODE_ENV || 'development');

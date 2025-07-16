@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Anicca Audio Recorder</title>
+</head>
+<body>
+    <script>
+        const { ipcRenderer } = require('electron');
+        
+        let mediaRecorder = null;
+        let audioChunks = [];
+        
+        // メインプロセスからの録音開始要求を受信
+        ipcRenderer.on('start-recording', async (event) => {
+            try {
+                // マイクアクセスを要求（これがmacOSの許可ダイアログをトリガー）
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 24000,  // OpenAI Whisper標準
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+                
+                
+                // 録音開始
+                audioChunks = [];
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+                
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        audioChunks.push(event.data);
+                    }
+                };
+                
+                mediaRecorder.onstop = async () => {
+                    // 音声データをBlobに変換
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // ArrayBufferに変換してメインプロセスに送信
+                    const arrayBuffer = await audioBlob.arrayBuffer();
+                    ipcRenderer.send('recording-complete', Buffer.from(arrayBuffer));
+                    
+                    // ストリームを停止
+                    stream.getTracks().forEach(track => track.stop());
+                };
+                
+                mediaRecorder.start();
+                ipcRenderer.send('recording-started');
+                
+            } catch (error) {
+                console.error('Recording error:', error);
+                ipcRenderer.send('recording-error', error.message);
+            }
+        });
+        
+        // 録音停止要求を受信
+        ipcRenderer.on('stop-recording', () => {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        });
+        
+        // 初期化完了を通知
+        ipcRenderer.send('recorder-ready');
+    </script>
+</body>
+</html>

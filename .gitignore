@@ -82,7 +82,7 @@ test-*.js
 test-*.ts
 
 # Worktrees and submodules
-anicca-*/
+# anicca-*/  # コメントアウトしてanicca-desktopを追加可能に
 anicca-agent-s/
 
 # Google Cloud credentials

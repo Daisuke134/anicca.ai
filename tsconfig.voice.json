@@ -17,7 +17,6 @@
     "src/ui/**/*",
     "node_modules",
     "**/*.spec.ts",
-    "**/*.test.ts",
-    "src/services/parallel-sdk/**/*"
+    "**/*.test.ts"
   ]
 }

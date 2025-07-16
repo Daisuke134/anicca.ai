@@ -1,0 +1,18 @@
+{
+  "id": "Worker4",
+  "name": "Worker4",
+  "totalTasks": 0,
+  "taskTypes": {
+    "development": 0,
+    "communication": 0,
+    "research": 0,
+    "creative": 0,
+    "execution": 0
+  },
+  "specialization": null,
+  "personality": "社交的で協調的",
+  "createdAt": "2024-01-03T00:00:00Z",
+  "lastActive": null,
+  "successRate": 0,
+  "averageTaskDuration": 0
+}

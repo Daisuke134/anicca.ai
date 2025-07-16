@@ -44,7 +44,7 @@ export class VoiceServerService {
 
     // Initialize ParentAgent for parallel execution using dynamic import
     // @ts-ignore
-    const ParentAgentModule = await import('./parallel-sdk/agents/ParentAgent.js');
+    const ParentAgentModule = await import('./parallel-sdk/agents/ParentAgent');
     this.parentAgent = new ParentAgentModule.ParentAgent();
     await this.parentAgent.initialize();
     console.log('✅ ParentAgent initialized with 5 workers');

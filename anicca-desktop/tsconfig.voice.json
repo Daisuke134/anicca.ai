@@ -4,20 +4,14 @@
     "outDir": "./dist"
   },
   "include": [
-    "src/main-voice.ts",
-    "src/main-voice-rtmcp.ts",
-    "src/main-voice-simple.ts",
-    "src/preload-rtmcp.ts",
+    "src/main.ts",
     "src/services/**/*.ts",
     "src/types/**/*.ts"
   ],
   "exclude": [
-    "src/main.ts",
-    "src/preload.ts",
     "src/ui/**/*",
     "node_modules",
     "**/*.spec.ts",
-    "**/*.test.ts",
-    "src/services/parallel-sdk/**/*"
+    "**/*.test.ts"
   ]
 }

@@ -16,7 +16,6 @@ export class VoiceServerService {
   private wss: WebSocketServer | null = null;
   private database!: SQLiteDatabase;
   private claudeService!: ClaudeExecutorService;
-  private parentAgent!: any; // 動的importで読み込むため
   private wsClients: Set<WebSocket> = new Set();
   
   // Task execution state
@@ -41,13 +40,6 @@ export class VoiceServerService {
     await this.database.init();
     this.claudeService = new ClaudeExecutorService(this.database);
     console.log('✅ Claude Executor Service initialized');
-
-    // Initialize ParentAgent for parallel execution using dynamic import
-    // @ts-ignore
-    const ParentAgentModule = await import('./parallel-sdk/agents/ParentAgent.js');
-    this.parentAgent = new ParentAgentModule.ParentAgent();
-    await this.parentAgent.initialize();
-    console.log('✅ ParentAgent initialized with 5 workers');
 
     // Create HTTP server
     this.httpServer = createServer(this.app);
@@ -94,8 +86,8 @@ export class VoiceServerService {
   }
 
   private setupRoutes(): void {
-    const API_BASE_URL = 'https://anicca-proxy-staging.up.railway.app/api/tools';
-    const PROXY_BASE_URL = 'https://anicca-proxy-staging.up.railway.app';
+    const API_BASE_URL = 'https://anicca-proxy-ten.vercel.app/api/tools';
+    const PROXY_BASE_URL = 'https://anicca-proxy-ten.vercel.app';
     const useProxy = !process.env.OPENAI_API_KEY || process.env.NODE_ENV === 'production';
     
     console.log('🔑 OpenAI API Key status:', process.env.OPENAI_API_KEY ? 'Found' : 'Not found');
@@ -275,34 +267,80 @@ Be friendly and helpful in any language.`,
             break;
             
           case 'think_with_claude':
-            // 並列実行でParentAgentに処理を委譲
+            // Claude実行
             try {
-              console.log(`🚀 Starting parallel task: ${args.task}`);
+              // Wait for lock to be available
+              const waitForLock = async () => {
+                while (this.taskLock) {
+                  await new Promise(resolve => setTimeout(resolve, 10));
+                }
+              };
+              
+              await waitForLock();
+              
+              // Acquire lock
+              this.taskLock = true;
+              
+              try {
+                // 実行状態をチェック
+                if (this.taskState.isExecuting) {
+                  const elapsed = Date.now() - (this.taskState.startedAt || 0);
+                  const elapsedSeconds = Math.floor(elapsed / 1000);
+                  return res.json({
+                    success: false,
+                    error: 'busy',
+                    message: `現在「${this.taskState.currentTask}」を実行中です（${elapsedSeconds}秒経過）`,
+                    currentTask: this.taskState.currentTask,
+                    elapsedTime: elapsedSeconds
+                  });
+                }
+                
+                // タスク実行開始
+                this.taskState.isExecuting = true;
+                this.taskState.currentTask = args.task;
+                this.taskState.startedAt = Date.now();
+              } finally {
+                // Release lock
+                this.taskLock = false;
+              }
+              
+              console.log(`🚀 Starting task: ${args.task}`);
               this.broadcast({ type: 'task_started', task: args.task });
               
-              // ParentAgentでタスクを並列実行
-              const result = await this.parentAgent.executeTask({
-                id: Date.now().toString(),
-                originalRequest: args.task,
-                context: args.context || '',
-                userId: 'voice-user' // 音声ユーザーのID
+              const result = await this.claudeService.executeAction({
+                type: 'general',
+                reasoning: args.task,
+                parameters: {
+                  query: args.task  // ClaudeExecutorServiceが期待するフォーマット
+                },
+                context: args.context || ''
               });
               
-              console.log(`✅ Parallel task completed: ${args.task}`);
+              // タスク完了
+              this.taskState.isExecuting = false;
+              this.taskState.currentTask = null;
+              this.taskState.startedAt = null;
+              
+              console.log(`✅ Task completed: ${args.task}`);
               this.broadcast({ type: 'task_completed', task: args.task });
               
               return res.json({
                 success: true,
                 result: {
-                  response: result.output || 'タスクを完了しました',
-                  toolsUsed: result.metadata?.toolsUsed || [],
-                  generatedFiles: result.metadata?.generatedFiles || []
+                  response: result.result || 'タスクを完了しました',
+                  toolsUsed: result.toolsUsed || [],
+                  generatedFiles: result.generatedFiles || []
                 }
               });
             } catch (error) {
-              console.error('Parallel execution error:', error);
+              // エラー時も状態をリセット
+              this.taskState.isExecuting = false;
+              this.taskState.currentTask = null;
+              this.taskState.startedAt = null;
+              
+              console.error('Claude execution error:', error);
               return res.status(500).json({
-                error: error instanceof Error ? error.message : 'Parallel execution failed'
+                error: error instanceof Error ? error.message : 'Claude execution failed'
               });
             }
             

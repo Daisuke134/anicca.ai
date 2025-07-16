@@ -337,7 +337,7 @@ export class ClaudeExecutorService extends EventEmitter {
   /**
    * 一般的なリクエストの実行（自由な指示）
    */
-  async executeGeneralRequest(action: ActionRequest): Promise<ExecutionResult> {
+  private async executeGeneralRequest(action: ActionRequest): Promise<ExecutionResult> {
     if (!action.parameters?.query) {
       return {
         success: false,
@@ -934,7 +934,7 @@ ${action.parameters.query || ''}`;
    * 
    * サーバーの初期化
    */
-  async initializeMCPServers(): Promise<void> {
+  private async initializeMCPServers(): Promise<void> {
     this.mcpServers = {};
     
     // ElevenLabs MCPの設定（環境変数が設定されている場合のみ有効）
@@ -993,25 +993,6 @@ ${action.parameters.query || ''}`;
       }
     } catch (error) {
       console.error('❌ Failed to initialize Slack MCP:', error);
-    }
-  }
-
-  /**
-   * Slackトークンを設定
-   */
-  setSlackTokens(tokens: any): void {
-    // Slack MCPサーバーの設定を更新
-    if (tokens.bot_token) {
-      this.mcpServers.slack = {
-        command: "npx",
-        args: ["-y", "@modelcontextprotocol/server-slack"],
-        env: {
-          SLACK_BOT_TOKEN: tokens.bot_token,
-          SLACK_USER_TOKEN: tokens.user_token || '',
-          SLACK_TEAM_ID: tokens.team_id || ''
-        }
-      };
-      console.log('✅ Slack tokens set for MCP');
     }
   }
 

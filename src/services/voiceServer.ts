@@ -302,21 +302,35 @@ Be friendly and helpful in any language.`,
             // Slack OAuth認証を開始
             try {
               const { exec } = require('child_process');
-              const authUrl = 'https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url';
+              const apiUrl = 'https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url?platform=desktop';
               
-              console.log('🔗 Opening Slack OAuth in browser...');
-              exec(`open "${authUrl}"`);
+              console.log('🔗 Fetching Slack OAuth URL from API...');
               
-              return {
+              // APIからOAuth URLを取得
+              const response = await fetch(apiUrl);
+              if (!response.ok) {
+                throw new Error(`API error: ${response.status}`);
+              }
+              
+              const data = await response.json();
+              if (!data.success || !data.url) {
+                throw new Error('Invalid response from API');
+              }
+              
+              // 実際のSlack OAuth URLをブラウザで開く
+              console.log('🔗 Opening Slack OAuth in browser:', data.url);
+              exec(`open "${data.url}"`);
+              
+              return res.json({
                 success: true,
                 result: 'ブラウザでSlackの認証画面を開きました。ワークスペースを選択して許可してください。'
-              };
+              });
             } catch (error) {
               console.error('Failed to open Slack OAuth:', error);
-              return {
+              return res.json({
                 success: false,
                 error: 'Slack認証の開始に失敗しました。'
-              };
+              });
             }
             
           case 'think_with_claude':

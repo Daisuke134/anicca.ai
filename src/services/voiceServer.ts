@@ -157,6 +157,8 @@ You have access to three powerful tools:
    - Slack連携 (Slackに投稿, post to Slack)
    - ブラウザ自動化 (サイト開いて, open website)
    - その他の複雑なタスク
+4. **connect_slack**: For connecting to Slack workspace
+   - Use for: Slack繋いで, スラック接続, connect Slack, Slack連携して
 
 IMPORTANT RULES:
 - For simple questions about news or search, use the specific tools
@@ -170,6 +172,17 @@ TASK EXECUTION RULES:
 - If user asks for a new task while busy: politely inform them the current task is still running
 - Common progress questions: "どうなってる？", "進捗は？", "status?", "how's it going?"
 
+MULTIPLE TASK HANDLING:
+- When user requests multiple tasks (e.g., "TODOアプリ作って、Slackにメッセージ送って、ニュース調べて"), 
+  send ALL tasks to think_with_claude in ONE request
+- DO NOT send tasks one by one - combine them into a single request
+- Example: "TODOアプリ作成、聖書の言葉送信、ニュース検索" → Send all 3 at once to think_with_claude
+
+SLACK CONNECTION:
+- When user says "Slack繋いで", "スラック接続", "connect Slack", etc., use connect_slack tool
+- This will open browser for OAuth authentication
+- After connection, all Slack features become available through think_with_claude
+
 Examples:
 - "TODOアプリ作って" → Use think_with_claude
 - "ゲーム作って" → Use think_with_claude
@@ -177,6 +190,7 @@ Examples:
 - "YouTube開いて" → Use think_with_claude
 - "最新ニュース" → Use get_hacker_news_stories
 - "天気について調べて" → Use search_exa
+- "Slack繋いで" → Use connect_slack
 
 Be friendly and helpful in any language.`,
           input_audio_format: 'pcm16',
@@ -239,6 +253,15 @@ Be friendly and helpful in any language.`,
                 },
                 required: ['task']
               }
+            },
+            {
+              type: 'function',
+              name: 'connect_slack',
+              description: 'Connect to Slack workspace for integration',
+              parameters: {
+                type: 'object',
+                properties: {}
+              }
             }
           ],
           temperature: 0.8,
@@ -275,6 +298,27 @@ Be friendly and helpful in any language.`,
             payload = { query: args.query };
             break;
             
+          case 'connect_slack':
+            // Slack OAuth認証を開始
+            try {
+              const { exec } = require('child_process');
+              const authUrl = 'https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url';
+              
+              console.log('🔗 Opening Slack OAuth in browser...');
+              exec(`open "${authUrl}"`);
+              
+              return {
+                success: true,
+                result: 'ブラウザでSlackの認証画面を開きました。ワークスペースを選択して許可してください。'
+              };
+            } catch (error) {
+              console.error('Failed to open Slack OAuth:', error);
+              return {
+                success: false,
+                error: 'Slack認証の開始に失敗しました。'
+              };
+            }
+            
           case 'think_with_claude':
             // 並列実行でParentAgentに処理を委譲
             try {
@@ -286,7 +330,7 @@ Be friendly and helpful in any language.`,
                 id: Date.now().toString(),
                 originalRequest: args.task,
                 context: args.context || '',
-                userId: 'voice-user' // 音声ユーザーのID
+                userId: 'desktop-user' // Desktop版ユーザーID
               });
               
               console.log(`✅ Parallel task completed: ${args.task}`);

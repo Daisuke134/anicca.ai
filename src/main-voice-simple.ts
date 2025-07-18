@@ -2,6 +2,7 @@ import { app, Tray, Menu, nativeImage, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { VoiceServerService } from './services/voiceServer';
+import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -11,12 +12,28 @@ let tray: Tray | null = null;
 let hiddenWindow: BrowserWindow | null = null;
 let voiceServer: VoiceServerService | null = null;
 let isListening = false;
+let authService: DesktopAuthService | null = null;
 
 // アプリの初期化
 async function initializeApp() {
   console.log('🎩 Anicca Voice Assistant Starting...');
   
   try {
+    // 認証サービスの初期化
+    authService = getAuthService();
+    await authService.initialize();
+    console.log('✅ Auth service initialized');
+    
+    // 認証状態をチェック
+    if (!authService.isAuthenticated()) {
+      console.log('⚠️ User not authenticated');
+      showNotification('ログインが必要です', 'システムトレイから「Login with Google」をクリックしてください');
+    } else {
+      const userName = authService.getCurrentUserName();
+      console.log(`✅ Authenticated as: ${userName}`);
+      showNotification('ようこそ', `${userName}さん、Aniccaへようこそ！`);
+    }
+    
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
     
@@ -43,6 +60,14 @@ async function initializeApp() {
     
     // VoiceServerServiceを起動
     voiceServer = new VoiceServerService();
+    
+    // 認証済みユーザーIDを設定
+    const userId = authService.getCurrentUserId();
+    if (userId) {
+      voiceServer.setCurrentUserId(userId);
+      console.log(`✅ User ID set in voice server: ${userId}`);
+    }
+    
     await voiceServer.start(8085);
     console.log('✅ Voice server started');
     
@@ -104,6 +129,42 @@ function createHiddenWindow() {
         let pc = null;
         let dataChannel = null;
         let audioElement = null;
+        let ws = null;
+        
+        // WebSocketに接続してリアルタイム通知を受信
+        function connectWebSocket() {
+          ws = new WebSocket('ws://localhost:8085');
+          
+          ws.onmessage = (event) => {
+            try {
+              const message = JSON.parse(event.data);
+              console.log('🔔 WebSocket message:', message);
+              
+              if (message.type === 'worker_task_complete' && dataChannel?.readyState === 'open') {
+                // Worker完了通知を音声で報告
+                const text = message.payload.message;
+                console.log('🗣️ Announcing:', text);
+                
+                // OpenAI RealtimeAPIで音声合成
+                dataChannel.send(JSON.stringify({
+                  type: 'response.create',
+                  response: {
+                    modalities: ['audio'],
+                    instructions: \`次のメッセージを日本語で読み上げてください: "\${text}"\`
+                  }
+                }));
+              }
+            } catch (error) {
+              console.error('WebSocket message error:', error);
+            }
+          };
+          
+          ws.onopen = () => console.log('✅ WebSocket connected');
+          ws.onclose = () => {
+            console.log('❌ WebSocket disconnected, reconnecting...');
+            setTimeout(connectWebSocket, 3000);
+          };
+        }
         
         // WebRTCセッションを自動的に開始する関数
         async function startVoiceSession() {
@@ -236,6 +297,9 @@ function createHiddenWindow() {
           }
         }
         
+        // WebSocketに接続
+        connectWebSocket();
+        
         // 自動的にWebRTC接続を開始
         setTimeout(() => {
           console.log('🚀 Auto-starting voice session...');
@@ -270,19 +334,70 @@ function createSystemTray() {
 
 // トレイメニューを更新
 function updateTrayMenu() {
+  const userName = authService?.isAuthenticated() ? authService.getCurrentUserName() : 'ゲスト';
+  const isAuthenticated = authService?.isAuthenticated() || false;
+  
   const contextMenu = Menu.buildFromTemplate([
+    {
+      label: `👤 ${userName}`,
+      enabled: false
+    },
     {
       label: isListening ? '🎙️ Listening...' : '🔇 Ready',
       enabled: false
     },
     { type: 'separator' },
+    ...(!isAuthenticated ? [{
+      label: 'Login with Google',
+      click: async () => {
+        const { shell } = require('electron');
+        // Supabase Google OAuth URL (Web版と同じプロジェクト)
+        const supabaseUrl = 'https://mzkwtwourrkduqkrsxpc.supabase.co';
+        const redirectUrl = 'http://localhost:3000/auth/callback';
+        shell.openExternal(`${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`);
+      }
+    }] : []),
     {
       label: 'Connect Slack',
       click: async () => {
         const { shell } = require('electron');
-        shell.openExternal('https://anicca-proxy-staging.up.railway.app/api/slack-oauth');
+        // Fetch the actual OAuth URL from the API
+        try {
+          const apiUrl = 'https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url?platform=desktop';
+          const response = await fetch(apiUrl);
+          const data = await response.json();
+          
+          if (data.url) {
+            shell.openExternal(data.url);
+          } else {
+            console.error('Failed to get Slack OAuth URL');
+            showNotification('Error', 'Failed to get Slack authentication URL');
+          }
+        } catch (error) {
+          console.error('Error fetching Slack OAuth URL:', error);
+          showNotification('Error', 'Failed to connect to Slack');
+        }
       }
     },
+    ...(isAuthenticated ? [{
+      label: 'Logout',
+      click: async () => {
+        if (authService && authService.isAuthenticated()) {
+          const userName = authService.getCurrentUserName();
+          await authService.signOut();
+          showNotification('ログアウト', `${userName}さん、さようなら`);
+          
+          // トレイメニューを更新
+          updateTrayMenu();
+          
+          // VoiceServerのユーザーIDをリセット
+          if (voiceServer) {
+            voiceServer.setCurrentUserId('desktop-user');
+          }
+        }
+      }
+    }] : []),
+    { type: 'separator' },
     {
       label: 'Show Demo Page',
       click: () => {

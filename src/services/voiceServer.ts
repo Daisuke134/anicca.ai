@@ -19,6 +19,7 @@ export class VoiceServerService {
   private claudeService!: ClaudeExecutorService;
   private parentAgent!: any; // 動的importで読み込むため
   private wsClients: Set<WebSocket> = new Set();
+  private currentUserId: string | null = null;
   
   // Task execution state
   private taskState = {
@@ -36,6 +37,17 @@ export class VoiceServerService {
     this.app.use(express.json());
   }
 
+  /**
+   * 現在のユーザーIDを設定
+   */
+  setCurrentUserId(userId: string): void {
+    this.currentUserId = userId;
+    // ParentAgentで使用される環境変数も設定
+    process.env.CURRENT_USER_ID = userId;
+    process.env.SLACK_USER_ID = userId;
+    console.log(`👤 Current user ID set to: ${userId}`);
+  }
+
   async start(port: number = 8085): Promise<void> {
     // Initialize database and Claude service
     this.database = new SQLiteDatabase();
@@ -47,6 +59,24 @@ export class VoiceServerService {
     // @ts-ignore
     const ParentAgentModule = await import(path.resolve(__dirname, '../../anicca-proxy-slack/services/parallel-sdk/agents/ParentAgent.js'));
     this.parentAgent = new ParentAgentModule.ParentAgent();
+    
+    // Desktop版のタスク完了コールバックを設定
+    if (process.env.DESKTOP_MODE === 'true') {
+      this.parentAgent.onTaskComplete = async (taskInfo: any) => {
+        console.log(`📢 Task completed by ${taskInfo.workerName}: ${taskInfo.task}`);
+        
+        // 音声で報告（クライアントにブロードキャスト）
+        this.broadcast({
+          type: 'worker_task_complete',
+          payload: {
+            message: `${taskInfo.workerName}が「${taskInfo.task}」を完了しました`,
+            workerName: taskInfo.workerName,
+            task: taskInfo.task
+          }
+        });
+      };
+    }
+    
     await this.parentAgent.initialize();
     console.log('✅ ParentAgent initialized with 5 workers');
 
@@ -344,7 +374,7 @@ Be friendly and helpful in any language.`,
                 id: Date.now().toString(),
                 originalRequest: args.task,
                 context: args.context || '',
-                userId: 'desktop-user' // Desktop版ユーザーID
+                userId: this.currentUserId || 'desktop-user' // 認証済みユーザーIDを使用
               });
               
               console.log(`✅ Parallel task completed: ${args.task}`);

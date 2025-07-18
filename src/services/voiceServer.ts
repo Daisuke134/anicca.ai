@@ -456,6 +456,116 @@ Be friendly and helpful in any language.`,
       res.json({ status: 'ok' });
     });
 
+    // Auth complete endpoint - receives tokens from callback page
+    this.app.post('/auth/complete', async (req, res) => {
+      try {
+        const { access_token, refresh_token, expires_at } = req.body;
+        console.log('🔐 Received auth tokens');
+        
+        // Get auth service from main process
+        const { getAuthService } = await import('./desktopAuthService');
+        const authService = getAuthService();
+        
+        // Set the session in Supabase
+        const { data, error } = await authService.supabase.auth.setSession({
+          access_token,
+          refresh_token
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        if (data?.user) {
+          // Update current user ID
+          this.setCurrentUserId(data.user.id);
+          console.log(`✅ User authenticated: ${data.user.email}`);
+          
+          // Notify main process to update tray menu
+          process.emit('user-authenticated', data.user);
+        }
+        
+        res.json({ success: true });
+      } catch (error) {
+        console.error('Auth complete error:', error);
+        res.status(500).json({ error: 'Failed to complete authentication' });
+      }
+    });
+
+    // Auth callback endpoint for Google OAuth
+    this.app.get('/auth/callback', async (req, res) => {
+      try {
+        console.log('📥 Auth callback received');
+        
+        // Extract tokens from URL fragment (will be handled client-side)
+        const html = `
+          <!DOCTYPE html>
+          <html>
+          <head>
+            <title>認証成功 - Anicca</title>
+            <meta charset="utf-8">
+            <style>
+              body {
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                background: #f5f5f5;
+              }
+              .container {
+                text-align: center;
+                padding: 40px;
+                background: white;
+                border-radius: 10px;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+              }
+              h1 { color: #333; }
+              p { color: #666; margin: 20px 0; }
+              .success { color: #4CAF50; font-size: 48px; }
+            </style>
+          </head>
+          <body>
+            <div class="container">
+              <div class="success">✅</div>
+              <h1>認証が完了しました</h1>
+              <p>このウィンドウは自動的に閉じられます...</p>
+            </div>
+            <script>
+              // Extract tokens from URL hash
+              const hash = window.location.hash.substring(1);
+              const params = new URLSearchParams(hash);
+              const accessToken = params.get('access_token');
+              const refreshToken = params.get('refresh_token');
+              
+              if (accessToken) {
+                // Send tokens to the desktop app via HTTP request
+                fetch('http://localhost:8085/auth/complete', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                    expires_at: params.get('expires_at')
+                  })
+                }).then(() => {
+                  setTimeout(() => window.close(), 2000);
+                });
+              }
+            </script>
+          </body>
+          </html>
+        `;
+        
+        res.setHeader('Content-Type', 'text/html; charset=utf-8');
+        res.send(html);
+      } catch (error) {
+        console.error('Auth callback error:', error);
+        res.status(500).send('Authentication error');
+      }
+    });
+
     // Main page - just return JSON
     this.app.get('/', (req, res) => {
       res.json({

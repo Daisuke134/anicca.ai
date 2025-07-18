@@ -9,7 +9,7 @@ const SUPABASE_URL = 'https://mzkwtwourrkduqkrsxpc.supabase.co';
 const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16a3d0d291cnJrZHVxa3JzeHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzQ1NjYsImV4cCI6MjA2Njc1MDU2Nn0.ihBs1cpz_sgR6UUZpIrICuN3b-gJNrfzWsfNVlpP4hs';
 
 export class DesktopAuthService {
-  private supabase: SupabaseClient;
+  public supabase: SupabaseClient;
   private currentUser: User | null = null;
   private currentSession: Session | null = null;
   private authFilePath: string;
@@ -104,7 +104,7 @@ export class DesktopAuthService {
     const { data, error } = await this.supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: 'http://localhost:3000/auth/callback',
+        redirectTo: 'http://localhost:8085/auth/callback',
         skipBrowserRedirect: true
       }
     });

@@ -34,6 +34,13 @@ async function initializeApp() {
       showNotification('ようこそ', `${userName}さん、Aniccaへようこそ！`);
     }
     
+    // 認証成功時のイベントリスナー
+    process.on('user-authenticated' as any, (user: any) => {
+      console.log('🎉 User authenticated via browser:', user.email);
+      showNotification('ログイン成功', `${user.email}でログインしました`);
+      updateTrayMenu();
+    });
+    
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
     
@@ -189,8 +196,10 @@ function createHiddenWindow() {
             
             // Data channel for communication
             dataChannel = pc.createDataChannel('oai-events');
+            console.log('📡 Data channel created, state:', dataChannel.readyState);
+            
             dataChannel.onopen = () => {
-              console.log('✅ Data channel opened!');
+              console.log('✅ Data channel opened! State:', dataChannel.readyState);
               
               // Send session config
               dataChannel.send(JSON.stringify({
@@ -208,6 +217,14 @@ function createHiddenWindow() {
                   max_response_output_tokens: session.max_response_output_tokens
                 }
               }));
+            };
+            
+            dataChannel.onerror = (error) => {
+              console.error('❌ Data channel error:', error);
+            };
+            
+            dataChannel.onclose = () => {
+              console.log('📴 Data channel closed');
             };
             
             dataChannel.onmessage = (event) => {
@@ -353,7 +370,7 @@ function updateTrayMenu() {
         const { shell } = require('electron');
         // Supabase Google OAuth URL (Web版と同じプロジェクト)
         const supabaseUrl = 'https://mzkwtwourrkduqkrsxpc.supabase.co';
-        const redirectUrl = 'http://localhost:3000/auth/callback';
+        const redirectUrl = 'http://localhost:8085/auth/callback';
         shell.openExternal(`${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`);
       }
     }] : []),

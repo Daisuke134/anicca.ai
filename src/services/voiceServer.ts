@@ -342,7 +342,7 @@ Be friendly and helpful in any language.`,
             // Slack OAuth認証を開始
             try {
               const { exec } = require('child_process');
-              const apiUrl = 'https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url?platform=desktop';
+              const apiUrl = `https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url?platform=desktop&userId=${this.currentUserId || 'desktop-user'}`;
               
               console.log('🔗 Fetching Slack OAuth URL from API...');
               

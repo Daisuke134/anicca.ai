@@ -150,6 +150,7 @@ function createHiddenWindow() {
         let dataChannel = null;
         let audioElement = null;
         let ws = null;
+        let userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
         
         // WebSocketに接続してリアルタイム通知を受信
         function connectWebSocket() {
@@ -192,7 +193,6 @@ function createHiddenWindow() {
             console.log('🚀 Starting voice session...');
             
             // Get session from server
-            const userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
             const sessionUrl = ${isDev} 
               ? userId ? \`/session?userId=\${userId}\` : '/session'
               : userId 

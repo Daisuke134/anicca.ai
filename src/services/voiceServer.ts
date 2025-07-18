@@ -48,6 +48,13 @@ export class VoiceServerService {
     console.log(`👤 Current user ID set to: ${userId}`);
   }
 
+  /**
+   * 現在のユーザーIDを取得
+   */
+  getCurrentUserId(): string | null {
+    return this.currentUserId;
+  }
+
   async start(port: number = 8085): Promise<void> {
     // Initialize database and Claude service
     this.database = new SQLiteDatabase();
@@ -141,7 +148,10 @@ export class VoiceServerService {
         if (useProxy) {
           // Fetch API key from proxy
           console.log('🌐 Fetching OpenAI API key from proxy...');
-          const response = await fetch(`${PROXY_BASE_URL}/api/openai-proxy/session`);
+          const sessionUrl = this.currentUserId 
+            ? `${PROXY_BASE_URL}/api/openai-proxy/session?userId=${this.currentUserId}`
+            : `${PROXY_BASE_URL}/api/openai-proxy/session`;
+          const response = await fetch(sessionUrl);
           
           if (!response.ok) {
             throw new Error('Failed to fetch API key from proxy');
@@ -482,7 +492,10 @@ Be friendly and helpful in any language.`,
           console.log(`✅ User authenticated: ${data.user.email}`);
           
           // Notify main process to update tray menu
-          process.emit('user-authenticated', data.user);
+          // Use a custom event emitter or global variable instead of process.emit
+          if ((global as any).onUserAuthenticated) {
+            (global as any).onUserAuthenticated(data.user);
+          }
         }
         
         res.json({ success: true });

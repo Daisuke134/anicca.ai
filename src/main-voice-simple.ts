@@ -34,12 +34,25 @@ async function initializeApp() {
       showNotification('ようこそ', `${userName}さん、Aniccaへようこそ！`);
     }
     
-    // 認証成功時のイベントリスナー
-    process.on('user-authenticated' as any, (user: any) => {
+    // 認証成功時のグローバルコールバックを設定
+    (global as any).onUserAuthenticated = async (user: any) => {
       console.log('🎉 User authenticated via browser:', user.email);
+      
+      // authServiceを更新
+      if (authService) {
+        await authService.initialize();
+      }
+      
+      // voiceServerにユーザーIDを設定
+      if (voiceServer && user.id) {
+        voiceServer.setCurrentUserId(user.id);
+        console.log(`✅ Updated voice server with user ID: ${user.id}`);
+      }
+      
+      // 通知とトレイメニュー更新
       showNotification('ログイン成功', `${user.email}でログインしました`);
       updateTrayMenu();
-    });
+    };
     
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
@@ -179,9 +192,12 @@ function createHiddenWindow() {
             console.log('🚀 Starting voice session...');
             
             // Get session from server
+            const userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
             const sessionUrl = ${isDev} 
-              ? '/session'
-              : 'https://anicca-proxy-staging.up.railway.app/api/openai-proxy/session';
+              ? userId ? \`/session?userId=\${userId}\` : '/session'
+              : userId 
+                ? \`https://anicca-proxy-staging.up.railway.app/api/openai-proxy/session?userId=\${userId}\`
+                : 'https://anicca-proxy-staging.up.railway.app/api/openai-proxy/session';
             const sessionResponse = await fetch(sessionUrl);
             const session = await sessionResponse.json();
             console.log('📡 Session received:', session);
@@ -279,8 +295,10 @@ function createHiddenWindow() {
             
             // Call our server which proxies to appropriate API
             const toolsUrl = ${isDev}
-              ? \`/tools/\${name}\`
-              : \`https://anicca-proxy-staging.up.railway.app/api/tools/\${name}\`;
+              ? userId ? \`/tools/\${name}?userId=\${userId}\` : \`/tools/\${name}\`
+              : userId 
+                ? \`https://anicca-proxy-staging.up.railway.app/api/tools/\${name}?userId=\${userId}\`
+                : \`https://anicca-proxy-staging.up.railway.app/api/tools/\${name}\`;
             const response = await fetch(toolsUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -368,10 +386,19 @@ function updateTrayMenu() {
       label: 'Login with Google',
       click: async () => {
         const { shell } = require('electron');
-        // Supabase Google OAuth URL (Web版と同じプロジェクト)
-        const supabaseUrl = 'https://mzkwtwourrkduqkrsxpc.supabase.co';
-        const redirectUrl = 'http://localhost:8085/auth/callback';
-        shell.openExternal(`${supabaseUrl}/auth/v1/authorize?provider=google&redirect_to=${encodeURIComponent(redirectUrl)}`);
+        try {
+          // authServiceのメソッドを使用してOAuth URLを取得
+          if (authService) {
+            const oauthUrl = await authService.getGoogleOAuthUrl();
+            shell.openExternal(oauthUrl);
+          } else {
+            console.error('Auth service not initialized');
+            showNotification('エラー', '認証サービスが初期化されていません');
+          }
+        } catch (error) {
+          console.error('Failed to get Google OAuth URL:', error);
+          showNotification('エラー', 'ログインに失敗しました');
+        }
       }
     }] : []),
     {

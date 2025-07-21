@@ -55,6 +55,56 @@ export class VoiceServerService {
     return this.currentUserId;
   }
 
+  /**
+   * Slack接続状態を確認
+   */
+  async checkSlackConnection(): Promise<{ connected: boolean; teamName?: string; tokens?: any }> {
+    try {
+      if (!this.currentUserId) {
+        console.log('⚠️ No user ID available for Slack connection check');
+        return { connected: false };
+      }
+
+      console.log('🔍 Checking Slack connection for user:', this.currentUserId);
+      
+      const response = await fetch('http://localhost:8085/api/tools/slack', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'getTokens',
+          arguments: {},
+          userId: this.currentUserId
+        })
+      });
+
+      if (!response.ok) {
+        console.log('❌ Failed to check Slack connection:', response.status);
+        return { connected: false };
+      }
+
+      const data = await response.json();
+      
+      if (data.bot_token) {
+        console.log('✅ Slack is connected:', data.team_name || 'Unknown workspace');
+        return {
+          connected: true,
+          teamName: data.team_name,
+          tokens: {
+            bot_token: data.bot_token,
+            user_token: data.user_token,
+            userId: this.currentUserId
+          }
+        };
+      } else {
+        console.log('❌ No Slack tokens found');
+        return { connected: false };
+      }
+    } catch (error) {
+      console.error('❌ Error checking Slack connection:', error);
+      return { connected: false };
+    }
+  }
+
   async start(port: number = 8085): Promise<void> {
     // Initialize database and Claude service
     this.database = new SQLiteDatabase();
@@ -82,6 +132,18 @@ export class VoiceServerService {
           }
         });
       };
+      
+      // Desktop版でSlackトークンを事前に取得してParentAgentに設定
+      if (this.currentUserId) {
+        console.log('🔍 Checking Slack tokens for ParentAgent initialization...');
+        const slackStatus = await this.checkSlackConnection();
+        if (slackStatus.connected && slackStatus.tokens) {
+          console.log('✅ Setting Slack tokens for ParentAgent');
+          this.parentAgent.setSlackTokens(slackStatus.tokens);
+        } else {
+          console.log('⚠️ No Slack tokens available for ParentAgent');
+        }
+      }
     }
     
     await this.parentAgent.initialize();
@@ -99,11 +161,22 @@ export class VoiceServerService {
 
     // Start server
     return new Promise((resolve) => {
-      this.httpServer!.listen(port, 'localhost', () => {
+      this.httpServer!.listen(port, 'localhost', async () => {
         console.log(`🎙️ Anicca Voice Server (Simple)`);
         console.log(`================================`);
         console.log(`🌐 Interface: http://localhost:${port}`);
         console.log(`🔗 API Base: https://anicca-proxy-staging.up.railway.app/api/tools`);
+        
+        // Slack接続状態をチェック
+        if (this.currentUserId) {
+          const slackStatus = await this.checkSlackConnection();
+          if (slackStatus.connected) {
+            console.log(`🔗 Slack: Connected to ${slackStatus.teamName || 'workspace'}`);
+          } else {
+            console.log(`❌ Slack: Not connected`);
+          }
+        }
+        
         console.log(`\n✅ Ready!`);
         resolve();
       });
@@ -339,6 +412,17 @@ Be friendly and helpful in any language.`,
             break;
             
           case 'connect_slack':
+            // まず既に接続済みかチェック
+            const slackStatus = await this.checkSlackConnection();
+            if (slackStatus.connected) {
+              console.log('🔗 Slack is already connected');
+              return res.json({
+                success: true,
+                result: `Slackは既に接続されています（${slackStatus.teamName || 'ワークスペース'}）`,
+                alreadyConnected: true
+              });
+            }
+            
             // Slack OAuth認証を開始
             try {
               const { exec } = require('child_process');
@@ -376,6 +460,32 @@ Be friendly and helpful in any language.`,
           case 'think_with_claude':
             // 並列実行でParentAgentに処理を委譲
             try {
+              // Desktop版でトークンを取得
+              if (process.env.DESKTOP_MODE === 'true' && !process.env.SLACK_BOT_TOKEN && this.currentUserId) {
+                try {
+                  console.log('🔑 Fetching Slack tokens for Desktop mode...');
+                  const tokenResponse = await fetch('http://localhost:8085/api/tools/slack', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      action: 'getTokens',
+                      arguments: {},
+                      userId: this.currentUserId
+                    })
+                  });
+                  const data = await tokenResponse.json();
+                  if (data.bot_token) {
+                    process.env.SLACK_BOT_TOKEN = data.bot_token;
+                    process.env.SLACK_USER_TOKEN = data.user_token || '';
+                    console.log('✅ Slack tokens set in environment variables');
+                  } else {
+                    console.log('⚠️ No Slack tokens found for user');
+                  }
+                } catch (error) {
+                  console.error('Failed to fetch tokens:', error);
+                }
+              }
+              
               console.log(`🚀 Starting parallel task: ${args.task}`);
               this.broadcast({ type: 'task_started', task: args.task });
               
@@ -579,6 +689,44 @@ Be friendly and helpful in any language.`,
       }
     });
 
+    // Slack API プロキシエンドポイント
+    this.app.all('/api/tools/slack', async (req, res) => {
+      try {
+        const railwayUrl = `${PROXY_BASE_URL}/api/tools/slack`;
+        
+        // リクエストボディにuserIdを追加
+        const body = {
+          ...req.body,
+          userId: this.currentUserId // 現在のユーザーIDを追加
+        };
+        
+        console.log('🔀 Proxying Slack request:', {
+          userId: this.currentUserId,
+          action: body.action,
+          hasUserId: !!this.currentUserId
+        });
+        
+        const response = await fetch(railwayUrl, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(body)
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          console.error('❌ Slack proxy error:', data);
+        }
+        
+        res.status(response.status).json(data);
+      } catch (error) {
+        console.error('Slack proxy error:', error);
+        res.status(500).json({ error: 'Proxy error', message: error instanceof Error ? error.message : 'Unknown error' });
+      }
+    });
+
     // Main page - just return JSON
     this.app.get('/', (req, res) => {
       res.json({
@@ -588,7 +736,8 @@ Be friendly and helpful in any language.`,
           session: '/session',
           tools: '/tools/:toolName',
           taskStatus: '/task-status',
-          health: '/health'
+          health: '/health',
+          slackProxy: '/api/tools/slack'
         }
       });
     });

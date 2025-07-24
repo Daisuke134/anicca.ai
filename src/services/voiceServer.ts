@@ -743,9 +743,22 @@ Be friendly and helpful in any language.`,
     });
   }
 
-  stop(): void {
+  async stop(): Promise<void> {
+    console.log('🛑 Stopping Voice Server...');
+    
+    // ParentAgentのシャットダウン
+    if (this.parentAgent && typeof this.parentAgent.shutdown === 'function') {
+      await this.parentAgent.shutdown();
+    }
+    
+    // HTTPサーバーのクローズ
     if (this.httpServer) {
       this.httpServer.close();
     }
+    
+    // WebSocketクライアントの切断
+    this.wsClients.forEach(ws => ws.close());
+    
+    console.log('✅ Voice Server stopped');
   }
 }

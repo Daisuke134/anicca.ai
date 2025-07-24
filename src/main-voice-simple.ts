@@ -496,20 +496,41 @@ app.on('window-all-closed', () => {
   // ウィンドウがなくても終了しない
 });
 
-app.on('before-quit', async () => {
+app.on('before-quit', async (event) => {
   console.log('👋 Anicca shutting down...');
   
-  if (voiceServer) {
-    voiceServer.stop();
-  }
+  // 非同期処理のためデフォルトの終了を防ぐ
+  event.preventDefault();
   
-  if (hiddenWindow) {
-    hiddenWindow.close();
+  try {
+    if (voiceServer) {
+      await voiceServer.stop();
+    }
+    
+    if (hiddenWindow) {
+      hiddenWindow.close();
+    }
+    
+    if (tray) {
+      tray.destroy();
+    }
+  } catch (error) {
+    console.error('Error during shutdown:', error);
+  } finally {
+    // 終了処理が完了したらアプリを終了
+    app.exit(0);
   }
-  
-  if (tray) {
-    tray.destroy();
-  }
+});
+
+// プロセス終了シグナルのハンドラー
+process.on('SIGINT', async () => {
+  console.log('\n🛑 Received SIGINT, shutting down gracefully...');
+  app.quit();
+});
+
+process.on('SIGTERM', async () => {
+  console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+  app.quit();
 });
 
 // エラーハンドリング

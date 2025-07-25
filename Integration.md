@@ -46,7 +46,6 @@ ${JSON.stringify(taskInfo.workers, null, 2)}
    - 該当タスクを無効化：
      await this.supabase.from('scheduled_tasks')
        .update({ status: 'inactive' }).eq('id', [特定したID])
-   - CLAUDE.mdから削除：Editツールで該当行を削除
    - 応答タイプ: "scheduled_delete"
 
 3. 定期タスク確認（「定期タスクある？」「どんな定期タスク」を含む場合）：

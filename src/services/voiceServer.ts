@@ -7,6 +7,7 @@ import * as dotenv from 'dotenv';
 import * as path from 'path';
 import { ClaudeExecutorService } from './claudeExecutorService';
 import { SQLiteDatabase } from './sqliteDatabase';
+import { API_ENDPOINTS, PORTS, PROXY_URL } from '../config';
 
 // Load environment variables
 dotenv.config();
@@ -67,7 +68,7 @@ export class VoiceServerService {
 
       console.log('🔍 Checking Slack connection for user:', this.currentUserId);
       
-      const response = await fetch('http://localhost:8085/api/tools/slack', {
+      const response = await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/api/tools/slack`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -105,7 +106,7 @@ export class VoiceServerService {
     }
   }
 
-  async start(port: number = 8085): Promise<void> {
+  async start(port: number = PORTS.OAUTH_CALLBACK): Promise<void> {
     // Initialize database and Claude service
     this.database = new SQLiteDatabase();
     await this.database.init();
@@ -134,16 +135,18 @@ export class VoiceServerService {
       };
       
       // Desktop版でSlackトークンを事前に取得してParentAgentに設定
-      if (this.currentUserId) {
-        console.log('🔍 Checking Slack tokens for ParentAgent initialization...');
-        const slackStatus = await this.checkSlackConnection();
-        if (slackStatus.connected && slackStatus.tokens) {
-          console.log('✅ Setting Slack tokens for ParentAgent');
-          this.parentAgent.setSlackTokens(slackStatus.tokens);
-        } else {
-          console.log('⚠️ No Slack tokens available for ParentAgent');
-        }
-      }
+      // スキップ: サーバー起動前なのでcheckSlackConnection()は使えない
+      // 後でHTTPサーバー起動後にトークンが設定される
+      // if (this.currentUserId) {
+      //   console.log('🔍 Checking Slack tokens for ParentAgent initialization...');
+      //   const slackStatus = await this.checkSlackConnection();
+      //   if (slackStatus.connected && slackStatus.tokens) {
+      //     console.log('✅ Setting Slack tokens for ParentAgent');
+      //     this.parentAgent.setSlackTokens(slackStatus.tokens);
+      //   } else {
+      //     console.log('⚠️ No Slack tokens available for ParentAgent');
+      //   }
+      // }
     }
     
     await this.parentAgent.initialize();
@@ -165,7 +168,7 @@ export class VoiceServerService {
         console.log(`🎙️ Anicca Voice Server (Simple)`);
         console.log(`================================`);
         console.log(`🌐 Interface: http://localhost:${port}`);
-        console.log(`🔗 API Base: https://anicca-proxy-staging.up.railway.app/api/tools`);
+        console.log(`🔗 API Base: ${API_ENDPOINTS.TOOLS.BASE}`);
         
         // Slack接続状態をチェック
         if (this.currentUserId) {
@@ -205,8 +208,8 @@ export class VoiceServerService {
   }
 
   private setupRoutes(): void {
-    const API_BASE_URL = 'https://anicca-proxy-staging.up.railway.app/api/tools';
-    const PROXY_BASE_URL = 'https://anicca-proxy-staging.up.railway.app';
+    const API_BASE_URL = API_ENDPOINTS.TOOLS.BASE;
+    const PROXY_BASE_URL = PROXY_URL;
     const useProxy = process.env.USE_PROXY !== 'false';
     
     console.log('🔑 OpenAI API Key status:', process.env.OPENAI_API_KEY ? 'Found' : 'Not found');
@@ -426,7 +429,7 @@ Be friendly and helpful in any language.`,
             // Slack OAuth認証を開始
             try {
               const { exec } = require('child_process');
-              const apiUrl = `https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url?platform=desktop&userId=${this.currentUserId || 'desktop-user'}`;
+              const apiUrl = `${API_ENDPOINTS.SLACK.OAUTH_URL}?platform=desktop&userId=${this.currentUserId || 'desktop-user'}`;
               
               console.log('🔗 Fetching Slack OAuth URL from API...');
               
@@ -464,7 +467,7 @@ Be friendly and helpful in any language.`,
               if (process.env.DESKTOP_MODE === 'true' && !process.env.SLACK_BOT_TOKEN && this.currentUserId) {
                 try {
                   console.log('🔑 Fetching Slack tokens for Desktop mode...');
-                  const tokenResponse = await fetch('http://localhost:8085/api/tools/slack', {
+                  const tokenResponse = await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/api/tools/slack`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
@@ -576,35 +579,33 @@ Be friendly and helpful in any language.`,
       res.json({ status: 'ok' });
     });
 
-    // Auth complete endpoint - receives tokens from callback page
+    // Auth complete endpoint - receives OAuth code from callback page
     this.app.post('/auth/complete', async (req, res) => {
       try {
-        const { access_token, refresh_token, expires_at } = req.body;
-        console.log('🔐 Received auth tokens');
+        const { code } = req.body;
+        console.log('🔐 Received auth code');
         
         // Get auth service from main process
         const { getAuthService } = await import('./desktopAuthService');
         const authService = getAuthService();
         
-        // Set the session in Supabase
-        const { data, error } = await authService.supabase.auth.setSession({
-          access_token,
-          refresh_token
-        });
+        // Exchange code for session
+        const success = await authService.handleOAuthCallback(code);
         
-        if (error) {
-          throw error;
+        if (!success) {
+          throw new Error('Failed to authenticate');
         }
         
-        if (data?.user) {
+        const user = authService.getCurrentUser();
+        if (user) {
           // Update current user ID
-          this.setCurrentUserId(data.user.id);
-          console.log(`✅ User authenticated: ${data.user.email}`);
+          this.setCurrentUserId(user.id);
+          console.log(`✅ User authenticated: ${user.email}`);
           
           // Notify main process to update tray menu
           // Use a custom event emitter or global variable instead of process.emit
           if ((global as any).onUserAuthenticated) {
-            (global as any).onUserAuthenticated(data.user);
+            (global as any).onUserAuthenticated(user);
           }
         }
         
@@ -656,25 +657,21 @@ Be friendly and helpful in any language.`,
               <p>このウィンドウは自動的に閉じられます...</p>
             </div>
             <script>
-              // Extract tokens from URL hash
-              const hash = window.location.hash.substring(1);
-              const params = new URLSearchParams(hash);
-              const accessToken = params.get('access_token');
-              const refreshToken = params.get('refresh_token');
+              // Extract code from URL query params
+              const urlParams = new URLSearchParams(window.location.search);
+              const code = urlParams.get('code');
               
-              if (accessToken) {
-                // Send tokens to the desktop app via HTTP request
-                fetch('http://localhost:8085/auth/complete', {
+              if (code) {
+                // Send code to the desktop app via HTTP request
+                fetch(\`http://localhost:${PORTS.OAUTH_CALLBACK}/auth/complete\`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                    expires_at: params.get('expires_at')
-                  })
+                  body: JSON.stringify({ code })
                 }).then(() => {
                   setTimeout(() => window.close(), 2000);
                 });
+              } else {
+                console.error('No authorization code found');
               }
             </script>
           </body>

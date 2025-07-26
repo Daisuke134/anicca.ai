@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { SimpleEncryption } from './simpleEncryption';
+import { PROXY_URL } from '../config';
 
 interface ActionRequest {
   type: 'general' | 'search' | 'code' | 'file' | 'command' | 'slack' | 'github' | 'browser' | 'wait';
@@ -55,7 +56,7 @@ export class ClaudeExecutorService extends EventEmitter {
       console.log('🌐 Using proxy mode for Claude API');
       
       // ANTHROPIC_BASE_URLを設定してプロキシ経由にする
-      process.env.ANTHROPIC_BASE_URL = 'https://anicca-proxy-staging.up.railway.app/api/claude';
+      process.env.ANTHROPIC_BASE_URL = `${PROXY_URL}/api/claude`;
       
       // ダミーのAPIキーを設定（プロキシが本物のキーを持っている）
       this.apiKey = 'proxy-placeholder';

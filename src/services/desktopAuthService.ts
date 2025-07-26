@@ -1,22 +1,30 @@
 import { safeStorage } from 'electron';
-import { createClient, SupabaseClient, User, Session } from '@supabase/supabase-js';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { API_ENDPOINTS, PORTS } from '../config';
 
-// Supabase設定（Web版と同じプロジェクト）
-const SUPABASE_URL = 'https://mzkwtwourrkduqkrsxpc.supabase.co';
-const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16a3d0d291cnJrZHVxa3JzeHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzQ1NjYsImV4cCI6MjA2Njc1MDU2Nn0.ihBs1cpz_sgR6UUZpIrICuN3b-gJNrfzWsfNVlpP4hs';
+// 認証セッションの型定義
+interface AuthSession {
+  access_token: string;
+  refresh_token: string;
+  expires_at: number;
+  user: AuthUser;
+}
+
+interface AuthUser {
+  id: string;
+  email: string;
+  user_metadata?: any;
+}
 
 export class DesktopAuthService {
-  public supabase: SupabaseClient;
-  private currentUser: User | null = null;
-  private currentSession: Session | null = null;
+  private currentUser: AuthUser | null = null;
+  private currentSession: AuthSession | null = null;
   private authFilePath: string;
+  private sessionCheckInterval: NodeJS.Timeout | null = null;
   
   constructor() {
-    this.supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
     // 認証情報の保存パス
     const aniccaDir = path.join(os.homedir(), '.anicca');
     if (!fs.existsSync(aniccaDir)) {
@@ -36,33 +44,29 @@ export class DesktopAuthService {
       const savedSession = this.loadSavedSession();
       if (savedSession) {
         console.log('📂 Found saved session, attempting to restore...');
-        const { data, error } = await this.supabase.auth.setSession(savedSession);
         
-        if (data?.session && !error) {
-          this.currentSession = data.session;
-          this.currentUser = data.user;
-          console.log('✅ Session restored successfully for user:', data.user?.email);
+        // プロキシ経由でセッションを確認
+        const validatedSession = await this.validateSession(savedSession);
+        
+        if (validatedSession) {
+          this.currentSession = validatedSession;
+          this.currentUser = validatedSession.user;
+          console.log('✅ Session restored successfully for user:', validatedSession.user?.email);
+        } else if (savedSession.refresh_token) {
+          // セッションが無効ならリフレッシュを試行
+          console.log('🔄 Session expired, attempting to refresh...');
+          const refreshedSession = await this.refreshSession();
+          if (!refreshedSession) {
+            this.clearSavedSession();
+          }
         } else {
-          console.log('❌ Failed to restore session:', error?.message);
-          // 無効なセッションを削除
+          console.log('❌ Failed to restore session');
           this.clearSavedSession();
         }
       }
       
-      // 認証状態の変更を監視
-      this.supabase.auth.onAuthStateChange((event, session) => {
-        console.log('🔄 Auth state changed:', event);
-        this.currentSession = session;
-        this.currentUser = session?.user || null;
-        
-        if (event === 'SIGNED_IN' && session) {
-          // ログイン成功時にセッションを保存
-          this.saveSession(session);
-        } else if (event === 'SIGNED_OUT') {
-          // ログアウト時に保存情報をクリア
-          this.clearSavedSession();
-        }
-      });
+      // 30分ごとにセッションをチェック
+      this.startSessionCheck();
       
     } catch (error) {
       console.error('❌ Auth initialization error:', error);
@@ -72,7 +76,7 @@ export class DesktopAuthService {
   /**
    * 現在のユーザーを取得
    */
-  getCurrentUser(): User | null {
+  getCurrentUser(): AuthUser | null {
     return this.currentUser;
   }
   
@@ -101,31 +105,78 @@ export class DesktopAuthService {
    * Google OAuth URLを取得
    */
   async getGoogleOAuthUrl(): Promise<string> {
-    const { data, error } = await this.supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: 'http://localhost:8085/auth/callback',
-        skipBrowserRedirect: true
+    try {
+      const userId = this.getCurrentUserId() || 'desktop-user';
+      const response = await fetch(`${API_ENDPOINTS.AUTH.GOOGLE_OAUTH}?userId=${userId}`);
+      
+      if (!response.ok) {
+        throw new Error(`Failed to get OAuth URL: ${response.statusText}`);
       }
-    });
-    
-    if (error) {
+      
+      const data = await response.json();
+      
+      if (!data.success || !data.url) {
+        throw new Error('Invalid response from auth server');
+      }
+      
+      return data.url;
+    } catch (error) {
+      console.error('❌ Failed to get Google OAuth URL:', error);
       throw error;
     }
-    
-    return data.url;
+  }
+  
+  /**
+   * セッションをリフレッシュ
+   */
+  async refreshSession(): Promise<AuthSession | null> {
+    try {
+      const savedSession = this.loadSavedSession();
+      if (!savedSession?.refresh_token) {
+        return null;
+      }
+      
+      const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          refresh_token: savedSession.refresh_token
+        })
+      });
+      
+      if (!response.ok) {
+        console.error('❌ Failed to refresh session:', response.statusText);
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.session) {
+        this.currentSession = data.session;
+        this.currentUser = data.session.user;
+        this.saveSession(data.session);
+        console.log('✅ Session refreshed successfully');
+        return data.session;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Refresh session error:', error);
+      return null;
+    }
   }
   
   /**
    * セッションを保存
    */
-  private saveSession(session: Session): void {
+  private saveSession(session: AuthSession): void {
     try {
       if (safeStorage.isEncryptionAvailable()) {
         const sessionData = JSON.stringify({
           access_token: session.access_token,
           refresh_token: session.refresh_token,
-          expires_at: session.expires_at
+          expires_at: session.expires_at,
+          user: session.user
         });
         const encrypted = safeStorage.encryptString(sessionData);
         fs.writeFileSync(this.authFilePath, encrypted);
@@ -139,16 +190,16 @@ export class DesktopAuthService {
   /**
    * 保存されたセッションを読み込む
    */
-  private loadSavedSession(): Session | null {
+  private loadSavedSession(): AuthSession | null {
     try {
       if (fs.existsSync(this.authFilePath) && safeStorage.isEncryptionAvailable()) {
         const encrypted = fs.readFileSync(this.authFilePath);
         const decrypted = safeStorage.decryptString(encrypted);
         const sessionData = JSON.parse(decrypted);
         
-        // 有効期限チェック
-        if (sessionData.expires_at && new Date(sessionData.expires_at * 1000) > new Date()) {
-          return sessionData as Session;
+        // リフレッシュトークンがあれば期限切れでも返す
+        if (sessionData.refresh_token) {
+          return sessionData as AuthSession;
         }
       }
     } catch (error) {
@@ -173,13 +224,111 @@ export class DesktopAuthService {
   }
   
   /**
+   * 定期的なセッションチェックを開始
+   */
+  private startSessionCheck(): void {
+    // 既存のインターバルがあればクリア
+    if (this.sessionCheckInterval) {
+      clearInterval(this.sessionCheckInterval);
+    }
+    
+    // 30分ごとにチェック
+    this.sessionCheckInterval = setInterval(async () => {
+      if (this.currentSession) {
+        const expiresAt = this.currentSession.expires_at;
+        if (expiresAt) {
+          const expiresIn = expiresAt * 1000 - Date.now();
+          // 有効期限が1時間以内に迫ったらリフレッシュ
+          if (expiresIn < 60 * 60 * 1000) {
+            console.log('🔄 Session expires soon, refreshing...');
+            await this.refreshSession();
+          }
+        }
+      }
+    }, 30 * 60 * 1000); // 30分
+  }
+
+  /**
+   * セッションチェックを停止
+   */
+  private stopSessionCheck(): void {
+    if (this.sessionCheckInterval) {
+      clearInterval(this.sessionCheckInterval);
+      this.sessionCheckInterval = null;
+    }
+  }
+  
+  /**
+   * セッションを検証
+   */
+  private async validateSession(session: AuthSession): Promise<AuthSession | null> {
+    try {
+      const response = await fetch(API_ENDPOINTS.AUTH.SESSION, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token
+        })
+      });
+      
+      if (!response.ok) {
+        return null;
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.session) {
+        return data.session;
+      }
+      
+      return null;
+    } catch (error) {
+      console.error('❌ Session validation error:', error);
+      return null;
+    }
+  }
+  
+  /**
+   * OAuth コールバックを処理
+   */
+  async handleOAuthCallback(code: string): Promise<boolean> {
+    try {
+      const response = await fetch(API_ENDPOINTS.AUTH.CALLBACK, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to exchange code for session');
+      }
+      
+      const data = await response.json();
+      
+      if (data.success && data.session) {
+        this.currentSession = data.session;
+        this.currentUser = data.session.user;
+        this.saveSession(data.session);
+        console.log('✅ OAuth login successful');
+        return true;
+      }
+      
+      return false;
+    } catch (error) {
+      console.error('❌ OAuth callback error:', error);
+      return false;
+    }
+  }
+  
+  /**
    * ログアウト
    */
   async signOut(): Promise<void> {
-    await this.supabase.auth.signOut();
     this.currentUser = null;
     this.currentSession = null;
     this.clearSavedSession();
+    this.stopSessionCheck();
   }
 }
 

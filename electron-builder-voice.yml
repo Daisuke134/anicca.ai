@@ -25,6 +25,7 @@ files:
   - "!dist/services/summaryAgentService.js"
   - "!dist/services/highlightsManager.js"
   - "!dist/services/exaMcpService.js"
+  - "!**/node_modules/@anthropic-ai/claude-code/vendor/claude-code-jetbrains-plugin/**"
 asarUnpack:
   - "**/node_modules/@anthropic-ai/claude-code/**/*"
 mac:

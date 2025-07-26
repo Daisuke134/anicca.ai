@@ -5,6 +5,7 @@ import { WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
+import * as crypto from 'crypto';
 import { ClaudeExecutorService } from './claudeExecutorService';
 import { SQLiteDatabase } from './sqliteDatabase';
 import { API_ENDPOINTS, PORTS, PROXY_URL } from '../config';
@@ -31,6 +32,11 @@ export class VoiceServerService {
   
   // Lock for preventing race conditions
   private taskLock = false;
+  
+  // Task duplicate check cache
+  private taskCache = new Map<string, number>();
+  private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分
+  private readonly DUPLICATE_THRESHOLD = 5000; // 5秒以内は即座にブロック
 
   constructor() {
     this.app = express();
@@ -54,6 +60,40 @@ export class VoiceServerService {
    */
   getCurrentUserId(): string | null {
     return this.currentUserId;
+  }
+
+  /**
+   * タスクのハッシュを生成
+   */
+  private createTaskHash(task: string): string {
+    return crypto.createHash('md5').update(task).digest('hex');
+  }
+
+  /**
+   * 重複タスクかどうかをチェック
+   */
+  private isDuplicateTask(task: string): boolean {
+    const hash = this.createTaskHash(task);
+    const lastExecuted = this.taskCache.get(hash);
+    const now = Date.now();
+    
+    // 古いエントリをクリーンアップ
+    for (const [h, timestamp] of this.taskCache.entries()) {
+      if (now - timestamp > this.CACHE_DURATION) {
+        this.taskCache.delete(h);
+      }
+    }
+    
+    if (lastExecuted) {
+      const timeDiff = now - lastExecuted;
+      if (timeDiff < this.DUPLICATE_THRESHOLD) {
+        console.log(`🚫 Duplicate task blocked locally: ${task.substring(0, 50)}...`);
+        return true;
+      }
+    }
+    
+    this.taskCache.set(hash, now);
+    return false;
   }
 
   /**
@@ -487,6 +527,21 @@ Be friendly and helpful in any language.`,
                 } catch (error) {
                   console.error('Failed to fetch tokens:', error);
                 }
+              }
+              
+              // 重複チェック
+              if (this.isDuplicateTask(args.task)) {
+                this.broadcast({ 
+                  type: 'duplicate_detected', 
+                  message: 'その依頼は既に実行中です。少々お待ちください。' 
+                });
+                return res.json({
+                  success: true,
+                  result: {
+                    response: 'その依頼は既に実行中です。少々お待ちください。',
+                    duplicate: true
+                  }
+                });
               }
               
               console.log(`🚀 Starting parallel task: ${args.task}`);

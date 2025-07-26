@@ -6,6 +6,18 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ANICCA is a multi-platform AI assistant ecosystem with voice interaction, screen analysis, and tool integration capabilities. The project consists of several components across multiple repositories.
 
+Code Development Guidelines
+絶対にフルパスのハードコーディングをしない
+NG: /Users/username/project/...
+OK: Path.cwd(), Path(__file__).parent, 相対パス
+ハードコーディングは基本的に避ける
+設定値は設定ファイルや環境変数から取得
+マジックナンバーは定数として定義
+固定値の代わりに動的な計算や設定を使用
+
+超重要！！
+優柔不断なのはやめて、きちんと考えた上で最善のものを決めなさい。
+
 ## Repository Structure
 
 ### Main Repository Components
@@ -25,7 +37,6 @@ ANICCA is a multi-platform AI assistant ecosystem with voice interaction, screen
 ```bash
 # Development (Recommended)
 npm run voice:simple     # Run simplified voice version
-npm run voice           # Run original voice version
 
 # Building
 npm run build:voice     # TypeScript compilation
@@ -78,9 +89,8 @@ rm -rf /private/var/folders/*/T/t-*
 - DMG distribution via proxy server's `/api/download` endpoint
 - Code signing and notarization configured
 
-### Proxy Server (Vercel)
-**URL**: https://anicca-proxy-ten.vercel.app
-**Critical**: Manual deployment with `vercel --prod` required
+### Proxy Server 
+**URL**: anicca-proxy-staging.up.railway.app
 **Key endpoints**:
 - `/api/claude` - Claude API proxy
 - `/api/slack/*` - OAuth flow
@@ -101,19 +111,9 @@ Deploy: `netlify deploy --prod --dir=landing`
 - Minimal `.env` configuration
 - API keys encrypted in OS keychain
 
-### Proxy Server (Required in Vercel)
-- `ANTHROPIC_API_KEY`
-- `OPENAI_API_KEY`
-- `GOOGLE_API_KEY`
-- `ELEVENLABS_API_KEY`
-- `GITHUB_TOKEN`
-- `SLACK_CLIENT_ID`
-- `SLACK_CLIENT_SECRET`
-
 ## Critical Development Notes
 
 1. **Always test before committing** - Build DMG and verify functionality
-2. **Proxy deployment is manual** - `vercel --prod` required for changes
 3. **Voice version is primary** - UI version is deprecated
 4. **Session persistence** - Maintains context across app restarts
 5. **Privacy-first design** - All data stored locally in `~/.anicca/`
@@ -124,3 +124,37 @@ Deploy: `netlify deploy --prod --dir=landing`
 - Slack integration via MCP for team collaboration
 - Continuous voice recognition with VAD
 - Tool extensibility through MCP protocol
+
+## 理想的なモノレポ構成（今後実施予定）
+
+### 構成
+```
+anicca.ai/ (メインリポジトリ)
+├── packages/
+│   ├── desktop/    # Electronデスクトップアプリ
+│   ├── proxy/      # APIプロキシサーバー
+│   └── web/        # Webアプリケーション
+├── landing/        # ランディングページ
+├── shared/         # 共通ユーティリティ
+└── docs/           # ドキュメント
+```
+
+### デプロイ設定
+- **Vercel（Web）**: Root Directory = `packages/web`
+- **Railway（Proxy）**: 
+  - Staging: Root Directory = `packages/proxy`
+  - Production: Root Directory = `packages/proxy`
+- **GitHub Actions**: パス別トリガーでデプロイ自動化
+
+### 環境変数管理
+```env
+# .env.example
+ANICCA_PROXY_URL=https://anicca-proxy-staging.up.railway.app
+```
+
+### メリット
+- 統一されたバージョン管理
+- コード共有の容易性
+- 一元的なCI/CD管理
+- 依存関係の最適化
+- 開発効率の向上

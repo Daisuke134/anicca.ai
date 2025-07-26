@@ -3,6 +3,7 @@ import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { VoiceServerService } from './services/voiceServer';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
+import { API_ENDPOINTS, PORTS } from './config';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -88,7 +89,7 @@ async function initializeApp() {
       console.log(`✅ User ID set in voice server: ${userId}`);
     }
     
-    await voiceServer.start(8085);
+    await voiceServer.start(PORTS.OAUTH_CALLBACK);
     console.log('✅ Voice server started');
     
     // 少し待ってからBrowserWindowを作成
@@ -130,8 +131,8 @@ function createHiddenWindow() {
     }
   });
   
-  // voice-demoのクライアントページを開く（ポート8085）
-  hiddenWindow.loadURL('http://localhost:8085');
+  // voice-demoのクライアントページを開く
+  hiddenWindow.loadURL(`http://localhost:${PORTS.OAUTH_CALLBACK}`);
   
   // デバッグ用 - 開発環境でのみ開く
   if (!app.isPackaged) {
@@ -151,10 +152,12 @@ function createHiddenWindow() {
         let audioElement = null;
         let ws = null;
         let userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
+        const apiBaseUrl = '${API_ENDPOINTS.OPENAI_PROXY.SESSION}'.replace('/api/openai-proxy/session', '');
+        const toolsBaseUrl = '${API_ENDPOINTS.TOOLS.BASE}';
         
         // WebSocketに接続してリアルタイム通知を受信
         function connectWebSocket() {
-          ws = new WebSocket('ws://localhost:8085');
+          ws = new WebSocket(\`ws://localhost:${PORTS.OAUTH_CALLBACK}\`);
           
           ws.onmessage = (event) => {
             try {
@@ -196,8 +199,8 @@ function createHiddenWindow() {
             const sessionUrl = ${isDev} 
               ? userId ? \`/session?userId=\${userId}\` : '/session'
               : userId 
-                ? \`https://anicca-proxy-staging.up.railway.app/api/openai-proxy/session?userId=\${userId}\`
-                : 'https://anicca-proxy-staging.up.railway.app/api/openai-proxy/session';
+                ? \`\${apiBaseUrl}/api/openai-proxy/session?userId=\${userId}\`
+                : \`\${apiBaseUrl}/api/openai-proxy/session\`;
             const sessionResponse = await fetch(sessionUrl);
             const session = await sessionResponse.json();
             console.log('📡 Session received:', session);
@@ -297,8 +300,8 @@ function createHiddenWindow() {
             const toolsUrl = ${isDev}
               ? userId ? \`/tools/\${name}?userId=\${userId}\` : \`/tools/\${name}\`
               : userId 
-                ? \`https://anicca-proxy-staging.up.railway.app/api/tools/\${name}?userId=\${userId}\`
-                : \`https://anicca-proxy-staging.up.railway.app/api/tools/\${name}\`;
+                ? \`\${toolsBaseUrl}/\${name}?userId=\${userId}\`
+                : \`\${toolsBaseUrl}/\${name}\`;
             const response = await fetch(toolsUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
@@ -407,7 +410,7 @@ function updateTrayMenu() {
         const { shell } = require('electron');
         // Fetch the actual OAuth URL from the API
         try {
-          const apiUrl = 'https://anicca-proxy-staging.up.railway.app/api/slack/oauth-url?platform=desktop';
+          const apiUrl = `${API_ENDPOINTS.SLACK.OAUTH_URL}?platform=desktop`;
           const response = await fetch(apiUrl);
           const data = await response.json();
           

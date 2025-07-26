@@ -410,7 +410,9 @@ function updateTrayMenu() {
         const { shell } = require('electron');
         // Fetch the actual OAuth URL from the API
         try {
-          const apiUrl = `${API_ENDPOINTS.SLACK.OAUTH_URL}?platform=desktop`;
+          // 認証されたユーザーIDを取得
+          const userId = authService?.getCurrentUserId() || 'desktop-user';
+          const apiUrl = `${API_ENDPOINTS.SLACK.OAUTH_URL}?platform=desktop&userId=${userId}`;
           const response = await fetch(apiUrl);
           const data = await response.json();
           

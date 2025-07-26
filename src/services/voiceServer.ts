@@ -579,18 +579,22 @@ Be friendly and helpful in any language.`,
       res.json({ status: 'ok' });
     });
 
-    // Auth complete endpoint - receives OAuth code from callback page
+    // Auth complete endpoint - receives tokens from callback page
     this.app.post('/auth/complete', async (req, res) => {
       try {
-        const { code } = req.body;
-        console.log('🔐 Received auth code');
+        const { access_token, refresh_token, expires_at } = req.body;
+        console.log('🔐 Received auth tokens');
         
         // Get auth service from main process
         const { getAuthService } = await import('./desktopAuthService');
         const authService = getAuthService();
         
-        // Exchange code for session
-        const success = await authService.handleOAuthCallback(code);
+        // Handle tokens directly
+        const success = await authService.handleTokens({
+          access_token,
+          refresh_token,
+          expires_at: parseInt(expires_at)
+        });
         
         if (!success) {
           throw new Error('Failed to authenticate');
@@ -657,21 +661,28 @@ Be friendly and helpful in any language.`,
               <p>このウィンドウは自動的に閉じられます...</p>
             </div>
             <script>
-              // Extract code from URL query params
-              const urlParams = new URLSearchParams(window.location.search);
-              const code = urlParams.get('code');
+              // Extract tokens from URL hash (Supabase uses Implicit Flow)
+              const hash = window.location.hash.substring(1);
+              const params = new URLSearchParams(hash);
+              const accessToken = params.get('access_token');
+              const refreshToken = params.get('refresh_token');
+              const expiresAt = params.get('expires_at');
               
-              if (code) {
-                // Send code to the desktop app via HTTP request
+              if (accessToken && refreshToken) {
+                // Send tokens to the desktop app via HTTP request
                 fetch(\`http://localhost:${PORTS.OAUTH_CALLBACK}/auth/complete\`, {
                   method: 'POST',
                   headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ code })
+                  body: JSON.stringify({ 
+                    access_token: accessToken,
+                    refresh_token: refreshToken,
+                    expires_at: expiresAt
+                  })
                 }).then(() => {
                   setTimeout(() => window.close(), 2000);
                 });
               } else {
-                console.error('No authorization code found');
+                console.error('No tokens found in URL');
               }
             </script>
           </body>

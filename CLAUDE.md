@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ANICCA is a multi-platform AI assistant ecosystem with voice interaction, screen analysis, and tool integration capabilities. The project consists of several components across multiple repositories.
 
+絶対に日本語で答えて！英語はだめ！
+
 Code Development Guidelines
 絶対にフルパスのハードコーディングをしない
 NG: /Users/username/project/...
@@ -51,8 +53,13 @@ npm run format          # Prettier formatting
 ```bash
 cd anicca-proxy-slack
 npm run dev             # Local development
-vercel --prod          # Deploy to production (REQUIRED - GitHub push alone won't deploy!)
 ```
+
+### DMGビルド前の確認事項（重要！）
+dist系コマンドを実行する前に必ず：
+1. マウントされているDMGを確認: `ls /Volumes/`
+2. Aniccaがマウントされていたら強制アンマウント: `hdiutil detach "/Volumes/Anicca*" -force`
+3. その後でdistコマンドを実行
 
 ### DMG Build Error Recovery
 ```bash

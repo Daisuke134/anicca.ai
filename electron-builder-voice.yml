@@ -4,6 +4,7 @@ directories:
   output: release
 files:
   - dist/main-voice-simple.js
+  - dist/config.js
   - dist/services/**/*
   - dist/recorder.html
   - node_modules/**/*
@@ -13,7 +14,14 @@ files:
   - assets/icon.icns
   - server.key
   - server.cert
-  - "!anicca-*/**"
+  - anicca-proxy-slack/src/**/*.js
+  - anicca-proxy-slack/src/**/*.json
+  - "!anicca-web/**"
+  - "!anicca-proxy-slack/node_modules/**"
+  - "!anicca-proxy-slack/.git/**"
+  - "!anicca-proxy-slack/.env*"
+  - "!anicca-proxy-slack/dist/**"
+  - "!anicca-proxy-slack/tests/**"
   - "!**/.git"
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
@@ -41,11 +49,9 @@ mac:
   target:
     - target: dmg
       arch:
-        - x64
         - arm64
     - target: zip
       arch:
-        - x64
         - arm64
 afterSign: notarize.js
 dmg:
@@ -57,3 +63,9 @@ dmg:
       y: 220
       type: link
       path: /Applications
+publish:
+  - provider: github
+    owner: Daisuke134
+    repo: anicca.ai
+    private: true
+    releaseType: release

@@ -1,9 +1,10 @@
 import { app, Tray, Menu, nativeImage, BrowserWindow } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
+import { autoUpdater } from 'electron-updater';
 import { VoiceServerService } from './services/voiceServer';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
-import { API_ENDPOINTS, PORTS } from './config';
+import { API_ENDPOINTS, PORTS, UPDATE_CONFIG } from './config';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -101,6 +102,32 @@ async function initializeApp() {
     // システムトレイの初期化
     createSystemTray();
     console.log('✅ System tray created');
+    
+    // 自動更新の初期化（サイレント）
+    const log = require('electron-log');
+    log.transports.file.level = 'info';
+    autoUpdater.logger = log;
+    autoUpdater.autoDownload = true;
+    autoUpdater.autoInstallOnAppQuit = true;
+    
+    // チャンネル設定（環境による切り替え）
+    autoUpdater.channel = UPDATE_CONFIG.CHANNEL;
+    console.log(`✅ Auto-updater initialized with channel: ${UPDATE_CONFIG.CHANNEL}`);
+    
+    // エラー時のみ通知
+    autoUpdater.on('error', (error) => {
+      console.error('Auto-updater error:', error);
+      showNotification('更新エラー', '自動更新中にエラーが発生しました。後でもう一度お試しください。');
+    });
+    
+    // サイレント更新（通知なし）
+    autoUpdater.on('update-downloaded', () => {
+      console.log('Update downloaded silently');
+      // 通知しない、次回起動時に自動適用
+    });
+    
+    // 更新チェック開始
+    autoUpdater.checkForUpdatesAndNotify();
     
     // 通知
     // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');
@@ -471,7 +498,7 @@ function updateTrayMenu() {
     {
       label: 'About Anicca',
       click: () => {
-        showNotification('Anicca v0.6.0', 'Voice AI Assistant\nSay "アニッチャ" to start!');
+        showNotification('Anicca v0.6.2', 'Voice AI Assistant\nSay "アニッチャ" to start!');
       }
     },
     { type: 'separator' },

@@ -6,8 +6,6 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as crypto from 'crypto';
-import { ClaudeExecutorService } from './claudeExecutorService';
-import { SQLiteDatabase } from './sqliteDatabase';
 import { API_ENDPOINTS, PORTS, PROXY_URL } from '../config';
 
 // Load environment variables
@@ -17,8 +15,6 @@ export class VoiceServerService {
   private app: express.Application;
   private httpServer: Server | null = null;
   private wss: WebSocketServer | null = null;
-  private database!: SQLiteDatabase;
-  private claudeService!: ClaudeExecutorService;
   private parentAgent!: any; // 動的importで読み込むため
   private wsClients: Set<WebSocket> = new Set();
   private currentUserId: string | null = null;
@@ -147,15 +143,9 @@ export class VoiceServerService {
   }
 
   async start(port: number = PORTS.OAUTH_CALLBACK): Promise<void> {
-    // Initialize database and Claude service
-    this.database = new SQLiteDatabase();
-    await this.database.init();
-    this.claudeService = new ClaudeExecutorService(this.database);
-    console.log('✅ Claude Executor Service initialized');
-
     // Initialize ParentAgent for parallel execution using dynamic import
     // @ts-ignore
-    const ParentAgentModule = await import(path.resolve(__dirname, '../../anicca-proxy-slack/services/parallel-sdk/agents/ParentAgent.js'));
+    const ParentAgentModule = await import(path.resolve(__dirname, '../../anicca-proxy-slack/src/services/parallel-sdk/core/ParentAgent.js'));
     this.parentAgent = new ParentAgentModule.ParentAgent();
     
     // Desktop版のタスク完了コールバックを設定

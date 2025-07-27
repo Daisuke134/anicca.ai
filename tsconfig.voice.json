@@ -4,6 +4,7 @@
     "outDir": "./dist"
   },
   "include": [
+    "src/config.ts",
     "src/main-voice.ts",
     "src/main-voice-rtmcp.ts",
     "src/main-voice-simple.ts",

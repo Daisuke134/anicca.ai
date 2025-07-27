@@ -48,6 +48,13 @@ Thumbs.db
 
 # SQLite databases (user data)
 *.db
+
+# SSL certificates and keys
+*.key
+*.cert
+*.pem
+server.key
+server.cert
 *.sqlite
 *.sqlite3
 

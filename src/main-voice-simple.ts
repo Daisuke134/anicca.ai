@@ -407,10 +407,6 @@ function updateTrayMenu() {
       label: `👤 ${userName}`,
       enabled: false
     },
-    {
-      label: isListening ? '🎙️ Listening...' : '🔇 Ready',
-      enabled: false
-    },
     { type: 'separator' },
     ...(!isAuthenticated ? [{
       label: 'Login with Google',
@@ -431,30 +427,6 @@ function updateTrayMenu() {
         }
       }
     }] : []),
-    {
-      label: 'Connect Slack',
-      click: async () => {
-        const { shell } = require('electron');
-        // Fetch the actual OAuth URL from the API
-        try {
-          // 認証されたユーザーIDを取得
-          const userId = authService?.getCurrentUserId() || 'desktop-user';
-          const apiUrl = `${API_ENDPOINTS.SLACK.OAUTH_URL}?platform=desktop&userId=${userId}`;
-          const response = await fetch(apiUrl);
-          const data = await response.json();
-          
-          if (data.url) {
-            shell.openExternal(data.url);
-          } else {
-            console.error('Failed to get Slack OAuth URL');
-            showNotification('Error', 'Failed to get Slack authentication URL');
-          }
-        } catch (error) {
-          console.error('Error fetching Slack OAuth URL:', error);
-          showNotification('Error', 'Failed to connect to Slack');
-        }
-      }
-    },
     ...(isAuthenticated ? [{
       label: 'Logout',
       click: async () => {

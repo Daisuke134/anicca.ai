@@ -3,6 +3,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { API_ENDPOINTS, PORTS } from '../config';
+import { SimpleEncryption } from './simpleEncryption';
 
 // 認証セッションの型定義
 interface AuthSession {
@@ -23,6 +24,7 @@ export class DesktopAuthService {
   private currentSession: AuthSession | null = null;
   private authFilePath: string;
   private sessionCheckInterval: NodeJS.Timeout | null = null;
+  private encryption: SimpleEncryption;
   
   constructor() {
     // 認証情報の保存パス
@@ -31,6 +33,9 @@ export class DesktopAuthService {
       fs.mkdirSync(aniccaDir, { recursive: true });
     }
     this.authFilePath = path.join(aniccaDir, 'auth.encrypted');
+    
+    // 暗号化サービスの初期化
+    this.encryption = new SimpleEncryption();
   }
   
   /**
@@ -40,6 +45,9 @@ export class DesktopAuthService {
     console.log('🔐 Initializing Desktop Auth Service...');
     
     try {
+      // 古い暗号化ファイルのクリーンアップ
+      this.encryption.cleanupOldFiles();
+      
       // 保存された認証情報を読み込む
       const savedSession = this.loadSavedSession();
       if (savedSession) {
@@ -171,17 +179,17 @@ export class DesktopAuthService {
    */
   private saveSession(session: AuthSession): void {
     try {
-      if (safeStorage.isEncryptionAvailable()) {
-        const sessionData = JSON.stringify({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token,
-          expires_at: session.expires_at,
-          user: session.user
-        });
-        const encrypted = safeStorage.encryptString(sessionData);
-        fs.writeFileSync(this.authFilePath, encrypted);
-        console.log('💾 Session saved securely');
-      }
+      const sessionData = JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at,
+        user: session.user
+      });
+      
+      // 新しい暗号化方式で保存
+      const encrypted = this.encryption.encrypt(sessionData);
+      fs.writeFileSync(this.authFilePath, encrypted, 'utf8');
+      console.log('💾 Session saved securely with dual encryption');
     } catch (error) {
       console.error('❌ Failed to save session:', error);
     }
@@ -192,9 +200,11 @@ export class DesktopAuthService {
    */
   private loadSavedSession(): AuthSession | null {
     try {
-      if (fs.existsSync(this.authFilePath) && safeStorage.isEncryptionAvailable()) {
-        const encrypted = fs.readFileSync(this.authFilePath);
-        const decrypted = safeStorage.decryptString(encrypted);
+      if (fs.existsSync(this.authFilePath)) {
+        const encrypted = fs.readFileSync(this.authFilePath, 'utf8');
+        
+        // 新しい暗号化方式で復号
+        const decrypted = this.encryption.decrypt(encrypted);
         const sessionData = JSON.parse(decrypted);
         
         // リフレッシュトークンがあれば期限切れでも返す
@@ -204,6 +214,8 @@ export class DesktopAuthService {
       }
     } catch (error) {
       console.error('❌ Failed to load saved session:', error);
+      // エラー時は破損したファイルを削除
+      this.clearSavedSession();
     }
     
     return null;

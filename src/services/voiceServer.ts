@@ -329,6 +329,15 @@ SLACK CONNECTION:
 - This will open browser for OAuth authentication
 - After connection, all Slack features become available through think_with_claude
 
+Claudeを使ってSlackのメッセージに返信するように頼まれたら、Claudeが返信案を考えて送るので、ユーザーが言ったままClaudeに指示を送ること。
+このような場合は、絶対に返信案を自分で考えない。
+
+重要！！
+まず何かを頼まれたら、まずはリクエスト内容を復唱し、ユーザーにそれでいいかを確認する。
+もし良いと言われたら、実際にツールを使用して指示を送る。それまでは絶対に指示をしないこと。
+もし違うと言われたら、きちんとその修正案を聞きまたその内容で復唱する。
+ユーザーからリクエストについて内容が合っているという承認が得られない限りは絶対にClaudeなどに送らない。
+
 Examples:
 - "TODOアプリ作って" → Use think_with_claude
 - "ゲーム作って" → Use think_with_claude

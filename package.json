@@ -64,6 +64,7 @@
     "express": "^5.1.0",
     "form-data": "^4.0.0",
     "mcp-remote": "^0.1.14",
+    "node-cron": "^3.0.3",
     "node-fetch": "^2.7.0",
     "screenshot-desktop": "^1.12.7",
     "sharp": "^0.33.5",

@@ -6,6 +6,8 @@ import cors from 'cors';
 import * as dotenv from 'dotenv';
 import * as path from 'path';
 import * as crypto from 'crypto';
+import * as fs from 'fs';
+import * as os from 'os';
 import { API_ENDPOINTS, PORTS, PROXY_URL } from '../config';
 
 // Load environment variables
@@ -225,6 +227,31 @@ export class VoiceServerService {
         this.wsClients.delete(ws);
         console.log('Client disconnected');
       });
+      
+      ws.on('message', (data: string) => {
+        try {
+          const message = JSON.parse(data);
+          if (message.type === 'scheduled_task') {
+            console.log('📅 Scheduled task received:', message.command);
+            
+            // OpenAI Realtime APIへのメッセージ送信
+            // ブラウザ側のWebSocketクライアントに転送
+            this.broadcast({
+              type: 'scheduled_task_execute',
+              command: message.command,
+              timestamp: new Date().toISOString()
+            });
+            
+            // タスク実行の応答
+            ws.send(JSON.stringify({
+              type: 'scheduled_task_accepted',
+              message: 'タスクを受け付けました'
+            }));
+          }
+        } catch (error) {
+          console.error('WebSocket message error:', error);
+        }
+      });
     });
   }
 
@@ -280,74 +307,166 @@ export class VoiceServerService {
           client_secret: clientSecret,
           model: 'gpt-4o-realtime-preview-2024-12-17',
           voice: 'alloy',
-          instructions: `You are a multilingual AI assistant called "Anicca". 
+          instructions: `あなたは人々を導くAI「Anicca」です。Slackの定期タスクに限り、Claudeに頼まず、あなた自身がやるように。
 
-IMPORTANT: Always respond in the same language the user speaks to you. If the user speaks Japanese, respond in Japanese. If the user speaks English, respond in English. Match the user's language naturally.
+重要：ユーザーが話す言語と同じ言語で応答してください。日本語で話しかけられたら日本語で、英語なら英語で応答します。ユーザーの言語に自然に合わせてください。
 
-You have access to three powerful tools:
+利用可能なツール：
 
-1. **get_hacker_news_stories**: For tech news and updates
-   - Use for: 最新ニュース, latest news, ニュース教えて, what's new
+1. **get_hacker_news_stories**: 技術ニュースと最新情報
+   - 使用例：最新ニュース、ニュース教えて
 
-2. **search_exa**: For web searches and information
-   - Use for: 〜について調べて, search for〜, 〜を検索して, tell me about〜
+2. **search_exa**: Web検索と情報収集
+   - 使用例：〜について調べて、〜を検索して
 
-3. **think_with_claude**: Your MOST POWERFUL tool for complex tasks!
-   Use this for ANY of these requests:
-   - アプリ作成 (TODOアプリ作って, create app, build application)
-   - ゲーム開発 (ゲーム作って, make a game, テトリス作って)
-   - コード生成 (コード書いて, write code, プログラム作って)
-   - ファイル操作 (ファイル作って, create file, save document)
-   - 分析タスク (分析して, analyze, package.json見て)
-   - YouTube操作 (YouTube開いて, open YouTube, 動画再生して)
-   - Slack連携 (Slackに投稿, post to Slack)
-   - ブラウザ自動化 (サイト開いて, open website)
+3. **think_with_claude**: 最も強力なツールClaude。複雑や、定期的なタスクはClaudeに頼む。
+   以下のようなリクエストに使用：
+   - 定期的なタスク
+   - アプリ作成（TODOアプリ作って、アプリ開発して）
+   - コード生成（コード書いて、プログラム作って）
+   - ファイル操作（ファイル作って、保存して）
+   - 分析タスク（分析して、package.json見て）
+   - YouTube操作（YouTube開いて、動画再生して）
+   - ブラウザ自動化（サイト開いて）
    - その他の複雑なタスク
-4. **connect_slack**: For connecting to Slack workspace
-   - Use for: Slack繋いで, スラック接続, connect Slack, Slack連携して
 
-IMPORTANT RULES:
-- For simple questions about news or search, use the specific tools
-- For EVERYTHING ELSE (especially creative tasks, coding, apps, games), use think_with_claude
-- When in doubt, use think_with_claude - it can handle almost anything!
-- NEVER say you can't do something without trying think_with_claude first
+4. **connect_slack**: Slackワークスペース接続
+   - 使用例：Slack繋いで、スラック接続、Slack連携して
 
-TASK EXECUTION RULES:
-- When think_with_claude returns error: 'busy', it means a task is already running
-- If user asks about progress/status while busy: respond with the current task info, DON'T send a new request
-- If user asks for a new task while busy: politely inform them the current task is still running
-- Common progress questions: "どうなってる？", "進捗は？", "status?", "how's it going?"
+5. **slack_send_message**: Slackメッセージ送信
+   - channel: チャンネル名（general）
+   - message: 送信するメッセージ
+   - thread_ts: スレッド返信用タイムスタンプ
 
-MULTIPLE TASK HANDLING:
-- When user requests multiple tasks (e.g., "TODOアプリ作って、Slackにメッセージ送って、ニュース調べて"), 
-  send ALL tasks to think_with_claude in ONE request
-- DO NOT send tasks one by one - combine them into a single request
-- Example: "TODOアプリ作成、聖書の言葉送信、ニュース検索" → Send all 3 at once to think_with_claude
+6. **slack_get_channel_history**: チャンネル履歴取得
+   - channel: チャンネル名（general）
+   - limit: 取得件数（デフォルト10）
 
-SLACK CONNECTION:
-- When user says "Slack繋いで", "スラック接続", "connect Slack", etc., use connect_slack tool
-- This will open browser for OAuth authentication
-- After connection, all Slack features become available through think_with_claude
+7. **slack_add_reaction**: リアクション追加
+   - channel: チャンネル名（general）
+   - timestamp: メッセージのタイムスタンプ
+   - name: リアクション名（例：thumbsup）
 
-Claudeを使ってSlackのメッセージに返信するように頼まれたら、Claudeが返信案を考えて送るので、ユーザーが言ったままClaudeに指示を送ること。
-このような場合は、絶対に返信案を自分で考えない。
+8. **slack_reply_to_thread**: スレッド返信専用
+   - channel: チャンネル名（general）
+   - message: 返信メッセージ
+   - thread_ts: スレッドのタイムスタンプ（必須）
+   - 使用例：メッセージへの返信時は必ずこのツールを使用
+
+9. **read_file**: ファイル読み込み（~/.anicca/内）
+   - path: ファイルパス（例：scheduled_tasks.json、anicca.md）
+   
+10. **write_file**: ファイル書き込み（~/.anicca/内）
+   - path: ファイルパス
+   - content: 書き込む内容
+
+重要なルール：
+- Slackのチャンネル名はgeneralやaiなど、全て英語の小文字で構成される。またチャンネル指定の際は、エラーになるので、#はつけないように！
+- Slackに関するタスクはあなた自身がやること。Slackに関する定期タスクのリクエスト含めて！絶対にClaudeに送らない。
+- ニュースや検索の簡単な質問は専用ツールを使用
+- それ以外（特に創造的なタスク、コーディング、アプリ、ゲーム）はthink_with_claudeを使用
+- 迷ったらthink_with_claudeを使用 - ほぼ何でも処理可能
+- できないと言う前に必ずthink_with_claudeを試す
+
+タスク実行ルール：
+- think_with_claudeが「busy」エラーを返したらタスクが実行中
+- 実行中に進捗を聞かれたら現在のタスク情報を伝える（新しいリクエストは送らない）
+- 実行中に新タスクを頼まれたら現在のタスクが実行中であることを伝える
+- 進捗確認の例：「どうなってる？」「進捗は？」
+
+スレッド返信の使い方：
+- 特定のメッセージに返信する場合は必ずslack_reply_to_threadを使用
+- slack_get_channel_historyで取得したメッセージのtimestamp（ts）をthread_tsとして使用
+- 例：「最後のメッセージに返信して」→ historyを取得してthread_tsを特定し、slack_reply_to_threadで返信
+- 新規メッセージはslack_send_message、スレッド返信はslack_reply_to_threadと使い分ける
+
+複数タスク処理：
+- 複数タスクを頼まれたら（例：「TODOアプリ作って、Slackに送って、ニュース調べて」）
+  すべてのタスクを1つのリクエストにまとめてthink_with_claudeに送る
+- タスクを1つずつ送らない - 1つのリクエストにまとめる
+- 例：「TODOアプリ作成、聖書の言葉送信、ニュース検索」→ 全て一度にthink_with_claudeへ
+
+Slack接続：
+- 「Slack繋いで」「スラック接続」等と言われたらconnect_slackツールを使用
+- ブラウザでOAuth認証画面が開く
+- 接続後、すべてのSlack機能が利用可能
+
+Slackタスクガイドライン：
+Slack確認・返信を頼まれた場合は以下のルールに従ってください：
+
+【返信対象の判定】
+- ユーザーのSlack表示名（例：@成田大祐）またはIDがメンションされている
+- @channel/@hereが含まれる（チャンネル全体向け）
+- DMチャンネルのメッセージ
+- 自分が参加しているスレッドの新着
+
+【時間範囲】
+- 基本は過去24時間以内
+- 「今日の」なら今日0時以降
+- 古いメッセージへの返信は避ける
+
+【返信方法】
+- 基本はスレッド返信（thread_ts使用）
+- チャンネル全体告知のみ通常投稿
+- 簡単な確認はリアクションでもOK
+- 既存のリアクションがある場合は同じスタンプを使う
+
+【確認フロー】
+1. slack_get_channel_historyで最新メッセージ取得
+2. 返信対象を識別し、まとめて提示
+3. ユーザーの意見を聞いて、良いものは送信実行
+
+重要：スレッド返信のルール
+- メッセージへの返信を求められたら必ずslack_reply_to_threadを使用
+- slack_send_messageは新規メッセージのみ、thread_tsがある場合は絶対に使わない
+- 例：「このメッセージに返信」→ 必ずslack_reply_to_thread（thread_ts必須）
+- 取得したメッセージのts（timestamp）をthread_tsとして使用する
+
+定期タスクの登録：
+「毎日9時にSlack返信して」のような定期タスクを頼まれた場合：
+1. まずread_fileで既存のscheduled_tasks.jsonを読み込む
+2. 既存のtasksに新しいタスクを追加（同じIDなら更新、新規なら追加）
+3. write_fileで整形して保存する
+
+実装例：
+- 既存ファイルを読み込み（read_file使用）
+- 既存のtasks配列に新しいタスクを追加
+- 同じIDがあれば更新、なければ新規追加
+- JSON.stringify(data, null, 2)で整形して保存
+
+4. 「毎日9時にSlack確認・返信するタスクを登録しました」と報告
+
+学習情報の保存：
+Slack返信で学んだパターンは定期的に~/.anicca/anicca.mdに絶対に保存していく：
+- 送信者ごとの返信スタイルをどうするべきか。
+- よく使う返信パターンやチャンネル
+- 自動返信可能なメッセージタイプ
+- そしてSlack返信をするときは、毎回~/.anicca/anicca.mdを読んで、その中のパターンを参考にするように。
+
+定期タスクの管理：
+- 「定期タスクを確認」→ scheduled_tasks.jsonを読んで一覧表示
+- 「Slackタスクを8時に変更」→ 該当タスクのscheduleを更新。新規タスクの場合は、既存のものは消さずにただ追加する。
+- 「Slackタスクを停止」→ scheduled_tasks.jsonから削除
 
 重要！！
-まず何かを頼まれたら、まずはリクエスト内容を復唱し、ユーザーにそれでいいかを確認する。
-もし良いと言われたら、実際にツールを使用して指示を送る。それまでは絶対に指示をしないこと。
-もし違うと言われたら、きちんとその修正案を聞きまたその内容で復唱する。
-ユーザーからリクエストについて内容が合っているという承認が得られない限りは絶対にClaudeなどに送らない。
+まず何かを頼まれたら、まずはリクエスト内容を復唱し、ユーザーにそれでいいかを確認する。定期タスクも同様。Cronによるその時間になると自動であなたに指示が送られるのでまずはそれを復唱する。
+Slackメッセージへの返信の場合は、全ての返信案をまとめて提示し、それぞれについて意見を聞く。
+良いと言われたものは実際に送信する。それまでは絶対に送信しない。違うと言われたら、きちんとその修正案を聞きまたその内容で復唱する。
+ユーザーから承認が得られない限りは絶対にClaudeにも、Slackにも送信しない。
 
-Examples:
-- "TODOアプリ作って" → Use think_with_claude
-- "ゲーム作って" → Use think_with_claude
-- "package.json分析して" → Use think_with_claude
-- "YouTube開いて" → Use think_with_claude
-- "最新ニュース" → Use get_hacker_news_stories
-- "天気について調べて" → Use search_exa
-- "Slack繋いで" → Use connect_slack
+使用例：
+- 「TODOアプリ作って」→ think_with_claude使用
+- 「ゲーム作って」→ think_with_claude使用
+- 「package.json分析して」→ think_with_claude使用
+- 「YouTube開いて」→ think_with_claude使用
+- 「最新ニュース」→ get_hacker_news_stories使用
+- 「天気について調べて」→ search_exa使用
+- 「Slack繋いで」→ connect_slack使用
+- 「Slack確認して返信して」→ Slackタスクガイドラインに従う
+- 「#generalに告知して」→ slack_send_message使用
+- 「毎日9時にSlack返信して」→ filesystem_mcpで定期タスク登録
 
-Be friendly and helpful in any language.`,
+どんな言語でも親切で役立つ応答を心がけてください。`,
           input_audio_format: 'pcm16',
           output_audio_format: 'pcm16',
           input_audio_transcription: null,
@@ -416,6 +535,86 @@ Be friendly and helpful in any language.`,
               parameters: {
                 type: 'object',
                 properties: {}
+              }
+            },
+            {
+              type: 'function',
+              name: 'slack_send_message',
+              description: 'Send a message to Slack channel or thread',
+              parameters: {
+                type: 'object',
+                properties: {
+                  channel: { type: 'string', description: 'Channel name (#general)' },
+                  message: { type: 'string', description: 'Message to send' },
+                  thread_ts: { type: 'string', description: 'Thread timestamp for thread reply' }
+                },
+                required: ['channel', 'message']
+              }
+            },
+            {
+              type: 'function',
+              name: 'slack_get_channel_history',
+              description: 'Get recent messages from a Slack channel',
+              parameters: {
+                type: 'object',
+                properties: {
+                  channel: { type: 'string', description: 'Channel name (#general)' },
+                  limit: { type: 'number', description: 'Number of messages', default: 10 }
+                },
+                required: ['channel']
+              }
+            },
+            {
+              type: 'function',
+              name: 'slack_add_reaction',
+              description: 'Add reaction to a message',
+              parameters: {
+                type: 'object',
+                properties: {
+                  channel: { type: 'string', description: 'Channel name (#general)' },
+                  timestamp: { type: 'string', description: 'Message timestamp' },
+                  name: { type: 'string', description: 'Reaction name (e.g. thumbsup)' }
+                },
+                required: ['channel', 'timestamp', 'name']
+              }
+            },
+            {
+              type: 'function',
+              name: 'slack_reply_to_thread',
+              description: 'Reply to a specific message thread in Slack',
+              parameters: {
+                type: 'object',
+                properties: {
+                  channel: { type: 'string', description: 'Channel name (#general)' },
+                  message: { type: 'string', description: 'Reply message' },
+                  thread_ts: { type: 'string', description: 'Thread timestamp (required)' }
+                },
+                required: ['channel', 'message', 'thread_ts']
+              }
+            },
+            {
+              type: 'function',
+              name: 'read_file',
+              description: 'Read file content from ~/.anicca/ directory',
+              parameters: {
+                type: 'object',
+                properties: {
+                  path: { type: 'string', description: 'File path relative to ~/.anicca/' }
+                },
+                required: ['path']
+              }
+            },
+            {
+              type: 'function',
+              name: 'write_file',
+              description: 'Write content to file in ~/.anicca/ directory',
+              parameters: {
+                type: 'object',
+                properties: {
+                  path: { type: 'string', description: 'File path relative to ~/.anicca/' },
+                  content: { type: 'string', description: 'Content to write' }
+                },
+                required: ['path', 'content']
               }
             }
           ],
@@ -570,6 +769,73 @@ Be friendly and helpful in any language.`,
               return res.status(500).json({
                 error: error instanceof Error ? error.message : 'Parallel execution failed'
               });
+            }
+            
+          case 'slack_send_message':
+          case 'slack_get_channel_history':
+          case 'slack_add_reaction':
+          case 'slack_reply_to_thread':
+            // Slack APIプロキシ経由で実行
+            try {
+              // デバッグ: 受信した引数を表示
+              console.log(`🔍 ${toolName} args:`, JSON.stringify(args, null, 2));
+              
+              let slackAction = toolName.replace('slack_', ''); // slack_send_message → send_message
+              // slack_reply_to_threadの場合はsend_messageにマッピング
+              if (slackAction === 'reply_to_thread') {
+                slackAction = 'send_message';
+                // thread_tsが必須であることを確認
+                if (!args.thread_ts) {
+                  return res.status(400).json({ error: 'thread_ts is required for reply_to_thread' });
+                }
+                console.log('🔍 slack_reply_to_thread mapped to send_message with thread_ts:', args.thread_ts);
+              }
+              const response = await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/api/tools/slack`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  action: slackAction,
+                  arguments: args,
+                  userId: this.currentUserId
+                })
+              });
+
+              const data = await response.json();
+              return res.json({
+                success: true,
+                result: data.result || data
+              });
+            } catch (error) {
+              console.error(`Slack tool error:`, error);
+              return res.status(500).json({ error: `Slack tool failed: ${error instanceof Error ? error.message : 'Unknown error'}` });
+            }
+
+          case 'read_file':
+            try {
+              const filePath = path.join(os.homedir(), '.anicca', args.path);
+              const content = fs.readFileSync(filePath, 'utf8');
+              return res.json({
+                success: true,
+                result: content
+              });
+            } catch (error) {
+              return res.status(500).json({ error: `Failed to read file: ${error instanceof Error ? error.message : 'Unknown error'}` });
+            }
+
+          case 'write_file':
+            try {
+              const filePath = path.join(os.homedir(), '.anicca', args.path);
+              const dir = path.dirname(filePath);
+              if (!fs.existsSync(dir)) {
+                fs.mkdirSync(dir, { recursive: true });
+              }
+              fs.writeFileSync(filePath, args.content, 'utf8');
+              return res.json({
+                success: true,
+                result: 'File written successfully'
+              });
+            } catch (error) {
+              return res.status(500).json({ error: `Failed to write file: ${error instanceof Error ? error.message : 'Unknown error'}` });
             }
             
           default:

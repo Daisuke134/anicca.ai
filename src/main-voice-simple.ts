@@ -5,6 +5,10 @@ import { autoUpdater } from 'electron-updater';
 import { VoiceServerService } from './services/voiceServer';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
 import { API_ENDPOINTS, PORTS, UPDATE_CONFIG } from './config';
+import * as cron from 'node-cron';
+import * as fs from 'fs';
+import * as os from 'os';
+import { WebSocket } from 'ws';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -15,6 +19,10 @@ let hiddenWindow: BrowserWindow | null = null;
 let voiceServer: VoiceServerService | null = null;
 let isListening = false;
 let authService: DesktopAuthService | null = null;
+
+// 定期タスク管理
+const cronJobs = new Map<string, any>();
+const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
 
 // アプリの初期化
 async function initializeApp() {
@@ -132,6 +140,9 @@ async function initializeApp() {
     // 通知
     // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');
     
+    // 定期タスクシステムを初期化
+    initializeScheduledTasks();
+    
   } catch (error) {
     console.error('❌ Initialization error:', error);
     
@@ -204,6 +215,32 @@ function createHiddenWindow() {
                     instructions: \`次のメッセージを日本語で読み上げてください: "\${text}"\`
                   }
                 }));
+              }
+              
+              // 定期タスク実行メッセージの処理
+              if (message.type === 'scheduled_task_execute' && dataChannel?.readyState === 'open') {
+                console.log('📅 Executing scheduled task:', message.command);
+                
+                // OpenAI Realtime APIに直接コマンドを送信
+                dataChannel.send(JSON.stringify({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'message',
+                    role: 'user',
+                    content: [{
+                      type: 'input_text',
+                      text: message.command
+                    }]
+                  }
+                }));
+                
+                // レスポンスをトリガー
+                setTimeout(() => {
+                  dataChannel.send(JSON.stringify({
+                    type: 'response.create',
+                    response: { modalities: ['text', 'audio'] }
+                  }));
+                }, 100);
               }
             } catch (error) {
               console.error('WebSocket message error:', error);
@@ -545,3 +582,81 @@ process.on('uncaughtException', (error) => {
 process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled rejection at:', promise, 'reason:', reason);
 });
+
+// 定期タスク管理関数
+function initializeScheduledTasks() {
+  if (fs.existsSync(scheduledTasksPath)) {
+    const content = fs.readFileSync(scheduledTasksPath, 'utf8');
+    const data = JSON.parse(content);
+    const tasks = data.tasks || [];
+
+    tasks.forEach((task: any) => {
+      registerCronJob(task);
+    });
+
+    console.log(`📅 ${tasks.length}個の定期タスクを登録しました`);
+  }
+
+  // ファイル監視
+  fs.watchFile(scheduledTasksPath, { interval: 1000 }, () => {
+    console.log('📝 scheduled_tasks.jsonが変更されました');
+    reloadScheduledTasks();
+  });
+}
+
+function registerCronJob(task: any) {
+  const job = cron.schedule(task.schedule, async () => {
+    console.log(`🔔 定期タスク実行: ${task.description}`);
+    await executeScheduledTask(task.command);
+  }, {
+    timezone: task.timezone || 'Asia/Tokyo',
+    scheduled: true
+  });
+
+  cronJobs.set(task.id, job);
+}
+
+async function executeScheduledTask(command: string) {
+  const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
+
+  ws.on('open', () => {
+    ws.send(JSON.stringify({
+      type: 'scheduled_task',
+      command: command
+    }));
+    
+    // すぐに閉じずに、レスポンスを待つ
+    setTimeout(() => {
+      ws.close();
+    }, 5000); // 5秒後にクローズ
+  });
+  
+  ws.on('message', (data) => {
+    console.log('📨 Response from server:', data);
+  });
+  
+  ws.on('error', (error) => {
+    console.error('❌ WebSocket error:', error);
+  });
+}
+
+function reloadScheduledTasks() {
+  // 既存のジョブを停止
+  cronJobs.forEach((job) => {
+    job.stop();
+  });
+  cronJobs.clear();
+
+  // 新しいタスクを読み込み
+  if (fs.existsSync(scheduledTasksPath)) {
+    const content = fs.readFileSync(scheduledTasksPath, 'utf8');
+    const data = JSON.parse(content);
+    const tasks = data.tasks || [];
+
+    tasks.forEach((task: any) => {
+      registerCronJob(task);
+    });
+
+    console.log(`📅 定期タスクを再読み込みしました: ${tasks.length}個のタスク`);
+  }
+}

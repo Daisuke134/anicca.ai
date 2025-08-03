@@ -1,76 +1,167 @@
-# ANICCA - AI Desktop Assistant
+# ANICCA Project
 
-![ANICCA Banner](https://img.shields.io/badge/ANICCA-AI%20Desktop%20Assistant-purple?style=for-the-badge)
-![Platform](https://img.shields.io/badge/platform-macOS-lightgrey?style=for-the-badge)
-![Version](https://img.shields.io/badge/version-v3.0-blue?style=for-the-badge)
+## 🎯 プロジェクト概要
 
-**ANICCA** is an intelligent macOS desktop assistant that understands your screen activities and helps boost your productivity. It watches, learns, and acts - your perfect digital companion.
+ANICCAは、音声インターフェースを中心としたAIアシスタントエコシステムです。デスクトップアプリ、Webアプリ、そしてそれらを繋ぐプロキシサーバーから構成されています。
 
-## ✨ Key Features
+## 📁 リポジトリ構造
 
-- 🎯 **Smart Screen Analysis**: Captures and understands your screen every 8 seconds
-- 🧠 **AI Commentary**: Real-time insights about your activities using Google Gemini 2.0 Flash
-- 🔮 **Behavior Prediction**: Predicts your next actions with accuracy tracking
-- 📊 **Daily Activity Dashboard**: Comprehensive analysis with activity graphs and daily highlights
-- 🤖 **Agent Mode**: Proactive assistance - automatically closes distracting tabs, manages windows
-- 🌍 **Multi-language Support**: Japanese and English interface
-- 🔒 **Privacy-First**: All data processed and stored locally on your Mac
+```
+anicca-project/
+├── src/                      # デスクトップアプリ (Electron + TypeScript)
+│   ├── main-voice-simple.ts  # メインエントリーポイント
+│   └── services/             # 各種サービス
+│       ├── voiceServer.ts    # 音声処理サーバー
+│       ├── desktopAuthService.ts
+│       ├── simpleEncryption.ts
+│       └── interfaces.ts
+│
+├── anicca-proxy-slack/       # プロキシサーバー (Express + TypeScript)
+│   ├── src/                  # サーバーソースコード
+│   ├── mcp-servers/          # MCP関連サーバー
+│   ├── supabase/             # Supabase設定
+│   └── debug-tools/          # デバッグツール
+│
+├── anicca-web/               # Webアプリ (Next.js + TypeScript)
+│   ├── app/                  # App Router
+│   ├── components/           # UIコンポーネント
+│   ├── hooks/                # カスタムフック
+│   └── lib/                  # ユーティリティ
+│
+├── landing/                  # ランディングページ
+├── scripts/                  # ビルドスクリプト
+└── assets/                   # アセットファイル
+```
 
-## 🚀 Getting Started
+## 🚀 主要コンポーネント
 
-### Download & Install
+### 1. デスクトップアプリ (`src/`)
+- **技術スタック**: Electron + TypeScript
+- **主な機能**: 
+  - 音声認識と応答
+  - システムトレイ常駐
+  - MCP (Model Context Protocol) 統合
 
-**For Apple Silicon Macs (M1/M2/M3/M4):**
-[⬇️ Download ANICCA v3.0](https://github.com/Daisuke134/anicca.ai/releases/download/v3.0.0/ANICCA-1.0.0-arm64.dmg)
+### 2. プロキシサーバー (`anicca-proxy-slack/`)
+- **技術スタック**: Express + TypeScript
+- **デプロイ先**: Railway (https://anicca-proxy-staging.up.railway.app)
+- **主な機能**:
+  - Claude API プロキシ
+  - Slack OAuth認証
+  - MCPツール統合
+  - DMGファイル配信
 
-### Installation Steps
+### 3. Webアプリ (`anicca-web/`)
+- **技術スタック**: Next.js 14 + TypeScript
+- **デプロイ先**: Vercel (https://app.aniccaai.com)
+- **主な機能**:
+  - ブラウザベース音声アシスタント
+  - リアルタイム音声ストリーミング
+  - Supabase認証
 
-1. **Download** the `.dmg` file above
-2. **Open** the downloaded file and drag ANICCA to your Applications folder  
-3. **Launch** ANICCA from Applications
-4. **Grant Permissions** when prompted:
-   - Screen Recording (required for screen analysis)
-   - Accessibility (for optimal experience)
-5. **Start Using**: Click "Start Analysis" and ANICCA begins working immediately!
+## 📦 インストール
 
-## 🎮 How to Use
+```bash
+# リポジトリのクローン
+git clone <repository-url>
+cd anicca-project
 
-- **No Setup Required**: ANICCA works out of the box - no API keys or configuration needed
-- **Claude Code SDK Included**: Advanced AI capabilities powered by Claude - create apps, solve problems, and automate tasks
-- **Real-time Analysis**: ANICCA continuously observes your screen and provides insights
-- **Activity Dashboard**: View your daily productivity patterns and highlights
-- **Agent Mode**: Enable proactive assistance to help maintain focus
-- **Language Settings**: Switch between Japanese and English anytime
-- **Privacy Control**: All your data remains on your Mac - nothing is sent to external servers
+# 依存関係のインストール
+npm install
 
-## 🛠 System Requirements
+# プロキシサーバーの依存関係
+cd anicca-proxy-slack
+npm install
+cd ..
 
-- **macOS 10.15+** (Catalina or later)
-- **Apple Silicon Mac** (M1/M2/M3/M4) recommended
-- **8GB RAM** or more
-- **Internet connection** for AI analysis
+# Webアプリの依存関係
+cd anicca-web
+npm install
+cd ..
+```
 
-## 🔒 Privacy & Security
+## 🛠️ 開発
 
-- **100% Local Data**: Your screen captures and personal data never leave your Mac
-- **Encrypted Storage**: All data is securely stored in a local SQLite database  
-- **API Privacy**: Only processed insights are sent to Google Gemini, never raw screenshots
-- **No Telemetry**: Zero data collection or tracking
-- **Code Signed & Notarized**: Verified by Apple for security
+### デスクトップアプリ
 
-## 📈 Upcoming Features
+```bash
+# 開発モード（推奨）
+npm run voice:simple
 
-- Enhanced browser automation and control
-- Extended AI memory and context
-- Voice interaction capabilities
-- Custom automation workflows
+# TypeScriptコンパイル
+npm run build:voice
 
-## 📧 Contact & Support
+# DMGビルド（配布用）
+npm run dist:voice
 
-For questions or support, please email: [contact@anicca.ai](mailto:contact@anicca.ai)
+# コード品質チェック
+npm run lint
+npm run format
+```
 
----
+### プロキシサーバー
 
-**Experience the future of desktop productivity with ANICCA** ✨
+```bash
+cd anicca-proxy-slack
+npm run dev  # ローカル開発
+```
 
-*Made with ❤️ for Mac users who want to maximize their potential*
+### Webアプリ
+
+```bash
+cd anicca-web
+npm run dev  # ローカル開発 (http://localhost:3000)
+```
+
+## 📝 環境変数
+
+### デスクトップアプリ
+最小限の`.env`設定。APIキーはOSのキーチェーンで暗号化管理。
+
+### プロキシサーバー
+`.env.example`を参考に`.env`ファイルを作成。
+
+### Webアプリ
+Vercelの環境変数設定で管理。
+
+## 🚢 デプロイ
+
+### デスクトップアプリ
+- GitHubリリース（プライベートリポジトリ）
+- DMGファイルはプロキシサーバー経由で配信
+
+### プロキシサーバー
+- Railway自動デプロイ（mainブランチプッシュ時）
+- Staging: https://anicca-proxy-staging.up.railway.app
+
+### Webアプリ
+- Vercel自動デプロイ（GitHubプッシュ時）
+- Production: https://app.aniccaai.com
+
+## 🔧 重要な開発ノート
+
+1. **DMGビルド前の確認**
+   ```bash
+   # マウントされているDMGを確認
+   ls /Volumes/
+   # Aniccaがマウントされていたら強制アンマウント
+   hdiutil detach "/Volumes/Anicca*" -force
+   ```
+
+2. **セッション永続化**: `~/.anicca/session.json`で会話コンテキストを保持
+
+3. **プライバシー優先設計**: すべてのデータは`~/.anicca/`にローカル保存
+
+4. **音声バージョンが主力**: UIバージョンは非推奨
+
+## 📄 ライセンス
+
+プロプライエタリ - 詳細は別途お問い合わせください。
+
+## 🤝 コントリビューション
+
+現在プライベートリポジトリとして運用中。コントリビューションは招待制です。
+
+## 📧 お問い合わせ
+
+[プロジェクトのサポートメール]

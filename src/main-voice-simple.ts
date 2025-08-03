@@ -189,6 +189,7 @@ function createHiddenWindow() {
         let dataChannel = null;
         let audioElement = null;
         let ws = null;
+        let isProcessingResponse = false;  // レスポンス競合防止用フラグ
         let userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
         const apiBaseUrl = '${API_ENDPOINTS.OPENAI_PROXY.SESSION}'.replace('/api/openai-proxy/session', '');
         const toolsBaseUrl = '${API_ENDPOINTS.TOOLS.BASE}';
@@ -202,24 +203,83 @@ function createHiddenWindow() {
               const message = JSON.parse(event.data);
               console.log('🔔 WebSocket message:', message);
               
-              if (message.type === 'worker_task_complete' && dataChannel?.readyState === 'open') {
+              if (message.type === 'worker_task_complete' && dataChannel?.readyState === 'open' && !isProcessingResponse) {
                 // Worker完了通知を音声で報告
                 const text = message.payload.message;
                 console.log('🗣️ Announcing:', text);
                 
-                // OpenAI RealtimeAPIで音声合成
+                isProcessingResponse = true;  // フラグを設定
+                
+                // ユーザーメッセージとして読み上げ指示を送る
                 dataChannel.send(JSON.stringify({
-                  type: 'response.create',
-                  response: {
-                    modalities: ['audio'],
-                    instructions: \`次のメッセージを日本語で読み上げてください: "\${text}"\`
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'message',
+                    role: 'user',  // ⭐ ユーザーからの指示として
+                    content: [{
+                      type: 'input_text',
+                      text: \`次のメッセージを読み上げてください: "\${text}"\`
+                    }]
                   }
                 }));
+                
+                // レスポンスをトリガー
+                setTimeout(() => {
+                  dataChannel.send(JSON.stringify({
+                    type: 'response.create',
+                    response: { modalities: ['text', 'audio'] }
+                  }));
+                  
+                  // 500ms後にフラグをリセット
+                  setTimeout(() => {
+                    isProcessingResponse = false;
+                  }, 500);
+                }, 100);
+              }
+              
+              // Worker STATUS_UPDATE処理
+              if (message.type === 'worker_status_update' && dataChannel?.readyState === 'open' && !isProcessingResponse) {
+                const text = message.payload.message;
+                console.log('📢 Worker status update:', text);
+                
+                isProcessingResponse = true;  // フラグを設定
+                
+                // ユーザーメッセージとして読み上げ指示を送る
+                dataChannel.send(JSON.stringify({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'message',
+                    role: 'user',  // ⭐ ユーザーからの指示として
+                    content: [{
+                      type: 'input_text',
+                      text: \`次のメッセージを読み上げて、ユーザーのフィードバックを待ちなさい。そのフィードバックを、Claudeへの指示という形にして渡すように。そしてその指示は、think_with_claudeツールのtaskパラメータとして送信してください: "\${text}"\`
+                    }]
+                  }
+                }));
+                
+                // レスポンスをトリガー
+                setTimeout(() => {
+                  dataChannel.send(JSON.stringify({
+                    type: 'response.create',
+                    response: { 
+                      modalities: ['text', 'audio']
+                    }
+                  }));
+                  
+                  // 500ms後にフラグをリセット
+                  setTimeout(() => {
+                    isProcessingResponse = false;
+                  }, 500);
+                }, 100);
+                
+                console.log('✅ Status update sent to OpenAI for speech synthesis');
               }
               
               // 定期タスク実行メッセージの処理
-              if (message.type === 'scheduled_task_execute' && dataChannel?.readyState === 'open') {
+              if (message.type === 'scheduled_task_execute' && dataChannel?.readyState === 'open' && !isProcessingResponse) {
                 console.log('📅 Executing scheduled task:', message.command);
+                
+                isProcessingResponse = true;  // フラグを設定
                 
                 // OpenAI Realtime APIに直接コマンドを送信
                 dataChannel.send(JSON.stringify({
@@ -240,6 +300,11 @@ function createHiddenWindow() {
                     type: 'response.create',
                     response: { modalities: ['text', 'audio'] }
                   }));
+                  
+                  // 500ms後にフラグをリセット
+                  setTimeout(() => {
+                    isProcessingResponse = false;
+                  }, 500);
                 }, 100);
               }
             } catch (error) {
@@ -275,7 +340,19 @@ function createHiddenWindow() {
             // Audio element for playback
             audioElement = document.createElement('audio');
             audioElement.autoplay = true;
-            pc.ontrack = e => audioElement.srcObject = e.streams[0];
+            pc.ontrack = e => {
+              console.log('🎵 Audio track received:', {
+                streamId: e.streams[0]?.id,
+                tracks: e.streams[0]?.getTracks().length,
+                audioTracks: e.streams[0]?.getAudioTracks().length
+              });
+              audioElement.srcObject = e.streams[0];
+              
+              // デバッグ: 音声再生状態の監視
+              audioElement.onplay = () => console.log('▶️ Audio playback started');
+              audioElement.onpause = () => console.log('⏸️ Audio playback paused');
+              audioElement.onerror = (err) => console.error('❌ Audio playback error:', err);
+            };
             
             // Data channel for communication
             dataChannel = pc.createDataChannel('oai-events');
@@ -314,6 +391,14 @@ function createHiddenWindow() {
               try {
                 const data = JSON.parse(event.data);
                 console.log('📨 Message:', data.type);
+                
+                
+                // エラーの詳細を確認
+                if (data.type === 'error') {
+                  console.error('❌ OpenAI API Error:', data);
+                  console.error('Error details:', JSON.stringify(data, null, 2));
+                  return;
+                }
                 
                 if (data.type === 'response.function_call_arguments.done') {
                   handleFunctionCall(data);
@@ -620,9 +705,12 @@ async function executeScheduledTask(command: string) {
   const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
 
   ws.on('open', () => {
+    // コマンドに読み上げ指示を含める
+    const enhancedCommand = `定期タスク：まずこのタスクをそのまま読み上げて開始を宣言。その上で、Slack返信タスクなら、まずはメッセージ取得と返信案の提示、。絶対に、ユーザーの承認を得られるまでは送信・返信しないこと。起床・就寝タスクならただその人を起こそうとすること　　${command}`;
+    
     ws.send(JSON.stringify({
       type: 'scheduled_task',
-      command: command
+      command: enhancedCommand
     }));
     
     // すぐに閉じずに、レスポンスを待つ

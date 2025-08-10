@@ -9,7 +9,6 @@ ANICCAは、音声インターフェースを中心としたマルチプラッ�
 - **場所**: `src/` ディレクトリ
 - **エントリーポイント**: `src/main-voice-simple.ts`
 - **主な機能**:
-  - 音声認識と応答（"Hey Anicca"で起動）
   - システムトレイ常駐
   - MCP (Model Context Protocol) 統合
   - セッション永続化（`~/.anicca/session.json`）

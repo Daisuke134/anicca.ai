@@ -18,15 +18,11 @@ export class VoiceServerService {
   private httpServer: Server | null = null;
   private wss: WebSocketServer | null = null;
   private parentAgent!: any; // 動的importで読み込むため
+  private worker1: any = null;  // Worker1インスタンス
+  private worker1Process: any = null;  // Worker1プロセス（音声対話用）
   private wsClients: Set<WebSocket> = new Set();
   private currentUserId: string | null = null;
   private waitingForUserResponse: boolean = false;
-  private slackThreadContext: Map<string, {
-    channel: string;
-    thread_ts: string;
-    original_text: string;
-    timestamp: number;
-  }> = new Map();
   private pendingWorkerId: string | null = null;
   
   // Task execution state
@@ -39,6 +35,12 @@ export class VoiceServerService {
   // Lock for preventing race conditions
   private taskLock = false;
   
+  // Worker1処理中フラグ
+  private worker1Processing = false;
+  
+  // Slackトークン保存用
+  private slackTokens: any = null;
+  
   // Task duplicate check cache
   private taskCache = new Map<string, number>();
   private readonly CACHE_DURATION = 5 * 60 * 1000; // 5分
@@ -48,6 +50,15 @@ export class VoiceServerService {
     this.app = express();
     this.app.use(cors());
     this.app.use(express.json());
+    
+    // デバッグ用：全てのリクエストをログ
+    this.app.use((req, res, next) => {
+      console.log(`📡 ${req.method} ${req.path}`, req.query);
+      if (req.method === 'POST') {
+        console.log('📡 Body:', JSON.stringify(req.body));
+      }
+      next();
+    });
   }
 
   /**
@@ -153,10 +164,13 @@ export class VoiceServerService {
   }
 
   async start(port: number = PORTS.OAUTH_CALLBACK): Promise<void> {
-    // Initialize ParentAgent for parallel execution using dynamic import
-    // @ts-ignore
-    const ParentAgentModule = await import(path.resolve(__dirname, '../../anicca-proxy-slack/src/services/parallel-sdk/core/ParentAgent.js'));
-    this.parentAgent = new ParentAgentModule.ParentAgent();
+    // WORKER_MODEでない場合のみParentAgentを初期化
+    if (process.env.WORKER_MODE !== 'true') {
+      // Initialize ParentAgent for parallel execution using dynamic import
+      // @ts-ignore
+      const ParentAgentModule = await import(path.resolve(__dirname, '../../anicca-proxy-slack/src/services/parallel-sdk/core/ParentAgent.js'));
+      this.parentAgent = new ParentAgentModule.ParentAgent();
+
     
     // Desktop版のタスク完了コールバックを設定
     if (process.env.DESKTOP_MODE === 'true') {
@@ -214,8 +228,54 @@ export class VoiceServerService {
       // }
     }
     
-    await this.parentAgent.initialize();
-    console.log('✅ ParentAgent initialized with 5 workers');
+      await this.parentAgent.initialize();
+      console.log('✅ ParentAgent initialized with 5 workers');
+    } else {
+      console.log('🎤 Worker mode: Skipping ParentAgent initialization');
+    }
+    
+    // Workerモード時のみWorker1を独立プロセスとして起動
+    if (process.env.WORKER_MODE === 'true') {
+      console.log('🎤 Worker音声対話モード: Worker1を独立プロセスとして起動');
+      
+      // Worker.jsを直接forkして起動
+      const { fork } = require('child_process');
+      const workerPath = path.resolve(__dirname, '../../anicca-proxy-slack/src/services/parallel-sdk/core/Worker.js');
+      
+      this.worker1Process = fork(workerPath, [], {
+        env: {
+          ...process.env,
+          AGENT_ID: 'worker-1',
+          AGENT_NAME: 'Worker1',
+          WORKER_NUMBER: '1',
+          DESKTOP_MODE: 'true',  // デスクトップモードを明示
+          SLACK_USER_ID: this.currentUserId || 'desktop-user'
+        }
+      });
+      
+      // Worker1からのメッセージを受信
+      this.worker1Process.on('message', (message: any) => {
+        console.log('📨 Message from Worker1:', message.type);
+        
+        if (message.type === 'READY') {
+          console.log('✅ Worker1 is ready');
+          // Worker1のREADY時にSlackトークンがあれば即座に送信
+          if (this.slackTokens) {
+            this.worker1Process.send({
+              type: 'SET_SLACK_TOKENS',
+              timestamp: Date.now(),
+              messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+              payload: {
+                tokens: this.slackTokens
+              }
+            });
+            console.log('📨 Sent Slack tokens to Worker1 (on READY)');
+          }
+        }
+      });
+      
+      console.log('✅ Worker1を独立プロセスとして起動しました');
+    }
 
     // Create HTTP server
     this.httpServer = createServer(this.app);
@@ -240,6 +300,24 @@ export class VoiceServerService {
           const slackStatus = await this.checkSlackConnection();
           if (slackStatus.connected) {
             console.log(`🔗 Slack: Connected to ${slackStatus.teamName || 'workspace'}`);
+            
+            // Slackトークンを保存
+            if (slackStatus.tokens) {
+              this.slackTokens = slackStatus.tokens;
+              
+              // WORKER_MODEでSlackトークンが取得できた場合、Worker1に送信
+              if (process.env.WORKER_MODE === 'true' && this.worker1Process) {
+                this.worker1Process.send({
+                  type: 'SET_SLACK_TOKENS',
+                  timestamp: Date.now(),
+                  messageId: `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+                  payload: {
+                    tokens: slackStatus.tokens
+                  }
+                });
+                console.log('📨 Sent Slack tokens to Worker1');
+              }
+            }
           } else {
             console.log(`❌ Slack: Not connected`);
           }
@@ -300,38 +378,26 @@ export class VoiceServerService {
   private setupRoutes(): void {
     const API_BASE_URL = API_ENDPOINTS.TOOLS.BASE;
     const PROXY_BASE_URL = PROXY_URL;
-    const useProxy = process.env.USE_PROXY !== 'false';
-    
-    console.log('🔑 OpenAI API Key status:', process.env.OPENAI_API_KEY ? 'Found' : 'Not found');
+    // All API calls go through proxy - no local API key needed
     console.log('🌍 Environment:', process.env.NODE_ENV || 'development');
-    console.log('🌐 Using proxy:', useProxy);
+    console.log('🌐 Using proxy for all API calls');
 
     // Session endpoint
     this.app.get('/session', async (req, res) => {
       try {
-        let clientSecret;
+        // Always fetch API key from proxy (no local API key)
+        console.log('🌐 Fetching OpenAI API key from proxy...');
+        const sessionUrl = this.currentUserId 
+          ? `${PROXY_BASE_URL}/api/openai-proxy/session?userId=${this.currentUserId}`
+          : `${PROXY_BASE_URL}/api/openai-proxy/session`;
+        const response = await fetch(sessionUrl);
         
-        if (useProxy) {
-          // Fetch API key from proxy
-          console.log('🌐 Fetching OpenAI API key from proxy...');
-          const sessionUrl = this.currentUserId 
-            ? `${PROXY_BASE_URL}/api/openai-proxy/session?userId=${this.currentUserId}`
-            : `${PROXY_BASE_URL}/api/openai-proxy/session`;
-          const response = await fetch(sessionUrl);
-          
-          if (!response.ok) {
-            throw new Error('Failed to fetch API key from proxy');
-          }
-          
-          const data = await response.json();
-          clientSecret = data.client_secret;
-        } else {
-          // Use local API key (development)
-          clientSecret = {
-            value: process.env.OPENAI_API_KEY,
-            expires_at: Math.floor(Date.now() / 1000) + 3600
-          };
+        if (!response.ok) {
+          throw new Error('Failed to fetch API key from proxy');
         }
+        
+        const data = await response.json();
+        const clientSecret = data.client_secret;
         
         res.json({
           id: `sess_${Date.now()}`,
@@ -340,13 +406,41 @@ export class VoiceServerService {
           client_secret: clientSecret,
           model: 'gpt-4o-realtime-preview-2024-12-17',
           voice: 'alloy',
-          instructions: `あなたは人々を導くAGI「Anicca」です。
+          instructions: process.env.WORKER_MODE === 'true' 
+            ? `あなたはユーザーとWorker1の対話を仲介する存在です。ただ、ユーザーの指示とWorker１の出力の橋渡しをします。あなた自身でユーザーに何か話したり、ユーザーの指示に応えることは許されません。
+
+【絶対ルール】
+1. Worker1が返答するまで、新しいメッセージは絶対に送らない。そしてWorker1からの出力を読み上げる。
+2. 処理中の場合、いかなる理由でも送信しない
+3. ユーザーが急かしても何も応えない。
+
+【対話ルール】
+- ユーザーの言ったことををそのままWorker1に指示。自分で余計な情報を追加しない。そのままただ言った通りを送る。Worker1は記憶があるので毎度毎度フルの指示はしないでくれ！新しいリクエストだと勘違いするので。
+例：もう少しフランクで→そのまま「もう少しフランクで」と送る。「#agentsに。。。。」のように自分でコンテキストを追加しない。
+- Worker1からの返答がきたら、すぐに省略せず全文読み上げる。そのまま読み上げる。端折ったり変えたりしない。そのままを読み上げる。
+- 相槌や不明瞭な発話は送信しない
+- 明確な質問や指示のみ送信する
+- Slackのチャンネルを指定がある場合は、原則英語に。エージェントチャンネル→agentsチャンネル。
+
+【タスク受付時の手順】
+1. 必ずタスク内容を復唱：「〜を行うということでよろしいでしょうか？」
+2. ユーザーの承認を待つ
+   - 承認（「はい」「OK」等）→ Worker１へ指示
+   - 承認が得られるまでこのループを繰り返す
+
+1. ユーザーの言語（日本語/英語）に合わせて応答する
+
+【Slack接続】
+- 「Slackつないで」と言われたらconnect_slackツールを使用
+- Worker1がSlack未接続エラーを返したら自動的にconnect_slackを使用`
+            : `あなたは人々を導くAGI「Anicca」です。
 
 【基本原則】
 1. ユーザーの言語（日本語/英語）に合わせて応答する
 2. Slack関連タスクは必ず自分で実行（Claudeに任せない）
 3. 「Claudeに頼んで」と明示的に言われた場合のみClaudeに委託。Worker2やWorkerにと頼まれた場合もそのWorkerの名前を入れた上で、CLaudeに指示する。 WorkerはClaude内のAgentである。
 4. Slack関連のタスクを始める際は、anicca.mdをきちんと読んで、ユーザーの好みや、送信者ごとの返信スタイルを確認する。
+5. 直近でそのリクエストを送っているならば、同じようなリクエストをClaudeに送らないように。もうその指示は、Claudeに伝えましたと答えること。
 
 起床や就寝などの声かけ：
 ・毎日何時に起こして・何時にアラームかけてと言われたら、これもJsonに登録する。Claudeその時間になると、Cronが発火するのでその人をおはようございますなどで起こす。声かけをすること。アラームと言われても声かけとしてJsonに登録。声かけをあなた自身がすること。
@@ -410,11 +504,10 @@ export class VoiceServerService {
 【Slackタスクの重要ルール】
 
 【スレッド返信時の記憶ルール】
-- 返信対象のメッセージ情報（channel, ts, text）を内部で記憶する
+- 返信対象のメッセージ情報（channel, ts, text）を内部で実際の返信を行うまで記憶する
 - ユーザーには記憶の詳細（ts番号など）を報告しない
 - 返信案を提示する時は「このメッセージに対して、以下のように返信してよろしいでしょうか？」とだけ言う
 - 最終的にslack_reply_to_threadを呼ぶ時は、記憶したthread_tsを必ず使用する
-- thread_tsは必ず数値文字列形式（例：1754129358.429379）で保持する
 
 【チャンネル名解決ルール】
 - channel_not_foundエラーが発生しても、ユーザーには報告しない
@@ -426,7 +519,6 @@ export class VoiceServerService {
 3. #は付けない（例：general、agents）
 
 ■ 時間範囲
-- 基本的には、過去２４時間のメッセージが対象。
 - 古いメッセージ（1年前など）は無視
 - thread_not_foundエラーは無視して次へ
 
@@ -439,13 +531,26 @@ export class VoiceServerService {
    - DMへのメッセージ
    - 参加中スレッドの新着メッセージ
    - 以上に該当しない場合も自律的に判断し、返信対象ならば行動する。
+   - 返信するメッセージのtsはきちんと絶対に記憶しておく。最終的に返信する際に使用するため。
+   - 返信対象が決まったら必ずwrite_fileで保存：
+     write_file("reply_target.json", JSON.stringify({
+       "channel": チャンネル名,
+       "ts": メッセージのts,
+       "message": メッセージ内容の最初30文字程度
+     }))
+     注意：writeFileは上書きなので、常に最新の1つだけ保存される
+
+   各メッセージについて：
+   a. 【最初に必ず】reply_countをチェック
+   b. reply_count > 0なら→**必ず**slack_get_thread_repliesでスレッド内容を取得
+   c. スレッド内に返信があるなら、スキップして次のメッセージへ。ないなら、返信案作成へ進む
+
 3. 対象メッセージのreply_count > 0の場合は、絶対にslack_get_thread_repliesでスレッド確認。スレッドの中でもう返信ずみであれば、返信不要なので絶対にユーザーに渡さない。それでもまだ追加返信が必要ものは、返信案を提示する。
-4. 返信案を提示：「このメッセージについて、このように返信してよろしいでしょうか？」
+4. 返信対象のメッセージ＋返信案のペアを提示。必ずペアで：「このメッセージについて、このように返信してよろしいでしょうか？」
 5. 承認後にslack_reply_to_thread（channel: メッセージのchannel, message: 返信内容, thread_ts: 手順2で取得したメッセージのts）で返信。
    **重要**: 必ず手順2で取得したメッセージのtsをthread_tsとして使用すること。長い対話があっても、最初に取得したtsを使い続ける。
-   send_messageは絶対に使わない。また１に戻り、一つずつこなしていく。
+   また１に戻り、次に返信するべき内容を探し、一つずつこなしていく。完全に返信する内容がなくなったらタスク完了とする。
 ■ エラー処理
-- thread_not_found：古いメッセージなので無視して次へ
 - channel_not_found：チャンネル名を再確認
 
 【学習と記録】
@@ -453,7 +558,7 @@ export class VoiceServerService {
   - ユーザーの名前、好み
   - 送信者ごとの返信スタイル
   - よく使うチャンネル
-- Slack返信時は必ずanicca.mdを参照
+- Slack返信時は必ず毎回anicca.mdをread_fileで参照
 
 【定期タスク管理】
 - scheduled_tasks.jsonで管理
@@ -478,7 +583,32 @@ export class VoiceServerService {
             silence_duration_ms: 200,
             create_response: true
           },
-          tools: [
+          tools: process.env.WORKER_MODE === 'true' ? [
+            {
+              type: 'function',
+              name: 'send_to_worker1',
+              description: 'ユーザーのメッセージをWorker1に送信して返答を取得',
+              parameters: {
+                type: 'object',
+                properties: {
+                  message: { 
+                    type: 'string', 
+                    description: 'ユーザーからのメッセージ' 
+                  }
+                },
+                required: ['message']
+              }
+            },
+            {
+              type: 'function',
+              name: 'connect_slack',
+              description: 'Slackワークスペースに接続',
+              parameters: {
+                type: 'object',
+                properties: {}
+              }
+            }
+          ] : [
             {
               type: 'function',
               name: 'get_hacker_news_stories',
@@ -672,6 +802,89 @@ export class VoiceServerService {
         let payload = {};
         
         switch (toolName) {
+          case 'send_to_worker1':
+            try {
+              console.log('🎤 Worker1音声対話:', args.message);
+              
+              // 絶対的なブロック
+              if (this.worker1Processing) {
+                console.log('⏳ Worker1は処理中です（ブロック）');
+                return res.json({ 
+                  result: 'Worker1がまだ考えています。返答をお待ちください。' 
+                });
+              }
+              
+              // Workerモードでローカル実行
+              if (process.env.WORKER_MODE === 'true' && this.worker1Process) {
+                // 処理開始を確実にマーク
+                this.worker1Processing = true;
+                console.log('🔒 Worker1処理ロック: ON');
+                
+                // IPCProtocolに準拠したメッセージ形式でWorker1に送信
+                const messageId = `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+                this.worker1Process.send({
+                  type: 'TASK_ASSIGN',  // EXECUTE_TASKではなくTASK_ASSIGN
+                  timestamp: Date.now(),
+                  messageId: messageId,
+                  payload: {
+                    task: {
+                      id: Date.now().toString(),
+                      originalRequest: args.message,
+                      type: 'general',
+                      userId: this.currentUserId || req.query.userId || 'desktop-user'
+                    },
+                    // Slackトークンがあれば追加
+                    ...(this.slackTokens && { slackTokens: this.slackTokens })
+                  }
+                });
+                
+                // Worker1からの返答を待つ（Promise with timeout）
+                const response: any = await new Promise((resolve, reject) => {
+                  const timeout = setTimeout(() => {
+                    this.worker1Processing = false;
+                    console.log('🔓 Worker1処理ロック: OFF（タイムアウト）');
+                    reject(new Error('Worker1 timeout'));
+                  }, 180000);  // 60秒→3分に延長（複雑なタスクのため）
+                  
+                  const handler = (message: any) => {
+                    if (message.type === 'TASK_COMPLETE') {
+                      clearTimeout(timeout);
+                      this.worker1Process.removeListener('message', handler);
+                      this.worker1Processing = false;
+                      console.log('🔓 Worker1処理ロック: OFF（完了）');
+                      resolve(message.payload);  // message.resultではなくmessage.payload
+                    }
+                  };
+                  
+                  this.worker1Process.on('message', handler);
+                });
+                
+                // 完全な返答を返す
+                const fullResponse = response.result?.output || response.output || '申し訳ございません';
+                console.log('📝 Worker1返答（フル）:', fullResponse);
+                
+                return res.json({ 
+                  result: fullResponse 
+                });
+              } else {
+                // 既存のRailway経由処理
+                const proxyUrl = `${PROXY_BASE_URL}/api/worker-voice/message`;
+                const userId = req.query.userId || 'desktop-user';
+                const workerResponse = await fetch(proxyUrl, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ message: args.message, userId })
+                });
+                const workerData = await workerResponse.json();
+                return res.json({ result: workerData.response || workerData.message });
+              }
+            } catch (error) {
+              console.error('❌ Worker1エラー:', error);
+              this.worker1Processing = false;
+              console.log('🔓 Worker1処理ロック: OFF（エラー）');
+              return res.status(500).json({ error: 'Worker1処理エラー' });
+            }
+            
           case 'get_hacker_news_stories':
             apiUrl = `${API_BASE_URL}/hackernews`;
             payload = { limit: args.limit || 5 };
@@ -715,6 +928,26 @@ export class VoiceServerService {
               // 実際のSlack OAuth URLをブラウザで開く
               console.log('🔗 Opening Slack OAuth in browser:', data.url);
               exec(`open "${data.url}"`);
+              
+              // OAuth完了後の自動チェック
+              // 5秒後と10秒後にチェック
+              setTimeout(async () => {
+                const status = await this.checkSlackConnection();
+                if (status.connected && status.tokens) {
+                  this.slackTokens = status.tokens;
+                  console.log('✅ Slack tokens saved for Worker1');
+                }
+              }, 5000);
+              
+              setTimeout(async () => {
+                if (!this.slackTokens) {
+                  const status = await this.checkSlackConnection();
+                  if (status.connected && status.tokens) {
+                    this.slackTokens = status.tokens;
+                    console.log('✅ Slack tokens saved for Worker1 (retry)');
+                  }
+                }
+              }, 10000);
               
               return res.json({
                 success: true,
@@ -846,29 +1079,6 @@ export class VoiceServerService {
 
               const data = await response.json();
               
-              // thread_tsを含むメッセージを自動的に記憶
-              if (toolName === 'slack_get_channel_history' && data.result?.messages) {
-                data.result.messages.forEach((msg: any) => {
-                  if (msg.ts && msg.text) {
-                    this.slackThreadContext.set(`${args.channel}_${msg.ts}`, {
-                      channel: args.channel,
-                      thread_ts: msg.ts,
-                      original_text: msg.text,
-                      timestamp: Date.now()
-                    });
-                    console.log(`📌 Memorized thread context: ${args.channel}_${msg.ts}`);
-                  }
-                });
-              }
-
-              // slack_reply_to_thread実行時に記憶したthread_tsを使用
-              if (toolName === 'slack_reply_to_thread' && args.thread_ts) {
-                const contextKey = `${args.channel}_${args.thread_ts}`;
-                const context = this.slackThreadContext.get(contextKey);
-                if (context) {
-                  console.log(`✅ Using memorized thread_ts: ${context.thread_ts}`);
-                }
-              }
               
               return res.json({
                 success: true,
@@ -943,6 +1153,49 @@ export class VoiceServerService {
         });
       }
     });
+
+    // Whisper APIプロキシ
+    this.app.post('/tools/transcribe', async (req: any, res: any) => {
+      try {
+        const proxyUrl = `${PROXY_BASE_URL}/api/tools/transcribe`;
+        
+        // multipart/form-dataをそのままプロキシに転送
+        const response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: {
+            ...req.headers,
+            'host': undefined // hostヘッダーは削除
+          },
+          body: req.body
+        });
+        
+        const data = await response.json();
+        res.json(data);
+      } catch (error) {
+        console.error('Transcribe error:', error);
+        res.status(500).json({ error: error instanceof Error ? error.message : 'Transcribe failed' });
+      }
+    });
+
+    // Worker音声プロキシ
+    this.app.post('/tools/worker-voice', async (req: any, res: any) => {
+      try {
+        const proxyUrl = `${PROXY_BASE_URL}/api/worker-voice/message`;
+        
+        const response = await fetch(proxyUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(req.body)
+        });
+        
+        const data = await response.json();
+        res.json(data);
+      } catch (error) {
+        console.error('Worker voice error:', error);
+        res.status(500).json({ error: error instanceof Error ? error.message : 'Worker voice failed' });
+      }
+    });
+
 
     // Task status endpoint
     this.app.get('/task-status', (req, res) => {
@@ -1157,6 +1410,14 @@ export class VoiceServerService {
 
   async stop(): Promise<void> {
     console.log('🛑 Stopping Voice Server...');
+    
+    // Worker1プロセスの終了
+    if (this.worker1Process) {
+      console.log('🛑 Shutting down Worker1 process...');
+      this.worker1Process.send({ type: 'SHUTDOWN' });
+      this.worker1Process.kill();
+      this.worker1Process = null;
+    }
     
     // ParentAgentのシャットダウン
     if (this.parentAgent && typeof this.parentAgent.shutdown === 'function') {

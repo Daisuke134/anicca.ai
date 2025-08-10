@@ -20,6 +20,9 @@ let voiceServer: VoiceServerService | null = null;
 let isListening = false;
 let authService: DesktopAuthService | null = null;
 
+// 起動モードの判定
+const isWorkerMode = process.env.WORKER_MODE === 'true';
+
 // 定期タスク管理
 const cronJobs = new Map<string, any>();
 const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
@@ -81,12 +84,8 @@ async function initializeApp() {
       }
     }
     
-    // プロキシモードではAPIキーチェックをスキップ
-    if (process.env.OPENAI_API_KEY) {
-      console.log('✅ OpenAI API key found (local mode)');
-    } else {
-      console.log('🌐 Using proxy mode for OpenAI API');
-    }
+    // 全てのAPI呼び出しはプロキシ経由で行われる
+    console.log('🌐 Using proxy for all API calls');
     
     // VoiceServerServiceを起動
     voiceServer = new VoiceServerService();
@@ -190,9 +189,12 @@ function createHiddenWindow() {
         let audioElement = null;
         let ws = null;
         let isProcessingResponse = false;  // レスポンス競合防止用フラグ
+        let isProcessingWorker1 = false;   // Worker1処理中フラグ
         let userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
         const apiBaseUrl = '${API_ENDPOINTS.OPENAI_PROXY.SESSION}'.replace('/api/openai-proxy/session', '');
         const toolsBaseUrl = '${API_ENDPOINTS.TOOLS.BASE}';
+        
+        
         
         // WebSocketに接続してリアルタイム通知を受信
         function connectWebSocket() {
@@ -217,7 +219,7 @@ function createHiddenWindow() {
                     type: 'message',
                     role: 'user',  // ⭐ ユーザーからの指示として
                     content: [{
-                      type: 'input_text',
+                      type: 'text',
                       text: \`次のメッセージを読み上げてください: "\${text}"\`
                     }]
                   }
@@ -251,7 +253,7 @@ function createHiddenWindow() {
                     type: 'message',
                     role: 'user',  // ⭐ ユーザーからの指示として
                     content: [{
-                      type: 'input_text',
+                      type: 'text',
                       text: \`次のメッセージを読み上げて、ユーザーのフィードバックを待ちなさい。そのフィードバックを、Claudeへの指示という形にして渡すように。そしてその指示は、think_with_claudeツールのtaskパラメータとして送信してください: "\${text}"\`
                     }]
                   }
@@ -288,7 +290,7 @@ function createHiddenWindow() {
                     type: 'message',
                     role: 'user',
                     content: [{
-                      type: 'input_text',
+                      type: 'text',
                       text: message.command
                     }]
                   }
@@ -318,6 +320,8 @@ function createHiddenWindow() {
             setTimeout(connectWebSocket, 3000);
           };
         }
+        
+        
         
         // WebRTCセッションを自動的に開始する関数
         async function startVoiceSession() {
@@ -362,21 +366,23 @@ function createHiddenWindow() {
               console.log('✅ Data channel opened! State:', dataChannel.readyState);
               
               // Send session config
-              dataChannel.send(JSON.stringify({
+              const sessionConfig = {
                 type: 'session.update',
                 session: {
-                  instructions: session.instructions,
+                  instructions: session.instructions,  // サーバーからの指示をそのまま使用
                   voice: session.voice,
                   input_audio_format: session.input_audio_format,
                   output_audio_format: session.output_audio_format,
-                  input_audio_transcription: { model: 'whisper-1' },
-                  turn_detection: session.turn_detection,
-                  tools: session.tools,
+                  input_audio_transcription: null,  // 不要
+                  turn_detection: session.turn_detection,  // server_vadをそのまま
+                  tools: session.tools,  // サーバーからのツールをそのまま
                   tool_choice: 'auto',
                   temperature: session.temperature,
                   max_response_output_tokens: session.max_response_output_tokens
                 }
-              }));
+              };
+              
+              dataChannel.send(JSON.stringify(sessionConfig));
             };
             
             dataChannel.onerror = (error) => {
@@ -387,7 +393,7 @@ function createHiddenWindow() {
               console.log('📴 Data channel closed');
             };
             
-            dataChannel.onmessage = (event) => {
+            dataChannel.onmessage = async (event) => {
               try {
                 const data = JSON.parse(event.data);
                 console.log('📨 Message:', data.type);
@@ -444,6 +450,26 @@ function createHiddenWindow() {
           
           try {
             console.log(\`🔧 Tool call: \${name}\`);
+            console.log('🔧 Arguments received:', args);  // 追加
+            
+            // Worker1処理の特別処理
+            if (name === 'send_to_worker1') {
+              if (isProcessingWorker1) {
+                console.log('⏳ Worker1は既に処理中です');
+                // 即座に完了を返す
+                dataChannel.send(JSON.stringify({
+                  type: 'conversation.item.create',
+                  item: {
+                    type: 'function_call_output',
+                    call_id: call_id,
+                    output: JSON.stringify({ result: 'Worker1が処理中です' })
+                  }
+                }));
+                return;
+              }
+              isProcessingWorker1 = true;  // 処理開始
+              console.log('🔒 Worker1処理開始（ブラウザ側）');
+            }
             
             // Call our server which proxies to appropriate API
             const toolsUrl = ${isDev}
@@ -451,15 +477,65 @@ function createHiddenWindow() {
               : userId 
                 ? \`\${toolsBaseUrl}/\${name}?userId=\${userId}\`
                 : \`\${toolsBaseUrl}/\${name}\`;
+            
+            console.log('🔧 Calling URL:', toolsUrl);  // 追加
+            // send_to_worker1の特別処理を追加
+            let parsedArgs;
+            if (name === 'send_to_worker1' && typeof args === 'string') {
+              try {
+                // まずJSONパースを試みる
+                parsedArgs = JSON.parse(args);
+              } catch (e) {
+                // JSONでない場合は、messageプロパティに包む
+                console.log('🔧 Wrapping plain text as message:', args);
+                parsedArgs = { message: args };
+              }
+            } else {
+              // 他のツールは通常通り
+              parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
+            }
+            const bodyData = {
+              arguments: parsedArgs
+            };
+            console.log('🔧 Request body:', JSON.stringify(bodyData));  // 追加
+            
             const response = await fetch(toolsUrl, {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                arguments: JSON.parse(args)
-              })
+              body: JSON.stringify(bodyData)
             });
             
+            console.log('🔧 Response status:', response.status);  // 追加
+            if (!response.ok) {
+              const errorText = await response.text();
+              console.error('🔧 Error response:', errorText);  // 追加
+              
+              // Worker1エラー時にもフラグリセット
+              if (name === 'send_to_worker1') {
+                isProcessingWorker1 = false;
+                console.log('🔓 Worker1処理エラー（ブラウザ側）');
+              }
+              
+              // エラー時は早期リターン
+              dataChannel.send(JSON.stringify({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'function_call_output',
+                  call_id: call_id,
+                  output: JSON.stringify({ error: errorText || 'エラーが発生しました' })
+                }
+              }));
+              return;  // 重要：ここでリターン
+            }
+            
             const result = await response.json();
+            
+            // Worker1処理完了時にフラグリセット
+            if (name === 'send_to_worker1') {
+              isProcessingWorker1 = false;
+              console.log('🔓 Worker1処理完了（ブラウザ側）');
+              console.log('📝 Worker1返答:', result.result);
+            }
             
             // Send result back to OpenAI
             dataChannel.send(JSON.stringify({
@@ -480,6 +556,10 @@ function createHiddenWindow() {
             }, 100);
             
           } catch (error) {
+            if (name === 'send_to_worker1') {
+              isProcessingWorker1 = false;  // エラー時にリセット
+              console.log('🔓 Worker1処理エラー（ブラウザ側）');
+            }
             console.error('Function call error:', error);
           }
         }
@@ -487,10 +567,10 @@ function createHiddenWindow() {
         // WebSocketに接続
         connectWebSocket();
         
-        // 自動的にWebRTC接続を開始
+        // 起動モードに応じて開始
         setTimeout(() => {
-          console.log('🚀 Auto-starting voice session...');
-          startVoiceSession();
+          console.log(${isWorkerMode} ? '🤖 Starting Worker voice mode...' : '🚀 Starting Anicca voice mode...');
+          startVoiceSession();  // 両モードで同じ関数を使用
         }, 2000);
       `);
     }, 2000);

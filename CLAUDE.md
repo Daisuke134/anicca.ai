@@ -6,6 +6,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ANICCA is a multi-platform AI assistant ecosystem with voice interaction, screen analysis, and tool integration capabilities. The project consists of several components across multiple repositories.
 
+あなたの仕事は決めること！！選択肢だけ提示してどれがいいですか？などは絶対に許さない！！
+
 
 絶対に日本語で答えて！英語はだめ！
 

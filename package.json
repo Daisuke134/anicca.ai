@@ -54,6 +54,7 @@
     "@ricky0123/vad-web": "^0.0.24",
     "@slack/web-api": "^7.9.3",
     "@supabase/supabase-js": "^2.52.0",
+    "@t09tanaka/mcp-simple-voicevox": "^0.1.0",
     "@types/express": "^5.0.3",
     "@types/sqlite3": "^5.1.0",
     "@types/ws": "^8.18.1",

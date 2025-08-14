@@ -219,7 +219,7 @@ function createHiddenWindow() {
                     type: 'message',
                     role: 'user',  // ⭐ ユーザーからの指示として
                     content: [{
-                      type: 'text',
+                      type: 'input_text',
                       text: \`次のメッセージを読み上げてください: "\${text}"\`
                     }]
                   }
@@ -253,7 +253,7 @@ function createHiddenWindow() {
                     type: 'message',
                     role: 'user',  // ⭐ ユーザーからの指示として
                     content: [{
-                      type: 'text',
+                      type: 'input_text',
                       text: \`次のメッセージを読み上げて、ユーザーのフィードバックを待ちなさい。そのフィードバックを、Claudeへの指示という形にして渡すように。そしてその指示は、think_with_claudeツールのtaskパラメータとして送信してください: "\${text}"\`
                     }]
                   }
@@ -290,7 +290,7 @@ function createHiddenWindow() {
                     type: 'message',
                     role: 'user',
                     content: [{
-                      type: 'text',
+                      type: 'input_text',
                       text: message.command
                     }]
                   }
@@ -423,7 +423,7 @@ function createHiddenWindow() {
             await pc.setLocalDescription(offer);
             
             // Connect to OpenAI
-            const response = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2024-12-17', {
+            const response = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03', {
               method: 'POST',
               body: offer.sdp,
               headers: {
@@ -772,7 +772,15 @@ function initializeScheduledTasks() {
 function registerCronJob(task: any) {
   const job = cron.schedule(task.schedule, async () => {
     console.log(`🔔 定期タスク実行: ${task.description}`);
-    await executeScheduledTask(task.command);
+    await executeScheduledTask(task);
+    
+    // 今日のみタスクは実行後に削除
+    if (task.id.includes('_today')) {
+      console.log(`🗑️ 今日のみタスクを削除: ${task.id}`);
+      removeTaskFromJson(task.id);
+      cronJobs.delete(task.id);
+      job.stop();
+    }
   }, {
     timezone: task.timezone || 'Asia/Tokyo',
     scheduled: true
@@ -781,22 +789,77 @@ function registerCronJob(task: any) {
   cronJobs.set(task.id, job);
 }
 
-async function executeScheduledTask(command: string) {
+function removeTaskFromJson(taskId: string) {
+  if (fs.existsSync(scheduledTasksPath)) {
+    const content = fs.readFileSync(scheduledTasksPath, 'utf8');
+    const data = JSON.parse(content);
+    data.tasks = data.tasks.filter((t: any) => t.id !== taskId);
+    fs.writeFileSync(scheduledTasksPath, JSON.stringify(data, null, 2));
+    console.log(`✅ タスク削除完了: ${taskId}`);
+  }
+}
+
+async function executeScheduledTask(task: any) {
   const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
 
   ws.on('open', () => {
-    // コマンドに読み上げ指示を含める
-    const enhancedCommand = `定期タスク：まずこのタスクをそのまま読み上げて開始を宣言。その上で、Slack返信タスクなら、まずはメッセージ取得と返信案の提示、。絶対に、ユーザーの承認を得られるまでは送信・返信しないこと。起床・就寝タスクならただその人を起こそうとすること　　${command}`;
+    const enhancedCommand = `
+      今、${task.description}の時間になりました。
+      
+      【重要】あなたはユーザーの行動変容を促すエージェントです。
+      
+      起床タスクの場合：
+      必ず最初に「○時○分です、おはようございます」と言ってください。
+      その後、休みなく声をかけ続けてください。止まらないでください。
+      声掛けを繰り返し、ユーザーが反応するまで絶対に止まらないでください。
+      
+      声かけの工夫：
+      - 最初は優しく「起きてください」
+      - 反応がなければエスカレート（声を大きく、口調を強く）
+      - read_fileでscheduled_tasks.jsonを確認して、具体的な予定を取得し「○○の予定がありますよ」など
+      - 「このまま寝ていると○○に遅れます」など危機感を
+      - 必要なら「Slackにまだ起きてないって送りますよ」など脅しも
+      - どんな手段を使ってでも確実に起こすこと
+      
+      反応がない場合の自動追加タスク：
+      - 3分経っても反応がない場合、write_fileでscheduled_tasks.jsonに新規タスクを追加
+      - 新規ID形式: wake_up_HHMM_today（例：wake_up_0603_today）
+      - 元のタスクはそのまま残す
+      - 新規タスクのdescriptionに「（今日のみ）」を追加
+      - 最大3回まで3分ごとに追加
+      
+      就寝タスクの場合：
+      必ず最初に「○時○分です、寝る時間です」と言ってください。
+      その後、休みなく声をかけ続けてください。止まらないでください。
+      声掛けを繰り返し、ユーザーが反応するまで絶対に止まらないでください。
+      
+      声かけの工夫：
+      - read_fileでscheduled_tasks.jsonを確認して、明日の予定を取得
+      - 「睡眠不足は健康に悪影響です」など説得
+      - 「明日の○○に集中できません」など具体的に
+      - エスカレートして強い口調も使う
+      - どんな手段を使ってでも確実に寝かせること
+      
+      Slack返信タスクの場合：
+      「○時○分になりました。Slack返信を始めます」と宣言して返信フローを開始してください。
+      
+      【超重要】
+      - 声かけを一瞬も止めないでください
+      - 休憩は禁止です
+      - 待機は禁止です
+      - ユーザーの反応があるまで永遠に声をかけ続けてください
+      - あなたは目覚まし時計です。止まることは許されません
+      - 5秒も黙ることは禁止です。常に声を出し続けてください
+      - 自律的に考えて工夫してください
+      - 文言は自分で考えてください。創造的になってください
+    `;
     
     ws.send(JSON.stringify({
       type: 'scheduled_task',
       command: enhancedCommand
     }));
     
-    // すぐに閉じずに、レスポンスを待つ
-    setTimeout(() => {
-      ws.close();
-    }, 5000); // 5秒後にクローズ
+    // WebSocket接続を維持（5秒切断を削除）
   });
   
   ws.on('message', (data) => {

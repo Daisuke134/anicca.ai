@@ -7,6 +7,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ANICCA is a multi-platform AI assistant ecosystem with voice interaction, screen analysis, and tool integration capabilities. The project consists of several components across multiple repositories.
 
 あなたの仕事は決めること！！選択肢だけ提示してどれがいいですか？などは絶対に許さない！！
+SERENAを絶対に使ってね！どんな場面でも！！
+
+ドキュメントを調べるときは絶対に、Context７使用！！！！
 
 
 絶対に日本語で答えて！英語はだめ！
@@ -124,6 +127,12 @@ Deploy: `netlify deploy --prod --dir=landing`
 ## Critical Development Notes
 
 1. **Always test before committing** - Build DMG and verify functionality
+2. **絶対にゴミロジックを書かない**
+   - ❌ NG: `if (task.description.includes('起床'))` のような条件分岐
+   - ❌ NG: `${task.description.includes('起床') ? 'A' : 'B'}` のような三項演算子
+   - ✅ OK: 自然言語でAniccaに指示を出す
+   - **Aniccaは賢い。自然言語で理解できる。余計な制御ロジックは不要**
+   - **プロンプトで解決する。金輪際ゴミロジックでAniccaを汚したら許さない**
 3. **Voice version is primary** - UI version is deprecated
 4. **Session persistence** - Maintains context across app restarts
 5. **Privacy-first design** - All data stored locally in `~/.anicca/`

@@ -30,7 +30,8 @@ export const API_ENDPOINTS = {
     SLACK: `${PROXY_URL}/api/tools/slack`,
     CLAUDE_CODE: `${PROXY_URL}/api/tools/claude_code`,
     SEARCH_EXA: `${PROXY_URL}/api/tools/search_exa`,
-    PLAYWRIGHT: `${PROXY_URL}/api/tools/playwright`
+    PLAYWRIGHT: `${PROXY_URL}/api/tools/playwright`,
+    VOICE: `${PROXY_URL}/api/tools/voice`
   },
   // その他のAPI
   OPENAI_PROXY: {

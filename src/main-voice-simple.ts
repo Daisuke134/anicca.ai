@@ -9,6 +9,9 @@ import * as cron from 'node-cron';
 import * as fs from 'fs';
 import * as os from 'os';
 import { WebSocket } from 'ws';
+// SDK imports
+import { AniccaSessionManager } from './agents/sessionManager';
+import { createAniccaAgent } from './agents/mainAgent';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -17,6 +20,9 @@ dotenv.config();
 let tray: Tray | null = null;
 let hiddenWindow: BrowserWindow | null = null;
 let voiceServer: VoiceServerService | null = null;
+let sessionManager: AniccaSessionManager | null = null;
+let mainAgent: any = null;
+let currentUserId: string | null = null;
 let isListening = false;
 let authService: DesktopAuthService | null = null;
 
@@ -95,6 +101,33 @@ async function initializeApp() {
     if (userId) {
       voiceServer.setCurrentUserId(userId);
       console.log(`✅ User ID set in voice server: ${userId}`);
+    }
+    
+    // SDK版の初期化
+    try {
+      mainAgent = createAniccaAgent();
+      sessionManager = new AniccaSessionManager();
+      await sessionManager.initialize();
+      
+      const sessionUrl = userId 
+        ? `${API_ENDPOINTS.OPENAI_PROXY.SESSION}?userId=${userId}`
+        : API_ENDPOINTS.OPENAI_PROXY.SESSION;
+      const response = await fetch(sessionUrl);
+
+      if (response.ok) {
+        const data = await response.json();
+        const apiKey = data.client_secret?.value;
+        if (apiKey) {
+          await sessionManager.connect(apiKey);
+          console.log('✅ AniccaSessionManager connected with SDK');
+          await sessionManager.restoreSession();
+        }
+      } else {
+        console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
+      }
+    } catch (error) {
+      console.error('❌ Failed to initialize SDK:', error);
+      // SDKエラーでも続行（voiceServerは動作可能）
     }
     
     await voiceServer.start(PORTS.OAUTH_CALLBACK);
@@ -190,7 +223,8 @@ function createHiddenWindow() {
         let ws = null;
         let isProcessingResponse = false;  // レスポンス競合防止用フラグ
         let isProcessingWorker1 = false;   // Worker1処理中フラグ
-        let userId = ${voiceServer?.getCurrentUserId() ? `'${voiceServer.getCurrentUserId()}'` : 'null'};
+        // currentUserIdはグローバル変数として管理
+        let userId = ${currentUserId ? `'${currentUserId}'` : 'null'};
         const apiBaseUrl = '${API_ENDPOINTS.OPENAI_PROXY.SESSION}'.replace('/api/openai-proxy/session', '');
         const toolsBaseUrl = '${API_ENDPOINTS.TOOLS.BASE}';
         
@@ -709,6 +743,12 @@ app.on('before-quit', async (event) => {
   event.preventDefault();
   
   try {
+    // SDKのクリーンアップ
+    if (sessionManager) {
+      await sessionManager.disconnect();
+      console.log('✅ SessionManager disconnected');
+    }
+    
     if (voiceServer) {
       await voiceServer.stop();
     }
@@ -816,7 +856,7 @@ async function executeScheduledTask(task: any) {
       声かけの工夫：
       - 最初は優しく「起きてください」
       - 反応がなければエスカレート（声を大きく、口調を強く）
-      - read_fileでscheduled_tasks.jsonを確認して、具体的な予定を取得し「○○の予定がありますよ」など
+      - 絶対に！！！read_fileでscheduled_tasks.jsonを確認して、具体的な予定を取得し「○○の予定がありますよ」など言って、起床・就寝を促す！！それが一番効果的！
       - 「このまま寝ていると○○に遅れます」など危機感を
       - 必要なら「Slackにまだ起きてないって送りますよ」など脅しも
       - どんな手段を使ってでも確実に起こすこと
@@ -834,7 +874,6 @@ async function executeScheduledTask(task: any) {
       声掛けを繰り返し、ユーザーが反応するまで絶対に止まらないでください。
       
       声かけの工夫：
-      - read_fileでscheduled_tasks.jsonを確認して、明日の予定を取得
       - 「睡眠不足は健康に悪影響です」など説得
       - 「明日の○○に集中できません」など具体的に
       - エスカレートして強い口調も使う
@@ -848,7 +887,6 @@ async function executeScheduledTask(task: any) {
       - 休憩は禁止です
       - 待機は禁止です
       - ユーザーの反応があるまで永遠に声をかけ続けてください
-      - あなたは目覚まし時計です。止まることは許されません
       - 5秒も黙ることは禁止です。常に声を出し続けてください
       - 自律的に考えて工夫してください
       - 文言は自分で考えてください。創造的になってください

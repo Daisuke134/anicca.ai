@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 100%;
+    --foreground: 240 10% 3.9%;
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+    --primary: 28 70% 45%;
+    --primary-foreground: 33 100% 96%;
+    --secondary: 30 10% 96%;
+    --secondary-foreground: 28 60% 20%;
+    --muted: 30 10% 96%;
+    --muted-foreground: 25 5% 45%;
+    --accent: 160 30% 90%;
+    --accent-foreground: 160 50% 20%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 20 5% 90%;
+    --input: 20 5% 90%;
+    --ring: 28 70% 45%;
+    --radius: 0.6rem;
+  }
+  .dark {
+    --background: 28 18% 8%;
+    --foreground: 30 20% 95%;
+    --card: 28 18% 10%;
+    --card-foreground: 30 20% 95%;
+    --popover: 28 18% 8%;
+    --popover-foreground: 30 20% 95%;
+    --primary: 28 70% 55%;
+    --primary-foreground: 30 20% 8%;
+    --secondary: 28 15% 18%;
+    --secondary-foreground: 30 20% 95%;
+    --muted: 28 15% 18%;
+    --muted-foreground: 30 10% 70%;
+    --accent: 160 25% 20%;
+    --accent-foreground: 160 40% 88%;
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 85.7% 97.3%;
+    --border: 28 15% 18%;
+    --input: 28 15% 18%;
+    --ring: 28 70% 55%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    background-image: radial-gradient(40rem 25rem at 10% -10%, hsl(28 70% 55%/0.15), transparent),
+      radial-gradient(40rem 25rem at 90% 10%, hsl(160 40% 40%/0.12), transparent),
+      radial-gradient(50rem 30rem at 50% 30%, hsl(38 100% 65%/0.08), transparent);
+    background-attachment: fixed;
+  }
+}
+
+@layer utilities {
+  .text-balance { text-wrap: balance; }
+}

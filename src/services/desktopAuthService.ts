@@ -25,6 +25,8 @@ export class DesktopAuthService {
   private authFilePath: string;
   private sessionCheckInterval: NodeJS.Timeout | null = null;
   private encryption: SimpleEncryption;
+  private retryCount: number = 0;
+  private maxRetries: number = 3;
   
   constructor() {
     // 認証情報の保存パス
@@ -39,45 +41,171 @@ export class DesktopAuthService {
   }
   
   /**
-   * 初期化 - 保存された認証情報を復元
+   * トークンの有効期限をローカルでチェック
+   * Supabaseの推奨：5分前にリフレッシュ
+   */
+  private isTokenValid(session: AuthSession): boolean {
+    if (!session?.expires_at) return false;
+    const buffer = 5 * 60 * 1000; // 5分前
+    const now = Date.now();
+    const expiresAt = session.expires_at * 1000; // Unix timestamp to ms
+    return now < (expiresAt - buffer);
+  }
+
+  /**
+   * ネットワークエラーかどうか判定
+   * 一時的なネットワーク障害と認証エラーを区別
+   */
+  private isNetworkError(error: any): boolean {
+    const networkErrorCodes = [
+      'ECONNREFUSED', 'ENOTFOUND', 'ETIMEDOUT', 
+      'ECONNRESET', 'ENETUNREACH', 'EHOSTUNREACH'
+    ];
+    
+    return networkErrorCodes.includes(error?.code) ||
+           error?.message?.includes('fetch failed') ||
+           error?.message?.includes('NetworkError') ||
+           error?.message?.includes('Failed to fetch');
+  }
+
+  /**
+   * リトライ付きリフレッシュ
+   * ネットワークエラー時は3回まで再試行
+   */
+  private async refreshWithRetry(): Promise<AuthSession | null> {
+    const savedSession = this.loadSavedSession();
+    if (!savedSession?.refresh_token) return null;
+
+    for (let i = 0; i < this.maxRetries; i++) {
+      try {
+        const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            refresh_token: savedSession.refresh_token
+          })
+        });
+
+        if (!response.ok) {
+          // 401/403は認証エラーなのでリトライしない
+          if (response.status === 401 || response.status === 403) {
+            console.error('❌ 認証エラー - セッションクリア');
+            this.clearSavedSession();
+            return null;
+          }
+          throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+        if (data.success && data.session) {
+          this.currentSession = data.session;
+          this.currentUser = data.session.user;
+          this.saveSession(data.session);
+          console.log('✅ セッションリフレッシュ成功');
+          return data.session;
+        }
+        
+        return null;
+      } catch (error) {
+        console.log(`🔄 リトライ ${i + 1}/${this.maxRetries}:`, error);
+        if (i === this.maxRetries - 1) {
+          if (this.isNetworkError(error)) {
+            console.log('📶 ネットワークエラー - セッション一時維持');
+            return savedSession; // 最後のセッションを維持
+          }
+          throw error;
+        }
+        // 指数バックオフ：1秒、2秒、4秒...
+        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
+      }
+    }
+    return null;
+  }
+
+  /**
+   * 動的スケジューリング
+   * expires_atに基づいて最適なタイミングでリフレッシュ
+   */
+  private scheduleNextRefresh(expiresAt: number) {
+    if (this.sessionCheckInterval) {
+      clearTimeout(this.sessionCheckInterval);
+    }
+    
+    const now = Date.now();
+    const refreshTime = (expiresAt * 1000) - (10 * 60 * 1000); // 10分前
+    const delay = Math.max(refreshTime - now, 60 * 1000); // 最小1分
+    
+    console.log(`⏰ 次回リフレッシュ: ${Math.round(delay / 60000)}分後`);
+    
+    this.sessionCheckInterval = setTimeout(async () => {
+      console.log('🔄 定期リフレッシュ実行');
+      const refreshed = await this.refreshWithRetry();
+      if (refreshed) {
+        this.scheduleNextRefresh(refreshed.expires_at);
+      } else {
+        // リフレッシュ失敗時は通常の間隔でリトライ
+        this.startSessionCheck();
+      }
+    }, delay);
+  }
+
+  /**
+   * 初期化 - 保存された認証情報を復元（完全改良版）
    */
   async initialize(): Promise<void> {
-    console.log('🔐 Initializing Desktop Auth Service...');
+    console.log('🔐 Desktop Auth Service初期化中...');
     
     try {
-      // 古い暗号化ファイルのクリーンアップ
       this.encryption.cleanupOldFiles();
-      
-      // 保存された認証情報を読み込む
       const savedSession = this.loadSavedSession();
+      
       if (savedSession) {
-        console.log('📂 Found saved session, attempting to restore...');
+        console.log('📂 保存済みセッション検出');
         
-        // プロキシ経由でセッションを確認
-        const validatedSession = await this.validateSession(savedSession);
+        // ステップ1: ローカルで有効期限チェック（Context7推奨）
+        if (this.isTokenValid(savedSession)) {
+          // 有効ならサーバー確認をスキップ
+          this.currentSession = savedSession;
+          this.currentUser = savedSession.user;
+          console.log('✅ セッション有効（ローカル確認のみ）');
+          console.log(`✅ ユーザー: ${savedSession.user?.email}`);
+          
+          // 動的なリフレッシュスケジュール設定
+          this.scheduleNextRefresh(savedSession.expires_at);
+          return;
+        }
         
-        if (validatedSession) {
-          this.currentSession = validatedSession;
-          this.currentUser = validatedSession.user;
-          console.log('✅ Session restored successfully for user:', validatedSession.user?.email);
-        } else if (savedSession.refresh_token) {
-          // セッションが無効ならリフレッシュを試行
-          console.log('🔄 Session expired, attempting to refresh...');
-          const refreshedSession = await this.refreshSession();
-          if (!refreshedSession) {
-            this.clearSavedSession();
+        // ステップ2: 期限切れならリフレッシュ
+        console.log('⏰ トークン期限切れ - リフレッシュ試行');
+        try {
+          const refreshed = await this.refreshWithRetry();
+          if (refreshed) {
+            this.scheduleNextRefresh(refreshed.expires_at);
+            return;
           }
-        } else {
-          console.log('❌ Failed to restore session');
+        } catch (error) {
+          if (this.isNetworkError(error)) {
+            // ネットワークエラーなら一時的にセッション維持
+            console.log('📶 オフライン検出 - 5分後に再試行');
+            this.currentSession = savedSession;
+            this.currentUser = savedSession.user;
+            
+            // 5分後に再試行
+            setTimeout(() => this.initialize(), 5 * 60 * 1000);
+            return;
+          }
+          // 認証エラーならクリア
+          console.log('❌ 認証失敗 - ログイン必要');
           this.clearSavedSession();
         }
+      } else {
+        console.log('ℹ️ 初回起動 - ログインが必要です');
       }
       
-      // 30分ごとにセッションをチェック
+      // デフォルトのチェック間隔を設定
       this.startSessionCheck();
-      
     } catch (error) {
-      console.error('❌ Auth initialization error:', error);
+      console.error('❌ 初期化エラー:', error);
     }
   }
   
@@ -106,7 +234,7 @@ export class DesktopAuthService {
    * 認証済みかどうか
    */
   isAuthenticated(): boolean {
-    return !!this.currentUser && !!this.currentSession;
+    return !!this.currentUser && !!this.currentSession && this.isTokenValid(this.currentSession);
   }
   
   /**
@@ -135,43 +263,10 @@ export class DesktopAuthService {
   }
   
   /**
-   * セッションをリフレッシュ
+   * セッションをリフレッシュ（レガシー互換用）
    */
   async refreshSession(): Promise<AuthSession | null> {
-    try {
-      const savedSession = this.loadSavedSession();
-      if (!savedSession?.refresh_token) {
-        return null;
-      }
-      
-      const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          refresh_token: savedSession.refresh_token
-        })
-      });
-      
-      if (!response.ok) {
-        console.error('❌ Failed to refresh session:', response.statusText);
-        return null;
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.session) {
-        this.currentSession = data.session;
-        this.currentUser = data.session.user;
-        this.saveSession(data.session);
-        console.log('✅ Session refreshed successfully');
-        return data.session;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('❌ Refresh session error:', error);
-      return null;
-    }
+    return await this.refreshWithRetry();
   }
   
   /**
@@ -236,28 +331,21 @@ export class DesktopAuthService {
   }
   
   /**
-   * 定期的なセッションチェックを開始
+   * 定期的なセッションチェックを開始（50分間隔）
    */
   private startSessionCheck(): void {
-    // 既存のインターバルがあればクリア
     if (this.sessionCheckInterval) {
       clearInterval(this.sessionCheckInterval);
     }
     
-    // 30分ごとにチェック
+    // 50分ごとにチェック（Supabaseトークン有効期限1時間）
     this.sessionCheckInterval = setInterval(async () => {
-      if (this.currentSession) {
-        const expiresAt = this.currentSession.expires_at;
-        if (expiresAt) {
-          const expiresIn = expiresAt * 1000 - Date.now();
-          // 有効期限が1時間以内に迫ったらリフレッシュ
-          if (expiresIn < 60 * 60 * 1000) {
-            console.log('🔄 Session expires soon, refreshing...');
-            await this.refreshSession();
-          }
-        }
+      const saved = this.loadSavedSession();
+      if (saved && !this.isTokenValid(saved)) {
+        console.log('🔄 定期チェック: トークンリフレッシュ');
+        await this.refreshWithRetry();
       }
-    }, 30 * 60 * 1000); // 30分
+    }, 50 * 60 * 1000); // 50分
   }
 
   /**

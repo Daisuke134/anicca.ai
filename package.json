@@ -9,7 +9,12 @@
     "electron": "electron .",
     "preelectron-dev": "npm run build",
     "electron-dev": "NODE_ENV=development electron .",
-    "test": "jest",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui",
+    "test:agents": "vitest src/agents/__tests__ --run",
+    "test:agents:watch": "vitest src/agents/__tests__",
+    "test:agents:coverage": "vitest src/agents/__tests__ --coverage",
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "build": "tsc && cp src/ui/*.html dist/ui/ && cp src/ui/*.js dist/ui/",
@@ -20,6 +25,7 @@
     "voice:prod": "npm run build:voice && electron dist/main-voice.js",
     "voice:rtmcp": "npm run build:voice && NODE_ENV=development electron dist/main-voice-rtmcp.js",
     "voice:simple": "npm run build:voice && NODE_ENV=development DESKTOP_MODE=true electron dist/main-voice-simple.js",
+    "dist:dev": "npm run build:voice && electron-builder --mac --config electron-builder-voice.yml --mac.identity=null --mac.notarize=false",
     "dist": "npm run build && electron-builder",
     "dist:mac": "npm run build && electron-builder --mac",
     "dist:voice": "npm run build:voice && electron-builder --mac --config electron-builder-voice.yml",
@@ -48,6 +54,7 @@
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.24",
+    "@composio/core": "^0.1.45",
     "@google-cloud/text-to-speech": "^6.1.0",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@openai/agents": "^0.0.16",
@@ -78,10 +85,11 @@
   },
   "devDependencies": {
     "@types/jest": "^29.5.12",
-    "@types/node": "^20.11.24",
+    "@types/node": "^20.19.11",
     "@types/screenshot-desktop": "^1.12.3",
     "@typescript-eslint/eslint-plugin": "^7.1.0",
     "@typescript-eslint/parser": "^7.1.0",
+    "@vitest/ui": "^3.2.4",
     "dotenv-cli": "^9.0.0",
     "electron": "^36.3.2",
     "electron-builder": "^25.1.8",
@@ -91,6 +99,7 @@
     "ts-jest": "^29.1.2",
     "ts-node": "^10.9.2",
     "ts-node-dev": "^2.0.0",
-    "typescript": "^5.3.3"
+    "typescript": "^5.3.3",
+    "vitest": "^3.2.4"
   }
 }

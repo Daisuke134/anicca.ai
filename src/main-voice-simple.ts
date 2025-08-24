@@ -1,8 +1,8 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
-import { VoiceServerService } from './services/voiceServer';
+import { setTracingDisabled } from '@openai/agents';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
 import { API_ENDPOINTS, PORTS, UPDATE_CONFIG } from './config';
 import * as cron from 'node-cron';
@@ -19,12 +19,12 @@ dotenv.config();
 // グローバル変数
 let tray: Tray | null = null;
 let hiddenWindow: BrowserWindow | null = null;
-let voiceServer: VoiceServerService | null = null;
 let sessionManager: AniccaSessionManager | null = null;
 let mainAgent: any = null;
 let currentUserId: string | null = null;
 let isListening = false;
 let authService: DesktopAuthService | null = null;
+let powerSaveBlockerId: number | null = null;
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -35,6 +35,9 @@ const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.j
 
 // アプリの初期化
 async function initializeApp() {
+  // トレースを無効化（MCPツールの取得でエラーになるため）
+  setTracingDisabled(true);
+  
   console.log('🎩 Anicca Voice Assistant Starting...');
   
   try {
@@ -62,10 +65,10 @@ async function initializeApp() {
         await authService.initialize();
       }
       
-      // voiceServerにユーザーIDを設定
-      if (voiceServer && user.id) {
-        voiceServer.setCurrentUserId(user.id);
-        console.log(`✅ Updated voice server with user ID: ${user.id}`);
+      // sessionManagerにユーザーIDを設定
+      if (sessionManager && user.id) {
+        sessionManager?.setCurrentUserId(user.id);
+        console.log(`✅ Updated session manager with user ID: ${user.id}`);
       }
       
       // 通知とトレイメニュー更新
@@ -93,21 +96,22 @@ async function initializeApp() {
     // 全てのAPI呼び出しはプロキシ経由で行われる
     console.log('🌐 Using proxy for all API calls');
     
-    // VoiceServerServiceを起動
-    voiceServer = new VoiceServerService();
-    
-    // 認証済みユーザーIDを設定
-    const userId = authService.getCurrentUserId();
-    if (userId) {
-      voiceServer.setCurrentUserId(userId);
-      console.log(`✅ User ID set in voice server: ${userId}`);
-    }
     
     // SDK版の初期化
     try {
-      mainAgent = createAniccaAgent();
-      sessionManager = new AniccaSessionManager();
+      // 先にユーザーIDを取得
+      const userId = authService.getCurrentUserId();
+      
+      // userIdを渡してエージェント作成
+      mainAgent = await createAniccaAgent(userId);
+      sessionManager = new AniccaSessionManager(mainAgent);
       await sessionManager.initialize();
+      
+      // 認証済みユーザーIDを設定（SessionManager初期化後）
+      if (userId) {
+        sessionManager.setCurrentUserId(userId);
+        console.log(`✅ User ID set in session manager: ${userId}`);
+      }
       
       const sessionUrl = userId 
         ? `${API_ENDPOINTS.OPENAI_PROXY.SESSION}?userId=${userId}`
@@ -120,7 +124,6 @@ async function initializeApp() {
         if (apiKey) {
           await sessionManager.connect(apiKey);
           console.log('✅ AniccaSessionManager connected with SDK');
-          await sessionManager.restoreSession();
         }
       } else {
         console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
@@ -130,8 +133,13 @@ async function initializeApp() {
       // SDKエラーでも続行（voiceServerは動作可能）
     }
     
-    await voiceServer.start(PORTS.OAUTH_CALLBACK);
-    console.log('✅ Voice server started');
+    // Bridgeサーバー起動（新規追加）
+    if (sessionManager) {
+      await sessionManager.startBridge(PORTS.OAUTH_CALLBACK);
+      console.log('✅ Bridge server started');
+    } else {
+      throw new Error('SessionManager not initialized');
+    }
     
     // 少し待ってからBrowserWindowを作成
     setTimeout(() => {
@@ -175,6 +183,18 @@ async function initializeApp() {
     // 定期タスクシステムを初期化
     initializeScheduledTasks();
     
+    // スリープ防止を有効化（システムスリープのみ防ぐ）
+    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+    console.log('🛡️ Power Save Blocker activated:', powerSaveBlocker.isStarted(powerSaveBlockerId));
+    
+    // アプリ終了時にブロッカーを解除
+    app.on('before-quit', () => {
+      if (powerSaveBlockerId !== null) {
+        powerSaveBlocker.stop(powerSaveBlockerId);
+        console.log('🛡️ Power Save Blocker stopped');
+      }
+    });
+    
   } catch (error) {
     console.error('❌ Initialization error:', error);
     
@@ -215,397 +235,340 @@ function createHiddenWindow() {
     const isDev = process.env.NODE_ENV === 'development';
     setTimeout(() => {
       hiddenWindow?.webContents.executeJavaScript(`
-        console.log('🎤 Starting voice assistant...');
-        
-        let pc = null;
-        let dataChannel = null;
-        let audioElement = null;
+        console.log('🎤 Starting SDK-based voice assistant...');
+
         let ws = null;
-        let isProcessingResponse = false;  // レスポンス競合防止用フラグ
-        let isProcessingWorker1 = false;   // Worker1処理中フラグ
-        // currentUserIdはグローバル変数として管理
-        let userId = ${currentUserId ? `'${currentUserId}'` : 'null'};
-        const apiBaseUrl = '${API_ENDPOINTS.OPENAI_PROXY.SESSION}'.replace('/api/openai-proxy/session', '');
-        const toolsBaseUrl = '${API_ENDPOINTS.TOOLS.BASE}';
-        
-        
-        
-        // WebSocketに接続してリアルタイム通知を受信
+        let mediaRecorder = null;
+        let audioContext = null;
+        let audioQueue = [];
+        let isPlaying = false;
+        let currentSource = null;
+        let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
+
+        // SDK状態確認
+        async function checkSDKStatus() {
+          try {
+            const response = await fetch('/sdk/status');
+            const status = await response.json();
+            console.log('SDK Status:', status);
+            return status.useSDK && status.connected && status.transport === 'websocket';
+          } catch (error) {
+            console.error('Failed to check SDK status:', error);
+            return false;
+          }
+        }
+
+        // WebSocket接続（音声出力受信用）
         function connectWebSocket() {
-          ws = new WebSocket(\`ws://localhost:${PORTS.OAUTH_CALLBACK}\`);
-          
-          ws.onmessage = (event) => {
+          ws = new WebSocket('ws://localhost:${PORTS.OAUTH_CALLBACK}');
+
+          ws.onmessage = async (event) => {
             try {
               const message = JSON.parse(event.data);
-              console.log('🔔 WebSocket message:', message);
-              
-              if (message.type === 'worker_task_complete' && dataChannel?.readyState === 'open' && !isProcessingResponse) {
-                // Worker完了通知を音声で報告
-                const text = message.payload.message;
-                console.log('🗣️ Announcing:', text);
-                
-                isProcessingResponse = true;  // フラグを設定
-                
-                // ユーザーメッセージとして読み上げ指示を送る
-                dataChannel.send(JSON.stringify({
-                  type: 'conversation.item.create',
-                  item: {
-                    type: 'message',
-                    role: 'user',  // ⭐ ユーザーからの指示として
-                    content: [{
-                      type: 'input_text',
-                      text: \`次のメッセージを読み上げてください: "\${text}"\`
-                    }]
-                  }
-                }));
-                
-                // レスポンスをトリガー
-                setTimeout(() => {
-                  dataChannel.send(JSON.stringify({
-                    type: 'response.create',
-                    response: { modalities: ['text', 'audio'] }
-                  }));
-                  
-                  // 500ms後にフラグをリセット
-                  setTimeout(() => {
-                    isProcessingResponse = false;
-                  }, 500);
-                }, 100);
+
+              // PCM16音声出力データを受信
+              if (message.type === 'audio_output' && message.format === 'pcm16') {
+                console.log('🔊 Received PCM16 audio from SDK');
+
+                // Base64デコードしてPCM16データを取得
+                const audioData = atob(message.data);
+                const arrayBuffer = new ArrayBuffer(audioData.length);
+                const view = new Uint8Array(arrayBuffer);
+                for (let i = 0; i < audioData.length; i++) {
+                  view[i] = audioData.charCodeAt(i);
+                }
+
+                // PCM16をWebAudio用に変換して再生
+                audioQueue.push(arrayBuffer);
+                if (!isPlaying) {
+                  playNextPCM16Audio();
+                }
               }
-              
-              // Worker STATUS_UPDATE処理
-              if (message.type === 'worker_status_update' && dataChannel?.readyState === 'open' && !isProcessingResponse) {
-                const text = message.payload.message;
-                console.log('📢 Worker status update:', text);
+
+              // 音声中断処理
+              if (message.type === 'audio_interrupted') {
+                console.log('🛑 Audio interrupted - clearing queue');
+                audioQueue = [];
+                isPlaying = false;
                 
-                isProcessingResponse = true;  // フラグを設定
-                
-                // ユーザーメッセージとして読み上げ指示を送る
-                dataChannel.send(JSON.stringify({
-                  type: 'conversation.item.create',
-                  item: {
-                    type: 'message',
-                    role: 'user',  // ⭐ ユーザーからの指示として
-                    content: [{
-                      type: 'input_text',
-                      text: \`次のメッセージを読み上げて、ユーザーのフィードバックを待ちなさい。そのフィードバックを、Claudeへの指示という形にして渡すように。そしてその指示は、think_with_claudeツールのtaskパラメータとして送信してください: "\${text}"\`
-                    }]
-                  }
-                }));
-                
-                // レスポンスをトリガー
-                setTimeout(() => {
-                  dataChannel.send(JSON.stringify({
-                    type: 'response.create',
-                    response: { 
-                      modalities: ['text', 'audio']
-                    }
-                  }));
-                  
-                  // 500ms後にフラグをリセット
-                  setTimeout(() => {
-                    isProcessingResponse = false;
-                  }, 500);
-                }, 100);
-                
-                console.log('✅ Status update sent to OpenAI for speech synthesis');
+                // 再生中の音声を停止
+                if (currentSource) {
+                  currentSource.stop();
+                  currentSource = null;
+                }
               }
-              
-              // 定期タスク実行メッセージの処理
-              if (message.type === 'scheduled_task_execute' && dataChannel?.readyState === 'open' && !isProcessingResponse) {
-                console.log('📅 Executing scheduled task:', message.command);
-                
-                isProcessingResponse = true;  // フラグを設定
-                
-                // OpenAI Realtime APIに直接コマンドを送信
-                dataChannel.send(JSON.stringify({
-                  type: 'conversation.item.create',
-                  item: {
-                    type: 'message',
-                    role: 'user',
-                    content: [{
-                      type: 'input_text',
-                      text: message.command
-                    }]
-                  }
-                }));
-                
-                // レスポンスをトリガー
-                setTimeout(() => {
-                  dataChannel.send(JSON.stringify({
-                    type: 'response.create',
-                    response: { modalities: ['text', 'audio'] }
-                  }));
-                  
-                  // 500ms後にフラグをリセット
-                  setTimeout(() => {
-                    isProcessingResponse = false;
-                  }, 500);
-                }, 100);
+
+              // ツール実行通知
+              if (message.type === 'tool_execution_start') {
+                console.log('🔧 Tool executing:', message.toolName);
               }
+
+              if (message.type === 'tool_execution_complete') {
+                console.log('✅ Tool completed:', message.toolName);
+              }
+
+              // ElevenLabs音声データの処理
+              if (message.type === 'elevenlabs_audio' && message.audioBase64) {
+                console.log('🎵 ElevenLabs audio received, length:', message.audioBase64.length);
+                
+                try {
+                  // Base64をBlobに変換
+                  const binaryString = atob(message.audioBase64);
+                  const bytes = new Uint8Array(binaryString.length);
+                  for (let i = 0; i < binaryString.length; i++) {
+                    bytes[i] = binaryString.charCodeAt(i);
+                  }
+                  
+                  // MP3形式として正しく設定
+                  const blob = new Blob([bytes], { type: 'audio/mpeg' });
+                  const audioUrl = URL.createObjectURL(blob);
+                  
+                  // Audio要素を作成して設定
+                  const audio = new Audio(audioUrl);
+                  audio.volume = 1.0;
+                  
+                  // 再生開始をsessionManagerに通知
+                  fetch('/elevenlabs/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'playing' })
+                  }).catch(error => {
+                    console.error('Failed to notify playback start:', error);
+                  });
+                  
+                  // システム音声再生フラグを設定（エコー防止）
+                  isSystemPlaying = true;
+                  
+                  // 再生完了時の処理
+                  audio.onended = () => {
+                    URL.revokeObjectURL(audioUrl);
+                    console.log('✅ ElevenLabs playback completed');
+                    
+                    // システム音声再生フラグをクリア
+                    isSystemPlaying = false;
+                    
+                    // 再生完了をsessionManagerに通知
+                    fetch('/elevenlabs/status', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: 'completed' })
+                    }).catch(error => {
+                      console.error('Failed to notify playback completion:', error);
+                    });
+                  };
+                  
+                  // エラー時も通知
+                  audio.onerror = (e) => {
+                    console.error('❌ Audio error:', e);
+                    
+                    // システム音声再生フラグをクリア
+                    isSystemPlaying = false;
+                    
+                    // エラー時も再生完了として扱う
+                    fetch('/elevenlabs/status', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ status: 'completed' })
+                    }).catch(error => {
+                      console.error('Failed to notify error completion:', error);
+                    });
+                  };
+                  
+                  // 再生実行
+                  const playPromise = audio.play();
+                  if (playPromise !== undefined) {
+                    playPromise
+                      .then(() => {
+                        console.log('✅ ElevenLabs playback started successfully');
+                      })
+                      .catch((error) => {
+                        console.error('❌ Playback failed:', error);
+                        
+                        // システム音声再生フラグをクリア
+                        isSystemPlaying = false;
+                        
+                        // 再生失敗時も完了として扱う
+                        fetch('/elevenlabs/status', {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ status: 'completed' })
+                        });
+                      });
+                  }
+                  
+                } catch (error) {
+                  console.error('❌ ElevenLabs processing failed:', error);
+                  
+                  // システム音声再生フラグをクリア
+                  isSystemPlaying = false;
+                  
+                  // エラー時も完了として扱う
+                  fetch('/elevenlabs/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'completed' })
+                  });
+                }
+              }
+
             } catch (error) {
               console.error('WebSocket message error:', error);
             }
           };
-          
+
           ws.onopen = () => console.log('✅ WebSocket connected');
           ws.onclose = () => {
             console.log('❌ WebSocket disconnected, reconnecting...');
             setTimeout(connectWebSocket, 3000);
           };
         }
-        
-        
-        
-        // WebRTCセッションを自動的に開始する関数
-        async function startVoiceSession() {
+
+        // PCM16音声再生（キュー処理）
+        async function playNextPCM16Audio() {
+          if (audioQueue.length === 0) {
+            isPlaying = false;
+            currentSource = null;
+            return;
+          }
+
+          isPlaying = true;
+          const pcm16Data = audioQueue.shift();
+
+          if (!audioContext) {
+            audioContext = new AudioContext({ sampleRate: 24000 });
+          }
+
           try {
-            console.log('🚀 Starting voice session...');
+            // PCM16データをFloat32に変換
+            const int16Array = new Int16Array(pcm16Data);
+            const float32Array = new Float32Array(int16Array.length);
             
-            // Get session from server
-            const sessionUrl = ${isDev} 
-              ? userId ? \`/session?userId=\${userId}\` : '/session'
-              : userId 
-                ? \`\${apiBaseUrl}/api/openai-proxy/session?userId=\${userId}\`
-                : \`\${apiBaseUrl}/api/openai-proxy/session\`;
-            const sessionResponse = await fetch(sessionUrl);
-            const session = await sessionResponse.json();
-            console.log('📡 Session received:', session);
-            
-            // Set up WebRTC
-            pc = new RTCPeerConnection();
-            
-            // Audio element for playback
-            audioElement = document.createElement('audio');
-            audioElement.autoplay = true;
-            pc.ontrack = e => {
-              console.log('🎵 Audio track received:', {
-                streamId: e.streams[0]?.id,
-                tracks: e.streams[0]?.getTracks().length,
-                audioTracks: e.streams[0]?.getAudioTracks().length
-              });
-              audioElement.srcObject = e.streams[0];
-              
-              // デバッグ: 音声再生状態の監視
-              audioElement.onplay = () => console.log('▶️ Audio playback started');
-              audioElement.onpause = () => console.log('⏸️ Audio playback paused');
-              audioElement.onerror = (err) => console.error('❌ Audio playback error:', err);
+            for (let i = 0; i < int16Array.length; i++) {
+              float32Array[i] = int16Array[i] / 32768.0;
+            }
+
+            // AudioBufferを作成
+            const audioBuffer = audioContext.createBuffer(1, float32Array.length, 24000);
+            audioBuffer.copyToChannel(float32Array, 0);
+
+            // 再生
+            const source = audioContext.createBufferSource();
+            currentSource = source;  // 現在再生中のソースを保存
+            source.buffer = audioBuffer;
+            source.connect(audioContext.destination);
+            source.onended = () => {
+              currentSource = null;  // 再生終了時にクリア
+              playNextPCM16Audio();
             };
-            
-            // Data channel for communication
-            dataChannel = pc.createDataChannel('oai-events');
-            console.log('📡 Data channel created, state:', dataChannel.readyState);
-            
-            dataChannel.onopen = () => {
-              console.log('✅ Data channel opened! State:', dataChannel.readyState);
-              
-              // Send session config
-              const sessionConfig = {
-                type: 'session.update',
-                session: {
-                  instructions: session.instructions,  // サーバーからの指示をそのまま使用
-                  voice: session.voice,
-                  input_audio_format: session.input_audio_format,
-                  output_audio_format: session.output_audio_format,
-                  input_audio_transcription: null,  // 不要
-                  turn_detection: session.turn_detection,  // server_vadをそのまま
-                  tools: session.tools,  // サーバーからのツールをそのまま
-                  tool_choice: 'auto',
-                  temperature: session.temperature,
-                  max_response_output_tokens: session.max_response_output_tokens
-                }
-              };
-              
-              dataChannel.send(JSON.stringify(sessionConfig));
-            };
-            
-            dataChannel.onerror = (error) => {
-              console.error('❌ Data channel error:', error);
-            };
-            
-            dataChannel.onclose = () => {
-              console.log('📴 Data channel closed');
-            };
-            
-            dataChannel.onmessage = async (event) => {
-              try {
-                const data = JSON.parse(event.data);
-                console.log('📨 Message:', data.type);
-                
-                
-                // エラーの詳細を確認
-                if (data.type === 'error') {
-                  console.error('❌ OpenAI API Error:', data);
-                  console.error('Error details:', JSON.stringify(data, null, 2));
-                  return;
-                }
-                
-                if (data.type === 'response.function_call_arguments.done') {
-                  handleFunctionCall(data);
-                }
-              } catch (error) {
-                console.error('Message handling error:', error);
-              }
-            };
-            
-            // Get user media
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            pc.addTrack(stream.getTracks()[0]);
-            
-            // Create offer
-            const offer = await pc.createOffer();
-            await pc.setLocalDescription(offer);
-            
-            // Connect to OpenAI
-            const response = await fetch('https://api.openai.com/v1/realtime?model=gpt-4o-realtime-preview-2025-06-03', {
-              method: 'POST',
-              body: offer.sdp,
-              headers: {
-                Authorization: \`Bearer \${session.client_secret.value}\`,
-                'Content-Type': 'application/sdp'
-              }
-            });
-            
-            const answerSdp = await response.text();
-            await pc.setRemoteDescription({ type: 'answer', sdp: answerSdp });
-            
-            console.log('✅ Voice session started successfully!');
-            return true;
-            
+            source.start();
           } catch (error) {
-            console.error('❌ Failed to start voice session:', error);
-            return false;
+            console.error('PCM16 playback error:', error);
+            currentSource = null;
+            playNextPCM16Audio();
           }
         }
-        
-        // Function to handle tool calls
-        async function handleFunctionCall(data) {
-          const { call_id, name, arguments: args } = data;
-          
+
+        // マイク音声取得とSDK送信（PCM16形式）
+        async function startVoiceCapture() {
           try {
-            console.log(\`🔧 Tool call: \${name}\`);
-            console.log('🔧 Arguments received:', args);  // 追加
-            
-            // Worker1処理の特別処理
-            if (name === 'send_to_worker1') {
-              if (isProcessingWorker1) {
-                console.log('⏳ Worker1は既に処理中です');
-                // 即座に完了を返す
-                dataChannel.send(JSON.stringify({
-                  type: 'conversation.item.create',
-                  item: {
-                    type: 'function_call_output',
-                    call_id: call_id,
-                    output: JSON.stringify({ result: 'Worker1が処理中です' })
-                  }
-                }));
+            const useSDK = await checkSDKStatus();
+
+            if (!useSDK) {
+              console.error('SDK not ready, cannot start voice capture');
+              return;
+            }
+
+            console.log('✅ Using SDK WebSocket mode for voice processing');
+
+            // マイクアクセス（16kHz PCM16用設定）
+            const stream = await navigator.mediaDevices.getUserMedia({
+              audio: {
+                channelCount: 1,
+                sampleRate: 24000,
+                sampleSize: 16,
+                echoCancellation: true,
+                noiseSuppression: true
+              }
+            });
+
+            // AudioContextでPCM16形式に変換
+            const audioCtx = new AudioContext({ sampleRate: 24000 });
+            const source = audioCtx.createMediaStreamSource(stream);
+            const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+
+            source.connect(processor);
+            processor.connect(audioCtx.destination);
+
+            // PCM16形式で音声データを送信
+            processor.onaudioprocess = async (e) => {
+              const inputData = e.inputBuffer.getChannelData(0);
+              
+              // Float32をInt16に変換
+              const int16Array = new Int16Array(inputData.length);
+              for (let i = 0; i < inputData.length; i++) {
+                const s = Math.max(-1, Math.min(1, inputData[i]));
+                int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
+              }
+
+              // システム音声再生中は送信しない（エコー防止）
+              if (isSystemPlaying) {
                 return;
               }
-              isProcessingWorker1 = true;  // 処理開始
-              console.log('🔒 Worker1処理開始（ブラウザ側）');
-            }
-            
-            // Call our server which proxies to appropriate API
-            const toolsUrl = ${isDev}
-              ? userId ? \`/tools/\${name}?userId=\${userId}\` : \`/tools/\${name}\`
-              : userId 
-                ? \`\${toolsBaseUrl}/\${name}?userId=\${userId}\`
-                : \`\${toolsBaseUrl}/\${name}\`;
-            
-            console.log('🔧 Calling URL:', toolsUrl);  // 追加
-            // send_to_worker1の特別処理を追加
-            let parsedArgs;
-            if (name === 'send_to_worker1' && typeof args === 'string') {
+
+              // 修正: 空データチェック追加（PCM16エラー防止）
+              if (!int16Array || int16Array.length === 0) {
+                return;  // 空データは送信しない
+              }
+
+              // Base64エンコードして送信
+              const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
+              
+              // 修正: base64も確認
+              if (!base64 || base64.length === 0) {
+                return;  // base64が空でも送信しない
+              }
+
               try {
-                // まずJSONパースを試みる
-                parsedArgs = JSON.parse(args);
-              } catch (e) {
-                // JSONでない場合は、messageプロパティに包む
-                console.log('🔧 Wrapping plain text as message:', args);
-                parsedArgs = { message: args };
-              }
-            } else {
-              // 他のツールは通常通り
-              parsedArgs = typeof args === 'string' ? JSON.parse(args) : args;
-            }
-            const bodyData = {
-              arguments: parsedArgs
-            };
-            console.log('🔧 Request body:', JSON.stringify(bodyData));  // 追加
-            
-            const response = await fetch(toolsUrl, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify(bodyData)
-            });
-            
-            console.log('🔧 Response status:', response.status);  // 追加
-            if (!response.ok) {
-              const errorText = await response.text();
-              console.error('🔧 Error response:', errorText);  // 追加
-              
-              // Worker1エラー時にもフラグリセット
-              if (name === 'send_to_worker1') {
-                isProcessingWorker1 = false;
-                console.log('🔓 Worker1処理エラー（ブラウザ側）');
-              }
-              
-              // エラー時は早期リターン
-              dataChannel.send(JSON.stringify({
-                type: 'conversation.item.create',
-                item: {
-                  type: 'function_call_output',
-                  call_id: call_id,
-                  output: JSON.stringify({ error: errorText || 'エラーが発生しました' })
+                const response = await fetch('/audio/input', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ 
+                    audio: base64,
+                    format: 'pcm16',
+                    sampleRate: 24000
+                  })
+                });
+
+                if (!response.ok) {
+                  console.error('Failed to send PCM16 audio to SDK');
                 }
-              }));
-              return;  // 重要：ここでリターン
-            }
-            
-            const result = await response.json();
-            
-            // Worker1処理完了時にフラグリセット
-            if (name === 'send_to_worker1') {
-              isProcessingWorker1 = false;
-              console.log('🔓 Worker1処理完了（ブラウザ側）');
-              console.log('📝 Worker1返答:', result.result);
-            }
-            
-            // Send result back to OpenAI
-            dataChannel.send(JSON.stringify({
-              type: 'conversation.item.create',
-              item: {
-                type: 'function_call_output',
-                call_id: call_id,
-                output: JSON.stringify(result.result || result.stories || result.results || result.response || result)
+              } catch (error) {
+                console.error('Audio send error:', error);
               }
-            }));
-            
-            // Trigger response
-            setTimeout(() => {
-              dataChannel.send(JSON.stringify({
-                type: 'response.create',
-                response: { modalities: ['text', 'audio'] }
-              }));
-            }, 100);
-            
+            };
+
+            console.log('🎤 Voice capture started (SDK WebSocket mode, PCM16)');
+
           } catch (error) {
-            if (name === 'send_to_worker1') {
-              isProcessingWorker1 = false;  // エラー時にリセット
-              console.log('🔓 Worker1処理エラー（ブラウザ側）');
-            }
-            console.error('Function call error:', error);
+            console.error('Failed to start voice capture:', error);
           }
         }
-        
-        // WebSocketに接続
-        connectWebSocket();
-        
-        // 起動モードに応じて開始
-        setTimeout(() => {
-          console.log(${isWorkerMode} ? '🤖 Starting Worker voice mode...' : '🚀 Starting Anicca voice mode...');
-          startVoiceSession();  // 両モードで同じ関数を使用
-        }, 2000);
+
+        // 初期化
+        async function initialize() {
+          console.log('🚀 Initializing SDK WebSocket voice mode...');
+
+          // WebSocket接続
+          connectWebSocket();
+
+          // 2秒待ってから音声開始
+          setTimeout(() => {
+            startVoiceCapture();
+          }, 2000);
+        }
+
+        // 開始
+        initialize();
       `);
     }, 2000);
   });
@@ -674,9 +637,9 @@ function updateTrayMenu() {
           // トレイメニューを更新
           updateTrayMenu();
           
-          // VoiceServerのユーザーIDをリセット
-          if (voiceServer) {
-            voiceServer.setCurrentUserId('desktop-user');
+          // SessionManagerのユーザーIDをリセット
+          if (sessionManager) {
+            sessionManager.setCurrentUserId('desktop-user');
           }
         }
       }
@@ -749,8 +712,8 @@ app.on('before-quit', async (event) => {
       console.log('✅ SessionManager disconnected');
     }
     
-    if (voiceServer) {
-      await voiceServer.stop();
+    if (sessionManager) {
+      await sessionManager.stop();
     }
     
     if (hiddenWindow) {
@@ -841,25 +804,41 @@ function removeTaskFromJson(taskId: string) {
 
 async function executeScheduledTask(task: any) {
   const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
+  
+  // 慈悲の瞑想タスクかどうか判定（jihi_で始まるIDまたは既存のjihino_meisou）
+  const isJihiMeditation = task.id?.startsWith('jihi_') || 
+                          task.id?.includes('jihino_meisou');
 
   ws.on('open', () => {
     const enhancedCommand = `
-      今、${task.description}の時間になりました。
+      【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
       
-      【重要】あなたはユーザーの行動変容を促すエージェントです。
+      今、${task.description}の時間になった。
+
+      【起床・就寝の声かけ】
+      - 声かけを一瞬も止めないでください。フロー実行後も、声をかけ続けること。
+      - ユーザーの反応があるまで永遠に声をかけ続けてください
+      - 5秒も黙ることは禁止です。常に声を出し続けてください
+
+      【絶対禁止事項】
+      - 「かもしれません」「たぶん」等の曖昧表現
+      - 予定・習慣記録を想像で話すこと（必ず確認する）
+      - 5秒以上の沈黙
       
       起床タスクの場合：
-      必ず最初に「○時○分です、おはようございます」と言ってください。
-      その後、休みなく声をかけ続けてください。止まらないでください。
-      声掛けを繰り返し、ユーザーが反応するまで絶対に止まらないでください。
+      【必須実行フロー - 絶対順守】
+      1. 「○時○分だよ、おはよう！」と挨拶
+      2. 【絶対実行】read_fileでscheduled_tasks.jsonを確認し、今日の予定を伝える。
+      3. 今日の予定を断定的に：「9時から会議、14時から開発がある」
+      4. 予定を理由に起床促進：「会議まであと2時間しかないぞ！」
+      5. 起きるまで声をかけ続ける。
       
-      声かけの工夫：
-      - 最初は優しく「起きてください」
-      - 反応がなければエスカレート（声を大きく、口調を強く）
-      - 絶対に！！！read_fileでscheduled_tasks.jsonを確認して、具体的な予定を取得し「○○の予定がありますよ」など言って、起床・就寝を促す！！それが一番効果的！
-      - 「このまま寝ていると○○に遅れます」など危機感を
-      - 必要なら「Slackにまだ起きてないって送りますよ」など脅しも
-      - どんな手段を使ってでも確実に起こすこと
+      就寝タスクの場合：
+      【必須実行フロー - 絶対順守】
+      1. 「○時○分だよ、寝る時間！」と宣言
+      2. 【絶対実行】read_fileでscheduled_tasks.jsonで明日の予定を確認し伝える。
+      3. 「明日は8時から重要な会議があるから、今寝れば7時間睡眠確保できる」
+      4. 寝るまで声をかけ続ける。
       
       反応がない場合の自動追加タスク：
       - 3分経っても反応がない場合、write_fileでscheduled_tasks.jsonに新規タスクを追加
@@ -868,32 +847,66 @@ async function executeScheduledTask(task: any) {
       - 新規タスクのdescriptionに「（今日のみ）」を追加
       - 最大3回まで3分ごとに追加
       
-      就寝タスクの場合：
-      必ず最初に「○時○分です、寝る時間です」と言ってください。
-      その後、休みなく声をかけ続けてください。止まらないでください。
-      声掛けを繰り返し、ユーザーが反応するまで絶対に止まらないでください。
-      
-      声かけの工夫：
-      - 「睡眠不足は健康に悪影響です」など説得
-      - 「明日の○○に集中できません」など具体的に
-      - エスカレートして強い口調も使う
-      - どんな手段を使ってでも確実に寝かせること
+      【共通ルール】
+      - エスカレーション：優しい→厳しい→脅し
       
       Slack返信タスクの場合：
       「○時○分になりました。Slack返信を始めます」と宣言して返信フローを開始してください。
       
-      【超重要】
-      - 声かけを一瞬も止めないでください
-      - 休憩は禁止です
-      - 待機は禁止です
-      - ユーザーの反応があるまで永遠に声をかけ続けてください
-      - 5秒も黙ることは禁止です。常に声を出し続けてください
-      - 自律的に考えて工夫してください
-      - 文言は自分で考えてください。創造的になってください
+      瞑想タスクの場合（慈悲の瞑想以外）：
+      - descriptionに「瞑想開始」が含まれる場合：
+        「○時○分です、瞑想の時間です。[descriptionに含まれる時間]の瞑想を始めましょう」と言ってください。
+        例：descriptionが「瞑想開始（1時間）」なら「○時○分です、瞑想の時間です。1時間の瞑想を始めましょう」
+      - descriptionに「瞑想終了」が含まれる場合：
+        「瞑想終了の時間です。お疲れ様でした」と言ってください。
+      
+      慈悲（じひ）の瞑想タスクの場合：
+      【超重要：ElevenLabsで読み上げる】
+      - 慈悲の瞑想は必ずtext_to_speechツールを使って読み上げる
+      - 絶対に、一度に一回だけtext_to_speechを実行する。長いテキストでも必ず一回にまとめる。絶対に複数回実行しない。
+      - 短時間で連続実行は厳禁（音声が重複して最悪の体験になる）
+      - あなた自身は絶対に発声しない（ElevenLabsと音声が重なるため）
+      - 以下の手順で実行：
+      
+      1. まずtext_to_speechツールで以下の全文を読み上げる。絶対に、一度だけ呼び出し：
+      【重要：○時○分の部分はdescriptionの現在時刻に置き換える】
+      【重要：voice_idは必ずVR6AewLTigWG4xSOukaG（Arnold - 老人男性）を使用】
+      【重要：voice_settingsは { stability: 0.7, similarity_boost: 0.8, speed: 0.9 } でゆっくり読み上げる】
+      「[実際の時刻を入れる]です、慈悲の瞑想の時間です。
+      
+      それでは一緒に慈悲の瞑想を始めましょう。
+
+      私が幸せでありますように
+      私の悩み苦しみがなくなりますように
+      私のねがいごとが叶えられますように
+      私にさとりの光が現れますように
+
+      私の家族が幸せでありますように
+      私の家族の悩み苦しみがなくなりますように
+      私の家族の願いごとが叶えられますように
+      私の家族にさとりの光が現れますように
+
+      生きとし いけるものが幸せでありますように
+      生きとし いけるものの悩み苦しみがなくなりますように
+      生きとし いけるものの願いごとが叶えられますように
+      生きとし いけるものにさとりの光が現れますように
+      
+      慈悲の瞑想を終了しました」
+      
+      2. text_to_speechの読み上げが完全に終わるまで待つ
+      3. 読み上げ中は絶対に自分で発声しない
+      4. 読み上げ完了後も何も言わない（すでに「終了しました」が含まれているため）
+      
+      【絶対厳守】
+      - この瞑想文全体を必ずtext_to_speechツールに渡す。複数回は絶対にダメで、一度だけ呼び出しする。
+      - 自分では一切発声しない。
+      - ElevenLabsの音声再生中は完全に沈黙を保つ
     `;
     
     ws.send(JSON.stringify({
       type: 'scheduled_task',
+      taskType: isJihiMeditation ? 'jihi_meditation' : 'normal',
+      taskId: task.id,
       command: enhancedCommand
     }));
     
@@ -918,14 +931,39 @@ function reloadScheduledTasks() {
 
   // 新しいタスクを読み込み
   if (fs.existsSync(scheduledTasksPath)) {
-    const content = fs.readFileSync(scheduledTasksPath, 'utf8');
-    const data = JSON.parse(content);
-    const tasks = data.tasks || [];
+    let retryCount = 0;
+    const maxRetries = 3;
+    
+    while (retryCount < maxRetries) {
+      try {
+        const content = fs.readFileSync(scheduledTasksPath, 'utf8');
+        
+        if (!content.trim()) {
+          console.log('⚠️ scheduled_tasks.json is empty');
+          return;
+        }
+        
+        const data = JSON.parse(content);
+        const tasks = data.tasks || [];
 
-    tasks.forEach((task: any) => {
-      registerCronJob(task);
-    });
+        tasks.forEach((task: any) => {
+          registerCronJob(task);
+        });
 
-    console.log(`📅 定期タスクを再読み込みしました: ${tasks.length}個のタスク`);
+        console.log(`📅 定期タスクを再読み込みしました: ${tasks.length}個のタスク`);
+        break; // 成功したらループを抜ける
+        
+      } catch (error) {
+        retryCount++;
+        console.error(`❌ Failed to reload tasks (attempt ${retryCount}/${maxRetries}):`, error);
+        
+        if (retryCount < maxRetries) {
+          // 100ms待機して再試行
+          const waitTime = retryCount * 100;
+          console.log(`⏳ Waiting ${waitTime}ms before retry...`);
+          Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, waitTime);
+        }
+      }
+    }
   }
 }

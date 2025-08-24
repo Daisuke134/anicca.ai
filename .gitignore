@@ -115,3 +115,5 @@ highlights_cache.json
 # 別リポジトリで管理しているフォルダ（絶対にプッシュしない！）
 anicca-proxy-slack/
 anicca-web/
+openai-agents-js/
+slack-mcp-server/

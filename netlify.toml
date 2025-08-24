@@ -1,0 +1,12 @@
+[build]
+  base = "landing"
+  publish = "landing"
+  command = ""
+
+[build.environment]
+  GIT_LFS_ENABLED = "false"
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

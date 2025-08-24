@@ -1,6 +1,6 @@
 [build]
   base = "landing"
-  publish = "landing"
+  publish = "."
   command = ""
 
 [build.environment]

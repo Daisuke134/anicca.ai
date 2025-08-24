@@ -111,3 +111,7 @@ highlights_cache.json
 
 # Local Netlify folder
 .netlify
+
+# 別リポジトリで管理しているフォルダ（絶対にプッシュしない！）
+anicca-proxy-slack/
+anicca-web/

@@ -2,7 +2,7 @@ import { RealtimeAgent } from '@openai/agents/realtime';
 import { getAllMcpTools, withTrace, setTracingDisabled } from '@openai/agents';
 import { allTools } from './tools';
 import { getMCPTools } from './mcpServers';
-import { getComposioGoogleCalendarMCPServer } from './composioMCP';
+// import { getGoogleCalendarTools } from './googleCalendarMCP';
 
 // voiceServer.tsから完全移植したinstructions
 const ANICCA_INSTRUCTIONS = `
@@ -420,24 +420,16 @@ export const createAniccaAgent = async (userId?: string | null) => {
   // 既存のMCPツール取得（SlackなどGoogle Calendar以外）
   const mcpTools = await getMCPTools(userId);
   
-  // 既存のツールとMCPツールを結合
-  const combinedTools = [...allTools, ...mcpTools];
+  // Google Calendar MCPツール取得
+  // const googleCalendarTools = await getGoogleCalendarTools(userId || 'desktop-user');
   
-  // Composio Google Calendar MCPサーバーを取得
-  const googleCalendarMCP = await getComposioGoogleCalendarMCPServer(userId || 'desktop-user');
-  
-  // MCPサーバーからツールを事前展開（公式推奨方法）
-  const composioTools = await withTrace('getComposioTools', async () => {
-    return await getAllMcpTools([googleCalendarMCP]);
-  });
-  
-  // 全ツールを結合
-  const finalTools = [...combinedTools, ...composioTools];
+  // 全ツール結合
+  const combinedTools = [...allTools, ...mcpTools]; // ...googleCalendarTools removed
   
   return new RealtimeAgent({
     name: 'Anicca',
     instructions: ANICCA_INSTRUCTIONS,
-    tools: finalTools, // 事前展開されたツールを渡す
+    tools: combinedTools,
     voice: 'alloy'
   });
 };

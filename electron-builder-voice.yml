@@ -30,6 +30,7 @@ files:
   - "!**/node_modules/@anthropic-ai/claude-code/vendor/claude-code-jetbrains-plugin/**"
 asarUnpack:
   - "**/node_modules/@anthropic-ai/claude-code/**/*"
+  - "**/node_modules/@modelcontextprotocol/**/*"
 mac:
   category: public.app-category.productivity
   icon: assets/icon.icns

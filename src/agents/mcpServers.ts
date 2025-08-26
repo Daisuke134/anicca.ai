@@ -2,20 +2,31 @@ import { MCPServerStdio, getAllMcpTools, withTrace } from '@openai/agents';
 import type { Tool } from '@openai/agents';
 import path from 'path';
 import os from 'os';
+import { app } from 'electron';
 
 
 export async function initializeMCPServers(userId?: string | null) {
   const servers: MCPServerStdio[] = [];
   
+  // DMG環境判定
+  const isDMG = app && app.isPackaged;
+  
   // Filesystem MCP Server（~/.aniccaのみアクセス可能）
   const filesystemServer = new MCPServerStdio({
     name: 'filesystem-mcp',
-    command: 'npx',
-    args: [
-      '-y',
-      '@modelcontextprotocol/server-filesystem',
-      path.join(os.homedir(), '.anicca')  // セキュリティ: ~/.aniccaのみ
-    ]
+    command: isDMG ? 'node' : 'npx',
+    args: isDMG ?
+      // DMG環境: 解凍されたファイルを直接実行
+      [
+        path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@modelcontextprotocol', 'server-filesystem', 'dist', 'index.js'),
+        path.join(os.homedir(), '.anicca')
+      ] :
+      // 開発環境: npx使用
+      [
+        '-y',
+        '@modelcontextprotocol/server-filesystem',
+        path.join(os.homedir(), '.anicca')
+      ]
   });
   
   servers.push(filesystemServer);

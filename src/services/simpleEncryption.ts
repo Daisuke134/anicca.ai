@@ -30,26 +30,32 @@ export class SimpleEncryption {
   private initializeMasterKey(): void {
     try {
       if (fs.existsSync(this.masterKeyPath) && safeStorage.isEncryptionAvailable()) {
-        // 既存のマスターキーを読み込む
-        const encryptedKey = fs.readFileSync(this.masterKeyPath);
-        const decryptedKey = safeStorage.decryptString(encryptedKey);
-        this.masterKey = Buffer.from(decryptedKey, 'hex');
-        console.log('🔑 Master key loaded successfully');
-      } else {
-        // 新しいマスターキーを生成
-        this.masterKey = crypto.randomBytes(32);
-        
-        if (safeStorage.isEncryptionAvailable()) {
-          const encryptedKey = safeStorage.encryptString(this.masterKey.toString('hex'));
-          fs.writeFileSync(this.masterKeyPath, encryptedKey);
-          console.log('🔑 New master key generated and saved');
-        } else {
-          throw new Error('SafeStorage is not available');
+        try {
+          // 既存のマスターキーを読み込む
+          const encryptedKey = fs.readFileSync(this.masterKeyPath);
+          const decryptedKey = safeStorage.decryptString(encryptedKey);
+          this.masterKey = Buffer.from(decryptedKey, 'hex');
+          console.log('🔑 Master key loaded successfully');
+          return;
+        } catch (decryptError) {
+          // 古い形式のファイルなので削除
+          console.log('🔄 Old format detected, cleaning up...');
+          fs.unlinkSync(this.masterKeyPath);
+          
+          // auth.encryptedも削除（再ログイン防止のため重要！）
+          const authPath = path.join(this.aniccaDir, 'auth.encrypted');
+          if (fs.existsSync(authPath)) {
+            fs.unlinkSync(authPath);
+            console.log('🗑️ Cleared old auth data');
+          }
         }
       }
+      
+      // 新しいマスターキーを生成
+      this.generateNewMasterKey();
+      
     } catch (error) {
-      console.error('❌ Failed to initialize master key:', error);
-      // エラー時は新しいマスターキーを生成
+      console.error('❌ Master key initialization error:', error);
       this.generateNewMasterKey();
     }
   }

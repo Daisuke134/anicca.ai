@@ -299,12 +299,15 @@ export const read_file = tool({
   }),
   execute: async ({ path: filePath }) => {
     try {
-      // Handle relative path to ~/.anicca/
       let resolvedPath = filePath;
-      if (!filePath.startsWith('/')) {
-        resolvedPath = path.join(os.homedir(), '.anicca', filePath);
-      } else {
+      
+      // write_fileと同じロジックに統一
+      if (filePath.startsWith('~/')) {
         resolvedPath = filePath.replace('~', os.homedir());
+      } else if (filePath.startsWith('/')) {
+        resolvedPath = filePath;
+      } else {
+        resolvedPath = path.join(os.homedir(), '.anicca', filePath);
       }
       
       const content = await fs.readFile(resolvedPath, 'utf8');
@@ -318,51 +321,96 @@ export const read_file = tool({
 // 14. write_file
 export const write_file = tool({
   name: 'write_file',
-  description: 'Write content to a file or update scheduled tasks',
+  description: 'Write content to a file. Default mode is append (add to existing content)',
   parameters: z.object({
     path: z.string().describe('File path relative to ~/.anicca/ or absolute path'),
-    content: z.string().describe('Content to write')
+    content: z.string().describe('Content to write'),
+    mode: z.enum(['append', 'overwrite', 'update']).optional().default('append').describe(
+      'append: add to end of file (default), overwrite: replace entire file, update: merge for JSON or append for text'
+    )
   }),
-  execute: async ({ path: filePath, content }) => {
+  execute: async ({ path: filePath, content, mode = 'append' }) => {
     try {
-      // Handle relative path to ~/.anicca/
       let resolvedPath = filePath;
+      
       if (filePath.startsWith('~/')) {
-        // ~/path の場合：~ を os.homedir() に置換
         resolvedPath = filePath.replace('~', os.homedir());
       } else if (filePath.startsWith('/')) {
-        // 絶対パスの場合：そのまま使用
         resolvedPath = filePath;
       } else {
-        // 相対パスの場合：~/.anicca/ に追加
         resolvedPath = path.join(os.homedir(), '.anicca', filePath);
       }
       
-      // ディレクトリが存在しない場合は作成
       const dir = path.dirname(resolvedPath);
       await fs.mkdir(dir, { recursive: true });
       
-      // JSONファイルの場合は自動整形
+      // JSONファイルの処理
       if (resolvedPath.endsWith('.json')) {
-        try {
-          // JSONとしてパース可能か確認
+        let finalContent = content;
+        
+        if (mode === 'update' || mode === 'append') {
+          // 既存のJSONを読み込んでマージ
+          try {
+            const existing = await fs.readFile(resolvedPath, 'utf8');
+            const existingData = JSON.parse(existing);
+            const newData = JSON.parse(content);
+            
+            // updateモード：オブジェクトをマージ、配列は結合
+            if (mode === 'update') {
+              if (Array.isArray(existingData) && Array.isArray(newData)) {
+                // 配列の場合：IDで重複排除してマージ
+                const merged = [...existingData];
+                for (const item of newData) {
+                  const index = merged.findIndex(m => m.id === item.id);
+                  if (index >= 0) {
+                    merged[index] = item; // 更新
+                  } else {
+                    merged.push(item); // 追加
+                  }
+                }
+                finalContent = JSON.stringify(merged, null, 2);
+              } else {
+                // オブジェクトの場合：マージ
+                finalContent = JSON.stringify({ ...existingData, ...newData }, null, 2);
+              }
+            } else {
+              // appendモード：配列なら要素追加、オブジェクトならマージ
+              if (Array.isArray(existingData) && Array.isArray(newData)) {
+                finalContent = JSON.stringify([...existingData, ...newData], null, 2);
+              } else {
+                finalContent = JSON.stringify({ ...existingData, ...newData }, null, 2);
+              }
+            }
+          } catch {
+            // 既存ファイルがないかJSON形式でない場合は新規作成
+            const jsonData = JSON.parse(content);
+            finalContent = JSON.stringify(jsonData, null, 2);
+          }
+        } else {
+          // overwriteモード
           const jsonData = JSON.parse(content);
-          // 整形して書き込み
-          await fs.writeFile(resolvedPath, JSON.stringify(jsonData, null, 2), 'utf8');
-        } catch {
-          // JSONでない場合はそのまま書き込み
+          finalContent = JSON.stringify(jsonData, null, 2);
+        }
+        
+        await fs.writeFile(resolvedPath, finalContent, 'utf8');
+        
+      } else {
+        // テキストファイルの処理
+        if (mode === 'append' || mode === 'update') {
+          // 追記モード（改行を追加）
+          await fs.appendFile(resolvedPath, '\n' + content, 'utf8');
+        } else {
+          // 上書きモード
           await fs.writeFile(resolvedPath, content, 'utf8');
         }
-      } else {
-        await fs.writeFile(resolvedPath, content, 'utf8');
       }
       
-      // scheduled_tasks.jsonの場合は、メインプロセスに通知
+      // scheduled_tasks.jsonの場合は通知
       if (resolvedPath.includes('scheduled_tasks.json')) {
         process.send?.({ type: 'RELOAD_SCHEDULED_TASKS' });
       }
       
-      return `File written successfully to ${filePath}`;
+      return `File written successfully to ${filePath} (mode: ${mode})`;
     } catch (error: any) {
       return `Error writing file: ${error.message}`;
     }
@@ -444,6 +492,73 @@ export const open_url = tool({
   },
 });
 
+// 17. connect_google_calendar
+export const connect_google_calendar = tool({
+  name: 'connect_google_calendar',
+  description: 'Google Calendarを接続',
+  parameters: z.object({}),
+  execute: async () => {
+    const userId = process.env.CURRENT_USER_ID || 'desktop-user';
+    
+    const response = await fetch(`${PROXY_URL}/api/composio/calendar-mcp`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
+    
+    const data = await response.json();
+    console.log('Calendar MCP response:', data);
+    
+    if (!data.connected && data.authUrl) {
+      const { shell } = require('electron');
+      shell.openExternal(data.authUrl);
+      return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+    }
+    
+    if (data.connected) {
+      return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
+    }
+    
+    return 'Google Calendar接続状態の確認に失敗しました。';
+  }
+});
+
+// 18. get_current_time
+export const get_current_time = tool({
+  name: 'get_current_time',
+  description: '現在の時刻を取得（ユーザーの場所に基づく）',
+  parameters: z.object({}),
+  execute: async () => {
+    try {
+      // WorldTimeAPI - IPベースで自動的にユーザーのタイムゾーンを検出
+      const response = await fetch('https://worldtimeapi.org/api/ip');
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // 生データを返す - Aniccaが判断して適切な言語で伝える
+      return JSON.stringify({
+        datetime: data.datetime,
+        timezone: data.timezone,
+        day_of_week: data.day_of_week,
+        week_number: data.week_number
+      });
+      
+    } catch (error: any) {
+      // フォールバック：システム時刻
+      const now = new Date();
+      return JSON.stringify({
+        datetime: now.toISOString(),
+        timezone: 'system',
+        error: error.message
+      });
+    }
+  }
+});
+
 
 // すべてのツールをエクスポート
 export const allTools = [
@@ -461,4 +576,6 @@ export const allTools = [
   write_file,
   text_to_speech,
   open_url,
+  connect_google_calendar,
+  get_current_time,
 ];

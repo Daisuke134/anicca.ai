@@ -11,25 +11,39 @@ export async function initializeMCPServers(userId?: string | null) {
   // DMG環境判定
   const isDMG = app && app.isPackaged;
   
-  // Filesystem MCP Server（~/.aniccaのみアクセス可能）
-  const filesystemServer = new MCPServerStdio({
-    name: 'filesystem-mcp',
-    command: isDMG ? 'node' : 'npx',
-    args: isDMG ?
-      // DMG環境: 解凍されたファイルを直接実行
-      [
-        path.join(process.resourcesPath, 'app.asar.unpacked', 'node_modules', '@modelcontextprotocol', 'server-filesystem', 'dist', 'index.js'),
+  // Filesystem MCP Server
+  if (isDMG) {
+    // DMG環境：直接nodeで実行
+    const filesystemServer = new MCPServerStdio({
+      name: 'filesystem-mcp',
+      command: process.execPath, // Electronのnode
+      args: [
+        path.join(
+          process.resourcesPath,
+          'app.asar.unpacked',
+          'node_modules',
+          '@modelcontextprotocol',
+          'server-filesystem',
+          'dist',  // 正しいパス
+          'index.js'
+        ),
         path.join(os.homedir(), '.anicca')
-      ] :
-      // 開発環境: npx使用
-      [
+      ]
+    });
+    servers.push(filesystemServer);
+  } else {
+    // 開発環境：npx使用
+    const filesystemServer = new MCPServerStdio({
+      name: 'filesystem-mcp',
+      command: 'npx',
+      args: [
         '-y',
         '@modelcontextprotocol/server-filesystem',
         path.join(os.homedir(), '.anicca')
       ]
-  });
-  
-  servers.push(filesystemServer);
+    });
+    servers.push(filesystemServer);
+  }
 
   // 各サーバーに接続
   for (const server of servers) {
@@ -38,6 +52,12 @@ export async function initializeMCPServers(userId?: string | null) {
       console.log(`✅ Connected to ${server.name}`);
     } catch (error) {
       console.error(`❌ Failed to connect to ${server.name}:`, error);
+      if (isDMG) {
+        console.error('DMG path details:', {
+          resourcesPath: process.resourcesPath,
+          execPath: process.execPath
+        });
+      }
     }
   }
 

@@ -154,6 +154,9 @@ async function initializeApp() {
     // ログ初期化（全環境共通）
     const log = require('electron-log');
     log.transports.file.level = 'info';
+    // DMGでも確実に書き込めるパス
+    log.transports.file.resolvePathFn = () => 
+      path.join(os.homedir(), 'Library', 'Logs', 'anicca-agi', 'main.log');
     autoUpdater.logger = log;
 
     // 自動更新の初期化（本番環境のみ）

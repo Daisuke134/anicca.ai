@@ -151,31 +151,33 @@ async function initializeApp() {
     createSystemTray();
     console.log('✅ System tray created');
     
-    // 自動更新の初期化（サイレント）
+    // ログ初期化（全環境共通）
     const log = require('electron-log');
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
-    autoUpdater.autoDownload = true;
-    autoUpdater.autoInstallOnAppQuit = true;
-    
-    // チャンネル設定（環境による切り替え）
-    autoUpdater.channel = UPDATE_CONFIG.CHANNEL;
-    console.log(`✅ Auto-updater initialized with channel: ${UPDATE_CONFIG.CHANNEL}`);
-    
-    // エラー時のみ通知
-    autoUpdater.on('error', (error) => {
-      console.error('Auto-updater error:', error);
-      showNotification('更新エラー', '自動更新中にエラーが発生しました。後でもう一度お試しください。');
-    });
-    
-    // サイレント更新（通知なし）
-    autoUpdater.on('update-downloaded', () => {
-      console.log('Update downloaded silently');
-      // 通知しない、次回起動時に自動適用
-    });
-    
-    // 更新チェック開始
-    autoUpdater.checkForUpdatesAndNotify();
+
+    // 自動更新の初期化（本番環境のみ）
+    if (process.env.NODE_ENV === 'production') {
+      autoUpdater.autoDownload = true;
+      autoUpdater.autoInstallOnAppQuit = true;
+      autoUpdater.channel = UPDATE_CONFIG.CHANNEL;
+      
+      log.info(`✅ Auto-updater initialized with channel: ${UPDATE_CONFIG.CHANNEL}`);
+      
+      // エラー時のログ記録（サイレント）
+      autoUpdater.on('error', (error) => {
+        log.error('Auto-updater error:', error);
+      });
+      
+      // 更新ダウンロード完了時のログ記録（サイレント）
+      autoUpdater.on('update-downloaded', () => {
+        log.info('Update downloaded silently');
+      });
+      
+      // 更新チェック開始
+      autoUpdater.checkForUpdatesAndNotify();
+    }
+    // 開発環境では何も出力しない
     
     // 通知
     // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');

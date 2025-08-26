@@ -6,6 +6,7 @@ files:
   - dist/main-voice-simple.js
   - dist/config.js
   - dist/services/**/*
+  - dist/agents/**/*
   - dist/recorder.html
   - node_modules/**/*
   - package.json
@@ -25,14 +26,7 @@ files:
   - "!**/.git"
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
-  - "!dist/main.js"
-  - "!dist/main-voice.js"
-  - "!dist/main-voice-rtmcp.js"
   - "!dist/ui/**"
-  - "!dist/services/gemini*.js"
-  - "!dist/services/summaryAgentService.js"
-  - "!dist/services/highlightsManager.js"
-  - "!dist/services/exaMcpService.js"
   - "!**/node_modules/@anthropic-ai/claude-code/vendor/claude-code-jetbrains-plugin/**"
 asarUnpack:
   - "**/node_modules/@anthropic-ai/claude-code/**/*"
@@ -69,3 +63,4 @@ publish:
     repo: anicca.ai
     private: true
     releaseType: release
+generateUpdatesFilesForAllChannels: true

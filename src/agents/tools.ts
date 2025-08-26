@@ -290,132 +290,7 @@ export const slack_get_thread_replies = tool({
 
 
 
-// 13. read_file
-export const read_file = tool({
-  name: 'read_file',
-  description: 'Read contents of a file',
-  parameters: z.object({
-    path: z.string().describe('File path relative to ~/.anicca/ or absolute path')
-  }),
-  execute: async ({ path: filePath }) => {
-    try {
-      let resolvedPath = filePath;
-      
-      // write_fileと同じロジックに統一
-      if (filePath.startsWith('~/')) {
-        resolvedPath = filePath.replace('~', os.homedir());
-      } else if (filePath.startsWith('/')) {
-        resolvedPath = filePath;
-      } else {
-        resolvedPath = path.join(os.homedir(), '.anicca', filePath);
-      }
-      
-      const content = await fs.readFile(resolvedPath, 'utf8');
-      return content;
-    } catch (error: any) {
-      return `Error reading file: ${error.message}`;
-    }
-  }
-});
 
-// 14. write_file
-export const write_file = tool({
-  name: 'write_file',
-  description: 'Write content to a file. Default mode is append (add to existing content)',
-  parameters: z.object({
-    path: z.string().describe('File path relative to ~/.anicca/ or absolute path'),
-    content: z.string().describe('Content to write'),
-    mode: z.enum(['append', 'overwrite', 'update']).optional().default('append').describe(
-      'append: add to end of file (default), overwrite: replace entire file, update: merge for JSON or append for text'
-    )
-  }),
-  execute: async ({ path: filePath, content, mode = 'append' }) => {
-    try {
-      let resolvedPath = filePath;
-      
-      if (filePath.startsWith('~/')) {
-        resolvedPath = filePath.replace('~', os.homedir());
-      } else if (filePath.startsWith('/')) {
-        resolvedPath = filePath;
-      } else {
-        resolvedPath = path.join(os.homedir(), '.anicca', filePath);
-      }
-      
-      const dir = path.dirname(resolvedPath);
-      await fs.mkdir(dir, { recursive: true });
-      
-      // JSONファイルの処理
-      if (resolvedPath.endsWith('.json')) {
-        let finalContent = content;
-        
-        if (mode === 'update' || mode === 'append') {
-          // 既存のJSONを読み込んでマージ
-          try {
-            const existing = await fs.readFile(resolvedPath, 'utf8');
-            const existingData = JSON.parse(existing);
-            const newData = JSON.parse(content);
-            
-            // updateモード：オブジェクトをマージ、配列は結合
-            if (mode === 'update') {
-              if (Array.isArray(existingData) && Array.isArray(newData)) {
-                // 配列の場合：IDで重複排除してマージ
-                const merged = [...existingData];
-                for (const item of newData) {
-                  const index = merged.findIndex(m => m.id === item.id);
-                  if (index >= 0) {
-                    merged[index] = item; // 更新
-                  } else {
-                    merged.push(item); // 追加
-                  }
-                }
-                finalContent = JSON.stringify(merged, null, 2);
-              } else {
-                // オブジェクトの場合：マージ
-                finalContent = JSON.stringify({ ...existingData, ...newData }, null, 2);
-              }
-            } else {
-              // appendモード：配列なら要素追加、オブジェクトならマージ
-              if (Array.isArray(existingData) && Array.isArray(newData)) {
-                finalContent = JSON.stringify([...existingData, ...newData], null, 2);
-              } else {
-                finalContent = JSON.stringify({ ...existingData, ...newData }, null, 2);
-              }
-            }
-          } catch {
-            // 既存ファイルがないかJSON形式でない場合は新規作成
-            const jsonData = JSON.parse(content);
-            finalContent = JSON.stringify(jsonData, null, 2);
-          }
-        } else {
-          // overwriteモード
-          const jsonData = JSON.parse(content);
-          finalContent = JSON.stringify(jsonData, null, 2);
-        }
-        
-        await fs.writeFile(resolvedPath, finalContent, 'utf8');
-        
-      } else {
-        // テキストファイルの処理
-        if (mode === 'append' || mode === 'update') {
-          // 追記モード（改行を追加）
-          await fs.appendFile(resolvedPath, '\n' + content, 'utf8');
-        } else {
-          // 上書きモード
-          await fs.writeFile(resolvedPath, content, 'utf8');
-        }
-      }
-      
-      // scheduled_tasks.jsonの場合は通知
-      if (resolvedPath.includes('scheduled_tasks.json')) {
-        process.send?.({ type: 'RELOAD_SCHEDULED_TASKS' });
-      }
-      
-      return `File written successfully to ${filePath} (mode: ${mode})`;
-    } catch (error: any) {
-      return `Error writing file: ${error.message}`;
-    }
-  }
-});
 
 // 15. text_to_speech (ElevenLabs)
 export const text_to_speech = tool({
@@ -572,8 +447,6 @@ export const allTools = [
   slack_add_reaction,
   slack_reply_to_thread,
   slack_get_thread_replies,
-  read_file,
-  write_file,
   text_to_speech,
   open_url,
   connect_google_calendar,

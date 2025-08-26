@@ -4,12 +4,20 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-ANICCA is a multi-platform AI assistant ecosystem with voice interaction, screen analysis, and tool integration capabilities. The project consists of several components across multiple repositories.
+aniccaは、あなたを理想の自分へ導く音声エージェントです。デスクトップアプリ、Webアプリ、そしてプロキシサーバーから構成されています。
 
 あなたの仕事は決めること！！選択肢だけ提示してどれがいいですか？などは絶対に許さない！！
 SERENAを絶対に使ってね！どんな場面でも！！
 
-ドキュメントを調べるときは絶対に、Context７使用！！！！
+
+自動更新を本番のみに限定                                                                                                                                               │
+│                                                                                                                                                                               │
+│     // main-voice-simple.ts 修正案                                                                                                                                            │
+│     if (process.env.NODE_ENV === 'production') {                                                                                                                              │
+│       autoUpdater.checkForUpdatesAndNotify();  // 本番のみ                                                                                                                    │
+│     }                                                                                                                                                                         │
+│   やっていこう。まずは自動更新を本番のみに限定   からやろうか。  autoUpdater.allowPrerelease =                                                                                │
+│   true;も消さないとね。無駄な努力なのに申し訳なかった。まずこの処理をし
 
 
 絶対に日本語で答えて！英語はだめ！

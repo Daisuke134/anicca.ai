@@ -54,6 +54,6 @@ export const APP_CONFIG = {
 
 // アップデート設定
 export const UPDATE_CONFIG = {
-  CHANNEL: process.env.NODE_ENV === 'production' ? 'stable' : 'beta',
+  CHANNEL: process.env.UPDATE_CHANNEL || (process.env.NODE_ENV === 'production' ? 'stable' : 'beta'),
   CHECK_INTERVAL: 1000 * 60 * 60 * 4 // 4時間ごと
 };

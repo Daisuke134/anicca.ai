@@ -27,6 +27,11 @@ jobs:
 
       - name: Install deps (include dev)
         run: npm ci --include=dev
+      
+      - name: Validate proxy secrets (stable)
+        run: |
+          test -n "${{ secrets.PROXY_URL_PRODUCTION }}" || (echo "Missing PROXY_URL_PRODUCTION" && exit 1)
+          test -n "${{ secrets.PROXY_URL_STAGING }}"    || (echo "Missing PROXY_URL_STAGING" && exit 1)
 
       - name: Build and Publish (stable)
         run: |

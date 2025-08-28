@@ -180,16 +180,17 @@ async function initializeApp() {
     // 自動更新の初期化（配布ビルドのみ）
     if (app.isPackaged) {
       // 本番配布はconfigのチャンネル決定に従う（ランタイムENVでは上書きしない）
-      const updateChannel = UPDATE_CONFIG.CHANNEL;
-      autoUpdater.channel = updateChannel;
+      // GitHub Releasesのデフォルトはlatestのため、stableはlatestにマッピング
+      const feedChannel = UPDATE_CONFIG.CHANNEL === 'stable' ? 'latest' : UPDATE_CONFIG.CHANNEL;
+      autoUpdater.channel = feedChannel;
 
-      // betaチャンネルまたはプレリリース版のみ、prereleaseを許可
+      // betaチャンネルまたはプレリリース版のみ、prereleaseを許可（判定は論理チャンネルで）
       const isPrereleaseVersion = /-/.test(app.getVersion());
-      autoUpdater.allowPrerelease = isPrereleaseVersion || updateChannel !== 'stable';
+      autoUpdater.allowPrerelease = isPrereleaseVersion || UPDATE_CONFIG.CHANNEL !== 'stable';
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
 
-      log.info(`✅ Auto-updater initialized (channel=${updateChannel}, allowPrerelease=${autoUpdater.allowPrerelease})`);
+      log.info(`✅ Auto-updater initialized (channel=${UPDATE_CONFIG.CHANNEL}, allowPrerelease=${autoUpdater.allowPrerelease})`);
 
       // エラー時のログ記録（サイレント）
       autoUpdater.on('error', (error) => {

@@ -36,3 +36,37 @@
 ## セキュリティ・設定 Tips
 - 機密値は `.env`（ルート/各サブプロジェクト）で読み込み、コミット禁止。
 - macOS のパッケージ前に既存 `Anicca` ボリュームをアンマウントしてビルド失敗を防止。
+
+## Release & Ops Overview
+
+- リポジトリ構成:
+  - Desktop: `Daisuke134/anicca.ai`（本レポ）
+  - Web: `Daisuke134/anicca-web`
+  - Proxy: `Daisuke134/anicca-proxy`（Railway にデプロイ）
+
+- 配布チャネルとブランチ:
+  - Beta: `beta` ブランチに push すると CI（Release Beta）が prerelease を公開（channel=beta, proxy=staging）
+  - Stable: `main` ブランチに push すると CI（Release Stable）が正式リリースを公開（channel=stable, proxy=production）
+
+- GitHub Secrets（`Daisuke134/anicca.ai`）:
+  - 署名/配布: `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_LINK`, `CSC_KEY_PASSWORD`
+  - プロキシURL: `PROXY_URL_PRODUCTION`, `PROXY_URL_STAGING`
+  - 備考: これらは CI 内でのみ使用。アプリ本体には秘匿情報は含まれない（公開可能なドメインのみ埋め込み）。
+
+- Proxy（Railway）環境:
+  - Staging / Production の 2 環境。`NODE_ENV` はサーバー挙動向け（ログ/最適化）で、Desktop の接続先切替は配布チャネルで制御（beta→staging, stable→production）。
+
+- Desktop の設定解決（今回の方針）:
+  - プロキシURLは、埋め込み `appConfig.proxy` → 環境変数（`PROXY_URL_PRODUCTION/STAGING`）→ 既定URL の順で解決。
+  - 更新チャネルは `UPDATE_CHANNEL` を最優先（なければ `NODE_ENV` で推定）。
+  - Beta は `allowPrerelease=true`、Stable は `false`。
+
+- 自動更新の動作:
+  - 初回は DMG でインストール。以降は `electron-updater` が GitHub Releases を定期チェックし、ZIP をサイレントDL。
+  - `autoInstallOnAppQuit=true` のためアプリ終了時に自動適用（ログ: `~/Library/Logs/anicca-agi/main.log`）。
+
+- 検証フロー（運用）:
+  1. 現ブランチで修正 → まず同ブランチに push（必須）
+  2. `beta` に push → CI が prerelease を公開 → インストールして起動/ログで確認
+  3. 版本を上げて再度 `beta` に push → 旧 beta が自動更新されるか確認
+  4. 問題なければ `main` に push → 本番リリースで最終確認

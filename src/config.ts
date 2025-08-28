@@ -1,12 +1,70 @@
 /**
  * Application configuration
- * 環境別の設定を管理
+ * 環境別の設定を管理（埋め込み → ENV → 既定URL の順で解決）
  */
 
-// プロキシサーバーのURL設定
-export const PROXY_URL = process.env.NODE_ENV === 'production'
-  ? 'https://anicca-proxy-production.up.railway.app'
-  : 'https://anicca-proxy-staging.up.railway.app';
+import * as fs from 'fs';
+import * as path from 'path';
+
+// CIが埋め込む想定のメタデータ
+type ProxyMeta = { production?: string; staging?: string };
+
+function readJsonSafe(p: string): any | undefined {
+  try {
+    return JSON.parse(fs.readFileSync(p, 'utf8'));
+  } catch {
+    return undefined;
+  }
+}
+
+// app.asar 内/開発時の両方で package.json を探す
+function loadEmbeddedProxy(): ProxyMeta | undefined {
+  // dist/config.js から見たルートの package.json
+  const nearDist = path.resolve(__dirname, '..', 'package.json');
+  // asar 直下の package.json（仮想FS経由で読める環境用）
+  const inAsar = process?.resourcesPath
+    ? path.join(process.resourcesPath, 'app.asar', 'package.json')
+    : undefined;
+  // 開発カレントの package.json
+  const inCwd = path.resolve(process.cwd(), 'package.json');
+
+  const candidates = [nearDist, inAsar, inCwd].filter(Boolean) as string[];
+  for (const p of candidates) {
+    const pkg = readJsonSafe(p);
+    if (!pkg) continue;
+    const embedded = pkg.appConfig?.proxy || pkg.extraMetadata?.appConfig?.proxy;
+    if (embedded?.production || embedded?.staging) return embedded;
+  }
+  return undefined;
+}
+
+// UPDATE_CHANNEL を最優先（beta/stable）。未指定時は NODE_ENV で推定。
+const UPDATE_CHANNEL =
+  (process.env.UPDATE_CHANNEL?.toLowerCase() === 'beta' && 'beta') ||
+  (process.env.UPDATE_CHANNEL?.toLowerCase() === 'stable' && 'stable') ||
+  (process.env.NODE_ENV === 'production' ? 'stable' : 'beta');
+
+const embedded = loadEmbeddedProxy();
+const envProduction = process.env.PROXY_URL_PRODUCTION;
+const envStaging = process.env.PROXY_URL_STAGING;
+
+function resolveProxyUrl(): string {
+  // 1) CI埋め込み最優先
+  if (embedded?.production && embedded?.staging) {
+    return UPDATE_CHANNEL === 'stable' ? embedded.production : embedded.staging;
+  }
+  // 2) ENV フォールバック
+  if (envProduction && envStaging) {
+    return UPDATE_CHANNEL === 'stable' ? envProduction : envStaging;
+  }
+  // 3) 既定URL（最後の砦）
+  return UPDATE_CHANNEL === 'stable'
+    ? 'https://anicca-proxy-production.up.railway.app'
+    : 'https://anicca-proxy-staging.up.railway.app';
+}
+
+// プロキシサーバーのURL設定（堅牢化）
+export const PROXY_URL = resolveProxyUrl();
 
 // ポート番号設定
 export const PORTS = {
@@ -54,6 +112,6 @@ export const APP_CONFIG = {
 
 // アップデート設定
 export const UPDATE_CONFIG = {
-  CHANNEL: process.env.NODE_ENV === 'production' ? 'stable' : 'beta',
+  CHANNEL: UPDATE_CHANNEL,
   CHECK_INTERVAL: 1000 * 60 * 60 * 4 // 4時間ごと
 };

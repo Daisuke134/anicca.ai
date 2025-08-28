@@ -161,22 +161,24 @@ async function initializeApp() {
 
     // 自動更新の初期化（配布ビルドのみ）
     if (app.isPackaged) {
+      // チャンネルに応じて prerelease の扱いを揃える
+      autoUpdater.allowPrerelease = UPDATE_CONFIG.CHANNEL !== 'stable';
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
       autoUpdater.channel = UPDATE_CONFIG.CHANNEL;
-      
+
       log.info(`✅ Auto-updater initialized with channel: ${UPDATE_CONFIG.CHANNEL}`);
-      
+
       // エラー時のログ記録（サイレント）
-        autoUpdater.on('error', (error) => {
-          log.error('Auto-updater error:', error);
-        });
-      
+      autoUpdater.on('error', (error) => {
+        log.error('Auto-updater error:', error);
+      });
+
       // 更新ダウンロード完了時のログ記録（サイレント）
       autoUpdater.on('update-downloaded', () => {
         log.info('Update downloaded silently');
       });
-      
+
       // 更新チェック開始
       autoUpdater.checkForUpdatesAndNotify();
     }

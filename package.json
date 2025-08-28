@@ -1,10 +1,6 @@
 {
   "name": "anicca-agi",
-<<<<<<< HEAD
   "version": "0.6.3-beta.5",
-=======
-  "version": "0.6.3-beta.5",
->>>>>>> f69e9b5 (fix(updater): use app.isPackaged; public GH provider; exclude package.json from files; bump to 0.6.3-beta.5)
   "description": "anicca - AI Screen Narrator Desktop App",
   "main": "dist/main-voice-simple.js",
   "homepage": "https://anicca.ai",

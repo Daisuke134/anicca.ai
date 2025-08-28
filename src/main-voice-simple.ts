@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -15,6 +15,16 @@ import { createAniccaAgent } from './agents/mainAgent';
 
 // 環境変数を読み込み
 dotenv.config();
+// ログ初期化（全環境でファイル出力）
+const log = require('electron-log/main');
+log.initialize();
+log.transports.file.level = process.env.NODE_ENV === 'development' ? 'debug' : 'info';
+// すべてのconsole出力をelectron-logに流す（main.logに記録）
+;(console as any).log = (...args: any[]) => log.info(...args);
+;(console as any).info = (...args: any[]) => log.info(...args);
+;(console as any).warn = (...args: any[]) => log.warn(...args);
+;(console as any).error = (...args: any[]) => log.error(...args);
+;(console as any).debug = (...args: any[]) => log.debug(...args);
 
 // グローバル変数
 let tray: Tray | null = null;
@@ -25,6 +35,7 @@ let currentUserId: string | null = null;
 let isListening = false;
 let authService: DesktopAuthService | null = null;
 let powerSaveBlockerId: number | null = null;
+let updateCheckIntervalId: NodeJS.Timeout | null = null;
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -38,6 +49,17 @@ async function initializeApp() {
   // トレースを無効化（MCPツールの取得でエラーになるため）
   setTracingDisabled(true);
   
+  // 実行時のチャンネル/接続先を可視化
+  try {
+    // 遅延importで循環依存を避ける
+    const { UPDATE_CONFIG, PROXY_URL, APP_VERSION_STR } = require('./config');
+    console.log(`🔎 App Version: ${APP_VERSION_STR}`);
+    console.log(`🔎 Update Channel: ${UPDATE_CONFIG.CHANNEL}`);
+    console.log(`🔎 Proxy URL: ${PROXY_URL}`);
+  } catch (e) {
+    console.warn('⚠️ Failed to log runtime config:', e);
+  }
+
   console.log('🎩 Anicca Voice Assistant Starting...');
   
   try {
@@ -151,33 +173,62 @@ async function initializeApp() {
     createSystemTray();
     console.log('✅ System tray created');
     
-    // ログ初期化（全環境共通）
-    const log = require('electron-log');
+    // ログ設定（本番はinfo、devは上でdebugに設定済み）
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
 
-    // 自動更新の初期化（本番環境のみ）
-    if (process.env.NODE_ENV === 'production') {
+    // 自動更新の初期化（配布ビルドのみ）
+    if (app.isPackaged) {
+      // チャンネル指定（環境変数があれば優先、なければ設定値）
+      const updateChannel = process.env.UPDATE_CHANNEL || UPDATE_CONFIG.CHANNEL;
+      autoUpdater.channel = updateChannel;
+
+      // プレリリース許可: バージョンがプレリリース（例: 0.6.3-beta.x）またはbetaチャンネル時
+      const isPrereleaseVersion = /-/.test(app.getVersion());
+      autoUpdater.allowPrerelease = isPrereleaseVersion || updateChannel === 'beta';
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
-      autoUpdater.channel = UPDATE_CONFIG.CHANNEL;
-      
-      log.info(`✅ Auto-updater initialized with channel: ${UPDATE_CONFIG.CHANNEL}`);
-      
+
+      log.info(`✅ Auto-updater initialized (channel=${updateChannel}, allowPrerelease=${autoUpdater.allowPrerelease})`);
+
       // エラー時のログ記録（サイレント）
       autoUpdater.on('error', (error) => {
         log.error('Auto-updater error:', error);
       });
-      
-      // 更新ダウンロード完了時のログ記録（サイレント）
-      autoUpdater.on('update-downloaded', () => {
-        log.info('Update downloaded silently');
+
+      // 更新ダウンロード完了時: 再起動プロンプトを表示
+      autoUpdater.on('update-downloaded', async (info) => {
+        try {
+          log.info(`Update downloaded: ${info?.version || ''}`);
+          const result = await dialog.showMessageBox({
+            type: 'info',
+            buttons: ['今すぐ再起動', '後で'],
+            defaultId: 0,
+            cancelId: 1,
+            title: 'アップデートの準備ができました',
+            message: '新しいバージョンをインストールできます。今すぐ再起動して適用しますか？'
+          });
+          if (result.response === 0) {
+            autoUpdater.quitAndInstall(false, true);
+          }
+        } catch (e) {
+          log.warn('Failed to show restart prompt after update download', e);
+        }
       });
-      
-      // 更新チェック開始
+
+      // 起動時に一度チェック
       autoUpdater.checkForUpdatesAndNotify();
+
+      // 定期チェック（設定値に基づく）
+      updateCheckIntervalId = setInterval(() => {
+        try {
+          autoUpdater.checkForUpdatesAndNotify();
+        } catch (e) {
+          log.warn('Auto-update periodic check failed', e);
+        }
+      }, UPDATE_CONFIG.CHECK_INTERVAL);
     }
-    // 開発環境では何も出力しない
+    // 非パッケージ（開発）時は初期化しない
     
     // 通知
     // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');
@@ -191,6 +242,10 @@ async function initializeApp() {
     
     // アプリ終了時にブロッカーを解除
     app.on('before-quit', () => {
+      if (updateCheckIntervalId) {
+        clearInterval(updateCheckIntervalId);
+        updateCheckIntervalId = null;
+      }
       if (powerSaveBlockerId !== null) {
         powerSaveBlocker.stop(powerSaveBlockerId);
         console.log('🛡️ Power Save Blocker stopped');
@@ -578,21 +633,39 @@ function createHiddenWindow() {
 
 // システムトレイの作成
 function createSystemTray() {
-  const iconPath = app.isPackaged 
-    ? path.join(process.resourcesPath, 'assets', 'tray-icon-gpt.png')
-    : path.join(__dirname, '../assets/tray-icon-gpt.png');
-  
+  // 新しい配置: assets/desktop/tray-icon.png（@2xあり）
+  // asar内のパス(__dirname)を優先し、次にresourcesPathをフォールバック
+  const iconCandidates = [
+    path.join(__dirname, '../assets/desktop/tray-icon.png'),
+    path.join(process.resourcesPath, 'assets', 'desktop', 'tray-icon.png'),
+    path.join(process.resourcesPath, 'desktop', 'tray-icon.png')
+  ];
+
+  let trayIconPath = iconCandidates.find(p => {
+    try { return fs.existsSync(p); } catch { return false; }
+  });
+
+  if (!trayIconPath) {
+    console.warn('⚠️ Tray icon file not found in candidates. Using empty image.');
+  }
+
   let trayIcon;
   try {
-    trayIcon = nativeImage.createFromPath(iconPath);
+    trayIcon = trayIconPath ? nativeImage.createFromPath(trayIconPath) : nativeImage.createEmpty();
     if (trayIcon.isEmpty()) {
+      console.warn('⚠️ Loaded tray image is empty. Falling back to empty image.');
       trayIcon = nativeImage.createEmpty();
     }
   } catch (error) {
-    console.warn('⚠️ Tray icon not found, using default');
+    console.warn('⚠️ Tray icon load failed, using empty image:', error);
     trayIcon = nativeImage.createEmpty();
   }
-  
+
+  // macOSではテンプレート画像として扱うことでライト/ダークに自動追従させる
+  if (process.platform === 'darwin') {
+    try { trayIcon.setTemplateImage(true); } catch {}
+  }
+
   tray = new Tray(trayIcon);
   updateTrayMenu();
   tray.setToolTip('Anicca - Say "アニッチャ" to begin');
@@ -648,14 +721,6 @@ function updateTrayMenu() {
     }] : []),
     { type: 'separator' },
     {
-      label: 'Show Demo Page',
-      click: () => {
-        if (hiddenWindow) {
-          hiddenWindow.show();
-        }
-      }
-    },
-    {
       label: 'Toggle Developer Tools',
       click: () => {
         if (hiddenWindow) {
@@ -665,13 +730,6 @@ function updateTrayMenu() {
             hiddenWindow.webContents.openDevTools({ mode: 'detach' });
           }
         }
-      }
-    },
-    { type: 'separator' },
-    {
-      label: 'About Anicca',
-      click: () => {
-        showNotification('Anicca v0.6.2', 'Voice AI Assistant\nSay "アニッチャ" to start!');
       }
     },
     { type: 'separator' },
@@ -916,7 +974,7 @@ async function executeScheduledTask(task: any) {
   });
   
   ws.on('message', (data) => {
-    console.log('📨 Response from server:', data);
+    // console.log('📨 Response from server:', data); // 冗長な出力を抑制
   });
   
   ws.on('error', (error) => {

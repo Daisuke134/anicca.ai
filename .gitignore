@@ -113,7 +113,8 @@ highlights_cache.json
 .netlify
 
 # 別リポジトリで管理しているフォルダ（絶対にプッシュしない！）
-# anicca-proxy-slack/  # 一時的にコメントアウト（開発中）
-# anicca-web/          # 一時的にコメントアウト（開発中）
-# openai-agents-js/    # 一時的にコメントアウト（開発中）
-# slack-mcp-server/    # 一時的にコメントアウト（開発中）
+anicca-proxy-slack/
+anicca-web/
+openai-agents-js/
+slack-mcp-server/
+composio/

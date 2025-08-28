@@ -17,31 +17,39 @@ function readJsonSafe(p: string): any | undefined {
   }
 }
 
-// app.asar 内/開発時の両方で package.json を探す
-function loadEmbeddedProxy(): ProxyMeta | undefined {
-  // dist/config.js から見たルートの package.json
-  const nearDist = path.resolve(__dirname, '..', 'package.json');
-  // asar 直下の package.json（仮想FS経由で読める環境用）
+// 近傍/asar/cwd の順で package.json を探索して情報取得
+function readPkg(): any | undefined {
+  const nearDist = path.resolve(__dirname, '..', 'package.json'); // app.asar/package.json を想定
   const inAsar = process?.resourcesPath
     ? path.join(process.resourcesPath, 'app.asar', 'package.json')
     : undefined;
-  // 開発カレントの package.json
-  const inCwd = path.resolve(process.cwd(), 'package.json');
-
+  const inCwd = path.resolve(process.cwd(), 'package.json'); // 開発時
   const candidates = [nearDist, inAsar, inCwd].filter(Boolean) as string[];
   for (const p of candidates) {
-    const pkg = readJsonSafe(p);
-    if (!pkg) continue;
-    const embedded = pkg.appConfig?.proxy || pkg.extraMetadata?.appConfig?.proxy;
-    if (embedded?.production || embedded?.staging) return embedded;
+    const v = readJsonSafe(p);
+    if (v) return v;
   }
   return undefined;
 }
 
-// UPDATE_CHANNEL を最優先（beta/stable）。未指定時は NODE_ENV で推定。
+function loadEmbeddedProxy(): ProxyMeta | undefined {
+  const pkg = readPkg();
+  if (!pkg) return undefined;
+  const embedded = pkg.appConfig?.proxy || pkg.extraMetadata?.appConfig?.proxy;
+  if (embedded?.production || embedded?.staging) return embedded;
+  return undefined;
+}
+
+// アプリのバージョン文字列（ログ/推定用）
+const PKG = readPkg() || {};
+export const APP_VERSION_STR: string = PKG.version || '';
+
+// UPDATE_CHANNEL を最優先。未指定なら version に '-' があれば beta、無ければ stable。
+// それも無ければ NODE_ENV で推定。
 const UPDATE_CHANNEL =
   (process.env.UPDATE_CHANNEL?.toLowerCase() === 'beta' && 'beta') ||
   (process.env.UPDATE_CHANNEL?.toLowerCase() === 'stable' && 'stable') ||
+  (/-/.test(APP_VERSION_STR) ? 'beta' : undefined) ||
   (process.env.NODE_ENV === 'production' ? 'stable' : 'beta');
 
 const embedded = loadEmbeddedProxy();
@@ -53,7 +61,7 @@ function resolveProxyUrl(): string {
   if (embedded?.production && embedded?.staging) {
     return UPDATE_CHANNEL === 'stable' ? embedded.production : embedded.staging;
   }
-  // 2) ENV フォールバック
+  // 2) ENV フォールバック（配布DMGでは通常未設定。開発/CIの緊急回避向け）
   if (envProduction && envStaging) {
     return UPDATE_CHANNEL === 'stable' ? envProduction : envStaging;
   }
@@ -102,11 +110,8 @@ export const API_ENDPOINTS = {
 
 // アプリケーション設定
 export const APP_CONFIG = {
-  // 開発モード判定
   IS_DEV: process.env.NODE_ENV !== 'production',
-  // デスクトップモード
   DESKTOP_MODE: true,
-  // プロキシ使用設定
   USE_PROXY: process.env.USE_PROXY !== 'false'
 };
 

@@ -50,6 +50,7 @@
     "@anthropic-ai/claude-code": "^1.0.24",
     "@composio/core": "^0.1.45",
     "@google-cloud/text-to-speech": "^6.1.0",
+    "@modelcontextprotocol/server-filesystem": "*",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@modelcontextprotocol/server-filesystem": "^2025.8.21",
     "@openai/agents": "^0.0.16",

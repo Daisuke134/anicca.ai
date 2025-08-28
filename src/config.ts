@@ -1,23 +1,30 @@
 /**
- * Application configuration
- * 環境別の設定を管理
+ * Application configuration (strict)
+ * - URLs are injected via extraMetadata at build time (CI).
+ * - No hardcoded fallback. Missing config -> throw.
  */
 
-// アプリバージョン（ビルド時に固定化される）
-// package.json はビルド成果物に同梱される設定（electron-builder-voice.ymlのfiles）
-// これにより、配布時も正確なバージョンを参照できる
 // eslint-disable-next-line @typescript-eslint/no-var-requires
-const { version: APP_VERSION } = require('../package.json');
-export const APP_VERSION_STR: string = APP_VERSION;
+const pkg = require('../package.json');
 
-// チャンネル判定：環境変数UPDATE_CHANNELがあれば最優先、なければバージョンのプレリリース有無で決定
-const IS_PRERELEASE = /-/.test(APP_VERSION_STR);
-const RUNTIME_CHANNEL = process.env.UPDATE_CHANNEL || (IS_PRERELEASE ? 'beta' : 'stable');
+const APP_VERSION_STR: string = pkg.version as string;
+const appConfig = (pkg.appConfig || {}) as { proxy?: { production?: string; staging?: string } };
+const proxy = appConfig.proxy || {};
 
-// プロキシサーバーのURL設定（チャンネルで接続先を分岐）
-const PRODUCTION_PROXY = 'https://anicca-proxy-production.up.railway.app';
-const STAGING_PROXY = 'https://anicca-proxy-staging.up.railway.app';
-export const PROXY_URL = RUNTIME_CHANNEL === 'beta' ? STAGING_PROXY : PRODUCTION_PROXY;
+if (!proxy.production || !proxy.staging) {
+  throw new Error('Proxy URLs are not embedded. Ensure CI injects appConfig.proxy.{production,staging}.');
+}
+
+// チャンネル: UPDATE_CHANNELがあれば優先、なければバージョンに'-'が含まれる場合はbeta、そうでなければstable
+const CHANNEL = process.env.UPDATE_CHANNEL || (/-/.test(APP_VERSION_STR) ? 'beta' : 'stable');
+
+export const UPDATE_CONFIG = {
+  CHANNEL,
+  CHECK_INTERVAL: 1000 * 60 * 60 * 4 // 4時間ごと
+};
+
+export const PROXY_URL = CHANNEL === 'beta' ? proxy.staging! : proxy.production!;
+export { APP_VERSION_STR };
 
 // ポート番号設定
 export const PORTS = {
@@ -55,16 +62,7 @@ export const API_ENDPOINTS = {
 
 // アプリケーション設定
 export const APP_CONFIG = {
-  // 開発モード判定
   IS_DEV: process.env.NODE_ENV !== 'production',
-  // デスクトップモード
   DESKTOP_MODE: true,
-  // プロキシ使用設定
   USE_PROXY: process.env.USE_PROXY !== 'false'
-};
-
-// アップデート設定
-export const UPDATE_CONFIG = {
-  CHANNEL: RUNTIME_CHANNEL,
-  CHECK_INTERVAL: 1000 * 60 * 60 * 4 // 4時間ごと
 };

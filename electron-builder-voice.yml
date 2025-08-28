@@ -58,6 +58,6 @@ publish:
   - provider: github
     owner: Daisuke134
     repo: anicca.ai
-    private: true
+    private: false
     releaseType: release
 generateUpdatesFilesForAllChannels: true

@@ -9,20 +9,16 @@ files:
   - dist/agents/**/*
   - dist/recorder.html
   - node_modules/**/*
-  - assets/tray-icon-gpt.png
-  - assets/GPT.png
-  - assets/icon.icns
-  - server.key
-  - server.cert
-  - anicca-proxy-slack/src/**/*.js
-  - anicca-proxy-slack/src/**/*.json
+  # Desktop app assets (tray + app icon)
+  - assets/desktop/tray-icon.png
+  - assets/desktop/tray-icon@2x.png
+  - assets/desktop/icon.icns
+  # Exclude entire web and proxy projects from bundle
   - "!anicca-web/**"
-  - "!anicca-proxy-slack/node_modules/**"
-  - "!anicca-proxy-slack/.git/**"
-  - "!anicca-proxy-slack/.env*"
-  - "!anicca-proxy-slack/dist/**"
-  - "!anicca-proxy-slack/tests/**"
+  - "!anicca-proxy-slack/**"
+  # General excludes for slimming node_modules
   - "!**/.git"
+  - "!**/.env"
   - "!**/node_modules/*/{CHANGELOG.md,README.md,README,readme.md,readme}"
   - "!**/node_modules/*/{test,__tests__,tests,powered-test,example,examples}"
   - "!dist/ui/**"
@@ -32,7 +28,7 @@ asarUnpack:
   - "**/node_modules/@modelcontextprotocol/server-filesystem/**/*"
 mac:
   category: public.app-category.productivity
-  icon: assets/icon.icns
+  icon: assets/desktop/icon.icns
   hardenedRuntime: true
   gatekeeperAssess: false
   entitlements: build/entitlements.mac.plist

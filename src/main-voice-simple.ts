@@ -177,8 +177,8 @@ async function initializeApp() {
     log.transports.file.level = 'info';
     autoUpdater.logger = log;
 
-    // 自動更新の初期化（本番環境のみ）
-    if (process.env.NODE_ENV === 'production') {
+    // 自動更新の初期化（配布ビルドのみ）
+    if (app.isPackaged) {
       // チャンネル指定（環境変数があれば優先、なければ設定値）
       const updateChannel = process.env.UPDATE_CHANNEL || UPDATE_CONFIG.CHANNEL;
       autoUpdater.channel = updateChannel;
@@ -229,7 +229,7 @@ async function initializeApp() {
         }
       }, UPDATE_CONFIG.CHECK_INTERVAL);
     }
-    // 開発環境では何も出力しない
+    // 非パッケージ（開発）時は初期化しない
     
     // 通知
     // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');

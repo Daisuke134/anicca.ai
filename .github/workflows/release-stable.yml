@@ -43,5 +43,6 @@ jobs:
           PROXY_URL_STAGING="${{ secrets.PROXY_URL_STAGING }}" \
           npx electron-builder --mac --config electron-builder-voice.yml --publish always \
             -c.publish.releaseType=release \
+            -c.publish.channel=stable \
             -c.extraMetadata.appConfig.proxy.production=$PROXY_URL_PRODUCTION \
             -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING

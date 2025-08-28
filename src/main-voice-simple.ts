@@ -186,7 +186,6 @@ async function initializeApp() {
       // プレリリース許可: バージョンがプレリリース（例: 0.6.3-beta.x）またはbetaチャンネル時
       const isPrereleaseVersion = /-/.test(app.getVersion());
       autoUpdater.allowPrerelease = isPrereleaseVersion || updateChannel === 'beta';
-
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
 

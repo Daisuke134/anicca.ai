@@ -36,6 +36,8 @@ jobs:
       - name: Build and Publish (beta)
         run: |
           npm run build:voice
+          # Pre-embed proxy URLs into package.json (no repo change)
+          node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.appConfig=p.appConfig||{}; p.appConfig.proxy={ production: process.env.PROXY_URL_PRODUCTION, staging: process.env.PROXY_URL_STAGING }; fs.writeFileSync('package.json', JSON.stringify(p,null,2));"
           UPDATE_CHANNEL=beta \
           NODE_ENV=production \
           PROXY_URL_PRODUCTION="${{ secrets.PROXY_URL_PRODUCTION }}" \

@@ -44,13 +44,16 @@ function loadEmbeddedProxy(): ProxyMeta | undefined {
 const PKG = readPkg() || {};
 export const APP_VERSION_STR: string = PKG.version || '';
 
-// UPDATE_CHANNEL を最優先。未指定なら version に '-' があれば beta、無ければ stable。
-// それも無ければ NODE_ENV で推定。
+// チャンネル決定ルール:
+// - 本番(NODE_ENV=production): ランタイムENVは無視。バージョンに '-' があれば beta、無ければ stable。
+// - 開発: ランタイムENV(UPDATE_CHANNEL)で上書き可。なければバージョンで推定。
+const IS_PROD = process.env.NODE_ENV === 'production';
+const VERSION_HAS_PRERELEASE = /-/.test(APP_VERSION_STR);
+const ENV_CH = IS_PROD ? undefined : process.env.UPDATE_CHANNEL?.toLowerCase();
 const UPDATE_CHANNEL =
-  (process.env.UPDATE_CHANNEL?.toLowerCase() === 'beta' && 'beta') ||
-  (process.env.UPDATE_CHANNEL?.toLowerCase() === 'stable' && 'stable') ||
-  (/-/.test(APP_VERSION_STR) ? 'beta' : undefined) ||
-  (process.env.NODE_ENV === 'production' ? 'stable' : 'beta');
+  (ENV_CH === 'beta' && 'beta') ||
+  (ENV_CH === 'stable' && 'stable') ||
+  (VERSION_HAS_PRERELEASE ? 'beta' : 'stable');
 
 const embedded = loadEmbeddedProxy();
 const envProduction = process.env.PROXY_URL_PRODUCTION;

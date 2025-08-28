@@ -179,13 +179,13 @@ async function initializeApp() {
 
     // 自動更新の初期化（配布ビルドのみ）
     if (app.isPackaged) {
-      // チャンネル指定（環境変数があれば優先、なければ設定値）
-      const updateChannel = process.env.UPDATE_CHANNEL || UPDATE_CONFIG.CHANNEL;
+      // 本番配布はconfigのチャンネル決定に従う（ランタイムENVでは上書きしない）
+      const updateChannel = UPDATE_CONFIG.CHANNEL;
       autoUpdater.channel = updateChannel;
 
-      // プレリリース許可: バージョンがプレリリース（例: 0.6.3-beta.x）またはbetaチャンネル時
+      // betaチャンネルまたはプレリリース版のみ、prereleaseを許可
       const isPrereleaseVersion = /-/.test(app.getVersion());
-      autoUpdater.allowPrerelease = isPrereleaseVersion || updateChannel === 'beta';
+      autoUpdater.allowPrerelease = isPrereleaseVersion || updateChannel !== 'stable';
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
 

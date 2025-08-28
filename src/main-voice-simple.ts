@@ -159,8 +159,8 @@ async function initializeApp() {
       path.join(os.homedir(), 'Library', 'Logs', 'anicca-agi', 'main.log');
     autoUpdater.logger = log;
 
-    // 自動更新の初期化（本番環境のみ）
-    if (process.env.NODE_ENV === 'production') {
+    // 自動更新の初期化（配布ビルドのみ）
+    if (app.isPackaged) {
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
       autoUpdater.channel = UPDATE_CONFIG.CHANNEL;
@@ -168,9 +168,9 @@ async function initializeApp() {
       log.info(`✅ Auto-updater initialized with channel: ${UPDATE_CONFIG.CHANNEL}`);
       
       // エラー時のログ記録（サイレント）
-      autoUpdater.on('error', (error) => {
-        log.error('Auto-updater error:', error);
-      });
+        autoUpdater.on('error', (error) => {
+          log.error('Auto-updater error:', error);
+        });
       
       // 更新ダウンロード完了時のログ記録（サイレント）
       autoUpdater.on('update-downloaded', () => {
@@ -180,7 +180,7 @@ async function initializeApp() {
       // 更新チェック開始
       autoUpdater.checkForUpdatesAndNotify();
     }
-    // 開発環境では何も出力しない
+    // 非パッケージ（開発）時は初期化しない
     
     // 通知
     // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');

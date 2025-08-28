@@ -9,7 +9,6 @@ files:
   - dist/agents/**/*
   - dist/recorder.html
   - node_modules/**/*
-  - package.json
   - assets/tray-icon-gpt.png
   - assets/GPT.png
   - assets/icon.icns
@@ -62,6 +61,6 @@ publish:
   - provider: github
     owner: Daisuke134
     repo: anicca.ai
-    private: true
+    private: false
     releaseType: release
 generateUpdatesFilesForAllChannels: true

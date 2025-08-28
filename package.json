@@ -1,6 +1,6 @@
 {
   "name": "anicca-agi",
-  "version": "0.6.2",
+  "version": "0.6.3-beta.1",
   "description": "anicca - AI Screen Narrator Desktop App",
   "main": "dist/main-voice-simple.js",
   "homepage": "https://anicca.ai",
@@ -50,6 +50,7 @@
     "@anthropic-ai/claude-code": "^1.0.24",
     "@composio/core": "^0.1.45",
     "@google-cloud/text-to-speech": "^6.1.0",
+    "@modelcontextprotocol/server-filesystem": "*",
     "@modelcontextprotocol/sdk": "^1.12.1",
     "@openai/agents": "^0.0.16",
     "@openai/agents-realtime": "^0.0.16",

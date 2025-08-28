@@ -70,3 +70,56 @@
   2. `beta` に push → CI が prerelease を公開 → インストールして起動/ログで確認
   3. 版本を上げて再度 `beta` に push → 旧 beta が自動更新されるか確認
   4. 問題なければ `main` に push → 本番リリースで最終確認
+
+## Release Strategy (Trunk + Tags)
+
+- 方針: トランクベース（`main` を単一の真実）+ タグ駆動で `beta`/`stable` を配布
+- 流れ:
+  - 開発: 短命 `feature/<topic>` → PR → `main` にマージ（小さく速く）
+  - Beta配布: 対象コミットにプレリリースタグ `vX.Y.Z-beta.N` を付与 → CI が prerelease 公開（channel=beta, proxy=staging）
+  - Stable配布: 検証OKの同コミット（または軽微修正コミット）に安定タグ `vX.Y.Z` を付与 → CI が正式リリース（channel=stable, proxy=production）
+- 理由:
+  - ドリフト防止（`main` 1本で履歴が明快）
+  - リリース粒度や履歴の可視性が高く、ロールバック容易
+  - `beta`/`stable` 切替がタグで一意に決まり、CIも単純
+
+### 具体例（新機能「クイック返信」）
+
+1) 実装～`main`取り込み
+```
+git switch -c feature/quick-reply
+# 実装・テスト
+git add -A && git commit -m "feat(quick-reply): support inline reply"
+git push -u origin HEAD
+# → GitHubでPR作成 → CI/レビュー → mainへマージ
+```
+
+2) Beta配布（検証用）
+```
+git switch main && git pull --ff-only
+# バージョンをプレリリースへ（npm versionでもOK）
+git tag v0.6.4-beta.1
+git push origin v0.6.4-beta.1
+# → CI: Release Beta が走り、prerelease を公開
+```
+
+3) 検証後にStable配布
+```
+# 不具合なければ同コミット、修正あればそのコミットに対して
+git tag v0.6.4
+git push origin v0.6.4
+# → CI: Release Stable が走り、正式リリースを公開
+```
+
+4) 運用Tips
+- ブランチ保護: `main` はPR必須・レビュー必須に。`beta` ブランチは不要（タグ運用のため）
+- バージョン: npm/package.json の version も `0.6.4-beta.1` → `0.6.4` の順で整合
+- ログ確認: `~/Library/Logs/anicca-agi/main.log` でチャネル・更新適用を確認
+
+### 自動更新の検証手順（最短）
+- ベータ公開後、1–2分ほど待つ（Releasesのフィード反映ラグ）
+- アプリを終了→再起動（起動時に即チェック）
+- ログで以下を確認:
+  - `Auto-updater initialized (channel=beta, allowPrerelease=true)`
+  - `Found version X.Y.Z-beta.N` → `Downloading update ...` → `Update downloaded: X.Y.Z-beta.N`
+  - ダイアログ「今すぐ再起動/後で」→ 今すぐ再起動で即適用（終了時でも適用）

@@ -49,6 +49,17 @@ async function initializeApp() {
   // トレースを無効化（MCPツールの取得でエラーになるため）
   setTracingDisabled(true);
   
+  // 実行時のチャンネル/接続先を可視化
+  try {
+    // 遅延importで循環依存を避ける
+    const { UPDATE_CONFIG, PROXY_URL, APP_VERSION_STR } = require('./config');
+    console.log(`🔎 App Version: ${APP_VERSION_STR}`);
+    console.log(`🔎 Update Channel: ${UPDATE_CONFIG.CHANNEL}`);
+    console.log(`🔎 Proxy URL: ${PROXY_URL}`);
+  } catch (e) {
+    console.warn('⚠️ Failed to log runtime config:', e);
+  }
+
   console.log('🎩 Anicca Voice Assistant Starting...');
   
   try {

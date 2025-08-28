@@ -3,10 +3,21 @@
  * 環境別の設定を管理
  */
 
-// プロキシサーバーのURL設定
-export const PROXY_URL = process.env.NODE_ENV === 'production'
-  ? 'https://anicca-proxy-production.up.railway.app'
-  : 'https://anicca-proxy-staging.up.railway.app';
+// アプリバージョン（ビルド時に固定化される）
+// package.json はビルド成果物に同梱される設定（electron-builder-voice.ymlのfiles）
+// これにより、配布時も正確なバージョンを参照できる
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const { version: APP_VERSION } = require('../package.json');
+export const APP_VERSION_STR: string = APP_VERSION;
+
+// チャンネル判定：環境変数UPDATE_CHANNELがあれば最優先、なければバージョンのプレリリース有無で決定
+const IS_PRERELEASE = /-/.test(APP_VERSION_STR);
+const RUNTIME_CHANNEL = process.env.UPDATE_CHANNEL || (IS_PRERELEASE ? 'beta' : 'stable');
+
+// プロキシサーバーのURL設定（チャンネルで接続先を分岐）
+const PRODUCTION_PROXY = 'https://anicca-proxy-production.up.railway.app';
+const STAGING_PROXY = 'https://anicca-proxy-staging.up.railway.app';
+export const PROXY_URL = RUNTIME_CHANNEL === 'beta' ? STAGING_PROXY : PRODUCTION_PROXY;
 
 // ポート番号設定
 export const PORTS = {
@@ -54,6 +65,6 @@ export const APP_CONFIG = {
 
 // アップデート設定
 export const UPDATE_CONFIG = {
-  CHANNEL: process.env.UPDATE_CHANNEL || (process.env.NODE_ENV === 'production' ? 'stable' : 'beta'),
+  CHANNEL: RUNTIME_CHANNEL,
   CHECK_INTERVAL: 1000 * 60 * 60 * 4 // 4時間ごと
 };

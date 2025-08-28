@@ -31,5 +31,11 @@ jobs:
       - name: Build and Publish (beta)
         run: |
           npm run build:voice
-          UPDATE_CHANNEL=beta NODE_ENV=production npx electron-builder --mac --config electron-builder-voice.yml --publish always \
-            -c.publish.releaseType=prerelease
+          UPDATE_CHANNEL=beta \
+          NODE_ENV=production \
+          PROXY_URL_PRODUCTION="${{ secrets.PROXY_URL_PRODUCTION }}" \
+          PROXY_URL_STAGING="${{ secrets.PROXY_URL_STAGING }}" \
+          npx electron-builder --mac --config electron-builder-voice.yml --publish always \
+            -c.publish.releaseType=prerelease \
+            -c.extraMetadata.appConfig.proxy.production=$PROXY_URL_PRODUCTION \
+            -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING

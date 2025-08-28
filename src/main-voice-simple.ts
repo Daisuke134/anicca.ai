@@ -179,18 +179,17 @@ async function initializeApp() {
 
     // 自動更新の初期化（配布ビルドのみ）
     if (app.isPackaged) {
-      // 本番配布はconfigのチャンネル決定に従う（ランタイムENVでは上書きしない）
-      // GitHub Releasesのデフォルトはlatestのため、stableはlatestにマッピング
-      const feedChannel = UPDATE_CONFIG.CHANNEL === 'stable' ? 'latest' : UPDATE_CONFIG.CHANNEL;
+      // フィードは常に latest を使用（安定・ベータともに latest-mac.yml を参照）
+      const feedChannel = 'latest';
       autoUpdater.channel = feedChannel;
 
-      // betaチャンネルまたはプレリリース版のみ、prereleaseを許可（判定は論理チャンネルで）
+      // beta相当（またはプレリリース版）のみ、prereleaseを許可（安定はfalse）
       const isPrereleaseVersion = /-/.test(app.getVersion());
       autoUpdater.allowPrerelease = isPrereleaseVersion || UPDATE_CONFIG.CHANNEL !== 'stable';
       autoUpdater.autoDownload = true;
       autoUpdater.autoInstallOnAppQuit = true;
 
-      log.info(`✅ Auto-updater initialized (channel=${UPDATE_CONFIG.CHANNEL}, allowPrerelease=${autoUpdater.allowPrerelease})`);
+      log.info(`✅ Auto-updater initialized (channel=${UPDATE_CONFIG.CHANNEL}, feed=latest, allowPrerelease=${autoUpdater.allowPrerelease})`);
 
       // エラー時のログ記録（サイレント）
       autoUpdater.on('error', (error) => {

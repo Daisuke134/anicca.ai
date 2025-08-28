@@ -113,8 +113,7 @@ highlights_cache.json
 .netlify
 
 # 別リポジトリで管理しているフォルダ（絶対にプッシュしない！）
-anicca-proxy-slack/
-anicca-web/
+# モノレポ化に伴い web/api は管理対象に変更
 openai-agents-js/
 slack-mcp-server/
 composio/

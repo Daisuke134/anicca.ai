@@ -1,5 +1,5 @@
 [build]
-  base = "landing"
+  base = "apps/landing"
   publish = "."
   command = ""
 

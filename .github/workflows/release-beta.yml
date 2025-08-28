@@ -4,6 +4,10 @@ on:
   push:
     branches: [ "beta" ]
 
+defaults:
+  run:
+    working-directory: apps/desktop
+
 jobs:
   build:
     runs-on: macos-latest

@@ -49,11 +49,12 @@ export const APP_VERSION_STR: string = PKG.version || '';
 // - 開発: ランタイムENV(UPDATE_CHANNEL)で上書き可。なければバージョンで推定。
 const IS_PROD = process.env.NODE_ENV === 'production';
 const VERSION_HAS_PRERELEASE = /-/.test(APP_VERSION_STR);
+// 開発時は既定で beta（staging）を指す
+const DEV_DEFAULT_CHANNEL = 'beta';
 const ENV_CH = IS_PROD ? undefined : process.env.UPDATE_CHANNEL?.toLowerCase();
-const UPDATE_CHANNEL =
-  (ENV_CH === 'beta' && 'beta') ||
-  (ENV_CH === 'stable' && 'stable') ||
-  (VERSION_HAS_PRERELEASE ? 'beta' : 'stable');
+const UPDATE_CHANNEL = IS_PROD
+  ? (VERSION_HAS_PRERELEASE ? 'beta' : 'stable')
+  : (ENV_CH === 'beta' || ENV_CH === 'stable' ? ENV_CH : DEV_DEFAULT_CHANNEL);
 
 const embedded = loadEmbeddedProxy();
 const envProduction = process.env.PROXY_URL_PRODUCTION;

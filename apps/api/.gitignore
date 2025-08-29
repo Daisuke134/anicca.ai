@@ -31,3 +31,4 @@ yarn-error.log*
 
 # Token storage
 .tokens.json
+.npmrc

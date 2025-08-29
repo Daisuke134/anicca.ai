@@ -149,6 +149,18 @@ export class AniccaSessionManager {
           if ((global as any).onUserAuthenticated) {
             (global as any).onUserAuthenticated(user);
           }
+
+          // 認証完了後、リモートMCP（Google Calendar）をtoolsに反映するためセッションを再初期化
+          try {
+            await this.disconnect();
+            await this.initialize();
+            if (this.apiKey) {
+              await this.connect(this.apiKey);
+            }
+            console.log('🔄 Session reinitialized after OAuth completion');
+          } catch (e) {
+            console.error('Failed to reinitialize session after auth:', e);
+          }
         }
         
         res.json({ success: true });

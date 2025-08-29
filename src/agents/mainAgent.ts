@@ -1,8 +1,9 @@
 import { RealtimeAgent } from '@openai/agents/realtime';
-import { getAllMcpTools, withTrace, setTracingDisabled } from '@openai/agents';
+import { getAllMcpTools, withTrace, setTracingDisabled, hostedMcpTool } from '@openai/agents';
 import { allTools } from './tools';
 import { getMCPTools } from './mcpServers';
 // import { getGoogleCalendarTools } from './googleCalendarMCP';
+import { resolveGoogleCalendarMcp } from './remoteMcp';
 
 // voiceServer.tsから完全移植したinstructions
 const ANICCA_INSTRUCTIONS = `
@@ -420,12 +421,30 @@ export const createAniccaAgent = async (userId?: string | null) => {
   
   // 既存のMCPツール取得（SlackなどGoogle Calendar以外）
   const mcpTools = await getMCPTools(userId);
-  
-  // Google Calendar MCPツール取得
-  // const googleCalendarTools = await getGoogleCalendarTools(userId || 'desktop-user');
-  
+
+  // Remote (hosted) MCP: Google Calendar（接続済み時のみ注入）
+  const hostedMcpTools: any[] = [];
+  if (userId) {
+    try {
+      const cfg = await resolveGoogleCalendarMcp(userId);
+      if (cfg) {
+        hostedMcpTools.push(
+          hostedMcpTool({
+            serverLabel: cfg.serverLabel,
+            serverUrl: cfg.serverUrl,
+            requireApproval: cfg.requireApproval ?? 'never',
+            ...(cfg.authorization ? { authorization: cfg.authorization } : {}),
+          })
+        );
+      }
+    } catch (e) {
+      // 失敗しても他のツールは使えるので握りつぶす
+      console.error('Failed to resolve Google Calendar MCP:', e);
+    }
+  }
+
   // 全ツール結合
-  const combinedTools = [...allTools, ...mcpTools]; // ...googleCalendarTools removed
+  const combinedTools = [...allTools, ...mcpTools, ...hostedMcpTools];
   
   return new RealtimeAgent({
     name: 'Anicca',

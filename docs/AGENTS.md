@@ -1,5 +1,7 @@
 # Repository Guidelines
 
+絶対に日本語で回答してください！
+
 ## プロジェクト構成・モジュール配置
 - `src/`: Electron + TypeScript のデスクトップ本体（`main-voice-simple.ts`、`services/`）。
 - `src/agents/`: メインエージェント、ツール、MCP 連携。テストは `src/agents/__tests__`。
@@ -7,46 +9,29 @@
 - `anicca-web/`: Next.js Web アプリ（単体で開発・起動）。
 - `assets/`, `scripts/`, `landing/`, `dist/`: アセット、ビルド補助、サイト、ビルド成果物。
 
-## ビルド・テスト・開発コマンド
-- 音声開発ラン: `npm run voice:simple`（ビルド後に Electron を起動）。
-- デスクトップビルド: `npm run build:voice`（`tsconfig.voice.json` でコンパイル＋アセット配置）。
-- Electron 開発起動: `npm run electron-dev`（`NODE_ENV=development`）。
-- DMG パッケージ: `npm run dist:dev | dist:staging | dist:production`。
-- テスト全体: `npm test`／ウォッチ: `npm run test:watch`。
-- エージェント限定: `npm run test:agents`／カバレッジ: `npm run test:agents:coverage`。
-- 品質: `npm run lint`／`npm run format`。
-- サブプロジェクト起動: `cd anicca-proxy-slack && npm run dev`, `cd anicca-web && npm run dev`。
+## ローカル開発・DMG確認（推奨フロー）
+- ローカル起動（最速）: `npm run voice:simple`
+  - dist/main-voice-simple.js を起動。ログは `~/Library/Logs/anicca-agi/main.log`。
+- ローカルDMG作成（最速確認）: `npm run dist:dev`
+  - 開いたDMGから `Anicca.app` を必ず `/Applications` へコピーし、DMGを取り出してから起動（read-only回避）。
+- 配布（CI）: ローカル確認後、Beta/Stable のブランチに push してCIで配布する。
 
-## コーディング規約・命名
-- TypeScript 厳格設定。`any` は許容だが極力避け、明示的な型を優先。
-- ESLint + Prettier（2 スペース）。ファイルは機能単位、テストは `.test.ts` 接尾辞。
-- 依存はデスクトップ側は `src/` 内で閉じる（サブプロジェクトを直接 import しない）。
-
-## テスト方針
-- フレームワーク: Vitest（Node 環境）。v8 カバレッジ、`text/json/html` レポート。
-- 配置: `src/**/__tests__/**/*.test.ts`（推奨）または `src/**/*.test.ts`。
-- 新規ツールは `src/agents/tools.ts` に追加し、ユニットテストを同時に用意。
-- PR 前に `npm run test:agents:coverage` を通過させる。
-
-## コミット・PR ガイドライン
-- Conventional Commits 推奨（例: `feat:`, `fix:`, `chore:`）。必要に応じてスコープ（`feat(agents): ...`）。
-- ブランチ命名: `feature/...`, `fix/...`, `hotfix/...`（例: `feature/desktop-app-parent-worker`）。
-- PR 必須情報: 目的/背景（Issue 連携可）、変更点、テスト手順と結果、UI/配布影響時はスクショ/ログ。
-
-## セキュリティ・設定 Tips
-- 機密値は `.env`（ルート/各サブプロジェクト）で読み込み、コミット禁止。
-- macOS のパッケージ前に既存 `Anicca` ボリュームをアンマウントしてビルド失敗を防止。
+## ビルド・テスト・開発コマンド（現行運用）
+- 開発ラン（推奨）: `npm run voice:simple`
+- ビルドのみ: `npm run build:voice`
+- ローカルDMG: `npm run dist:dev`（最速検証用・配布はCI）
+- テスト（必要時）: `npm test`、エージェント系: `npm run test:agents`
 
 ## Release & Ops Overview
 
 - リポジトリ構成:
   - Desktop: `Daisuke134/anicca.ai`（本レポ）
-  - Web: `Daisuke134/anicca-web`
+  - Web: `Daisuke134/anicca-web`（Vercel にデプロイ）
   - Proxy: `Daisuke134/anicca-proxy`（Railway にデプロイ）
 
 - 配布チャネルとブランチ:
-  - Beta: `beta` ブランチに push すると CI（Release Beta）が prerelease を公開（channel=beta, proxy=staging）
-  - Stable: `main` ブランチに push すると CI（Release Stable）が正式リリースを公開（channel=stable, proxy=production）
+  - Beta: `beta` ブランチに push → CI（Release Beta）が prerelease を公開（feed=latest, allowPrerelease=true, proxy=staging）
+  - Stable: `main` ブランチに push → CI（Release Stable）が正式リリースを公開（feed=latest, allowPrerelease=false, proxy=production）
 
 - GitHub Secrets（`Daisuke134/anicca.ai`）:
   - 署名/配布: `APPLE_ID`, `APPLE_APP_SPECIFIC_PASSWORD`, `APPLE_TEAM_ID`, `CSC_LINK`, `CSC_KEY_PASSWORD`
@@ -56,14 +41,23 @@
 - Proxy（Railway）環境:
   - Staging / Production の 2 環境。`NODE_ENV` はサーバー挙動向け（ログ/最適化）で、Desktop の接続先切替は配布チャネルで制御（beta→staging, stable→production）。
 
-- Desktop の設定解決（今回の方針）:
-  - プロキシURLは、埋め込み `appConfig.proxy` → 環境変数（`PROXY_URL_PRODUCTION/STAGING`）→ 既定URL の順で解決。
-  - 更新チャネルは `UPDATE_CHANNEL` を最優先（なければ `NODE_ENV` で推定）。
-  - Beta は `allowPrerelease=true`、Stable は `false`。
+-- Desktop の設定解決（現実装）:
+  - プロキシURL: 埋め込み `appConfig.proxy` → 環境変数（`PROXY_URL_PRODUCTION/STAGING`）→ 既定URL の順で解決。
+  - チャンネル決定: 本番は runtime の `UPDATE_CHANNEL` を無視。アプリのバージョンに `-` が含まれれば beta、無ければ stable。
+  - フィード: 安定/ベータともに GitHub Releases の `latest-mac.yml` を参照（feed=latest）。
+  - 分離: Beta は `allowPrerelease=true`、Stable は `false`（これで1フィードでも厳密に振る舞い分岐）。
 
 - 自動更新の動作:
-  - 初回は DMG でインストール。以降は `electron-updater` が GitHub Releases を定期チェックし、ZIP をサイレントDL。
-  - `autoInstallOnAppQuit=true` のためアプリ終了時に自動適用（ログ: `~/Library/Logs/anicca-agi/main.log`）。
+  - 初回は DMG でインストール。以降は `electron-updater` が GitHub Releases を定期チェック（起動時＋4時間ごと）、ZIP をサイレントDL。
+  - `autoInstallOnAppQuit=true` で終了時適用。ベータ検証時は `update-downloaded` でダイアログ（今すぐ再起動/後で）。
+  - ログ確認例（`~/Library/Logs/anicca-agi/main.log`）:
+    - 初期化: `Auto-updater initialized (channel=stable|beta, feed=latest, allowPrerelease=...)`
+    - 検出: `Found version X.Y.Z ...`
+    - DL完了: `Update downloaded: X.Y.Z`
+    - 再起動後: `App Version: X.Y.Z`
+  - 参考コマンド:
+    - `grep -n "App Version\|Update Channel\|Proxy URL\|feed=latest" ~/Library/Logs/anicca-agi/main.log`
+    - `grep -n "Found version\|Update downloaded" ~/Library/Logs/anicca-agi/main.log`
 
 - 検証フロー（運用）:
   1. 現ブランチで修正 → まず同ブランチに push（必須）
@@ -123,3 +117,38 @@ git push origin v0.6.4
   - `Auto-updater initialized (channel=beta, allowPrerelease=true)`
   - `Found version X.Y.Z-beta.N` → `Downloading update ...` → `Update downloaded: X.Y.Z-beta.N`
   - ダイアログ「今すぐ再起動/後で」→ 今すぐ再起動で即適用（終了時でも適用）
+
+## 運用: Vercel/Railway のログ取得（CLI）
+
+以下は、Web(=Vercel) と Proxy(=Railway) のログを私（エージェント）が直接取得・解析するための標準手順です。
+
+**前提**
+- 権限は最小限: Vercel はパーソナルアクセストークン（読み取りのみ）、Railway はプロジェクトトークン（環境スコープ）。
+- トークンはこのセッションのみで使用し、ディスク保存しない。
+
+**Vercel: アクセストークン発行（UI操作）**
+- 右上アバター → `Account Settings`（チームなら `Team Settings`）→ 左メニュー `Security`/`Access Tokens`（`Tokens`）→ `Create`。
+- 入力: `Name`（例: `anicca-cli-local-YYYYMMDD`）、`Scope`（個人 or 対象チーム）、有効期限（必要に応じて）。
+- 作成後に表示される値を安全にコピー（再表示不可）。
+
+**Vercel: CLI でのログ取得**
+- インストール: `npm i -g vercel`
+- 認証確認: `vercel whoami --token "$VERCEL_TOKEN"`
+- ビルドログ（特定デプロイ/URL）: `vercel inspect <deployment-url-or-id> --logs --wait --token "$VERCEL_TOKEN"`
+- ランタイムログ（Functions/Middleware）: `vercel logs <deployment-url-or-id|url> --since 24h --token "$VERCEL_TOKEN"`
+  - 例: `vercel inspect https://app.aniccaai.com --logs --wait ...`
+  - 例: `vercel logs https://app.aniccaai.com --since 1h ...`
+
+**Railway: プロジェクトトークン発行（UI操作）**
+- 対象プロジェクトを開く → `Settings` → `Tokens` → `Create Token`。
+- `Environment` を選択（`Staging` or `Production`）。必要なら `Name`、期限を設定 → 作成 → 表示値を安全にコピー（再表示不可）。
+
+**Railway: CLI でのログ取得**
+- インストール: `npm i -g @railway/cli`（macOS は `brew install railway` も可）
+- ステージング環境の例: `export RAILWAY_TOKEN=<staging-token>` → `railway logs --deployment`（実行ログ）、`railway logs --build`（ビルドログ）
+- 本番環境の例: `export RAILWAY_TOKEN=<production-token>` → 同上
+  - 必要に応じて `railway link` でプロジェクト紐付け（トークンが環境スコープなら省略可）。
+
+**運用メモ**
+- トークンは最小権限・短期限で発行し、不要になったら破棄/ローテーション。
+- ログ量が多い場合は `--since 1h` や `--tail` を活用し、`jq`/フィルタで解析。

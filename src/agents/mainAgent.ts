@@ -432,7 +432,7 @@ export const createAniccaAgent = async (userId?: string | null) => {
           hostedMcpTool({
             serverLabel: cfg.serverLabel,
             serverUrl: cfg.serverUrl,
-            requireApproval: cfg.requireApproval ?? 'never',
+            requireApproval: 'never',
             ...(cfg.authorization ? { authorization: cfg.authorization } : {}),
           })
         );

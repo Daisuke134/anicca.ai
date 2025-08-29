@@ -19,6 +19,11 @@
 - Proxy（Railway）環境:
   - Staging / Production の 2 環境。`NODE_ENV` はサーバー挙動向け（ログ/最適化）で、Desktop の接続先切替は配布チャネルで制御（beta→staging, stable→production）。
 
+### Proxy反映メモ（重要・数行）
+- Staging 反映: `Daisuke134/anicca-proxy` の `feature/user-based-connections` ブランチへ push → Railway(Staging) が自動デプロイ。
+- Production 反映: `main` ブランチへ push → Railway(Production) が自動デプロイ。
+- ローカル検証時は `UPDATE_CHANNEL=beta` を付与して起動（staging を参照）。例: `UPDATE_CHANNEL=beta npm run voice:simple`
+
 - Desktop の設定解決（今回の方針）:
   - プロキシURLは、埋め込み `appConfig.proxy` → 環境変数（`PROXY_URL_PRODUCTION/STAGING`）→ 既定URL の順で解決。
   - 更新チャネルは `UPDATE_CHANNEL` を最優先（なければ `NODE_ENV` で推定）。

@@ -105,7 +105,8 @@ export const API_ENDPOINTS = {
   },
   // その他のAPI
   OPENAI_PROXY: {
-    SESSION: `${PROXY_URL}/api/openai-proxy/session`
+    SESSION: `${PROXY_URL}/api/openai-proxy/session`, // 旧（互換のため残置）
+    DESKTOP_SESSION: `${PROXY_URL}/api/openai-proxy/desktop-session`
   },
   SLACK: {
     OAUTH_URL: `${PROXY_URL}/api/slack/oauth-url`

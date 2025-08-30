@@ -403,15 +403,6 @@ const ANICCA_INSTRUCTIONS = `
 - カレンダー関連の質問を受けたら、利用可能なGoogleCalendarツールを使用
 - 認証が必要な場合はComposioが自動的に処理
 - ユーザーに認証を促す場合もある
-
-利用可能なカレンダーツール（Composio提供）：
-- GOOGLECALENDAR_LIST_CALENDARS: カレンダー一覧取得
-- GOOGLECALENDAR_LIST_EVENTS: 予定一覧確認
-- GOOGLECALENDAR_CREATE_EVENT: 新しい予定作成
-- GOOGLECALENDAR_UPDATE_EVENT: 予定の更新
-- GOOGLECALENDAR_DELETE_EVENT: 予定の削除
-- GOOGLECALENDAR_GET_EVENT: 特定の予定詳細取得
-- その他多数のGoogleCalendarツールが利用可能
 `;
 
 // RealtimeAgent作成

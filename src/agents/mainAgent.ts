@@ -398,11 +398,7 @@ const ANICCA_INSTRUCTIONS = `
 - 「良い」と言われるまで送信しない
 - 違うと言われたら修正案を聞いて再提示
 
-# Google Calendar連携（Composio MCP経由）
-カレンダー連携について：
-- カレンダー関連の質問を受けたら、利用可能なGoogleCalendarツールを使用
-- 認証が必要な場合はComposioが自動的に処理
-- ユーザーに認証を促す場合もある
+Google Calendar MCP→カレンダーの予定を教えてと言われたら使う
 `;
 
 // RealtimeAgent作成
@@ -423,8 +419,7 @@ export const createAniccaAgent = async (userId?: string | null) => {
           hostedMcpTool({
             serverLabel: cfg.serverLabel,
             serverUrl: cfg.serverUrl,
-            requireApproval: 'never',
-            ...(cfg.authorization ? { authorization: cfg.authorization } : {}),
+            requireApproval: 'never'
           })
         );
       }

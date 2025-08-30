@@ -136,8 +136,8 @@ async function initializeApp() {
       }
       
       const sessionUrl = userId 
-        ? `${API_ENDPOINTS.OPENAI_PROXY.SESSION}?userId=${userId}`
-        : API_ENDPOINTS.OPENAI_PROXY.SESSION;
+        ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
+        : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
       const response = await fetch(sessionUrl);
 
       if (response.ok) {
@@ -167,101 +167,44 @@ async function initializeApp() {
     setTimeout(() => {
       createHiddenWindow();
       console.log('✅ Hidden browser window created');
-    }, 3000);
+    }, 1000);
     
-    // システムトレイの初期化
-    createSystemTray();
+    // 自動更新チェック（本番環境のみ）
+    if (process.env.NODE_ENV === 'production') {
+      const { autoUpdater } = require('electron-updater');
+      autoUpdater.checkForUpdatesAndNotify();
+      
+      // 定期的な自動更新チェック（1時間ごと）
+      updateCheckIntervalId = setInterval(() => {
+        autoUpdater.checkForUpdatesAndNotify();
+      }, UPDATE_CONFIG.CHECK_INTERVAL);
+      
+      console.log('⏰ Auto-update checks scheduled (production only)');
+    }
+    
+    // コンポーネントの初期化順序を最適化
+    console.log('🔄 Initializing voice components...');
+    
+    // システムトレイの作成
+    await createSystemTray();
     console.log('✅ System tray created');
     
-    // ログ設定（本番はinfo、devは上でdebugに設定済み）
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-
-    // 自動更新の初期化（配布ビルドのみ）
-    if (app.isPackaged) {
-      // フィードは常に latest を使用（安定・ベータともに latest-mac.yml を参照）
-      const feedChannel = 'latest';
-      autoUpdater.channel = feedChannel;
-
-      // beta相当（またはプレリリース版）のみ、prereleaseを許可（安定はfalse）
-      const isPrereleaseVersion = /-/.test(app.getVersion());
-      autoUpdater.allowPrerelease = isPrereleaseVersion || UPDATE_CONFIG.CHANNEL !== 'stable';
-      autoUpdater.autoDownload = true;
-      autoUpdater.autoInstallOnAppQuit = true;
-
-      log.info(`✅ Auto-updater initialized (channel=${UPDATE_CONFIG.CHANNEL}, feed=latest, allowPrerelease=${autoUpdater.allowPrerelease})`);
-
-      // エラー時のログ記録（サイレント）
-      autoUpdater.on('error', (error) => {
-        log.error('Auto-updater error:', error);
-      });
-
-      // 更新ダウンロード完了時: 再起動プロンプトを表示
-      autoUpdater.on('update-downloaded', async (info) => {
-        try {
-          log.info(`Update downloaded: ${info?.version || ''}`);
-          const result = await dialog.showMessageBox({
-            type: 'info',
-            buttons: ['今すぐ再起動', '後で'],
-            defaultId: 0,
-            cancelId: 1,
-            title: 'アップデートの準備ができました',
-            message: '新しいバージョンをインストールできます。今すぐ再起動して適用しますか？'
-          });
-          if (result.response === 0) {
-            autoUpdater.quitAndInstall(false, true);
-          }
-        } catch (e) {
-          log.warn('Failed to show restart prompt after update download', e);
-        }
-      });
-
-      // 起動時に一度チェック
-      autoUpdater.checkForUpdatesAndNotify();
-
-      // 定期チェック（設定値に基づく）
-      updateCheckIntervalId = setInterval(() => {
-        try {
-          autoUpdater.checkForUpdatesAndNotify();
-        } catch (e) {
-          log.warn('Auto-update periodic check failed', e);
-        }
-      }, UPDATE_CONFIG.CHECK_INTERVAL);
-    }
-    // 非パッケージ（開発）時は初期化しない
-    
-    // 通知
-    // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');
-    
-    // 定期タスクシステムを初期化
-    initializeScheduledTasks();
-    
-    // スリープ防止を有効化（システムスリープのみ防ぐ）
+    // スリープ防止の設定
     powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-    console.log('🛡️ Power Save Blocker activated:', powerSaveBlocker.isStarted(powerSaveBlockerId));
+    console.log('✅ Power save blocker started');
     
-    // アプリ終了時にブロッカーを解除
-    app.on('before-quit', () => {
-      if (updateCheckIntervalId) {
-        clearInterval(updateCheckIntervalId);
-        updateCheckIntervalId = null;
-      }
-      if (powerSaveBlockerId !== null) {
-        powerSaveBlocker.stop(powerSaveBlockerId);
-        console.log('🛡️ Power Save Blocker stopped');
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Initialization error:', error);
-    
-    if (app.isPackaged) {
-      const { dialog } = require('electron');
-      dialog.showErrorBox('Anicca Startup Error', 
-        `Failed to start Anicca:\n\n${error}`);
+    // ログイン済み（認証後）の場合は、定期タスクを自動開始
+    if (authService.isAuthenticated()) {
+      console.log('👤 User is authenticated, starting scheduled tasks...');
+      initializeScheduledTasks();
+      console.log('✅ Scheduled tasks started');
     }
-    
-    app.quit();
+
+    console.log('🚀 Anicca Voice Assistant started successfully!');
+    console.log('🎤 Say "アニカ" to begin conversation');
+  } catch (error) {
+    console.error('💥 Failed to initialize application:', error);
+    throw error;
   }
 }
 

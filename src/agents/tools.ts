@@ -375,22 +375,38 @@ export const connect_google_calendar = tool({
   execute: async () => {
     const userId = process.env.CURRENT_USER_ID || 'desktop-user';
     
-    const response = await fetch(`${PROXY_URL}/api/composio/calendar-mcp`, {
+    // ステータス確認（新しいエンドポイント）
+    const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId })
     });
     
-    const data = await response.json();
-    console.log('Calendar MCP response:', data);
-    
-    if (!data.connected && data.authUrl) {
-      const { shell } = require('electron');
-      shell.openExternal(data.authUrl);
-      return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+    if (!statusResponse.ok) {
+      return 'Google Calendar接続状態の確認に失敗しました。';
     }
     
-    if (data.connected) {
+    const statusData = await statusResponse.json();
+    console.log('Calendar MCP status:', statusData);
+    
+    if (!statusData.connected) {
+      // OAuth URL取得（新しいエンドポイント）
+      const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
+      
+      if (!oauthResponse.ok) {
+        return 'Google Calendar認証URLの取得に失敗しました。';
+      }
+      
+      const oauthData = await oauthResponse.json();
+      
+      if (oauthData.url) {
+        const { shell } = require('electron');
+        shell.openExternal(oauthData.url);
+        return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+      }
+    }
+    
+    if (statusData.connected) {
       return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
     }
     

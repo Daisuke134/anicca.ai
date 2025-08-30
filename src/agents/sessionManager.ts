@@ -51,7 +51,7 @@ export class AniccaSessionManager {
     
     // セッション作成（WebSocketトランスポート使用）
     this.session = new RealtimeSession(this.agent, {
-      model: 'gpt-4o-mini-realtime-preview-2024-12-17',
+      model: 'gpt-realtime',
       transport: transport,  // ← インスタンスで指定
       config: {
         turnDetection: {

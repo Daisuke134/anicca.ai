@@ -7,33 +7,60 @@ export type McpServerConfig = {
 };
 
 /**
- * Resolve Google Calendar remote MCP server for the current user.
- * - If not connected, opens the OAuth URL in the browser and returns null.
- * - If connected, returns the hosted MCP tool configuration.
+ * Resolve Google Calendar remote MCP server using workspace-mcp
+ * - Uses workspace-mcp deployed on Railway with multi-user OAuth support
+ * - Returns MCP configuration if available, null otherwise
  */
-// 起動時は何もしない（ブラウザを開かない）。接続確認のみ行う
 export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServerConfig | null> {
-  const url = `${PROXY_URL}/api/composio/calendar-mcp`;
-  const res = await fetch(url, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ userId })
-  });
+  try {
+    const statusUrl = `${PROXY_URL}/api/mcp/gcal/status`;
+    const statusRes = await fetch(statusUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId })
+    });
 
-  const ct = res.headers.get('content-type') || '';
-  if (!res.ok) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Calendar MCP HTTP ${res.status} at ${url}: ${text.slice(0, 300)}`);
-  }
-  if (!ct.includes('application/json')) {
-    const text = await res.text().catch(() => '');
-    throw new Error(`Calendar MCP returned non-JSON at ${url} (content-type=${ct}). Body: ${text.slice(0, 300)}`);
-  }
+    if (!statusRes.ok) {
+      console.error(`MCP status check failed: ${statusRes.status}`);
+      return null;
+    }
 
-  const data = await res.json();
-  if (data.connected && data.mcpUrl) {
-    return { serverLabel: 'google_calendar', serverUrl: data.mcpUrl };
+    const statusData = await statusRes.json();
+    
+    if (statusData.connected && statusData.server_url) {
+      console.log('✅ Google Calendar MCP connected via workspace-mcp');
+      return {
+        serverLabel: 'google_calendar',
+        serverUrl: statusData.server_url,
+        authorization: statusData.authorization
+      };
+    }
+    
+    console.log('❌ Google Calendar MCP not configured');
+    return null;
+  } catch (error) {
+    console.error('Failed to resolve Google Calendar MCP:', error);
+    return null;
   }
-  // 未接続時は null を返す（起動時はブラウザを開かない）
-  return null;
+}
+
+/**
+ * Get OAuth URL for Google Calendar connection
+ */
+export async function getGoogleCalendarOAuthUrl(userId: string): Promise<string | null> {
+  try {
+    const url = `${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`;
+    const res = await fetch(url);
+    
+    if (!res.ok) {
+      console.error(`Failed to get OAuth URL: ${res.status}`);
+      return null;
+    }
+    
+    const data = await res.json();
+    return data.url;
+  } catch (error) {
+    console.error('Failed to get OAuth URL:', error);
+    return null;
+  }
 }

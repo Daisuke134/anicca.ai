@@ -108,9 +108,12 @@ export class AniccaSessionManager {
         const userId = req.query.userId as string || this.currentUserId;
         console.log('📡 Session request:', { userId });
         
-        // プロキシから設定取得（既存ロジック）
-        const PROXY_BASE_URL = process.env.PROXY_BASE_URL || 'https://anicca-proxy-staging.up.railway.app';
-        const response = await fetch(`${PROXY_BASE_URL}/api/openai-proxy/session${userId ? `?userId=${userId}` : ''}`);
+        // プロキシから設定取得（Desktop専用ルート使用）
+        const { API_ENDPOINTS } = require('../config');
+        const sessionUrl = userId
+          ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
+          : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
+        const response = await fetch(sessionUrl);
         const data = await response.json();
         
         res.json(data);

@@ -373,44 +373,50 @@ export const connect_google_calendar = tool({
   description: 'Google Calendarを接続',
   parameters: z.object({}),
   execute: async () => {
-    const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-    
-    // ステータス確認（新しいエンドポイント）
-    const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    });
-    
-    if (!statusResponse.ok) {
-      return 'Google Calendar接続状態の確認に失敗しました。';
-    }
-    
-    const statusData = await statusResponse.json();
-    console.log('Calendar MCP status:', statusData);
-    
-    if (!statusData.connected || !statusData.authorization) {
-      // OAuth URL取得（新しいエンドポイント）
-      const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
-      
-      if (!oauthResponse.ok) {
+    try {
+      const userId = process.env.CURRENT_USER_ID || 'desktop-user';
+
+      // ステータス確認
+      const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (!statusResponse.ok) {
+        console.warn(`Google Calendar status check failed: ${statusResponse.status}`);
+        return 'Google Calendar接続状態の確認に失敗しました。';
+      }
+
+      const statusData = await statusResponse.json();
+      console.log('Calendar MCP status:', statusData);
+
+      // authorization が無ければ未接続として扱い、必ず認可URLを開く
+      if (!statusData.connected || !statusData.authorization) {
+        const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
+        if (!oauthResponse.ok) {
+          console.warn(`Google Calendar OAuth URL fetch failed: ${oauthResponse.status}`);
+          return 'Google Calendar認証URLの取得に失敗しました。';
+        }
+        const oauthData = await oauthResponse.json();
+        if (oauthData.url) {
+          const { shell } = require('electron');
+          shell.openExternal(oauthData.url);
+          return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+        }
+        console.warn('Google Calendar OAuth URL payload did not include url');
         return 'Google Calendar認証URLの取得に失敗しました。';
       }
-      
-      const oauthData = await oauthResponse.json();
-      
-      if (oauthData.url) {
-        const { shell } = require('electron');
-        shell.openExternal(oauthData.url);
-        return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+
+      if (statusData.connected && statusData.authorization) {
+        return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
       }
+
+      console.warn('Google Calendar status response did not meet connected criteria');
+      return 'Google Calendar接続状態の確認に失敗しました。';
+    } catch (e: any) {
+      console.error('connect_google_calendar failed:', e);
+      return 'Google Calendar接続で予期しないエラーが発生しました。';
     }
-    
-    if (statusData.connected && statusData.authorization) {
-      return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
-    }
-    
-    return 'Google Calendar接続状態の確認に失敗しました。';
   }
 });
 

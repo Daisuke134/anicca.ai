@@ -30,6 +30,16 @@
   - Desktop: https://github.com/Daisuke134/anicca.ai （作業中の該当ブランチ）
 - CI/デプロイ（Railway/GitHub Releases）までを考慮し、反映を確認する。
 
+### 固定パスとPush先の厳守（重要）
+- 実装・修正の対象パスは以下に限定する。
+  - Proxy（ローカル）: `anicca-proxy-slack/` 配下（例: `src/api/mcp/gcal/*`, `src/server.js`）。
+  - Desktop（ローカル）: 本リポジトリの `src/` 配下（例: `src/agents/*`）。
+- 一時クローン（`tmp/` 配下）は「調査専用」。実装・修正・デプロイ対象にしてはならない。作業終了後は必ず削除する。
+- Push先は固定する。
+  - Proxy: `origin feature/user-based-connections`
+  - Desktop: 該当作業ブランチ（例: `feature/remote-mcp-google-calendar`）
+- 変更前チェック（必須）: `pwd` と対象ファイルの絶対/相対パスを確認し、「固定パス」であることを確認してから修正・コミット・Pushする。
+
 ## Release & Ops Overview
 
 - リポジトリ構成:

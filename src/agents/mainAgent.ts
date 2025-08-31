@@ -419,12 +419,17 @@ export const createAniccaAgent = async (userId?: string | null) => {
           hostedMcpTool({
             serverLabel: cfg.serverLabel,
             serverUrl: cfg.serverUrl,
+            // 認可トークンをRealtimeに引き渡す（必須）
+            authorization: cfg.authorization,
             requireApproval: 'never'
           })
         );
+      } else {
+        // 設定が未完了（未接続など）の場合は Calendar MCP のみスキップ
+        console.warn('Google Calendar MCP not configured; skipping hosted tool registration');
       }
     } catch (e) {
-      // 失敗しても他のツールは使えるので握りつぶす
+      // ログにエラーを出し、Calendar MCP のみスキップ（他ツールは継続）
       console.error('Failed to resolve Google Calendar MCP:', e);
     }
   }

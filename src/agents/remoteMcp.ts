@@ -35,8 +35,8 @@ export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServe
         authorization: statusData.authorization
       };
     }
-    
-    console.log('❌ Google Calendar MCP not configured');
+    // 接続未完了（認可トークン未取得など）
+    console.warn('Google Calendar MCP not configured');
     return null;
   } catch (error) {
     console.error('Failed to resolve Google Calendar MCP:', error);

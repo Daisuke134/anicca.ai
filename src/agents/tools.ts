@@ -389,7 +389,7 @@ export const connect_google_calendar = tool({
     const statusData = await statusResponse.json();
     console.log('Calendar MCP status:', statusData);
     
-    if (!statusData.connected) {
+    if (!statusData.connected || !statusData.authorization) {
       // OAuth URL取得（新しいエンドポイント）
       const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
       
@@ -406,7 +406,7 @@ export const connect_google_calendar = tool({
       }
     }
     
-    if (statusData.connected) {
+    if (statusData.connected && statusData.authorization) {
       return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
     }
     

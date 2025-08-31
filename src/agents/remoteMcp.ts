@@ -27,7 +27,7 @@ export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServe
 
     const statusData = await statusRes.json();
     
-    if (statusData.connected && statusData.server_url) {
+    if (statusData.connected && statusData.server_url && statusData.authorization) {
       console.log('✅ Google Calendar MCP connected via workspace-mcp');
       return {
         serverLabel: 'google_calendar',

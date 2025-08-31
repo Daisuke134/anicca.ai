@@ -37,6 +37,8 @@ export class AniccaSessionManager {
     currentTask: null as any,
     startedAt: null as number | null
   };
+  // Realtime履歴の新規アイテム検出用（MCP呼び出しの可視化）
+  private lastLoggedHistoryIndex: number = 0;
   
   constructor(private mainAgent?: any) {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
@@ -700,12 +702,39 @@ export class AniccaSessionManager {
       }
     });
 
-    // 履歴更新時に保存
-    this.session.on('history_updated', async (history: any) => {
+    // 履歴更新時：新規アイテムからMCP呼び出しを検出してログ
+    this.session.on('history_updated', async (history: any[]) => {
       console.log('📝 History updated, length:', history?.length);
-      
-      // 慈悲の瞑想はElevenLabsで処理するため、終了検知は不要
-      
+
+      try {
+        const len = Array.isArray(history) ? history.length : 0;
+        for (let i = this.lastLoggedHistoryIndex; i < len; i++) {
+          const item: any = history[i];
+          const providerType = item?.providerData?.type || item?.type;
+
+          // hosted MCP 呼び出しの開始検出
+          if (providerType === 'mcp_call' && item?.providerData) {
+            const server = item.providerData.server_label || 'unknown_server';
+            const tool   = item.providerData.tool || 'unknown_tool';
+            const args   = item.providerData.arguments;
+            let compactArgs = '';
+            try {
+              compactArgs = typeof args === 'string' ? args : JSON.stringify(args);
+              if (compactArgs.length > 200) compactArgs = compactArgs.slice(0, 200) + '...';
+            } catch { /* noop */ }
+            console.log(`🛠 MCP start: ${server}.${tool} args=${compactArgs}`);
+          }
+
+          // アシスタント応答到着を「完了」のサインとして簡易ログ
+          if ((providerType === 'message' || providerType === 'response') && item?.role === 'assistant') {
+            console.log('🛠 MCP done: assistant responded');
+          }
+        }
+        this.lastLoggedHistoryIndex = len;
+      } catch (e) {
+        console.warn('Failed to inspect history for MCP logs:', e);
+      }
+
       await this.saveSession(history);
     });
 

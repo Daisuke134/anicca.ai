@@ -572,22 +572,24 @@ export class AniccaSessionManager {
 
     // ツール実行イベント（正しいプロパティ名）
     this.session.on('agent_tool_start', async (context: any, agent: any, tool: any, details: any) => {
-      const isMcp = (tool && (tool.type === 'mcp' || tool.server_label));
-      const mcpServer = isMcp ? (tool.server_label || 'mcp') : null;
-      const mcpTool = isMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
-      const toolName = tool?.name || (isMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : 'unknown_tool');
+      const isHostedMcp = (
+        tool && tool.type === 'hosted_tool' && tool.name === 'hosted_mcp' && tool.providerData?.type === 'mcp'
+      );
+      const mcpServer = isHostedMcp ? (tool.providerData.server_label || 'mcp') : null;
+      const mcpTool = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const toolName = isHostedMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : (tool?.name || 'unknown_tool');
 
       console.log(`🔧 SDK自動実行開始: ${toolName}`);
-      if (isMcp) {
+      if (isHostedMcp) {
         try {
           const args = details?.toolCall?.arguments;
           let compact = '';
           if (typeof args !== 'undefined') {
             compact = typeof args === 'string' ? args : JSON.stringify(args);
             if (compact.length > 200) compact = compact.slice(0, 200) + '...';
-            console.log(`🛠 MCP start: ${mcpServer}${mcpTool ? '.' + mcpTool : ''} args=${compact}`);
+            console.log(`🛠 MCP start: ${mcpServer}.${mcpTool} args=${compact}`);
           } else {
-            console.log(`🛠 MCP start: ${mcpServer}${mcpTool ? '.' + mcpTool : ''}`);
+            console.log(`🛠 MCP start: ${mcpServer}.${mcpTool}`);
           }
         } catch (e) {
           console.warn('Failed to log MCP call args:', e);
@@ -628,14 +630,16 @@ export class AniccaSessionManager {
     });
 
     this.session.on('agent_tool_end', async (context: any, agent: any, tool: any, result: any, details: any) => {
-      const isMcp = (tool && (tool.type === 'mcp' || tool.server_label));
-      const mcpServer = isMcp ? (tool.server_label || 'mcp') : null;
-      const mcpTool = isMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
-      const toolName = tool?.name || (isMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : 'unknown_tool');
+      const isHostedMcp = (
+        tool && tool.type === 'hosted_tool' && tool.name === 'hosted_mcp' && tool.providerData?.type === 'mcp'
+      );
+      const mcpServer = isHostedMcp ? (tool.providerData.server_label || 'mcp') : null;
+      const mcpTool = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const toolName = isHostedMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : (tool?.name || 'unknown_tool');
 
       console.log(`✅ SDK自動実行完了: ${toolName}`);
-      if (isMcp) {
-        console.log(`🛠 MCP done: ${mcpServer}${mcpTool ? '.' + mcpTool : ''}`);
+      if (isHostedMcp) {
+        console.log(`🛠 MCP done: ${mcpServer}.${mcpTool}`);
       }
       try {
         console.log(`結果: ${JSON.stringify(result)}`);

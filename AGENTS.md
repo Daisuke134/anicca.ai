@@ -50,6 +50,15 @@
   - Desktop: 該当作業ブランチ（例: `feature/remote-mcp-google-calendar`）
 - 変更前チェック（必須）: `pwd` と対象ファイルの絶対/相対パスを確認し、「固定パス」であることを確認してから修正・コミット・Pushする。
 
+### ネットワーク操作・検証ポリシー（重要・必ず実行）
+- 本エージェントは、オーナーの許可がある場合、外部ネットワークを用いた検証（例: `curl` による疎通確認、外部APIのステータス確認）を自ら実行する。
+- オーナーから「叩いて確認して」と明示された場合は、拒否せずに実行し、結果をログ付きで共有する。
+- 代表例:
+  - Proxyエンドポイントの検証: `curl -sS -X POST "$PROXY_BASE/api/mcp/gcal/status" -H "Content-Type: application/json" -d '{"userId":"$USER_ID"}'`
+  - Realtimeクライアントシークレット発行: `curl -sS -X POST https://api.openai.com/v1/realtime/client_secrets -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" -d '{...}'`
+- 実行前に必要な環境変数（`OPENAI_API_KEY`, `PROXY_BASE`, `WORKSPACE_MCP_URL` など）が設定済みかを確認し、不足があれば明示する。
+- 実行の可否は環境のネットワーク権限（CLI設定）に依存するが、許可がある限りエージェント自身が実行して結果を提示する。
+
 ## Release & Ops Overview
 
 - リポジトリ構成:

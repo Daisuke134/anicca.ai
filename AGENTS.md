@@ -35,6 +35,11 @@
   - Desktop: https://github.com/Daisuke134/anicca.ai （作業中の該当ブランチ）
 - CI/デプロイ（Railway/GitHub Releases）までを考慮し、反映を確認する。
 
+### ドキュメント言語ポリシー（重要）
+- 新規に追加・更新するMD/MDXドキュメントは、必ず日本語で記載する。
+- 多言語が必要な場合でも、日本語版を必ず先に用意する（英語は補助）。
+- このポリシーは `docs/` 配下および設計/要件定義のMD/MDXに適用する。
+
 ### 固定パスとPush先の厳守（重要）
 - 実装・修正の対象パスは以下に限定する。
   - Proxy（ローカル）: `anicca-proxy-slack/` 配下（例: `src/api/mcp/gcal/*`, `src/server.js`）。

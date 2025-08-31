@@ -572,8 +572,27 @@ export class AniccaSessionManager {
 
     // ツール実行イベント（正しいプロパティ名）
     this.session.on('agent_tool_start', async (context: any, agent: any, tool: any, details: any) => {
-      const toolName = tool.name;  // ← 正しいプロパティ
+      const isMcp = (tool && (tool.type === 'mcp' || tool.server_label));
+      const mcpServer = isMcp ? (tool.server_label || 'mcp') : null;
+      const mcpTool = isMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const toolName = tool?.name || (isMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : 'unknown_tool');
+
       console.log(`🔧 SDK自動実行開始: ${toolName}`);
+      if (isMcp) {
+        try {
+          const args = details?.toolCall?.arguments;
+          let compact = '';
+          if (typeof args !== 'undefined') {
+            compact = typeof args === 'string' ? args : JSON.stringify(args);
+            if (compact.length > 200) compact = compact.slice(0, 200) + '...';
+            console.log(`🛠 MCP start: ${mcpServer}${mcpTool ? '.' + mcpTool : ''} args=${compact}`);
+          } else {
+            console.log(`🛠 MCP start: ${mcpServer}${mcpTool ? '.' + mcpTool : ''}`);
+          }
+        } catch (e) {
+          console.warn('Failed to log MCP call args:', e);
+        }
+      }
       
       // text_to_speech重複防止チェック
       if (toolName === 'text_to_speech') {
@@ -609,9 +628,20 @@ export class AniccaSessionManager {
     });
 
     this.session.on('agent_tool_end', async (context: any, agent: any, tool: any, result: any, details: any) => {
-      const toolName = tool.name;  // ← 正しいプロパティ
+      const isMcp = (tool && (tool.type === 'mcp' || tool.server_label));
+      const mcpServer = isMcp ? (tool.server_label || 'mcp') : null;
+      const mcpTool = isMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const toolName = tool?.name || (isMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : 'unknown_tool');
+
       console.log(`✅ SDK自動実行完了: ${toolName}`);
-      console.log(`結果: ${JSON.stringify(result)}`);
+      if (isMcp) {
+        console.log(`🛠 MCP done: ${mcpServer}${mcpTool ? '.' + mcpTool : ''}`);
+      }
+      try {
+        console.log(`結果: ${JSON.stringify(result)}`);
+      } catch (_) {
+        // noop
+      }
       
       // ElevenLabs音声データの処理
       if (toolName === 'text_to_speech') {

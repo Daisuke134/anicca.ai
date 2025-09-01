@@ -576,8 +576,13 @@ export class AniccaSessionManager {
         tool && tool.type === 'hosted_tool' && tool.name === 'hosted_mcp' && tool.providerData?.type === 'mcp'
       );
       const mcpServer = isHostedMcp ? (tool.providerData.server_label || 'mcp') : null;
-      const mcpTool = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
-      const toolName = isHostedMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : (tool?.name || 'unknown_tool');
+      const mcpTool   = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const serverTagMap: Record<string,string> = {
+        google_calendar: '[CALENDAR]',
+        gmail:           '[GMAIL]'
+      };
+      const tag = isHostedMcp ? (serverTagMap[mcpServer!] || `[${mcpServer}]`) : '';
+      const toolName = isHostedMcp ? `${tag} [${mcpTool || 'unknown'}]` : (tool?.name || 'unknown_tool');
 
       console.log(`🔧 SDK自動実行開始: ${toolName}`);
       if (isHostedMcp) {
@@ -587,9 +592,9 @@ export class AniccaSessionManager {
           if (typeof args !== 'undefined') {
             compact = typeof args === 'string' ? args : JSON.stringify(args);
             if (compact.length > 200) compact = compact.slice(0, 200) + '...';
-            console.log(`🛠 MCP start: ${mcpServer}.${mcpTool} args=${compact}`);
+            console.log(`🛠 MCP start: ${tag} ${mcpTool} args=${compact}`);
           } else {
-            console.log(`🛠 MCP start: ${mcpServer}.${mcpTool}`);
+            console.log(`🛠 MCP start: ${tag} ${mcpTool}`);
           }
         } catch (e) {
           console.warn('Failed to log MCP call args:', e);
@@ -634,12 +639,18 @@ export class AniccaSessionManager {
         tool && tool.type === 'hosted_tool' && tool.name === 'hosted_mcp' && tool.providerData?.type === 'mcp'
       );
       const mcpServer = isHostedMcp ? (tool.providerData.server_label || 'mcp') : null;
-      const mcpTool = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
-      const toolName = isHostedMcp ? `${mcpServer}${mcpTool ? '.' + mcpTool : ''}` : (tool?.name || 'unknown_tool');
+      const mcpTool   = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const serverTagMap: Record<string,string> = {
+        google_calendar: '[CALENDAR]',
+        gmail:           '[GMAIL]'
+      };
+      const tag = isHostedMcp ? (serverTagMap[mcpServer!] || `[${mcpServer}]`) : '';
+      const toolName = isHostedMcp ? `${tag} [${mcpTool || 'unknown'}]` : (tool?.name || 'unknown_tool');
 
       console.log(`✅ SDK自動実行完了: ${toolName}`);
       if (isHostedMcp) {
-        console.log(`🛠 MCP done: ${mcpServer}.${mcpTool}`);
+      const elapsedMs = this.taskState.startedAt ? (Date.now() - this.taskState.startedAt) : 0;
+      console.log(`🛠 MCP done: ${tag} ${mcpTool} (${elapsedMs}ms)`);
       }
       try {
         console.log(`結果: ${JSON.stringify(result)}`);

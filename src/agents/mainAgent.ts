@@ -425,6 +425,29 @@ export const createAniccaAgent = async (userId?: string | null) => {
               ? cfg.authorization
               : `Bearer ${cfg.authorization}`
           },
+          // 誤起動防止: calendar/gmail の実行系ツールのみ許可
+          allowedTools: {
+            toolNames: [
+              // Calendar
+              'list_calendars',
+              'get_events',
+              'create_event',
+              'modify_event',
+              'delete_event',
+              // Gmail
+              'search_gmail_messages',
+              'get_gmail_message_content',
+              'get_gmail_messages_content_batch',
+              'send_gmail_message',
+              'draft_gmail_message',
+              'get_gmail_thread_content',
+              'get_gmail_threads_content_batch',
+              'list_gmail_labels',
+              'manage_gmail_label',
+              'modify_gmail_message_labels',
+              'batch_modify_gmail_message_labels'
+            ]
+          },
           requireApproval: 'never'
         })
         );

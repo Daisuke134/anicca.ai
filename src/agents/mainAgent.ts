@@ -417,7 +417,8 @@ export const createAniccaAgent = async (userId?: string | null) => {
       if (cfg) {
         hostedMcpTools.push(
         hostedMcpTool({
-          serverLabel: cfg.serverLabel,
+          // カレンダー限定にするため serverLabel を明示
+          serverLabel: 'google_calendar',
           serverUrl: cfg.serverUrl,
           // Authorization ヘッダに統一（server_url方式はauthorizationフィールドを使用しない）
           headers: {
@@ -425,7 +426,7 @@ export const createAniccaAgent = async (userId?: string | null) => {
               ? cfg.authorization
               : `Bearer ${cfg.authorization}`
           },
-          // 誤起動防止: calendar/gmail の実行系ツールのみ許可
+          // カレンダーの実行系ツールのみ許可（Gmailは除外）
           allowedTools: {
             toolNames: [
               // Calendar
@@ -433,19 +434,7 @@ export const createAniccaAgent = async (userId?: string | null) => {
               'get_events',
               'create_event',
               'modify_event',
-              'delete_event',
-              // Gmail
-              'search_gmail_messages',
-              'get_gmail_message_content',
-              'get_gmail_messages_content_batch',
-              'send_gmail_message',
-              'draft_gmail_message',
-              'get_gmail_thread_content',
-              'get_gmail_threads_content_batch',
-              'list_gmail_labels',
-              'manage_gmail_label',
-              'modify_gmail_message_labels',
-              'batch_modify_gmail_message_labels'
+              'delete_event'
             ]
           },
           requireApproval: 'never'

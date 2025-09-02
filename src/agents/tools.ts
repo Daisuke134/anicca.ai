@@ -420,42 +420,44 @@ export const connect_google_calendar = tool({
   }
 });
 
-// 18. get_current_time
+// 18. get_current_time（外部API非依存：OSのIANA TZを返す）
 export const get_current_time = tool({
   name: 'get_current_time',
   description: '現在の時刻を取得（ユーザーの場所に基づく）',
   parameters: z.object({}),
   execute: async () => {
-    try {
-      // WorldTimeAPI - IPベースで自動的にユーザーのタイムゾーンを検出
-      const response = await fetch('https://worldtimeapi.org/api/ip');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // 生データを返す - Aniccaが判断して適切な言語で伝える
-      return JSON.stringify({
-        datetime: data.datetime,
-        timezone: data.timezone,
-        day_of_week: data.day_of_week,
-        week_number: data.week_number
-      });
-      
-    } catch (error: any) {
-      // フォールバック：システム時刻
-      const now = new Date();
-      return JSON.stringify({
-        datetime: now.toISOString(),
-        timezone: 'system',
-        error: error.message
-      });
-    }
+    const now = new Date();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    return JSON.stringify({ datetime: now.toISOString(), timezone: tz });
   }
 });
 
+// 19. convert_time（ISO日時→指定IANA TZの人間可読表示）
+export const convert_time = tool({
+  name: 'convert_time',
+  description: 'ISO日時を指定IANAタイムゾーンのローカル時刻に変換（人間可読）',
+  parameters: z.object({
+    datetime: z.string().describe('ISO 8601 datetime（例: 2025-09-02T05:41:00Z）'),
+    to_timezone: z.string().describe('IANA TZ（例: Asia/Tokyo）'),
+    locale: z.string().optional().describe('表示ロケール（省略時はOSの既定ロケール）')
+  }),
+  execute: async ({ datetime, to_timezone, locale }) => {
+    try {
+      const d = new Date(datetime);
+      if (isNaN(d.getTime())) return 'Invalid datetime';
+      // locale 未指定時は OS 既定ロケールを使用（Intl が自動選択）
+      const fmt = new Intl.DateTimeFormat(locale ?? undefined, {
+        timeZone: to_timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+      const human = fmt.format(d);
+      return JSON.stringify({ human, timezone: to_timezone, source: datetime });
+    } catch (e: any) {
+      return `convert_time error: ${e.message}`;
+    }
+  }
+});
 
 // すべてのツールをエクスポート
 export const allTools = [
@@ -473,4 +475,5 @@ export const allTools = [
   open_url,
   connect_google_calendar,
   get_current_time,
+  convert_time,
 ];

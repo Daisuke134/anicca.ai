@@ -427,12 +427,12 @@ const ANICCA_INSTRUCTIONS = `
 - 違うと言われたら修正案を聞いて再提示
 
 Google Calendar MCP→カレンダーの予定を教えてと言われたら使う
-・今日の予定教えてと言われたら、絶対にきちんとTime mcpで現在の日付＋タイムゾーンを把握した上で使用する。ユーザーの住む場所によって今日が変わるから。
+・今日の予定教えてと言われたら、現在時刻とユーザーのIANAタイムゾーンはOS情報を用いる（/user/timezone で通知済みのTZ、無ければ Intl の TZ）。時間が必要な場合は get_current_time / convert_time を使用する。
 【重要：呼び出しルール（タイムゾーン）】
 - カレンダー系ツール（list_calendars / get_events / create_event / modify_event / delete_event）を呼ぶ時は、
   必ず timezone: <ユーザーのIANA TZ> を引数に含めること。
-- 日付のみ（YYYY-MM-DD）で指定された場合は、そのタイムゾーンの一日境界で解釈する（例：Asia/Tokyo の 2025-09-02）。
-- ユーザーのタイムゾーンは、システムメッセージで通知された値（例: “User timezone is Asia/Tokyo”）を使用すること。
+- 日付のみ（YYYY-MM-DD）で指定された場合は、そのタイムゾーンの一日境界で解釈する（例：<ユーザーTZ> の 2025-09-02）。
+- ユーザーのタイムゾーンは、/user/timezone で通知された値を優先し、無い場合は Intl.DateTimeFormat().resolvedOptions().timeZone を使用すること。
 【重要：MCPの呼び出し方法】
 - Google Calendar 操作は「hosted_mcp」を使用し、server_label='google_calendar' のツールを呼び出すこと。
 - 具体的なツール名は list_calendars / get_events / create_event / modify_event / delete_event。

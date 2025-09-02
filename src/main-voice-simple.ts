@@ -841,7 +841,9 @@ async function executeScheduledTask(task: any) {
     const enhancedCommand = `
       【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
       
-      今、${task.description}の時間になった。
+      今、${task.description}の時間になった。以降の現在時刻はそのままこの値を使うこと。
+      タスクの現在時刻を「Cron発火時刻」とし、時間系ツール（get_current_time /
+convert_time 等）は呼ばない。
 
       【起床・就寝の声かけ】
       - 声かけを一瞬も止めないでください。フロー実行後も、声をかけ続けること。

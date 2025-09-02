@@ -244,6 +244,7 @@ function createHiddenWindow() {
         let isPlaying = false;
         let currentSource = null;
         let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
+        let isAgentSpeaking = false; // エージェント発話中（半二重ゲート）
         let sdkReady = false; // SDK接続可否（送信ゲート）
 
         // SDK状態確認
@@ -272,6 +273,7 @@ function createHiddenWindow() {
 
               // PCM16音声出力データを受信
               if (message.type === 'audio_output' && message.format === 'pcm16') {
+                // エージェント発話中フラグに基づき再生キュー投入
                 console.log('🔊 Received PCM16 audio from SDK');
 
                 // Base64デコードしてPCM16データを取得
@@ -289,11 +291,23 @@ function createHiddenWindow() {
                 }
               }
 
+              // エージェント音声開始/終了（半二重制御用）
+              if (message.type === 'audio_start') {
+                isAgentSpeaking = true;
+                // console.debug('agent speaking: ON');
+              }
+              if (message.type === 'audio_stopped') {
+                isAgentSpeaking = false;
+                // console.debug('agent speaking: OFF');
+              }
+
               // 音声中断処理
               if (message.type === 'audio_interrupted') {
                 console.log('🛑 Audio interrupted - clearing queue');
                 audioQueue = [];
                 isPlaying = false;
+                // 発話フラグも下げる
+                isAgentSpeaking = false;
                 
                 // 再生中の音声を停止
                 if (currentSource) {
@@ -514,8 +528,10 @@ function createHiddenWindow() {
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
 
-              // システム音声再生中は送信しない（エコー防止）
-              if (isSystemPlaying) {
+              // 出力中は送信しない（半二重）。
+              // 1) システム音声（ElevenLabs等）再生中 → 送信停止
+              // 2) エージェント自身が発話中（audio_output） → 送信停止
+              if (isSystemPlaying || isAgentSpeaking) {
                 return;
               }
 

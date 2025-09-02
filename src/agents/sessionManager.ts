@@ -162,10 +162,23 @@ export class AniccaSessionManager {
           try {
             await this.disconnect();
             await this.initialize();
-            if (this.apiKey) {
-              await this.connect(this.apiKey);
+            // OAuth後は必ず新しい client_secret を取得して再接続する
+            const { API_ENDPOINTS } = require('../config');
+            const sessionUrl = this.currentUserId
+              ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
+              : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
+            const resp = await fetch(sessionUrl);
+            if (!resp.ok) {
+              throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
             }
+            const data = await resp.json();
+            const apiKey = data?.client_secret?.value;
+            if (!apiKey) {
+              throw new Error('No client_secret returned after OAuth');
+            }
+            await this.connect(apiKey);
             console.log('🔄 Session reinitialized after OAuth completion');
+            console.log('✅ Reconnected after OAuth with refreshed client secret');
           } catch (e) {
             console.error('Failed to reinitialize session after auth:', e);
           }

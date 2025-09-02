@@ -52,17 +52,21 @@ export class AniccaSessionManager {
     // WebSocketトランスポートのインスタンスを明示的に作成
     const transport = new OpenAIRealtimeWebSocket();
     
-    // セッション作成（WebSocketトランスポート使用）
+    // セッション作成（GA構成の音声設定に一本化）
     this.session = new RealtimeSession(this.agent, {
       model: 'gpt-realtime',
-      transport: transport,  // ← インスタンスで指定
+      transport: transport,
       config: {
-        turnDetection: {
-          type: 'semantic_vad',
-          eagerness: 'medium',    // ユーザー発話終了後、即座に応答開始
-          createResponse: true,
-          interruptResponse: true,
-        },
+        outputModalities: ['audio', 'text'],
+        audio: {
+          input: {
+            format: { type: 'audio/pcm', rate: 24000 },
+            turnDetection: { type: 'server_vad' }
+          },
+          output: {
+            voice: 'alloy'
+          }
+        }
       }
     });
 
@@ -450,35 +454,15 @@ export class AniccaSessionManager {
   }
   
   // WebSocket Keep-alive機能
-  private keepAliveErrors = 0;  // エラーカウンター追加
-  
+  private keepAliveErrors = 0;  // （無効化済みだが参照残し）
+
   private startKeepAlive() {
-    // 既存のインターバルをクリア
+    // アプリ層の送信型 keep-alive は無効化（transportに任せる）
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
     }
-    
-    // 30秒ごとにkeep-aliveを送信
-    this.keepAliveInterval = setInterval(async () => {
-      if (this.session && this.isConnected()) {
-        try {
-          // 修正: sendMessageでテキストping送信（エラーにならない）
-          await this.sendMessage(" ");  // スペース1文字
-          console.log('💓 Keep-alive sent');
-          this.keepAliveErrors = 0;  // 成功時はカウンターリセット
-        } catch (error) {
-          console.error('❌ Keep-alive failed:', error);
-          this.keepAliveErrors++;
-          // 修正: 3回失敗で再接続（頻繁な再接続を防ぐ）
-          if (!this.isReconnecting && this.apiKey && this.keepAliveErrors > 3) {
-            await this.handleReconnection();
-            this.keepAliveErrors = 0;
-          }
-        }
-      }
-    }, 30000); // 30秒ごと
-    
-    console.log('✅ Keep-alive started (30s interval)');
+    console.log('🛑 App-layer keep-alive disabled (handled by transport)');
   }
 
   private stopKeepAlive() {

@@ -439,13 +439,13 @@ export const convert_time = tool({
   parameters: z.object({
     datetime: z.string().describe('ISO 8601 datetime（例: 2025-09-02T05:41:00Z）'),
     to_timezone: z.string().describe('IANA TZ（例: Asia/Tokyo）'),
-    locale: z.string().optional().describe('表示ロケール（省略時はOSの既定ロケール）')
+    locale: z.string().nullable().describe('表示ロケール。null のときはOS既定ロケール')
   }),
   execute: async ({ datetime, to_timezone, locale }) => {
     try {
       const d = new Date(datetime);
       if (isNaN(d.getTime())) return 'Invalid datetime';
-      // locale 未指定時は OS 既定ロケールを使用（Intl が自動選択）
+      // locale が null の場合は OS 既定ロケール（Intl に undefined を渡す）
       const fmt = new Intl.DateTimeFormat(locale ?? undefined, {
         timeZone: to_timezone,
         year: 'numeric', month: '2-digit', day: '2-digit',

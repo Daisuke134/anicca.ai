@@ -399,6 +399,11 @@ const ANICCA_INSTRUCTIONS = `
 - 違うと言われたら修正案を聞いて再提示
 
 Google Calendar MCP→カレンダーの予定を教えてと言われたら使う
+【重要：呼び出しルール（タイムゾーン）】
+- カレンダー系ツール（list_calendars / get_events / create_event / modify_event / delete_event）を呼ぶ時は、
+  必ず `timezone: <ユーザーのIANA TZ>` を引数に含めること。
+- 日付のみ（YYYY-MM-DD）で指定された場合は、そのタイムゾーンの一日境界で解釈する（例：Asia/Tokyo の 2025-09-02）。
+- ユーザーのタイムゾーンは、システムメッセージで通知された値（例: “User timezone is Asia/Tokyo”）を使用すること。
 【重要：MCPの呼び出し方法】
 - Google Calendar 操作は「hosted_mcp」を使用し、server_label='google_calendar' のツールを呼び出すこと。
 - 具体的なツール名は list_calendars / get_events / create_event / modify_event / delete_event。

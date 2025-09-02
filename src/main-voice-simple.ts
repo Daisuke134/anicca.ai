@@ -274,7 +274,9 @@ function createHiddenWindow() {
 
               // PCM16音声出力データを受信
               if (message.type === 'audio_output' && message.format === 'pcm16') {
-                // エージェント発話中フラグに基づき再生キュー投入
+                // エージェント発話開始レースを潰す：即時に送話停止
+                isAgentSpeaking = true;
+                micPaused = true;
                 console.log('🔊 Received PCM16 audio from SDK');
 
                 // Base64デコードしてPCM16データを取得
@@ -299,7 +301,8 @@ function createHiddenWindow() {
               }
               if (message.type === 'audio_stopped') {
                 isAgentSpeaking = false;
-                micPaused = false; // 出力終了→入力再開
+                // レース吸収：最終化待ち（150ms）後に送話再開
+                setTimeout(() => { micPaused = false; }, 150);
               }
 
               // 音声中断処理
@@ -307,9 +310,9 @@ function createHiddenWindow() {
                 console.log('🛑 Audio interrupted - clearing queue');
                 audioQueue = [];
                 isPlaying = false;
-                // 発話フラグも下げる（半二重解除）
+                // 中断は終了ではない：送話再開しない
                 isAgentSpeaking = false;
-                micPaused = false;
+                // micPaused は維持（ここで下げない）
                 
                 // 再生中の音声を停止
                 if (currentSource) {

@@ -245,6 +245,7 @@ function createHiddenWindow() {
         let currentSource = null;
         let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
         let isAgentSpeaking = false; // エージェント発話中（半二重ゲート）
+        let micPaused = false;       // マイク送出一時停止
         let sdkReady = false; // SDK接続可否（送信ゲート）
 
         // SDK状態確認
@@ -294,11 +295,11 @@ function createHiddenWindow() {
               // エージェント音声開始/終了（半二重制御用）
               if (message.type === 'audio_start') {
                 isAgentSpeaking = true;
-                // console.debug('agent speaking: ON');
+                micPaused = true; // 出力開始→入力停止
               }
               if (message.type === 'audio_stopped') {
                 isAgentSpeaking = false;
-                // console.debug('agent speaking: OFF');
+                micPaused = false; // 出力終了→入力再開
               }
 
               // 音声中断処理
@@ -306,8 +307,9 @@ function createHiddenWindow() {
                 console.log('🛑 Audio interrupted - clearing queue');
                 audioQueue = [];
                 isPlaying = false;
-                // 発話フラグも下げる
+                // 発話フラグも下げる（半二重解除）
                 isAgentSpeaking = false;
+                micPaused = false;
                 
                 // 再生中の音声を停止
                 if (currentSource) {
@@ -531,7 +533,7 @@ function createHiddenWindow() {
               // 出力中は送信しない（半二重）。
               // 1) システム音声（ElevenLabs等）再生中 → 送信停止
               // 2) エージェント自身が発話中（audio_output） → 送信停止
-              if (isSystemPlaying || isAgentSpeaking) {
+              if (micPaused || isSystemPlaying || isAgentSpeaking) {
                 return;
               }
 

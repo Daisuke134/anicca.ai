@@ -557,6 +557,18 @@ function createHiddenWindow() {
         // 初期化
         async function initialize() {
           console.log('🚀 Initializing SDK WebSocket voice mode...');
+          // ユーザーのタイムゾーンをBridgeへ通知
+          try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            await fetch('/user/timezone', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ timezone: tz })
+            });
+            console.log('🌐 Reported user timezone:', tz);
+          } catch (e) {
+            console.warn('Failed to report timezone:', e);
+          }
 
           // WebSocket接続
           connectWebSocket();

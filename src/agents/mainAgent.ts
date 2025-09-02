@@ -399,6 +399,10 @@ const ANICCA_INSTRUCTIONS = `
 - 違うと言われたら修正案を聞いて再提示
 
 Google Calendar MCP→カレンダーの予定を教えてと言われたら使う
+【重要：MCPの呼び出し方法】
+- Google Calendar 操作は「hosted_mcp」を使用し、server_label='google_calendar' のツールを呼び出すこと。
+- 具体的なツール名は list_calendars / get_events / create_event / modify_event / delete_event。
+- “mcp_google_calendar” というツール名は存在しないので絶対に呼び出さないこと。
 `;
 
 // RealtimeAgent作成

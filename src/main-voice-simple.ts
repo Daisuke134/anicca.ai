@@ -244,6 +244,7 @@ function createHiddenWindow() {
         let isPlaying = false;
         let currentSource = null;
         let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
+        let sdkReady = false; // SDK接続可否（送信ゲート）
 
         // SDK状態確認
         async function checkSDKStatus() {
@@ -251,9 +252,12 @@ function createHiddenWindow() {
             const response = await fetch('/sdk/status');
             const status = await response.json();
             console.log('SDK Status:', status);
-            return status.useSDK && status.connected && status.transport === 'websocket';
+            const ok = status.useSDK && status.connected && status.transport === 'websocket';
+            sdkReady = !!ok;
+            return ok;
           } catch (error) {
             console.error('Failed to check SDK status:', error);
+            sdkReady = false;
             return false;
           }
         }
@@ -520,6 +524,10 @@ function createHiddenWindow() {
                 return;  // 空データは送信しない
               }
 
+              // 未接続時は送信しない
+              if (!sdkReady) {
+                return;
+              }
               // Base64エンコードして送信
               const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
               
@@ -541,6 +549,9 @@ function createHiddenWindow() {
 
                 if (!response.ok) {
                   console.error('Failed to send PCM16 audio to SDK');
+                  if (response.status === 400) {
+                    await checkSDKStatus();
+                  }
                 }
               } catch (error) {
                 console.error('Audio send error:', error);
@@ -573,6 +584,8 @@ function createHiddenWindow() {
           // WebSocket接続
           connectWebSocket();
 
+          // 接続監視ループ（1.5秒間隔）
+          setInterval(() => { checkSDKStatus(); }, 1500);
           // 2秒待ってから音声開始
           setTimeout(() => {
             startVoiceCapture();
@@ -867,6 +880,37 @@ async function executeScheduledTask(task: any) {
       
       Slack返信タスクの場合：
       「○時○分になりました。Slack返信を始めます」と宣言して返信フローを開始してください。
+
+      朝会タスクの場合（task.id が「standup_」で始まる）：
+      - 開始宣言：「[現在時刻]です。朝会を始めます。」と告げる。
+      - 今日の固定予定の確認：
+        ・read_fileで ~/.anicca/scheduled_tasks.json を読み、今日の“現在時刻以降”に発火するタスクを時刻順に簡潔に列挙（時刻＋要点のみ）。
+      - 残存タスクの取得と選定：
+        ・read_fileで ~/.anicca/tasks.md を読み、未完了のタスクを把握する。
+        ・期限や重要性を踏まえ、自律的に「今日やるタスク」を複数選定（数理スコアは使わず自然言語判断でよい）。
+        ・疑問点や依存関係がある場合のみ短く質問し、回答を反映して確定する。
+      - 具体的な時間への自動落とし込み（開始リマインドの登録）：
+        ・先に把握した固定予定のスキマ時間に、選定した各タスクの開始時刻を自動で割当てる（過度な最適化は不要）。
+        ・各タスクについて ~/.anicca/scheduled_tasks.json に“今日のみ”の開始リマインドを追加する。
+          - id: todo_<slug>_<HHMM>_today（<slug> はタスク名を小文字・英数字・ハイフンに正規化）
+          - schedule: "<MM> <HH> * * *"
+          - command: "タスク開始リマインド"
+          - description: "今日のタスク: <元のタスク名> を開始（今日のみ）"
+          - timezone: task.timezone を必ず使用する（未指定のタスクは追加しない／登録時点で必ず timezone を付与する）
+        ・書き込みは必ず read→merge→write(JSON.stringify(, null, 2))。同一idが既にあれば重複追加しない。
+      - まとめの宣言：
+        ・「今日やることは『[決めたタスク名一覧]』です。開始時刻になったら声をかけます。変更があれば今言ってください。」と短く締める。
+
+      会議の10分前タスクの場合（task.id が「mtg_pre_」で始まる）：
+      - 宣言：「10分前です。この予定です。」と告げる（会議名は読み上げ不要）。
+      - URLがある場合（description に "url=" を含む）：
+        ・ただちに既定ブラウザでURLを開く（承認確認は不要）。
+        ・「リンクを開きました。入室してください。」と案内。開けない環境の場合はURLを読み上げるだけに留める。
+      - URLが無い場合：
+        ・「リンクは未提供です。いつもの手段で入室準備をしてください。」と短く促す。
+
+      会議開始タスクの場合（task.id が「mtg_start_」で始まる）：
+      - 宣言：「開始時刻になりました。入室してください。」とだけ告げる（10分前で入室済み前提。会議名やURLの再案内は不要）。
       
       瞑想タスクの場合（慈悲の瞑想以外）：
       - descriptionに「瞑想開始」が含まれる場合：

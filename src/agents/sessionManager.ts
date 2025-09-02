@@ -754,8 +754,19 @@ export class AniccaSessionManager {
       }
       
       this.broadcast({ type: 'error', error: error.message });
-      
-      // 自動再接続（handleReconnection()を使用）
+
+      // エラー種別で再接続を制御
+      const code = error?.error?.error?.code || error?.code || '';
+      const isLogicError = (
+        code === 'conversation_already_has_active_response' ||
+        code === 'invalid_value' ||
+        code === 'empty_array'
+      );
+      if (isLogicError) {
+        // 論理エラーは会話制御の問題。再接続せずログのみ。
+        return;
+      }
+      // ネットワーク断・タイムアウトなどのみ再接続
       if (!this.isReconnecting && this.apiKey) {
         await this.handleReconnection();
       }

@@ -104,6 +104,8 @@ export class AniccaSessionManager {
   // ルート設定
   private setupRoutes() {
     if (!this.app) return;
+    const app = this.app as express.Application;
+    const self = this;
     
     // 1. /session - hiddenWindow用（必須）
     this.app.get('/session', async (req, res) => {
@@ -334,6 +336,20 @@ export class AniccaSessionManager {
       }
       
       res.json({ success: true });
+    });
+
+    // 1-1. ユーザーのタイムゾーンを受け取る（setupRoutes内に配置）
+    this.app.post('/user/timezone', (req, res) => {
+      try {
+        const tz = String(req.body?.timezone ?? '');
+        if (tz && tz.length >= 3) {
+          this.userTimezone = tz;
+          console.log('🌐 User timezone set:', tz);
+        }
+        res.json({ ok: true, timezone: this.userTimezone });
+      } catch (e: any) {
+        res.status(400).json({ ok: false, error: e?.message || String(e) });
+      }
     });
   }
 
@@ -1071,16 +1087,3 @@ ${memories}
     console.log('🛑 SessionManager stopped');
   }
 }
-    // 1-1. ユーザーのタイムゾーンを受け取る
-    this.app.post('/user/timezone', (req, res) => {
-      try {
-        const tz = (req.body?.timezone || '').toString();
-        if (tz && tz.length >= 3) {
-          this.userTimezone = tz;
-          console.log('🌐 User timezone set:', tz);
-        }
-        res.json({ ok: true, timezone: this.userTimezone });
-      } catch (e: any) {
-        res.status(400).json({ ok: false, error: e?.message || String(e) });
-      }
-    });

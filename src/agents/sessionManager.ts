@@ -27,6 +27,7 @@ export class AniccaSessionManager {
   private currentUserId: string | null = null;
   private currentPort: number = 8085; // デフォルトポート
   private isElevenLabsPlaying: boolean = false;
+  private userTimezone: string | null = null;
   
   // text_to_speech重複防止
   private lastElevenLabsExecutionTime = 0;
@@ -800,6 +801,16 @@ export class AniccaSessionManager {
     
     // Serenaの記憶を確認
     await this.checkMemories();
+
+    // ユーザーのTZをセッションに周知（行動誘導）
+    if (this.userTimezone) {
+      try {
+        await this.session.sendMessage(`System: User timezone is ${this.userTimezone}. When you call calendar tools, pass this timezone parameter.`);
+        console.log('🌐 Informed session about user timezone:', this.userTimezone);
+      } catch (e) {
+        console.warn('Failed to inform session about timezone:', e);
+      }
+    }
   }
   
   async disconnect() {
@@ -1060,3 +1071,16 @@ ${memories}
     console.log('🛑 SessionManager stopped');
   }
 }
+    // 1-1. ユーザーのタイムゾーンを受け取る
+    this.app.post('/user/timezone', (req, res) => {
+      try {
+        const tz = (req.body?.timezone || '').toString();
+        if (tz && tz.length >= 3) {
+          this.userTimezone = tz;
+          console.log('🌐 User timezone set:', tz);
+        }
+        res.json({ ok: true, timezone: this.userTimezone });
+      } catch (e: any) {
+        res.status(400).json({ ok: false, error: e?.message || String(e) });
+      }
+    });

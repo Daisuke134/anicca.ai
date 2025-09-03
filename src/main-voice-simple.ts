@@ -43,6 +43,7 @@ const isWorkerMode = process.env.WORKER_MODE === 'true';
 // 定期タスク管理
 const cronJobs = new Map<string, any>();
 const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
+const todaySchedulePath = path.join(os.homedir(), '.anicca', 'today_schedule.json');
 
 // アプリの初期化
 async function initializeApp() {
@@ -818,7 +819,69 @@ function initializeScheduledTasks() {
   fs.watchFile(scheduledTasksPath, { interval: 1000 }, () => {
     console.log('📝 scheduled_tasks.jsonが変更されました');
     reloadScheduledTasks();
+    rebuildTodayIndex();
   });
+}
+
+// --------------- Today Index（読み上げビュー） ---------------
+function buildTodayIndex(tasks: Array<{ id: string; schedule: string; description?: string }>, now = new Date()): Array<[string, string]> {
+  // 前提：毎日（MM HH * * *）と今日だけ（idに _today）だけを対象にし、「今日の全予定」を出力する（現在時刻での除外はしない）
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const items: Array<[string, string]> = [];
+
+  const dailyRegex = /^\s*(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*\s*$/; // MM HH * * *
+
+  for (const t of tasks) {
+    if (!t || !t.schedule || typeof t.schedule !== 'string') continue;
+    const m = t.schedule.match(dailyRegex);
+    if (!m) continue; // 複雑なcronは対象外（発火はnode-cron任せ）
+    const mm = parseInt(m[1], 10);
+    const hh = parseInt(m[2], 10);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) continue;
+
+    const timeStr = `${pad(hh)}:${pad(mm)}`;
+    const labelSrc = (t.description || t.id || '').trim();
+    // 軽いノイズ除去（任意）：末尾の「に」「毎日」「今日だけ」を緩く削ぐ
+    const label = labelSrc
+      .replace(/^\s*毎日\s*/g, '')
+      .replace(/^\s*今日だけ\s*/g, '')
+      .replace(/\s*に\s*$/g, '')
+      || t.id;
+
+    // _today の有無は index には関係ない（発火・削除は cron 側の責務）
+    items.push([timeStr, label]);
+  }
+
+  // 時刻昇順で並べる
+  items.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return items;
+}
+
+function writeTodayIndex(items: Array<[string, string]>) {
+  try {
+    const dir = path.dirname(todaySchedulePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(todaySchedulePath, JSON.stringify(items, null, 2), 'utf8');
+    console.log(`✅ today_schedule.json を更新: ${items.length}件`);
+  } catch (e) {
+    console.warn('⚠️ today_schedule.json の書き込みに失敗:', e);
+  }
+}
+
+function rebuildTodayIndex() {
+  try {
+    if (!fs.existsSync(scheduledTasksPath)) return;
+    const content = fs.readFileSync(scheduledTasksPath, 'utf8');
+    if (!content.trim()) return;
+    const data = JSON.parse(content);
+    const tasks = Array.isArray((data as any)?.tasks) ? (data as any).tasks : [];
+    const items = buildTodayIndex(tasks, new Date());
+    writeTodayIndex(items);
+  } catch (e) {
+    console.warn('⚠️ today index 再生成に失敗:', e);
+  }
 }
 
 function registerCronJob(task: any) {
@@ -879,7 +942,7 @@ convert_time 等）は呼ばない。
       起床タスクの場合：
       【必須実行フロー - 絶対順守】
       1. 「○時○分だよ、おはよう！」と挨拶
-      2. 【絶対実行】read_fileでscheduled_tasks.jsonを確認し、今日の予定を伝える。
+      2. 【絶対実行】read_fileで ~/.anicca/today_schedule.json を確認し、そこにある“時刻順の項目”だけを簡潔に伝える（「HH:MM」と短い文。現在時刻以降のみ）。
       3. 今日の予定を断定的に：「9時から会議、14時から開発がある」
       4. 予定を理由に起床促進：「会議まであと2時間しかないぞ！」
       5. 起きるまで声をかけ続ける。
@@ -902,25 +965,23 @@ convert_time 等）は呼ばない。
       - エスカレーション：優しい→厳しい→脅し
       
       Slack返信タスクの場合：
-      「○時○分になりました。Slack返信を始めます」と宣言して返信フローを開始してください。
+      開始宣言はせず、返信フローを即時に開始する（送信直前のみ一度だけ承認）。
 
-      朝会タスクの場合（task.id が「standup_」で始まる）：
-      - 開始宣言：「[現在時刻]です。朝会を始めます。」と告げる。
+      朝会タスクの場合（task.id が「standup_」や「standup__」で始まる）：
+      - 開始宣言はしない。すぐに進行する。
       - 今日の固定予定の確認：
-        ・read_fileで ~/.anicca/scheduled_tasks.json を読み、今日の“現在時刻以降”に発火するタスクを時刻順に簡潔に列挙（時刻＋要点のみ）。
+        ・read_fileで ~/.anicca/today_schedule.json を読み、配列に含まれる“時刻順の項目（現在時刻以降）”だけを簡潔に列挙（HH:MMと短い文のみ）。
       - 残存タスクの取得と選定：
         ・read_fileで ~/.anicca/tasks.md を読み、未完了のタスクを把握する。
         ・期限や重要性を踏まえ、自律的に「今日やるタスク」を複数選定（数理スコアは使わず自然言語判断でよい）。
         ・疑問点や依存関係がある場合のみ短く質問し、回答を反映して確定する。
       - 具体的な時間への自動落とし込み（開始リマインドの登録）：
-        ・先に把握した固定予定のスキマ時間に、選定した各タスクの開始時刻を自動で割当てる（過度な最適化は不要）。
-        ・各タスクについて ~/.anicca/scheduled_tasks.json に“今日のみ”の開始リマインドを追加する。
-          - id: todo_<slug>_<HHMM>_today（<slug> はタスク名を小文字・英数字・ハイフンに正規化）
+        ・先に把握した固定予定のスキマ時間に、選定した各タスクの開始時刻を自動で割り当てる（過度な最適化は不要）。
+        ・各タスクについて ~/.anicca/scheduled_tasks.json に“今日のみ”の開始リマインドを追加する（最小スキーマのみ使用）。
+          - id: todo-<slug>__<HHMM>_today（<slug> はタスク名を小文字・英数字・ハイフンに正規化）
           - schedule: "<MM> <HH> * * *"
-          - command: "タスク開始リマインド"
-          - description: "今日のタスク: <元のタスク名> を開始（今日のみ）"
-          - timezone: task.timezone を必ず使用する（未指定のタスクは追加しない／登録時点で必ず timezone を付与する）
-        ・書き込みは必ず read→merge→write(JSON.stringify(, null, 2))。同一idが既にあれば重複追加しない。
+          - description: "<短い文>"
+        ・書き込みは必ず read→merge→write(JSON.stringify(, null, 2))。同一 id + schedule が既にあれば追加しない。
       - まとめの宣言：
         ・「今日やることは『[決めたタスク名一覧]』です。開始時刻になったら声をかけます。変更があれば今言ってください。」と短く締める。
 

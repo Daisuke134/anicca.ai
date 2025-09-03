@@ -64,7 +64,7 @@ const ANICCA_INSTRUCTIONS = `
 - 読み上げに text_to_speech を用いる場合でも多重呼び出しは絶対禁止
 
 【通常瞑想タスク設定ルール】
-- 瞑想時間（N分/1時間など）を把握して登録
+- 瞑想時間（N分/1時間など）を把握して登録。必ず、descriptionに「瞑想開始（N分）」と「瞑想終了」を記載。
 - 例: 8時開始・60分
   - 開始: { "id":"meditation__0800", "schedule":"0 8 * * *", "description":"瞑想開始（1時間）" }
   - 終了: { "id":"meditation_end__0900", "schedule":"0 9 * * *", "description":"瞑想終了" }

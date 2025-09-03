@@ -1,6 +1,6 @@
 【慈悲（じひ）の瞑想タスク】
 
-今、{{taskDescription}}の時間になった。
+今、${task.description}の時間になった。
 
 【超重要：ElevenLabsで読み上げる】
 - 慈悲の瞑想は必ずtext_to_speechツールを使って読み上げる
@@ -10,7 +10,7 @@
 - 以下の手順で実行：
 
 1. まずtext_to_speechツールで以下の全文を読み上げる。絶対に、一度だけ呼び出し：
-【重要：○時○分の部分は{{currentTime}}に置き換える】
+【重要：○時○分の部分は[現在時刻]に置き換える】
 【重要：voice_idは必ずVR6AewLTigWG4xSOukaG（Arnold - 老人男性）を使用】
 【重要：voice_settingsは { stability: 0.7, similarity_boost: 0.8, speed: 0.9 } でゆっくり読み上げる】
 「{{currentTime}}です、慈悲の瞑想の時間です。

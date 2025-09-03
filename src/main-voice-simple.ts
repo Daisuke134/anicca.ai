@@ -917,138 +917,34 @@ function removeTaskFromJson(taskId: string) {
 async function executeScheduledTask(task: any) {
   const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
   
-  // 慈悲の瞑想タスクかどうか判定（jihi_で始まるIDまたは既存のjihino_meisou）
-  const isJihiMeditation = task.id?.startsWith('jihi_') || 
-                          task.id?.includes('jihino_meisou');
+  // テンプレートは task.id の接頭辞で選択（最小ロジック）
 
   ws.on('open', () => {
-    const enhancedCommand = `
-      【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
-      
-      今、${task.description}の時間になった。以降の現在時刻はそのままこの値を使うこと。
-      タスクの現在時刻を「Cron発火時刻」とし、時間系ツール（get_current_time /
-convert_time 等）は呼ばない。
+    const id = String(task.id || '');
+    let tpl = 'default.txt';
+    if (id.startsWith('jihi_') || id.startsWith('jihi__')) tpl = 'jihi_meditation.txt';
+    else if (id.startsWith('wake_up_') || id.startsWith('wake_up__')) tpl = 'wake_up.txt';
+    else if (id.startsWith('sleep_') || id.startsWith('sleep__')) tpl = 'sleep.txt';
+    else if (id.startsWith('standup_') || id.startsWith('standup__')) tpl = 'standup.txt';
+    else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
+    else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
 
-      【起床・就寝の声かけ】
-      - 声かけを一瞬も止めないでください。フロー実行後も、声をかけ続けること。
-      - ユーザーの反応があるまで永遠に声をかけ続けてください
-      - 5秒も黙ることは禁止です。常に声を出し続けてください
+    const commonPath = path.join(process.cwd(), 'prompts', 'common.txt');
+    const tplPath = path.join(process.cwd(), 'prompts', tpl);
+    let commonText = '';
+    let templateText = '';
+    try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
+    try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
+    const commandBody = [commonText, templateText]
+      .filter(Boolean)
+      .join('\n\n')
+      .replace(/\$\{task\.description\}/g, String(task.description ?? ''));
 
-      【絶対禁止事項】
-      - 「かもしれません」「たぶん」等の曖昧表現
-      - 予定・習慣記録を想像で話すこと（必ず確認する）
-      - 5秒以上の沈黙
-      
-      起床タスクの場合：
-      【必須実行フロー - 絶対順守】
-      1. 「○時○分だよ、おはよう！」と挨拶
-      2. 【絶対実行】read_fileで ~/.anicca/today_schedule.json を確認し、そこにある“時刻順の項目”だけを簡潔に伝える（「HH:MM」と短い文。現在時刻以降のみ）。
-      3. 今日の予定を断定的に：「9時から会議、14時から開発がある」
-      4. 予定を理由に起床促進：「会議まであと2時間しかないぞ！」
-      5. 起きるまで声をかけ続ける。
-      
-      就寝タスクの場合：
-      【必須実行フロー - 絶対順守】
-      1. 「○時○分だよ、寝る時間！」と宣言
-      2. 【絶対実行】read_fileでscheduled_tasks.jsonで明日の予定を確認し伝える。
-      3. 「明日は8時から重要な会議があるから、今寝れば7時間睡眠確保できる」
-      4. 寝るまで声をかけ続ける。
-      
-      反応がない場合の自動追加タスク：
-      - 3分経っても反応がない場合、write_fileでscheduled_tasks.jsonに新規タスクを追加
-      - 新規ID形式: wake_up_HHMM_today（例：wake_up_0603_today）
-      - 元のタスクはそのまま残す
-      - 新規タスクのdescriptionに「（今日のみ）」を追加
-      - 最大3回まで3分ごとに追加
-      
-      【共通ルール】
-      - エスカレーション：優しい→厳しい→脅し
-      
-      Slack返信タスクの場合：
-      開始宣言はせず、返信フローを即時に開始する（送信直前のみ一度だけ承認）。
-
-      朝会タスクの場合（task.id が「standup_」や「standup__」で始まる）：
-      - 開始宣言：「[現在時刻]になりました。朝会を始めます。」と告げる。
-      - 今日の固定予定の確認：
-        ・read_fileで ~/.anicca/today_schedule.json を読み、現在時刻以降の各項目を「HH時MM分は〈内容〉です。」の形式で、間を置きつつ簡潔に読み上げる。
-      - 残存タスクの取得と選定：
-        ・read_fileで ~/.anicca/tasks.md を読み、未完了のタスクを把握する。
-        ・重要度・期限・依存関係を踏まえ、「今日やるべきタスク案」とその理由を提示（短く）。
-        ・ユーザーに追加/完了/優先順位変更の有無を相談し、合意内容を反映する。
-      - Todayセクションの確定：
-        ・「## Today YYYY-MM-DD」セクションを作成/更新し、チェックボックス形式で今日のToDoを列挙。
-        ・既存内容は保持しつつ当日セクションのみ更新。保存後は「今日のToDoを確定しました。」とだけ報告。
-
-      会議の10分前タスクの場合（task.id が「mtg_pre_」で始まる）：
-      - 宣言：description から会議名を抽出し、「〈会議名〉の10分前です。準備をお願いします。」と告げる。
-        ・会議名は description の括弧（「（」）より前の名称、無ければURLなどを除いた短い名称を用いる。
-      - URLがある場合（description に "url=" を含む）：
-        ・ただちに既定ブラウザでURLを開く（承認確認は不要）。
-        ・「リンクを開きました。入室してください。」と案内。開けない環境の場合はURLを読み上げるだけに留める。
-      - URLが無い場合：
-        ・「リンクは未提供です。いつもの手段で入室準備をしてください。」と短く促す。
-
-      会議開始タスクの場合（task.id が「mtg_start_」で始まる）：
-      - 宣言：「開始時刻になりました。入室してください。」とだけ告げる（10分前で入室済み前提。会議名やURLの再案内は不要）。
-      
-      瞑想タスクの場合（慈悲の瞑想以外）：
-      - descriptionに「瞑想開始」が含まれる場合：
-        「○時○分です、瞑想の時間です。[descriptionに含まれる時間]の瞑想を始めましょう」と言ってください。
-        例：descriptionが「瞑想開始（1時間）」なら「○時○分です、瞑想の時間です。1時間の瞑想を始めましょう」
-      - descriptionに「瞑想終了」が含まれる場合：
-        「瞑想終了の時間です。お疲れ様でした」と言ってください。
-      
-      慈悲（じひ）の瞑想タスクの場合：
-      【超重要：ElevenLabsで読み上げる】
-      - 慈悲の瞑想は必ずtext_to_speechツールを使って読み上げる
-      - 絶対に、一度に一回だけtext_to_speechを実行する。長いテキストでも必ず一回にまとめる。絶対に複数回実行しない。
-      - 短時間で連続実行は厳禁（音声が重複して最悪の体験になる）
-      - あなた自身は絶対に発声しない（ElevenLabsと音声が重なるため）
-      - 以下の手順で実行：
-      
-      1. まずtext_to_speechツールで以下の全文を読み上げる。絶対に、一度だけ呼び出し：
-      【重要：○時○分の部分はdescriptionの現在時刻に置き換える】
-      【重要：voice_idは必ずVR6AewLTigWG4xSOukaG（Arnold - 老人男性）を使用】
-      【重要：voice_settingsは { stability: 0.7, similarity_boost: 0.8, speed: 0.9 } でゆっくり読み上げる】
-      「[実際の時刻を入れる]です、慈悲の瞑想の時間です。
-      
-      それでは一緒に慈悲の瞑想を始めましょう。
-
-      私が幸せでありますように
-      私の悩み苦しみがなくなりますように
-      私のねがいごとが叶えられますように
-      私にさとりの光が現れますように
-
-      私の家族が幸せでありますように
-      私の家族の悩み苦しみがなくなりますように
-      私の家族の願いごとが叶えられますように
-      私の家族にさとりの光が現れますように
-
-      生きとし いけるものが幸せでありますように
-      生きとし いけるものの悩み苦しみがなくなりますように
-      生きとし いけるものの願いごとが叶えられますように
-      生きとし いけるものにさとりの光が現れますように
-      
-      慈悲の瞑想を終了しました」
-      
-      2. text_to_speechの読み上げが完全に終わるまで待つ
-      3. 読み上げ中は絶対に自分で発声しない
-      4. 読み上げ完了後も何も言わない（すでに「終了しました」が含まれているため）
-      
-      【絶対厳守】
-      - この瞑想文全体を必ずtext_to_speechツールに渡す。複数回は絶対にダメで、一度だけ呼び出しする。
-      - 自分では一切発声しない。
-      - ElevenLabsの音声再生中は完全に沈黙を保つ
-    `;
-    
     ws.send(JSON.stringify({
       type: 'scheduled_task',
-      taskType: isJihiMeditation ? 'jihi_meditation' : 'normal',
       taskId: task.id,
-      command: enhancedCommand
+      command: commandBody
     }));
-    
-    // WebSocket接続を維持（5秒切断を削除）
   });
   
   ws.on('message', (data) => {

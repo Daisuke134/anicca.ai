@@ -20,6 +20,11 @@ export class AniccaSessionManager {
   private ready: boolean = false;
   private isEnsuring: boolean = false;                 // ensureConnected 並列抑止
   private restoredOnce: boolean = false;               // restoreSession 多重実行防止
+  // 応答進行・自動送信用
+  private isGenerating: boolean = false;
+  private systemOpQueue: Array<{ kind: 'mem'|'tz'; payload?: any }> = [];
+  private hasInformedTimezoneThisSession: boolean = false;
+  private lastInformedTimezone: string | null = null;
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
@@ -52,6 +57,64 @@ export class AniccaSessionManager {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
   }
   
+  // ======= 自動送信（mem/TZ）: キュー運用 + 応答を起動しない送信 =======
+  private enqueueSystemOp(op: {kind:'mem'|'tz'; payload?: any}) {
+    if (op.kind === 'tz') {
+      const tz = this.userTimezone || null;
+      if (!tz) return; // TZが無いなら送らない
+      if (this.hasInformedTimezoneThisSession && this.lastInformedTimezone === tz) return;
+    }
+    this.systemOpQueue.push(op);
+    console.log('[SYSOP_ENQUEUE]', op.kind);
+  }
+
+  private async flushSystemOpsIfIdle() {
+    if (this.isGenerating || !this.ready) return;
+    while (this.systemOpQueue.length > 0 && !this.isGenerating && this.ready) {
+      const op = this.systemOpQueue.shift()!;
+      console.log('[SYSOP_FLUSH]', op.kind);
+      try {
+        if (op.kind === 'mem') {
+          await this.sendMemoriesSilently();
+        } else if (op.kind === 'tz') {
+          await this.sendTimezoneSilently();
+        }
+      } catch (e) {
+        console.warn('[SYSOP_FAIL]', op.kind, e);
+      }
+    }
+  }
+
+  private async sendMemoriesSilently() {
+    try {
+      const aniccaPath = path.join(os.homedir(), '.anicca', 'anicca.md');
+      if (!await fs.access(aniccaPath).then(() => true).catch(() => false)) return;
+      const memories = await fs.readFile(aniccaPath, 'utf-8');
+      if (!memories.trim()) return;
+      const systemMessage =
+        `以下はユーザーに関する記憶。会話の前提として内部で保持すること（返答不要）：\n\n${memories}`;
+      // 応答を起動しない送信（transportレベル）
+      (this.session as any)?.transport?.sendMessage?.(systemMessage, {}, { triggerResponse: false });
+      console.log('[MEM_SENT_SILENTLY]');
+    } catch (e) {
+      console.warn('sendMemoriesSilently failed:', e);
+    }
+  }
+
+  private async sendTimezoneSilently() {
+    const tz = this.userTimezone || null;
+    if (!tz) return;
+    try {
+      const msg = `System: User timezone is ${tz}. Use this timezone in calendar/tool calls.`;
+      (this.session as any)?.transport?.sendMessage?.(msg, {}, { triggerResponse: false });
+      this.hasInformedTimezoneThisSession = true;
+      this.lastInformedTimezone = tz;
+      console.log('[TZ_INFO_SENT]', { once: true, changed: true, triggerResponse: false });
+    } catch (e) {
+      console.warn('sendTimezoneSilently failed:', e);
+    }
+  }
+
   // --- 健全性ユーティリティ ---
   private tokenTTLSeconds(): number {
     if (!this.clientSecretExpiresAt) return Number.POSITIVE_INFINITY;
@@ -624,8 +687,27 @@ export class AniccaSessionManager {
               console.warn('restoreSession after READY failed:', e);
             }
           }
+          // READY後に一度だけ mem/TZ を“応答なし”で反映（多重抑止つき）
+          this.enqueueSystemOp({ kind: 'mem' });
+          this.enqueueSystemOp({ kind: 'tz' });
+          this.flushSystemOpsIfIdle();
         }
       } catch {}
+    });
+
+    // 応答の開始/終了を捕捉（競合回避とキュー解放）
+    this.session.on('agent_start', (_ctx: any, _agent: any) => {
+      this.isGenerating = true;
+      this.lastServerEventAt = Date.now();
+      console.log('[AGENT_START]');
+    });
+    this.session.on('agent_end', (_ctx: any, _agent: any, _output: string) => {
+      this.isGenerating = false;
+      this.lastServerEventAt = Date.now();
+      console.log('[AGENT_END]');
+      // UIへ完了のフォールバック通知（半二重戻し）
+      this.broadcast({ type: 'turn_done' });
+      this.flushSystemOpsIfIdle();
     });
 
     // 音声データイベント（transport経由）
@@ -646,7 +728,7 @@ export class AniccaSessionManager {
     });
 
     // 音声開始/終了
-    this.session.on('audio_start', () => {
+    this.session.on('audio_start', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
       // ElevenLabs再生中は無視
       if (this.isElevenLabsPlaying) {
@@ -657,7 +739,7 @@ export class AniccaSessionManager {
       this.broadcast({ type: 'audio_start' });
     });
 
-    this.session.on('audio_stopped', () => {
+    this.session.on('audio_stopped', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
       // ElevenLabs再生中は無視
       if (this.isElevenLabsPlaying) {
@@ -947,18 +1029,7 @@ export class AniccaSessionManager {
     // Slack接続状態を確認
     await this.checkSlackConnection();
     
-    // Serenaの記憶を確認
-    await this.checkMemories();
-
-    // ユーザーのTZをセッションに周知（行動誘導）
-    if (this.userTimezone) {
-      try {
-        await this.session.sendMessage(`System: User timezone is ${this.userTimezone}. When you call calendar tools, pass this timezone parameter.`);
-        console.log('🌐 Informed session about user timezone:', this.userTimezone);
-      } catch (e) {
-        console.warn('Failed to inform session about timezone:', e);
-      }
-    }
+    // （READY後に mem/TZ を“応答なし”で反映する。ここでは送らない）
   }
   
   async disconnect() {

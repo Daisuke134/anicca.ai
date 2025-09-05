@@ -897,11 +897,53 @@ function registerCronJob(task: any) {
       job.stop();
     }
   }, {
-    timezone: task.timezone || 'Asia/Tokyo',
+    timezone: resolveTZ(task),
     scheduled: true
   });
 
   cronJobs.set(task.id, job);
+
+  // ------- 事前プレフライト（T-1分；簡易MM HH対応） -------
+  try {
+    const m = String(task.schedule || '').match(/^\s*(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*\s*$/);
+    if (m) {
+      const mm = parseInt(m[1], 10);
+      const hh = parseInt(m[2], 10);
+      const preMinute = (mm >= 1 ? mm - 1 : 59);
+      const preHour = (mm >= 1 ? hh : (hh + 23) % 24);
+      const preSpec = `${preMinute} ${preHour} * * *`;
+      const preflight = cron.schedule(preSpec, async () => {
+        try {
+          await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+          console.log('[CRON_PREFLIGHT]', task.id);
+        } catch (e) {
+          console.warn('[CRON_PREFLIGHT_FAIL]', task.id, e);
+        }
+      }, {
+        timezone: resolveTZ(task),
+        scheduled: true
+      });
+      cronJobs.set(`${task.id}__preflight`, preflight);
+    }
+  } catch (e) {
+    console.warn('⚠️ preflight setup failed:', e);
+  }
+}
+
+// ---- タイムゾーン解決（タスク→ユーザー→OS→UTC）----
+function resolveTZ(task: any): string {
+  try {
+    if (task && typeof task.timezone === 'string' && task.timezone.length >= 3) {
+      return task.timezone;
+    }
+    const userTz = (sessionManager as any)?.getUserTimezone?.();
+    if (userTz && typeof userTz === 'string' && userTz.length >= 3) {
+      return userTz;
+    }
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
 }
 
 function removeTaskFromJson(taskId: string) {

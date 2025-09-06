@@ -554,8 +554,8 @@ function createHiddenWindow() {
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
             // ノイズ抑止パラメータ（拾いを優先して緩和）
-            const RMS_THRESHOLD = 0.010;  // ノイズ抑制をやや強めに
-            const MIN_SPEECH_MS = 350;    // 誤立ち上がりをさらに抑制
+            const RMS_THRESHOLD = 0.008;  // 反応重視（拾いを戻す）
+            const MIN_SPEECH_MS = 300;    // 0.3秒で送信開始に到達
             const SAMPLE_RATE = 24000;
             let speechAccumMs = 0;
             // プリロール（先行バッファ）で開始直後から十分量を送る

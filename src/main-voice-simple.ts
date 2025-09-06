@@ -245,9 +245,10 @@ function createHiddenWindow() {
         let isPlaying = false;
         let currentSource = null;
         let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
-        let isAgentSpeaking = false; // エージェント発話中（半二重ゲート）
-        let micPaused = false;       // マイク送出一時停止
-        let sdkReady = false; // SDK接続可否（送信ゲート）
+        let isAgentSpeaking = false; // 視覚用フラグ（送信ゲートには使用しない）
+        let micPaused = false;       // 入力一時停止（ElevenLabs等の“システム再生時のみ”使用）
+        let sdkReady = false; // 監視用（送信ゲートには使用しない）
+        let inflight = false;        // /audio/input 送信の同時実行抑制（1本だけ）
 
         // SDK状態確認
         async function checkSDKStatus() {
@@ -275,9 +276,8 @@ function createHiddenWindow() {
 
               // PCM16音声出力データを受信
               if (message.type === 'audio_output' && message.format === 'pcm16') {
-                // エージェント発話開始レースを潰す：即時に送話停止
+                // エージェント発話開始の合図（視覚用のみ）
                 isAgentSpeaking = true;
-                micPaused = true;
                 console.log('🔊 Received PCM16 audio from SDK');
 
                 // Base64デコードしてPCM16データを取得
@@ -297,13 +297,17 @@ function createHiddenWindow() {
 
               // エージェント音声開始/終了（半二重制御用）
               if (message.type === 'audio_start') {
-                isAgentSpeaking = true;
-                micPaused = true; // 出力開始→入力停止
+                isAgentSpeaking = true; // 視覚用のみ（ゲートには不使用）
               }
               if (message.type === 'audio_stopped') {
+                isAgentSpeaking = false; // 視覚用のみ（ゲートには不使用）
+              }
+
+              // 応答完了（フォールバックで半二重を確実に戻す）
+              if (message.type === 'turn_done') {
                 isAgentSpeaking = false;
-                // レース吸収：最終化待ち（150ms）後に送話再開
-                setTimeout(() => { micPaused = false; }, 150);
+                micPaused = false;
+                console.log('🔁 turn_done: gates cleared');
               }
 
               // 音声中断処理
@@ -311,11 +315,11 @@ function createHiddenWindow() {
                 console.log('🛑 Audio interrupted - clearing queue');
                 audioQueue = [];
                 isPlaying = false;
-                // 中断は終了ではない：送話再開しない
+                // 即時にマイクを解放し、ユーザー音声を継続送出（barge-in 確実化）
+                micPaused = false;
                 isAgentSpeaking = false;
-                // micPaused は維持（ここで下げない）
-                
-                // 再生中の音声を停止
+                console.log('[BARGE_IN_DETECTED]');
+                // 再生中の音声を停止（存在すれば）
                 if (currentSource) {
                   currentSource.stop();
                   currentSource = null;
@@ -526,7 +530,21 @@ function createHiddenWindow() {
             // PCM16形式で音声データを送信
             processor.onaudioprocess = async (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
-              
+
+              // 軽量RMSで環境ノイズを抑制（誤バージイン抑止）
+              try {
+                let sum = 0;
+                for (let i = 0; i < inputData.length; i++) {
+                  const s = inputData[i];
+                  sum += s * s;
+                }
+                const rms = Math.sqrt(sum / inputData.length);
+                if (typeof RMS_THRESHOLD !== 'undefined' && rms < RMS_THRESHOLD) {
+                  // console.debug('[RMS_DROP]', rms);
+                  return;
+                }
+              } catch {}
+
               // Float32をInt16に変換
               const int16Array = new Int16Array(inputData.length);
               for (let i = 0; i < inputData.length; i++) {
@@ -534,10 +552,10 @@ function createHiddenWindow() {
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
 
-              // 出力中は送信しない（半二重）。
+              // 送信停止条件の最小化：
               // 1) システム音声（ElevenLabs等）再生中 → 送信停止
-              // 2) エージェント自身が発話中（audio_output） → 送信停止
-              if (micPaused || isSystemPlaying || isAgentSpeaking) {
+              // 2) エージェント自身が発話中 → 停止しない（barge-in成立のため常時送る）
+              if (isSystemPlaying) {
                 return;
               }
 
@@ -546,10 +564,11 @@ function createHiddenWindow() {
                 return;  // 空データは送信しない
               }
 
-              // 未接続時は送信しない
-              if (!sdkReady) {
+              // /audio/input 送信の同時実行を抑制（inflight 1本）
+              if (typeof inflight !== 'undefined' && inflight) {
                 return;
               }
+              if (typeof inflight !== 'undefined') inflight = true;
               // Base64エンコードして送信
               const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
               
@@ -558,26 +577,47 @@ function createHiddenWindow() {
                 return;  // base64が空でも送信しない
               }
 
-              try {
-                const response = await fetch('/audio/input', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    audio: base64,
-                    format: 'pcm16',
-                    sampleRate: 24000
-                  })
-                });
-
-                if (!response.ok) {
-                  console.error('Failed to send PCM16 audio to SDK');
-                  if (response.status === 400) {
-                    await checkSDKStatus();
+              const trySend = async () => {
+                try {
+                  const response = await fetch('/audio/input', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ 
+                      audio: base64,
+                      format: 'pcm16',
+                      sampleRate: 24000
+                    })
+                  });
+                  // console.debug('[SEND_GATE_BYPASS] frame sent (bridge ensures if stale)');
+                  if (response.status === 503) throw new Error('503');
+                  if (!response.ok) {
+                    console.error('Failed to send PCM16 audio to SDK');
                   }
+                } catch (error) {
+                  // READY直後の一発落ちを自然復旧（短いリトライ）
+                  let ok = false, delay = 200;
+                  for (let i = 0; i < 3; i++) {
+                    await new Promise(r => setTimeout(r, delay));
+                    try {
+                      const resp = await fetch('/audio/input', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ 
+                          audio: base64,
+                          format: 'pcm16',
+                          sampleRate: 24000
+                        })
+                      });
+                      if (resp.ok) { ok = true; break; }
+                    } catch {}
+                    delay += 200;
+                  }
+                  if (!ok) console.error('Audio send error (after retries):', error);
+                } finally {
+                  if (typeof inflight !== 'undefined') inflight = false;
                 }
-              } catch (error) {
-                console.error('Audio send error:', error);
-              }
+              };
+              trySend();
             };
 
             console.log('🎤 Voice capture started (SDK WebSocket mode, PCM16)');

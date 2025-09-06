@@ -196,7 +196,14 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            turnDetection: { type: 'server_vad' }
+            // 割り込み即応性を最大化（semantic_vad + 応答自動開始 + 高感度 + 短無音）
+            turnDetection: {
+              type: 'semantic_vad',
+              createResponse: true,
+              interruptResponse: true,
+              eagerness: 'high',
+              silenceDurationMs: 300
+            }
           },
           output: {
             voice: 'alloy'

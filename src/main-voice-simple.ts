@@ -506,7 +506,13 @@ function createHiddenWindow() {
               return;
             }
 
-            console.log('✅ Using SDK WebSocket mode for voice processing');
+            // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
+            console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
+            // ノイズ抑止パラメータ（環境に合わせて微調整可）
+            const RMS_THRESHOLD = 0.006;  // 0.006–0.008 目安
+            const MIN_SPEECH_MS = 120;    // 80–150ms 目安
+            const SAMPLE_RATE = 24000;
+            let speechAccumMs = 0;
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -539,8 +545,10 @@ function createHiddenWindow() {
                   sum += s * s;
                 }
                 const rms = Math.sqrt(sum / inputData.length);
-                if (typeof RMS_THRESHOLD !== 'undefined' && rms < RMS_THRESHOLD) {
-                  // console.debug('[RMS_DROP]', rms);
+                const chunkMs = (inputData.length / SAMPLE_RATE) * 1000;
+                if (typeof RMS_THRESHOLD !== 'undefined' && rms >= RMS_THRESHOLD) { speechAccumMs += chunkMs; } else { speechAccumMs = 0; }
+                if (speechAccumMs < MIN_SPEECH_MS) {
+                  // console.debug('[SHORT_DROP]', { rms, speechAccumMs });
                   return;
                 }
               } catch {}
@@ -620,7 +628,7 @@ function createHiddenWindow() {
               trySend();
             };
 
-            console.log('🎤 Voice capture started (SDK WebSocket mode, PCM16)');
+            console.log('🎤 Voice capture started (PCM16, noise-gated)');
 
           } catch (error) {
             console.error('Failed to start voice capture:', error);

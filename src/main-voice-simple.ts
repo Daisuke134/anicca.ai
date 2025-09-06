@@ -248,7 +248,47 @@ function createHiddenWindow() {
         let isAgentSpeaking = false; // 視覚用フラグ（送信ゲートには使用しない）
         let micPaused = false;       // 入力一時停止（ElevenLabs等の“システム再生時のみ”使用）
         let sdkReady = false; // 監視用（送信ゲートには使用しない）
-        let inflight = false;        // /audio/input 送信の同時実行抑制（1本だけ）
+        let sendQueue = [];          // /audio/input 直列送信用キュー
+        let sending = false;         // 送信中フラグ
+        const queueHighWater = 8;    // 最大キュー長（約1.3秒分）
+
+        function enqueueFrame(base64) {
+          try {
+            if (!base64 || base64.length === 0) return;
+            if (sendQueue.length >= queueHighWater) {
+              sendQueue.shift();
+            }
+            sendQueue.push(base64);
+            drainQueue();
+          } catch (e) {
+            console.error('enqueue error:', e);
+          }
+        }
+
+        async function drainQueue() {
+          if (sending) return;
+          sending = true;
+          try {
+            while (sendQueue.length) {
+              const b64 = sendQueue.shift();
+              try {
+                const resp = await fetch('/audio/input', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ audio: b64, format: 'pcm16', sampleRate: 24000 })
+                });
+                if (!resp.ok) {
+                  console.warn('audio/input not ok:', resp.status);
+                }
+              } catch (e) {
+                console.error('audio/input send error:', e);
+              }
+            }
+          } finally {
+            sending = false;
+            if (sendQueue.length) drainQueue();
+          }
+        }
 
         // SDK状態確認
         async function checkSDKStatus() {
@@ -572,60 +612,12 @@ function createHiddenWindow() {
                 return;  // 空データは送信しない
               }
 
-              // /audio/input 送信の同時実行を抑制（inflight 1本）
-              if (typeof inflight !== 'undefined' && inflight) {
-                return;
-              }
-              if (typeof inflight !== 'undefined') inflight = true;
-              // Base64エンコードして送信
+              // Base64エンコードして直列キューへ（破棄しない・高水位で古いものを捨てる）
               const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
-              
-              // 修正: base64も確認
               if (!base64 || base64.length === 0) {
                 return;  // base64が空でも送信しない
               }
-
-              const trySend = async () => {
-                try {
-                  const response = await fetch('/audio/input', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ 
-                      audio: base64,
-                      format: 'pcm16',
-                      sampleRate: 24000
-                    })
-                  });
-                  // console.debug('[SEND_GATE_BYPASS] frame sent (bridge ensures if stale)');
-                  if (response.status === 503) throw new Error('503');
-                  if (!response.ok) {
-                    console.error('Failed to send PCM16 audio to SDK');
-                  }
-                } catch (error) {
-                  // READY直後の一発落ちを自然復旧（短いリトライ）
-                  let ok = false, delay = 200;
-                  for (let i = 0; i < 3; i++) {
-                    await new Promise(r => setTimeout(r, delay));
-                    try {
-                      const resp = await fetch('/audio/input', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ 
-                          audio: base64,
-                          format: 'pcm16',
-                          sampleRate: 24000
-                        })
-                      });
-                      if (resp.ok) { ok = true; break; }
-                    } catch {}
-                    delay += 200;
-                  }
-                  if (!ok) console.error('Audio send error (after retries):', error);
-                } finally {
-                  if (typeof inflight !== 'undefined') inflight = false;
-                }
-              };
-              trySend();
+              enqueueFrame(base64);
             };
 
             console.log('🎤 Voice capture started (PCM16, noise-gated)');

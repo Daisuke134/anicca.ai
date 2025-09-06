@@ -203,9 +203,12 @@ export class AniccaSessionManager {
             // semantic_vad は維持。初動をやや攻める
             turnDetection: {
               type: 'semantic_vad',
-              eagerness: 'auto',
+              eagerness: 'low',
               createResponse: true,
-              interruptResponse: true
+              interruptResponse: true,
+              prefixPaddingMs: 200,
+              silenceDurationMs: 900,
+              idleTimeoutMs: 1500
             }
           },
           output: {

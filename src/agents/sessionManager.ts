@@ -198,12 +198,12 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            // 近接マイク（イヤホン/ヘッドセット）用の抑制
-            noiseReduction: { type: 'near_field' },
-            // 短断片ノイズでターンが立ちにくい semantic_vad
+            // 一旦、安全側（内蔵マイク前提）に戻す
+            noiseReduction: { type: 'far_field' },
+            // semantic_vad は維持。初動をやや攻める
             turnDetection: {
               type: 'semantic_vad',
-              eagerness: 'low',
+              eagerness: 'auto',
               createResponse: true,
               interruptResponse: true
             }

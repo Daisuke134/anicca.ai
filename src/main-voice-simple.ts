@@ -553,15 +553,15 @@ function createHiddenWindow() {
 
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // ノイズ抑止パラメータ（送る前で強めにブロック）
-            const RMS_THRESHOLD = 0.015;  // 短断片ノイズを通さないレベル
-            const MIN_SPEECH_MS = 700;    // 0.7秒未満は送らない
+            // ノイズ抑止パラメータ（拾いを優先して緩和）
+            const RMS_THRESHOLD = 0.008;  // 0.008前後に緩和
+            const MIN_SPEECH_MS = 300;    // 0.3秒で送信開始に到達
             const SAMPLE_RATE = 24000;
             let speechAccumMs = 0;
             // プリロール（先行バッファ）で開始直後から十分量を送る
             const FRAME_SAMPLES = 4096;
             const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000; // ≈171ms
-            const PREROLL_MS = 700; // 0.7s
+            const PREROLL_MS = 500; // 0.5s に短縮
             const MAX_PREROLL_FRAMES = Math.ceil(PREROLL_MS / FRAME_MS);
             let preRoll = [];
             let speaking = false;

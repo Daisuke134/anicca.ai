@@ -553,16 +553,16 @@ function createHiddenWindow() {
 
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // ノイズ抑止パラメータ（拾いを優先して緩和）
-            const RMS_THRESHOLD = 0.008;  // 反応重視（拾いを戻す）
-            const MIN_SPEECH_MS = 300;    // 0.3秒で送信開始に到達
+            // 独自ゲートを一時無効化（送信前ブロックOFF）
+            const RMS_THRESHOLD = 0;      // 0 = 無効化
+            const MIN_SPEECH_MS = 0;      // 0 = 無効化
             const SAMPLE_RATE = 24000;
             let speechAccumMs = 0;
             // プリロール（先行バッファ）で開始直後から十分量を送る
             const FRAME_SAMPLES = 4096;
             const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000; // ≈171ms
-            const PREROLL_MS = 500; // 0.5s に短縮
-            const MAX_PREROLL_FRAMES = Math.ceil(PREROLL_MS / FRAME_MS);
+            const PREROLL_MS = 0; // 0 = 無効化（先行送出しない）
+            const MAX_PREROLL_FRAMES = 0;
             let preRoll = [];
             let speaking = false;
 
@@ -593,18 +593,8 @@ function createHiddenWindow() {
                 return;
               }
 
-              // 軽量RMSで環境ノイズを抑制（誤バージイン抑止）
-              try {
-                let sum = 0;
-                for (let i = 0; i < inputData.length; i++) {
-                  const s = inputData[i];
-                  sum += s * s;
-                }
-                const rms = Math.sqrt(sum / inputData.length);
-                const chunkMs = (inputData.length / SAMPLE_RATE) * 1000;
-                if (typeof RMS_THRESHOLD !== 'undefined' && rms >= RMS_THRESHOLD) { speechAccumMs += chunkMs; } else { speechAccumMs = 0; }
-                // ここではreturnしない（プリロール用にフレーム化して保持するため）
-              } catch {}
+              // ゲート無効化（RMS/MINを完全スキップ）
+              try { speechAccumMs = MIN_SPEECH_MS; } catch {}
 
               // Float32をInt16に変換（プリロール保持のため先に作る）
               const int16Array = new Int16Array(inputData.length);
@@ -619,26 +609,8 @@ function createHiddenWindow() {
                 return;
               }
 
-              // プリロールへフレームを入れる
-              const frameBytes = new Uint8Array(int16Array.buffer);
-              preRoll.push(frameBytes);
-              if (preRoll.length > MAX_PREROLL_FRAMES) preRoll.shift();
-
-              // 閾値未達の間は送らない（ただしプリロールには貯める）
-              if (speechAccumMs < MIN_SPEECH_MS) {
-                speaking = false;
-                return;
-              }
-
-              // 閾値達成の瞬間にプリロールを吐き出し、その後は継続送信
-              if (!speaking) {
-                for (const fr of preRoll) {
-                  if (!fr || fr.byteLength === 0) continue;
-                  const b64pre = btoa(String.fromCharCode(...fr));
-                  if (b64pre && b64pre.length) enqueueFrame(b64pre);
-                }
-                speaking = true;
-              }
+              // PREROLL無効化：先行バッファ処理をスキップし、即送信
+              speaking = true;
 
               // 空データチェック（保険）
               if (!int16Array || int16Array.length === 0) {
@@ -652,10 +624,8 @@ function createHiddenWindow() {
               }
               enqueueFrame(base64);
 
-              // しきい値を切ったら発話終了扱い（次回開始でまたプリロールを吐く）
-              if (speechAccumMs === 0) {
-                speaking = false;
-              }
+              // 発話終了トグルは独自ゲート無効化中は不使用
+              // if (speechAccumMs === 0) { speaking = false; }
             };
 
             console.log('🎤 Voice capture started (PCM16, noise-gated)');

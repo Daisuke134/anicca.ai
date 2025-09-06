@@ -209,13 +209,15 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            // 割り込み即応性を最大化（semantic_vad + 応答自動開始 + 高感度 + 短無音）
+            // 誤起動抑止の保守設定（server_vad）+ 遠距離ノイズ低減
+            noiseReduction: { type: 'far_field' },
             turnDetection: {
-              type: 'semantic_vad',
+              type: 'server_vad',
+              threshold: 0.93,
+              prefixPaddingMs: 300,
+              silenceDurationMs: 700,
               createResponse: true,
-              interruptResponse: true,
-              eagerness: 'high',
-              silenceDurationMs: 300
+              interruptResponse: true
             }
           },
           output: {
@@ -820,6 +822,11 @@ export class AniccaSessionManager {
 
     // 音声中断処理（transport経由）
     this.session.transport.on('audio_interrupted', () => {
+      // wake 中はノイズ割り込みを無視（実発話は別経路で判定）
+      if (this.wakeupPending) {
+        console.log('[WAKE_IGNORE_INTERRUPTED]');
+        return;
+      }
       // ユーザー発話（barge-in）でwake停止、許可は維持（会話継続）
       this.speechAllowed = true;
       this.stopWakeupLoop();

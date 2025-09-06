@@ -53,18 +53,7 @@ export class AniccaSessionManager {
   // Realtime履歴の新規アイテム検出用（MCP呼び出しの可視化）
   private lastLoggedHistoryIndex: number = 0;
   
-  // --- wake（起床）専用ループ／出力ゲート制御 ---
-  private wakeupPending: boolean = false;
-  private wakeupRepeats: number = 0;
-  private wakeupMaxRepeats: number = 5;            // 最大再送回数
-  private wakeupIntervalMsBase: number = 45_000;   // 初回再送まで
-  private wakeupTimer: NodeJS.Timeout | null = null;
-  private lastWakeupCommand: string | null = null;
-
-  private speechAllowed: boolean = false;          // Cron/ユーザー/起床以外は false
-  private unauthorizedSpeechCount: number = 0;     // 未許可連続回数
-  private lastUnauthorizedSpeechAt: number = 0;    // 直近検出時刻
-  private softMuteUntil: number = 0;               // ソフトミュート解除時刻(ms)
+  // （wake専用ループ／独自ゲートは撤廃）
   
   constructor(private mainAgent?: any) {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
@@ -200,7 +189,7 @@ export class AniccaSessionManager {
     // WebSocketトランスポートのインスタンスを明示的に作成
     const transport = new OpenAIRealtimeWebSocket();
     
-    // セッション作成（GA構成の音声設定に一本化）
+    // セッション作成（GA構成の音声設定）
     this.session = new RealtimeSession(this.agent, {
       model: 'gpt-realtime',
       transport: transport,
@@ -209,13 +198,12 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            // 誤起動抑止の保守設定（server_vad）+ 遠距離ノイズ低減
-            noiseReduction: { type: 'far_field' },
+            // 近接マイク（イヤホン/ヘッドセット）用の抑制
+            noiseReduction: { type: 'near_field' },
+            // 短断片ノイズでターンが立ちにくい semantic_vad
             turnDetection: {
-              type: 'server_vad',
-              threshold: 0.93,
-              prefixPaddingMs: 300,
-              silenceDurationMs: 700,
+              type: 'semantic_vad',
+              eagerness: 'low',
               createResponse: true,
               interruptResponse: true
             }
@@ -465,7 +453,7 @@ export class AniccaSessionManager {
       });
     });
     
-    // 7. 音声入力エンドポイント（新規追加）
+    // 7. 音声入力エンドポイント（短尺/空データは最終フィルタでドロップ）
     this.app.post('/audio/input', async (req, res) => {
       try {
         // 入口で復旧（未接続/期限切れ/古い場合に直す）
@@ -480,6 +468,14 @@ export class AniccaSessionManager {
 
         // Base64エンコードされたPCM16音声データを受け取る
         const audioData = Buffer.from(req.body.audio, 'base64');
+        // 短尺/空チャンクは捨てる（約80ms未満のみブロック）
+        const rate = Number(req.body?.sampleRate) || 24000;
+        const minMs = 80;
+        const minBytes = Math.floor(rate * (minMs / 1000)) * 2; // PCM16(16bit=2bytes)
+        if (audioData.byteLength < minBytes) {
+          res.json({ success: true, dropped: 'short', bytes: audioData.byteLength });
+          return;
+        }
         
         // SDKにPCM16形式の音声データを送信
         await session.sendAudio(audioData.buffer as ArrayBuffer);
@@ -574,8 +570,7 @@ export class AniccaSessionManager {
             await this.ensureConnected(true);
             console.log('📅 Scheduled task received:', message.command);
 
-            // Cronターンは出力許可（ターン中のみ）。wakeは後続で維持。
-            this.speechAllowed = true;
+            // 念のため直前の出力を再チェック
             await interruptIfGenerating(100);
             
             // 慈悲の瞑想タスクの場合の特別処理
@@ -604,23 +599,7 @@ export class AniccaSessionManager {
               }));
             }
 
-            // 起床ループ開始（wake_up__ / wake_up_）
-            try {
-              const id = String(message.taskId || '');
-              const isWake = id.startsWith('wake_up_') || id.startsWith('wake_up__');
-              if (isWake) {
-                if (this.wakeupTimer) {
-                  console.log('[WAKE_DUP_SUPPRESSED] already running');
-                } else {
-                  this.wakeupPending = true;
-                  this.wakeupRepeats = 0;
-                  this.lastWakeupCommand = message.command;
-                  this.speechAllowed = true;
-                  this.startWakeupLoop();
-                  console.log('[WAKE_START]');
-                }
-              }
-            } catch {}
+            // 起床タスクも他の定期タスクと同様に“一発発火”のみ（ループは撤廃）
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -758,8 +737,6 @@ export class AniccaSessionManager {
     this.session.on('agent_end', (_ctx: any, _agent: any, _output: string) => {
       this.isGenerating = false;
       this.lastServerEventAt = Date.now();
-      // wake中は許可維持、それ以外はターン終了で閉じる
-      if (!this.wakeupPending) this.speechAllowed = false;
       console.log('[AGENT_END]');
       // UIへ完了のフォールバック通知（半二重戻し）
       this.broadcast({ type: 'turn_done' });
@@ -786,20 +763,6 @@ export class AniccaSessionManager {
     // 音声開始/終了
     this.session.on('audio_start', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
-      // 未許可の自発発話は即中断（デバウンス付）
-      if (!this.isElevenLabsPlaying && !this.speechAllowed) {
-        const now = Date.now();
-        if (now < this.softMuteUntil) return;
-        try { this.session?.interrupt(); } catch {}
-        this.unauthorizedSpeechCount += 1;
-        if (this.unauthorizedSpeechCount >= 3 && (now - this.lastUnauthorizedSpeechAt) <= 3000) {
-          this.softMuteUntil = now + 2000; // 2秒ソフトミュート
-          this.unauthorizedSpeechCount = 0;
-          console.log('[SPEECH_BLOCKED] soft-mute 2s');
-        }
-        this.lastUnauthorizedSpeechAt = now;
-        return;
-      }
       // ElevenLabs再生中は無視
       if (this.isElevenLabsPlaying) {
         console.log('🔇 Ignoring Anicca audio_start during ElevenLabs playback');
@@ -822,15 +785,6 @@ export class AniccaSessionManager {
 
     // 音声中断処理（transport経由）
     this.session.transport.on('audio_interrupted', () => {
-      // wake 中はノイズ割り込みを無視（実発話は別経路で判定）
-      if (this.wakeupPending) {
-        console.log('[WAKE_IGNORE_INTERRUPTED]');
-        return;
-      }
-      // ユーザー発話（barge-in）でwake停止、許可は維持（会話継続）
-      this.speechAllowed = true;
-      this.stopWakeupLoop();
-      this.wakeupPending = false;
       // ElevenLabs再生中は割り込みを無視（慈悲の瞑想はElevenLabsで処理）
       if (this.isElevenLabsPlaying) {
         console.log('🔇 ElevenLabs再生中 - 割り込みを無視');
@@ -1235,37 +1189,7 @@ export class AniccaSessionManager {
     });
   }
   
-  // ====== wake（起床）の外部ループ ======
-  private startWakeupLoop() {
-    if (!this.wakeupPending) return;
-    if (this.wakeupTimer) return;
-    const tick = async () => {
-      try {
-        if (!this.wakeupPending) { this.stopWakeupLoop(); return; }
-        if (this.wakeupRepeats >= this.wakeupMaxRepeats) { console.log('[WAKE_STOP] max reached'); this.stopWakeupLoop(); return; }
-        // 衝突回避
-        if (this.isGenerating) {
-          try { await this.session?.interrupt(); } catch {}
-          await new Promise(r => setTimeout(r, 100));
-        }
-        if (this.session && this.isConnected() && this.lastWakeupCommand) {
-          await this.sendMessage(this.lastWakeupCommand);
-          this.wakeupRepeats++;
-          console.log('[WAKE_RESEND]', { n: this.wakeupRepeats });
-        }
-      } catch (e) {
-        console.warn('[WAKE_LOOP_ERR]', e);
-      } finally {
-        if (!this.wakeupPending) { this.stopWakeupLoop(); return; }
-        const nextDelay = this.wakeupIntervalMsBase + this.wakeupRepeats * 15_000; // 緩やかに延長
-        this.wakeupTimer = setTimeout(tick, nextDelay);
-      }
-    };
-    this.wakeupTimer = setTimeout(tick, this.wakeupIntervalMsBase);
-  }
-  private stopWakeupLoop() {
-    if (this.wakeupTimer) { clearTimeout(this.wakeupTimer); this.wakeupTimer = null; }
-  }
+  // （wake専用ループは撤廃）
 
   // ====== 応答衝突回避（進行中なら interrupt→短待ち） ======
   private async interruptIfGenerating(delayMs = 100) {
@@ -1393,8 +1317,6 @@ ${memories}
   }
 
   async stop() {
-    // wake ループ停止
-    this.stopWakeupLoop();
     // keep-aliveを停止
     this.stopKeepAlive();
     

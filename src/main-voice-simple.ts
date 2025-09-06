@@ -251,6 +251,7 @@ function createHiddenWindow() {
         let sendQueue = [];          // /audio/input 直列送信用キュー
         let sending = false;         // 送信中フラグ
         const queueHighWater = 8;    // 最大キュー長（約1.3秒分）
+        let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
 
         function enqueueFrame(base64) {
           try {
@@ -341,6 +342,8 @@ function createHiddenWindow() {
               }
               if (message.type === 'audio_stopped') {
                 isAgentSpeaking = false; // 視覚用のみ（ゲートには不使用）
+                // 出力直後の誤割り込み抑止
+                micPostStopMuteUntil = Date.now() + 300;
               }
 
               // 応答完了（フォールバックで半二重を確実に戻す）
@@ -348,6 +351,8 @@ function createHiddenWindow() {
                 isAgentSpeaking = false;
                 micPaused = false;
                 console.log('🔁 turn_done: gates cleared');
+                // 出力直後の誤割り込み抑止
+                micPostStopMuteUntil = Date.now() + 300;
               }
 
               // 音声中断処理
@@ -548,11 +553,18 @@ function createHiddenWindow() {
 
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // ノイズ抑止パラメータ（環境に合わせて微調整可）
-            const RMS_THRESHOLD = 0.006;  // 0.006–0.008 目安
-            const MIN_SPEECH_MS = 120;    // 80–150ms 目安
+            // ノイズ抑止パラメータ（送る前で強めにブロック）
+            const RMS_THRESHOLD = 0.015;  // 短断片ノイズを通さないレベル
+            const MIN_SPEECH_MS = 700;    // 0.7秒未満は送らない
             const SAMPLE_RATE = 24000;
             let speechAccumMs = 0;
+            // プリロール（先行バッファ）で開始直後から十分量を送る
+            const FRAME_SAMPLES = 4096;
+            const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000; // ≈171ms
+            const PREROLL_MS = 700; // 0.7s
+            const MAX_PREROLL_FRAMES = Math.ceil(PREROLL_MS / FRAME_MS);
+            let preRoll = [];
+            let speaking = false;
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -576,6 +588,10 @@ function createHiddenWindow() {
             // PCM16形式で音声データを送信
             processor.onaudioprocess = async (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
+              // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
+              if (Date.now() < micPostStopMuteUntil) {
+                return;
+              }
 
               // 軽量RMSで環境ノイズを抑制（誤バージイン抑止）
               try {
@@ -587,37 +603,59 @@ function createHiddenWindow() {
                 const rms = Math.sqrt(sum / inputData.length);
                 const chunkMs = (inputData.length / SAMPLE_RATE) * 1000;
                 if (typeof RMS_THRESHOLD !== 'undefined' && rms >= RMS_THRESHOLD) { speechAccumMs += chunkMs; } else { speechAccumMs = 0; }
-                if (speechAccumMs < MIN_SPEECH_MS) {
-                  // console.debug('[SHORT_DROP]', { rms, speechAccumMs });
-                  return;
-                }
+                // ここではreturnしない（プリロール用にフレーム化して保持するため）
               } catch {}
 
-              // Float32をInt16に変換
+              // Float32をInt16に変換（プリロール保持のため先に作る）
               const int16Array = new Int16Array(inputData.length);
               for (let i = 0; i < inputData.length; i++) {
                 const s = Math.max(-1, Math.min(1, inputData[i]));
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
 
-              // 送信停止条件の最小化：
+              // 送信停止条件：
               // 1) システム音声（ElevenLabs等）再生中 → 送信停止
-              // 2) エージェント自身が発話中 → 停止しない（barge-in成立のため常時送る）
               if (isSystemPlaying) {
                 return;
               }
 
-              // 修正: 空データチェック追加（PCM16エラー防止）
+              // プリロールへフレームを入れる
+              const frameBytes = new Uint8Array(int16Array.buffer);
+              preRoll.push(frameBytes);
+              if (preRoll.length > MAX_PREROLL_FRAMES) preRoll.shift();
+
+              // 閾値未達の間は送らない（ただしプリロールには貯める）
+              if (speechAccumMs < MIN_SPEECH_MS) {
+                speaking = false;
+                return;
+              }
+
+              // 閾値達成の瞬間にプリロールを吐き出し、その後は継続送信
+              if (!speaking) {
+                for (const fr of preRoll) {
+                  if (!fr || fr.byteLength === 0) continue;
+                  const b64pre = btoa(String.fromCharCode(...fr));
+                  if (b64pre && b64pre.length) enqueueFrame(b64pre);
+                }
+                speaking = true;
+              }
+
+              // 空データチェック（保険）
               if (!int16Array || int16Array.length === 0) {
                 return;  // 空データは送信しない
               }
 
-              // Base64エンコードして直列キューへ（破棄しない・高水位で古いものを捨てる）
+              // Base64エンコードして直列キューへ
               const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
               if (!base64 || base64.length === 0) {
                 return;  // base64が空でも送信しない
               }
               enqueueFrame(base64);
+
+              // しきい値を切ったら発話終了扱い（次回開始でまたプリロールを吐く）
+              if (speechAccumMs === 0) {
+                speaking = false;
+              }
             };
 
             console.log('🎤 Voice capture started (PCM16, noise-gated)');

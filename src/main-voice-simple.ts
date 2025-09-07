@@ -598,18 +598,19 @@ function createHiddenWindow() {
 
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // 独自ゲートを一時無効化（送信前ブロックOFF）
-            const RMS_THRESHOLD = 0;      // 0 = 無効化
-            const MIN_SPEECH_MS = 0;      // 0 = 無効化
+            // 軽量RMSゲート（Semantic VAD 前段で“明らかな環境音”を落とす）
+            const RMS_THRESHOLD = 0.0045; // ≈ -47 dBFS：小さな環境音を弾く
+            const MIN_SPEECH_MS = 300;    // 300ms 連続で閾値超えなら送信開始
             const SAMPLE_RATE = 24000;
             let speechAccumMs = 0;
             // プリロール（先行バッファ）で開始直後から十分量を送る
             const FRAME_SAMPLES = 4096;
             const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000; // ≈171ms
-            const PREROLL_MS = 0; // 0 = 無効化（先行送出しない）
-            const MAX_PREROLL_FRAMES = 0;
+            const PREROLL_MS = 200; // 頭欠け防止で直前200msも送る
+            const MAX_PREROLL_FRAMES = Math.ceil(PREROLL_MS / FRAME_MS);
             let preRoll = [];
             let speaking = false;
+            let hangoverMsLeft = 400; // 終了後に少しだけ送り続けて語尾切れ防止
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -638,8 +639,13 @@ function createHiddenWindow() {
                 return;
               }
 
-              // ゲート無効化（RMS/MINを完全スキップ）
-              try { speechAccumMs = MIN_SPEECH_MS; } catch {}
+              // フレームRMSを計算（0..1）
+              let sumSq = 0;
+              for (let i = 0; i < inputData.length; i++) {
+                const s = inputData[i];
+                sumSq += s * s;
+              }
+              const rms = Math.sqrt(sumSq / inputData.length);
 
               // Float32をInt16に変換（プリロール保持のため先に作る）
               const int16Array = new Int16Array(inputData.length);
@@ -654,20 +660,47 @@ function createHiddenWindow() {
                 return;
               }
 
-              // PREROLL無効化：先行バッファ処理をスキップし、即送信
-              speaking = true;
-
-              // 空データチェック（保険）
-              if (!int16Array || int16Array.length === 0) {
-                return;  // 空データは送信しない
+              // 軽量RMSゲート：開始/終了/余韻/先行バッファ（PREROLL）
+              if (rms >= RMS_THRESHOLD) {
+                // 閾値以上 → 話し中カウント加算、余韻リセット
+                speechAccumMs += FRAME_MS;
+                hangoverMsLeft = 400;
+                if (!speaking && speechAccumMs >= MIN_SPEECH_MS) {
+                  // 未発話→発話へ遷移（しきい値連続超過）
+                  speaking = true;
+                  // 貯めたPREROLLを先に吐き出す
+                  if (preRoll.length) {
+                    for (const p of preRoll) enqueueFrame(p);
+                    preRoll = [];
+                  }
+                }
+              } else {
+                // 閾値未満：発話中なら余韻で送る。余韻消化後に停止
+                if (speaking) {
+                  if (hangoverMsLeft > 0) {
+                    hangoverMsLeft -= FRAME_MS;
+                  } else {
+                    speaking = false;
+                    speechAccumMs = 0;
+                  }
+                }
               }
 
-              // Base64エンコードして直列キューへ
-              const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
-              if (!base64 || base64.length === 0) {
-                return;  // base64が空でも送信しない
+              // 送信判定
+              const needSend = speaking || hangoverMsLeft > 0;
+              if (needSend) {
+                if (!int16Array || int16Array.length === 0) return; // 保険
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
+                if (!base64 || base64.length === 0) return;
+                enqueueFrame(base64);
+              } else if (PREROLL_MS > 0 && !speaking) {
+                // PREROLLに積む（先頭が古い）
+                const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
+                if (base64 && base64.length > 0) {
+                  if (preRoll.length >= MAX_PREROLL_FRAMES) preRoll.shift();
+                  preRoll.push(base64);
+                }
               }
-              enqueueFrame(base64);
 
               // 発話終了トグルは独自ゲート無効化中は不使用
               // if (speechAccumMs === 0) { speaking = false; }

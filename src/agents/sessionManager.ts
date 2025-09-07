@@ -216,7 +216,7 @@ export class AniccaSessionManager {
               // 入力待ちを少し短縮（環境音の巻き込み低減）
               idleTimeoutMs: 1200,
               // “話し声” 確信度の閾値を追加（厳しめに）
-              threshold: 0.65
+              threshold: 0.70
             }
           },
           output: {

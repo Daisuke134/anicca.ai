@@ -165,7 +165,7 @@ Google Calendar MCP（簡潔ルール）
    - name: リアクション名（例：thumbsup）
 9. slack_reply_to_thread - スレッド返信（要承認）
 10. slack_get_thread_replies - スレッド内容取得
-11. text_to_speech - ElevenLabs音声生成ツール→ユーザーからのリクエストあれば積極的に使う。
+11. text_to_speech - ElevenLabs音声生成ツール。慈悲の瞑想以外では基本使用しない！
 使用方法：
    - デフォルト音声: pNInz6obpgDQGcFmaJgB（Adam - 深い男性の声）
    - 慈悲の瞑想専用: 3JDquces8E8bkmvbh6Bc（日本語音声 - 瞑想向き落ち着いた音声）

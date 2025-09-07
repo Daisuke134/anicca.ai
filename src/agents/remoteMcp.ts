@@ -1,4 +1,5 @@
 import { PROXY_URL } from '../config';
+import { getAuthService } from '../services/desktopAuthService';
 
 export type McpServerConfig = {
   serverLabel: string;
@@ -14,9 +15,13 @@ export type McpServerConfig = {
 export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServerConfig | null> {
   try {
     const statusUrl = `${PROXY_URL}/api/mcp/gcal/status`;
+    const token = getAuthService().getJwt();
     const statusRes = await fetch(statusUrl, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+      },
       body: JSON.stringify({ userId })
     });
 
@@ -49,8 +54,11 @@ export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServe
  */
 export async function getGoogleCalendarOAuthUrl(userId: string): Promise<string | null> {
   try {
+    const token = getAuthService().getJwt();
     const url = `${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`;
-    const res = await fetch(url);
+    const res = await fetch(url, {
+      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+    });
     
     if (!res.ok) {
       console.error(`Failed to get OAuth URL: ${res.status}`);

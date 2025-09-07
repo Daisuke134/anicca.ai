@@ -472,6 +472,13 @@ export class DesktopAuthService {
     this.clearSavedSession();
     this.stopSessionCheck();
   }
+
+  /**
+   * 現在のデスクトップJWT（Proxy API 認可用）
+   */
+  getJwt(): string | null {
+    return this.currentSession?.access_token || null;
+  }
 }
 
 // シングルトンインスタンス

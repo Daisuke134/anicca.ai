@@ -1,5 +1,6 @@
 import { RealtimeSession, OpenAIRealtimeWebSocket } from '@openai/agents/realtime';
 import { createAniccaAgent } from './mainAgent';
+import { resolveGoogleCalendarMcp } from './remoteMcp';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -28,6 +29,7 @@ export class AniccaSessionManager {
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
+  private mcpRefreshInterval: NodeJS.Timeout | null = null;
   
   // Express関連
   private app: express.Application | null = null;
@@ -217,6 +219,24 @@ export class AniccaSessionManager {
         }
       }
     });
+
+    // --- Google Calendar hosted_mcp の定期リフレッシュ（20分間隔）---
+    if (this.mcpRefreshInterval) {
+      clearInterval(this.mcpRefreshInterval);
+      this.mcpRefreshInterval = null;
+    }
+    this.mcpRefreshInterval = setInterval(async () => {
+      try {
+        if (!this.currentUserId || !this.session) return;
+        const cfg = await resolveGoogleCalendarMcp(this.currentUserId);
+        if (!cfg) return; // 未接続時は何もしない
+        const newAgent = await createAniccaAgent(this.currentUserId);
+        await this.session.updateAgent(newAgent);
+        console.log('🔁 hosted_mcp refreshed (periodic)');
+      } catch (e: any) {
+        console.warn('Periodic hosted_mcp refresh skipped:', e?.message || e);
+      }
+    }, 20 * 60 * 1000);
 
     // イベントハンドラー設定
     this.setupEventHandlers();
@@ -962,6 +982,20 @@ export class AniccaSessionManager {
         toolName: toolName,
         result: result
       });
+
+      // 接続直後のツール更新：connect_google_calendar 完了時に hosted_mcp を即注入
+      try {
+        if (tool?.type === 'function' && tool?.name === 'connect_google_calendar' && this.currentUserId && this.session) {
+          const cfg = await resolveGoogleCalendarMcp(this.currentUserId);
+          if (cfg) {
+            const newAgent = await createAniccaAgent(this.currentUserId);
+            await this.session.updateAgent(newAgent);
+            console.log('✅ hosted_mcp injected after connect_google_calendar');
+          }
+        }
+      } catch (e: any) {
+        console.warn('Failed to inject hosted_mcp after connect:', e?.message || e);
+      }
     });
 
     // エラー処理
@@ -1077,6 +1111,10 @@ export class AniccaSessionManager {
       console.log('🔌 Disconnected from OpenAI Realtime API');
     }
     this.apiKey = null;
+    if (this.mcpRefreshInterval) {
+      clearInterval(this.mcpRefreshInterval);
+      this.mcpRefreshInterval = null;
+    }
   }
   
   async sendAudio(audioData: Uint8Array) {

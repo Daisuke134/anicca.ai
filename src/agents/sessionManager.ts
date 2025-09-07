@@ -200,6 +200,8 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
+            // 日本語前提で ASR を明示（誤起動抑制に寄与）
+            transcription: { model: 'gpt-4o-mini-transcribe', language: 'ja' },
             // 一旦、安全側（内蔵マイク前提）に戻す
             noiseReduction: { type: 'near_field' },
             // semantic_vad は維持。初動をやや攻める
@@ -208,9 +210,14 @@ export class AniccaSessionManager {
               eagerness: 'low',
               createResponse: true,
               interruptResponse: true,
-              prefixPaddingMs: 200,
-              silenceDurationMs: 900,
-              idleTimeoutMs: 1500
+              // 冒頭欠け防止の先取りバッファを拡大
+              prefixPaddingMs: 300,
+              // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
+              silenceDurationMs: 1400,
+              // 入力待ちを少し短縮（環境音の巻き込み低減）
+              idleTimeoutMs: 1200,
+              // “話し声” 確信度の閾値を追加（厳しめに）
+              threshold: 0.6
             }
           },
           output: {

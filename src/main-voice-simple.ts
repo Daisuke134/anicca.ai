@@ -248,10 +248,42 @@ function createHiddenWindow() {
         let isAgentSpeaking = false; // 視覚用フラグ（送信ゲートには使用しない）
         let micPaused = false;       // 入力一時停止（ElevenLabs等の“システム再生時のみ”使用）
         let sdkReady = false; // 監視用（送信ゲートには使用しない）
+        // SDKステータスの前回値（差分時のみログ出力するためのキー）
+        let lastSdkStatusKey = '';
         let sendQueue = [];          // /audio/input 直列送信用キュー
         let sending = false;         // 送信中フラグ
         const queueHighWater = 8;    // 最大キュー長（約1.3秒分）
         let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
+
+        // --- 追加: 初回プレフライト接続 & 録音起動の待機ヘルパー ---
+        async function ensureSDKConnection() {
+          try {
+            await fetch('/sdk/ensure', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const ok = await checkSDKStatus();
+            if (!ok) console.warn('SDK ensure completed but not ready yet');
+            return ok;
+          } catch (e) {
+            console.warn('SDK ensure failed:', e);
+            return false;
+          }
+        }
+
+        function startCaptureWhenReady(retryMs = 1000, maxAttempts = 15) {
+          (async () => {
+            try {
+              const ok = await checkSDKStatus();
+              if (ok) {
+                startVoiceCapture();
+                return;
+              }
+            } catch {}
+            if (maxAttempts > 0) {
+              setTimeout(() => startCaptureWhenReady(retryMs, maxAttempts - 1), retryMs);
+            } else {
+              console.warn('SDK not ready after retries; skipping auto start');
+            }
+          })();
+        }
 
         function enqueueFrame(base64) {
           try {
@@ -296,7 +328,20 @@ function createHiddenWindow() {
           try {
             const response = await fetch('/sdk/status');
             const status = await response.json();
-            console.log('SDK Status:', status);
+            // 状態変化時のみログを出す（DevToolsノイズ・負荷を低減）
+            const key = [
+              status?.useSDK ? 1 : 0,
+              status?.connected ? 1 : 0,
+              status?.ready ? 1 : 0,
+              status?.transport || '',
+              // TTL/ageは秒単位で揺れるため丸めて比較（過剰出力を防止）
+              typeof status?.tokenTTL === 'number' ? Math.floor(status.tokenTTL / 30) : '',
+              typeof status?.sessionAge === 'number' ? Math.floor(status.sessionAge / 60) : ''
+            ].join('|');
+            if (key !== lastSdkStatusKey) {
+              console.log('SDK Status:', status);
+              lastSdkStatusKey = key;
+            }
             const ok = status.useSDK && status.connected && status.transport === 'websocket';
             sdkReady = !!ok;
             return ok;
@@ -651,15 +696,16 @@ function createHiddenWindow() {
             console.warn('Failed to report timezone:', e);
           }
 
+          // 追加: 起動直後に一度だけ接続を確立（デッドロック防止）
+          await ensureSDKConnection();
+
           // WebSocket接続
           connectWebSocket();
 
           // 接続監視ループ（1.5秒間隔）
           setInterval(() => { checkSDKStatus(); }, 1500);
-          // 2秒待ってから音声開始
-          setTimeout(() => {
-            startVoiceCapture();
-          }, 2000);
+          // SDKがReadyになったら録音開始（Readyでない場合はリトライ）
+          startCaptureWhenReady(1000, 15);
         }
 
         // 開始

@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { getAuthService } from '../services/desktopAuthService';
+import { PORTS } from '../config';
 
 const PROXY_URL = process.env.PROXY_URL || 'https://anicca-proxy-staging.up.railway.app';
 
@@ -388,7 +389,11 @@ export const connect_google_calendar = tool({
       }
 
       const statusData = await statusResponse.json();
-      console.log('Calendar MCP status:', statusData);
+      // Reduce sensitive logging: do not print tokens
+      console.log('Calendar MCP status:', {
+        connected: !!statusData?.connected,
+        server_url: statusData?.server_url || 'hidden'
+      });
 
       // authorization が無ければ未接続として扱い、必ず認可URLを開く
       if (!statusData.connected || !statusData.authorization) {
@@ -416,6 +421,36 @@ export const connect_google_calendar = tool({
     } catch (e: any) {
       console.error('connect_google_calendar failed:', e);
       return 'Google Calendar接続で予期しないエラーが発生しました。';
+    }
+  }
+});
+
+// 17.5 disconnect_google_calendar
+export const disconnect_google_calendar = tool({
+  name: 'disconnect_google_calendar',
+  description: 'Google Calendarの接続を解除する（音声コマンド用）',
+  parameters: z.object({}),
+  execute: async () => {
+    try {
+      const userId = process.env.CURRENT_USER_ID || 'desktop-user';
+      const resp = await fetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId })
+      });
+      if (!resp.ok) {
+        return `Google Calendarの接続解除に失敗しました（HTTP ${resp.status}）`;
+      }
+      // Best-effort: Bridge に接続再初期化を依頼
+      try {
+        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch { /* noop */ }
+      return 'Google Calendarの接続を解除しました。';
+    } catch (e: any) {
+      return `Google Calendarの接続解除でエラーが発生しました: ${e.message}`;
     }
   }
 });
@@ -474,6 +509,7 @@ export const allTools = [
   text_to_speech,
   open_url,
   connect_google_calendar,
+  disconnect_google_calendar,
   get_current_time,
   convert_time,
 ];

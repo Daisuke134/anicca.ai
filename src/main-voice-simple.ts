@@ -43,6 +43,7 @@ const isWorkerMode = process.env.WORKER_MODE === 'true';
 // 定期タスク管理
 const cronJobs = new Map<string, any>();
 const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
+const todaySchedulePath = path.join(os.homedir(), '.anicca', 'today_schedule.json');
 
 // アプリの初期化
 async function initializeApp() {
@@ -136,8 +137,8 @@ async function initializeApp() {
       }
       
       const sessionUrl = userId 
-        ? `${API_ENDPOINTS.OPENAI_PROXY.SESSION}?userId=${userId}`
-        : API_ENDPOINTS.OPENAI_PROXY.SESSION;
+        ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
+        : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
       const response = await fetch(sessionUrl);
 
       if (response.ok) {
@@ -167,101 +168,44 @@ async function initializeApp() {
     setTimeout(() => {
       createHiddenWindow();
       console.log('✅ Hidden browser window created');
-    }, 3000);
+    }, 1000);
     
-    // システムトレイの初期化
-    createSystemTray();
+    // 自動更新チェック（本番環境のみ）
+    if (process.env.NODE_ENV === 'production') {
+      const { autoUpdater } = require('electron-updater');
+      autoUpdater.checkForUpdatesAndNotify();
+      
+      // 定期的な自動更新チェック（1時間ごと）
+      updateCheckIntervalId = setInterval(() => {
+        autoUpdater.checkForUpdatesAndNotify();
+      }, UPDATE_CONFIG.CHECK_INTERVAL);
+      
+      console.log('⏰ Auto-update checks scheduled (production only)');
+    }
+    
+    // コンポーネントの初期化順序を最適化
+    console.log('🔄 Initializing voice components...');
+    
+    // システムトレイの作成
+    await createSystemTray();
     console.log('✅ System tray created');
     
-    // ログ設定（本番はinfo、devは上でdebugに設定済み）
-    log.transports.file.level = 'info';
-    autoUpdater.logger = log;
-
-    // 自動更新の初期化（配布ビルドのみ）
-    if (app.isPackaged) {
-      // フィードは常に latest を使用（安定・ベータともに latest-mac.yml を参照）
-      const feedChannel = 'latest';
-      autoUpdater.channel = feedChannel;
-
-      // beta相当（またはプレリリース版）のみ、prereleaseを許可（安定はfalse）
-      const isPrereleaseVersion = /-/.test(app.getVersion());
-      autoUpdater.allowPrerelease = isPrereleaseVersion || UPDATE_CONFIG.CHANNEL !== 'stable';
-      autoUpdater.autoDownload = true;
-      autoUpdater.autoInstallOnAppQuit = true;
-
-      log.info(`✅ Auto-updater initialized (channel=${UPDATE_CONFIG.CHANNEL}, feed=latest, allowPrerelease=${autoUpdater.allowPrerelease})`);
-
-      // エラー時のログ記録（サイレント）
-      autoUpdater.on('error', (error) => {
-        log.error('Auto-updater error:', error);
-      });
-
-      // 更新ダウンロード完了時: 再起動プロンプトを表示
-      autoUpdater.on('update-downloaded', async (info) => {
-        try {
-          log.info(`Update downloaded: ${info?.version || ''}`);
-          const result = await dialog.showMessageBox({
-            type: 'info',
-            buttons: ['今すぐ再起動', '後で'],
-            defaultId: 0,
-            cancelId: 1,
-            title: 'アップデートの準備ができました',
-            message: '新しいバージョンをインストールできます。今すぐ再起動して適用しますか？'
-          });
-          if (result.response === 0) {
-            autoUpdater.quitAndInstall(false, true);
-          }
-        } catch (e) {
-          log.warn('Failed to show restart prompt after update download', e);
-        }
-      });
-
-      // 起動時に一度チェック
-      autoUpdater.checkForUpdatesAndNotify();
-
-      // 定期チェック（設定値に基づく）
-      updateCheckIntervalId = setInterval(() => {
-        try {
-          autoUpdater.checkForUpdatesAndNotify();
-        } catch (e) {
-          log.warn('Auto-update periodic check failed', e);
-        }
-      }, UPDATE_CONFIG.CHECK_INTERVAL);
-    }
-    // 非パッケージ（開発）時は初期化しない
-    
-    // 通知
-    // showNotification('Anicca Started', 'Say "アニッチャ" to begin!');
-    
-    // 定期タスクシステムを初期化
-    initializeScheduledTasks();
-    
-    // スリープ防止を有効化（システムスリープのみ防ぐ）
+    // スリープ防止の設定
     powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-    console.log('🛡️ Power Save Blocker activated:', powerSaveBlocker.isStarted(powerSaveBlockerId));
+    console.log('✅ Power save blocker started');
     
-    // アプリ終了時にブロッカーを解除
-    app.on('before-quit', () => {
-      if (updateCheckIntervalId) {
-        clearInterval(updateCheckIntervalId);
-        updateCheckIntervalId = null;
-      }
-      if (powerSaveBlockerId !== null) {
-        powerSaveBlocker.stop(powerSaveBlockerId);
-        console.log('🛡️ Power Save Blocker stopped');
-      }
-    });
-    
-  } catch (error) {
-    console.error('❌ Initialization error:', error);
-    
-    if (app.isPackaged) {
-      const { dialog } = require('electron');
-      dialog.showErrorBox('Anicca Startup Error', 
-        `Failed to start Anicca:\n\n${error}`);
+    // ログイン済み（認証後）の場合は、定期タスクを自動開始
+    if (authService.isAuthenticated()) {
+      console.log('👤 User is authenticated, starting scheduled tasks...');
+      initializeScheduledTasks();
+      console.log('✅ Scheduled tasks started');
     }
-    
-    app.quit();
+
+    console.log('🚀 Anicca Voice Assistant started successfully!');
+    console.log('🎤 Say "アニカ" to begin conversation');
+  } catch (error) {
+    console.error('💥 Failed to initialize application:', error);
+    throw error;
   }
 }
 
@@ -301,16 +245,109 @@ function createHiddenWindow() {
         let isPlaying = false;
         let currentSource = null;
         let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
+        let isAgentSpeaking = false; // 視覚用フラグ（送信ゲートには使用しない）
+        let micPaused = false;       // 入力一時停止（ElevenLabs等の“システム再生時のみ”使用）
+        let sdkReady = false; // 監視用（送信ゲートには使用しない）
+        // SDKステータスの前回値（差分時のみログ出力するためのキー）
+        let lastSdkStatusKey = '';
+        let sendQueue = [];          // /audio/input 直列送信用キュー
+        let sending = false;         // 送信中フラグ
+        const queueHighWater = 8;    // 最大キュー長（約1.3秒分）
+        let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
+
+        // --- 追加: 初回プレフライト接続 & 録音起動の待機ヘルパー ---
+        async function ensureSDKConnection() {
+          try {
+            await fetch('/sdk/ensure', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
+            const ok = await checkSDKStatus();
+            if (!ok) console.warn('SDK ensure completed but not ready yet');
+            return ok;
+          } catch (e) {
+            console.warn('SDK ensure failed:', e);
+            return false;
+          }
+        }
+
+        function startCaptureWhenReady(retryMs = 1000, maxAttempts = 15) {
+          (async () => {
+            try {
+              const ok = await checkSDKStatus();
+              if (ok) {
+                startVoiceCapture();
+                return;
+              }
+            } catch {}
+            if (maxAttempts > 0) {
+              setTimeout(() => startCaptureWhenReady(retryMs, maxAttempts - 1), retryMs);
+            } else {
+              console.warn('SDK not ready after retries; skipping auto start');
+            }
+          })();
+        }
+
+        function enqueueFrame(base64) {
+          try {
+            if (!base64 || base64.length === 0) return;
+            if (sendQueue.length >= queueHighWater) {
+              sendQueue.shift();
+            }
+            sendQueue.push(base64);
+            drainQueue();
+          } catch (e) {
+            console.error('enqueue error:', e);
+          }
+        }
+
+        async function drainQueue() {
+          if (sending) return;
+          sending = true;
+          try {
+            while (sendQueue.length) {
+              const b64 = sendQueue.shift();
+              try {
+                const resp = await fetch('/audio/input', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ audio: b64, format: 'pcm16', sampleRate: 24000 })
+                });
+                if (!resp.ok) {
+                  console.warn('audio/input not ok:', resp.status);
+                }
+              } catch (e) {
+                console.error('audio/input send error:', e);
+              }
+            }
+          } finally {
+            sending = false;
+            if (sendQueue.length) drainQueue();
+          }
+        }
 
         // SDK状態確認
         async function checkSDKStatus() {
           try {
             const response = await fetch('/sdk/status');
             const status = await response.json();
-            console.log('SDK Status:', status);
-            return status.useSDK && status.connected && status.transport === 'websocket';
+            // 状態変化時のみログを出す（DevToolsノイズ・負荷を低減）
+            const key = [
+              status?.useSDK ? 1 : 0,
+              status?.connected ? 1 : 0,
+              status?.ready ? 1 : 0,
+              status?.transport || '',
+              // TTL/ageは秒単位で揺れるため丸めて比較（過剰出力を防止）
+              typeof status?.tokenTTL === 'number' ? Math.floor(status.tokenTTL / 30) : '',
+              typeof status?.sessionAge === 'number' ? Math.floor(status.sessionAge / 60) : ''
+            ].join('|');
+            if (key !== lastSdkStatusKey) {
+              console.log('SDK Status:', status);
+              lastSdkStatusKey = key;
+            }
+            const ok = status.useSDK && status.connected && status.transport === 'websocket';
+            sdkReady = !!ok;
+            return ok;
           } catch (error) {
             console.error('Failed to check SDK status:', error);
+            sdkReady = false;
             return false;
           }
         }
@@ -325,6 +362,8 @@ function createHiddenWindow() {
 
               // PCM16音声出力データを受信
               if (message.type === 'audio_output' && message.format === 'pcm16') {
+                // エージェント発話開始の合図（視覚用のみ）
+                isAgentSpeaking = true;
                 console.log('🔊 Received PCM16 audio from SDK');
 
                 // Base64デコードしてPCM16データを取得
@@ -342,13 +381,35 @@ function createHiddenWindow() {
                 }
               }
 
+              // エージェント音声開始/終了（半二重制御用）
+              if (message.type === 'audio_start') {
+                isAgentSpeaking = true; // 視覚用のみ（ゲートには不使用）
+              }
+              if (message.type === 'audio_stopped') {
+                isAgentSpeaking = false; // 視覚用のみ（ゲートには不使用）
+                // 出力直後の誤割り込み抑止
+                micPostStopMuteUntil = Date.now() + 300;
+              }
+
+              // 応答完了（フォールバックで半二重を確実に戻す）
+              if (message.type === 'turn_done') {
+                isAgentSpeaking = false;
+                micPaused = false;
+                console.log('🔁 turn_done: gates cleared');
+                // 出力直後の誤割り込み抑止
+                micPostStopMuteUntil = Date.now() + 300;
+              }
+
               // 音声中断処理
               if (message.type === 'audio_interrupted') {
                 console.log('🛑 Audio interrupted - clearing queue');
                 audioQueue = [];
                 isPlaying = false;
-                
-                // 再生中の音声を停止
+                // 即時にマイクを解放し、ユーザー音声を継続送出（barge-in 確実化）
+                micPaused = false;
+                isAgentSpeaking = false;
+                console.log('[BARGE_IN_DETECTED]');
+                // 再生中の音声を停止（存在すれば）
                 if (currentSource) {
                   currentSource.stop();
                   currentSource = null;
@@ -535,7 +596,20 @@ function createHiddenWindow() {
               return;
             }
 
-            console.log('✅ Using SDK WebSocket mode for voice processing');
+            // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
+            console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
+            // 独自ゲートを一時無効化（送信前ブロックOFF）
+            const RMS_THRESHOLD = 0;      // 0 = 無効化
+            const MIN_SPEECH_MS = 0;      // 0 = 無効化
+            const SAMPLE_RATE = 24000;
+            let speechAccumMs = 0;
+            // プリロール（先行バッファ）で開始直後から十分量を送る
+            const FRAME_SAMPLES = 4096;
+            const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000; // ≈171ms
+            const PREROLL_MS = 0; // 0 = 無効化（先行送出しない）
+            const MAX_PREROLL_FRAMES = 0;
+            let preRoll = [];
+            let speaking = false;
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -559,52 +633,47 @@ function createHiddenWindow() {
             // PCM16形式で音声データを送信
             processor.onaudioprocess = async (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
-              
-              // Float32をInt16に変換
+              // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
+              if (Date.now() < micPostStopMuteUntil) {
+                return;
+              }
+
+              // ゲート無効化（RMS/MINを完全スキップ）
+              try { speechAccumMs = MIN_SPEECH_MS; } catch {}
+
+              // Float32をInt16に変換（プリロール保持のため先に作る）
               const int16Array = new Int16Array(inputData.length);
               for (let i = 0; i < inputData.length; i++) {
                 const s = Math.max(-1, Math.min(1, inputData[i]));
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
 
-              // システム音声再生中は送信しない（エコー防止）
+              // 送信停止条件：
+              // 1) システム音声（ElevenLabs等）再生中 → 送信停止
               if (isSystemPlaying) {
                 return;
               }
 
-              // 修正: 空データチェック追加（PCM16エラー防止）
+              // PREROLL無効化：先行バッファ処理をスキップし、即送信
+              speaking = true;
+
+              // 空データチェック（保険）
               if (!int16Array || int16Array.length === 0) {
                 return;  // 空データは送信しない
               }
 
-              // Base64エンコードして送信
+              // Base64エンコードして直列キューへ
               const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
-              
-              // 修正: base64も確認
               if (!base64 || base64.length === 0) {
                 return;  // base64が空でも送信しない
               }
+              enqueueFrame(base64);
 
-              try {
-                const response = await fetch('/audio/input', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    audio: base64,
-                    format: 'pcm16',
-                    sampleRate: 24000
-                  })
-                });
-
-                if (!response.ok) {
-                  console.error('Failed to send PCM16 audio to SDK');
-                }
-              } catch (error) {
-                console.error('Audio send error:', error);
-              }
+              // 発話終了トグルは独自ゲート無効化中は不使用
+              // if (speechAccumMs === 0) { speaking = false; }
             };
 
-            console.log('🎤 Voice capture started (SDK WebSocket mode, PCM16)');
+            console.log('🎤 Voice capture started (PCM16, noise-gated)');
 
           } catch (error) {
             console.error('Failed to start voice capture:', error);
@@ -614,14 +683,29 @@ function createHiddenWindow() {
         // 初期化
         async function initialize() {
           console.log('🚀 Initializing SDK WebSocket voice mode...');
+          // ユーザーのタイムゾーンをBridgeへ通知
+          try {
+            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+            await fetch('/user/timezone', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ timezone: tz })
+            });
+            console.log('🌐 Reported user timezone:', tz);
+          } catch (e) {
+            console.warn('Failed to report timezone:', e);
+          }
+
+          // 追加: 起動直後に一度だけ接続を確立（デッドロック防止）
+          await ensureSDKConnection();
 
           // WebSocket接続
           connectWebSocket();
 
-          // 2秒待ってから音声開始
-          setTimeout(() => {
-            startVoiceCapture();
-          }, 2000);
+          // 接続監視ループ（1.5秒間隔）
+          setInterval(() => { checkSDKStatus(); }, 1500);
+          // SDKがReadyになったら録音開始（Readyでない場合はリトライ）
+          startCaptureWhenReady(1000, 15);
         }
 
         // 開始
@@ -829,7 +913,69 @@ function initializeScheduledTasks() {
   fs.watchFile(scheduledTasksPath, { interval: 1000 }, () => {
     console.log('📝 scheduled_tasks.jsonが変更されました');
     reloadScheduledTasks();
+    rebuildTodayIndex();
   });
+}
+
+// --------------- Today Index（読み上げビュー） ---------------
+function buildTodayIndex(tasks: Array<{ id: string; schedule: string; description?: string }>, now = new Date()): Array<[string, string]> {
+  // 前提：毎日（MM HH * * *）と今日だけ（idに _today）だけを対象にし、「今日の全予定」を出力する（現在時刻での除外はしない）
+  const pad = (n: number) => n.toString().padStart(2, '0');
+  const items: Array<[string, string]> = [];
+
+  const dailyRegex = /^\s*(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*\s*$/; // MM HH * * *
+
+  for (const t of tasks) {
+    if (!t || !t.schedule || typeof t.schedule !== 'string') continue;
+    const m = t.schedule.match(dailyRegex);
+    if (!m) continue; // 複雑なcronは対象外（発火はnode-cron任せ）
+    const mm = parseInt(m[1], 10);
+    const hh = parseInt(m[2], 10);
+    if (Number.isNaN(hh) || Number.isNaN(mm)) continue;
+
+    const timeStr = `${pad(hh)}:${pad(mm)}`;
+    const labelSrc = (t.description || t.id || '').trim();
+    // 軽いノイズ除去（任意）：末尾の「に」「毎日」「今日だけ」を緩く削ぐ
+    const label = labelSrc
+      .replace(/^\s*毎日\s*/g, '')
+      .replace(/^\s*今日だけ\s*/g, '')
+      .replace(/\s*に\s*$/g, '')
+      || t.id;
+
+    // _today の有無は index には関係ない（発火・削除は cron 側の責務）
+    items.push([timeStr, label]);
+  }
+
+  // 時刻昇順で並べる
+  items.sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : 0));
+  return items;
+}
+
+function writeTodayIndex(items: Array<[string, string]>) {
+  try {
+    const dir = path.dirname(todaySchedulePath);
+    if (!fs.existsSync(dir)) {
+      fs.mkdirSync(dir, { recursive: true });
+    }
+    fs.writeFileSync(todaySchedulePath, JSON.stringify(items, null, 2), 'utf8');
+    console.log(`✅ today_schedule.json を更新: ${items.length}件`);
+  } catch (e) {
+    console.warn('⚠️ today_schedule.json の書き込みに失敗:', e);
+  }
+}
+
+function rebuildTodayIndex() {
+  try {
+    if (!fs.existsSync(scheduledTasksPath)) return;
+    const content = fs.readFileSync(scheduledTasksPath, 'utf8');
+    if (!content.trim()) return;
+    const data = JSON.parse(content);
+    const tasks = Array.isArray((data as any)?.tasks) ? (data as any).tasks : [];
+    const items = buildTodayIndex(tasks, new Date());
+    writeTodayIndex(items);
+  } catch (e) {
+    console.warn('⚠️ today index 再生成に失敗:', e);
+  }
 }
 
 function registerCronJob(task: any) {
@@ -845,11 +991,53 @@ function registerCronJob(task: any) {
       job.stop();
     }
   }, {
-    timezone: task.timezone || 'Asia/Tokyo',
+    timezone: resolveTZ(task),
     scheduled: true
   });
 
   cronJobs.set(task.id, job);
+
+  // ------- 事前プレフライト（T-1分；簡易MM HH対応） -------
+  try {
+    const m = String(task.schedule || '').match(/^\s*(\d{1,2})\s+(\d{1,2})\s+\*\s+\*\s+\*\s*$/);
+    if (m) {
+      const mm = parseInt(m[1], 10);
+      const hh = parseInt(m[2], 10);
+      const preMinute = (mm >= 1 ? mm - 1 : 59);
+      const preHour = (mm >= 1 ? hh : (hh + 23) % 24);
+      const preSpec = `${preMinute} ${preHour} * * *`;
+      const preflight = cron.schedule(preSpec, async () => {
+        try {
+          await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+          console.log('[CRON_PREFLIGHT]', task.id);
+        } catch (e) {
+          console.warn('[CRON_PREFLIGHT_FAIL]', task.id, e);
+        }
+      }, {
+        timezone: resolveTZ(task),
+        scheduled: true
+      });
+      cronJobs.set(`${task.id}__preflight`, preflight);
+    }
+  } catch (e) {
+    console.warn('⚠️ preflight setup failed:', e);
+  }
+}
+
+// ---- タイムゾーン解決（タスク→ユーザー→OS→UTC）----
+function resolveTZ(task: any): string {
+  try {
+    if (task && typeof task.timezone === 'string' && task.timezone.length >= 3) {
+      return task.timezone;
+    }
+    const userTz = (sessionManager as any)?.getUserTimezone?.();
+    if (userTz && typeof userTz === 'string' && userTz.length >= 3) {
+      return userTz;
+    }
+    return Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+  } catch {
+    return 'UTC';
+  }
 }
 
 function removeTaskFromJson(taskId: string) {
@@ -865,112 +1053,34 @@ function removeTaskFromJson(taskId: string) {
 async function executeScheduledTask(task: any) {
   const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
   
-  // 慈悲の瞑想タスクかどうか判定（jihi_で始まるIDまたは既存のjihino_meisou）
-  const isJihiMeditation = task.id?.startsWith('jihi_') || 
-                          task.id?.includes('jihino_meisou');
+  // テンプレートは task.id の接頭辞で選択（最小ロジック）
 
   ws.on('open', () => {
-    const enhancedCommand = `
-      【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
-      
-      今、${task.description}の時間になった。
+    const id = String(task.id || '');
+    let tpl = 'default.txt';
+    if (id.startsWith('jihi_') || id.startsWith('jihi__')) tpl = 'jihi_meditation.txt';
+    else if (id.startsWith('wake_up_') || id.startsWith('wake_up__')) tpl = 'wake_up.txt';
+    else if (id.startsWith('sleep_') || id.startsWith('sleep__')) tpl = 'sleep.txt';
+    else if (id.startsWith('standup_') || id.startsWith('standup__')) tpl = 'standup.txt';
+    else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
+    else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
 
-      【起床・就寝の声かけ】
-      - 声かけを一瞬も止めないでください。フロー実行後も、声をかけ続けること。
-      - ユーザーの反応があるまで永遠に声をかけ続けてください
-      - 5秒も黙ることは禁止です。常に声を出し続けてください
+    const commonPath = path.join(process.cwd(), 'prompts', 'common.txt');
+    const tplPath = path.join(process.cwd(), 'prompts', tpl);
+    let commonText = '';
+    let templateText = '';
+    try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
+    try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
+    const commandBody = [commonText, templateText]
+      .filter(Boolean)
+      .join('\n\n')
+      .replace(/\$\{task\.description\}/g, String(task.description ?? ''));
 
-      【絶対禁止事項】
-      - 「かもしれません」「たぶん」等の曖昧表現
-      - 予定・習慣記録を想像で話すこと（必ず確認する）
-      - 5秒以上の沈黙
-      
-      起床タスクの場合：
-      【必須実行フロー - 絶対順守】
-      1. 「○時○分だよ、おはよう！」と挨拶
-      2. 【絶対実行】read_fileでscheduled_tasks.jsonを確認し、今日の予定を伝える。
-      3. 今日の予定を断定的に：「9時から会議、14時から開発がある」
-      4. 予定を理由に起床促進：「会議まであと2時間しかないぞ！」
-      5. 起きるまで声をかけ続ける。
-      
-      就寝タスクの場合：
-      【必須実行フロー - 絶対順守】
-      1. 「○時○分だよ、寝る時間！」と宣言
-      2. 【絶対実行】read_fileでscheduled_tasks.jsonで明日の予定を確認し伝える。
-      3. 「明日は8時から重要な会議があるから、今寝れば7時間睡眠確保できる」
-      4. 寝るまで声をかけ続ける。
-      
-      反応がない場合の自動追加タスク：
-      - 3分経っても反応がない場合、write_fileでscheduled_tasks.jsonに新規タスクを追加
-      - 新規ID形式: wake_up_HHMM_today（例：wake_up_0603_today）
-      - 元のタスクはそのまま残す
-      - 新規タスクのdescriptionに「（今日のみ）」を追加
-      - 最大3回まで3分ごとに追加
-      
-      【共通ルール】
-      - エスカレーション：優しい→厳しい→脅し
-      
-      Slack返信タスクの場合：
-      「○時○分になりました。Slack返信を始めます」と宣言して返信フローを開始してください。
-      
-      瞑想タスクの場合（慈悲の瞑想以外）：
-      - descriptionに「瞑想開始」が含まれる場合：
-        「○時○分です、瞑想の時間です。[descriptionに含まれる時間]の瞑想を始めましょう」と言ってください。
-        例：descriptionが「瞑想開始（1時間）」なら「○時○分です、瞑想の時間です。1時間の瞑想を始めましょう」
-      - descriptionに「瞑想終了」が含まれる場合：
-        「瞑想終了の時間です。お疲れ様でした」と言ってください。
-      
-      慈悲（じひ）の瞑想タスクの場合：
-      【超重要：ElevenLabsで読み上げる】
-      - 慈悲の瞑想は必ずtext_to_speechツールを使って読み上げる
-      - 絶対に、一度に一回だけtext_to_speechを実行する。長いテキストでも必ず一回にまとめる。絶対に複数回実行しない。
-      - 短時間で連続実行は厳禁（音声が重複して最悪の体験になる）
-      - あなた自身は絶対に発声しない（ElevenLabsと音声が重なるため）
-      - 以下の手順で実行：
-      
-      1. まずtext_to_speechツールで以下の全文を読み上げる。絶対に、一度だけ呼び出し：
-      【重要：○時○分の部分はdescriptionの現在時刻に置き換える】
-      【重要：voice_idは必ずVR6AewLTigWG4xSOukaG（Arnold - 老人男性）を使用】
-      【重要：voice_settingsは { stability: 0.7, similarity_boost: 0.8, speed: 0.9 } でゆっくり読み上げる】
-      「[実際の時刻を入れる]です、慈悲の瞑想の時間です。
-      
-      それでは一緒に慈悲の瞑想を始めましょう。
-
-      私が幸せでありますように
-      私の悩み苦しみがなくなりますように
-      私のねがいごとが叶えられますように
-      私にさとりの光が現れますように
-
-      私の家族が幸せでありますように
-      私の家族の悩み苦しみがなくなりますように
-      私の家族の願いごとが叶えられますように
-      私の家族にさとりの光が現れますように
-
-      生きとし いけるものが幸せでありますように
-      生きとし いけるものの悩み苦しみがなくなりますように
-      生きとし いけるものの願いごとが叶えられますように
-      生きとし いけるものにさとりの光が現れますように
-      
-      慈悲の瞑想を終了しました」
-      
-      2. text_to_speechの読み上げが完全に終わるまで待つ
-      3. 読み上げ中は絶対に自分で発声しない
-      4. 読み上げ完了後も何も言わない（すでに「終了しました」が含まれているため）
-      
-      【絶対厳守】
-      - この瞑想文全体を必ずtext_to_speechツールに渡す。複数回は絶対にダメで、一度だけ呼び出しする。
-      - 自分では一切発声しない。
-      - ElevenLabsの音声再生中は完全に沈黙を保つ
-    `;
-    
     ws.send(JSON.stringify({
       type: 'scheduled_task',
-      taskType: isJihiMeditation ? 'jihi_meditation' : 'normal',
       taskId: task.id,
-      command: enhancedCommand
+      command: commandBody
     }));
-    
-    // WebSocket接続を維持（5秒切断を削除）
   });
   
   ws.on('message', (data) => {

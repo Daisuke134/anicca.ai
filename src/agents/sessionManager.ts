@@ -1,5 +1,6 @@
 import { RealtimeSession, OpenAIRealtimeWebSocket } from '@openai/agents/realtime';
 import { createAniccaAgent } from './mainAgent';
+import { resolveGoogleCalendarMcp } from './remoteMcp';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -13,9 +14,22 @@ export class AniccaSessionManager {
   private sessionFilePath: string;
   private apiKey: string | null = null;
   private isReconnecting: boolean = false;
+  // 健全性トラッキング
+  private clientSecretExpiresAt: number | null = null; // ms epoch
+  private sessionStartedAt: number | null = null;      // ms epoch
+  private lastServerEventAt: number | null = null;     // ms epoch
+  private ready: boolean = false;
+  private isEnsuring: boolean = false;                 // ensureConnected 並列抑止
+  private restoredOnce: boolean = false;               // restoreSession 多重実行防止
+  // 応答進行・自動送信用
+  private isGenerating: boolean = false;
+  private systemOpQueue: Array<{ kind: 'mem'|'tz'; payload?: any }> = [];
+  private hasInformedTimezoneThisSession: boolean = false;
+  private lastInformedTimezone: string | null = null;
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
+  private mcpRefreshInterval: NodeJS.Timeout | null = null;
   
   // Express関連
   private app: express.Application | null = null;
@@ -27,6 +41,7 @@ export class AniccaSessionManager {
   private currentUserId: string | null = null;
   private currentPort: number = 8085; // デフォルトポート
   private isElevenLabsPlaying: boolean = false;
+  private userTimezone: string | null = null;
   
   // text_to_speech重複防止
   private lastElevenLabsExecutionTime = 0;
@@ -37,11 +52,138 @@ export class AniccaSessionManager {
     currentTask: null as any,
     startedAt: null as number | null
   };
+  // Realtime履歴の新規アイテム検出用（MCP呼び出しの可視化）
+  private lastLoggedHistoryIndex: number = 0;
+  
+  // （wake専用ループ／独自ゲートは撤廃）
   
   constructor(private mainAgent?: any) {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
   }
   
+  // ======= 自動送信（mem/TZ）: キュー運用 + 応答を起動しない送信 =======
+  private enqueueSystemOp(op: {kind:'mem'|'tz'; payload?: any}) {
+    if (op.kind === 'tz') {
+      const tz = this.userTimezone || null;
+      if (!tz) return; // TZが無いなら送らない
+      if (this.hasInformedTimezoneThisSession && this.lastInformedTimezone === tz) return;
+    }
+    this.systemOpQueue.push(op);
+    console.log('[SYSOP_ENQUEUE]', op.kind);
+  }
+
+  private async flushSystemOpsIfIdle() {
+    if (this.isGenerating || !this.ready) return;
+    while (this.systemOpQueue.length > 0 && !this.isGenerating && this.ready) {
+      const op = this.systemOpQueue.shift()!;
+      console.log('[SYSOP_FLUSH]', op.kind);
+      try {
+        if (op.kind === 'mem') {
+          await this.sendMemoriesSilently();
+        } else if (op.kind === 'tz') {
+          await this.sendTimezoneSilently();
+        }
+      } catch (e) {
+        console.warn('[SYSOP_FAIL]', op.kind, e);
+      }
+    }
+  }
+
+  private async sendMemoriesSilently() {
+    try {
+      const aniccaPath = path.join(os.homedir(), '.anicca', 'anicca.md');
+      if (!await fs.access(aniccaPath).then(() => true).catch(() => false)) return;
+      const memories = await fs.readFile(aniccaPath, 'utf-8');
+      if (!memories.trim()) return;
+      const systemMessage =
+        `以下はユーザーに関する記憶。会話の前提として内部で保持すること（返答不要）：\n\n${memories}`;
+      // 応答を起動しない送信（transportレベル）
+      (this.session as any)?.transport?.sendMessage?.(systemMessage, {}, { triggerResponse: false });
+      console.log('[MEM_SENT_SILENTLY]');
+    } catch (e) {
+      console.warn('sendMemoriesSilently failed:', e);
+    }
+  }
+
+  private async sendTimezoneSilently() {
+    const tz = this.userTimezone || null;
+    if (!tz) return;
+    try {
+      const msg = `System: User timezone is ${tz}. Use this timezone in calendar/tool calls.`;
+      (this.session as any)?.transport?.sendMessage?.(msg, {}, { triggerResponse: false });
+      this.hasInformedTimezoneThisSession = true;
+      this.lastInformedTimezone = tz;
+      console.log('[TZ_INFO_SENT]', { once: true, changed: true, triggerResponse: false });
+    } catch (e) {
+      console.warn('sendTimezoneSilently failed:', e);
+    }
+  }
+
+  // --- 健全性ユーティリティ ---
+  private tokenTTLSeconds(): number {
+    if (!this.clientSecretExpiresAt) return Number.POSITIVE_INFINITY;
+    return Math.floor((this.clientSecretExpiresAt - Date.now()) / 1000);
+  }
+  private sessionAgeSeconds(): number {
+    if (!this.sessionStartedAt) return Number.POSITIVE_INFINITY;
+    return Math.floor((Date.now() - this.sessionStartedAt) / 1000);
+  }
+  private isStale(): boolean {
+    const transportOpen = (this.session?.transport?.status === 'connected');
+    const lastEvOk = (Date.now() - (this.lastServerEventAt ?? 0)) <= 30_000; // 30s
+    const ttlOk = this.tokenTTLSeconds() > 120; // >120s
+    const ageOk = this.sessionAgeSeconds() < 3_000; // <50min
+    return !(transportOpen && this.ready === true && lastEvOk && ttlOk && ageOk);
+  }
+
+  // --- 接続保証（入口一本化；並列抑止つき） ---
+  private async ensureConnected(freshIfStale: boolean = true): Promise<void> {
+    const need = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
+    if (!need) return;
+    if (this.isEnsuring) {
+      let waited = 0;
+      while (this.isEnsuring && waited < 2000) { // 最大2s待つ
+        await new Promise(r => setTimeout(r, 100));
+        waited += 100;
+      }
+      return;
+    }
+    this.isEnsuring = true;
+    console.log('[ENSURE] refreshing realtime session...');
+    try {
+      await this.disconnect();
+      await this.initialize();
+      const { API_ENDPOINTS } = require('../config');
+      const url = this.currentUserId
+        ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
+        : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
+      const resp = await fetch(url);
+      if (!resp.ok) throw new Error(`desktop-session failed: ${resp.status}`);
+      const data = await resp.json();
+      const key = data?.client_secret?.value;
+      const exp = data?.client_secret?.expires_at;
+      if (!key) throw new Error('no client_secret');
+      this.clientSecretExpiresAt = typeof exp === 'number' ? exp * 1000 : null;
+      console.log('[TOKEN_ISSUED]');
+      await this.connect(key);
+      console.log('[CONNECT_OK]');
+      // READY待ち（最大~1.5s）
+      let delay = 100;
+      for (let i = 0; i < 5; i++) {
+        if (this.isConnected()) break;
+        await new Promise(r => setTimeout(r, delay));
+        delay *= 2; // 100→200→400→800→1600
+      }
+      if (!this.isConnected()) throw new Error('ready wait timeout');
+      console.log('[READY]');
+    } catch (e) {
+      console.error('[ENSURE_FAIL]', e);
+      throw e;
+    } finally {
+      this.isEnsuring = false;
+    }
+  }
+
   async initialize() {
     // エージェント作成
     this.agent = this.mainAgent || await createAniccaAgent(this.currentUserId);
@@ -49,19 +191,59 @@ export class AniccaSessionManager {
     // WebSocketトランスポートのインスタンスを明示的に作成
     const transport = new OpenAIRealtimeWebSocket();
     
-    // セッション作成（WebSocketトランスポート使用）
+    // セッション作成（GA構成の音声設定）
     this.session = new RealtimeSession(this.agent, {
-      model: 'gpt-4o-mini-realtime-preview-2024-12-17',
-      transport: transport,  // ← インスタンスで指定
+      model: 'gpt-realtime',
+      transport: transport,
       config: {
-        turnDetection: {
-          type: 'semantic_vad',
-          eagerness: 'medium',    // ユーザー発話終了後、即座に応答開始
-          createResponse: true,
-          interruptResponse: true,
-        },
+        outputModalities: ['audio', 'text'],
+        audio: {
+          input: {
+            format: { type: 'audio/pcm', rate: 24000 },
+            // 日本語前提で ASR を明示（誤起動抑制に寄与）
+            transcription: { model: 'gpt-4o-mini-transcribe', language: 'ja' },
+            // 一旦、安全側（内蔵マイク前提）に戻す
+            noiseReduction: { type: 'near_field' },
+            // semantic_vad は維持。初動をやや攻める
+            turnDetection: {
+              type: 'semantic_vad',
+              eagerness: 'low',
+              createResponse: true,
+              interruptResponse: true,
+              // 冒頭欠け防止の先取りバッファを拡大
+              prefixPaddingMs: 300,
+              // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
+              silenceDurationMs: 1400,
+              // 入力待ちを少し短縮（環境音の巻き込み低減）
+              idleTimeoutMs: 1200,
+              // “話し声” 確信度の閾値を追加（厳しめに）
+              threshold: 0.6
+            }
+          },
+          output: {
+            voice: 'alloy'
+          }
+        }
       }
     });
+
+    // --- Google Calendar hosted_mcp の定期リフレッシュ（20分間隔）---
+    if (this.mcpRefreshInterval) {
+      clearInterval(this.mcpRefreshInterval);
+      this.mcpRefreshInterval = null;
+    }
+    this.mcpRefreshInterval = setInterval(async () => {
+      try {
+        if (!this.currentUserId || !this.session) return;
+        const cfg = await resolveGoogleCalendarMcp(this.currentUserId);
+        if (!cfg) return; // 未接続時は何もしない
+        const newAgent = await createAniccaAgent(this.currentUserId);
+        await this.session.updateAgent(newAgent);
+        console.log('🔁 hosted_mcp refreshed (periodic)');
+      } catch (e: any) {
+        console.warn('Periodic hosted_mcp refresh skipped:', e?.message || e);
+      }
+    }, 20 * 60 * 1000);
 
     // イベントハンドラー設定
     this.setupEventHandlers();
@@ -101,6 +283,8 @@ export class AniccaSessionManager {
   // ルート設定
   private setupRoutes() {
     if (!this.app) return;
+    const app = this.app as express.Application;
+    const self = this;
     
     // 1. /session - hiddenWindow用（必須）
     this.app.get('/session', async (req, res) => {
@@ -108,9 +292,12 @@ export class AniccaSessionManager {
         const userId = req.query.userId as string || this.currentUserId;
         console.log('📡 Session request:', { userId });
         
-        // プロキシから設定取得（既存ロジック）
-        const PROXY_BASE_URL = process.env.PROXY_BASE_URL || 'https://anicca-proxy-staging.up.railway.app';
-        const response = await fetch(`${PROXY_BASE_URL}/api/openai-proxy/session${userId ? `?userId=${userId}` : ''}`);
+        // プロキシから設定取得（Desktop専用ルート使用）
+        const { API_ENDPOINTS } = require('../config');
+        const sessionUrl = userId
+          ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
+          : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
+        const response = await fetch(sessionUrl);
         const data = await response.json();
         
         res.json(data);
@@ -148,6 +335,31 @@ export class AniccaSessionManager {
           // メインプロセスに通知
           if ((global as any).onUserAuthenticated) {
             (global as any).onUserAuthenticated(user);
+          }
+
+          // 認証完了後、リモートMCP（Google Calendar）をtoolsに反映するためセッションを再初期化
+          try {
+            await this.disconnect();
+            await this.initialize();
+            // OAuth後は必ず新しい client_secret を取得して再接続する
+            const { API_ENDPOINTS } = require('../config');
+            const sessionUrl = this.currentUserId
+              ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
+              : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
+            const resp = await fetch(sessionUrl);
+            if (!resp.ok) {
+              throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
+            }
+            const data = await resp.json();
+            const apiKey = data?.client_secret?.value;
+            if (!apiKey) {
+              throw new Error('No client_secret returned after OAuth');
+            }
+            await this.connect(apiKey);
+            console.log('🔄 Session reinitialized after OAuth completion');
+            console.log('✅ Reconnected after OAuth with refreshed client secret');
+          } catch (e) {
+            console.error('Failed to reinitialize session after auth:', e);
           }
         }
         
@@ -271,24 +483,37 @@ export class AniccaSessionManager {
       });
     });
     
-    // 7. 音声入力エンドポイント（新規追加）
+    // 7. 音声入力エンドポイント（短尺/空データは最終フィルタでドロップ）
     this.app.post('/audio/input', async (req, res) => {
       try {
-        if (!this.session || !this.isConnected()) {
-          res.status(400).json({ error: 'Session not connected' });
+        // 入口で復旧（未接続/期限切れ/古い場合に直す）
+        await this.ensureConnected(true);
+
+        // ensureConnected は型上は this.session を非null化しないため、明示ガード
+        const session = this.session;
+        if (!session) {
+          res.status(503).json({ error: 'Session not connected' });
           return;
         }
 
         // Base64エンコードされたPCM16音声データを受け取る
         const audioData = Buffer.from(req.body.audio, 'base64');
+        // 短尺/空チャンクは捨てる（約80ms未満のみブロック）
+        const rate = Number(req.body?.sampleRate) || 24000;
+        const minMs = 80;
+        const minBytes = Math.floor(rate * (minMs / 1000)) * 2; // PCM16(16bit=2bytes)
+        if (audioData.byteLength < minBytes) {
+          res.json({ success: true, dropped: 'short', bytes: audioData.byteLength });
+          return;
+        }
         
         // SDKにPCM16形式の音声データを送信
-        await this.session.sendAudio(audioData.buffer as ArrayBuffer);
+        await session.sendAudio(audioData.buffer as ArrayBuffer);
         
         res.json({ success: true, format: 'pcm16' });
       } catch (error: any) {
         console.error('Audio input error:', error);
-        res.status(500).json({ error: error.message });
+        res.status(503).json({ error: error.message });
       }
     });
 
@@ -299,8 +524,22 @@ export class AniccaSessionManager {
         hasAgent: !!this.agent,
         userId: this.currentUserId,
         useSDK: true,  // SDK使用フラグ
-        transport: 'websocket'  // トランスポート情報
+        transport: 'websocket',  // トランスポート情報
+        ready: this.ready,
+        tokenTTL: Math.floor(this.tokenTTLSeconds()),
+        sessionAge: Math.floor(this.sessionAgeSeconds()),
+        lastServerEventMsAgo: (Date.now() - (this.lastServerEventAt ?? 0))
       });
+    });
+
+    // 8.5. 接続保証（Cron/任意発話の入口から呼ぶ）
+    this.app.post('/sdk/ensure', async (req, res) => {
+      try {
+        await this.ensureConnected(true);
+        res.json({ ok: true });
+      } catch (e: any) {
+        res.status(503).json({ ok: false, error: e?.message || String(e) });
+      }
     });
 
     // 9. ElevenLabs再生状態の通知を受け取る
@@ -317,6 +556,20 @@ export class AniccaSessionManager {
       
       res.json({ success: true });
     });
+
+    // 1-1. ユーザーのタイムゾーンを受け取る（setupRoutes内に配置）
+    this.app.post('/user/timezone', (req, res) => {
+      try {
+        const tz = String(req.body?.timezone ?? '');
+        if (tz && tz.length >= 3) {
+          this.userTimezone = tz;
+          console.log('🌐 User timezone set:', tz);
+        }
+        res.json({ ok: true, timezone: this.userTimezone });
+      } catch (e: any) {
+        res.status(400).json({ ok: false, error: e?.message || String(e) });
+      }
+    });
   }
 
   // WebSocket設定
@@ -329,13 +582,26 @@ export class AniccaSessionManager {
       console.log('🔌 WebSocket client connected');
       this.wsClients.add(ws);
       
+      // 衝突回避ヘルパ：進行中応答がある場合は interrupt → 短待ち
+      const interruptIfGenerating = async (delayMs = 100) => {
+        if (this.isGenerating) {
+          try { await this.session?.interrupt(); } catch {}
+          await new Promise(r => setTimeout(r, delayMs));
+        }
+      };
+      
       // 定期タスクメッセージハンドラーを追加
       ws.on('message', async (data: string) => {
         try {
           const message = JSON.parse(data);
           
           if (message.type === 'scheduled_task') {
+            // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
+            await this.ensureConnected(true);
             console.log('📅 Scheduled task received:', message.command);
+
+            // 念のため直前の出力を再チェック
+            await interruptIfGenerating(100);
             
             // 慈悲の瞑想タスクの場合の特別処理
             if (message.taskType === 'jihi_meditation') {
@@ -345,6 +611,8 @@ export class AniccaSessionManager {
             
             // メッセージ送信（共通）
             if (this.session && this.isConnected()) {
+              // 念のため直前の出力を再チェック
+              await interruptIfGenerating(100);
               await this.sendMessage(message.command);
               console.log('✅ Task sent to Anicca');
               
@@ -360,6 +628,8 @@ export class AniccaSessionManager {
                 message: 'Session not connected'
               }));
             }
+
+            // 起床タスクも他の定期タスクと同様に“一発発火”のみ（ループは撤廃）
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -401,37 +671,21 @@ export class AniccaSessionManager {
   getCurrentUserId(): string | null {
     return this.currentUserId;
   }
+  // ユーザーTZ参照（Cron/TZ解決で利用）
+  getUserTimezone(): string | null {
+    return this.userTimezone;
+  }
   
   // WebSocket Keep-alive機能
-  private keepAliveErrors = 0;  // エラーカウンター追加
-  
+  private keepAliveErrors = 0;  // （無効化済みだが参照残し）
+
   private startKeepAlive() {
-    // 既存のインターバルをクリア
+    // アプリ層の送信型 keep-alive は無効化（transportに任せる）
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
+      this.keepAliveInterval = null;
     }
-    
-    // 30秒ごとにkeep-aliveを送信
-    this.keepAliveInterval = setInterval(async () => {
-      if (this.session && this.isConnected()) {
-        try {
-          // 修正: sendMessageでテキストping送信（エラーにならない）
-          await this.sendMessage(" ");  // スペース1文字
-          console.log('💓 Keep-alive sent');
-          this.keepAliveErrors = 0;  // 成功時はカウンターリセット
-        } catch (error) {
-          console.error('❌ Keep-alive failed:', error);
-          this.keepAliveErrors++;
-          // 修正: 3回失敗で再接続（頻繁な再接続を防ぐ）
-          if (!this.isReconnecting && this.apiKey && this.keepAliveErrors > 3) {
-            await this.handleReconnection();
-            this.keepAliveErrors = 0;
-          }
-        }
-      }
-    }, 30000); // 30秒ごと
-    
-    console.log('✅ Keep-alive started (30s interval)');
+    console.log('🛑 App-layer keep-alive disabled (handled by transport)');
   }
 
   private stopKeepAlive() {
@@ -453,15 +707,7 @@ export class AniccaSessionManager {
     this.stopKeepAlive();
     
     try {
-      // 既存セッションをクリーンアップ
-      if (this.session) {
-        this.session.close();
-      }
-      
-      // 再初期化
-      await this.initialize();
-      await this.connect(this.apiKey!);
-      
+      await this.ensureConnected(true);
       console.log('✅ Reconnected successfully');
       this.broadcast({ type: 'websocket_reconnected' });
     } catch (error) {
@@ -479,8 +725,57 @@ export class AniccaSessionManager {
   private setupEventHandlers() {
     if (!this.session) return;
 
+    // 低レベル接続イベント
+    try {
+      this.session.transport.on('connected', () => {
+        this.lastServerEventAt = Date.now();
+      });
+      this.session.transport.on('disconnected', () => {
+        this.ready = false;
+      });
+    } catch {}
+
+    // サーバからの生イベント（READY合図をここで検知）
+    this.session.on('transport_event', async (event: any) => {
+      try {
+        this.lastServerEventAt = Date.now();
+        if (event?.type === 'session.created') {
+          this.ready = true;
+          console.log('[READY] session.created');
+          if (!this.restoredOnce) {
+            try {
+              await this.restoreSession();
+              this.restoredOnce = true;
+            } catch (e) {
+              console.warn('restoreSession after READY failed:', e);
+            }
+          }
+          // READY後に一度だけ mem/TZ を“応答なし”で反映（多重抑止つき）
+          this.enqueueSystemOp({ kind: 'mem' });
+          this.enqueueSystemOp({ kind: 'tz' });
+          this.flushSystemOpsIfIdle();
+        }
+      } catch {}
+    });
+
+    // 応答の開始/終了を捕捉（競合回避とキュー解放）
+    this.session.on('agent_start', (_ctx: any, _agent: any) => {
+      this.isGenerating = true;
+      this.lastServerEventAt = Date.now();
+      console.log('[AGENT_START]');
+    });
+    this.session.on('agent_end', (_ctx: any, _agent: any, _output: string) => {
+      this.isGenerating = false;
+      this.lastServerEventAt = Date.now();
+      console.log('[AGENT_END]');
+      // UIへ完了のフォールバック通知（半二重戻し）
+      this.broadcast({ type: 'turn_done' });
+      this.flushSystemOpsIfIdle();
+    });
+
     // 音声データイベント（transport経由）
     this.session.transport.on('audio', (event: any) => {
+      this.lastServerEventAt = Date.now();
       // ElevenLabs再生中は音声出力を送信しない
       if (this.isElevenLabsPlaying) {
         // ログは出さない（大量に出るため）
@@ -496,7 +791,8 @@ export class AniccaSessionManager {
     });
 
     // 音声開始/終了
-    this.session.on('audio_start', () => {
+    this.session.on('audio_start', (_ctx: any, _agent: any) => {
+      this.lastServerEventAt = Date.now();
       // ElevenLabs再生中は無視
       if (this.isElevenLabsPlaying) {
         console.log('🔇 Ignoring Anicca audio_start during ElevenLabs playback');
@@ -506,7 +802,8 @@ export class AniccaSessionManager {
       this.broadcast({ type: 'audio_start' });
     });
 
-    this.session.on('audio_stopped', () => {
+    this.session.on('audio_stopped', (_ctx: any, _agent: any) => {
+      this.lastServerEventAt = Date.now();
       // ElevenLabs再生中は無視
       if (this.isElevenLabsPlaying) {
         console.log('🔇 Ignoring Anicca audio_stopped during ElevenLabs playback');
@@ -555,8 +852,34 @@ export class AniccaSessionManager {
 
     // ツール実行イベント（正しいプロパティ名）
     this.session.on('agent_tool_start', async (context: any, agent: any, tool: any, details: any) => {
-      const toolName = tool.name;  // ← 正しいプロパティ
+      const isHostedMcp = (
+        tool && tool.type === 'hosted_tool' && tool.name === 'hosted_mcp' && tool.providerData?.type === 'mcp'
+      );
+      const mcpServer = isHostedMcp ? (tool.providerData.server_label || 'mcp') : null;
+      const mcpTool   = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const serverTagMap: Record<string,string> = {
+        google_calendar: '[CALENDAR]',
+        gmail:           '[GMAIL]'
+      };
+      const tag = isHostedMcp ? (serverTagMap[mcpServer!] || `[${mcpServer}]`) : '';
+      const toolName = isHostedMcp ? `${tag} [${mcpTool || 'unknown'}]` : (tool?.name || 'unknown_tool');
+
       console.log(`🔧 SDK自動実行開始: ${toolName}`);
+      if (isHostedMcp) {
+        try {
+          const args = details?.toolCall?.arguments;
+          let compact = '';
+          if (typeof args !== 'undefined') {
+            compact = typeof args === 'string' ? args : JSON.stringify(args);
+            if (compact.length > 200) compact = compact.slice(0, 200) + '...';
+            console.log(`🛠 MCP start: ${tag} ${mcpTool} args=${compact}`);
+          } else {
+            console.log(`🛠 MCP start: ${tag} ${mcpTool}`);
+          }
+        } catch (e) {
+          console.warn('Failed to log MCP call args:', e);
+        }
+      }
       
       // text_to_speech重複防止チェック
       if (toolName === 'text_to_speech') {
@@ -592,9 +915,28 @@ export class AniccaSessionManager {
     });
 
     this.session.on('agent_tool_end', async (context: any, agent: any, tool: any, result: any, details: any) => {
-      const toolName = tool.name;  // ← 正しいプロパティ
+      const isHostedMcp = (
+        tool && tool.type === 'hosted_tool' && tool.name === 'hosted_mcp' && tool.providerData?.type === 'mcp'
+      );
+      const mcpServer = isHostedMcp ? (tool.providerData.server_label || 'mcp') : null;
+      const mcpTool   = isHostedMcp ? (details?.toolCall?.name || details?.toolCall?.tool || '') : '';
+      const serverTagMap: Record<string,string> = {
+        google_calendar: '[CALENDAR]',
+        gmail:           '[GMAIL]'
+      };
+      const tag = isHostedMcp ? (serverTagMap[mcpServer!] || `[${mcpServer}]`) : '';
+      const toolName = isHostedMcp ? `${tag} [${mcpTool || 'unknown'}]` : (tool?.name || 'unknown_tool');
+
       console.log(`✅ SDK自動実行完了: ${toolName}`);
-      console.log(`結果: ${JSON.stringify(result)}`);
+      if (isHostedMcp) {
+      const elapsedMs = this.taskState.startedAt ? (Date.now() - this.taskState.startedAt) : 0;
+      console.log(`🛠 MCP done: ${tag} ${mcpTool} (${elapsedMs}ms)`);
+      }
+      try {
+        console.log(`結果: ${JSON.stringify(result)}`);
+      } catch (_) {
+        // noop
+      }
       
       // ElevenLabs音声データの処理
       if (toolName === 'text_to_speech') {
@@ -647,6 +989,26 @@ export class AniccaSessionManager {
         toolName: toolName,
         result: result
       });
+
+      // 接続直後のツール更新：connect_google_calendar 完了時に hosted_mcp を即注入
+      try {
+        if (tool?.type === 'function' && tool?.name === 'connect_google_calendar' && this.currentUserId && this.session) {
+          const cfg = await resolveGoogleCalendarMcp(this.currentUserId);
+          if (cfg) {
+            const newAgent = await createAniccaAgent(this.currentUserId);
+            await this.session.updateAgent(newAgent);
+            console.log('✅ hosted_mcp injected after connect_google_calendar');
+          }
+        }
+        // 切断直後のツール更新：disconnect_google_calendar 完了時に hosted_mcp を即時除去
+        if (tool?.type === 'function' && tool?.name === 'disconnect_google_calendar' && this.currentUserId && this.session) {
+          const newAgent = await createAniccaAgent(this.currentUserId);
+          await this.session.updateAgent(newAgent);
+          console.log('🧹 hosted_mcp removed after disconnect_google_calendar');
+        }
+      } catch (e: any) {
+        console.warn('Failed to inject hosted_mcp after connect:', e?.message || e);
+      }
     });
 
     // エラー処理
@@ -678,19 +1040,67 @@ export class AniccaSessionManager {
       }
       
       this.broadcast({ type: 'error', error: error.message });
-      
-      // 自動再接続（handleReconnection()を使用）
+
+      // エラー種別で再接続を制御
+      const code = error?.error?.error?.code || error?.code || '';
+      const isLogicError = (
+        code === 'conversation_already_has_active_response' ||
+        code === 'invalid_value' ||
+        code === 'empty_array'
+      );
+      if (isLogicError) {
+        // 論理エラーは会話制御の問題。再接続せずログのみ。
+        return;
+      }
+      // 401/Unauthorized を簡易検知して hosted_mcp をリフレッシュ（ワンショット）
+      try {
+        const msg = JSON.stringify(error) || '';
+        if ((msg.includes('401') || msg.toLowerCase().includes('unauthorized') || msg.includes('Token verification failed')) && this.currentUserId && this.session) {
+          const newAgent = await createAniccaAgent(this.currentUserId);
+          await this.session.updateAgent(newAgent);
+          console.log('🔁 Refreshed hosted_mcp after 401/Unauthorized');
+        }
+      } catch { /* noop */ }
+
+      // ネットワーク断・タイムアウトなどのみ再接続
       if (!this.isReconnecting && this.apiKey) {
         await this.handleReconnection();
       }
     });
 
-    // 履歴更新時に保存
-    this.session.on('history_updated', async (history: any) => {
+    // 履歴更新時：新規アイテムからMCP呼び出しを検出してログ
+    this.session.on('history_updated', async (history: any[]) => {
       console.log('📝 History updated, length:', history?.length);
-      
-      // 慈悲の瞑想はElevenLabsで処理するため、終了検知は不要
-      
+
+      try {
+        const len = Array.isArray(history) ? history.length : 0;
+        for (let i = this.lastLoggedHistoryIndex; i < len; i++) {
+          const item: any = history[i];
+          const providerType = item?.providerData?.type || item?.type;
+
+          // hosted MCP 呼び出しの開始検出
+          if (providerType === 'mcp_call' && item?.providerData) {
+            const server = item.providerData.server_label || 'unknown_server';
+            const tool   = item.providerData.tool || 'unknown_tool';
+            const args   = item.providerData.arguments;
+            let compactArgs = '';
+            try {
+              compactArgs = typeof args === 'string' ? args : JSON.stringify(args);
+              if (compactArgs.length > 200) compactArgs = compactArgs.slice(0, 200) + '...';
+            } catch { /* noop */ }
+            console.log(`🛠 MCP start: ${server}.${tool} args=${compactArgs}`);
+          }
+
+          // アシスタント応答到着を「完了」のサインとして簡易ログ
+          if ((providerType === 'message' || providerType === 'response') && item?.role === 'assistant') {
+            console.log('🛠 MCP done: assistant responded');
+          }
+        }
+        this.lastLoggedHistoryIndex = len;
+      } catch (e) {
+        console.warn('Failed to inspect history for MCP logs:', e);
+      }
+
       await this.saveSession(history);
     });
 
@@ -700,17 +1110,19 @@ export class AniccaSessionManager {
     if (!this.session) throw new Error('Session not initialized');
     
     this.apiKey = apiKey;
+    // 新セッションの開始直後に age/ready を初期化
+    this.sessionStartedAt = Date.now();
+    this.ready = false;
+    this.restoredOnce = false;
     await this.session.connect({ apiKey });
     console.log('✅ Connected to OpenAI Realtime API');
     
-    // 接続後に履歴を復元
-    await this.restoreSession();
-    
+    // 履歴復元は session.created（READY）後に行う
+
     // Slack接続状態を確認
     await this.checkSlackConnection();
     
-    // Serenaの記憶を確認
-    await this.checkMemories();
+    // （READY後に mem/TZ を“応答なし”で反映する。ここでは送らない）
   }
   
   async disconnect() {
@@ -722,6 +1134,10 @@ export class AniccaSessionManager {
       console.log('🔌 Disconnected from OpenAI Realtime API');
     }
     this.apiKey = null;
+    if (this.mcpRefreshInterval) {
+      clearInterval(this.mcpRefreshInterval);
+      this.mcpRefreshInterval = null;
+    }
   }
   
   async sendAudio(audioData: Uint8Array) {
@@ -837,12 +1253,26 @@ export class AniccaSessionManager {
     });
   }
   
+  // （wake専用ループは撤廃）
+
+  // ====== 応答衝突回避（進行中なら interrupt→短待ち） ======
+  private async interruptIfGenerating(delayMs = 100) {
+    if (this.isGenerating) {
+      try { await this.session?.interrupt(); } catch {}
+      await new Promise(r => setTimeout(r, delayMs));
+    }
+  }
+
   getSession() {
     return this.session;
   }
   
   isConnected() {
-    return this.session !== null && this.apiKey !== null;
+    const transportOpen = (this.session?.transport?.status === 'connected');
+    const lastEvOk = (Date.now() - (this.lastServerEventAt ?? 0)) <= 30_000; // 30s
+    const ttlOk = this.tokenTTLSeconds() > 120; // >120s
+    const ageOk = this.sessionAgeSeconds() < 3_000; // <50min
+    return (transportOpen && this.ready === true && lastEvOk && ttlOk && ageOk);
   }
 
   // クリーンアップ

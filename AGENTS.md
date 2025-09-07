@@ -1,41 +1,63 @@
 # Repository Guidelines
 
-## プロジェクト構成・モジュール配置
-- `src/`: Electron + TypeScript のデスクトップ本体（`main-voice-simple.ts`、`services/`）。
-- `src/agents/`: メインエージェント、ツール、MCP 連携。テストは `src/agents/__tests__`。
-- `anicca-proxy-slack/`: Express ベースのプロキシ/MCP バックエンド（単体で開発・起動）。
-- `anicca-web/`: Next.js Web アプリ（単体で開発・起動）。
-- `assets/`, `scripts/`, `landing/`, `dist/`: アセット、ビルド補助、サイト、ビルド成果物。
+## 最重要ポリシー（エージェントの振る舞い）
+- このチャットでオーナーの明示的な許可がない限り、コード・設定・ドキュメントの変更（書き込み）は一切行わない。
+- 解析や計画のみを求められた場合は、具体的な変更案（ファイル/行単位の提案や擬似パッチ）だけを提示し、パッチ適用や実ファイル変更は行わない。
+- いかなる `apply_patch` や書き込みを伴うコマンドの前にも、変更範囲・対象ファイル・意図を事前に確認する。
+- 万一誤って変更した場合は直ちに作業を停止し、変更点を要約して報告し、オーナーの許可を得てからリバートする。
+- 本ポリシーは他の指示より優先される。違反は重大な問題として扱う。
 
-## ビルド・テスト・開発コマンド
-- 音声開発ラン: `npm run voice:simple`（ビルド後に Electron を起動）。
-- デスクトップビルド: `npm run build:voice`（`tsconfig.voice.json` でコンパイル＋アセット配置）。
-- Electron 開発起動: `npm run electron-dev`（`NODE_ENV=development`）。
-- DMG パッケージ: `npm run dist:dev | dist:staging | dist:production`。
-- テスト全体: `npm test`／ウォッチ: `npm run test:watch`。
-- エージェント限定: `npm run test:agents`／カバレッジ: `npm run test:agents:coverage`。
-- 品質: `npm run lint`／`npm run format`。
-- サブプロジェクト起動: `cd anicca-proxy-slack && npm run dev`, `cd anicca-web && npm run dev`。
+### 意思決定の方針（曖昧さの排除）
+- 選択肢が複数ある場合でも、ユーザーの目的と制約に即して最適解一つに定めて提示する。その際、なぜそれが最適なのかを必ず理由付きで説明する（理由なしの提案は不可）。
+- 「こうしても良い/ああしても良い。どうしますか？」のような曖昧な提示は行わない。必要な前提・仮定は明示し、その上で最適解を断定して提案する。
+- 例外的に外部承認やポリシー判断が必須で決めきれない場合のみ、その理由と最小限の分岐を明記する。
 
-## コーディング規約・命名
-- TypeScript 厳格設定。`any` は許容だが極力避け、明示的な型を優先。
-- ESLint + Prettier（2 スペース）。ファイルは機能単位、テストは `.test.ts` 接尾辞。
-- 依存はデスクトップ側は `src/` 内で閉じる（サブプロジェクトを直接 import しない）。
+### 単一解提示の厳守（ベストパスの一本化）
+- 手順や対処法は常に「最適な一つ」だけを提示する（ユーザーが複数案を明示的に要求した場合を除く）。
+- 代替案は提示しない。必要であれば「選ばない理由」を簡潔に添える。
+- この原則は実装時だけでなく、説明・運用・トラブルシュートの全場面で適用する。
 
-## テスト方針
-- フレームワーク: Vitest（Node 環境）。v8 カバレッジ、`text/json/html` レポート。
-- 配置: `src/**/__tests__/**/*.test.ts`（推奨）または `src/**/*.test.ts`。
-- 新規ツールは `src/agents/tools.ts` に追加し、ユニットテストを同時に用意。
-- PR 前に `npm run test:agents:coverage` を通過させる。
+### 説明の姿勢（初心者にもわかりやすく）
+- 実装や概念の説明は、初心者にもわかる言葉で丁寧に行う。
+- ダイアグラムやフローチャート等の視覚表現を積極的に用い、仕組みと流れを明確に示す。
 
-## コミット・PR ガイドライン
-- Conventional Commits 推奨（例: `feat:`, `fix:`, `chore:`）。必要に応じてスコープ（`feat(agents): ...`）。
-- ブランチ命名: `feature/...`, `fix/...`, `hotfix/...`（例: `feature/desktop-app-parent-worker`）。
-- PR 必須情報: 目的/背景（Issue 連携可）、変更点、テスト手順と結果、UI/配布影響時はスクショ/ログ。
+### 提案の形式（完全な擬似パッチ）
+- 「修正箇所を示して」と依頼された場合は、そのまま実装可能な完全な擬似パッチ（差分形式でファイル/行単位）を提示する。
+- 変更しない箇所は示さない。文章だけの方針説明で終わらせない。
 
-## セキュリティ・設定 Tips
-- 機密値は `.env`（ルート/各サブプロジェクト）で読み込み、コミット禁止。
-- macOS のパッケージ前に既存 `Anicca` ボリュームをアンマウントしてビルド失敗を防止。
+### 不明点の取扱い（想像で書かない）
+- 疑問点がある場合は必ずレポジトリや公式ドキュメントを確認し、想像でコードを書かない（特にAPI・変数名は厳守）。
+- 疑問が解消できない場合は、その点を明確にユーザーへ報告し、疑問が0になるまで実装に入らない。
+
+### 変更完了後の運用（必ずPush）
+- 変更が完了したら、指示がなくても必ず各リポジトリへPushする（ブランチ/チャネル運用に従う）。
+  - Proxy: https://github.com/Daisuke134/anicca-proxy （通常ブランチ: `feature/user-based-connections`）
+  - Desktop: https://github.com/Daisuke134/anicca.ai （作業中の該当ブランチ）
+- CI/デプロイ（Railway/GitHub Releases）までを考慮し、反映を確認する。
+
+### ドキュメント言語ポリシー（重要）
+- 新規に追加・更新するMD/MDXドキュメントは、必ず日本語で記載する。
+- 多言語が必要な場合でも、日本語版を必ず先に用意する（英語は補助）。
+- このポリシーは `docs/` 配下および設計/要件定義のMD/MDXに適用する。
+
+### 固定パスとPush先の厳守（重要）
+- 実装・修正の対象パスは以下に限定する。
+  - Proxy（ローカル）: `anicca-proxy-slack/` 配下（例: `src/api/mcp/gcal/*`, `src/server.js`）。
+  - Desktop（ローカル）: 本リポジトリの `src/` 配下（例: `src/agents/*`）。
+- 一時クローン（`tmp/` 配下）は「調査専用」。実装・修正・デプロイ対象にしてはならない。作業終了後は必ず削除する。
+- Push先は固定する。
+  - Proxy: `origin feature/user-based-connections`
+  - Desktop: 該当作業ブランチ（例: `feature/remote-mcp-google-calendar`）
+- 変更前チェック（必須）: `pwd` と対象ファイルの絶対/相対パスを確認し、「固定パス」であることを確認してから修正・コミット・Pushする。
+
+### ネットワーク操作・検証ポリシー（重要・必ず実行）
+- 本エージェントは、オーナーの許可がある場合、外部ネットワークを用いた検証（例: `curl` による疎通確認、外部APIのステータス確認）を自ら実行する。
+- オーナーから「叩いて確認して」と明示された場合は、拒否せずに実行し、結果をログ付きで共有する。
+- 代表例:
+  - Proxyエンドポイントの検証: `curl -sS -X POST "$PROXY_BASE/api/mcp/gcal/status" -H "Content-Type: application/json" -d '{"userId":"$USER_ID"}'`
+  - Realtimeクライアントシークレット発行: `curl -sS -X POST https://api.openai.com/v1/realtime/client_secrets -H "Authorization: Bearer $OPENAI_API_KEY" -H "Content-Type: application/json" -d '{...}'`
+- 実行前に必要な環境変数（`OPENAI_API_KEY`, `PROXY_BASE`, `WORKSPACE_MCP_URL` など）が設定済みかを確認し、不足があれば明示する。
+- 実行の可否は環境のネットワーク権限（CLI設定）に依存するが、許可がある限りエージェント自身が実行して結果を提示する。
 
 ## Release & Ops Overview
 
@@ -55,6 +77,11 @@
 
 - Proxy（Railway）環境:
   - Staging / Production の 2 環境。`NODE_ENV` はサーバー挙動向け（ログ/最適化）で、Desktop の接続先切替は配布チャネルで制御（beta→staging, stable→production）。
+
+### Proxy反映メモ（重要・数行）
+- Staging 反映: `Daisuke134/anicca-proxy` の `feature/user-based-connections` ブランチへ push → Railway(Staging) が自動デプロイ。
+- Production 反映: `main` ブランチへ push → Railway(Production) が自動デプロイ。
+- ローカル検証時は `UPDATE_CHANNEL=beta` を付与して起動（staging を参照）。例: `UPDATE_CHANNEL=beta npm run voice:simple`
 
 - Desktop の設定解決（今回の方針）:
   - プロキシURLは、埋め込み `appConfig.proxy` → 環境変数（`PROXY_URL_PRODUCTION/STAGING`）→ 既定URL の順で解決。

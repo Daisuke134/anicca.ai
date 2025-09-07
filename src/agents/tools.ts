@@ -5,6 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { getAuthService } from '../services/desktopAuthService';
+import { PORTS } from '../config';
 
 const PROXY_URL = process.env.PROXY_URL || 'https://anicca-proxy-staging.up.railway.app';
 
@@ -373,67 +374,133 @@ export const connect_google_calendar = tool({
   description: 'Google Calendarを接続',
   parameters: z.object({}),
   execute: async () => {
-    const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-    
-    const response = await fetch(`${PROXY_URL}/api/composio/calendar-mcp`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId })
-    });
-    
-    const data = await response.json();
-    console.log('Calendar MCP response:', data);
-    
-    if (!data.connected && data.authUrl) {
-      const { shell } = require('electron');
-      shell.openExternal(data.authUrl);
-      return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+    try {
+      const userId = process.env.CURRENT_USER_ID || 'desktop-user';
+      const jwt = getAuthService().getJwt();
+      // ステータス確認
+      const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {})
+        },
+        body: JSON.stringify({ userId })
+      });
+      if (!statusResponse.ok) {
+        console.warn(`Google Calendar status check failed: ${statusResponse.status}`);
+        return 'Google Calendar接続状態の確認に失敗しました。';
+      }
+
+      const statusData = await statusResponse.json();
+      // Reduce sensitive logging: do not print tokens
+      console.log('Calendar MCP status:', {
+        connected: !!statusData?.connected,
+        server_url: statusData?.server_url || 'hidden'
+      });
+
+      // authorization が無ければ未接続として扱い、必ず認可URLを開く
+      if (!statusData.connected || !statusData.authorization) {
+        const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`,
+        { headers: jwt ? { 'Authorization': `Bearer ${jwt}` } : {} });
+        if (!oauthResponse.ok) {
+          console.warn(`Google Calendar OAuth URL fetch failed: ${oauthResponse.status}`);
+          return 'Google Calendar認証URLの取得に失敗しました。';
+        }
+        const oauthData = await oauthResponse.json();
+        if (oauthData.url) {
+          const { shell } = require('electron');
+          shell.openExternal(oauthData.url);
+          return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+        }
+        console.warn('Google Calendar OAuth URL payload did not include url');
+        return 'Google Calendar認証URLの取得に失敗しました。';
+      }
+
+      if (statusData.connected && statusData.authorization) {
+        return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
+      }
+
+      console.warn('Google Calendar status response did not meet connected criteria');
+      return 'Google Calendar接続状態の確認に失敗しました。';
+    } catch (e: any) {
+      console.error('connect_google_calendar failed:', e);
+      return 'Google Calendar接続で予期しないエラーが発生しました。';
     }
-    
-    if (data.connected) {
-      return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
-    }
-    
-    return 'Google Calendar接続状態の確認に失敗しました。';
   }
 });
 
-// 18. get_current_time
+// 17.5 disconnect_google_calendar
+export const disconnect_google_calendar = tool({
+  name: 'disconnect_google_calendar',
+  description: 'Google Calendarの接続を解除する（音声コマンド用）',
+  parameters: z.object({}),
+  execute: async () => {
+    try {
+      const userId = process.env.CURRENT_USER_ID || 'desktop-user';
+      const jwt = getAuthService().getJwt();
+      const resp = await fetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {})
+        },
+        body: JSON.stringify({ userId })
+      });
+      if (!resp.ok) {
+        return `Google Calendarの接続解除に失敗しました（HTTP ${resp.status}）`;
+      }
+      // Best-effort: Bridge に接続再初期化を依頼
+      try {
+        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' }
+        });
+      } catch { /* noop */ }
+      return 'Google Calendarの接続を解除しました。';
+    } catch (e: any) {
+      return `Google Calendarの接続解除でエラーが発生しました: ${e.message}`;
+    }
+  }
+});
+
+// 18. get_current_time（外部API非依存：OSのIANA TZを返す）
 export const get_current_time = tool({
   name: 'get_current_time',
   description: '現在の時刻を取得（ユーザーの場所に基づく）',
   parameters: z.object({}),
   execute: async () => {
-    try {
-      // WorldTimeAPI - IPベースで自動的にユーザーのタイムゾーンを検出
-      const response = await fetch('https://worldtimeapi.org/api/ip');
-      
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
-      const data = await response.json();
-      
-      // 生データを返す - Aniccaが判断して適切な言語で伝える
-      return JSON.stringify({
-        datetime: data.datetime,
-        timezone: data.timezone,
-        day_of_week: data.day_of_week,
-        week_number: data.week_number
-      });
-      
-    } catch (error: any) {
-      // フォールバック：システム時刻
-      const now = new Date();
-      return JSON.stringify({
-        datetime: now.toISOString(),
-        timezone: 'system',
-        error: error.message
-      });
-    }
+    const now = new Date();
+    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC';
+    return JSON.stringify({ datetime: now.toISOString(), timezone: tz });
   }
 });
 
+// 19. convert_time（ISO日時→指定IANA TZの人間可読表示）
+export const convert_time = tool({
+  name: 'convert_time',
+  description: 'ISO日時を指定IANAタイムゾーンのローカル時刻に変換（人間可読）',
+  parameters: z.object({
+    datetime: z.string().describe('ISO 8601 datetime（例: 2025-09-02T05:41:00Z）'),
+    to_timezone: z.string().describe('IANA TZ（例: Asia/Tokyo）'),
+    locale: z.string().nullable().describe('表示ロケール。null のときはOS既定ロケール')
+  }),
+  execute: async ({ datetime, to_timezone, locale }) => {
+    try {
+      const d = new Date(datetime);
+      if (isNaN(d.getTime())) return 'Invalid datetime';
+      // locale が null の場合は OS 既定ロケール（Intl に undefined を渡す）
+      const fmt = new Intl.DateTimeFormat(locale ?? undefined, {
+        timeZone: to_timezone,
+        year: 'numeric', month: '2-digit', day: '2-digit',
+        hour: '2-digit', minute: '2-digit'
+      });
+      const human = fmt.format(d);
+      return JSON.stringify({ human, timezone: to_timezone, source: datetime });
+    } catch (e: any) {
+      return `convert_time error: ${e.message}`;
+    }
+  }
+});
 
 // すべてのツールをエクスポート
 export const allTools = [
@@ -450,5 +517,7 @@ export const allTools = [
   text_to_speech,
   open_url,
   connect_google_calendar,
+  disconnect_google_calendar,
   get_current_time,
+  convert_time,
 ];

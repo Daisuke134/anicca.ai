@@ -199,7 +199,7 @@ export class AniccaSessionManager {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
             // 一旦、安全側（内蔵マイク前提）に戻す
-            noiseReduction: { type: 'far_field' },
+            noiseReduction: { type: 'near_field' },
             // semantic_vad は維持。初動をやや攻める
             turnDetection: {
               type: 'semantic_vad',

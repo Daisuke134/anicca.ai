@@ -83,10 +83,12 @@ const ANICCA_INSTRUCTIONS = `
 - 実行は一度だけ。多重呼び出し・短時間連続呼び出しは絶対禁止
 - 長文は1回にまとめる。読み上げ中は発話しない
 
-【Google Calendar MCP（重要）】
-- Google Calendar 操作は「hosted_mcp」を使用し、server_label='google_calendar' のツールを呼び出す
-- ツール名: list_calendars / get_events / create_event / modify_event / delete_event
-- “mcp_google_calendar” というツール名は存在しないため絶対に呼び出さない
+Google Calendar MCP（簡潔ルール）
+- 入口は常に hosted_mcp（server_label='google_calendar'）のみを使う。
+- list_calendars / get_events / create_event / modify_event / delete_event は「リモートMCPの tool 名」。トップレベルで直接呼ばない。hosted_mcp の tool に指定して呼ぶ。
+- カレンダー系を呼ぶときは arguments に必ず timezone（ユーザーの IANA TZ）を含める。
+- もし誤ってトップレベルの get_events 等を選びそうになったら、必ず hosted_mcp 経由に“自動で修正”する。
+- “mcp_google_calendar” というツール名は存在しない。絶対に呼ばない。
 
 【禁止事項】
 - 開始宣言・復唱・長い前置き
@@ -396,14 +398,14 @@ const ANICCA_INSTRUCTIONS = `
 Google Calendar MCP→カレンダーの予定を教えてと言われたら使う
 ・今日の予定教えてと言われたら、現在時刻とユーザーのIANAタイムゾーンはOS情報を用いる（/user/timezone で通知済みのTZ、無ければ Intl の TZ）。時間が必要な場合は get_current_time / convert_time を使用する。
 【重要：呼び出しルール（タイムゾーン）】
-- カレンダー系ツール（list_calendars / get_events / create_event / modify_event / delete_event）を呼ぶ時は、
-  必ず timezone: <ユーザーのIANA TZ> を引数に含めること。
+- カレンダー系のリモートMCPツール（list_calendars / get_events / create_event / modify_event / delete_event）を hosted_mcp 経由で呼ぶときは、必ず arguments に timezone: <ユーザーのIANA TZ> を含めること。
 - 日付のみ（YYYY-MM-DD）で指定された場合は、そのタイムゾーンの一日境界で解釈する（例：<ユーザーTZ> の 2025-09-02）。
 - ユーザーのタイムゾーンは、/user/timezone で通知された値を優先し、無い場合は Intl.DateTimeFormat().resolvedOptions().timeZone を使用すること。
-【重要：MCPの呼び出し方法】
-- Google Calendar 操作は「hosted_mcp」を使用し、server_label='google_calendar' のツールを呼び出すこと。
-- 具体的なツール名は list_calendars / get_events / create_event / modify_event / delete_event。
-- “mcp_google_calendar” というツール名は存在しないので絶対に呼び出さないこと。
+【Google Calendar MCP（簡潔ルール）】
+- 入口は常に hosted_mcp（server_label='google_calendar'）のみを使う。
+- list_calendars / get_events / create_event / modify_event / delete_event は「リモートMCPの tool 名」。トップレベルで直接呼ばない。hosted_mcp の tool に指定して呼ぶ。
+- もし誤ってトップレベルの get_events 等を選びそうになったら、必ず hosted_mcp 経由に“自動で修正”する。
+- “mcp_google_calendar” というツール名は存在しない。絶対に呼ばない。
 `;
 
 // RealtimeAgent作成

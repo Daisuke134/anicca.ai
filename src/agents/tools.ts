@@ -376,11 +376,14 @@ export const connect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-
+      const jwt = getAuthService().getJwt();
       // ステータス確認
       const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {})
+        },
         body: JSON.stringify({ userId })
       });
       if (!statusResponse.ok) {
@@ -397,7 +400,8 @@ export const connect_google_calendar = tool({
 
       // authorization が無ければ未接続として扱い、必ず認可URLを開く
       if (!statusData.connected || !statusData.authorization) {
-        const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
+        const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`,
+        { headers: jwt ? { 'Authorization': `Bearer ${jwt}` } : {} });
         if (!oauthResponse.ok) {
           console.warn(`Google Calendar OAuth URL fetch failed: ${oauthResponse.status}`);
           return 'Google Calendar認証URLの取得に失敗しました。';
@@ -433,9 +437,13 @@ export const disconnect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
+      const jwt = getAuthService().getJwt();
       const resp = await fetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {})
+        },
         body: JSON.stringify({ userId })
       });
       if (!resp.ok) {

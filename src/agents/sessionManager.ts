@@ -993,6 +993,12 @@ export class AniccaSessionManager {
             console.log('✅ hosted_mcp injected after connect_google_calendar');
           }
         }
+        // 切断直後のツール更新：disconnect_google_calendar 完了時に hosted_mcp を即時除去
+        if (tool?.type === 'function' && tool?.name === 'disconnect_google_calendar' && this.currentUserId && this.session) {
+          const newAgent = await createAniccaAgent(this.currentUserId);
+          await this.session.updateAgent(newAgent);
+          console.log('🧹 hosted_mcp removed after disconnect_google_calendar');
+        }
       } catch (e: any) {
         console.warn('Failed to inject hosted_mcp after connect:', e?.message || e);
       }
@@ -1039,6 +1045,16 @@ export class AniccaSessionManager {
         // 論理エラーは会話制御の問題。再接続せずログのみ。
         return;
       }
+      // 401/Unauthorized を簡易検知して hosted_mcp をリフレッシュ（ワンショット）
+      try {
+        const msg = JSON.stringify(error) || '';
+        if ((msg.includes('401') || msg.toLowerCase().includes('unauthorized') || msg.includes('Token verification failed')) && this.currentUserId && this.session) {
+          const newAgent = await createAniccaAgent(this.currentUserId);
+          await this.session.updateAgent(newAgent);
+          console.log('🔁 Refreshed hosted_mcp after 401/Unauthorized');
+        }
+      } catch { /* noop */ }
+
       // ネットワーク断・タイムアウトなどのみ再接続
       if (!this.isReconnecting && this.apiKey) {
         await this.handleReconnection();

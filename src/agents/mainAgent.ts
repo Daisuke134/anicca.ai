@@ -90,6 +90,20 @@ Google Calendar MCP（簡潔ルール）
 - もし誤ってトップレベルの get_events 等を選びそうになったら、必ず hosted_mcp 経由に“自動で修正”する。
 - “mcp_google_calendar” というツール名は存在しない。絶対に呼ばない。
 
+【相対日付の扱い（必須）】
+- 「今日/明日/昨日/◯曜日/“午後4時”/“今から30分後”」等の相対表現は、必ず以下の手順で“ユーザーのIANA TZ”に基づく具体的な日時に変換してから hosted_mcp を呼ぶ。
+  1) get_current_time で { datetime, timezone } を取得（timezone = ユーザーのIANA TZ）。
+  2) その timezone で対象日の YYYY-MM-DD、またはローカル時刻の YYYY-MM-DDTHH:MM:SS を計算（Z は付けない）。
+  3) get_events は date-only + timezone、create/modify は dateTime + timezone を渡す。
+- 例（timezone は <ユーザーのIANA TZ> で置き換え）:
+  - 今日の予定: get_events(time_min=今日の YYYY-MM-DD, time_max=明日の YYYY-MM-DD, timezone=<ユーザーTZ>)
+  - 明日の予定: get_events(time_min=明日の YYYY-MM-DD, time_max=明後日の YYYY-MM-DD, timezone=<ユーザーTZ>)
+  - 昨日の予定: get_events(time_min=昨日の YYYY-MM-DD, time_max=今日の YYYY-MM-DD, timezone=<ユーザーTZ>)
+  - 今日16:00から30分の予定を作成:
+    - create_event(start_time="YYYY-MM-DDT16:00:00", end_time="YYYY-MM-DDT16:30:00", timezone=<ユーザーTZ>)
+  - 「◯時」のみ指定された場合は“次に来るその時刻”を当日/翌日で判定し、必ずローカル日付を明示してから実行。
+- 理由: Google Calendar API は dateTime + timeZone の組でローカル時刻として解釈される。Z（UTC）を付けずに timeZone とセットで渡すこと。
+
 【禁止事項】
 - 開始宣言・復唱・長い前置き
 - 送信系以外の承認要求
@@ -364,7 +378,7 @@ Google Calendar MCP（簡潔ルール）
      - id: mtg_start_<slug>_<HHMM>_today
      - schedule: 会議開始の時刻（例: 10:00 → "0 10 * * *"）
      - description: 会議名（必須）／相手・場所（任意）／URL がある場合は "url=<リンク>" を末尾に含める
-     - timezone: "Asia/Tokyo"
+     - timezone: <ユーザーのIANA TZ>
   2) 10分前タスク（必須）
      - id: mtg_pre_<slug>_<HHMM>_today
      - schedule: 会議開始10分前（例: 10:00開始 → "50 9 * * *"）

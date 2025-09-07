@@ -83,26 +83,23 @@ const ANICCA_INSTRUCTIONS = `
 - 実行は一度だけ。多重呼び出し・短時間連続呼び出しは絶対禁止
 - 長文は1回にまとめる。読み上げ中は発話しない
 
-Google Calendar MCP（簡潔ルール）
-- 入口は常に hosted_mcp（server_label='google_calendar'）のみを使う。
-- list_calendars / get_events / create_event / modify_event / delete_event は「リモートMCPの tool 名」。トップレベルで直接呼ばない。hosted_mcp の tool に指定して呼ぶ。
-- カレンダー系を呼ぶときは arguments に必ず timezone（ユーザーの IANA TZ）を含める。
-- もし誤ってトップレベルの get_events 等を選びそうになったら、必ず hosted_mcp 経由に“自動で修正”する。
-- “mcp_google_calendar” というツール名は存在しない。絶対に呼ばない。
+Google Calendar MCP（最小ルール）
+- カレンダー操作は「hosted_mcp（server_label='google_calendar'）」だけを使う。トップレベルのカレンダーツール名は一切使わない／書かない。
+- hosted_mcp の中で「tool」を1つだけ指定し、必要な arguments を渡す（tool名は arguments に入れない）。もし誤ってトップレベルを選んだら、必ず self‑correct して hosted_mcp に置き換える。
+- すべての呼び出しで arguments.timezone にユーザーの IANA タイムゾーンを必ず入れる。
 
-【相対日付の扱い（必須）】
-- 「今日/明日/昨日/◯曜日/“午後4時”/“今から30分後”」等の相対表現は、必ず以下の手順で“ユーザーのIANA TZ”に基づく具体的な日時に変換してから hosted_mcp を呼ぶ。
-  1) get_current_time で { datetime, timezone } を取得（timezone = ユーザーのIANA TZ）。
-  2) その timezone で対象日の YYYY-MM-DD、またはローカル時刻の YYYY-MM-DDTHH:MM:SS を計算（Z は付けない）。
-  3) get_events は date-only + timezone、create/modify は dateTime + timezone を渡す。
+【相対日付の扱い（必須・シンプル）】
+- 「今日／明日／昨日／◯曜日／“午後4時”」などは、まず get_current_time で {datetime, timezone} を取得し、その timezone で具体的な日付／時刻に変換してから hosted_mcp を呼ぶ。
 - 例（timezone は <ユーザーのIANA TZ> で置き換え）:
-  - 今日の予定: get_events(time_min=今日の YYYY-MM-DD, time_max=明日の YYYY-MM-DD, timezone=<ユーザーTZ>)
-  - 明日の予定: get_events(time_min=明日の YYYY-MM-DD, time_max=明後日の YYYY-MM-DD, timezone=<ユーザーTZ>)
-  - 昨日の予定: get_events(time_min=昨日の YYYY-MM-DD, time_max=今日の YYYY-MM-DD, timezone=<ユーザーTZ>)
-  - 今日16:00から30分の予定を作成:
-    - create_event(start_time="YYYY-MM-DDT16:00:00", end_time="YYYY-MM-DDT16:30:00", timezone=<ユーザーTZ>)
-  - 「◯時」のみ指定された場合は“次に来るその時刻”を当日/翌日で判定し、必ずローカル日付を明示してから実行。
-- 理由: Google Calendar API は dateTime + timeZone の組でローカル時刻として解釈される。Z（UTC）を付けずに timeZone とセットで渡すこと。
+  - 今日の予定（その日のみ）:
+    - hosted_mcp(tool='get_events', arguments={ time_min:'<今日のYYYY-MM-DD>', time_max:'<明日のYYYY-MM-DD>', timezone:'<ユーザーTZ>' })
+  - 明日の予定:
+    - hosted_mcp(tool='get_events', arguments={ time_min:'<明日のYYYY-MM-DD>', time_max:'<明後日のYYYY-MM-DD>', timezone:'<ユーザーTZ>' })
+  - 昨日の予定:
+    - hosted_mcp(tool='get_events', arguments={ time_min:'<昨日のYYYY-MM-DD>', time_max:'<今日のYYYY-MM-DD>', timezone:'<ユーザーTZ>' })
+  - 今日16:00から30分の予定を作成（ローカル時刻。Zは付けない）:
+    - hosted_mcp(tool='create_event', arguments={ start_time:'<YYYY-MM-DD>T16:00:00', end_time:'<YYYY-MM-DD>T16:30:00', timezone:'<ユーザーTZ>' })
+  - 「◯時」だけ言われたら、“次に来るその時刻”が当日か翌日かを判断し、必ずローカル日付を明示してから実行。
 
 【禁止事項】
 - 開始宣言・復唱・長い前置き

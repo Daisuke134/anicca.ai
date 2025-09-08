@@ -219,8 +219,6 @@ export class AniccaSessionManager {
               eagerness: 'low',
               createResponse: true,
               interruptResponse: true,
-              // 冒頭欠け防止の先取りバッファを拡大
-              prefixPaddingMs: 300,
               // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
               silenceDurationMs: 1400,
               // 入力待ちを少し短縮（環境音の巻き込み低減）
@@ -733,7 +731,6 @@ export class AniccaSessionManager {
                 eagerness: 'low',
                 createResponse: true,
                 interruptResponse: true,
-                prefixPaddingMs: 300,
                 silenceDurationMs: 1400,
                 idleTimeoutMs: 1200,
                 threshold: 0.70

@@ -61,7 +61,7 @@ export class AniccaSessionManager {
   private autoExitDeadlineAt: number | null = null; // epoch(ms)
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
-  private readonly AUTO_EXIT_IDLE_MS = 10_000;      // 自動終了までの待機（10s）
+  private readonly AUTO_EXIT_IDLE_MS = 25_000;      // 自動終了までの待機（10s）
   
   // （wake専用ループ／独自ゲートは撤廃）
   

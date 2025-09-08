@@ -1465,7 +1465,7 @@ ${memories}
   }
 }
     // 8.6 PTT: モード切替
-    this.app.post('/mode/set', async (req, res) => {
+    app.post('/mode/set', async (req, res) => {
       try {
         const mode = String(req.body?.mode || '').toLowerCase();
         const reason = String(req.body?.reason || '');
@@ -1473,14 +1473,14 @@ ${memories}
           res.status(400).json({ ok: false, error: 'invalid mode' });
           return;
         }
-        await this.setMode(mode as any, reason);
-        res.json({ ok: true, mode: this.mode });
+        await self.setMode(mode as any, reason);
+        res.json({ ok: true, mode: self.mode });
       } catch (e: any) {
         res.status(500).json({ ok: false, error: e?.message || String(e) });
       }
     });
 
     // 8.7 PTT: モード状態
-    this.app.get('/mode/status', (req, res) => {
-      res.json({ ok: true, mode: this.mode, autoExitMsRemaining: this.getAutoExitMsRemaining() });
+    app.get('/mode/status', (req, res) => {
+      res.json({ ok: true, mode: self.mode, autoExitMsRemaining: self.getAutoExitMsRemaining() });
     });

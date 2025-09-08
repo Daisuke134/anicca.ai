@@ -8,6 +8,7 @@ import * as path from 'path';
 
 // CIが埋め込む想定のメタデータ
 type ProxyMeta = { production?: string; staging?: string };
+type SupabaseMeta = { url?: string; anonKey?: string };
 
 function readJsonSafe(p: string): any | undefined {
   try {
@@ -40,6 +41,15 @@ function loadEmbeddedProxy(): ProxyMeta | undefined {
   return undefined;
 }
 
+function loadEmbeddedSupabase(): SupabaseMeta | undefined {
+  const pkg = readPkg();
+  if (!pkg) return undefined;
+  const embedded =
+    pkg.appConfig?.supabase ||
+    pkg.extraMetadata?.appConfig?.supabase;
+  if (embedded?.url && embedded?.anonKey) return embedded;
+  return undefined;
+}
 // アプリのバージョン文字列（ログ/推定用）
 const PKG = readPkg() || {};
 export const APP_VERSION_STR: string = PKG.version || '';
@@ -105,7 +115,6 @@ export const API_ENDPOINTS = {
   },
   // その他のAPI
   OPENAI_PROXY: {
-    SESSION: `${PROXY_URL}/api/openai-proxy/session`, // 旧（互換のため残置）
     DESKTOP_SESSION: `${PROXY_URL}/api/openai-proxy/desktop-session`
   },
   SLACK: {
@@ -124,4 +133,11 @@ export const APP_CONFIG = {
 export const UPDATE_CONFIG = {
   CHANNEL: UPDATE_CHANNEL,
   CHECK_INTERVAL: 1000 * 60 * 60 * 4 // 4時間ごと
+};
+
+// Supabase（公開設定のみを「埋め込みメタ」から解決。ランタイムENVは使用しない）
+const SUPABASE_EMBEDDED = loadEmbeddedSupabase();
+export const SUPABASE_CONFIG = {
+  URL: SUPABASE_EMBEDDED?.url || '',
+  ANON_KEY: SUPABASE_EMBEDDED?.anonKey || ''
 };

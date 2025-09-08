@@ -335,7 +335,7 @@ export class AniccaSessionManager {
           return;
         }
 
-        // Supabase経由で code → session を交換（Proxyの /api/auth/callback を内部で叩く）
+        // Supabase経由で code → session を交換（Desktop内のsupabase-jsで直接実行）
         const { getAuthService } = await import('../services/desktopAuthService');
         const authService = getAuthService();
         const ok = await authService.handleOAuthCallback(String(code));

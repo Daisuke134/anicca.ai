@@ -2,8 +2,9 @@ import { safeStorage } from 'electron';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { API_ENDPOINTS, PORTS } from '../config';
+import { API_ENDPOINTS, PORTS, SUPABASE_CONFIG } from '../config';
 import { SimpleEncryption } from './simpleEncryption';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // 認証セッションの型定義
 interface AuthSession {
@@ -33,6 +34,8 @@ export class DesktopAuthService {
   private readonly proxyJwtSkewMs: number = 2 * 60 * 1000; // 2分の前倒し更新
   // 並行リフレッシュ抑止
   private refreshInFlight: boolean = false;
+  // Supabaseクライアント（公開設定のみ／PKCE）
+  private supabase: SupabaseClient | null = null;
   
   constructor() {
     // 認証情報の保存パス
@@ -44,6 +47,21 @@ export class DesktopAuthService {
     
     // 暗号化サービスの初期化
     this.encryption = new SimpleEncryption();
+
+    // Supabaseクライアント初期化（PKCE／公開設定のみ使用。ENVは読まない）
+    if (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY) {
+      console.error('Supabase config missing: embed appConfig.supabase.url / anonKey via extraMetadata.');
+      this.supabase = null;
+    } else {
+      this.supabase = createClient(SUPABASE_CONFIG.URL, SUPABASE_CONFIG.ANON_KEY, {
+        auth: {
+          flowType: 'pkce',
+          autoRefreshToken: false,  // リフレッシュは自前スケジューラで
+          persistSession: false,    // 保存は暗号化ファイルで
+          detectSessionInUrl: false
+        }
+      });
+    }
   }
   
   /**
@@ -86,51 +104,51 @@ export class DesktopAuthService {
       return savedSession;
     }
     this.refreshInFlight = true;
-    for (let i = 0; i < this.maxRetries; i++) {
-      try {
-        const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
+    try {
+      for (let i = 0; i < this.maxRetries; i++) {
+        try {
+          if (!this.supabase) throw new Error('Supabase client not initialized');
+          const { data, error } = await this.supabase.auth.refreshSession({
             refresh_token: savedSession.refresh_token
-          })
-        });
-
-        if (!response.ok) {
-          // 401/403は即セッションクリアせず中断（先行更新競合を考慮）
-          if (response.status === 401 || response.status === 403) {
-            console.error('❌ 認証エラー - リフレッシュ中断（セッション保持）');
+          });
+          if (error) {
+            console.error('❌ 認証エラー - リフレッシュ失敗');
             return null;
           }
-          throw new Error(`HTTP ${response.status}`);
-        }
-
-        const data = await response.json();
-        if (data.success && data.session) {
-          this.currentSession = data.session;
-          this.currentUser = data.session.user;
-          this.saveSession(data.session);
+          const sess = data.session!;
+          const usr = data.user!;
+          const newSession: AuthSession = {
+            access_token: sess?.access_token || '',
+            refresh_token: sess?.refresh_token || '',
+            expires_at: (sess?.expires_at ?? Math.floor(Date.now() / 1000) + 3600),
+            user: {
+              id: usr?.id || '',
+              email: usr?.email || '',
+              user_metadata: usr?.user_metadata
+            }
+          };
+          this.currentSession = newSession;
+          this.currentUser = newSession.user;
+          this.saveSession(newSession);
           console.log('✅ セッションリフレッシュ成功');
-          return data.session;
-        }
-        
-        return null;
-      } catch (error) {
-        console.log(`🔄 リトライ ${i + 1}/${this.maxRetries}:`, error);
-        if (i === this.maxRetries - 1) {
-          if (this.isNetworkError(error)) {
-            console.log('📶 ネットワークエラー - セッション一時維持');
-            return savedSession; // 最後のセッションを維持
+          return newSession;
+        } catch (error) {
+          console.log(`🔄 リトライ ${i + 1}/${this.maxRetries}:`, error);
+          if (i === this.maxRetries - 1) {
+            if (this.isNetworkError(error)) {
+              console.log('📶 ネットワークエラー - セッション一時維持');
+              return savedSession; // 最後のセッションを維持
+            }
+            throw error;
           }
-          throw error;
+          // 指数バックオフ：1秒、2秒、4秒...
+          await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
         }
-        // 指数バックオフ：1秒、2秒、4秒...
-        await new Promise(r => setTimeout(r, 1000 * Math.pow(2, i)));
       }
+      return null;
+    } finally {
+      this.refreshInFlight = false;
     }
-    return null;
-  } finally {
-    this.refreshInFlight = false;
   }
 
   /**
@@ -255,20 +273,22 @@ export class DesktopAuthService {
    */
   async getGoogleOAuthUrl(): Promise<string> {
     try {
-      const userId = this.getCurrentUserId() || 'desktop-user';
-      const redirectUri = encodeURIComponent(`http://localhost:${PORTS.OAUTH_CALLBACK}/auth/callback`);
-      const response = await fetch(`${API_ENDPOINTS.AUTH.GOOGLE_OAUTH}?userId=${userId}&redirect_uri=${redirectUri}`);
-      
-      if (!response.ok) {
-        throw new Error(`Failed to get OAuth URL: ${response.statusText}`);
-      }
-      
-      const data = await response.json();
-      
-      if (!data.success || !data.url) {
-        throw new Error('Invalid response from auth server');
-      }
-      
+      if (!this.supabase) throw new Error('Supabase client not initialized');
+      const redirectTo = `http://localhost:${PORTS.OAUTH_CALLBACK}/auth/callback`;
+      const { data, error } = await this.supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          skipBrowserRedirect: true,
+          scopes: 'email profile',
+          // 型互換のため any キャスト。実行時はPKCEを有効化
+          ...( { flowType: 'pkce' } as any ),
+          // リフレッシュ発行を確実化
+          queryParams: { access_type: 'offline', prompt: 'consent' }
+        }
+      });
+      if (error) throw error;
+      if (!data?.url) throw new Error('No OAuth URL generated');
       return data.url;
     } catch (error) {
       console.error('❌ Failed to get Google OAuth URL:', error);
@@ -359,6 +379,7 @@ export class DesktopAuthService {
    */
   private async validateSession(session: AuthSession): Promise<AuthSession | null> {
     // 削除：未使用
+    return null;
   }
   
   /**
@@ -366,27 +387,27 @@ export class DesktopAuthService {
    */
   async handleOAuthCallback(code: string): Promise<boolean> {
     try {
-      const response = await fetch(API_ENDPOINTS.AUTH.CALLBACK, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ code })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to exchange code for session');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.session) {
-        this.currentSession = data.session;
-        this.currentUser = data.session.user;
-        this.saveSession(data.session);
-        console.log('✅ OAuth login successful');
-        return true;
-      }
-      
-      return false;
+      if (!this.supabase) throw new Error('Supabase client not initialized');
+      const { data, error } = await this.supabase.auth.exchangeCodeForSession(code);
+      if (error) throw error;
+      const sess = data.session!;
+      const usr = data.user!;
+      const newSession: AuthSession = {
+        access_token: sess?.access_token || '',
+        refresh_token: sess?.refresh_token || '',
+        expires_at: (sess?.expires_at ?? Math.floor(Date.now() / 1000) + 3600),
+        user: {
+          id: usr?.id || '',
+          email: usr?.email || '',
+          user_metadata: usr?.user_metadata
+        }
+      };
+      this.currentSession = newSession;
+      this.currentUser = newSession.user;
+      this.saveSession(newSession);
+      this.scheduleNextRefresh(newSession.expires_at);
+      console.log('✅ OAuth login successful');
+      return true;
     } catch (error) {
       console.error('❌ OAuth callback error:', error);
       return false;

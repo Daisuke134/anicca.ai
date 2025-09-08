@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -189,6 +189,22 @@ async function initializeApp() {
     // システムトレイの作成
     await createSystemTray();
     console.log('✅ System tray created');
+    
+    // PTT: 単キー(F9)で会話モード開始（押しっぱなし不要）
+    try {
+      const ok = globalShortcut.register('F9', () => {
+        try {
+          fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/mode/set`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'conversation', reason: 'hotkey' })
+          }).catch(() => {});
+        } catch {}
+      });
+      console.log(ok ? '🎚️ PTT shortcut (F9) registered' : '⚠️ Failed to register PTT shortcut');
+    } catch (e) {
+      console.warn('PTT shortcut registration error:', (e as any)?.message || e);
+    }
     
   // スリープ防止の設定
   powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');

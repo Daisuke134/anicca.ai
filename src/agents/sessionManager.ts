@@ -55,6 +55,14 @@ export class AniccaSessionManager {
   // Realtime履歴の新規アイテム検出用（MCP呼び出しの可視化）
   private lastLoggedHistoryIndex: number = 0;
   
+  // ==== PTT: モード管理・自動終了 ====
+  private mode: 'silent' | 'conversation' = 'silent';
+  private autoExitTimer: NodeJS.Timeout | null = null;
+  private autoExitDeadlineAt: number | null = null; // epoch(ms)
+  private lastUserActivityAt: number | null = null; // epoch(ms)
+  private lastAgentEndAt: number | null = null;     // epoch(ms)
+  private readonly AUTO_EXIT_IDLE_MS = 10_000;      // 自動終了までの待機（10s）
+  
   // （wake専用ループ／独自ゲートは撤廃）
   
   constructor(private mainAgent?: any) {
@@ -426,7 +434,9 @@ export class AniccaSessionManager {
           taskStatus: '/task-status',
           health: '/health',
           audioInput: '/audio/input',
-          sdkStatus: '/sdk/status'
+          sdkStatus: '/sdk/status',
+          modeSet: '/mode/set',
+          modeStatus: '/mode/status'
         }
       });
     });
@@ -476,7 +486,9 @@ export class AniccaSessionManager {
         ready: this.ready,
         tokenTTL: Math.floor(this.tokenTTLSeconds()),
         sessionAge: Math.floor(this.sessionAgeSeconds()),
-        lastServerEventMsAgo: (Date.now() - (this.lastServerEventAt ?? 0))
+        lastServerEventMsAgo: (Date.now() - (this.lastServerEventAt ?? 0)),
+        mode: this.mode,
+        autoExitMsRemaining: this.getAutoExitMsRemaining()
       });
     });
 
@@ -561,7 +573,9 @@ export class AniccaSessionManager {
               console.log('🧘 慈悲の瞑想モード開始（ElevenLabs読み上げ）');
               // ElevenLabsで処理するため、特別な割り込み防止は不要
             }
-            
+            // PTT: Cron開始時は会話モードへ
+            try { await this.setMode('conversation', 'cron'); } catch {}
+
             // メッセージ送信（共通）
             if (this.session && this.isConnected()) {
               // 念のため直前の出力を再チェック
@@ -641,6 +655,76 @@ export class AniccaSessionManager {
     console.log('🛑 App-layer keep-alive disabled (handled by transport)');
   }
 
+  // ================= PTT: モード切替と自動終了 =================
+  private getAutoExitMsRemaining(): number | null {
+    if (!this.autoExitDeadlineAt) return null;
+    return Math.max(0, this.autoExitDeadlineAt - Date.now());
+  }
+
+  private clearAutoExitTimer() {
+    if (this.autoExitTimer) {
+      clearTimeout(this.autoExitTimer);
+      this.autoExitTimer = null;
+    }
+    this.autoExitDeadlineAt = null;
+  }
+
+  private startAutoExitCountdown() {
+    this.clearAutoExitTimer();
+    this.autoExitDeadlineAt = Date.now() + this.AUTO_EXIT_IDLE_MS;
+    this.autoExitTimer = setTimeout(async () => {
+      const userAfterAgent = (this.lastUserActivityAt ?? 0) > (this.lastAgentEndAt ?? 0);
+      if (this.mode === 'conversation' && !userAfterAgent) {
+        try { await this.setMode('silent', 'auto_exit'); } catch (e) { console.warn('auto-exit failed:', e); }
+      }
+    }, this.AUTO_EXIT_IDLE_MS);
+  }
+
+  private noteUserActivity() {
+    this.lastUserActivityAt = Date.now();
+    // 会話継続のため、待機中タイマは一旦クリア（次の agent_end で再セット）
+    this.clearAutoExitTimer();
+  }
+
+  private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
+    const same = (newMode === this.mode);
+    await this.ensureConnected(true).catch(() => {});
+
+    try {
+      if (newMode === 'conversation') {
+        const turnDetection = {
+          type: 'semantic_vad',
+          eagerness: 'low',
+          create_response: true,
+          interrupt_response: true,
+          prefix_padding_ms: 300,
+          silence_duration_ms: 1400,
+          idle_timeout_ms: 1200,
+          threshold: 0.65,
+        } as any;
+        (this.session as any)?.transport?.sendEvent?.({
+          type: 'session.update',
+          session: { turn_detection: turnDetection },
+        });
+        this.mode = 'conversation';
+        this.clearAutoExitTimer();
+        this.lastUserActivityAt = null;
+      } else {
+        (this.session as any)?.transport?.sendEvent?.({
+          type: 'session.update',
+          session: { turn_detection: null },
+        });
+        this.mode = 'silent';
+        this.clearAutoExitTimer();
+        this.lastUserActivityAt = null;
+      }
+      console.log('[MODE_SET]', { mode: this.mode, reason });
+    } catch (e) {
+      console.warn('setMode failed:', e);
+    }
+  }
+  // ============================================================
+
   private stopKeepAlive() {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
@@ -707,6 +791,8 @@ export class AniccaSessionManager {
           this.enqueueSystemOp({ kind: 'mem' });
           this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
+          // 既定は沈黙モード
+          try { await this.setMode('silent', 'startup'); } catch {}
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {
@@ -724,6 +810,8 @@ export class AniccaSessionManager {
       this.isGenerating = true;
       this.lastServerEventAt = Date.now();
       console.log('[AGENT_START]');
+      // 会話継続中は自動終了カウントを停止（次の agent_end で再度開始）
+      this.clearAutoExitTimer();
     });
     this.session.on('agent_end', (_ctx: any, _agent: any, _output: string) => {
       this.isGenerating = false;
@@ -732,6 +820,10 @@ export class AniccaSessionManager {
       // UIへ完了のフォールバック通知（半二重戻し）
       this.broadcast({ type: 'turn_done' });
       this.flushSystemOpsIfIdle();
+      if (this.mode === 'conversation') {
+        this.lastAgentEndAt = Date.now();
+        this.startAutoExitCountdown();
+      }
     });
 
     // 音声データイベント（transport経由）
@@ -1058,6 +1150,16 @@ export class AniccaSessionManager {
           }
         }
         this.lastLoggedHistoryIndex = len;
+        // PTT: 直近がユーザー入力なら活動記録
+        if (this.mode === 'conversation' && len > 0) {
+          try {
+            const last = history[len - 1];
+            if ((last?.type === 'message' && last?.role === 'user') ||
+                (last?.providerType === 'input_audio_transcription')) {
+              this.noteUserActivity();
+            }
+          } catch {}
+        }
       } catch (e) {
         console.warn('Failed to inspect history for MCP logs:', e);
       }
@@ -1362,3 +1464,23 @@ ${memories}
     console.log('🛑 SessionManager stopped');
   }
 }
+    // 8.6 PTT: モード切替
+    this.app.post('/mode/set', async (req, res) => {
+      try {
+        const mode = String(req.body?.mode || '').toLowerCase();
+        const reason = String(req.body?.reason || '');
+        if (mode !== 'silent' && mode !== 'conversation') {
+          res.status(400).json({ ok: false, error: 'invalid mode' });
+          return;
+        }
+        await this.setMode(mode as any, reason);
+        res.json({ ok: true, mode: this.mode });
+      } catch (e: any) {
+        res.status(500).json({ ok: false, error: e?.message || String(e) });
+      }
+    });
+
+    // 8.7 PTT: モード状態
+    this.app.get('/mode/status', (req, res) => {
+      res.json({ ok: true, mode: this.mode, autoExitMsRemaining: this.getAutoExitMsRemaining() });
+    });

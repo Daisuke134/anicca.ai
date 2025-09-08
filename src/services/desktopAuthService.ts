@@ -421,47 +421,6 @@ export class DesktopAuthService {
     }
   }
   
-  /**
-   * トークンを直接処理（Implicit Flow用）
-   */
-  async handleTokens(tokens: { access_token: string; refresh_token: string; expires_at: number }): Promise<boolean> {
-    try {
-      // プロキシ経由でセッションを検証
-      const response = await fetch(API_ENDPOINTS.AUTH.SESSION, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to validate session');
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.session) {
-        // セッションを保存
-        this.currentSession = {
-          access_token: tokens.access_token,
-          refresh_token: tokens.refresh_token,
-          expires_at: tokens.expires_at,
-          user: data.session.user
-        };
-        this.currentUser = data.session.user;
-        this.saveSession(this.currentSession);
-        console.log('✅ Token authentication successful');
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('❌ Token handling error:', error);
-      return false;
-    }
-  }
   
   /**
    * ログアウト

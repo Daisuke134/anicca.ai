@@ -205,20 +205,19 @@ export class AniccaSessionManager {
             // transcription 設定はデフォルトに委ねる（言語ヒントは未指定）
             // 一旦、安全側（内蔵マイク前提）に戻す
             noiseReduction: { type: 'near_field' },
-            // semantic_vad は維持。初動をやや攻める
+            // Server VAD 比較（沈黙時の誤起動を抑えるため閾値を高めに）
             turnDetection: {
-              type: 'semantic_vad',
-              eagerness: 'low',
+              type: 'server_vad',
               createResponse: true,
               interruptResponse: true,
-              // 冒頭欠け防止の先取りバッファを拡大
+              // 冒頭欠け防止
               prefixPaddingMs: 300,
-              // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
-              silenceDurationMs: 1400,
-              // 入力待ちを少し短縮（環境音の巻き込み低減）
-              idleTimeoutMs: 1200,
-              // “話し声” 確信度の閾値を追加（厳しめに）
-              threshold: 0.70
+              // 開始検出を厳しめに（沈黙誤起動を抑制）
+              threshold: 0.92,
+              // 終話確定は中庸（ダラつきを避けつつ誤連鎖も防止）
+              silenceDurationMs: 700,
+              // 入力待ちの上限
+              idleTimeoutMs: 1100
             }
           },
           output: {

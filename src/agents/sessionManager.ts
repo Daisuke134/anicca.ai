@@ -210,20 +210,15 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            // transcription 設定はデフォルトに委ねる（言語ヒントは未指定）
-            // 一旦、安全側（内蔵マイク前提）に戻す
+            // transcription 設定はデフォルト（言語ヒント未指定）
             noiseReduction: { type: 'near_field' },
-            // semantic_vad は維持。初動をやや攻める
+            // server_vad に統一（session.create を確実に成功させる）
             turnDetection: {
-              type: 'semantic_vad',
-              eagerness: 'low',
+              type: 'server_vad',
               createResponse: true,
               interruptResponse: true,
-              // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
+              prefixPaddingMs: 300,
               silenceDurationMs: 1400,
-              // 入力待ちを少し短縮（環境音の巻き込み低減）
-              idleTimeoutMs: 1200,
-              // “話し声” 確信度の閾値を追加（厳しめに）
               threshold: 0.70
             }
           },

@@ -205,19 +205,20 @@ export class AniccaSessionManager {
             // transcription 設定はデフォルトに委ねる（言語ヒントは未指定）
             // 一旦、安全側（内蔵マイク前提）に戻す
             noiseReduction: { type: 'near_field' },
-            // Server VAD 比較（沈黙時の誤起動を抑えるため閾値を高めに）
+            // semantic_vad は維持。初動をやや攻める
             turnDetection: {
-              type: 'server_vad',
+              type: 'semantic_vad',
+              eagerness: 'low',
               createResponse: true,
               interruptResponse: true,
-              // 冒頭欠け防止
+              // 冒頭欠け防止の先取りバッファを拡大
               prefixPaddingMs: 300,
-              // 開始検出を厳しめに（沈黙誤起動を抑制）
-              threshold: 0.92,
-              // 終話確定は中庸（ダラつきを避けつつ誤連鎖も防止）
-              silenceDurationMs: 700,
-              // 入力待ちの上限
-              idleTimeoutMs: 1100
+              // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
+              silenceDurationMs: 1400,
+              // 入力待ちを少し短縮（環境音の巻き込み低減）
+              idleTimeoutMs: 1200,
+              // “話し声” 確信度の閾値を追加（厳しめに）
+              threshold: 0.70
             }
           },
           output: {
@@ -307,138 +308,85 @@ export class AniccaSessionManager {
       }
     });
     
-    // 3. /auth/complete - OAuth完了
-    this.app.post('/auth/complete', async (req, res) => {
+    // 3. /auth/callback - OAuthコールバック（PKCE/Code Flowに統一）
+    this.app.get('/auth/callback', async (req, res) => {
       try {
-        const { access_token, refresh_token, expires_at } = req.body;
-        console.log('🔐 Received auth tokens');
-        
-        // desktopAuthService経由で処理
+        console.log('📥 Auth callback received');
+        const q: any = req.query || {};
+        const code =
+          typeof q.code === 'string' ? q.code :
+          (Array.isArray(q.code) ? q.code[0] : undefined);
+        const err =
+          typeof q.error === 'string' ? q.error :
+          (Array.isArray(q.error) ? q.error[0] : undefined);
+        const errDesc =
+          typeof q.error_description === 'string' ? q.error_description :
+          (Array.isArray(q.error_description) ? q.error_description[0] : undefined);
+
+        if (err) {
+          console.warn('OAuth error from IdP:', err, errDesc || '');
+          res.status(400).send(`Authentication error: ${err}${errDesc ? ' - ' + errDesc : ''}`);
+          return;
+        }
+        if (!code) {
+          console.error('Missing authorization code in callback');
+          res.status(400).send('Missing authorization code');
+          return;
+        }
+
+        // Supabase経由で code → session を交換（Proxyの /api/auth/callback を内部で叩く）
         const { getAuthService } = await import('../services/desktopAuthService');
         const authService = getAuthService();
-        
-        const success = await authService.handleTokens({
-          access_token,
-          refresh_token,
-          expires_at: parseInt(expires_at)
-        });
-        
-        if (!success) {
-          throw new Error('Failed to authenticate');
+        const ok = await authService.handleOAuthCallback(String(code));
+        if (!ok) {
+          console.error('handleOAuthCallback returned false');
+          res.status(500).send('Failed to complete authentication');
+          return;
         }
-        
+
+        // ユーザー確定 → SessionManagerへ反映
         const user = authService.getCurrentUser();
-        if (user) {
+        if (user?.id) {
           this.setCurrentUserId(user.id);
           console.log(`✅ User authenticated: ${user.email}`);
-          
-          // メインプロセスに通知
           if ((global as any).onUserAuthenticated) {
             (global as any).onUserAuthenticated(user);
           }
 
-          // 認証完了後、リモートMCP（Google Calendar）をtoolsに反映するためセッションを再初期化
+          // OAuth後はRealtimeのclient_secretを再取得して再接続
           try {
             await this.disconnect();
             await this.initialize();
-            // OAuth後は必ず新しい client_secret を取得して再接続する
             const { API_ENDPOINTS } = require('../config');
             const sessionUrl = this.currentUserId
               ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
               : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
             const resp = await fetch(sessionUrl);
-            if (!resp.ok) {
-              throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
-            }
+            if (!resp.ok) throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
             const data = await resp.json();
             const apiKey = data?.client_secret?.value;
-            if (!apiKey) {
-              throw new Error('No client_secret returned after OAuth');
-            }
+            if (!apiKey) throw new Error('No client_secret returned after OAuth');
             await this.connect(apiKey);
-            console.log('🔄 Session reinitialized after OAuth completion');
             console.log('✅ Reconnected after OAuth with refreshed client secret');
           } catch (e) {
             console.error('Failed to reinitialize session after auth:', e);
           }
         }
-        
-        res.json({ success: true });
-      } catch (error) {
-        console.error('Auth complete error:', error);
-        res.status(500).json({ error: 'Failed to complete authentication' });
-      }
-    });
-    
-    // 4. /auth/callback - OAuthコールバック
-    this.app.get('/auth/callback', async (req, res) => {
-      try {
-        console.log('📥 Auth callback received');
-        
-        // HTMLページ返却（動的ポート番号を使用）
-        const html = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>認証成功 - Anicca</title>
-            <meta charset="utf-8">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                background: #f5f5f5;
-              }
-              .container {
-                text-align: center;
-                padding: 40px;
-                background: white;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-              }
-              h1 { color: #333; }
-              p { color: #666; margin: 20px 0; }
-              .success { color: #4CAF50; font-size: 48px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="success">✅</div>
-              <h1>認証が完了しました</h1>
-              <p>このウィンドウは自動的に閉じられます...</p>
-            </div>
-            <script>
-              const hash = window.location.hash.substring(1);
-              const params = new URLSearchParams(hash);
-              const accessToken = params.get('access_token');
-              const refreshToken = params.get('refresh_token');
-              const expiresAt = params.get('expires_at');
-              
-              if (accessToken && refreshToken) {
-                fetch(\`http://localhost:${this.currentPort}/auth/complete\`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                    expires_at: expiresAt
-                  })
-                }).then(() => {
-                  setTimeout(() => window.close(), 2000);
-                });
-              } else {
-                console.error('No tokens found in URL');
-              }
-            </script>
-          </body>
-          </html>
-        `;
-        
+
+        // 成功ページ（自動クローズ）
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(html);
+        res.send(`
+          <!DOCTYPE html>
+          <html><head><meta charset="utf-8"><title>認証完了 - Anicca</title>
+          <style>
+            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}
+            .c{background:#fff;padding:40px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.1);text-align:center}
+            .ok{font-size:48px;color:#4CAF50}
+            p{color:#666}
+          </style></head>
+          <body><div class="c"><div class="ok">✅</div><h1>認証が完了しました</h1><p>このウィンドウは自動的に閉じられます...</p></div>
+          <script>setTimeout(()=>window.close(), 1500)</script></body></html>
+        `);
       } catch (error) {
         console.error('Auth callback error:', error);
         res.status(500).send('Authentication error');

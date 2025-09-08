@@ -502,6 +502,31 @@ export class AniccaSessionManager {
       }
     });
 
+    // 8.6 PTT: モード切替（クラス内へ移設）
+    this.app.post('/mode/set', async (req, res) => {
+      try {
+        const mode = String(req.body?.mode || '').toLowerCase();
+        const reason = String(req.body?.reason || '');
+        if (mode !== 'silent' && mode !== 'conversation') {
+          res.status(400).json({ ok: false, error: 'invalid mode' });
+          return;
+        }
+        await self.setMode(mode as any, reason);
+        res.json({ ok: true, mode: self.mode });
+      } catch (e: any) {
+        res.status(500).json({ ok: false, error: e?.message || String(e) });
+      }
+    });
+
+    // 8.7 PTT: モード状態（クラス内へ移設）
+    this.app.get('/mode/status', (req, res) => {
+      res.json({
+        ok: true,
+        mode: self.mode,
+        autoExitMsRemaining: self.getAutoExitMsRemaining()
+      });
+    });
+
     // 9. ElevenLabs再生状態の通知を受け取る
     this.app.post('/elevenlabs/status', (req, res) => {
       const { status } = req.body; // 'playing' | 'completed'
@@ -692,24 +717,28 @@ export class AniccaSessionManager {
 
     try {
       if (newMode === 'conversation') {
-        const turnDetection = {
-          type: 'semantic_vad',
-          eagerness: 'low',
-          create_response: true,
-          interrupt_response: true,
-          prefix_padding_ms: 300,
-          silence_duration_ms: 1400,
-          idle_timeout_ms: 1200,
-          threshold: 0.65,
-        } as any;
-        (this.session as any)?.transport?.sendEvent?.({
-          type: 'session.update',
-          session: { turn_detection: turnDetection },
+        // 公式SDK: updateSessionConfig（camel -> snake はSDK側で処理）
+        this.session?.transport?.updateSessionConfig({
+          audio: {
+            input: {
+              turnDetection: {
+                type: 'semantic_vad',
+                eagerness: 'low',
+                createResponse: true,
+                interruptResponse: true,
+                prefixPaddingMs: 300,
+                silenceDurationMs: 1400,
+                idleTimeoutMs: 1200,
+                threshold: 0.65
+              }
+            }
+          }
         });
         this.mode = 'conversation';
         this.clearAutoExitTimer();
         this.lastUserActivityAt = null;
       } else {
+        // turnDetectionの完全無効化は低レベルイベントで null を送る
         (this.session as any)?.transport?.sendEvent?.({
           type: 'session.update',
           session: { turn_detection: null },
@@ -820,10 +849,7 @@ export class AniccaSessionManager {
       // UIへ完了のフォールバック通知（半二重戻し）
       this.broadcast({ type: 'turn_done' });
       this.flushSystemOpsIfIdle();
-      if (this.mode === 'conversation') {
-        this.lastAgentEndAt = Date.now();
-        this.startAutoExitCountdown();
-      }
+      // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });
 
     // 音声データイベント（transport経由）
@@ -864,6 +890,11 @@ export class AniccaSessionManager {
       }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
+      // 発話が止まったら10秒カウント開始
+      if (this.mode === 'conversation') {
+        this.lastAgentEndAt = Date.now();
+        this.startAutoExitCountdown();
+      }
     });
 
     // 音声中断処理（transport経由）
@@ -1150,16 +1181,6 @@ export class AniccaSessionManager {
           }
         }
         this.lastLoggedHistoryIndex = len;
-        // PTT: 直近がユーザー入力なら活動記録
-        if (this.mode === 'conversation' && len > 0) {
-          try {
-            const last = history[len - 1];
-            if ((last?.type === 'message' && last?.role === 'user') ||
-                (last?.providerType === 'input_audio_transcription')) {
-              this.noteUserActivity();
-            }
-          } catch {}
-        }
       } catch (e) {
         console.warn('Failed to inspect history for MCP logs:', e);
       }
@@ -1167,6 +1188,16 @@ export class AniccaSessionManager {
       await this.saveSession(history);
     });
 
+    // 追加：増分1件でユーザー活動を即検知（軽量・確実）
+    this.session.on('history_added', (item: any) => {
+      try {
+        if (this.mode !== 'conversation') return;
+        const isUser =
+          (item?.type === 'message' && item?.role === 'user') ||
+          item?.providerType === 'input_audio_transcription';
+        if (isUser) this.noteUserActivity();
+      } catch { /* noop */ }
+    });
   }
   
   async connect(apiKey: string) {
@@ -1464,23 +1495,3 @@ ${memories}
     console.log('🛑 SessionManager stopped');
   }
 }
-    // 8.6 PTT: モード切替
-    app.post('/mode/set', async (req, res) => {
-      try {
-        const mode = String(req.body?.mode || '').toLowerCase();
-        const reason = String(req.body?.reason || '');
-        if (mode !== 'silent' && mode !== 'conversation') {
-          res.status(400).json({ ok: false, error: 'invalid mode' });
-          return;
-        }
-        await self.setMode(mode as any, reason);
-        res.json({ ok: true, mode: self.mode });
-      } catch (e: any) {
-        res.status(500).json({ ok: false, error: e?.message || String(e) });
-      }
-    });
-
-    // 8.7 PTT: モード状態
-    app.get('/mode/status', (req, res) => {
-      res.json({ ok: true, mode: self.mode, autoExitMsRemaining: self.getAutoExitMsRemaining() });
-    });

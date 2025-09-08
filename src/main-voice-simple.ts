@@ -42,6 +42,7 @@ const isWorkerMode = process.env.WORKER_MODE === 'true';
 
 // 定期タスク管理
 const cronJobs = new Map<string, any>();
+let cronInitialized = false; // 多重登録防止（冪等化フラグ）
 const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
 const todaySchedulePath = path.join(os.homedir(), '.anicca', 'today_schedule.json');
 
@@ -97,6 +98,14 @@ async function initializeApp() {
       // 通知とトレイメニュー更新
       showNotification('ログイン成功', `${user.email}でログインしました`);
       updateTrayMenu();
+
+      // 認証完了後に定期タスク登録を必ず一度だけ起動（冪等）
+      if (!cronInitialized) {
+        console.log('👤 Auth completed, starting scheduled tasks (post-login)...');
+        initializeScheduledTasks();
+        cronInitialized = true;
+        console.log('✅ Scheduled tasks started (post-login)');
+      }
     };
     
     // マイク権限をリクエスト
@@ -225,11 +234,22 @@ async function initializeApp() {
     try {
       await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
     } catch { /* noop */ }
+
+    // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
+    try {
+      if (authService?.isAuthenticated() && !cronInitialized) {
+        console.log('⏰ System resume: ensuring scheduled tasks started...');
+        initializeScheduledTasks();
+        cronInitialized = true;
+        console.log('✅ Scheduled tasks started (on resume)');
+      }
+    } catch { /* noop */ }
   });
-    // ログイン済み（認証後）の場合は、定期タスクを自動開始
-    if (authService.isAuthenticated()) {
+    // 起動直後に既にログイン済みなら、定期タスクを一度だけ起動（冪等）
+    if (authService.isAuthenticated() && !cronInitialized) {
       console.log('👤 User is authenticated, starting scheduled tasks...');
       initializeScheduledTasks();
+      cronInitialized = true;
       console.log('✅ Scheduled tasks started');
     }
 

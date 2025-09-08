@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -190,10 +190,26 @@ async function initializeApp() {
     await createSystemTray();
     console.log('✅ System tray created');
     
-    // スリープ防止の設定
-    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-    console.log('✅ Power save blocker started');
-    
+  // スリープ防止の設定
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+  console.log('✅ Power save blocker started');
+
+  // 復帰時の即時リフレッシュと接続保証
+  powerMonitor.on('resume', async () => {
+    console.log('⏰ System resume detected - refreshing auth & proxy JWT');
+    try {
+      if (authService) {
+        await authService.refreshSession();  // Supabaseセッション更新
+        await authService.getProxyJwt();     // Proxy JWT再取得（必要時）
+      }
+    } catch (e) {
+      console.warn('Auth refresh on resume failed:', (e as any)?.message || e);
+    }
+    // Realtime接続の即保証（best-effort）
+    try {
+      await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+    } catch { /* noop */ }
+  });
     // ログイン済み（認証後）の場合は、定期タスクを自動開始
     if (authService.isAuthenticated()) {
       console.log('👤 User is authenticated, starting scheduled tasks...');

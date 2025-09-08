@@ -27,6 +27,10 @@ export class DesktopAuthService {
   private encryption: SimpleEncryption;
   private retryCount: number = 0;
   private maxRetries: number = 3;
+  // Proxy短命JWT（利用権バッジ）
+  private proxyJwt: string | null = null;
+  private proxyJwtExpiresAt: number | null = null; // ms epoch
+  private readonly proxyJwtSkewMs: number = 2 * 60 * 1000; // 2分の前倒し更新
   
   constructor() {
     // 認証情報の保存パス
@@ -437,6 +441,48 @@ export class DesktopAuthService {
    */
   getJwt(): string | null {
     return this.currentSession?.access_token || null;
+  }
+
+  /**
+   * Proxy JWTが有効か
+   */
+  private isProxyJwtValid(): boolean {
+    if (!this.proxyJwt || !this.proxyJwtExpiresAt) return false;
+    return Date.now() < (this.proxyJwtExpiresAt - this.proxyJwtSkewMs);
+  }
+
+  /**
+   * Proxy API用の短命JWTを取得（必要時に発行）。メモリ保持のみ。
+   * Authorization: Bearer <Supabase access_token>
+   */
+  async getProxyJwt(): Promise<string | null> {
+    try {
+      if (this.isProxyJwtValid()) return this.proxyJwt;
+      const session = this.loadSavedSession() || this.currentSession;
+      const access = session?.access_token || null;
+      if (!access) return null;
+      const resp = await fetch(API_ENDPOINTS.AUTH.ENTITLEMENT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${access}`
+        },
+        body: JSON.stringify({})
+      });
+      if (!resp.ok) {
+        console.warn('Entitlement HTTP error:', resp.status);
+        return null;
+      }
+      const data = await resp.json();
+      if (!data?.token || !data?.expires_at) return null;
+      this.proxyJwt = data.token;
+      this.proxyJwtExpiresAt = Number(data.expires_at);
+      console.log('🎫 Proxy JWT issued (short‑lived)');
+      return this.proxyJwt;
+    } catch (e: any) {
+      console.warn('getProxyJwt error:', e?.message || e);
+      return null;
+    }
   }
 }
 

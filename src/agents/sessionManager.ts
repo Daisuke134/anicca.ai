@@ -444,7 +444,12 @@ export class AniccaSessionManager {
     // 7. 音声入力エンドポイント（短尺/空データは最終フィルタでドロップ）
     this.app.post('/audio/input', async (req, res) => {
       try {
-        // 入口で復旧（未接続/期限切れ/古い場合に直す）
+        // Silent中は受信自体をドロップ（帯域/CPU/バッファ滞留を防止）
+        if (this.mode !== 'conversation') {
+          res.json({ success: true, dropped: 'silent' });
+          return;
+        }
+        // 会話時のみ接続保証
         await this.ensureConnected(true);
 
         // ensureConnected は型上は this.session を非null化しないため、明示ガード
@@ -512,7 +517,7 @@ export class AniccaSessionManager {
           return;
         }
         await self.setMode(mode as any, reason);
-        res.json({ ok: true, mode: self.mode });
+        res.json({ ok: true, mode: self.mode, autoExitMsRemaining: self.getAutoExitMsRemaining() });
       } catch (e: any) {
         res.status(500).json({ ok: false, error: e?.message || String(e) });
       }
@@ -712,8 +717,10 @@ export class AniccaSessionManager {
   }
 
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
-    const same = (newMode === this.mode);
-    await this.ensureConnected(true).catch(() => {});
+    // 同じモードなら何もしない（冪等・安定化）
+    if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
+    // 会話に上げる時だけ接続保証（下げるだけなら不要）
+    if (newMode === 'conversation') { await this.ensureConnected(true).catch(() => {}); }
 
     try {
       if (newMode === 'conversation') {
@@ -729,7 +736,7 @@ export class AniccaSessionManager {
                 prefixPaddingMs: 300,
                 silenceDurationMs: 1400,
                 idleTimeoutMs: 1200,
-                threshold: 0.65
+                threshold: 0.70
               }
             }
           }
@@ -738,10 +745,15 @@ export class AniccaSessionManager {
         this.clearAutoExitTimer();
         this.lastUserActivityAt = null;
       } else {
-        // turnDetectionの完全無効化は低レベルイベントで null を送る
+        // OFFは低レベル session.update を正しい階層＋必須フィールドで送る
         (this.session as any)?.transport?.sendEvent?.({
           type: 'session.update',
-          session: { turn_detection: null },
+          session: {
+            type: 'realtime',
+            audio: {
+              input: { turn_detection: null }
+            }
+          }
         });
         this.mode = 'silent';
         this.clearAutoExitTimer();
@@ -1192,9 +1204,8 @@ export class AniccaSessionManager {
     this.session.on('history_added', (item: any) => {
       try {
         if (this.mode !== 'conversation') return;
-        const isUser =
-          (item?.type === 'message' && item?.role === 'user') ||
-          item?.providerType === 'input_audio_transcription';
+        // RealtimeItemとの整合: ユーザー発話のみで判定
+        const isUser = (item?.type === 'message' && item?.role === 'user');
         if (isUser) this.noteUserActivity();
       } catch { /* noop */ }
     });

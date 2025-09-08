@@ -6,8 +6,8 @@
   "homepage": "https://anicca.ai",
   "appConfig": {
     "supabase": {
-      "url": "https://viwdrircoxxdqfbbmcef.supabase.co",
-      "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpd2RyaXJjb3h4ZHFmYmJtY2VmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzQ5MzQsImV4cCI6MjA2MzkxMDkzNH0.flCvPV13hOslkGUYft5kbGGUGiK3EoGGyjmZpLdd16U"
+      "url": "https://auth.aniccaai.com",
+      "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16a3d0d291cnJrZHVxa3JzeHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzQ1NjYsImV4cCI6MjA2Njc1MDU2Nn0.ihBs1cpz_sgR6UUZpIrICuN3b-gJNrfzWsfNVlpP4hs"
     }
   },
   "scripts": {

@@ -190,18 +190,18 @@ async function initializeApp() {
     await createSystemTray();
     console.log('✅ System tray created');
     
-    // PTT: 単キー(F9)で会話モード開始（押しっぱなし不要）
+    // PTT: 単キー(F8=MediaPlayPause)で「開始のみ」（終了は自動終了に一本化）
     try {
-      const ok = globalShortcut.register('F9', () => {
+      const okMedia = globalShortcut.register('MediaPlayPause', () => {
         try {
           fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/mode/set`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ mode: 'conversation', reason: 'hotkey' })
           }).catch(() => {});
-        } catch {}
+        } catch { /* noop */ }
       });
-      console.log(ok ? '🎚️ PTT shortcut (F9) registered' : '⚠️ Failed to register PTT shortcut');
+      console.log(okMedia ? '🎚️ PTT shortcut (MediaPlayPause/F8) registered' : '⚠️ Failed to register MediaPlayPause');
     } catch (e) {
       console.warn('PTT shortcut registration error:', (e as any)?.message || e);
     }

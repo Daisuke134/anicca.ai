@@ -61,7 +61,7 @@ export class AniccaSessionManager {
   private autoExitDeadlineAt: number | null = null; // epoch(ms)
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
-  private readonly AUTO_EXIT_IDLE_MS = 10_000;      // 自動終了までの待機（10s）
+  private readonly AUTO_EXIT_IDLE_MS = 5_000;       // 自動終了までの待機（5s）
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -727,12 +727,12 @@ export class AniccaSessionManager {
           audio: {
             input: {
               turnDetection: {
-                type: 'semantic_vad',
-                eagerness: 'low',
+                type: 'server_vad',
                 createResponse: true,
                 interruptResponse: true,
+                // server_vad で有効なパラメータ
+                prefixPaddingMs: 300,
                 silenceDurationMs: 1400,
-                idleTimeoutMs: 1200,
                 threshold: 0.70
               }
             }

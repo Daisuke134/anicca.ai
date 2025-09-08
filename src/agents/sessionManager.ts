@@ -142,11 +142,13 @@ export class AniccaSessionManager {
     if (!need) return;
     if (this.isEnsuring) {
       let waited = 0;
-      while (this.isEnsuring && waited < 2000) { // 最大2s待つ
+      while (this.isEnsuring && waited < 5000) { // 最大5s待つ
         await new Promise(r => setTimeout(r, 100));
         waited += 100;
       }
-      return;
+      // 既存ensure完了後に再評価。まだ必要ならこの呼び出しで接続を確立
+      const stillNeed = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
+      if (!stillNeed) return;
     }
     this.isEnsuring = true;
     console.log('[ENSURE] refreshing realtime session...');
@@ -167,12 +169,12 @@ export class AniccaSessionManager {
       console.log('[TOKEN_ISSUED]');
       await this.connect(key);
       console.log('[CONNECT_OK]');
-      // READY待ち（最大~1.5s）
+      // READY待ち（最大~6.3s）
       let delay = 100;
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 6; i++) {
         if (this.isConnected()) break;
         await new Promise(r => setTimeout(r, delay));
-        delay *= 2; // 100→200→400→800→1600
+        delay *= 2; // 100→200→400→800→1600→3200
       }
       if (!this.isConnected()) throw new Error('ready wait timeout');
       console.log('[READY]');
@@ -597,6 +599,11 @@ export class AniccaSessionManager {
           if (message.type === 'scheduled_task') {
             // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
             await this.ensureConnected(true);
+            // 直後に未接続なら、短期待機して一度だけ再試行（READY直前のゆらぎ吸収）
+            if (!this.isConnected()) {
+              await new Promise(r => setTimeout(r, 800));
+              await this.ensureConnected(true);
+            }
             console.log('📅 Scheduled task received:', message.command);
 
             // 念のため直前の出力を再チェック
@@ -754,6 +761,14 @@ export class AniccaSessionManager {
           this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
         }
+        // セッション失効（60分上限）検出時は即時復旧
+        try {
+          const err = (event as any)?.error?.error || (event as any)?.error;
+          if ((event?.type === 'error' || !!err) && err?.code === 'session_expired') {
+            console.warn('[EXPIRED] realtime session expired → reconnecting...');
+            try { await this.ensureConnected(true); } catch (e) { console.error('auto-reconnect failed:', e); }
+          }
+        } catch {}
       } catch {}
     });
 

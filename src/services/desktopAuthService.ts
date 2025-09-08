@@ -31,6 +31,8 @@ export class DesktopAuthService {
   private proxyJwt: string | null = null;
   private proxyJwtExpiresAt: number | null = null; // ms epoch
   private readonly proxyJwtSkewMs: number = 2 * 60 * 1000; // 2分の前倒し更新
+  // リフレッシュの並行実行を抑止
+  private refreshInFlight: boolean = false;
   
   constructor() {
     // 認証情報の保存パス
@@ -80,6 +82,11 @@ export class DesktopAuthService {
     const savedSession = this.loadSavedSession();
     if (!savedSession?.refresh_token) return null;
 
+    if (this.refreshInFlight) {
+      return savedSession;
+    }
+    this.refreshInFlight = true;
+
     for (let i = 0; i < this.maxRetries; i++) {
       try {
         const response = await fetch(API_ENDPOINTS.AUTH.REFRESH, {
@@ -91,10 +98,9 @@ export class DesktopAuthService {
         });
 
         if (!response.ok) {
-          // 401/403は認証エラーなのでリトライしない
+          // 401/403でも即セッションクリアしない（並行更新による競合の可能性）
           if (response.status === 401 || response.status === 403) {
-            console.error('❌ 認証エラー - セッションクリア');
-            this.clearSavedSession();
+            console.error('❌ 認証エラー - リフレッシュ中断（セッション保持）');
             return null;
           }
           throw new Error(`HTTP ${response.status}`);
@@ -124,6 +130,8 @@ export class DesktopAuthService {
       }
     }
     return null;
+  } finally {
+    this.refreshInFlight = false;
   }
 
   /**
@@ -205,9 +213,6 @@ export class DesktopAuthService {
       } else {
         console.log('ℹ️ 初回起動 - ログインが必要です');
       }
-      
-      // デフォルトのチェック間隔を設定
-      this.startSessionCheck();
     } catch (error) {
       console.error('❌ 初期化エラー:', error);
     }
@@ -334,64 +339,12 @@ export class DesktopAuthService {
     }
   }
   
-  /**
-   * 定期的なセッションチェックを開始（50分間隔）
-   */
-  private startSessionCheck(): void {
-    if (this.sessionCheckInterval) {
-      clearInterval(this.sessionCheckInterval);
-    }
-    
-    // 50分ごとにチェック（Supabaseトークン有効期限1時間）
-    this.sessionCheckInterval = setInterval(async () => {
-      const saved = this.loadSavedSession();
-      if (saved && !this.isTokenValid(saved)) {
-        console.log('🔄 定期チェック: トークンリフレッシュ');
-        await this.refreshWithRetry();
-      }
-    }, 50 * 60 * 1000); // 50分
-  }
-
-  /**
-   * セッションチェックを停止
-   */
-  private stopSessionCheck(): void {
-    if (this.sessionCheckInterval) {
-      clearInterval(this.sessionCheckInterval);
-      this.sessionCheckInterval = null;
-    }
-  }
+  // 50分間隔の定期チェックは廃止。scheduleNextRefreshのみ使用。
   
   /**
    * セッションを検証
    */
-  private async validateSession(session: AuthSession): Promise<AuthSession | null> {
-    try {
-      const response = await fetch(API_ENDPOINTS.AUTH.SESSION, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          access_token: session.access_token,
-          refresh_token: session.refresh_token
-        })
-      });
-      
-      if (!response.ok) {
-        return null;
-      }
-      
-      const data = await response.json();
-      
-      if (data.success && data.session) {
-        return data.session;
-      }
-      
-      return null;
-    } catch (error) {
-      console.error('❌ Session validation error:', error);
-      return null;
-    }
-  }
+  // validateSessionは未使用につき削除
   
   /**
    * OAuth コールバックを処理
@@ -433,7 +386,10 @@ export class DesktopAuthService {
     this.currentUser = null;
     this.currentSession = null;
     this.clearSavedSession();
-    this.stopSessionCheck();
+    if (this.sessionCheckInterval) {
+      clearTimeout(this.sessionCheckInterval);
+      this.sessionCheckInterval = null;
+    }
   }
 
   /**

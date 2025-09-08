@@ -92,7 +92,8 @@ export const API_ENDPOINTS = {
     GOOGLE_OAUTH: `${PROXY_URL}/api/auth/google`,
     CALLBACK: `${PROXY_URL}/api/auth/callback`,
     SESSION: `${PROXY_URL}/api/auth/session`,
-    REFRESH: `${PROXY_URL}/api/auth/refresh`
+    REFRESH: `${PROXY_URL}/api/auth/refresh`,
+    ENTITLEMENT: `${PROXY_URL}/api/auth/entitlement`,
   },
   // ツール関連
   TOOLS: {

@@ -4,6 +4,12 @@
   "description": "anicca - AI Screen Narrator Desktop App",
   "main": "dist/main-voice-simple.js",
   "homepage": "https://anicca.ai",
+  "appConfig": {
+    "supabase": {
+      "url": "https://viwdrircoxxdqfbbmcef.supabase.co",
+      "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZpd2RyaXJjb3h4ZHFmYmJtY2VmIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDgzMzQ5MzQsImV4cCI6MjA2MzkxMDkzNH0.flCvPV13hOslkGUYft5kbGGUGiK3EoGGyjmZpLdd16U"
+    }
+  },
   "scripts": {
     "preelectron": "npm run build",
     "electron": "electron .",

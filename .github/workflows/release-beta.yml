@@ -24,8 +24,10 @@ jobs:
         with:
           node-version: "20"
           cache: "npm"
+          cache-dependency-path: apps/desktop/package-lock.json
 
       - name: Install deps (include dev)
+        working-directory: apps/desktop
         run: npm ci --include=dev
 
       - name: Validate proxy secrets (beta)
@@ -34,6 +36,7 @@ jobs:
           test -n "${{ secrets.PROXY_URL_STAGING }}"    || (echo "Missing PROXY_URL_STAGING" && exit 1)
 
       - name: Build and Publish (beta)
+        working-directory: apps/desktop
         run: |
           npm run build:voice
           # Pre-embed proxy URLs into package.json (no repo change)

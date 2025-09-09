@@ -1,0 +1,49 @@
+{
+  "name": "anicca-proxy",
+  "version": "1.0.0",
+  "description": "Proxy server for ANICCA AI Screen Narrator",
+  "type": "module",
+  "main": "src/server.js",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod",
+    "start": "node src/server.js",
+    "dev:railway": "nodemon src/server.js"
+  },
+  "keywords": [
+    "proxy",
+    "gemini",
+    "claude",
+    "api"
+  ],
+  "author": "ANICCA",
+  "license": "MIT",
+  "devDependencies": {
+    "@types/node": "^24.0.4",
+    "typescript": "^5.8.3",
+    "vercel": "^32.0.0"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-code": "^1.0.35",
+    "@composio/core": "latest",
+    "@composio/openai": "latest",
+    "@elevenlabs/elevenlabs-js": "^2.9.0",
+    "@google-cloud/text-to-speech": "^6.1.0",
+    "@modelcontextprotocol/sdk": "^1.13.0",
+    "@slack/web-api": "^7.9.3",
+    "@supabase/supabase-js": "^2.50.2",
+    "@vercel/mcp-adapter": "^0.11.1",
+    "axios": "^1.10.0",
+    "busboy": "^1.6.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "exa-mcp-server": "^0.3.10",
+    "express": "^4.18.2",
+    "form-data": "^4.0.3",
+    "mime-types": "^2.1.35",
+    "node-cron": "^3.0.3",
+    "pg": "^8.16.3",
+    "@google-cloud/kms": "^3.3.0",
+    "uuid": "^9.0.0"
+  }
+}

@@ -112,9 +112,9 @@ highlights_cache.json
 # Local Netlify folder
 .netlify
 
-# 別リポジトリで管理しているフォルダ（絶対にプッシュしない！）
-anicca-proxy-slack/
-anicca-web/
-openai-agents-js/
-slack-mcp-server/
-composio/
+# 別リポジトリ由来の参考ソース（examples 配下のみ非追跡）
+examples/openai-realtime-agents/
+examples/openai-agents-js-latest/
+examples/slack-mcp-server/
+examples/composio/
+apps/api/.npmrc

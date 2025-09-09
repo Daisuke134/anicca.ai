@@ -9,6 +9,7 @@ files:
   - dist/agents/**/*
   - dist/recorder.html
   - node_modules/**/*
+  - prompts/*.txt
   # Desktop app assets (tray + app icon)
   - assets/desktop/tray-icon.png
   - assets/desktop/tray-icon@2x.png

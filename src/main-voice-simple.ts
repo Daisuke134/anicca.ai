@@ -219,31 +219,42 @@ async function initializeApp() {
   powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
   console.log('✅ Power save blocker started');
 
-  // 復帰時の即時リフレッシュと接続保証
+  // 復帰時の即時リフレッシュと接続保証（段階的＆オフライン待ち）
+  let resumeRecoveryInFlight = false;
   powerMonitor.on('resume', async () => {
-    console.log('⏰ System resume detected - refreshing auth & proxy JWT');
+    if (resumeRecoveryInFlight) return;
+    resumeRecoveryInFlight = true;
+    console.log('⏰ System resume detected - staged recovery start');
     try {
+      const { waitForOnline } = await import('./services/network');
+      const online = await waitForOnline({ timeoutTotal: 15000, interval: 1000 });
+      if (!online) {
+        console.log('📶 Still offline after resume window; defer recovery to later triggers');
+        return;
+      }
       if (authService) {
-        await authService.refreshSession();  // Supabaseセッション更新
-        await authService.getProxyJwt();     // Proxy JWT再取得（必要時）
+        try { await authService.refreshSession(); } catch (e) {
+          console.warn('Auth refresh on resume failed:', (e as any)?.message || e);
+        }
+        try { await authService.getProxyJwt(); } catch { /* noop */ }
       }
-    } catch (e) {
-      console.warn('Auth refresh on resume failed:', (e as any)?.message || e);
-    }
-    // Realtime接続の即保証（best-effort）
-    try {
-      await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
-    } catch { /* noop */ }
+      // Realtime接続の即保証（少し遅延）
+      setTimeout(() => {
+        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' }).catch(() => {});
+      }, 300);
 
-    // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
-    try {
-      if (authService?.isAuthenticated() && !cronInitialized) {
-        console.log('⏰ System resume: ensuring scheduled tasks started...');
-        initializeScheduledTasks();
-        cronInitialized = true;
-        console.log('✅ Scheduled tasks started (on resume)');
-      }
-    } catch { /* noop */ }
+      // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
+      try {
+        if (authService?.isAuthenticated() && !cronInitialized) {
+          console.log('⏰ System resume: ensuring scheduled tasks started...');
+          initializeScheduledTasks();
+          cronInitialized = true;
+          console.log('✅ Scheduled tasks started (on resume)');
+        }
+      } catch { /* noop */ }
+    } finally {
+      resumeRecoveryInFlight = false;
+    }
   });
     // 起動直後に既にログイン済みなら、定期タスクを一度だけ起動（冪等）
     if (authService.isAuthenticated() && !cronInitialized) {

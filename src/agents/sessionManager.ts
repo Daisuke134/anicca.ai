@@ -61,7 +61,7 @@ export class AniccaSessionManager {
   private autoExitDeadlineAt: number | null = null; // epoch(ms)
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
-  private readonly AUTO_EXIT_IDLE_MS = 20_000;      // 自動終了までの待機（10s）
+  private readonly AUTO_EXIT_IDLE_MS = 60_000;      // 自動終了までの待機（10s）
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -237,6 +237,12 @@ export class AniccaSessionManager {
     this.mcpRefreshInterval = setInterval(async () => {
       try {
         if (!this.currentUserId || !this.session) return;
+        // オンライン時のみ実行（復帰直後の無駄な失敗回避）
+        const { isOnline } = await import('../services/network');
+        if (!(await isOnline())) {
+          console.log('⏭️ Skipped hosted_mcp refresh (offline)');
+          return;
+        }
         const cfg = await resolveGoogleCalendarMcp(this.currentUserId);
         if (!cfg) return; // 未接続時は何もしない
         const newAgent = await createAniccaAgent(this.currentUserId);

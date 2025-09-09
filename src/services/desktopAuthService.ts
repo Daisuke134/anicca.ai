@@ -3,6 +3,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import { API_ENDPOINTS, PORTS, SUPABASE_CONFIG } from '../config';
+import { isOnline } from '../services/network';
+import { shouldLog } from '../utils/logRateLimit';
 import { SimpleEncryption } from './simpleEncryption';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
@@ -105,6 +107,11 @@ export class DesktopAuthService {
     }
     this.refreshInFlight = true;
     try {
+      // オフライン時は即座に最後のセッションを温存して終了
+      if (!(await isOnline())) {
+        console.log('📶 オフライン検出 - セッション一時維持（refresh skip）');
+        return savedSession;
+      }
       for (let i = 0; i < this.maxRetries; i++) {
         try {
           if (!this.supabase) throw new Error('Supabase client not initialized');
@@ -449,6 +456,13 @@ export class DesktopAuthService {
    */
   async getProxyJwt(): Promise<string | null> {
     try {
+      // オフラインなら叩かない（静かに降格）
+      if (!(await isOnline())) {
+        if (shouldLog('getProxyJwt.offline', 30000)) {
+          console.log('📶 オフライン検出 - Proxy JWT発行をスキップ');
+        }
+        return null;
+      }
       if (this.isProxyJwtValid()) return this.proxyJwt;
       const session = this.loadSavedSession() || this.currentSession;
       const access = session?.access_token || null;
@@ -472,7 +486,9 @@ export class DesktopAuthService {
       console.log('🎫 Proxy JWT issued (short‑lived)');
       return this.proxyJwt;
     } catch (e: any) {
-      console.warn('getProxyJwt error:', e?.message || e);
+      if (shouldLog('getProxyJwt.error', 30000)) {
+        console.warn('getProxyJwt error:', e?.message || e);
+      }
       return null;
     }
   }

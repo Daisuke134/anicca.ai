@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -42,6 +42,7 @@ const isWorkerMode = process.env.WORKER_MODE === 'true';
 
 // 定期タスク管理
 const cronJobs = new Map<string, any>();
+let cronInitialized = false; // 多重登録防止（冪等化フラグ）
 const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
 const todaySchedulePath = path.join(os.homedir(), '.anicca', 'today_schedule.json');
 
@@ -97,6 +98,14 @@ async function initializeApp() {
       // 通知とトレイメニュー更新
       showNotification('ログイン成功', `${user.email}でログインしました`);
       updateTrayMenu();
+
+      // 認証完了後に定期タスク登録を必ず一度だけ起動（冪等）
+      if (!cronInitialized) {
+        console.log('👤 Auth completed, starting scheduled tasks (post-login)...');
+        initializeScheduledTasks();
+        cronInitialized = true;
+        console.log('✅ Scheduled tasks started (post-login)');
+      }
     };
     
     // マイク権限をリクエスト
@@ -190,14 +199,68 @@ async function initializeApp() {
     await createSystemTray();
     console.log('✅ System tray created');
     
-    // スリープ防止の設定
-    powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
-    console.log('✅ Power save blocker started');
+    // PTT: 単キー(F8=MediaPlayPause)で「開始のみ」（終了は自動終了に一本化）
+    try {
+      const okMedia = globalShortcut.register('MediaPlayPause', () => {
+        try {
+          fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/mode/set`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ mode: 'conversation', reason: 'hotkey' })
+          }).catch(() => {});
+        } catch { /* noop */ }
+      });
+      console.log(okMedia ? '🎚️ PTT shortcut (MediaPlayPause/F8) registered' : '⚠️ Failed to register MediaPlayPause');
+    } catch (e) {
+      console.warn('PTT shortcut registration error:', (e as any)?.message || e);
+    }
     
-    // ログイン済み（認証後）の場合は、定期タスクを自動開始
-    if (authService.isAuthenticated()) {
+  // スリープ防止の設定
+  powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
+  console.log('✅ Power save blocker started');
+
+  // 復帰時の即時リフレッシュと接続保証（段階的＆オフライン待ち）
+  let resumeRecoveryInFlight = false;
+  powerMonitor.on('resume', async () => {
+    if (resumeRecoveryInFlight) return;
+    resumeRecoveryInFlight = true;
+    console.log('⏰ System resume detected - staged recovery start');
+    try {
+      const { waitForOnline } = await import('./services/network');
+      const online = await waitForOnline({ timeoutTotal: 15000, interval: 1000 });
+      if (!online) {
+        console.log('📶 Still offline after resume window; defer recovery to later triggers');
+        return;
+      }
+      if (authService) {
+        try { await authService.refreshSession(); } catch (e) {
+          console.warn('Auth refresh on resume failed:', (e as any)?.message || e);
+        }
+        try { await authService.getProxyJwt(); } catch { /* noop */ }
+      }
+      // Realtime接続の即保証（少し遅延）
+      setTimeout(() => {
+        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' }).catch(() => {});
+      }, 300);
+
+      // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
+      try {
+        if (authService?.isAuthenticated() && !cronInitialized) {
+          console.log('⏰ System resume: ensuring scheduled tasks started...');
+          initializeScheduledTasks();
+          cronInitialized = true;
+          console.log('✅ Scheduled tasks started (on resume)');
+        }
+      } catch { /* noop */ }
+    } finally {
+      resumeRecoveryInFlight = false;
+    }
+  });
+    // 起動直後に既にログイン済みなら、定期タスクを一度だけ起動（冪等）
+    if (authService.isAuthenticated() && !cronInitialized) {
       console.log('👤 User is authenticated, starting scheduled tasks...');
       initializeScheduledTasks();
+      cronInitialized = true;
       console.log('✅ Scheduled tasks started');
     }
 
@@ -598,7 +661,7 @@ function createHiddenWindow() {
 
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // 独自ゲートを一時無効化（送信前ブロックOFF）
+            // 独自RMSゲートは無効化（送信前ブロックOFF）
             const RMS_THRESHOLD = 0;      // 0 = 無効化
             const MIN_SPEECH_MS = 0;      // 0 = 無効化
             const SAMPLE_RATE = 24000;
@@ -630,16 +693,13 @@ function createHiddenWindow() {
             source.connect(processor);
             processor.connect(audioCtx.destination);
 
-            // PCM16形式で音声データを送信
+            // PCM16形式で音声データを送信（ゲート無効化：常時ストリーミング）
             processor.onaudioprocess = async (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
               if (Date.now() < micPostStopMuteUntil) {
                 return;
               }
-
-              // ゲート無効化（RMS/MINを完全スキップ）
-              try { speechAccumMs = MIN_SPEECH_MS; } catch {}
 
               // Float32をInt16に変換（プリロール保持のため先に作る）
               const int16Array = new Int16Array(inputData.length);
@@ -654,26 +714,18 @@ function createHiddenWindow() {
                 return;
               }
 
-              // PREROLL無効化：先行バッファ処理をスキップし、即送信
-              speaking = true;
 
-              // 空データチェック（保険）
-              if (!int16Array || int16Array.length === 0) {
-                return;  // 空データは送信しない
-              }
-
-              // Base64エンコードして直列キューへ
+              // 常時ストリーミング送信（空データは送らない）
+              if (!int16Array || int16Array.length === 0) return;
               const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
-              if (!base64 || base64.length === 0) {
-                return;  // base64が空でも送信しない
-              }
+              if (!base64 || base64.length === 0) return;
               enqueueFrame(base64);
 
               // 発話終了トグルは独自ゲート無効化中は不使用
               // if (speechAccumMs === 0) { speaking = false; }
             };
 
-            console.log('🎤 Voice capture started (PCM16, noise-gated)');
+            console.log('🎤 Voice capture started (PCM16, no RMS pre-gate)');
 
           } catch (error) {
             console.error('Failed to start voice capture:', error);

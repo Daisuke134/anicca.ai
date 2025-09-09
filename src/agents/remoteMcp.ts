@@ -1,4 +1,5 @@
 import { PROXY_URL } from '../config';
+import { isOnline } from '../services/network';
 import { getAuthService } from '../services/desktopAuthService';
 
 export type McpServerConfig = {
@@ -14,8 +15,12 @@ export type McpServerConfig = {
  */
 export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServerConfig | null> {
   try {
+    if (!(await isOnline())) {
+      console.log('🛑 Offline - skip MCP status check');
+      return null;
+    }
     const statusUrl = `${PROXY_URL}/api/mcp/gcal/status`;
-    const token = getAuthService().getJwt();
+    const token = await getAuthService().getProxyJwt();
     const statusRes = await fetch(statusUrl, {
       method: 'POST',
       headers: {
@@ -54,7 +59,7 @@ export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServe
  */
 export async function getGoogleCalendarOAuthUrl(userId: string): Promise<string | null> {
   try {
-    const token = getAuthService().getJwt();
+    const token = await getAuthService().getProxyJwt();
     const url = `${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`;
     const res = await fetch(url, {
       headers: token ? { 'Authorization': `Bearer ${token}` } : undefined

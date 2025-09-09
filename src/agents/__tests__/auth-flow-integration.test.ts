@@ -209,7 +209,7 @@ describe('認証フロー統合テスト - 実際の問題検証', () => {
    * 期待する出力: 認証成功、onUserAuthenticatedコールバック発火
    * 実際の出力: プロキシ検証失敗（テストトークンのため）
    */
-  it('SessionManagerの/auth/completeが実際のトークン検証で失敗する', async () => {
+  it.skip('SessionManagerの/auth/completeが実際のトークン検証で失敗する（PKCE移行によりエンドポイント撤去済み）', async () => {
     console.log('🔍 テスト3: SessionManagerの/auth/completeエンドポイント');
     
     // 1. onUserAuthenticatedコールバックのスパイ
@@ -232,19 +232,7 @@ describe('認証フロー統合テスト - 実際の問題検証', () => {
     
     console.log('📤 /auth/completeにPOST送信:', testAuthData);
     
-    // 3. SessionManagerの/auth/completeエンドポイントに送信
-    const response = await fetch('http://localhost:8085/auth/complete', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(testAuthData)
-    });
-    
-    const responseData = await response.json();
-    console.log('📥 /auth/complete レスポンス:', {
-      status: response.status,
-      ok: response.ok,
-      data: responseData
-    });
+    // （PKCE移行）/auth/complete は削除済みのため、このテストは無効化
     
     // 4. 期待: 認証成功、コールバック発火（TDD-RED: プロキシ検証で失敗）
     // 実際はプロキシの/api/auth/google/sessionでテストトークンを検証できないため失敗

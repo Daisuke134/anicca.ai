@@ -55,6 +55,14 @@ export class AniccaSessionManager {
   // Realtime履歴の新規アイテム検出用（MCP呼び出しの可視化）
   private lastLoggedHistoryIndex: number = 0;
   
+  // ==== PTT: モード管理・自動終了 ====
+  private mode: 'silent' | 'conversation' = 'silent';
+  private autoExitTimer: NodeJS.Timeout | null = null;
+  private autoExitDeadlineAt: number | null = null; // epoch(ms)
+  private lastUserActivityAt: number | null = null; // epoch(ms)
+  private lastAgentEndAt: number | null = null;     // epoch(ms)
+  private readonly AUTO_EXIT_IDLE_MS = 60_000;      // 自動終了までの待機（10s）
+  
   // （wake専用ループ／独自ゲートは撤廃）
   
   constructor(private mainAgent?: any) {
@@ -142,11 +150,13 @@ export class AniccaSessionManager {
     if (!need) return;
     if (this.isEnsuring) {
       let waited = 0;
-      while (this.isEnsuring && waited < 2000) { // 最大2s待つ
+      while (this.isEnsuring && waited < 5000) { // 最大5s待つ
         await new Promise(r => setTimeout(r, 100));
         waited += 100;
       }
-      return;
+      // 既存ensure完了後に再評価。まだ必要ならこの呼び出しで接続を確立
+      const stillNeed = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
+      if (!stillNeed) return;
     }
     this.isEnsuring = true;
     console.log('[ENSURE] refreshing realtime session...');
@@ -167,12 +177,12 @@ export class AniccaSessionManager {
       console.log('[TOKEN_ISSUED]');
       await this.connect(key);
       console.log('[CONNECT_OK]');
-      // READY待ち（最大~1.5s）
+      // READY待ち（最大~6.3s）
       let delay = 100;
-      for (let i = 0; i < 5; i++) {
+      for (let i = 0; i < 6; i++) {
         if (this.isConnected()) break;
         await new Promise(r => setTimeout(r, delay));
-        delay *= 2; // 100→200→400→800→1600
+        delay *= 2; // 100→200→400→800→1600→3200
       }
       if (!this.isConnected()) throw new Error('ready wait timeout');
       console.log('[READY]');
@@ -200,24 +210,16 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            // 日本語前提で ASR を明示（誤起動抑制に寄与）
-            transcription: { model: 'gpt-4o-mini-transcribe', language: 'ja' },
-            // 一旦、安全側（内蔵マイク前提）に戻す
+            // transcription 設定はデフォルト（言語ヒント未指定）
             noiseReduction: { type: 'near_field' },
-            // semantic_vad は維持。初動をやや攻める
+            // server_vad に統一（session.create を確実に成功させる）
             turnDetection: {
-              type: 'semantic_vad',
-              eagerness: 'low',
+              type: 'server_vad',
               createResponse: true,
               interruptResponse: true,
-              // 冒頭欠け防止の先取りバッファを拡大
               prefixPaddingMs: 300,
-              // 終話判定をやや長めに（短ノイズでの誤反応を抑制）
               silenceDurationMs: 1400,
-              // 入力待ちを少し短縮（環境音の巻き込み低減）
-              idleTimeoutMs: 1200,
-              // “話し声” 確信度の閾値を追加（厳しめに）
-              threshold: 0.6
+              threshold: 0.70
             }
           },
           output: {
@@ -235,6 +237,12 @@ export class AniccaSessionManager {
     this.mcpRefreshInterval = setInterval(async () => {
       try {
         if (!this.currentUserId || !this.session) return;
+        // オンライン時のみ実行（復帰直後の無駄な失敗回避）
+        const { isOnline } = await import('../services/network');
+        if (!(await isOnline())) {
+          console.log('⏭️ Skipped hosted_mcp refresh (offline)');
+          return;
+        }
         const cfg = await resolveGoogleCalendarMcp(this.currentUserId);
         if (!cfg) return; // 未接続時は何もしない
         const newAgent = await createAniccaAgent(this.currentUserId);
@@ -307,138 +315,85 @@ export class AniccaSessionManager {
       }
     });
     
-    // 3. /auth/complete - OAuth完了
-    this.app.post('/auth/complete', async (req, res) => {
+    // 3. /auth/callback - OAuthコールバック（PKCE/Code Flowに統一）
+    this.app.get('/auth/callback', async (req, res) => {
       try {
-        const { access_token, refresh_token, expires_at } = req.body;
-        console.log('🔐 Received auth tokens');
-        
-        // desktopAuthService経由で処理
+        console.log('📥 Auth callback received');
+        const q: any = req.query || {};
+        const code =
+          typeof q.code === 'string' ? q.code :
+          (Array.isArray(q.code) ? q.code[0] : undefined);
+        const err =
+          typeof q.error === 'string' ? q.error :
+          (Array.isArray(q.error) ? q.error[0] : undefined);
+        const errDesc =
+          typeof q.error_description === 'string' ? q.error_description :
+          (Array.isArray(q.error_description) ? q.error_description[0] : undefined);
+
+        if (err) {
+          console.warn('OAuth error from IdP:', err, errDesc || '');
+          res.status(400).send(`Authentication error: ${err}${errDesc ? ' - ' + errDesc : ''}`);
+          return;
+        }
+        if (!code) {
+          console.error('Missing authorization code in callback');
+          res.status(400).send('Missing authorization code');
+          return;
+        }
+
+        // Supabase経由で code → session を交換（Desktop内のsupabase-jsで直接実行）
         const { getAuthService } = await import('../services/desktopAuthService');
         const authService = getAuthService();
-        
-        const success = await authService.handleTokens({
-          access_token,
-          refresh_token,
-          expires_at: parseInt(expires_at)
-        });
-        
-        if (!success) {
-          throw new Error('Failed to authenticate');
+        const ok = await authService.handleOAuthCallback(String(code));
+        if (!ok) {
+          console.error('handleOAuthCallback returned false');
+          res.status(500).send('Failed to complete authentication');
+          return;
         }
-        
+
+        // ユーザー確定 → SessionManagerへ反映
         const user = authService.getCurrentUser();
-        if (user) {
+        if (user?.id) {
           this.setCurrentUserId(user.id);
           console.log(`✅ User authenticated: ${user.email}`);
-          
-          // メインプロセスに通知
           if ((global as any).onUserAuthenticated) {
             (global as any).onUserAuthenticated(user);
           }
 
-          // 認証完了後、リモートMCP（Google Calendar）をtoolsに反映するためセッションを再初期化
+          // OAuth後はRealtimeのclient_secretを再取得して再接続
           try {
             await this.disconnect();
             await this.initialize();
-            // OAuth後は必ず新しい client_secret を取得して再接続する
             const { API_ENDPOINTS } = require('../config');
             const sessionUrl = this.currentUserId
               ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
               : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
             const resp = await fetch(sessionUrl);
-            if (!resp.ok) {
-              throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
-            }
+            if (!resp.ok) throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
             const data = await resp.json();
             const apiKey = data?.client_secret?.value;
-            if (!apiKey) {
-              throw new Error('No client_secret returned after OAuth');
-            }
+            if (!apiKey) throw new Error('No client_secret returned after OAuth');
             await this.connect(apiKey);
-            console.log('🔄 Session reinitialized after OAuth completion');
             console.log('✅ Reconnected after OAuth with refreshed client secret');
           } catch (e) {
             console.error('Failed to reinitialize session after auth:', e);
           }
         }
-        
-        res.json({ success: true });
-      } catch (error) {
-        console.error('Auth complete error:', error);
-        res.status(500).json({ error: 'Failed to complete authentication' });
-      }
-    });
-    
-    // 4. /auth/callback - OAuthコールバック
-    this.app.get('/auth/callback', async (req, res) => {
-      try {
-        console.log('📥 Auth callback received');
-        
-        // HTMLページ返却（動的ポート番号を使用）
-        const html = `
-          <!DOCTYPE html>
-          <html>
-          <head>
-            <title>認証成功 - Anicca</title>
-            <meta charset="utf-8">
-            <style>
-              body {
-                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                height: 100vh;
-                margin: 0;
-                background: #f5f5f5;
-              }
-              .container {
-                text-align: center;
-                padding: 40px;
-                background: white;
-                border-radius: 10px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-              }
-              h1 { color: #333; }
-              p { color: #666; margin: 20px 0; }
-              .success { color: #4CAF50; font-size: 48px; }
-            </style>
-          </head>
-          <body>
-            <div class="container">
-              <div class="success">✅</div>
-              <h1>認証が完了しました</h1>
-              <p>このウィンドウは自動的に閉じられます...</p>
-            </div>
-            <script>
-              const hash = window.location.hash.substring(1);
-              const params = new URLSearchParams(hash);
-              const accessToken = params.get('access_token');
-              const refreshToken = params.get('refresh_token');
-              const expiresAt = params.get('expires_at');
-              
-              if (accessToken && refreshToken) {
-                fetch(\`http://localhost:${this.currentPort}/auth/complete\`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ 
-                    access_token: accessToken,
-                    refresh_token: refreshToken,
-                    expires_at: expiresAt
-                  })
-                }).then(() => {
-                  setTimeout(() => window.close(), 2000);
-                });
-              } else {
-                console.error('No tokens found in URL');
-              }
-            </script>
-          </body>
-          </html>
-        `;
-        
+
+        // 成功ページ（自動クローズ）
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
-        res.send(html);
+        res.send(`
+          <!DOCTYPE html>
+          <html><head><meta charset="utf-8"><title>認証完了 - Anicca</title>
+          <style>
+            body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}
+            .c{background:#fff;padding:40px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.1);text-align:center}
+            .ok{font-size:48px;color:#4CAF50}
+            p{color:#666}
+          </style></head>
+          <body><div class="c"><div class="ok">✅</div><h1>認証が完了しました</h1><p>このウィンドウは自動的に閉じられます...</p></div>
+          <script>setTimeout(()=>window.close(), 1500)</script></body></html>
+        `);
       } catch (error) {
         console.error('Auth callback error:', error);
         res.status(500).send('Authentication error');
@@ -478,7 +433,9 @@ export class AniccaSessionManager {
           taskStatus: '/task-status',
           health: '/health',
           audioInput: '/audio/input',
-          sdkStatus: '/sdk/status'
+          sdkStatus: '/sdk/status',
+          modeSet: '/mode/set',
+          modeStatus: '/mode/status'
         }
       });
     });
@@ -486,7 +443,12 @@ export class AniccaSessionManager {
     // 7. 音声入力エンドポイント（短尺/空データは最終フィルタでドロップ）
     this.app.post('/audio/input', async (req, res) => {
       try {
-        // 入口で復旧（未接続/期限切れ/古い場合に直す）
+        // Silent中は受信自体をドロップ（帯域/CPU/バッファ滞留を防止）
+        if (this.mode !== 'conversation') {
+          res.json({ success: true, dropped: 'silent' });
+          return;
+        }
+        // 会話時のみ接続保証
         await this.ensureConnected(true);
 
         // ensureConnected は型上は this.session を非null化しないため、明示ガード
@@ -528,7 +490,9 @@ export class AniccaSessionManager {
         ready: this.ready,
         tokenTTL: Math.floor(this.tokenTTLSeconds()),
         sessionAge: Math.floor(this.sessionAgeSeconds()),
-        lastServerEventMsAgo: (Date.now() - (this.lastServerEventAt ?? 0))
+        lastServerEventMsAgo: (Date.now() - (this.lastServerEventAt ?? 0)),
+        mode: this.mode,
+        autoExitMsRemaining: this.getAutoExitMsRemaining()
       });
     });
 
@@ -540,6 +504,31 @@ export class AniccaSessionManager {
       } catch (e: any) {
         res.status(503).json({ ok: false, error: e?.message || String(e) });
       }
+    });
+
+    // 8.6 PTT: モード切替（クラス内へ移設）
+    this.app.post('/mode/set', async (req, res) => {
+      try {
+        const mode = String(req.body?.mode || '').toLowerCase();
+        const reason = String(req.body?.reason || '');
+        if (mode !== 'silent' && mode !== 'conversation') {
+          res.status(400).json({ ok: false, error: 'invalid mode' });
+          return;
+        }
+        await self.setMode(mode as any, reason);
+        res.json({ ok: true, mode: self.mode, autoExitMsRemaining: self.getAutoExitMsRemaining() });
+      } catch (e: any) {
+        res.status(500).json({ ok: false, error: e?.message || String(e) });
+      }
+    });
+
+    // 8.7 PTT: モード状態（クラス内へ移設）
+    this.app.get('/mode/status', (req, res) => {
+      res.json({
+        ok: true,
+        mode: self.mode,
+        autoExitMsRemaining: self.getAutoExitMsRemaining()
+      });
     });
 
     // 9. ElevenLabs再生状態の通知を受け取る
@@ -598,6 +587,11 @@ export class AniccaSessionManager {
           if (message.type === 'scheduled_task') {
             // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
             await this.ensureConnected(true);
+            // 直後に未接続なら、短期待機して一度だけ再試行（READY直前のゆらぎ吸収）
+            if (!this.isConnected()) {
+              await new Promise(r => setTimeout(r, 800));
+              await this.ensureConnected(true);
+            }
             console.log('📅 Scheduled task received:', message.command);
 
             // 念のため直前の出力を再チェック
@@ -608,7 +602,9 @@ export class AniccaSessionManager {
               console.log('🧘 慈悲の瞑想モード開始（ElevenLabs読み上げ）');
               // ElevenLabsで処理するため、特別な割り込み防止は不要
             }
-            
+            // PTT: Cron開始時は会話モードへ
+            try { await this.setMode('conversation', 'cron'); } catch {}
+
             // メッセージ送信（共通）
             if (this.session && this.isConnected()) {
               // 念のため直前の出力を再チェック
@@ -688,6 +684,86 @@ export class AniccaSessionManager {
     console.log('🛑 App-layer keep-alive disabled (handled by transport)');
   }
 
+  // ================= PTT: モード切替と自動終了 =================
+  private getAutoExitMsRemaining(): number | null {
+    if (!this.autoExitDeadlineAt) return null;
+    return Math.max(0, this.autoExitDeadlineAt - Date.now());
+  }
+
+  private clearAutoExitTimer() {
+    if (this.autoExitTimer) {
+      clearTimeout(this.autoExitTimer);
+      this.autoExitTimer = null;
+    }
+    this.autoExitDeadlineAt = null;
+  }
+
+  private startAutoExitCountdown() {
+    this.clearAutoExitTimer();
+    this.autoExitDeadlineAt = Date.now() + this.AUTO_EXIT_IDLE_MS;
+    this.autoExitTimer = setTimeout(async () => {
+      const userAfterAgent = (this.lastUserActivityAt ?? 0) > (this.lastAgentEndAt ?? 0);
+      if (this.mode === 'conversation' && !userAfterAgent) {
+        try { await this.setMode('silent', 'auto_exit'); } catch (e) { console.warn('auto-exit failed:', e); }
+      }
+    }, this.AUTO_EXIT_IDLE_MS);
+  }
+
+  private noteUserActivity() {
+    this.lastUserActivityAt = Date.now();
+    // 会話継続のため、待機中タイマは一旦クリア（次の agent_end で再セット）
+    this.clearAutoExitTimer();
+  }
+
+  private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
+    // 同じモードなら何もしない（冪等・安定化）
+    if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
+    // 会話に上げる時だけ接続保証（下げるだけなら不要）
+    if (newMode === 'conversation') { await this.ensureConnected(true).catch(() => {}); }
+
+    try {
+      if (newMode === 'conversation') {
+        // 公式SDK: updateSessionConfig（camel -> snake はSDK側で処理）
+        this.session?.transport?.updateSessionConfig({
+          audio: {
+            input: {
+              turnDetection: {
+                type: 'server_vad',
+                createResponse: true,
+                interruptResponse: true,
+                // server_vad で有効なパラメータ
+                prefixPaddingMs: 300,
+                silenceDurationMs: 1400,
+                threshold: 0.70
+              }
+            }
+          }
+        });
+        this.mode = 'conversation';
+        this.clearAutoExitTimer();
+        this.lastUserActivityAt = null;
+      } else {
+        // OFFは低レベル session.update を正しい階層＋必須フィールドで送る
+        (this.session as any)?.transport?.sendEvent?.({
+          type: 'session.update',
+          session: {
+            type: 'realtime',
+            audio: {
+              input: { turn_detection: null }
+            }
+          }
+        });
+        this.mode = 'silent';
+        this.clearAutoExitTimer();
+        this.lastUserActivityAt = null;
+      }
+      console.log('[MODE_SET]', { mode: this.mode, reason });
+    } catch (e) {
+      console.warn('setMode failed:', e);
+    }
+  }
+  // ============================================================
+
   private stopKeepAlive() {
     if (this.keepAliveInterval) {
       clearInterval(this.keepAliveInterval);
@@ -754,7 +830,17 @@ export class AniccaSessionManager {
           this.enqueueSystemOp({ kind: 'mem' });
           this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
+          // 既定は沈黙モード
+          try { await this.setMode('silent', 'startup'); } catch {}
         }
+        // セッション失効（60分上限）検出時は即時復旧
+        try {
+          const err = (event as any)?.error?.error || (event as any)?.error;
+          if ((event?.type === 'error' || !!err) && err?.code === 'session_expired') {
+            console.warn('[EXPIRED] realtime session expired → reconnecting...');
+            try { await this.ensureConnected(true); } catch (e) { console.error('auto-reconnect failed:', e); }
+          }
+        } catch {}
       } catch {}
     });
 
@@ -763,6 +849,8 @@ export class AniccaSessionManager {
       this.isGenerating = true;
       this.lastServerEventAt = Date.now();
       console.log('[AGENT_START]');
+      // 会話継続中は自動終了カウントを停止（次の agent_end で再度開始）
+      this.clearAutoExitTimer();
     });
     this.session.on('agent_end', (_ctx: any, _agent: any, _output: string) => {
       this.isGenerating = false;
@@ -771,6 +859,7 @@ export class AniccaSessionManager {
       // UIへ完了のフォールバック通知（半二重戻し）
       this.broadcast({ type: 'turn_done' });
       this.flushSystemOpsIfIdle();
+      // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });
 
     // 音声データイベント（transport経由）
@@ -811,6 +900,11 @@ export class AniccaSessionManager {
       }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
+      // 発話が止まったら10秒カウント開始
+      if (this.mode === 'conversation') {
+        this.lastAgentEndAt = Date.now();
+        this.startAutoExitCountdown();
+      }
     });
 
     // 音声中断処理（transport経由）
@@ -1104,6 +1198,15 @@ export class AniccaSessionManager {
       await this.saveSession(history);
     });
 
+    // 追加：増分1件でユーザー活動を即検知（軽量・確実）
+    this.session.on('history_added', (item: any) => {
+      try {
+        if (this.mode !== 'conversation') return;
+        // RealtimeItemとの整合: ユーザー発話のみで判定
+        const isUser = (item?.type === 'message' && item?.role === 'user');
+        if (isUser) this.noteUserActivity();
+      } catch { /* noop */ }
+    });
   }
   
   async connect(apiKey: string) {

@@ -376,7 +376,7 @@ export const connect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const jwt = getAuthService().getJwt();
+      const jwt = await getAuthService().getProxyJwt();
       // ステータス確認
       const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
         method: 'POST',
@@ -437,7 +437,7 @@ export const disconnect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const jwt = getAuthService().getJwt();
+      const jwt = await getAuthService().getProxyJwt();
       const resp = await fetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
         method: 'POST',
         headers: {

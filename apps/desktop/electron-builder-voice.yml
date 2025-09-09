@@ -13,9 +13,7 @@ files:
   - assets/desktop/tray-icon.png
   - assets/desktop/tray-icon@2x.png
   - assets/desktop/icon.icns
-  # Exclude entire web and proxy projects from bundle
-  - "!anicca-web/**"
-  - "!anicca-proxy-slack/**"
+  # (monorepo配下の他アプリはカレント外なので除外指定は不要)
   # General excludes for slimming node_modules
   - "!**/.git"
   - "!**/.env"

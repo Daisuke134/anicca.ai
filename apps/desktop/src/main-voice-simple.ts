@@ -1117,8 +1117,17 @@ async function executeScheduledTask(task: any) {
     else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
     else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
 
-    const commonPath = path.join(process.cwd(), 'prompts', 'common.txt');
-    const tplPath = path.join(process.cwd(), 'prompts', tpl);
+    // Resolve prompts directory robustly (packaged/asar and dev both対応)
+    const appRoot = path.resolve(__dirname, '..'); // dist/ の1つ上（asar内）
+    const candidates = [
+      path.join(appRoot, 'prompts'),
+      path.join(process.cwd(), 'prompts'),
+    ];
+    const promptsDir = candidates.find(p => {
+      try { return fs.existsSync(p); } catch { return false; }
+    }) || path.join(process.cwd(), 'prompts');
+    const commonPath = path.join(promptsDir, 'common.txt');
+    const tplPath = path.join(promptsDir, tpl);
     let commonText = '';
     let templateText = '';
     try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}

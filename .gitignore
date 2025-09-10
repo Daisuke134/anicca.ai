@@ -99,6 +99,7 @@ gen-lang-client-*.json
 # Temporary files
 haconiwa-reference/
 create-tray-icon.py
+tmp/
 
 # Audio files
 *.wav

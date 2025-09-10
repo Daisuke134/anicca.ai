@@ -10,10 +10,11 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import fetch from 'node-fetch';
 
-// プロキシベースURL（NODE_ENVで判定）
-const PROXY_BASE_URL = process.env.NODE_ENV === 'production'
-  ? 'https://anicca-proxy-production.up.railway.app'
-  : 'https://anicca-proxy-staging.up.railway.app';
+// プロキシベースURL（環境変数からのみ解決）
+const PROXY_BASE_URL = process.env.PROXY_BASE_URL;
+if (!PROXY_BASE_URL) {
+  throw new Error('PROXY_BASE_URL is required (set in environment).');
+}
 
 const server = new Server(
   {

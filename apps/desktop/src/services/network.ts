@@ -1,4 +1,4 @@
-import { PROXY_URL } from '../config';
+import { PROXY_URL, NETWORK_TIMEOUT_MS, NETWORK_CACHE_MS } from '../config';
 
 let _lastAt = 0;
 let _lastOk: boolean | null = null;
@@ -10,7 +10,7 @@ function withTimeout<T>(p: Promise<T>, ms: number): Promise<T> {
   });
 }
 
-export async function isOnline(timeoutMs = 1500, cacheMs = 5000): Promise<boolean> {
+export async function isOnline(timeoutMs = NETWORK_TIMEOUT_MS, cacheMs = NETWORK_CACHE_MS): Promise<boolean> {
   const now = Date.now();
   if (_lastOk !== null && (now - _lastAt) < cacheMs) return _lastOk;
   const targets = [
@@ -37,4 +37,3 @@ export async function waitForOnline({ timeoutTotal = 15000, interval = 1000 } = 
   }
   return false;
 }
-

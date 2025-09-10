@@ -8,9 +8,10 @@ import { PROXY_BASE_URL as FULL_PROXY_BASE_URL, WEB_CONFIG } from '../../../conf
 const PROXY_BASE_URL = FULL_PROXY_BASE_URL.replace(/^https?:\/\//, '');
 
 // 暗号化キー（本番環境では環境変数から取得）
-const ENCRYPTION_KEY = process.env.SLACK_TOKEN_ENCRYPTION_KEY 
-  ? Buffer.from(process.env.SLACK_TOKEN_ENCRYPTION_KEY, 'hex')
-  : crypto.randomBytes(32);
+if (!process.env.SLACK_TOKEN_ENCRYPTION_KEY) {
+  throw new Error('SLACK_TOKEN_ENCRYPTION_KEY is required for Slack token encryption');
+}
+const ENCRYPTION_KEY = Buffer.from(process.env.SLACK_TOKEN_ENCRYPTION_KEY, 'hex');
 const IV_LENGTH = 16;
 
 // 暗号化関数

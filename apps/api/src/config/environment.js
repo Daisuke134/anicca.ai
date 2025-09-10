@@ -11,9 +11,12 @@ export const IS_PRODUCTION = NODE_ENV === 'production';
 export const IS_DEVELOPMENT = NODE_ENV === 'development';
 
 // プロキシサーバー設定
-export const PROXY_BASE_URL = IS_PRODUCTION
-  ? 'https://anicca-proxy-production.up.railway.app'
-  : 'https://anicca-proxy-staging.up.railway.app';
+export const PROXY_BASE_URL = process.env.PROXY_BASE_URL || '';
+
+// 本番では必須（未設定は即座に失敗）
+if (IS_PRODUCTION && !PROXY_BASE_URL) {
+  throw new Error('PROXY_BASE_URL is required in production environment');
+}
 
 // アプリケーションモード
 export const DESKTOP_MODE = process.env.DESKTOP_MODE === 'true' || false;

@@ -4,7 +4,7 @@ import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
 import { setTracingDisabled } from '@openai/agents';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
-import { API_ENDPOINTS, PORTS, UPDATE_CONFIG } from './config';
+import { API_ENDPOINTS, PORTS, UPDATE_CONFIG, AUDIO_SAMPLE_RATE, WS_RECONNECT_DELAY_MS, CHECK_STATUS_INTERVAL_MS } from './config';
 import * as cron from 'node-cron';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -600,7 +600,7 @@ function createHiddenWindow() {
           ws.onopen = () => console.log('✅ WebSocket connected');
           ws.onclose = () => {
             console.log('❌ WebSocket disconnected, reconnecting...');
-            setTimeout(connectWebSocket, 3000);
+            setTimeout(connectWebSocket, ${WS_RECONNECT_DELAY_MS});
           };
         }
 
@@ -616,7 +616,7 @@ function createHiddenWindow() {
           const pcm16Data = audioQueue.shift();
 
           if (!audioContext) {
-            audioContext = new AudioContext({ sampleRate: 24000 });
+            audioContext = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
           }
 
           try {
@@ -629,7 +629,7 @@ function createHiddenWindow() {
             }
 
             // AudioBufferを作成
-            const audioBuffer = audioContext.createBuffer(1, float32Array.length, 24000);
+            const audioBuffer = audioContext.createBuffer(1, float32Array.length, ${AUDIO_SAMPLE_RATE});
             audioBuffer.copyToChannel(float32Array, 0);
 
             // 再生
@@ -664,7 +664,7 @@ function createHiddenWindow() {
             // 独自RMSゲートは無効化（送信前ブロックOFF）
             const RMS_THRESHOLD = 0;      // 0 = 無効化
             const MIN_SPEECH_MS = 0;      // 0 = 無効化
-            const SAMPLE_RATE = 24000;
+            const SAMPLE_RATE = ${AUDIO_SAMPLE_RATE};
             let speechAccumMs = 0;
             // プリロール（先行バッファ）で開始直後から十分量を送る
             const FRAME_SAMPLES = 4096;
@@ -678,7 +678,7 @@ function createHiddenWindow() {
             const stream = await navigator.mediaDevices.getUserMedia({
               audio: {
                 channelCount: 1,
-                sampleRate: 24000,
+                sampleRate: ${AUDIO_SAMPLE_RATE},
                 sampleSize: 16,
                 echoCancellation: true,
                 noiseSuppression: true
@@ -686,7 +686,7 @@ function createHiddenWindow() {
             });
 
             // AudioContextでPCM16形式に変換
-            const audioCtx = new AudioContext({ sampleRate: 24000 });
+            const audioCtx = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
             const source = audioCtx.createMediaStreamSource(stream);
             const processor = audioCtx.createScriptProcessor(4096, 1, 1);
 
@@ -755,7 +755,7 @@ function createHiddenWindow() {
           connectWebSocket();
 
           // 接続監視ループ（1.5秒間隔）
-          setInterval(() => { checkSDKStatus(); }, 1500);
+          setInterval(() => { checkSDKStatus(); }, ${CHECK_STATUS_INTERVAL_MS});
           // SDKがReadyになったら録音開始（Readyでない場合はリトライ）
           startCaptureWhenReady(1000, 15);
         }

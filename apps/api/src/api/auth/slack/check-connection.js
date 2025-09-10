@@ -2,9 +2,10 @@ import { loadTokensFromDB } from '../../../services/storage/database.js';
 import crypto from 'crypto';
 
 // 復号化キー（暗号化と同じキーを使用）
-const ENCRYPTION_KEY = process.env.SLACK_TOKEN_ENCRYPTION_KEY 
-  ? Buffer.from(process.env.SLACK_TOKEN_ENCRYPTION_KEY, 'hex')
-  : crypto.randomBytes(32);
+if (!process.env.SLACK_TOKEN_ENCRYPTION_KEY) {
+  throw new Error('SLACK_TOKEN_ENCRYPTION_KEY is required for Slack token decryption');
+}
+const ENCRYPTION_KEY = Buffer.from(process.env.SLACK_TOKEN_ENCRYPTION_KEY, 'hex');
 
 // 復号化関数
 function decrypt(text) {

@@ -5,9 +5,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { getAuthService } from '../services/desktopAuthService';
-import { PORTS } from '../config';
-
-const PROXY_URL = process.env.PROXY_URL || 'https://anicca-proxy-staging.up.railway.app';
+import { PORTS, PROXY_URL, API_ENDPOINTS } from '../config';
 
 // 1. get_hacker_news_stories
 export const get_hacker_news_stories = tool({
@@ -92,7 +90,7 @@ export const connect_slack = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/auth/slack/oauth-url?userId=${userId}`);
+      const response = await fetch(`${API_ENDPOINTS.SLACK.OAUTH_URL}?userId=${userId}`);
       const data = await response.json();
       if (data.authUrl) {
         const { shell } = require('electron');
@@ -119,7 +117,7 @@ export const slack_list_channels = tool({
       const { limit = 30 } = params || {};
       
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -147,7 +145,7 @@ export const slack_send_message = tool({
   execute: async ({ channel, message }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +184,7 @@ export const slack_get_channel_history = tool({
       }
       
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +213,7 @@ export const slack_add_reaction = tool({
   execute: async ({ channel, timestamp, name }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -244,7 +242,7 @@ export const slack_reply_to_thread = tool({
   execute: async ({ channel, message, thread_ts }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,7 +270,7 @@ export const slack_get_thread_replies = tool({
   execute: async ({ channel, thread_ts }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

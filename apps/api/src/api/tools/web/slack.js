@@ -9,12 +9,17 @@ import { getSlackTokensForUser } from '../../../services/storage/database.js';
 const recentThreadTs = new Map();
 
 // 復号化関数
+if (!process.env.SLACK_TOKEN_ENCRYPTION_KEY) {
+  throw new Error('SLACK_TOKEN_ENCRYPTION_KEY is required for Slack token decryption');
+}
+const ENCRYPTION_KEY = Buffer.from(process.env.SLACK_TOKEN_ENCRYPTION_KEY, 'hex');
+
 function decrypt(text) {
   const ENCRYPTION_KEY = process.env.SLACK_TOKEN_ENCRYPTION_KEY || crypto.randomBytes(32);
   const textParts = text.split(':');
   const iv = Buffer.from(textParts.shift(), 'hex');
   const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY, 'hex'), iv);
+  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
   let decrypted = decipher.update(encryptedText);
   decrypted = Buffer.concat([decrypted, decipher.final()]);
   return decrypted.toString();

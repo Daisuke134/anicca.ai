@@ -1390,8 +1390,8 @@ export class AniccaSessionManager {
 
       console.log('🔍 Checking Slack connection for user:', this.currentUserId);
       
-      const PROXY_URL = process.env.PROXY_URL || 'https://anicca-proxy-staging.up.railway.app';
-      const response = await fetch(`${PROXY_URL}/api/tools/slack`, {
+      const { API_ENDPOINTS } = require('../config');
+      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

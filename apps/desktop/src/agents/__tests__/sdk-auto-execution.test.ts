@@ -17,7 +17,7 @@ describe('SDK自動ツール実行（実API使用）', () => {
     console.log('🧪 SDK自動実行テスト開始 - 実際のAPIキーを取得中...');
     
     // 1. 実際のAPIキーをプロキシから取得
-    const PROXY_URL = 'https://anicca-proxy-staging.up.railway.app';
+    const { PROXY_URL } = await import('../../config');
     const response = await fetch(`${PROXY_URL}/api/openai-proxy/desktop-session`);
     
     if (!response.ok) {

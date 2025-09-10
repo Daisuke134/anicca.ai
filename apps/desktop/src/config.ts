@@ -5,6 +5,11 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import * as dotenv from 'dotenv';
+
+// 環境変数の読み込み（.env → .env.defaults の順でマージ）
+try { dotenv.config(); } catch {}
+try { dotenv.config({ path: '.env.defaults', override: false }); } catch {}
 
 // CIが埋め込む想定のメタデータ
 type ProxyMeta = { production?: string; staging?: string };
@@ -75,14 +80,15 @@ function resolveProxyUrl(): string {
   if (embedded?.production && embedded?.staging) {
     return UPDATE_CHANNEL === 'stable' ? embedded.production : embedded.staging;
   }
-  // 2) ENV フォールバック（配布DMGでは通常未設定。開発/CIの緊急回避向け）
-  if (envProduction && envStaging) {
-    return UPDATE_CHANNEL === 'stable' ? envProduction : envStaging;
-  }
-  // 3) 既定URL（最後の砦）
-  return UPDATE_CHANNEL === 'stable'
-    ? 'https://anicca-proxy-production.up.railway.app'
-    : 'https://anicca-proxy-staging.up.railway.app';
+  // 2) ENV（必要な片側のみでも可）
+  if (UPDATE_CHANNEL === 'stable' && envProduction) return envProduction;
+  if (UPDATE_CHANNEL === 'beta' && envStaging) return envStaging;
+
+  // 3) いずれも無い場合は明確に失敗させる
+  throw new Error(
+    `PROXY_URL not resolvable. Provide appConfig.proxy via CI or set ` +
+    `${UPDATE_CHANNEL === 'stable' ? 'PROXY_URL_PRODUCTION' : 'PROXY_URL_STAGING'} in environment.`
+  );
 }
 
 // プロキシサーバーのURL設定（堅牢化）
@@ -94,6 +100,13 @@ export const PORTS = {
   OAUTH_CALLBACK: process.env.OAUTH_CALLBACK_PORT ? parseInt(process.env.OAUTH_CALLBACK_PORT) : 8085,
   PARENT_AGENT: process.env.PARENT_AGENT_PORT ? parseInt(process.env.PARENT_AGENT_PORT) : 8091
 };
+
+// 共通チューニング値（マジックナンバー集約）
+export const AUDIO_SAMPLE_RATE = 24000;
+export const NETWORK_TIMEOUT_MS = 1500;
+export const NETWORK_CACHE_MS = 5000;
+export const WS_RECONNECT_DELAY_MS = 3000;
+export const CHECK_STATUS_INTERVAL_MS = 1500;
 
 // API エンドポイント
 export const API_ENDPOINTS = {

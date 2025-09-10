@@ -7,44 +7,10 @@ if (process.env.NODE_ENV !== 'production') {
   import('dotenv').then(dotenv => dotenv.config());
 }
 
-// サーバー起動時の初期化処理
+// サーバー起動時の初期化処理（DB初期化のみ）
 async function initializeServer() {
-  // データベースを初期化
-  const dbInitialized = await initDatabase();
-  
-  // ユーザーベースのトークン管理に移行したため、
-  // グローバル変数へのトークン読み込みは無効化
+  await initDatabase();
   console.log('✅ Database initialized. Using user-based token management.');
-  
-  // 以下の処理は無効化（後方互換性のためコメントで残す）
-  /*
-  if (dbInitialized) {
-    // データベースから最新のトークンを読み込む
-    try {
-      const dbTokens = await loadLatestTokensFromDB();
-      if (dbTokens) {
-        global.slackBotToken = dbTokens.bot_token;
-        global.slackUserToken = dbTokens.user_token;
-        global.currentSessionId = dbTokens.session_id;
-        console.log('✅ Loaded Slack tokens from database');
-      }
-    } catch (error) {
-      console.error('Failed to load tokens from DB:', error);
-    }
-  } else {
-    // データベースが使えない場合はファイルから読み込む（後方互換性）
-    try {
-      const tokens = await loadTokens('default');
-      if (tokens) {
-        global.slackBotToken = tokens.bot_token;
-        global.slackUserToken = tokens.user_token;
-        console.log('✅ Loaded Slack tokens from file');
-      }
-    } catch (error) {
-      console.error('Failed to load tokens from file:', error);
-    }
-  }
-  */
 }
 
 initializeServer();

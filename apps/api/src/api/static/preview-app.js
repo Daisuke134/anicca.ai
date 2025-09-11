@@ -11,12 +11,6 @@ import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {
   // CORSヘッダーを設定
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
   
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -62,10 +56,8 @@ export default async function handler(req, res) {
     
     // Content-Typeを決定
     const contentType = getContentType(filePath);
-    res.setHeader('Content-Type', contentType);
     
     // キャッシュヘッダーを設定（1時間）
-    res.setHeader('Cache-Control', 'public, max-age=3600');
     
     // ファイルの内容をバイナリとして読み取り
     const buffer = await data.arrayBuffer();

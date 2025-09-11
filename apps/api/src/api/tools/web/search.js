@@ -4,14 +4,6 @@ import { exaMcpService } from '../../../services/mcp-clients/exaClient.js';
 let isInitialized = false;
 
 export default async function handler(req, res) {
-  // CORS設定
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -24,10 +16,7 @@ export default async function handler(req, res) {
       isInitialized = true;
     }
     
-    // URLからツール名を取得（例: /api/tools/github_search → github_search）
-    const urlParts = req.url.split('/');
-    const toolName = urlParts[urlParts.length - 1];
-    console.log('🛠️ Tool name from URL:', toolName);
+    // ツール名はボディから任意指定。未指定なら自動選択。
     
     // 両方の形式に対応
     let query;
@@ -59,41 +48,12 @@ export default async function handler(req, res) {
     // Exa MCPで検索（ツール名を指定）
     console.log('🔍 Using Exa MCP for search...');
     
-    // crawlingツールは特別な処理が必要
-    let searchParams = { numResults: 5 };
-    if (toolName === 'crawling') {
-      // crawlingはurlパラメータを期待
-      const result = await exaMcpService.client.callTool({
-        name: 'crawling',
-        arguments: {
-          url: query  // queryをurlとして渡す
-        }
-      });
-      console.log('🌐 Exa MCP response:', JSON.stringify(result, null, 2));
-      
-      // 結果を標準フォーマットに変換
-      let results = [];
-      if (result && result.content) {
-        results = [{
-          title: 'Crawled Content',
-          url: query,
-          snippet: result.content[0]?.text?.substring(0, 500) + '...'
-        }];
-      }
-      
-      return {
-        success: true,
-        tool: toolName,
-        exaTool: 'crawling',
-        query: query,
-        results: results,
-        _instruction: 'Please summarize the crawled content.'
-      };
-    }
-    
-    // 通常の検索処理
+    const searchParams = { numResults: (req.body?.numResults || 5) };
+    const bodyTool = req.body?.tool;
+    const chosenTool = bodyTool || exaMcpService.selectSearchTool(query);
+    // 検索実行
     const mcpResult = await exaMcpService.search(query, {
-      tool: toolName,  // ツール名を明示的に指定
+      tool: chosenTool,
       numResults: searchParams.numResults
     });
     

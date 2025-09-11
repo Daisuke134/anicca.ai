@@ -21,15 +21,6 @@ function decrypt(text) {
 export default async function handler(req, res) {
   console.log('🔍 Checking Slack connection status...');
   
-  // CORSヘッダーを設定
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  
   try {
     // ユーザーIDまたはセッションIDを取得
     const { sessionId, userId } = req.query;

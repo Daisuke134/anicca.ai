@@ -212,12 +212,14 @@ export class AniccaSessionManager {
             format: { type: 'audio/pcm', rate: 24000 },
             // transcription 設定はデフォルト（言語ヒント未指定）
             noiseReduction: { type: 'near_field' },
-            // semantic_vad（慎重寄り）。semantic では prefix/silence は送らない
+            // server_vad に統一（session.create を確実に成功させる）
             turnDetection: {
-              type: 'semantic_vad',
+              type: 'server_vad',
               createResponse: true,
               interruptResponse: true,
-              eagerness: 'low'
+              prefixPaddingMs: 300,
+              silenceDurationMs: 500,
+              threshold: 0.90
             }
           },
           output: {
@@ -726,10 +728,13 @@ export class AniccaSessionManager {
           audio: {
             input: {
               turnDetection: {
-                type: 'semantic_vad',
+                type: 'server_vad',
                 createResponse: true,
                 interruptResponse: true,
-                eagerness: 'low'
+                // server_vad チューニング（俊敏寄り）
+                prefixPaddingMs: 300,
+                silenceDurationMs: 500,
+                threshold: 0.90
               }
         }
       }

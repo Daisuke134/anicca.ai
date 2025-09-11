@@ -1,8 +1,14 @@
 // DMGファイルのプロキシダウンロード
 export default async function handler(req, res) {
   // CORSヘッダーを設定
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
   
   // OPTIONSリクエストの処理
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
   
   // GETリクエストのみ許可
   if (req.method !== 'GET') {
@@ -75,6 +81,9 @@ export default async function handler(req, res) {
     }
     
     // レスポンスヘッダーを設定
+    res.setHeader('Content-Type', 'application/x-apple-diskimage');
+    res.setHeader('Content-Disposition', `attachment; filename="${dmgAsset.name}"`);
+    res.setHeader('Content-Length', dmgAsset.size);
     
     // ストリーミングでクライアントに転送
     const reader = downloadResponse.body.getReader();

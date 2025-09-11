@@ -2,6 +2,15 @@ export default async function handler(req, res) {
   console.log('🔍 Claude proxy handler called');
   console.log('  Method:', req.method);
   console.log('  URL:', req.url);
+  
+  // Enable CORS
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-API-Key, anthropic-version, anthropic-beta');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
   try {
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;

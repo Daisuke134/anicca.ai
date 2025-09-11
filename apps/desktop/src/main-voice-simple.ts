@@ -481,26 +481,31 @@ function createHiddenWindow() {
               }
 
               // モード確定通知（会話モードに上がった事実に同期してビープ）
-              if (message.type === 'mode_set' && message.mode === 'conversation') {
-                try {
-                  const Ctor = (window['AudioContext'] || window['webkitAudioContext']);
-                  // Ctor が未定義なら何もしない
-                  if (!Ctor) throw new Error('No AudioContext available');
-                  const ctx = audioContext || new Ctor();
-                  if (!audioContext) { audioContext = ctx; }
-                  try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
-                  const o = ctx.createOscillator();
-                  const g = ctx.createGain();
-                  o.type = 'sine';
-                  o.frequency.value = 880; // A5
-                  g.gain.setValueAtTime(0.0, ctx.currentTime);
-                  g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
-                  o.connect(g).connect(ctx.destination);
-                  o.start();
-                  o.stop(ctx.currentTime + 0.14);
-                } catch (e) {
-                  console.warn('mode_set beep failed:', e);
+              if (message.type === 'mode_set' && message.mode === 'conversation' && message.reason === 'hotkey') {
+                // F8（hotkey）かつ SDK接続OKのときのみ効果音
+                const ok = await checkSDKStatus().catch(() => false);
+                if (!ok) {
+                  console.warn('mode_set (hotkey) but SDK not ready; skip beep');
+                } else {
+                  try {
+                    const Ctor = (window['AudioContext'] || window['webkitAudioContext']);
+                    if (!Ctor) throw new Error('No AudioContext available');
+                    const ctx = audioContext || new Ctor();
+                    if (!audioContext) { audioContext = ctx; }
+                    try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.value = 880; // A5
+                    g.gain.setValueAtTime(0.0, ctx.currentTime);
+                    g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+                    o.connect(g).connect(ctx.destination);
+                    o.start();
+                    o.stop(ctx.currentTime + 0.14);
+                  } catch (e) {
+                    console.warn('mode_set beep failed:', e);
+                  }
                 }
               }
 
@@ -686,18 +691,7 @@ function createHiddenWindow() {
 
             // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // 独自RMSゲートは無効化（送信前ブロックOFF）
-            const RMS_THRESHOLD = 0;      // 0 = 無効化
-            const MIN_SPEECH_MS = 0;      // 0 = 無効化
-            const SAMPLE_RATE = ${AUDIO_SAMPLE_RATE};
-            let speechAccumMs = 0;
-            // プリロール（先行バッファ）で開始直後から十分量を送る
-            const FRAME_SAMPLES = 4096;
-            const FRAME_MS = (FRAME_SAMPLES / SAMPLE_RATE) * 1000; // ≈171ms
-            const PREROLL_MS = 0; // 0 = 無効化（先行送出しない）
-            const MAX_PREROLL_FRAMES = 0;
-            let preRoll = [];
-            let speaking = false;
+            // 送信ゲートはサーバVADへ一本化（ローカルRMS/プリロールは撤廃）
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -743,8 +737,7 @@ function createHiddenWindow() {
               if (!base64 || base64.length === 0) return;
               enqueueFrame(base64);
 
-              // 発話終了トグルは独自ゲート無効化中は不使用
-              // if (speechAccumMs === 0) { speaking = false; }
+              // （ローカルRMS/プリロール運用は撤廃済み）
             };
 
             console.log('🎤 Voice capture started (PCM16, no RMS pre-gate)');

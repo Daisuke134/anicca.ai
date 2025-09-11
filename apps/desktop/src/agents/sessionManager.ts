@@ -61,7 +61,7 @@ export class AniccaSessionManager {
   private autoExitDeadlineAt: number | null = null; // epoch(ms)
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
-  private readonly AUTO_EXIT_IDLE_MS = 60_000;      // 自動終了までの待機（10s）
+  private readonly AUTO_EXIT_IDLE_MS = 15_000;      // 自動終了までの待機（15s）
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -218,8 +218,8 @@ export class AniccaSessionManager {
               createResponse: true,
               interruptResponse: true,
               prefixPaddingMs: 300,
-              silenceDurationMs: 1400,
-              threshold: 0.70
+              silenceDurationMs: 700,
+              threshold: 0.92
             }
           },
           output: {
@@ -731,14 +731,14 @@ export class AniccaSessionManager {
                 type: 'server_vad',
                 createResponse: true,
                 interruptResponse: true,
-                // server_vad で有効なパラメータ
+                // server_vad で有効なパラメータ（厳しめチューニング）
                 prefixPaddingMs: 300,
-                silenceDurationMs: 1400,
-                threshold: 0.70
+                silenceDurationMs: 700,
+                threshold: 0.92
               }
-            }
-          }
-        });
+        }
+      }
+    });
         this.mode = 'conversation';
         this.clearAutoExitTimer();
         this.lastUserActivityAt = null;
@@ -758,6 +758,8 @@ export class AniccaSessionManager {
         this.lastUserActivityAt = null;
       }
       console.log('[MODE_SET]', { mode: this.mode, reason });
+      // UI へ確定モードを通知（PTTフィードバック用）
+      this.broadcast({ type: 'mode_set', mode: this.mode, reason });
     } catch (e) {
       console.warn('setMode failed:', e);
     }

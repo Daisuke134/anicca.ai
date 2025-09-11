@@ -446,10 +446,11 @@ function createHiddenWindow() {
 
               // エージェント音声開始/終了（半二重制御用）
               if (message.type === 'audio_start') {
-                isAgentSpeaking = true; // 視覚用のみ（ゲートには不使用）
+                isAgentSpeaking = true;  // 視覚用
               }
               if (message.type === 'audio_stopped') {
-                isAgentSpeaking = false; // 視覚用のみ（ゲートには不使用）
+                isAgentSpeaking = false; // 視覚用
+                micPaused = false;       // 半二重解除
                 // 出力直後の誤割り込み抑止
                 micPostStopMuteUntil = Date.now() + 300;
               }
@@ -457,7 +458,7 @@ function createHiddenWindow() {
               // 応答完了（フォールバックで半二重を確実に戻す）
               if (message.type === 'turn_done') {
                 isAgentSpeaking = false;
-                micPaused = false;
+                micPaused = false; // 半二重解除（保険）
                 console.log('🔁 turn_done: gates cleared');
                 // 出力直後の誤割り込み抑止
                 micPostStopMuteUntil = Date.now() + 300;
@@ -476,6 +477,30 @@ function createHiddenWindow() {
                 if (currentSource) {
                   currentSource.stop();
                   currentSource = null;
+                }
+              }
+
+              // モード確定通知（会話モードに上がった事実に同期してビープ）
+              if (message.type === 'mode_set' && message.mode === 'conversation') {
+                try {
+                  const Ctor = (window['AudioContext'] || window['webkitAudioContext']);
+                  // Ctor が未定義なら何もしない
+                  if (!Ctor) throw new Error('No AudioContext available');
+                  const ctx = audioContext || new Ctor();
+                  if (!audioContext) { audioContext = ctx; }
+                  try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
+                  const o = ctx.createOscillator();
+                  const g = ctx.createGain();
+                  o.type = 'sine';
+                  o.frequency.value = 880; // A5
+                  g.gain.setValueAtTime(0.0, ctx.currentTime);
+                  g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
+                  g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+                  o.connect(g).connect(ctx.destination);
+                  o.start();
+                  o.stop(ctx.currentTime + 0.14);
+                } catch (e) {
+                  console.warn('mode_set beep failed:', e);
                 }
               }
 
@@ -693,11 +718,15 @@ function createHiddenWindow() {
             source.connect(processor);
             processor.connect(audioCtx.destination);
 
-            // PCM16形式で音声データを送信（ゲート無効化：常時ストリーミング）
+            // PCM16形式で音声データを送信（システム再生ガード）
             processor.onaudioprocess = async (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
               if (Date.now() < micPostStopMuteUntil) {
+                return;
+              }
+              // システム再生中は送信しない（エコー防止）
+              if (isSystemPlaying) {
                 return;
               }
 
@@ -707,13 +736,6 @@ function createHiddenWindow() {
                 const s = Math.max(-1, Math.min(1, inputData[i]));
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
-
-              // 送信停止条件：
-              // 1) システム音声（ElevenLabs等）再生中 → 送信停止
-              if (isSystemPlaying) {
-                return;
-              }
-
 
               // 常時ストリーミング送信（空データは送らない）
               if (!int16Array || int16Array.length === 0) return;

@@ -67,15 +67,9 @@ async function initializeParentAgent() {
   return parentAgent;
 }
 
-export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+import logger from '../../../utils/logger.js';
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+export default async function handler(req, res) {
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -85,7 +79,7 @@ export default async function handler(req, res) {
     // 両方の形式に対応
     let task, context, userId, timezone;
     
-    console.log('📥 Claude Code request:', {
+    logger.debug('Claude Code request:', {
       bodyKeys: Object.keys(req.body),
       hasArguments: !!req.body.arguments,
       argumentsType: typeof req.body.arguments,
@@ -101,7 +95,7 @@ export default async function handler(req, res) {
       context = args.context;
       userId = args.userId;
       timezone = args.timezone;
-      console.log('🔧 Using arguments format:', { 
+      logger.debug('Using arguments format:', { 
         task: task ? task.substring(0, 50) + '...' : 'none',
         hasContext: !!context,
         userId: userId || 'none',
@@ -113,7 +107,7 @@ export default async function handler(req, res) {
       context = req.body.context;
       userId = req.body.userId;
       timezone = req.body.timezone;
-      console.log('🔧 Using direct format:', { 
+      logger.debug('Using direct format:', { 
         task: task ? task.substring(0, 50) + '...' : 'none',
         hasContext: !!context,
         userId: userId || 'none',
@@ -127,7 +121,7 @@ export default async function handler(req, res) {
 
     // 重複チェック
     if (checkTaskDuplicate(task)) {
-      console.log(`🚫 Duplicate task blocked: ${task.substring(0, 50)}...`);
+      logger.info(`Duplicate task blocked: ${task.substring(0, 50)}...`);
       return res.json({
         success: true,
         result: {
@@ -158,17 +152,17 @@ export default async function handler(req, res) {
     
     // Slackトークンがある場合はグローバルに設定（Workerが使用）
     if (slackTokens) {
-      console.log('🔗 Setting Slack tokens globally for Workers');
+      logger.info('Setting Slack tokens globally for Workers');
       global.slackTokens = slackTokens;
       global.slackBotToken = slackTokens.bot_token;
       global.slackUserToken = slackTokens.user_token;
       global.currentUserId = userId;  // 実際のuserIdを設定
     } else {
-      console.log('⚠️ No Slack tokens to set for userId:', userId || 'none');
+      logger.warn(`No Slack tokens to set for userId: ${userId || 'none'}`);
       global.currentUserId = userId || null;  // userIdがない場合もnullで設定
     }
     
-    console.log(`🚀 Starting task: ${task}`);
+    logger.info(`Starting task: ${task}`);
     
     try {
       // ParentAgentでタスクを処理（並列実行対応）
@@ -216,14 +210,14 @@ export default async function handler(req, res) {
       });
       
     } catch (error) {
-      console.error('Claude execution error:', error);
+      logger.error(`Claude execution error: ${error?.message || String(error)}`);
       return res.status(500).json({
         error: error instanceof Error ? error.message : 'Claude execution failed'
       });
     }
 
   } catch (error) {
-    console.error('think_with_claude error:', error);
+    logger.error(`think_with_claude error: ${error?.message || String(error)}`);
     return res.status(500).json({ 
       error: 'Internal server error', 
       message: error.message 

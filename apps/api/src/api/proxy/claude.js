@@ -1,16 +1,9 @@
-export default async function handler(req, res) {
-  console.log('🔍 Claude proxy handler called');
-  console.log('  Method:', req.method);
-  console.log('  URL:', req.url);
-  
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, X-API-Key, anthropic-version, anthropic-beta');
+import logger from '../../utils/logger.js';
 
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+export default async function handler(req, res) {
+  logger.info('Claude proxy handler called');
+  logger.debug(`Method: ${req.method}`);
+  logger.debug(`URL: ${req.url}`);
 
   try {
     const anthropicApiKey = process.env.ANTHROPIC_API_KEY;
@@ -21,7 +14,7 @@ export default async function handler(req, res) {
     // console.log('  Length:', anthropicApiKey ? anthropicApiKey.length : 0);
     
     if (!anthropicApiKey) {
-      console.error('❌ ANTHROPIC_API_KEY not configured');
+      logger.error('ANTHROPIC_API_KEY not configured');
       return res.status(500).json({ error: 'Claude API key not configured on server' });
     }
 
@@ -46,11 +39,11 @@ export default async function handler(req, res) {
     // Check if this is a Worker request and force Claude 4 Sonnet
     // Support both header and URL path methods
     if ((req.headers['x-agent-type'] === 'worker' || agentType === 'worker') && req.body?.model) {
-      console.log('🤖 Worker detected - forcing Claude 4 Sonnet model');
-      console.log('  Original model:', req.body.model);
+      logger.info('Worker detected - forcing Claude 4 Sonnet model');
+      logger.debug(`Original model: ${req.body.model}`);
       const { MODEL_CONFIG } = await import('../../config/environment.js');
       req.body.model = MODEL_CONFIG.CLAUDE_WORKER_DEFAULT_MODEL;
-      console.log('  Forced model:', req.body.model);
+      logger.debug(`Forced model: ${req.body.model}`);
     }
     
 
@@ -76,7 +69,7 @@ export default async function handler(req, res) {
         body: req.method !== 'GET' ? JSON.stringify(req.body) : undefined,
       });
     } catch (fetchError) {
-      console.error('❌ Fetch error:', fetchError);
+      logger.error(`Fetch error: ${fetchError?.message || String(fetchError)}`);
       return res.status(502).json({ 
         error: 'Bad Gateway', 
         message: 'Failed to connect to Claude API',
@@ -91,8 +84,8 @@ export default async function handler(req, res) {
 
     // Error check
     if (!response.ok) {
-      console.error(`❌ Claude API error: ${response.status}`);
-      console.error('Response:', responseText);
+      logger.error(`Claude API error: ${response.status}`);
+      logger.debug(`Response: ${responseText}`);
     }
 
     // Forward response headers
@@ -107,8 +100,8 @@ export default async function handler(req, res) {
     res.status(response.status).send(responseText);
 
   } catch (error) {
-    console.error('❌ Claude proxy error:', error);
-    console.error('Stack trace:', error.stack);
+    logger.error(`Claude proxy error: ${error?.message || String(error)}`);
+    logger.debug(error?.stack || '');
     res.status(500).json({ 
       error: 'Internal server error', 
       message: error.message 

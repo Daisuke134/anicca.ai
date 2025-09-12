@@ -4,6 +4,7 @@ import fs from 'fs';
 import path from 'path';
 import os from 'os';
 import { getSlackTokensForUser } from '../../../services/tokens/slackTokens.supabase.js';
+import logger from '../../../utils/logger.js';
 
 // スレッド返信用のts記憶
 const recentThreadTs = new Map();
@@ -26,14 +27,7 @@ function decrypt(text) {
 
 
 export default async function handler(req, res) {
-  // Enable CORS
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  // CORSはグローバルで対応（server.js）。個別設定は撤去予定。
 
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -41,8 +35,27 @@ export default async function handler(req, res) {
 
   try {
     const { action, arguments: args, userId } = req.body;
+
+    // 認可強化: JWTのsubとuserIdの一致を強制（TOOLS_AUTH_STRICT=true のとき）
+    try {
+      const strict = String(process.env.TOOLS_AUTH_STRICT || '').toLowerCase() === 'true';
+      if (strict) {
+        const authSub = req?.auth?.sub || null;
+        if (!authSub) {
+          return res.status(401).json({ error: 'Unauthorized: missing auth subject' });
+        }
+        if (!userId) {
+          return res.status(400).json({ error: 'Bad Request: userId is required' });
+        }
+        if (authSub !== userId) {
+          return res.status(403).json({ error: 'Forbidden: token.sub does not match userId' });
+        }
+      }
+    } catch (authCheckErr) {
+      logger.warn(`Slack auth check warning: ${authCheckErr?.message || String(authCheckErr)}`);
+    }
     
-    console.log('🔧 Slack tool request:', { 
+    logger.info('Slack tool request', { 
       action, 
       args, 
       userId,
@@ -56,9 +69,9 @@ export default async function handler(req, res) {
     let botToken, userToken, slackUserId;
     
     if (userId) {
-      console.log('🔍 Looking up tokens for userId:', userId);
+      logger.debug(`Looking up tokens for userId: ${userId}`);
       const userTokens = await getSlackTokensForUser(userId);
-      console.log('🔍 Token lookup result:', {
+      logger.debug('Token lookup result:', {
         found: !!userTokens,
         hasBotToken: !!userTokens?.bot_token,
         hasUserToken: !!userTokens?.user_token,
@@ -68,12 +81,12 @@ export default async function handler(req, res) {
         botToken = userTokens.bot_token;
         userToken = userTokens.user_token;
         slackUserId = userTokens.slack_user_id; // Store slack_user_id here
-        console.log('🔐 Retrieved tokens for user:', userId);
+        logger.info(`Retrieved tokens for user: ${userId}`);
       } else {
-        console.log('⚠️ No tokens found for user:', userId);
+        logger.warn(`No tokens found for user: ${userId}`);
       }
     } else {
-      console.log('⚠️ No userId provided in request');
+      logger.warn('No userId provided in request');
     }
     
     // フォールバック：環境変数またはグローバル変数
@@ -82,10 +95,10 @@ export default async function handler(req, res) {
       userToken = process.env.SLACK_USER_TOKEN || global.slackUserToken;
     }
     
-    console.log('🔑 Token check - Bot:', !!botToken, 'User:', !!userToken);
+    logger.debug(`Token check - Bot: ${!!botToken} User: ${!!userToken}`);
     
     if (!botToken) {
-      console.error('❌ No bot token available:', {
+      logger.error('No bot token available:', {
         userId: userId || 'none',
         hasEnvToken: !!process.env.SLACK_BOT_TOKEN,
         hasGlobalToken: !!global.slackBotToken
@@ -95,11 +108,11 @@ export default async function handler(req, res) {
     
     if (botToken && botToken.includes(':')) {
       botToken = decrypt(botToken);
-      console.log('🔓 Bot token decrypted');
+      logger.debug('Bot token decrypted');
     }
     if (userToken && userToken.includes(':')) {
       userToken = decrypt(userToken);
-      console.log('🔓 User token decrypted');
+      logger.debug('User token decrypted');
     }
     
     // Slack Web APIクライアントを作成
@@ -108,7 +121,7 @@ export default async function handler(req, res) {
     const slack = new WebClient(primaryToken);
     const botSlack = new WebClient(botToken); // Bot専用の操作用
     
-    console.log('🎯 Using token type:', userToken ? 'User Token' : 'Bot Token');
+    logger.info(`Using token type: ${userToken ? 'User Token' : 'Bot Token'}`);
     
     // チャンネル名をIDに変換する関数
     // 編集距離（レーベンシュタイン距離）を計算
@@ -137,11 +150,11 @@ export default async function handler(req, res) {
     }
     
     async function resolveChannelId(channelNameOrId) {
-      console.log(`🔍 resolveChannelId input: "${channelNameOrId}"`);
+      logger.debug(`resolveChannelId input: "${channelNameOrId}"`);
       
       // すでにIDの形式（C,G,Dで始まる）ならそのまま返す
       if (channelNameOrId.match(/^[CGD][A-Z0-9]+$/)) {
-        console.log(`✅ Already an ID: ${channelNameOrId}`);
+        logger.debug(`Already an ID: ${channelNameOrId}`);
         return channelNameOrId;
       }
       
@@ -150,7 +163,7 @@ export default async function handler(req, res) {
         try {
           // @を削除
           const userId = channelNameOrId.replace(/^@/, '');
-          console.log(`🔄 Opening DM channel for user: ${userId}`);
+          logger.debug(`Opening DM channel for user: ${userId}`);
           
           // conversations.openでDMチャンネルを開く（既存の場合は既存のIDを返す）
           const result = await slack.conversations.open({
@@ -158,13 +171,13 @@ export default async function handler(req, res) {
           });
           
           if (result.ok && result.channel) {
-            console.log(`✅ DM channel ID: ${result.channel.id}`);
+            logger.debug(`DM channel ID: ${result.channel.id}`);
             return result.channel.id;
           }
           
           throw new Error(`Failed to open DM channel for user: ${userId}`);
         } catch (error) {
-          console.error('Failed to open DM channel:', error);
+          logger.error(`Failed to open DM channel: ${error?.message || String(error)}`);
           throw error;
         }
       }
@@ -180,14 +193,14 @@ export default async function handler(req, res) {
         });
         
         const channel = channelsList.channels?.find(ch => ch.name === channelName);
-        console.log(`🔍 Channel search result:`, channel ? `Found: ${channel.id}` : 'Not found');
+        logger.debug(`Channel search result: ${channel ? `Found: ${channel.id}` : 'Not found'}`);
         if (channel) {
-          console.log(`🔄 Resolved channel name "${channelName}" to ID: ${channel.id}`);
+          logger.debug(`Resolved channel name "${channelName}" to ID: ${channel.id}`);
           return channel.id;
         }
         
         // 完全一致が見つからない場合、類似チャンネルを探す
-        console.log(`⚠️ Exact match not found for "${channelName}". Searching for similar channels...`);
+        logger.debug(`Exact match not found for "${channelName}". Searching for similar channels...`);
 
         // すべてのチャンネルに対して編集距離を計算
         const channelScores = channelsList.channels?.map(ch => ({
@@ -198,7 +211,7 @@ export default async function handler(req, res) {
         // 編集距離が最小のチャンネルを選択（最大2文字まで）
         const bestMatch = channelScores[0];
         if (bestMatch && bestMatch.distance <= 2) {
-          console.log(`✅ Found similar channel: ${bestMatch.channel.name} (edit distance: ${bestMatch.distance})`);
+          logger.debug(`Found similar channel: ${bestMatch.channel.name} (edit distance: ${bestMatch.distance})`);
           return bestMatch.channel.id;
         }
 
@@ -208,13 +221,13 @@ export default async function handler(req, res) {
         );
 
         if (partialMatch) {
-          console.log(`⚠️ Using partial match: ${partialMatch.name}`);
+          logger.debug(`Using partial match: ${partialMatch.name}`);
           return partialMatch.id;
         }
 
         throw new Error(`Channel "${channelName}" not found and no similar channels found`);
       } catch (error) {
-        console.error('Failed to resolve channel name:', error);
+        logger.error(`Failed to resolve channel name: ${error?.message || String(error)}`);
         throw error;
       }
     }
@@ -224,7 +237,7 @@ export default async function handler(req, res) {
     // アクションに応じて処理
     switch (action) {
       case 'getTokens':
-        console.log('🔑 Processing getTokens request for userId:', userId);
+        logger.info(`Processing getTokens request for userId: ${userId}`);
         if (!userId) {
           throw new Error('User ID required for getTokens action');
         }
@@ -242,14 +255,14 @@ export default async function handler(req, res) {
             decryptedUserToken = decrypt(tokens.user_token);
           }
           
-          console.log('✅ Tokens found and decrypted');
+          logger.info('Tokens found and decrypted');
           return res.json({
             bot_token: decryptedBotToken,
             user_token: decryptedUserToken,
             team_name: tokens.team_name || null
           });
         }
-        console.log('❌ No tokens found for getTokens request');
+        logger.warn('No tokens found for getTokens request');
         return res.status(404).json({ error: 'No tokens found' });
         
       case 'reply_to_thread':
@@ -262,12 +275,12 @@ export default async function handler(req, res) {
               const target = JSON.parse(fs.readFileSync(targetFile, 'utf8'));
               if (target.channel === args.channel && target.ts) {
                 args.thread_ts = target.ts;
-                console.log(`✅ Using saved target ts: ${target.ts} for message: "${target.message}"`);
+                logger.debug(`Using saved target ts: ${target.ts} for message: "${target.message}"`);
               } else {
                 throw new Error(`Saved target is for different channel: ${target.channel} vs ${args.channel}`);
               }
             } catch (e) {
-              console.error('Failed to read reply target:', e);
+              logger.error(`Failed to read reply target: ${e?.message || String(e)}`);
               throw new Error('Failed to read reply target file');
             }
           } else {
@@ -308,17 +321,17 @@ export default async function handler(req, res) {
               try {
                 const targetFile = path.join(os.homedir(), '.anicca', 'reply_target.json');
                 fs.writeFileSync(targetFile, '{}', 'utf8');
-                console.log('✅ Reply target file cleared');
+                logger.debug('Reply target file cleared');
               } catch (e) {
                 // エラーは無視
-                console.log('⚠️ Could not clear reply target file:', e.message);
+                logger.warn(`Could not clear reply target file: ${e.message}`);
               }
             }
           }
         } catch (sendError) {
           // thread_not_foundの場合は通常メッセージとして再送信
           if (sendError.data?.error === 'thread_not_found' && args.thread_ts) {
-            console.log('⚠️ Thread not found, retrying as new message');
+            logger.warn('Thread not found, retrying as new message');
             result = await slack.chat.postMessage({
               channel: sendChannelId,
               text: args.message || args.text,
@@ -340,21 +353,21 @@ export default async function handler(req, res) {
         });
         
         // デバッグログ追加
-        console.log(`📊 Retrieved ${result.messages?.length || 0} messages from #${args.channel}`);
+        logger.info(`Retrieved ${result.messages?.length || 0} messages from #${args.channel}`);
         if (result.messages && result.messages.length > 0) {
           const oldest = new Date(result.messages[result.messages.length - 1].ts * 1000);
           const newest = new Date(result.messages[0].ts * 1000);
-          console.log(`📅 Date range: ${oldest.toLocaleString('ja-JP')} ~ ${newest.toLocaleString('ja-JP')}`);
+          logger.debug(`Date range: ${oldest.toLocaleString('ja-JP')} ~ ${newest.toLocaleString('ja-JP')}`);
           
           // @hereを含むメッセージをログ出力
           const atHereMessages = result.messages.filter(m => 
             m.text && (m.text.includes('@here') || m.text.includes('@channel') || m.text.includes('日付'))
           );
           if (atHereMessages.length > 0) {
-            console.log(`🔍 Found ${atHereMessages.length} messages with @here/@channel/日付:`);
+            logger.debug(`Found ${atHereMessages.length} messages with @here/@channel/日付:`);
             atHereMessages.forEach(m => {
               const date = new Date(m.ts * 1000);
-              console.log(`  - ${date.toLocaleString('ja-JP')}: ${m.text.substring(0, 50)}...`);
+              logger.debug(`  - ${date.toLocaleString('ja-JP')}: ${m.text.substring(0, 50)}...`);
             });
           }
         }
@@ -368,13 +381,13 @@ export default async function handler(req, res) {
         break;
         
       case 'list_channels':
-        console.log('📋 Getting channel list');
+        logger.info('Getting channel list');
         result = await slack.conversations.list({
           types: 'public_channel,private_channel',
           limit: args.limit || 1000,
           exclude_archived: args.exclude_archived !== false
         });
-        console.log(`✅ Retrieved ${result.channels?.length || 0} channels`);
+        logger.info(`Retrieved ${result.channels?.length || 0} channels`);
         break;
         case 'get_user_info':
         result = await slack.users.info({
@@ -401,7 +414,7 @@ export default async function handler(req, res) {
         
 
         
-        console.log('🔍 Adding reaction:', args.name, 'to', args.timestamp);
+        logger.info(`Adding reaction: ${args.name} to ${args.timestamp}`);
         
         try {
           result = await slack.reactions.add({
@@ -409,11 +422,11 @@ export default async function handler(req, res) {
             timestamp: args.timestamp,
             name: args.name
           });
-          console.log('✅ Reaction added successfully');
+          logger.info('Reaction added successfully');
         } catch (reactionError) {
           // エラーでも成功として扱う
           const errorCode = reactionError.data?.error;
-          console.log(`⚠️ Reaction error (${errorCode}) but treating as success`);
+          logger.warn(`Reaction error (${errorCode}) but treating as success`);
           
           if (errorCode === 'already_reacted') {
             result = { ok: true, warning: 'Already reacted' };
@@ -440,11 +453,11 @@ export default async function handler(req, res) {
             name: args.name || 'anicca_report',
             is_private: args.is_private || false
           });
-          console.log('✅ Channel created successfully:', result.channel?.name);
+          logger.info(`Channel created successfully: ${result.channel?.name}`);
         } catch (createError) {
           // チャンネルが既に存在する場合はそのまま使う
           if (createError.data?.error === 'name_taken') {
-            console.log('⚠️ Channel already exists, fetching existing channel...');
+            logger.warn('Channel already exists, fetching existing channel...');
             const listResult = await slack.conversations.list({
               types: 'public_channel,private_channel',
               limit: 1000
@@ -473,7 +486,7 @@ export default async function handler(req, res) {
           }
         }
         
-        console.log('📤 Sending DM to user:', userSlackIdForDM);
+        logger.info(`Sending DM to user: ${userSlackIdForDM}`);
         
         try {
           // DMチャンネルを開く/取得
@@ -486,7 +499,7 @@ export default async function handler(req, res) {
           }
           
           const dmChannelId = dmResult.channel.id;
-          console.log('✅ DM channel opened:', dmChannelId);
+          logger.debug(`DM channel opened: ${dmChannelId}`);
           
           // メッセージ送信
           result = await slack.chat.postMessage({
@@ -494,9 +507,9 @@ export default async function handler(req, res) {
             text: args.message || args.text
           });
           
-          console.log('✅ DM sent successfully');
+          logger.info('DM sent successfully');
         } catch (dmError) {
-          console.error('❌ DM error:', dmError);
+          logger.error(`DM error: ${dmError?.message || String(dmError)}`);
           throw new Error(`Failed to send DM: ${dmError.message}`);
         }
         break;
@@ -506,7 +519,7 @@ export default async function handler(req, res) {
         const threadTs = args.thread_ts;
         
         
-        console.log(`📤 Getting thread replies for ${threadTs} in ${repliesChannelId}`);
+        logger.info(`Getting thread replies for ${threadTs} in ${repliesChannelId}`);
         
         try {
           result = await slack.conversations.replies({
@@ -514,15 +527,15 @@ export default async function handler(req, res) {
             ts: threadTs,
             limit: args.limit || 100
           });
-          console.log(`✅ Retrieved ${result.messages?.length || 0} thread replies`);
+          logger.info(`Retrieved ${result.messages?.length || 0} thread replies`);
         } catch (repliesError) {
           // エラーの場合も空の結果を返して処理継続
           if (repliesError.data?.error === 'thread_not_found' || 
               repliesError.data?.error === 'message_not_found') {
-            console.log('⚠️ Thread/Message not found, returning empty');
+            logger.warn('Thread/Message not found, returning empty');
             result = { messages: [], ok: true };
           } else {
-            console.warn('⚠️ Thread error but continuing:', repliesError.message);
+            logger.warn(`Thread error but continuing: ${repliesError.message}`);
             result = { messages: [], ok: true, warning: repliesError.message };
           }
         }
@@ -532,19 +545,14 @@ export default async function handler(req, res) {
         throw new Error(`Unknown Slack action: ${action}`);
     }
     
-    console.log('✅ Slack tool execution completed');
+    logger.info('Slack tool execution completed');
     return res.status(200).json({
       success: true,
       result: result
     });
     
   } catch (error) {
-    console.error('❌ Slack tool execution error:', {
-      error: error.message,
-      errorCode: error.data?.error,
-      action: req.body?.action,
-      userId: req.body?.userId
-    });
+    logger.error(`Slack tool execution error: ${error?.message || String(error)}`);
     
     // 処理を継続すべきエラーは警告として扱う
     const continuableErrors = [
@@ -558,7 +566,7 @@ export default async function handler(req, res) {
     ];
     
     if (error.data?.error && continuableErrors.includes(error.data.error)) {
-      console.log(`⚠️ Treating ${error.data.error} as warning, continuing`);
+      logger.warn(`Treating ${error.data.error} as warning, continuing`);
       return res.status(200).json({
         success: true,
         warning: error.data.error,

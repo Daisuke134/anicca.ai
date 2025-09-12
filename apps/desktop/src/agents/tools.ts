@@ -92,9 +92,10 @@ export const connect_slack = tool({
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
       const response = await fetch(`${API_ENDPOINTS.SLACK.OAUTH_URL}?userId=${userId}`);
       const data = await response.json();
-      if (data.authUrl) {
+      const launchUrl = data.url || data.authUrl; // 後方互換
+      if (launchUrl) {
         const { shell } = require('electron');
-        shell.openExternal(data.authUrl);
+        shell.openExternal(launchUrl);
         return 'Slackの認証ページを開きました。ブラウザで認証を完了してください。';
       }
       return 'Slack接続URLの取得に失敗しました';

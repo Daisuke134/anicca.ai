@@ -1,17 +1,10 @@
 import { playwrightMcpService } from '../../../mcp/clients/playwrightClient.js';
+import logger from '../../../utils/logger.js';
 
 // MCPサービスの初期化（一度だけ）
 let isInitialized = false;
 
 export default async function handler(req, res) {
-  // CORS設定
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -24,13 +17,15 @@ export default async function handler(req, res) {
       isInitialized = true;
     }
     
-    // URLからツール名を取得（例: /api/tools/playwright_navigate → playwright_navigate）
+    // アクションは body.action を最優先。未指定時のみURL末尾から推測（移行期フォールバック）。
     const urlParts = req.url.split('/');
-    const toolName = urlParts[urlParts.length - 1];
-    console.log('🛠️ Playwright tool name from URL:', toolName);
+    const urlTail = urlParts[urlParts.length - 1];
+    const bodyAction = typeof req.body?.action === 'string' ? req.body.action.trim() : '';
+    const chosenAction = bodyAction || urlTail.replace('playwright_', '');
+    logger.debug(`Playwright chosen action: ${chosenAction}`);
     
     // リクエストボディから引数を取得
-    console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
+    logger.debug('Playwright request body:', req.body);
     
     let args = {};
     
@@ -45,15 +40,15 @@ export default async function handler(req, res) {
       args = req.body;
     }
     
-    console.log('🔧 Parsed arguments:', args);
+    logger.debug('Playwright parsed arguments:', args);
     
-    // Playwright MCPのツール名に変換
-    const mcpToolName = toolName.replace('playwright_', '');
+    // Playwright MCPのツール名
+    const mcpToolName = chosenAction;
     
     // ツールを実行
     const result = await playwrightMcpService.callTool(mcpToolName, args);
     
-    console.log('✅ Playwright tool execution completed');
+    logger.info('Playwright tool execution completed');
     
     // 結果を返す
     return res.status(200).json({
@@ -62,11 +57,7 @@ export default async function handler(req, res) {
     });
     
   } catch (error) {
-    console.error('❌ Playwright tool error:', {
-      error: error.message,
-      stack: error.stack,
-      toolName: req.url
-    });
+    logger.error(`Playwright tool error: ${error?.message || String(error)}`);
     
     return res.status(500).json({
       error: 'Playwright tool execution failed',

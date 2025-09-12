@@ -1,4 +1,5 @@
 import { exaMcpService } from '../../../mcp/clients/exaClient.js';
+import logger from '../../../utils/logger.js';
 
 // MCPサービスの初期化（一度だけ）
 let isInitialized = false;
@@ -23,7 +24,7 @@ export default async function handler(req, res) {
     // 両方の形式に対応
     let query;
     
-    console.log('📥 Request body:', JSON.stringify(req.body, null, 2));
+    logger.debug('Exa search request body:', req.body);
     
     if (req.body.arguments) {
       // デスクトップ版形式: { arguments: { query: "..." } }
@@ -31,11 +32,11 @@ export default async function handler(req, res) {
         ? JSON.parse(req.body.arguments) 
         : req.body.arguments;
       query = args.query;
-      console.log('🔧 Using arguments format - query:', query);
+      logger.debug(`Using arguments format - query: ${query}`);
     } else {
       // Web版形式: { query: "..." }
       query = req.body.query;
-      console.log('🔧 Using direct format - query:', query);
+      logger.debug(`Using direct format - query: ${query}`);
     }
     
     if (!query) {
@@ -50,10 +51,10 @@ export default async function handler(req, res) {
     // ツール名の最終決定
     if (!toolName) {
       toolName = exaMcpService.selectSearchTool(query);
-      console.log('🧭 Auto-selected tool:', toolName);
+      logger.info(`Exa auto-selected tool: ${toolName}`);
     }
 
-    console.log('🔍 Using Exa MCP for search...');
+    logger.info('Using Exa MCP for search');
     let searchParams = { numResults: 5 };
 
     // crawlingツールは特別な処理が必要
@@ -65,7 +66,7 @@ export default async function handler(req, res) {
           url: query  // queryをurlとして渡す
         }
       });
-      console.log('🌐 Exa MCP response:', JSON.stringify(result, null, 2));
+      logger.debug('Exa MCP crawling response:', result);
       
       // 結果を標準フォーマットに変換
       let results = [];
@@ -77,20 +78,20 @@ export default async function handler(req, res) {
         }];
       }
       
-      return {
+      return res.status(200).json({
         success: true,
         tool: toolName,
         exaTool: 'crawling',
         query: query,
         results: results,
         _instruction: 'Please summarize the crawled content.'
-      };
+      });
     }
     
     // 通常の検索処理
     const mcpResult = await exaMcpService.search(query, { tool: toolName, numResults: searchParams.numResults });
     
-    console.log('🌐 Exa MCP response:', JSON.stringify(mcpResult, null, 2));
+    logger.debug('Exa MCP response:', mcpResult);
     
     // MCPレスポンスを既存のフォーマットに変換
     let results = [];
@@ -147,11 +148,11 @@ export default async function handler(req, res) {
       _instruction: 'Please summarize these results concisely, highlighting the most important and relevant information. Focus on key insights rather than listing all results.'
     };
     
-    console.log('✅ Returning response:', JSON.stringify(responseData, null, 2));
+    logger.debug('Exa response data:', responseData);
     res.status(200).json(responseData);
     
   } catch (error) {
-    console.error('Exa MCP Error:', error);
+    logger.error(`Exa MCP Error: ${error?.message || String(error)}`);
     res.status(500).json({
       error: 'Failed to search with Exa MCP',
       message: error.message

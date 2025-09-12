@@ -1,6 +1,6 @@
 import express from 'express';
 import cors from 'cors';
-import { initDatabase, loadLatestTokensFromDB } from './services/tokens/slackTokens.supabase.js';
+import { initDatabase } from './services/tokens/slackTokens.supabase.js';
 import apiRouter from './routes/index.js';
 
 // Only load dotenv in development
@@ -20,10 +20,16 @@ const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+const corsOptions = {
+  origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'anthropic-version', 'anthropic-beta']
+};
+app.use(cors(corsOptions));
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
-app.use(express.static('public'));
+// Preflight 全面対応
+app.options('*', cors(corsOptions));
 
 // Import auth middleware
 // import { authMiddleware } from './middleware/auth.js';

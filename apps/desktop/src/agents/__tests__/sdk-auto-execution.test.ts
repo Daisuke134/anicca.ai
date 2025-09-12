@@ -18,7 +18,7 @@ describe('SDK自動ツール実行（実API使用）', () => {
     
     // 1. 実際のAPIキーをプロキシから取得
     const { PROXY_URL } = await import('../../config');
-    const response = await fetch(`${PROXY_URL}/api/openai-proxy/desktop-session`);
+    const response = await fetch(`${PROXY_URL}/api/realtime/desktop`);
     
     if (!response.ok) {
       throw new Error(`Failed to get API key: ${response.status}`);

@@ -74,6 +74,11 @@ export const DEBUG_CONFIG = {
   LOG_LEVEL: process.env.LOG_LEVEL || (IS_PRODUCTION ? 'info' : 'debug')
 };
 
+// モデル設定（将来差替え容易に）
+export const MODEL_CONFIG = {
+  CLAUDE_WORKER_DEFAULT_MODEL: process.env.CLAUDE_WORKER_DEFAULT_MODEL || 'claude-4-sonnet-20250514'
+};
+
 // 環境変数の検証
 export function validateEnvironment() {
   const warnings = [];

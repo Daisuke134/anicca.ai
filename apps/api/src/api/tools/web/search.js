@@ -1,17 +1,10 @@
-import { exaMcpService } from '../../../services/mcp-clients/exaClient.js';
+import { exaMcpService } from '../../../mcp/clients/exaClient.js';
 
 // MCPサービスの初期化（一度だけ）
 let isInitialized = false;
 
 export default async function handler(req, res) {
-  // CORS設定
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  // CORSはグローバルミドルウェアで処理
   
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
@@ -24,10 +17,8 @@ export default async function handler(req, res) {
       isInitialized = true;
     }
     
-    // URLからツール名を取得（例: /api/tools/github_search → github_search）
-    const urlParts = req.url.split('/');
-    const toolName = urlParts[urlParts.length - 1];
-    console.log('🛠️ Tool name from URL:', toolName);
+    // ツール名はボディから（無ければクエリで自動選択）
+    let toolName = req.body?.tool;
     
     // 両方の形式に対応
     let query;
@@ -56,11 +47,16 @@ export default async function handler(req, res) {
       throw new Error('EXA_API_KEY is not configured');
     }
     
-    // Exa MCPで検索（ツール名を指定）
+    // ツール名の最終決定
+    if (!toolName) {
+      toolName = exaMcpService.selectSearchTool(query);
+      console.log('🧭 Auto-selected tool:', toolName);
+    }
+
     console.log('🔍 Using Exa MCP for search...');
-    
-    // crawlingツールは特別な処理が必要
     let searchParams = { numResults: 5 };
+
+    // crawlingツールは特別な処理が必要
     if (toolName === 'crawling') {
       // crawlingはurlパラメータを期待
       const result = await exaMcpService.client.callTool({
@@ -92,10 +88,7 @@ export default async function handler(req, res) {
     }
     
     // 通常の検索処理
-    const mcpResult = await exaMcpService.search(query, {
-      tool: toolName,  // ツール名を明示的に指定
-      numResults: searchParams.numResults
-    });
+    const mcpResult = await exaMcpService.search(query, { tool: toolName, numResults: searchParams.numResults });
     
     console.log('🌐 Exa MCP response:', JSON.stringify(mcpResult, null, 2));
     

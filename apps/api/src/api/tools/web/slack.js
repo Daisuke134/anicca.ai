@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import fs from 'fs';
 import path from 'path';
 import os from 'os';
-import { getSlackTokensForUser } from '../../../services/storage/database.js';
+import { getSlackTokensForUser } from '../../../services/tokens/slackTokens.supabase.js';
 
 // スレッド返信用のts記憶
 const recentThreadTs = new Map();
@@ -15,11 +15,10 @@ if (!process.env.SLACK_TOKEN_ENCRYPTION_KEY) {
 const ENCRYPTION_KEY = Buffer.from(process.env.SLACK_TOKEN_ENCRYPTION_KEY, 'hex');
 
 function decrypt(text) {
-  const ENCRYPTION_KEY = process.env.SLACK_TOKEN_ENCRYPTION_KEY || crypto.randomBytes(32);
   const textParts = text.split(':');
   const iv = Buffer.from(textParts.shift(), 'hex');
   const encryptedText = Buffer.from(textParts.join(':'), 'hex');
-  const decipher = crypto.createDecipheriv('aes-256-cbc', Buffer.from(ENCRYPTION_KEY), iv);
+  const decipher = crypto.createDecipheriv('aes-256-cbc', ENCRYPTION_KEY, iv);
   let decrypted = decipher.update(encryptedText);
   decrypted = Buffer.concat([decrypted, decipher.final()]);
   return decrypted.toString();

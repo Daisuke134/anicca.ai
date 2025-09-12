@@ -128,10 +128,10 @@ export const API_ENDPOINTS = {
   },
   // その他のAPI
   OPENAI_PROXY: {
-    DESKTOP_SESSION: `${PROXY_URL}/api/openai-proxy/desktop-session`
+    DESKTOP_SESSION: `${PROXY_URL}/api/realtime/desktop`
   },
   SLACK: {
-    OAUTH_URL: `${PROXY_URL}/api/slack/oauth-url`
+    OAUTH_URL: `${PROXY_URL}/api/auth/slack/oauth/url`
   }
 };
 

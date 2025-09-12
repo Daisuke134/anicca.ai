@@ -62,7 +62,7 @@ export const think_with_claude = tool({
   execute: async ({ task }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/execution/parallel-sdk`, {
+      const response = await fetch(`${PROXY_URL}/api/tools/claude_code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

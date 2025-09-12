@@ -1,10 +1,15 @@
 [build]
-  base = "landing"
+  base = "apps/landing"
   publish = "."
   command = ""
 
 [build.environment]
   GIT_LFS_ENABLED = "false"
+
+[[redirects]]
+  from = "/api/*"
+  to = "https://anicca-proxy-production.up.railway.app/api/:splat"
+  status = 200
 
 [[redirects]]
   from = "/*"

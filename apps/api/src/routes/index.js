@@ -1,0 +1,62 @@
+import express from 'express';
+
+// Realtime
+import realtimeDesktopRouter from './realtime/desktop.js';
+import realtimeWebRouter from './realtime/web.js';
+
+// Proxy
+import claudeProxyRouter from './proxy/claude.js';
+
+// Auth
+import googleAuthRouter from './auth/google/index.js';
+import slackAuthRouter from './auth/slack/index.js';
+import entitlementRouter from './auth/entitlement.js';
+
+// MCP
+import mcpGcalRouter from './mcp/gcal/index.js';
+import mcpElevenLabsRouter from './mcp/elevenlabs.js';
+
+// Tools
+import newsRouter from './tools/news.js';
+import searchExaRouter from './tools/search_exa.js';
+import claudeCodeRouter from './tools/claude_code.js';
+import slackToolRouter from './tools/slack.js';
+import playwrightRouter from './tools/playwright.js';
+import transcribeRouter from './tools/transcribe.js';
+
+// Preview
+import previewAppRouter from './preview/app.js';
+
+// Worker voice (kept to preserve current functionality under new routing layer)
+import workerVoiceMessageRouter from './worker-voice/message.js';
+import workerVoiceInterruptRouter from './worker-voice/interrupt.js';
+
+const router = express.Router();
+
+// Mount under /api prefix (kept by design)
+router.use('/realtime/desktop', realtimeDesktopRouter);
+router.use('/realtime/web', realtimeWebRouter);
+
+router.use('/proxy/claude', claudeProxyRouter);
+
+router.use('/auth/google', googleAuthRouter);
+router.use('/auth/slack', slackAuthRouter);
+router.use('/auth/entitlement', entitlementRouter);
+
+router.use('/mcp/gcal', mcpGcalRouter);
+router.use('/mcp/elevenlabs', mcpElevenLabsRouter);
+
+router.use('/tools/news', newsRouter);
+router.use('/tools/search/exa', searchExaRouter);
+router.use('/tools/claude_code', claudeCodeRouter);
+router.use('/tools/slack', slackToolRouter);
+router.use('/tools/playwright', playwrightRouter);
+router.use('/tools/transcribe', transcribeRouter);
+
+router.use('/preview/app', previewAppRouter);
+
+router.use('/worker-voice/message', workerVoiceMessageRouter);
+router.use('/worker-voice/interrupt', workerVoiceInterruptRouter);
+
+export default router;
+

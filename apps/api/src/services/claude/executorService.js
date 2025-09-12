@@ -82,7 +82,7 @@ export class ClaudeExecutorService extends EventEmitter {
       // 環境変数から取得したプロキシURLを使用
       const baseProxyUrl = PROXY_BASE_URL;
       
-      const proxyUrl = `${baseProxyUrl}/api/claude/${agentType}`;
+      const proxyUrl = `${baseProxyUrl}/api/proxy/claude/${agentType}`;
       process.env.ANTHROPIC_BASE_URL = proxyUrl;
       
       // プロキシモードではAPIキーは不要（Railwayの環境変数を使用）

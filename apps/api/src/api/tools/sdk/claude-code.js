@@ -3,7 +3,7 @@
 
 import { ParentAgent } from '../../../services/parallel-sdk/core/ParentAgent.js';
 // import { MockDatabase } from '../../services/mockDatabase.js'; // Removed in Phase 1
-import { getSlackTokensForUser } from '../../../services/storage/database.js';
+import { getSlackTokensForUser } from '../../../services/tokens/slackTokens.supabase.js';
 import { v4 as uuidv4 } from 'uuid';
 import crypto from 'crypto';
 

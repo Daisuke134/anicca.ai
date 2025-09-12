@@ -1,4 +1,4 @@
-import { loadTokensFromDB } from '../../../services/storage/database.js';
+import { loadTokensFromDB } from '../../../services/tokens/slackTokens.supabase.js';
 import crypto from 'crypto';
 
 // 復号化キー（暗号化と同じキーを使用）

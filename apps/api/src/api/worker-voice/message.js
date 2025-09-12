@@ -5,7 +5,7 @@ import { fork } from 'child_process';
 import { fileURLToPath } from 'url';
 import path from 'path';
 import { dirname } from 'path';
-import { getSlackTokensForUser } from '../../services/storage/database.js';
+import { getSlackTokensForUser } from '../../services/tokens/slackTokens.supabase.js';
 import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 
 // Google TTS クライアント初期化

@@ -48,7 +48,8 @@ export default async function handler(req, res) {
     if ((req.headers['x-agent-type'] === 'worker' || agentType === 'worker') && req.body?.model) {
       console.log('🤖 Worker detected - forcing Claude 4 Sonnet model');
       console.log('  Original model:', req.body.model);
-      req.body.model = 'claude-4-sonnet-20250514';
+      const { MODEL_CONFIG } = await import('../../config/environment.js');
+      req.body.model = MODEL_CONFIG.CLAUDE_WORKER_DEFAULT_MODEL;
       console.log('  Forced model:', req.body.model);
     }
     

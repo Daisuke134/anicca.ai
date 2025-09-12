@@ -1,7 +1,7 @@
 import crypto from 'crypto';
 import axios from 'axios';
 // import { saveTokens } from '../../services/tokenStorage.js'; // Removed in Phase 1
-import { saveTokensToDB } from '../../../services/storage/database.js';
+import { saveTokensToDB } from '../../../services/tokens/slackTokens.supabase.js';
 import { PROXY_BASE_URL as FULL_PROXY_BASE_URL, WEB_CONFIG } from '../../../config/environment.js';
 
 // プロキシベースURL（ホスト部分のみ）

@@ -4,7 +4,7 @@ import { createRequire } from 'module';
 const require = createRequire(import.meta.url);
 const { v4: uuidv4 } = require('uuid');
 import { loadWorkspace, saveWorkspace } from '../../storage/workerMemory.js';
-import { getSlackTokensForUser } from '../../storage/database.js';
+import { getSlackTokensForUser } from '../../tokens/slackTokens.supabase.js';
 import { createClient } from '@supabase/supabase-js';
 import * as path from 'path';
 import * as os from 'os';

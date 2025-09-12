@@ -1,9 +1,6 @@
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type');
+import logger from '../../utils/logger.js';
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
+export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
@@ -66,7 +63,7 @@ export default async function handler(req, res) {
       voice: 'alloy'
     });
   } catch (err) {
-    console.error('desktop-session error:', err);
+    logger.error(`desktop-session error: ${err?.message || String(err)}`);
     return res.status(500).json({ error: 'desktop-session internal error', message: err?.message || String(err) });
   }
 }

@@ -10,13 +10,7 @@ import { createClient } from '@supabase/supabase-js';
  */
 
 export default async function handler(req, res) {
-  // CORSヘッダーを設定
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
+  // CORSはグローバルで処理
   
   if (req.method !== 'GET') {
     return res.status(405).json({ error: 'Method not allowed' });

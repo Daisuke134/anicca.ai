@@ -1029,7 +1029,10 @@ ${action.parameters.query || ''}`;
     // HTTP MCPサーバーを追加（Slack連携がある場合のみ）
     if (this.slackTokens && this.slackTokens.userId) {
       console.log(`🔍 [${this.agentName}] Attempting to configure HTTP MCP for Slack...`);
-      const httpMcpPath = path.join(path.dirname(new URL(import.meta.url).pathname), '../../..', 'mcp-servers', 'http-mcp-server.js');
+      const httpMcpPath = path.join(
+        path.dirname(new URL(import.meta.url).pathname),
+        '..', '..', 'mcp', 'servers', 'http', 'index.js'
+      );
       this.mcpServers.http = {
         command: 'node',
         args: [httpMcpPath],

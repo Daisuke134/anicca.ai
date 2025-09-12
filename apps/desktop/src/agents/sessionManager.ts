@@ -211,7 +211,7 @@ export class AniccaSessionManager {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
             // transcription 設定はデフォルト（言語ヒント未指定）
-            noiseReduction: { type: 'near_field' },
+            // noiseReduction: { type: 'near_field' }, // Disabled for Near Field cutover (echo behavior A/B)
             // semantic_vad（慎重寄り）
             turnDetection: {
               type: 'semantic_vad',

@@ -12,7 +12,7 @@ import { ClaudeExecutorService } from '../../claude/executorService.js';
 import { ClaudeSession } from '../../claude/sessionManager.js';
 // import { MockDatabase } from '../../mockDatabase.js'; // Removed in Phase 1
 import { loadWorkspace, saveWorkspace } from '../../storage/workerMemory.js';
-import { getSlackTokensForUser } from '../../storage/database.js';
+import { getSlackTokensForUser } from '../../tokens/slackTokens.supabase.js';
 import fs from 'fs/promises';
 import fsSync from 'fs';
 import path from 'path';

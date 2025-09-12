@@ -3,7 +3,7 @@ import {
   createTaskCompleteMessage, 
   createErrorMessage 
 } from '../IPCProtocol.js';
-import { getSlackTokensForUser } from '../../storage/database.js';
+import { getSlackTokensForUser } from '../../tokens/slackTokens.supabase.js';
 import { previewManager } from '../utils/PreviewManager.js';
 import fs from 'fs';
 import * as path from 'path';

@@ -313,9 +313,7 @@ function createHiddenWindow() {
         let sdkReady = false; // 監視用（送信ゲートには使用しない）
         // SDKステータスの前回値（差分時のみログ出力するためのキー）
         let lastSdkStatusKey = '';
-        let sendQueue = [];          // /audio/input 直列送信用キュー
-        let sending = false;         // 送信中フラグ
-        const queueHighWater = 8;    // 最大キュー長（約1.3秒分）
+        // 音声入力はWSバイナリ直送に一本化（送信キュー/HTTPは廃止）
         let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
 
         // --- 追加: 初回プレフライト接続 & 録音起動の待機ヘルパー ---
@@ -348,43 +346,7 @@ function createHiddenWindow() {
           })();
         }
 
-        function enqueueFrame(base64) {
-          try {
-            if (!base64 || base64.length === 0) return;
-            if (sendQueue.length >= queueHighWater) {
-              sendQueue.shift();
-            }
-            sendQueue.push(base64);
-            drainQueue();
-          } catch (e) {
-            console.error('enqueue error:', e);
-          }
-        }
-
-        async function drainQueue() {
-          if (sending) return;
-          sending = true;
-          try {
-            while (sendQueue.length) {
-              const b64 = sendQueue.shift();
-              try {
-                const resp = await fetch('/audio/input', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ audio: b64, format: 'pcm16', sampleRate: 24000 })
-                });
-                if (!resp.ok) {
-                  console.warn('audio/input not ok:', resp.status);
-                }
-              } catch (e) {
-                console.error('audio/input send error:', e);
-              }
-            }
-          } finally {
-            sending = false;
-            if (sendQueue.length) drainQueue();
-          }
-        }
+        // 送信キュー/HTTPは使用しない
 
         // SDK状態確認
         async function checkSDKStatus() {
@@ -418,6 +380,7 @@ function createHiddenWindow() {
         // WebSocket接続（音声出力受信用）
         function connectWebSocket() {
           ws = new WebSocket('ws://localhost:${PORTS.OAUTH_CALLBACK}');
+          ws.binaryType = 'arraybuffer';
 
           ws.onmessage = async (event) => {
             try {
@@ -451,17 +414,17 @@ function createHiddenWindow() {
               if (message.type === 'audio_stopped') {
                 isAgentSpeaking = false; // 視覚用
                 micPaused = false;       // 半二重解除
-                // 出力直後の誤割り込み抑止
-                micPostStopMuteUntil = Date.now() + 300;
+                // 出力直後の誤割り込み抑止（短縮）
+                micPostStopMuteUntil = Date.now() + 120;
               }
 
-              // 応答完了（フォールバックで半二重を確実に戻す）
-              if (message.type === 'turn_done') {
+              // 応答完了（公式イベントに一本化）
+              if (message.type === 'agent_end') {
                 isAgentSpeaking = false;
-                micPaused = false; // 半二重解除（保険）
-                console.log('🔁 turn_done: gates cleared');
-                // 出力直後の誤割り込み抑止
-                micPostStopMuteUntil = Date.now() + 300;
+                micPaused = false; // 半二重解除
+                console.log('🔁 agent_end: gates cleared');
+                // 出力直後の誤割り込み抑止（短縮）
+                micPostStopMuteUntil = Date.now() + 120;
               }
 
               // 音声中断処理
@@ -689,9 +652,8 @@ function createHiddenWindow() {
               return;
             }
 
-            // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
+            // 監視ステータスに依らず録音を開始し、復旧は Bridge 側の WS で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // 送信ゲートはサーバVADへ一本化（ローカルRMS/プリロールは撤廃）
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -731,16 +693,15 @@ function createHiddenWindow() {
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
 
-              // 常時ストリーミング送信（空データは送らない）
+              // 常時ストリーミング送信（WSバイナリ直送）
               if (!int16Array || int16Array.length === 0) return;
-              const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
-              if (!base64 || base64.length === 0) return;
-              enqueueFrame(base64);
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(int16Array.buffer);
+              }
 
-              // （ローカルRMS/プリロール運用は撤廃済み）
             };
 
-            console.log('🎤 Voice capture started (PCM16, no RMS pre-gate)');
+            console.log('🎤 Voice capture started (PCM16)');
 
           } catch (error) {
             console.error('Failed to start voice capture:', error);

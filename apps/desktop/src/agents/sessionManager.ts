@@ -211,13 +211,13 @@ export class AniccaSessionManager {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
             // transcription 設定はデフォルト（言語ヒント未指定）
-            // noiseReduction: { type: 'near_field' }, // Disabled for Near Field cutover (echo behavior A/B)
+            // noiseReduction: { type: 'far_field' }, // Disabled for Near Field cutover (echo behavior A/B)
             // semantic_vad（慎重寄り）
             turnDetection: {
               type: 'semantic_vad',
               createResponse: true,
               interruptResponse: true,
-              eagerness: 'low'
+              eagerness: 'auto'
             }
           },
           output: {
@@ -430,7 +430,6 @@ export class AniccaSessionManager {
           session: '/session',
           taskStatus: '/task-status',
           health: '/health',
-          audioInput: '/audio/input',
           sdkStatus: '/sdk/status',
           modeSet: '/mode/set',
           modeStatus: '/mode/status'
@@ -438,44 +437,6 @@ export class AniccaSessionManager {
       });
     });
     
-    // 7. 音声入力エンドポイント（短尺/空データは最終フィルタでドロップ）
-    this.app.post('/audio/input', async (req, res) => {
-      try {
-        // Silent中は受信自体をドロップ（帯域/CPU/バッファ滞留を防止）
-        if (this.mode !== 'conversation') {
-          res.json({ success: true, dropped: 'silent' });
-          return;
-        }
-        // 会話時のみ接続保証
-        await this.ensureConnected(true);
-
-        // ensureConnected は型上は this.session を非null化しないため、明示ガード
-        const session = this.session;
-        if (!session) {
-          res.status(503).json({ error: 'Session not connected' });
-          return;
-        }
-
-        // Base64エンコードされたPCM16音声データを受け取る
-        const audioData = Buffer.from(req.body.audio, 'base64');
-        // 短尺/空チャンクは捨てる（約80ms未満のみブロック）
-        const rate = Number(req.body?.sampleRate) || 24000;
-        const minMs = 80;
-        const minBytes = Math.floor(rate * (minMs / 1000)) * 2; // PCM16(16bit=2bytes)
-        if (audioData.byteLength < minBytes) {
-          res.json({ success: true, dropped: 'short', bytes: audioData.byteLength });
-          return;
-        }
-        
-        // SDKにPCM16形式の音声データを送信
-        await session.sendAudio(audioData.buffer as ArrayBuffer);
-        
-        res.json({ success: true, format: 'pcm16' });
-      } catch (error: any) {
-        console.error('Audio input error:', error);
-        res.status(503).json({ error: error.message });
-      }
-    });
 
     // 8. SDK状態確認エンドポイント（新規追加）
     this.app.get('/sdk/status', (req, res) => {
@@ -578,8 +539,20 @@ export class AniccaSessionManager {
       };
       
       // 定期タスクメッセージハンドラーを追加
-      ws.on('message', async (data: string) => {
+      ws.on('message', async (data: any) => {
         try {
+          // 1) バイナリ（PCM16）入力: SDKへ直結
+          if (typeof data !== 'string') {
+            if (this.mode !== 'conversation') return;
+            await this.ensureConnected(true);
+            if (!this.session) return;
+            if (this.isElevenLabsPlaying) return;
+            const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+            await this.sendAudio(new Uint8Array(buf));
+            return;
+          }
+
+          // 2) JSON メッセージ
           const message = JSON.parse(data);
           
           if (message.type === 'scheduled_task') {
@@ -729,7 +702,7 @@ export class AniccaSessionManager {
                 type: 'semantic_vad',
                 createResponse: true,
                 interruptResponse: true,
-                eagerness: 'low'
+                eagerness: 'auto'
               }
         }
       }
@@ -853,8 +826,8 @@ export class AniccaSessionManager {
       this.isGenerating = false;
       this.lastServerEventAt = Date.now();
       console.log('[AGENT_END]');
-      // UIへ完了のフォールバック通知（半二重戻し）
-      this.broadcast({ type: 'turn_done' });
+      // 公式イベントに一本化
+      this.broadcast({ type: 'agent_end' });
       this.flushSystemOpsIfIdle();
       // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });

@@ -538,11 +538,11 @@ export class AniccaSessionManager {
         }
       };
       
-      // 定期タスクメッセージハンドラーを追加
-      ws.on('message', async (data: any) => {
+      // 定期タスク/音声フレームのメッセージハンドラー（isBinary で正確に判定）
+      ws.on('message', async (data: any, isBinary: boolean) => {
         try {
           // 1) バイナリ（PCM16）入力: SDKへ直結
-          if (typeof data !== 'string') {
+          if (isBinary) {
             if (this.mode !== 'conversation') return;
             await this.ensureConnected(true);
             if (!this.session) return;
@@ -552,8 +552,9 @@ export class AniccaSessionManager {
             return;
           }
 
-          // 2) JSON メッセージ
-          const message = JSON.parse(data);
+          // 2) JSON メッセージ（BufferでもUTF-8文字列へ変換して解釈）
+          const text = typeof data === 'string' ? data : Buffer.from(data).toString('utf8');
+          const message = JSON.parse(text);
           
           if (message.type === 'scheduled_task') {
             // T時点の入口で必ず復旧（プリフライト未達でもここで直る）

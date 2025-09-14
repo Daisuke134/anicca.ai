@@ -5,7 +5,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 export default function FaqPage() {
   return (
     <main className="container mx-auto max-w-3xl px-4 py-24">
-      <h1 className="text-3xl font-bold text-ink-800">FAQ</h1>
+      <h1 className="text-3xl font-bold text-foreground">FAQ</h1>
       <div className="mt-6">
         <Accordion type="single" collapsible>
           <AccordionItem value="item-1">

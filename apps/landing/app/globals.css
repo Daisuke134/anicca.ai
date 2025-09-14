@@ -2,43 +2,31 @@
 @tailwind components;
 @tailwind utilities;
 
+/* shadcn theme tokens (light only) */
 :root {
-  --color-ivory-50: #FFFEFA;
-  --color-ivory-100: #FFFDF4;
-  --color-ivory-200: #FCFAEC;
-  --color-ivory-300: #F7F3DD;
-  --color-ivory-400: #F0ECD0;
-  --color-ivory-500: #E7E3C2;
-  --color-ivory-600: #D6D1AD;
-  --color-ivory-700: #BDB895;
-  --color-ivory-800: #9E9A78;
-  --color-ivory-900: #7E7A5E;
-
-  --color-saffron-50: #FFF8E6;
-  --color-saffron-100: #FFEFC2;
-  --color-saffron-200: #FFE18A;
-  --color-saffron-300: #FFD155;
-  --color-saffron-400: #FFC12B;
-  --color-saffron-500: #F2B320;
-  --color-saffron-600: #D99E1A;
-  --color-saffron-700: #B88315;
-  --color-saffron-800: #946912;
-  --color-saffron-900: #78550E;
-
-  --color-ink-50: #F6F7F8;
-  --color-ink-100: #EDEFF1;
-  --color-ink-200: #DBE0E5;
-  --color-ink-300: #B7C0CB;
-  --color-ink-400: #8E9AA8;
-  --color-ink-500: #6B7280;
-  --color-ink-600: #4B5563;
-  --color-ink-700: #374151;
-  --color-ink-800: #1F2937;
-  --color-ink-900: #0B1220;
+  --background: 0 0% 100%;
+  --foreground: 222.2 47.4% 11.2%;
+  --muted: 210 40% 96.1%;
+  --muted-foreground: 215.4 16.3% 46.9%;
+  --card: 0 0% 100%;
+  --card-foreground: 222.2 47.4% 11.2%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 222.2 47.4% 11.2%;
+  --primary: 222.2 47.4% 11.2%;
+  --primary-foreground: 210 40% 98%;
+  --secondary: 210 40% 96.1%;
+  --secondary-foreground: 222.2 47.4% 11.2%;
+  --accent: 210 40% 96.1%;
+  --accent-foreground: 222.2 47.4% 11.2%;
+  --destructive: 0 84.2% 60.2%;
+  --destructive-foreground: 210 40% 98%;
+  --border: 214.3 31.8% 91.4%;
+  --input: 214.3 31.8% 91.4%;
+  --ring: 222.2 84% 4.9%;
 }
 
 * { box-sizing: border-box; }
 html, body { height: 100%; }
-body { margin: 0; background: theme('colors.ivory.50'); color: theme('colors.ink.800'); }
+body { margin: 0; background: hsl(var(--background)); color: hsl(var(--foreground)); }
 
 

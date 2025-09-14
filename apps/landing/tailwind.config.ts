@@ -2,7 +2,6 @@ import type { Config } from 'tailwindcss'
 import animate from 'tailwindcss-animate'
 
 const config: Config = {
-  darkMode: ['class'],
   content: [
     './app/**/*.{js,ts,jsx,tsx,mdx}',
     './components/**/*.{js,ts,jsx,tsx,mdx}',
@@ -13,41 +12,38 @@ const config: Config = {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
       },
       colors: {
-        ivory: {
-          50: '#FFFEFA',
-          100: '#FFFDF4',
-          200: '#FCFAEC',
-          300: '#F7F3DD',
-          400: '#F0ECD0',
-          500: '#E7E3C2',
-          600: '#D6D1AD',
-          700: '#BDB895',
-          800: '#9E9A78',
-          900: '#7E7A5E',
+        border: 'hsl(var(--border))',
+        input: 'hsl(var(--input))',
+        ring: 'hsl(var(--ring))',
+        background: 'hsl(var(--background))',
+        foreground: 'hsl(var(--foreground))',
+        primary: {
+          DEFAULT: 'hsl(var(--primary))',
+          foreground: 'hsl(var(--primary-foreground))',
         },
-        saffron: {
-          50: '#FFF8E6',
-          100: '#FFEFC2',
-          200: '#FFE18A',
-          300: '#FFD155',
-          400: '#FFC12B',
-          500: '#F2B320',
-          600: '#D99E1A',
-          700: '#B88315',
-          800: '#946912',
-          900: '#78550E',
+        secondary: {
+          DEFAULT: 'hsl(var(--secondary))',
+          foreground: 'hsl(var(--secondary-foreground))',
         },
-        ink: {
-          50: '#F6F7F8',
-          100: '#EDEFF1',
-          200: '#DBE0E5',
-          300: '#B7C0CB',
-          400: '#8E9AA8',
-          500: '#6B7280',
-          600: '#4B5563',
-          700: '#374151',
-          800: '#1F2937',
-          900: '#0B1220',
+        destructive: {
+          DEFAULT: 'hsl(var(--destructive))',
+          foreground: 'hsl(var(--destructive-foreground))',
+        },
+        muted: {
+          DEFAULT: 'hsl(var(--muted))',
+          foreground: 'hsl(var(--muted-foreground))',
+        },
+        accent: {
+          DEFAULT: 'hsl(var(--accent))',
+          foreground: 'hsl(var(--accent-foreground))',
+        },
+        popover: {
+          DEFAULT: 'hsl(var(--popover))',
+          foreground: 'hsl(var(--popover-foreground))',
+        },
+        card: {
+          DEFAULT: 'hsl(var(--card))',
+          foreground: 'hsl(var(--card-foreground))',
         },
       },
       container: {

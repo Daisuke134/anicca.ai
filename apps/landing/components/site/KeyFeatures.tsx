@@ -14,16 +14,16 @@ const features = [
 
 export default function KeyFeatures() {
   return (
-    <section id="features" className="py-16 bg-white">
+    <section id="features" className="py-16 bg-background">
       <Container>
         <h2 className="text-3xl font-bold text-center">Key Features</h2>
         <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {features.map((f) => (
             <FadeIn key={f.title}>
             <Card className="p-6 hover:shadow-md transition">
-              <div className="mb-3"><f.Icon className="h-6 w-6 text-ink-800" /></div>
-              <h3 className="text-lg font-semibold text-ink-800">{f.title}</h3>
-              <p className="mt-2 text-ink-600">{f.text}</p>
+              <div className="mb-3"><f.Icon className="h-6 w-6 text-foreground" /></div>
+              <h3 className="text-lg font-semibold text-foreground">{f.title}</h3>
+              <p className="mt-2 text-muted-foreground">{f.text}</p>
             </Card>
             </FadeIn>
           ))}

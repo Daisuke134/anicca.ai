@@ -3,13 +3,13 @@ import Container from '@/components/base/Container'
 
 export default function Navbar() {
   return (
-    <nav className="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-ivory-300">
+    <nav className="sticky top-0 z-50 bg-background/90 backdrop-blur border-b border-border">
       <Container>
         <div className="flex h-14 items-center justify-between">
           <Link href="/" className="flex items-center font-bold">
-            <span className="bg-gradient-to-r from-ink-800 to-saffron-500 bg-clip-text text-transparent">Anicca</span>
+            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Anicca</span>
           </Link>
-          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-ink-700">
+          <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#features">Features</a>
             <a href="#privacy">Privacy</a>
             <a href="#how-it-works">How It Works</a>

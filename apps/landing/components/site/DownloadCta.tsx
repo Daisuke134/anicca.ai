@@ -12,7 +12,7 @@ export default function DownloadCta() {
               href="https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-arm64.dmg"
               className="inline-flex items-center font-semibold px-5 py-3 text-base bg-ink-800 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition rounded-xl"
             >
-              🎧 Apple Silicon (M1/M2/M3)
+              Download for Mac
             </a>
           </div>
           <div className="mt-6">

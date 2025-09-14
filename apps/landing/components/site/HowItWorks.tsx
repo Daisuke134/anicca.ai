@@ -2,7 +2,7 @@ import Container from '@/components/base/Container'
 
 const steps = [
   { n: 1, title: 'Onboard', text: 'Tell Anicca your ideal day, the habits to build—and the ones to quit.' },
-  { n: 2, title: 'Lead', text: 'Anicca prepares in advance and triggers at the right moment. External sends happen only after your nod.' },
+  { n: 2, title: 'Lead', text: 'Anicca prepares in advance and triggers at the right moment.' },
   { n: 3, title: 'Act', text: 'Routines and good deeds move first. You follow—and your day starts to run itself in the direction you chose.' },
 ]
 

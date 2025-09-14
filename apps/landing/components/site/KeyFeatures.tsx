@@ -5,8 +5,8 @@ import FadeIn from '@/components/base/FadeIn'
 const features = [
   { icon: '🎯', title: 'Leads, not waits', text: 'Anicca moves first at the right moment.' },
   { icon: '🎙️', title: 'Voice‑only, tray‑only', text: 'No UI to manage—works for anyone.' },
-  { icon: '🔁', title: 'Habit engine', text: 'Schedules that run themselves; today’s view auto‑generated.' },
-  { icon: '💬', title: 'Slack follow‑through', text: 'Drafts ready at your set times; you just say “send”.' },
+  { icon: '🔁', title: 'Habit engine', text: 'Schedules that run themselves' },
+  { icon: '💬', title: 'Slack follow‑through', text: 'Drafts ready at your set times' },
   { icon: '🔒', title: 'Privacy‑first', text: 'Local‑first, least privilege, no telemetry.' },
   { icon: '🧩', title: 'Open Source', text: 'Transparent by default.' },
 ]

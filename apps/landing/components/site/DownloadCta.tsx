@@ -1,4 +1,5 @@
 import Container from '@/components/base/Container'
+import { Button } from '@/components/ui/button'
 
 export default function DownloadCta() {
   return (
@@ -8,12 +9,11 @@ export default function DownloadCta() {
           <h2 className="text-3xl font-bold">Get Started Now</h2>
           <p className="mt-2 text-ink-600">Take the first step toward behavioral change.</p>
           <div className="mt-6 flex justify-center">
-            <a
-              href="https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-arm64.dmg"
-              className="inline-flex items-center font-semibold px-5 py-3 text-base bg-ink-800 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition rounded-xl"
-            >
-              Download for Mac
-            </a>
+            <Button asChild>
+              <a href="https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-arm64.dmg">
+                Download for Mac
+              </a>
+            </Button>
           </div>
           <div className="mt-6">
             <a href="https://github.com/Daisuke134/anicca.ai" className="font-semibold underline">View on GitHub</a>

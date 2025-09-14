@@ -1,14 +1,15 @@
 import Container from '@/components/base/Container'
-import { Card, CardText, CardTitle } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
 import FadeIn from '@/components/base/FadeIn'
+import { Target, Mic, Repeat, MessageSquare, Shield, Code } from 'lucide-react'
 
 const features = [
-  { icon: '🎯', title: 'Leads, not waits', text: 'Anicca moves first at the right moment.' },
-  { icon: '🎙️', title: 'Voice‑only, tray‑only', text: 'No UI to manage—works for anyone.' },
-  { icon: '🔁', title: 'Habit engine', text: 'Schedules that run themselves' },
-  { icon: '💬', title: 'Slack follow‑through', text: 'Drafts ready at your set times' },
-  { icon: '🔒', title: 'Privacy‑first', text: 'Local‑first, least privilege, no telemetry.' },
-  { icon: '🧩', title: 'Open Source', text: 'Transparent by default.' },
+  { Icon: Target, title: 'Leads, not waits', text: 'Anicca moves first at the right moment.' },
+  { Icon: Mic, title: 'Voice‑only, tray‑only', text: 'No UI to manage—works for anyone.' },
+  { Icon: Repeat, title: 'Habit engine', text: 'Schedules that run themselves' },
+  { Icon: MessageSquare, title: 'Slack follow‑through', text: 'Drafts ready at your set times' },
+  { Icon: Shield, title: 'Privacy‑first', text: 'Local‑first, least privilege, no telemetry.' },
+  { Icon: Code, title: 'Open Source', text: 'Transparent by default.' },
 ]
 
 export default function KeyFeatures() {
@@ -20,9 +21,9 @@ export default function KeyFeatures() {
           {features.map((f) => (
             <FadeIn key={f.title}>
             <Card className="p-6 hover:shadow-md transition">
-              <div className="text-3xl mb-3">{f.icon}</div>
-              <CardTitle>{f.title}</CardTitle>
-              <CardText className="mt-2">{f.text}</CardText>
+              <div className="mb-3"><f.Icon className="h-6 w-6 text-ink-800" /></div>
+              <h3 className="text-lg font-semibold text-ink-800">{f.title}</h3>
+              <p className="mt-2 text-ink-600">{f.text}</p>
             </Card>
             </FadeIn>
           ))}

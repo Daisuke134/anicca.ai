@@ -29,7 +29,7 @@ export default function Page() {
           <span>•</span>
           <a href="/terms" className="underline">Terms of Service</a>
           <span>•</span>
-          <a href="mailto:keiodaisuke@gmail.com" className="underline">Contact</a>
+          <a href="mailto:contact@anicca.ai" className="underline">Contact</a>
         </p>
       </footer>
     </>

@@ -1,7 +1,7 @@
-import React from 'react'
+import * as React from 'react'
 
-export function Separator() {
-  return <div className="h-px w-full bg-ivory-300" />
+export function Separator({ className = '' }: { className?: string }) {
+  return <div className={`h-px w-full bg-ivory-300 ${className}`} />
 }
 
 

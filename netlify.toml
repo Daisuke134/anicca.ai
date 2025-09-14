@@ -1,7 +1,7 @@
 [build]
   base = "apps/landing"
-  publish = "landing"
-  command = ""
+  publish = "out"
+  command = "npm ci && npm run build && npm run export"
 
 [build.environment]
   GIT_LFS_ENABLED = "false"
@@ -9,9 +9,4 @@
 [[redirects]]
   from = "/api/*"
   to = "https://anicca-proxy-production.up.railway.app/api/:splat"
-  status = 200
-
-[[redirects]]
-  from = "/*"
-  to = "/index.html"
   status = 200

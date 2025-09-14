@@ -25,10 +25,7 @@ export default function Privacy() {
             </div>
           ))}
         </div>
-        <div className="mt-10 text-center">
-          <div className="mx-auto text-5xl">🔒</div>
-          <p className="mt-2 font-semibold text-ink-800">Your data belongs only to you</p>
-        </div>
+        {/* lock line removed per request */}
       </Container>
     </section>
   )

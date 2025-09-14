@@ -1,7 +1,7 @@
 [build]
   base = "apps/landing"
   publish = "out"
-  command = "npm ci && npm run build && npm run export"
+  command = "npm ci && npm run build"
 
 [build.environment]
   GIT_LFS_ENABLED = "false"

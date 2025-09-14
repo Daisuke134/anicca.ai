@@ -1,6 +1,7 @@
 import Container from '@/components/base/Container'
 import { Badge } from '@/components/ui/badge'
 import FadeIn from '@/components/base/FadeIn'
+import { Button } from '@/components/ui/button'
 
 export default function Hero() {
   return (
@@ -16,12 +17,11 @@ export default function Hero() {
             A proactive agent for behavior change. From wake to sleep—build good habits and break bad ones in days, not decades.
           </p>
           <div className="mt-6 flex flex-col items-start gap-3">
-            <a
-              href="https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-arm64.dmg"
-              className="inline-flex items-center font-semibold px-4 py-2.5 text-sm bg-ink-800 text-white shadow-sm hover:shadow-md hover:-translate-y-0.5 transition rounded-xl"
-            >
-              Download for Mac
-            </a>
+            <Button asChild>
+              <a href="https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-arm64.dmg">
+                Download for Mac
+              </a>
+            </Button>
             <p className="text-sm text-ink-500">macOS 10.15+ (Catalina or later)</p>
           </div>
           <div className="mt-4 flex flex-wrap gap-2 text-ink-600 font-semibold">

@@ -1,21 +1,30 @@
-import React from 'react'
-import clsx from 'clsx'
+import * as React from 'react'
+import { cva, type VariantProps } from 'class-variance-authority'
+import { cn } from '@/lib/utils'
 
-type Props = React.HTMLAttributes<HTMLSpanElement> & {
-  tone?: 'default' | 'ink' | 'saffron'
+const badgeVariants = cva(
+  'inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold transition-colors',
+  {
+    variants: {
+      variant: {
+        default: 'border-transparent bg-ivory-200 text-ink-700',
+        ink: 'border-transparent bg-ink-800 text-white',
+        saffron: 'border-transparent bg-saffron-200 text-ink-800',
+        outline: 'text-ink-800',
+      },
+    },
+    defaultVariants: {
+      variant: 'default',
+    },
+  }
+)
+
+export interface BadgeProps extends React.HTMLAttributes<HTMLDivElement>, VariantProps<typeof badgeVariants> {}
+
+function Badge({ className, variant, ...props }: BadgeProps) {
+  return <div className={cn(badgeVariants({ variant }), className)} {...props} />
 }
 
-export function Badge({ className, tone = 'default', ...props }: Props) {
-  const styles = {
-    default: 'bg-ivory-200 text-ink-700',
-    ink: 'bg-ink-800 text-white',
-    saffron: 'bg-saffron-200 text-ink-800',
-  }[tone]
-  return (
-    <span className={clsx('inline-flex items-center rounded-full px-3 py-1 text-xs font-semibold', styles, className)}
-      {...props}
-    />
-  )
-}
+export { Badge, badgeVariants }
 
 

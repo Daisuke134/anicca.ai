@@ -100,7 +100,7 @@ body {
 /* Hero Section */
 .hero {
     padding: 120px 0 80px;
-    background: linear-gradient(135deg, #F9FAFB 0%, #F3E8FF 100%);
+    background: #FAFAF5;
 }
 
 .hero .container {
@@ -447,7 +447,7 @@ body {
 /* Download Section */
 .download {
     padding: 100px 0;
-    background: linear-gradient(135deg, #F3E8FF 0%, #E9D5FF 100%);
+    background: #FAFAF5;
 }
 
 .download-content {
@@ -585,9 +585,6 @@ body {
 }
 
 .hero {
-    background: linear-gradient(-45deg, #F9FAFB, #F3E8FF, #E9D5FF, #F9FAFB);
-    background-size: 400% 400%;
-    animation: gradient 15s ease infinite;
 }
 
 /* Loading Animation */

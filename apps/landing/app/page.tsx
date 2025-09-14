@@ -20,7 +20,7 @@ export default function Page() {
       <HowItWorks />
       <Philosophy />
       <DownloadCta />
-      <footer className="bg-ink-800 text-white py-8 text-center">
+      <footer className="bg-primary text-primary-foreground py-8 text-center">
         <p>© 2025 Anicca. All rights reserved.</p>
         <p className="mt-2 flex items-center justify-center gap-2">
           <a href="https://github.com/Daisuke134/anicca.ai" className="underline">GitHub</a>

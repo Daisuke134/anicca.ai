@@ -3,11 +3,11 @@ import { Button } from '@/components/ui/button'
 
 export default function DownloadCta() {
   return (
-    <section id="download" className="py-20 bg-ivory-50">
+    <section id="download" className="py-20 bg-background">
       <Container>
         <div className="text-center">
           <h2 className="text-3xl font-bold">Get Started Now</h2>
-          <p className="mt-2 text-ink-600">Take the first step toward behavioral change.</p>
+          <p className="mt-2 text-muted-foreground">Take the first step toward behavioral change.</p>
           <div className="mt-6 flex justify-center">
             <Button asChild>
               <a href="https://github.com/Daisuke134/anicca.ai/releases/latest/download/anicca-arm64.dmg">

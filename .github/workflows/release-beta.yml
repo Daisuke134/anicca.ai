@@ -2,7 +2,12 @@ name: Release Beta (macOS)
 
 on:
   push:
-    branches: [ "beta" ]
+    tags:
+      - 'v*.*.*-beta.*'
+
+concurrency:
+  group: desktop-release-${{ github.ref_name }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -18,6 +23,8 @@ jobs:
       CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -30,6 +37,24 @@ jobs:
         working-directory: apps/desktop
         run: npm ci --include=dev
 
+      - name: Validate tag (vX.Y.Z-beta.N) and expose VERSION
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "TAG=$TAG"
+          if ! [[ "$TAG" =~ ^v[0-9]+\.[0-9]+\.[0-9]+-beta\.[0-9]+$ ]]; then
+            echo "❌ Tag must match vX.Y.Z-beta.N (got: $TAG)"; exit 1
+          fi
+          echo "VERSION=${TAG#v}" >> $GITHUB_ENV
+
+      - name: Ensure package.json version matches tag
+        working-directory: apps/desktop
+        run: |
+          PKG_VERSION=$(node -p "require('./package.json').version")
+          if [ "$PKG_VERSION" != "$VERSION" ]; then
+            echo "❌ Version mismatch. package.json=$PKG_VERSION tag=$VERSION"; exit 1
+          fi
+          echo "✅ Version match: $PKG_VERSION"
+
       - name: Validate proxy secrets (beta)
         run: |
           test -n "${{ secrets.PROXY_URL_PRODUCTION }}" || (echo "Missing PROXY_URL_PRODUCTION" && exit 1)
@@ -41,7 +66,6 @@ jobs:
           npm run build:voice
           # Pre-embed proxy URLs into package.json (no repo change)
           node -e "const fs=require('fs'); const p=JSON.parse(fs.readFileSync('package.json')); p.appConfig=p.appConfig||{}; p.appConfig.proxy={ production: process.env.PROXY_URL_PRODUCTION, staging: process.env.PROXY_URL_STAGING }; fs.writeFileSync('package.json', JSON.stringify(p,null,2));"
-          UPDATE_CHANNEL=beta \
           NODE_ENV=production \
           PROXY_URL_PRODUCTION="${{ secrets.PROXY_URL_PRODUCTION }}" \
           PROXY_URL_STAGING="${{ secrets.PROXY_URL_STAGING }}" \
@@ -50,3 +74,9 @@ jobs:
             -c.publish.channel=latest \
             -c.extraMetadata.appConfig.proxy.production=$PROXY_URL_PRODUCTION \
             -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING
+
+      - name: Generate release notes (auto)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "$GITHUB_REF_NAME" --repo "$GITHUB_REPOSITORY" --generate-notes

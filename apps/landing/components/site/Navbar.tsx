@@ -7,7 +7,7 @@ export default function Navbar() {
       <Container>
         <div className="flex h-14 items-center justify-between">
           <Link href="/" className="flex items-center font-bold">
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Anicca</span>
+            <span className="text-foreground">Anicca</span>
           </Link>
           <div className="hidden md:flex items-center gap-6 text-sm font-medium text-muted-foreground">
             <a href="#features">Features</a>

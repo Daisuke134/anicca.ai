@@ -10,7 +10,7 @@ export default function Hero() {
         <FadeIn>
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
-            <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">Anicca</span><br />
+            <span className="text-foreground">Anicca</span><br />
             Leading you to your best self.
           </h1>
           <p className="mt-5 text-lg text-muted-foreground">

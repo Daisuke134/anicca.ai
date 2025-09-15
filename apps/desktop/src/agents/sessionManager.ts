@@ -792,7 +792,7 @@ export class AniccaSessionManager {
     this.session.on('transport_event', async (event: any) => {
       try {
         this.lastServerEventAt = Date.now();
-        if (event?.type === 'session.created') {
+          if (event?.type === 'session.created') {
           this.ready = true;
           console.log('[READY] session.created');
           if (!this.restoredOnce) {
@@ -806,8 +806,15 @@ export class AniccaSessionManager {
           // READY後に一度だけ mem を“応答なし”で反映（多重抑止つき）
           this.enqueueSystemOp({ kind: 'mem' });
           this.flushSystemOpsIfIdle();
-          // 既定は沈黙モード
-          try { await this.setMode('silent', 'startup'); } catch {}
+          
+          // モード復元: wake中 or 生成中 or 直前が会話なら conversation を維持
+          try {
+            const wakeSticky = (this.stickyTask === 'wake_up' && this.wakeActive);
+            const wantConversation = wakeSticky || this.isGenerating || this.mode === 'conversation';
+            const desired: 'silent' | 'conversation' = wantConversation ? 'conversation' : 'silent';
+            await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
+          } catch (e) { console.warn('apply mode on READY failed:', e); }
+
           // ベースプロンプトを instructions として適用（Dynamic Flow: 初期は差分なし）
           try {
             const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');

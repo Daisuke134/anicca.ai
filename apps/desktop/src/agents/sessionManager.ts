@@ -23,9 +23,9 @@ export class AniccaSessionManager {
   private restoredOnce: boolean = false;               // restoreSession 多重実行防止
   // 応答進行・自動送信用
   private isGenerating: boolean = false;
-  private systemOpQueue: Array<{ kind: 'mem'|'tz'; payload?: any }> = [];
-  private hasInformedTimezoneThisSession: boolean = false;
-  private lastInformedTimezone: string | null = null;
+  private systemOpQueue: Array<{ kind: 'mem'; payload?: any }> = [];
+  // 保存プロンプト適用済みフラグ（多重防止）
+  private basePromptApplied: boolean = false;
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
@@ -70,12 +70,7 @@ export class AniccaSessionManager {
   }
   
   // ======= 自動送信（mem/TZ）: キュー運用 + 応答を起動しない送信 =======
-  private enqueueSystemOp(op: {kind:'mem'|'tz'; payload?: any}) {
-    if (op.kind === 'tz') {
-      const tz = this.userTimezone || null;
-      if (!tz) return; // TZが無いなら送らない
-      if (this.hasInformedTimezoneThisSession && this.lastInformedTimezone === tz) return;
-    }
+  private enqueueSystemOp(op: {kind:'mem'; payload?: any}) {
     this.systemOpQueue.push(op);
     console.log('[SYSOP_ENQUEUE]', op.kind);
   }
@@ -88,12 +83,33 @@ export class AniccaSessionManager {
       try {
         if (op.kind === 'mem') {
           await this.sendMemoriesSilently();
-        } else if (op.kind === 'tz') {
-          await this.sendTimezoneSilently();
         }
       } catch (e) {
         console.warn('[SYSOP_FAIL]', op.kind, e);
       }
+    }
+  }
+
+  // 一度だけ保存プロンプト（Anicca Base）を適用
+  private async applyBasePromptOnce() {
+    if (this.basePromptApplied || !this.session?.transport) return;
+    try {
+      const locale = Intl.DateTimeFormat().resolvedOptions().locale || 'en';
+      const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
+      const variables: any = {
+        preferred_language: { type: 'input_text', text: locale },
+        timezone: { type: 'input_text', text: tz }
+      };
+      await this.session.transport.updateSessionConfig({
+        prompt: {
+          promptId: 'pmpt_68c56db87b3881909a53f4bf16ab1067052b61f109111e63',
+          variables
+        }
+      });
+      this.basePromptApplied = true;
+      console.log('[PROMPT_APPLIED] Anicca Base with variables');
+    } catch (e) {
+      console.warn('applyBasePromptOnce failed:', e);
     }
   }
 
@@ -113,19 +129,7 @@ export class AniccaSessionManager {
     }
   }
 
-  private async sendTimezoneSilently() {
-    const tz = this.userTimezone || null;
-    if (!tz) return;
-    try {
-      const msg = `System: User timezone is ${tz}. Use this timezone in calendar/tool calls.`;
-      (this.session as any)?.transport?.sendMessage?.(msg, {}, { triggerResponse: false });
-      this.hasInformedTimezoneThisSession = true;
-      this.lastInformedTimezone = tz;
-      console.log('[TZ_INFO_SENT]', { once: true, changed: true, triggerResponse: false });
-    } catch (e) {
-      console.warn('sendTimezoneSilently failed:', e);
-    }
-  }
+  // sendTimezoneSilently: 廃止（timezoneは prompt.variables で管理）
 
   // --- 健全性ユーティリティ ---
   private tokenTTLSeconds(): number {
@@ -506,12 +510,24 @@ export class AniccaSessionManager {
     });
 
     // 1-1. ユーザーのタイムゾーンを受け取る（setupRoutes内に配置）
-    this.app.post('/user/timezone', (req, res) => {
+    this.app.post('/user/timezone', async (req, res) => {
       try {
         const tz = String(req.body?.timezone ?? '');
         if (tz && tz.length >= 3) {
           this.userTimezone = tz;
           console.log('🌐 User timezone set:', tz);
+          // 保存プロンプトの変数として即時反映（input_text 形式）
+          try {
+            await this.session?.transport?.updateSessionConfig({
+              prompt: {
+                // promptId は初回適用済みのため省略可だが、冪等に入れても問題なし
+                promptId: 'pmpt_68c56db87b3881909a53f4bf16ab1067052b61f109111e63',
+                variables: { timezone: { type: 'input_text', text: tz } }
+              }
+            });
+          } catch (e) {
+            console.warn('Failed to update timezone variable:', e);
+          }
         }
         res.json({ ok: true, timezone: this.userTimezone });
       } catch (e: any) {
@@ -799,10 +815,11 @@ export class AniccaSessionManager {
           }
           // READY後に一度だけ mem/TZ を“応答なし”で反映（多重抑止つき）
           this.enqueueSystemOp({ kind: 'mem' });
-          this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
           // 既定は沈黙モード
           try { await this.setMode('silent', 'startup'); } catch {}
+          // 保存プロンプト適用（1回のみ）
+          try { await this.applyBasePromptOnce(); } catch {}
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {

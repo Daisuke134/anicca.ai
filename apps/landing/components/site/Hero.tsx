@@ -1,12 +1,11 @@
-import Container from '@/components/base/Container'
+import Section from '@/components/base/Section'
 import { Badge } from '@/components/ui/badge'
 import FadeIn from '@/components/base/FadeIn'
 import { Button } from '@/components/ui/button'
 
 export default function Hero() {
   return (
-    <section className="bg-background pt-24 pb-16">
-      <Container>
+    <Section className="pt-24 pb-16">
         <FadeIn>
         <div className="max-w-3xl">
           <h1 className="text-4xl md:text-6xl font-bold leading-tight">
@@ -37,8 +36,7 @@ export default function Hero() {
           </div>
         </div>
         </FadeIn>
-      </Container>
-    </section>
+    </Section>
   )
 }
 

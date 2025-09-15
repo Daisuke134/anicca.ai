@@ -1,4 +1,4 @@
-import Container from '@/components/base/Container'
+import Section from '@/components/base/Section'
 import { Card } from '@/components/ui/card'
 import FadeIn from '@/components/base/FadeIn'
 import { Target, Mic, Repeat, MessageSquare, Shield, Code } from 'lucide-react'
@@ -14,8 +14,7 @@ const features = [
 
 export default function KeyFeatures() {
   return (
-    <section id="features" className="py-16 bg-background">
-      <Container>
+    <Section id="features">
         <h2 className="text-3xl font-bold text-center">Key Features</h2>
         <div className="mt-10 grid gap-6 md:grid-cols-2 xl:grid-cols-3">
           {features.map((f) => (
@@ -28,8 +27,7 @@ export default function KeyFeatures() {
             </FadeIn>
           ))}
         </div>
-      </Container>
-    </section>
+    </Section>
   )
 }
 

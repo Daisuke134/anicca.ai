@@ -1,9 +1,8 @@
-import Container from '@/components/base/Container'
+import Section from '@/components/base/Section'
 
 export default function Philosophy() {
   return (
-    <section className="py-16 bg-background">
-      <Container>
+    <Section>
         <div className="mx-auto max-w-3xl">
           <h2 className="text-3xl font-bold">Philosophy — The End of Suffering</h2>
           <p className="mt-4 text-muted-foreground">
@@ -11,8 +10,7 @@ export default function Philosophy() {
           </p>
           <p className="mt-4 font-semibold text-foreground">Leading you to the end of suffering.</p>
         </div>
-      </Container>
-    </section>
+    </Section>
   )
 }
 

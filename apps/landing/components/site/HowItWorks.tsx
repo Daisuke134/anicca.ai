@@ -1,4 +1,4 @@
-import Container from '@/components/base/Container'
+import Section from '@/components/base/Section'
 
 const steps = [
   { n: 1, title: 'Onboard', text: 'Tell Anicca your ideal day, the habits to build—and the ones to quit.' },
@@ -8,8 +8,7 @@ const steps = [
 
 export default function HowItWorks() {
   return (
-    <section id="how-it-works" className="py-16 bg-background">
-      <Container>
+    <Section id="how-it-works">
         <h2 className="text-3xl font-bold text-center">How It Works</h2>
         <div className="mt-10 grid gap-8 md:grid-cols-3">
           {steps.map((s) => (
@@ -22,8 +21,7 @@ export default function HowItWorks() {
             </div>
           ))}
         </div>
-      </Container>
-    </section>
+    </Section>
   )
 }
 

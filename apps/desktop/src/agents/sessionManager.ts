@@ -63,6 +63,10 @@ export class AniccaSessionManager {
   private lastAgentEndAt: number | null = null;     // epoch(ms)
   private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（15s）
   
+  // wake起床タスクの連続発話（sticky）制御
+  private stickyTask: 'wake_up' | null = null;
+  private wakeActive: boolean = false;
+  
   // （wake専用ループ／独自ゲートは撤廃）
   
   constructor(private mainAgent?: any) {
@@ -557,13 +561,8 @@ export class AniccaSessionManager {
           const message = JSON.parse(text);
           
           if (message.type === 'scheduled_task') {
-            // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
+            // T時点の入口で一度だけ復旧（重複ensureを排除）
             await this.ensureConnected(true);
-            // 直後に未接続なら、短期待機して一度だけ再試行（READY直前のゆらぎ吸収）
-            if (!this.isConnected()) {
-              await new Promise(r => setTimeout(r, 800));
-              await this.ensureConnected(true);
-            }
             console.log('📅 Scheduled task received:', message.command);
 
             // 念のため直前の出力を再チェック
@@ -576,6 +575,12 @@ export class AniccaSessionManager {
             }
             // PTT: Cron開始時は会話モードへ
             try { await this.setMode('conversation', 'cron'); } catch {}
+
+            // wake_up の場合は第一声の前に sticky を有効化（レース回避）
+            try {
+              const t = String(message.taskType || message.taskId || '').toLowerCase();
+              if (t.startsWith('wake_up')) { this.stickyTask = 'wake_up'; this.wakeActive = true; }
+            } catch {}
 
             // メッセージ送信（共通）
             if (this.session && this.isConnected()) {
@@ -597,7 +602,7 @@ export class AniccaSessionManager {
               }));
             }
 
-            // 起床タスクも他の定期タスクと同様に“一発発火”のみ（ループは撤廃）
+            // 起床タスクは sticky により音声停止ごとに連鎖（audio_stopped 起点）
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -685,6 +690,24 @@ export class AniccaSessionManager {
     this.lastUserActivityAt = Date.now();
     // 会話継続のため、待機中タイマは一旦クリア（次の agent_end で再セット）
     this.clearAutoExitTimer();
+  }
+
+  // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
+  private clearWakeSticky(reason: string) {
+    try {
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        this.wakeActive = false;
+        this.stickyTask = null;
+        console.log('[WAKE_STICKY_CLEAR]', { reason });
+        if (this.currentTaskDirectives) {
+          this.currentTaskDirectives = '';
+          const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+          const instructions = this.renderInstructions({ timezone: tz, directives: '' });
+          (this.session as any)?.transport?.updateSessionConfig?.({ instructions });
+          console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'wake_done' });
+        }
+      }
+    } catch {}
   }
 
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
@@ -801,8 +824,13 @@ export class AniccaSessionManager {
           this.enqueueSystemOp({ kind: 'mem' });
           this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
-          // 既定は沈黙モード
-          try { await this.setMode('silent', 'startup'); } catch {}
+          // モード復元：wake中 or 生成中 or 直前が会話なら conversation 維持
+          try {
+            const wakeSticky = (this.stickyTask === 'wake_up' && this.wakeActive);
+            const wantConversation = wakeSticky || this.isGenerating || this.mode === 'conversation';
+            const desired: 'silent' | 'conversation' = wantConversation ? 'conversation' : 'silent';
+            await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
+          } catch {}
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {
@@ -871,10 +899,14 @@ export class AniccaSessionManager {
       }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
-      // 発話が止まったら10秒カウント開始
-      if (this.mode === 'conversation') {
-        this.lastAgentEndAt = Date.now();
-        this.startAutoExitCountdown();
+      // 起床中は即連鎖。非wakeは通常の無応答タイマー開始（AUTO_EXIT_IDLE_MS）
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        try { (this.session as any)?.transport?.sendEvent?.({ type: 'response.create' }); } catch {}
+      } else {
+        if (this.mode === 'conversation') {
+          this.lastAgentEndAt = Date.now();
+          this.startAutoExitCountdown();
+        }
       }
     });
 
@@ -1175,7 +1207,13 @@ export class AniccaSessionManager {
         if (this.mode !== 'conversation') return;
         // RealtimeItemとの整合: ユーザー発話のみで判定
         const isUser = (item?.type === 'message' && item?.role === 'user');
-        if (isUser) this.noteUserActivity();
+        if (isUser) {
+          this.noteUserActivity();
+          // 起床中はユーザーが返答した瞬間に連鎖を終了
+          if (this.stickyTask === 'wake_up' && this.wakeActive) {
+            this.clearWakeSticky('user_message');
+          }
+        }
       } catch { /* noop */ }
     });
   }

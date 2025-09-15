@@ -28,7 +28,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "public",
-    "src/agents/__tests__/**"
+    "public"
   ]
 } 

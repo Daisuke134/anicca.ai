@@ -23,11 +23,9 @@ export class AniccaSessionManager {
   private restoredOnce: boolean = false;               // restoreSession 多重実行防止
   // 応答進行・自動送信用
   private isGenerating: boolean = false;
-  private systemOpQueue: Array<{ kind: 'mem'; payload?: any }> = [];
-  // Dynamic Flow 廃止（差分は常に system メッセージで注入）
-  // wake起床タスクの連続発話（sticky）制御
-  private stickyTask: 'wake_up' | null = null;
-  private wakeActive: boolean = false;
+  private systemOpQueue: Array<{ kind: 'mem'|'tz'; payload?: any }> = [];
+  private hasInformedTimezoneThisSession: boolean = false;
+  private lastInformedTimezone: string | null = null;
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
@@ -72,7 +70,12 @@ export class AniccaSessionManager {
   }
   
   // ======= 自動送信（mem/TZ）: キュー運用 + 応答を起動しない送信 =======
-  private enqueueSystemOp(op: {kind:'mem'; payload?: any}) {
+  private enqueueSystemOp(op: {kind:'mem'|'tz'; payload?: any}) {
+    if (op.kind === 'tz') {
+      const tz = this.userTimezone || null;
+      if (!tz) return; // TZが無いなら送らない
+      if (this.hasInformedTimezoneThisSession && this.lastInformedTimezone === tz) return;
+    }
     this.systemOpQueue.push(op);
     console.log('[SYSOP_ENQUEUE]', op.kind);
   }
@@ -85,26 +88,13 @@ export class AniccaSessionManager {
       try {
         if (op.kind === 'mem') {
           await this.sendMemoriesSilently();
+        } else if (op.kind === 'tz') {
+          await this.sendTimezoneSilently();
         }
       } catch (e) {
         console.warn('[SYSOP_FAIL]', op.kind, e);
       }
     }
-  }
-
-  // ベースプロンプトにトークンを埋め込み（差分指示は使用しない）
-  private renderInstructions(opts: { timezone?: string | null; userName?: string | null }): string {
-    const { BASE_PROMPT } = require('./mainAgent');
-    const tz = (opts.timezone || '') as string;
-    const name = (opts.userName || '') as string;
-    const locale = (Intl.DateTimeFormat().resolvedOptions().locale || '').toLowerCase();
-    const lang = locale.startsWith('ja') ? 'Japanese' : 'English';
-    return String(BASE_PROMPT)
-      .replace(/\{\{TIMEZONE\}\}/g, tz)
-      // Dynamic Flow 廃止: TASK_DIRECTIVES は常に空で置換
-      .replace(/\{\{TASK_DIRECTIVES\}\}/g, '')
-      .replace(/\{\{USER_NAME\}\}/g, name)
-      .replace(/\{\{PREFERRED_LANGUAGE\}\}/g, lang);
   }
 
   private async sendMemoriesSilently() {
@@ -123,7 +113,19 @@ export class AniccaSessionManager {
     }
   }
 
-  // sendTimezoneSilently: 廃止（timezoneは prompt.variables で管理）
+  private async sendTimezoneSilently() {
+    const tz = this.userTimezone || null;
+    if (!tz) return;
+    try {
+      const msg = `System: User timezone is ${tz}. Use this timezone in calendar/tool calls.`;
+      (this.session as any)?.transport?.sendMessage?.(msg, {}, { triggerResponse: false });
+      this.hasInformedTimezoneThisSession = true;
+      this.lastInformedTimezone = tz;
+      console.log('[TZ_INFO_SENT]', { once: true, changed: true, triggerResponse: false });
+    } catch (e) {
+      console.warn('sendTimezoneSilently failed:', e);
+    }
+  }
 
   // --- 健全性ユーティリティ ---
   private tokenTTLSeconds(): number {
@@ -504,18 +506,12 @@ export class AniccaSessionManager {
     });
 
     // 1-1. ユーザーのタイムゾーンを受け取る（setupRoutes内に配置）
-    this.app.post('/user/timezone', async (req, res) => {
+    this.app.post('/user/timezone', (req, res) => {
       try {
         const tz = String(req.body?.timezone ?? '');
         if (tz && tz.length >= 3) {
           this.userTimezone = tz;
           console.log('🌐 User timezone set:', tz);
-          // instructions を差し替え（Dynamic Flow）
-          try {
-            const instructions = this.renderInstructions({ timezone: tz });
-            await this.session?.transport?.updateSessionConfig({ instructions });
-            console.log('[INSTRUCTIONS_APPLIED] after timezone set');
-          } catch (e) { console.warn('Failed to update instructions after timezone set:', e); }
         }
         res.json({ ok: true, timezone: this.userTimezone });
       } catch (e: any) {
@@ -562,8 +558,12 @@ export class AniccaSessionManager {
           
           if (message.type === 'scheduled_task') {
             // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
-            // 接続保証（1回のみ）。二重ensureは行わない
             await this.ensureConnected(true);
+            // 直後に未接続なら、短期待機して一度だけ再試行（READY直前のゆらぎ吸収）
+            if (!this.isConnected()) {
+              await new Promise(r => setTimeout(r, 800));
+              await this.ensureConnected(true);
+            }
             console.log('📅 Scheduled task received:', message.command);
 
             // 念のため直前の出力を再チェック
@@ -577,28 +577,27 @@ export class AniccaSessionManager {
             // PTT: Cron開始時は会話モードへ
             try { await this.setMode('conversation', 'cron'); } catch {}
 
-            // 差分は“systemメッセージ”として会話に注入（ベースは再送しない）
-            try {
-              const directives = String(message.command || '');
-              // systemメッセージ追加（応答はまだ起こさない）
-              this.session?.transport?.sendEvent?.({
-                type: 'conversation.item.create',
-                item: {
-                  type: 'message',
-                  role: 'system',
-                  content: [{ type: 'input_text', text: directives }]
-                }
-              });
-              // wake_up の場合は初回レスポンス前に sticky を有効化（レース回避）
-              const t = String(message.taskType || message.taskId || '').toLowerCase();
-              if (t.startsWith('wake_up')) { this.stickyTask = 'wake_up'; this.wakeActive = true; }
-              // 直後に第一声を必ず開始
-              this.session?.transport?.sendEvent?.({ type: 'response.create' });
-              ws.send(JSON.stringify({ type: 'scheduled_task_accepted', message: '差分指示を適用しました' }));
-            } catch (e) {
-              console.error('❌ Failed to inject directives:', e);
-              ws.send(JSON.stringify({ type: 'error', message: 'Failed to inject directives' }));
+            // メッセージ送信（共通）
+            if (this.session && this.isConnected()) {
+              // 念のため直前の出力を再チェック
+              await interruptIfGenerating(100);
+              await this.sendMessage(message.command);
+              console.log('✅ Task sent to Anicca');
+              
+              // タスク受付の応答
+              ws.send(JSON.stringify({
+                type: 'scheduled_task_accepted',
+                message: 'タスクを受け付けました'
+              }));
+            } else {
+              console.error('❌ Session not connected, cannot execute scheduled task');
+              ws.send(JSON.stringify({
+                type: 'error',
+                message: 'Session not connected'
+              }));
             }
+
+            // 起床タスクも他の定期タスクと同様に“一発発火”のみ（ループは撤廃）
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -688,22 +687,11 @@ export class AniccaSessionManager {
     this.clearAutoExitTimer();
   }
 
-  // 起床タスクの粘着モードを明示的に解除
-  private clearWakeSticky(reason: string) {
-    try {
-      if (this.stickyTask === 'wake_up' && this.wakeActive) {
-        this.wakeActive = false;
-        this.stickyTask = null;
-        console.log('[WAKE_STICKY_CLEAR]', { reason });
-      }
-    } catch {}
-  }
-
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
     // 同じモードなら何もしない（冪等・安定化）
     if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
-    // 会話に上げる時、未接続のときのみ接続保証（CONNECTING競合を避ける）
-    if (newMode === 'conversation' && !this.isConnected()) { await this.ensureConnected(true).catch(() => {}); }
+    // 会話に上げる時だけ接続保証（下げるだけなら不要）
+    if (newMode === 'conversation') { await this.ensureConnected(true).catch(() => {}); }
 
     try {
       if (newMode === 'conversation') {
@@ -798,7 +786,7 @@ export class AniccaSessionManager {
     this.session.on('transport_event', async (event: any) => {
       try {
         this.lastServerEventAt = Date.now();
-          if (event?.type === 'session.created') {
+        if (event?.type === 'session.created') {
           this.ready = true;
           console.log('[READY] session.created');
           if (!this.restoredOnce) {
@@ -809,25 +797,12 @@ export class AniccaSessionManager {
               console.warn('restoreSession after READY failed:', e);
             }
           }
-          // READY後に一度だけ mem を“応答なし”で反映（多重抑止つき）
+          // READY後に一度だけ mem/TZ を“応答なし”で反映（多重抑止つき）
           this.enqueueSystemOp({ kind: 'mem' });
+          this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
-          
-          // モード復元: wake中 or 生成中 or 直前が会話なら conversation を維持
-          try {
-            const wakeSticky = (this.stickyTask === 'wake_up' && this.wakeActive);
-            const wantConversation = wakeSticky || this.isGenerating || this.mode === 'conversation';
-            const desired: 'silent' | 'conversation' = wantConversation ? 'conversation' : 'silent';
-            await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
-          } catch (e) { console.warn('apply mode on READY failed:', e); }
-
-          // ベースプロンプトを instructions として適用（差分は使わない）
-          try {
-            const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-            const instructions = this.renderInstructions({ timezone: tz });
-            await this.session?.transport?.updateSessionConfig({ instructions });
-            console.log('[INSTRUCTIONS_APPLIED] base (on ready)');
-          } catch (e) { console.warn('apply base instructions failed:', e); }
+          // 既定は沈黙モード
+          try { await this.setMode('silent', 'startup'); } catch {}
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {
@@ -855,7 +830,6 @@ export class AniccaSessionManager {
       // 公式イベントに一本化
       this.broadcast({ type: 'agent_end' });
       this.flushSystemOpsIfIdle();
-      // Dynamic Flow のクリア処理は廃止（差分は常に system メッセージのみ）
       // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });
 
@@ -897,15 +871,10 @@ export class AniccaSessionManager {
       }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
-      if (this.stickyTask === 'wake_up' && this.wakeActive) {
-        // wake中は差分クリアせず、即再開。オートエグジットもしない。
-        try { this.session?.transport?.sendEvent?.({ type: 'response.create' }); } catch {}
-      } else {
-        // 非wake：クリア処理は不要（差分はsystemのみ）
-        if (this.mode === 'conversation') {
-          this.lastAgentEndAt = Date.now();
-          this.startAutoExitCountdown();
-        }
+      // 発話が止まったら10秒カウント開始
+      if (this.mode === 'conversation') {
+        this.lastAgentEndAt = Date.now();
+        this.startAutoExitCountdown();
       }
     });
 
@@ -919,10 +888,6 @@ export class AniccaSessionManager {
       
       console.log('⚠️ Audio interrupted');
       this.broadcast({ type: 'audio_interrupted' });
-      // 起床中は割り込み＝ユーザー発話開始の可能性が高い → 早期に連鎖を終了
-      if (this.stickyTask === 'wake_up' && this.wakeActive) {
-        this.clearWakeSticky('audio_interrupted');
-      }
     });
 
     // WebSocket切断/エラー検知（transport層）
@@ -1210,13 +1175,7 @@ export class AniccaSessionManager {
         if (this.mode !== 'conversation') return;
         // RealtimeItemとの整合: ユーザー発話のみで判定
         const isUser = (item?.type === 'message' && item?.role === 'user');
-        if (isUser) {
-          this.noteUserActivity();
-          // 起床中はユーザーが話した瞬間に連鎖を終了
-          if (this.stickyTask === 'wake_up' && this.wakeActive) {
-            this.clearWakeSticky('user_message');
-          }
-        }
+        if (isUser) this.noteUserActivity();
       } catch { /* noop */ }
     });
   }

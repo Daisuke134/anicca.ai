@@ -1,4 +1,4 @@
-import Container from '@/components/base/Container'
+import Section from '@/components/base/Section'
 
 const items = [
   { title: 'Local‑first', text: 'Session and schedules live in ~/.anicca.' },
@@ -11,8 +11,7 @@ const items = [
 
 export default function Privacy() {
   return (
-    <section id="privacy" className="py-16 bg-background">
-      <Container>
+    <Section id="privacy">
         <h2 className="text-3xl font-bold text-center">Privacy‑first by design</h2>
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           {items.map((i) => (
@@ -26,8 +25,7 @@ export default function Privacy() {
           ))}
         </div>
         {/* lock line removed per request */}
-      </Container>
-    </section>
+    </Section>
   )
 }
 

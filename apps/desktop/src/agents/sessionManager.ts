@@ -24,8 +24,7 @@ export class AniccaSessionManager {
   // 応答進行・自動送信用
   private isGenerating: boolean = false;
   private systemOpQueue: Array<{ kind: 'mem'; payload?: any }> = [];
-  // ランタイム差分（Dynamic Flow）
-  private currentTaskDirectives: string = '';
+  // Dynamic Flow 廃止（差分は常に system メッセージで注入）
   // wake起床タスクの連続発話（sticky）制御
   private stickyTask: 'wake_up' | null = null;
   private wakeActive: boolean = false;
@@ -93,17 +92,17 @@ export class AniccaSessionManager {
     }
   }
 
-  // ベースプロンプトにトークンを埋め込み
-  private renderInstructions(opts: { timezone?: string | null; directives?: string | null; userName?: string | null }): string {
+  // ベースプロンプトにトークンを埋め込み（差分指示は使用しない）
+  private renderInstructions(opts: { timezone?: string | null; userName?: string | null }): string {
     const { BASE_PROMPT } = require('./mainAgent');
     const tz = (opts.timezone || '') as string;
-    const dir = (opts.directives || '') as string;
     const name = (opts.userName || '') as string;
     const locale = (Intl.DateTimeFormat().resolvedOptions().locale || '').toLowerCase();
     const lang = locale.startsWith('ja') ? 'Japanese' : 'English';
     return String(BASE_PROMPT)
       .replace(/\{\{TIMEZONE\}\}/g, tz)
-      .replace(/\{\{TASK_DIRECTIVES\}\}/g, dir)
+      // Dynamic Flow 廃止: TASK_DIRECTIVES は常に空で置換
+      .replace(/\{\{TASK_DIRECTIVES\}\}/g, '')
       .replace(/\{\{USER_NAME\}\}/g, name)
       .replace(/\{\{PREFERRED_LANGUAGE\}\}/g, lang);
   }
@@ -513,7 +512,7 @@ export class AniccaSessionManager {
           console.log('🌐 User timezone set:', tz);
           // instructions を差し替え（Dynamic Flow）
           try {
-            const instructions = this.renderInstructions({ timezone: tz, directives: this.currentTaskDirectives });
+            const instructions = this.renderInstructions({ timezone: tz });
             await this.session?.transport?.updateSessionConfig({ instructions });
             console.log('[INSTRUCTIONS_APPLIED] after timezone set');
           } catch (e) { console.warn('Failed to update instructions after timezone set:', e); }
@@ -563,12 +562,8 @@ export class AniccaSessionManager {
           
           if (message.type === 'scheduled_task') {
             // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
+            // 接続保証（1回のみ）。二重ensureは行わない
             await this.ensureConnected(true);
-            // 直後に未接続なら、短期待機して一度だけ再試行（READY直前のゆらぎ吸収）
-            if (!this.isConnected()) {
-              await new Promise(r => setTimeout(r, 800));
-              await this.ensureConnected(true);
-            }
             console.log('📅 Scheduled task received:', message.command);
 
             // 念のため直前の出力を再チェック
@@ -693,20 +688,13 @@ export class AniccaSessionManager {
     this.clearAutoExitTimer();
   }
 
-  // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
+  // 起床タスクの粘着モードを明示的に解除
   private clearWakeSticky(reason: string) {
     try {
       if (this.stickyTask === 'wake_up' && this.wakeActive) {
         this.wakeActive = false;
         this.stickyTask = null;
         console.log('[WAKE_STICKY_CLEAR]', { reason });
-        if (this.currentTaskDirectives) {
-          this.currentTaskDirectives = '';
-          const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-          const instructions = this.renderInstructions({ timezone: tz, directives: '' });
-          this.session?.transport?.updateSessionConfig({ instructions });
-          console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'wake_done' });
-        }
       }
     } catch {}
   }
@@ -714,8 +702,8 @@ export class AniccaSessionManager {
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
     // 同じモードなら何もしない（冪等・安定化）
     if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
-    // 会話に上げる時だけ接続保証（下げるだけなら不要）
-    if (newMode === 'conversation') { await this.ensureConnected(true).catch(() => {}); }
+    // 会話に上げる時、未接続のときのみ接続保証（CONNECTING競合を避ける）
+    if (newMode === 'conversation' && !this.isConnected()) { await this.ensureConnected(true).catch(() => {}); }
 
     try {
       if (newMode === 'conversation') {
@@ -833,10 +821,10 @@ export class AniccaSessionManager {
             await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
           } catch (e) { console.warn('apply mode on READY failed:', e); }
 
-          // ベースプロンプトを instructions として適用（Dynamic Flow: 初期は差分なし）
+          // ベースプロンプトを instructions として適用（差分は使わない）
           try {
             const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-            const instructions = this.renderInstructions({ timezone: tz, directives: this.currentTaskDirectives });
+            const instructions = this.renderInstructions({ timezone: tz });
             await this.session?.transport?.updateSessionConfig({ instructions });
             console.log('[INSTRUCTIONS_APPLIED] base (on ready)');
           } catch (e) { console.warn('apply base instructions failed:', e); }
@@ -867,16 +855,7 @@ export class AniccaSessionManager {
       // 公式イベントに一本化
       this.broadcast({ type: 'agent_end' });
       this.flushSystemOpsIfIdle();
-      // 非wakeのみ、差分をクリア（従来挙動）
-      try {
-        if (!(this.stickyTask === 'wake_up' && this.wakeActive) && this.currentTaskDirectives) {
-          this.currentTaskDirectives = '';
-          const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-          const instructions = this.renderInstructions({ timezone: tz, directives: '' });
-          this.session?.transport?.updateSessionConfig({ instructions });
-          console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'agent_end' });
-        }
-      } catch {}
+      // Dynamic Flow のクリア処理は廃止（差分は常に system メッセージのみ）
       // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });
 
@@ -922,16 +901,7 @@ export class AniccaSessionManager {
         // wake中は差分クリアせず、即再開。オートエグジットもしない。
         try { this.session?.transport?.sendEvent?.({ type: 'response.create' }); } catch {}
       } else {
-        // 非wake：従来のクリア/オートエグジット
-        try {
-          if (this.currentTaskDirectives) {
-            this.currentTaskDirectives = '';
-            const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-            const instructions = this.renderInstructions({ timezone: tz, directives: '' });
-            this.session?.transport?.updateSessionConfig({ instructions });
-            console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'audio_stopped' });
-          }
-        } catch {}
+        // 非wake：クリア処理は不要（差分はsystemのみ）
         if (this.mode === 'conversation') {
           this.lastAgentEndAt = Date.now();
           this.startAutoExitCountdown();

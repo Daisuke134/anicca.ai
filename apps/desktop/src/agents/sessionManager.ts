@@ -693,6 +693,24 @@ export class AniccaSessionManager {
     this.clearAutoExitTimer();
   }
 
+  // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
+  private clearWakeSticky(reason: string) {
+    try {
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        this.wakeActive = false;
+        this.stickyTask = null;
+        console.log('[WAKE_STICKY_CLEAR]', { reason });
+        if (this.currentTaskDirectives) {
+          this.currentTaskDirectives = '';
+          const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+          const instructions = this.renderInstructions({ timezone: tz, directives: '' });
+          this.session?.transport?.updateSessionConfig({ instructions });
+          console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'wake_done' });
+        }
+      }
+    } catch {}
+  }
+
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
     // 同じモードなら何もしない（冪等・安定化）
     if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
@@ -931,6 +949,10 @@ export class AniccaSessionManager {
       
       console.log('⚠️ Audio interrupted');
       this.broadcast({ type: 'audio_interrupted' });
+      // 起床中は割り込み＝ユーザー発話開始の可能性が高い → 早期に連鎖を終了
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        this.clearWakeSticky('audio_interrupted');
+      }
     });
 
     // WebSocket切断/エラー検知（transport層）
@@ -1218,7 +1240,13 @@ export class AniccaSessionManager {
         if (this.mode !== 'conversation') return;
         // RealtimeItemとの整合: ユーザー発話のみで判定
         const isUser = (item?.type === 'message' && item?.role === 'user');
-        if (isUser) this.noteUserActivity();
+        if (isUser) {
+          this.noteUserActivity();
+          // 起床中はユーザーが話した瞬間に連鎖を終了
+          if (this.stickyTask === 'wake_up' && this.wakeActive) {
+            this.clearWakeSticky('user_message');
+          }
+        }
       } catch { /* noop */ }
     });
   }

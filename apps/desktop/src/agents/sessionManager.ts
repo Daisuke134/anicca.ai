@@ -66,6 +66,8 @@ export class AniccaSessionManager {
   // wake起床タスクの連続発話（sticky）制御
   private stickyTask: 'wake_up' | null = null;
   private wakeActive: boolean = false;
+  // wake専用：アシスタントの最初の発話（audio_start）までは解除判定を無効化
+  private stickyReady: boolean = false;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -573,14 +575,18 @@ export class AniccaSessionManager {
               console.log('🧘 慈悲の瞑想モード開始（ElevenLabs読み上げ）');
               // ElevenLabsで処理するため、特別な割り込み防止は不要
             }
-            // PTT: Cron開始時は会話モードへ
-            try { await this.setMode('conversation', 'cron'); } catch {}
-
-            // wake_up の場合は第一声の前に sticky を有効化（レース回避）
+            // wake_up の場合は第一声の前に sticky を先に有効化（ゲートを確実に先出し）
             try {
               const t = String(message.taskType || message.taskId || '').toLowerCase();
-              if (t.startsWith('wake_up')) { this.stickyTask = 'wake_up'; this.wakeActive = true; }
+              if (t.startsWith('wake_up')) {
+                this.stickyTask = 'wake_up';
+                this.wakeActive = true;
+                this.stickyReady = false; // audio_start が来るまで解除不可
+              }
             } catch {}
+
+            // PTT: Cron開始時は会話モードへ（stickyを立てた後）
+            try { await this.setMode('conversation', 'cron'); } catch {}
 
             // メッセージ送信（共通）
             if (this.session && this.isConnected()) {
@@ -698,14 +704,8 @@ export class AniccaSessionManager {
       if (this.stickyTask === 'wake_up' && this.wakeActive) {
         this.wakeActive = false;
         this.stickyTask = null;
+        this.stickyReady = false;
         console.log('[WAKE_STICKY_CLEAR]', { reason });
-        if (this.currentTaskDirectives) {
-          this.currentTaskDirectives = '';
-          const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
-          const instructions = this.renderInstructions({ timezone: tz, directives: '' });
-          (this.session as any)?.transport?.updateSessionConfig?.({ instructions });
-          console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'wake_done' });
-        }
       }
     } catch {}
   }
@@ -885,6 +885,10 @@ export class AniccaSessionManager {
       if (this.isElevenLabsPlaying) {
         console.log('🔇 Ignoring Anicca audio_start during ElevenLabs playback');
         return;
+      }
+      // wake中は最初の発話が始まった時点で解除ゲートを開く
+      if (this.stickyTask === 'wake_up' && this.wakeActive && !this.stickyReady) {
+        this.stickyReady = true;
       }
       console.log('🔊 Agent started speaking');
       this.broadcast({ type: 'audio_start' });
@@ -1204,13 +1208,17 @@ export class AniccaSessionManager {
     // 追加：増分1件でユーザー活動を即検知（軽量・確実）
     this.session.on('history_added', (item: any) => {
       try {
-        if (this.mode !== 'conversation') return;
+        // wake中はモードに関係なく、audio_start前の'user'は無視する
+        if (this.stickyTask !== 'wake_up' || !this.wakeActive) {
+          if (this.mode !== 'conversation') return;
+        }
         // RealtimeItemとの整合: ユーザー発話のみで判定
         const isUser = (item?.type === 'message' && item?.role === 'user');
         if (isUser) {
           this.noteUserActivity();
-          // 起床中はユーザーが返答した瞬間に連鎖を終了
           if (this.stickyTask === 'wake_up' && this.wakeActive) {
+            // audio_start でゲートが開くまでは解除しない
+            if (!this.stickyReady) return;
             this.clearWakeSticky('user_message');
           }
         }

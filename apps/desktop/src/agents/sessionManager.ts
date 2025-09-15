@@ -24,8 +24,11 @@ export class AniccaSessionManager {
   // 応答進行・自動送信用
   private isGenerating: boolean = false;
   private systemOpQueue: Array<{ kind: 'mem'; payload?: any }> = [];
-  // 保存プロンプト適用済みフラグ（多重防止）
-  private basePromptApplied: boolean = false;
+  // ランタイム差分（Dynamic Flow）
+  private currentTaskDirectives: string = '';
+  // wake起床タスクの連続発話（sticky）制御
+  private stickyTask: 'wake_up' | null = null;
+  private wakeActive: boolean = false;
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
@@ -90,27 +93,19 @@ export class AniccaSessionManager {
     }
   }
 
-  // 一度だけ保存プロンプト（Anicca Base）を適用
-  private async applyBasePromptOnce() {
-    if (this.basePromptApplied || !this.session?.transport) return;
-    try {
-      const locale = Intl.DateTimeFormat().resolvedOptions().locale || 'en';
-      const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || 'UTC');
-      const variables: any = {
-        preferred_language: { type: 'input_text', text: locale },
-        timezone: { type: 'input_text', text: tz }
-      };
-      await this.session.transport.updateSessionConfig({
-        prompt: {
-          promptId: 'pmpt_68c56db87b3881909a53f4bf16ab1067052b61f109111e63',
-          variables
-        }
-      });
-      this.basePromptApplied = true;
-      console.log('[PROMPT_APPLIED] Anicca Base with variables');
-    } catch (e) {
-      console.warn('applyBasePromptOnce failed:', e);
-    }
+  // ベースプロンプトにトークンを埋め込み
+  private renderInstructions(opts: { timezone?: string | null; directives?: string | null; userName?: string | null }): string {
+    const { BASE_PROMPT } = require('./mainAgent');
+    const tz = (opts.timezone || '') as string;
+    const dir = (opts.directives || '') as string;
+    const name = (opts.userName || '') as string;
+    const locale = (Intl.DateTimeFormat().resolvedOptions().locale || '').toLowerCase();
+    const lang = locale.startsWith('ja') ? 'Japanese' : 'English';
+    return String(BASE_PROMPT)
+      .replace(/\{\{TIMEZONE\}\}/g, tz)
+      .replace(/\{\{TASK_DIRECTIVES\}\}/g, dir)
+      .replace(/\{\{USER_NAME\}\}/g, name)
+      .replace(/\{\{PREFERRED_LANGUAGE\}\}/g, lang);
   }
 
   private async sendMemoriesSilently() {
@@ -516,18 +511,12 @@ export class AniccaSessionManager {
         if (tz && tz.length >= 3) {
           this.userTimezone = tz;
           console.log('🌐 User timezone set:', tz);
-          // 保存プロンプトの変数として即時反映（input_text 形式）
+          // instructions を差し替え（Dynamic Flow）
           try {
-            await this.session?.transport?.updateSessionConfig({
-              prompt: {
-                // promptId は初回適用済みのため省略可だが、冪等に入れても問題なし
-                promptId: 'pmpt_68c56db87b3881909a53f4bf16ab1067052b61f109111e63',
-                variables: { timezone: { type: 'input_text', text: tz } }
-              }
-            });
-          } catch (e) {
-            console.warn('Failed to update timezone variable:', e);
-          }
+            const instructions = this.renderInstructions({ timezone: tz, directives: this.currentTaskDirectives });
+            await this.session?.transport?.updateSessionConfig({ instructions });
+            console.log('[INSTRUCTIONS_APPLIED] after timezone set');
+          } catch (e) { console.warn('Failed to update instructions after timezone set:', e); }
         }
         res.json({ ok: true, timezone: this.userTimezone });
       } catch (e: any) {
@@ -593,27 +582,28 @@ export class AniccaSessionManager {
             // PTT: Cron開始時は会話モードへ
             try { await this.setMode('conversation', 'cron'); } catch {}
 
-            // メッセージ送信（共通）
-            if (this.session && this.isConnected()) {
-              // 念のため直前の出力を再チェック
-              await interruptIfGenerating(100);
-              await this.sendMessage(message.command);
-              console.log('✅ Task sent to Anicca');
-              
-              // タスク受付の応答
-              ws.send(JSON.stringify({
-                type: 'scheduled_task_accepted',
-                message: 'タスクを受け付けました'
-              }));
-            } else {
-              console.error('❌ Session not connected, cannot execute scheduled task');
-              ws.send(JSON.stringify({
-                type: 'error',
-                message: 'Session not connected'
-              }));
+            // 差分は“systemメッセージ”として会話に注入（ベースは再送しない）
+            try {
+              const directives = String(message.command || '');
+              // systemメッセージ追加（応答はまだ起こさない）
+              this.session?.transport?.sendEvent?.({
+                type: 'conversation.item.create',
+                item: {
+                  type: 'message',
+                  role: 'system',
+                  content: [{ type: 'input_text', text: directives }]
+                }
+              });
+              // wake_up の場合は初回レスポンス前に sticky を有効化（レース回避）
+              const t = String(message.taskType || message.taskId || '').toLowerCase();
+              if (t.startsWith('wake_up')) { this.stickyTask = 'wake_up'; this.wakeActive = true; }
+              // 直後に第一声を必ず開始
+              this.session?.transport?.sendEvent?.({ type: 'response.create' });
+              ws.send(JSON.stringify({ type: 'scheduled_task_accepted', message: '差分指示を適用しました' }));
+            } catch (e) {
+              console.error('❌ Failed to inject directives:', e);
+              ws.send(JSON.stringify({ type: 'error', message: 'Failed to inject directives' }));
             }
-
-            // 起床タスクも他の定期タスクと同様に“一発発火”のみ（ループは撤廃）
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -813,13 +803,18 @@ export class AniccaSessionManager {
               console.warn('restoreSession after READY failed:', e);
             }
           }
-          // READY後に一度だけ mem/TZ を“応答なし”で反映（多重抑止つき）
+          // READY後に一度だけ mem を“応答なし”で反映（多重抑止つき）
           this.enqueueSystemOp({ kind: 'mem' });
           this.flushSystemOpsIfIdle();
           // 既定は沈黙モード
           try { await this.setMode('silent', 'startup'); } catch {}
-          // 保存プロンプト適用（1回のみ）
-          try { await this.applyBasePromptOnce(); } catch {}
+          // ベースプロンプトを instructions として適用（Dynamic Flow: 初期は差分なし）
+          try {
+            const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+            const instructions = this.renderInstructions({ timezone: tz, directives: this.currentTaskDirectives });
+            await this.session?.transport?.updateSessionConfig({ instructions });
+            console.log('[INSTRUCTIONS_APPLIED] base (on ready)');
+          } catch (e) { console.warn('apply base instructions failed:', e); }
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {
@@ -847,6 +842,16 @@ export class AniccaSessionManager {
       // 公式イベントに一本化
       this.broadcast({ type: 'agent_end' });
       this.flushSystemOpsIfIdle();
+      // 非wakeのみ、差分をクリア（従来挙動）
+      try {
+        if (!(this.stickyTask === 'wake_up' && this.wakeActive) && this.currentTaskDirectives) {
+          this.currentTaskDirectives = '';
+          const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+          const instructions = this.renderInstructions({ timezone: tz, directives: '' });
+          this.session?.transport?.updateSessionConfig({ instructions });
+          console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'agent_end' });
+        }
+      } catch {}
       // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });
 
@@ -888,10 +893,24 @@ export class AniccaSessionManager {
       }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
-      // 発話が止まったら10秒カウント開始
-      if (this.mode === 'conversation') {
-        this.lastAgentEndAt = Date.now();
-        this.startAutoExitCountdown();
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        // wake中は差分クリアせず、即再開。オートエグジットもしない。
+        try { this.session?.transport?.sendEvent?.({ type: 'response.create' }); } catch {}
+      } else {
+        // 非wake：従来のクリア/オートエグジット
+        try {
+          if (this.currentTaskDirectives) {
+            this.currentTaskDirectives = '';
+            const tz = this.userTimezone || (Intl.DateTimeFormat().resolvedOptions().timeZone || '');
+            const instructions = this.renderInstructions({ timezone: tz, directives: '' });
+            this.session?.transport?.updateSessionConfig({ instructions });
+            console.log('[TASK_DIRECTIVES_CLEAR]', { reason: 'audio_stopped' });
+          }
+        } catch {}
+        if (this.mode === 'conversation') {
+          this.lastAgentEndAt = Date.now();
+          this.startAutoExitCountdown();
+        }
       }
     });
 

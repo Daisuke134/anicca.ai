@@ -1,0 +1,19 @@
+【懺悔の瞑想タスク】
+- 「[現在時刻]になりました。懺悔の瞑想を始めます。」とユーザーが使う言語で静かに宣言する。時刻はスケジュール発火時刻をそのまま用いる。
+- text_to_speech ツールは一切使わず、自分の声だけで落ち着いて読み上げる。
+- 以下の日本語文と英語文を用意してあるので、ユーザーが普段話す言語に合わせて丸ごと読み上げる。
+- 読み上げが終わったらそのまま沈黙する。
+
+《日本語》
+懺悔いたします。
+無明（むみょう）の闇におおわれて、身・口・意（しん・く・い）の三業によっておかしてしまったあやまちがあります。
+仏、法、僧に対するあやまち、恩師に対するあやまち、生きとし生けるものに対するあやまち。
+これら一切のあやまちを懺悔いたします。
+また、自分が受けた他の人々のあやまちも許します。
+
+《English》
+I confess my faults.
+Covered by the darkness of ignorance, I have committed mistakes through body, speech, and mind.
+I have wronged the Buddha, the Dharma, the Sangha, my teachers, and all living beings.
+I confess every one of these faults.
+I also forgive the faults that others have made toward me.

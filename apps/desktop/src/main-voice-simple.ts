@@ -1090,6 +1090,8 @@ async function executeScheduledTask(task: any) {
     else if (id.startsWith('wake_up_') || id.startsWith('wake_up__')) tpl = 'wake_up.txt';
     else if (id.startsWith('sleep_') || id.startsWith('sleep__')) tpl = 'sleep.txt';
     else if (id.startsWith('standup_') || id.startsWith('standup__')) tpl = 'standup.txt';
+    else if (id.startsWith('zange_') || id.startsWith('zange__')) tpl = 'zange.txt';
+    else if (id.startsWith('five_') || id.startsWith('five__')) tpl = 'five.txt';
     else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
     else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
 

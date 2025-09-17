@@ -17,7 +17,7 @@ export async function createCheckoutSession({ userId, email }) {
     throw new Error('STRIPE_PRICE_PRO_MONTHLY is not configured');
   }
   const successUrl = requireReturnUrl(BILLING_CONFIG.CHECKOUT_RETURN_URL, 'CHECKOUT_RETURN_URL');
-  const cancelUrl = successUrl; // 単一ページで状態メッセージを表示（LP側で処理）
+  const cancelUrl = requireReturnUrl(BILLING_CONFIG.PORTAL_RETURN_URL, 'PORTAL_RETURN_URL');
 
   const session = await stripe.checkout.sessions.create({
     mode: 'subscription',

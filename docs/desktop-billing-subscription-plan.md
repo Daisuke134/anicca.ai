@@ -48,7 +48,7 @@ Anicca Desktopアプリに月額課金機能（Proプラン：USD 5/月）を導
    - Railway API: `/api/billing/webhook/stripe`
    - 署名検証: `stripe.webhooks.constructEvent`で`STRIPE_WEBHOOK_SECRET`を検証。
 4. **Customer Portal**
-   - URL設定 → `return_url`はDesktop設定画面のディープリンク（例: `anicca://billing/success`）とブラウザ用フォールバック。
+   - URL設定 → Checkout 完了後はランディングの`/billing/success`、キャンセルやポータル遷移後はトップ (`/`) に戻す。
    - Allowed features: 支払い方法更新、請求履歴確認、キャンセル。
 
 ## Proxy/API 実装方針（`apps/api`）
@@ -136,4 +136,4 @@ Anicca Desktopアプリに月額課金機能（Proプラン：USD 5/月）を導
 - Entitlement API (`/api/auth/entitlement`) で `plan`, `status`, `daily_usage_limit`, `daily_usage_remaining` を JWT とレスポンスに封入。Proxy JWT の検証で同情報を参照し、Realtime セッション発行前に残枠を判定。
 - デスクトップは `DesktopAuthService` がプラン状態を保持し、トレイメニューに「現在のプラン」「Upgrade」「Manage Subscription」を表示。402 受信時は通知し、Stripe Hosted Checkout/Portal をブラウザで開く。
 - 新規環境変数: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRODUCT_PRO`, `STRIPE_WEBHOOK_SECRET`, `CHECKOUT_RETURN_URL`, `PORTAL_RETURN_URL`, `PRO_PLAN_MONTHLY_USD`, `FREE_DAILY_LIMIT`。Railway (staging/production) で設定済み。
-- ランディングの戻り先はトップページ（`/`）に統一し、Stripe Checkout/Portal 完了後はトップへリダイレクトする。専用案内ページは不要になった。
+- ランディングの Checkout 完了時は`/billing/success`で完了ステータスを示し、キャンセルや Portal からの復帰はトップページ（`/`）へ戻す。

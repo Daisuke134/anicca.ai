@@ -12,6 +12,9 @@ import googleAuthRouter from './auth/google/index.js';
 import slackAuthRouter from './auth/slack/index.js';
 import entitlementRouter from './auth/entitlement.js';
 
+// Billing
+import billingRouter from './billing/index.js';
+
 // MCP
 import mcpGcalRouter from './mcp/gcal/index.js';
 import mcpElevenLabsRouter from './mcp/elevenlabs.js';
@@ -42,6 +45,8 @@ router.use('/proxy/claude', claudeProxyRouter);
 router.use('/auth/google', googleAuthRouter);
 router.use('/auth/slack', slackAuthRouter);
 router.use('/auth/entitlement', entitlementRouter);
+
+router.use('/billing', billingRouter);
 
 router.use('/mcp/gcal', mcpGcalRouter);
 router.use('/mcp/elevenlabs', mcpElevenLabsRouter);

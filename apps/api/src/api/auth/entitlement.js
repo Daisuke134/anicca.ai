@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { signJwtHs256 } from '../../utils/jwt.js';
+import { getEntitlementState, normalizePlanForResponse } from '../../services/subscriptionStore.js';
 
 const DEFAULT_TTL_SEC = 30 * 60; // 30分
 
@@ -24,22 +25,32 @@ export default async function handler(req, res) {
     }
 
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
-    // Supabaseのaccess_tokenを検証してユーザーを取得
     const { data, error } = await supabase.auth.getUser(supabaseAccessToken);
     if (error || !data?.user) {
       return res.status(401).json({ error: 'Invalid Supabase access token' });
     }
 
     const user = data.user;
-    // 課金導入前は暫定（将来はStripeのサブスク状態で決定）
-    const plan = 'free';
-
+    const entitlementState = await getEntitlementState(user.id);
     const now = Math.floor(Date.now() / 1000);
     const exp = now + DEFAULT_TTL_SEC;
-    const payload = { sub: user.id, email: user.email || null, plan, iat: now, exp };
+    const payload = {
+      sub: user.id,
+      email: user.email || null,
+      plan: entitlementState.plan,
+      status: entitlementState.status,
+      usage_limit: entitlementState.usageLimit,
+      usage_remaining: entitlementState.usageRemaining,
+      iat: now,
+      exp
+    };
     const token = signJwtHs256(payload, proxySecret);
-
-    return res.json({ token, expires_at: exp * 1000 });
+    const response = {
+      token,
+      expires_at: exp * 1000,
+      entitlement: normalizePlanForResponse(entitlementState)
+    };
+    return res.json(response);
   } catch (e) {
     console.error('entitlement error:', e);
     return res.status(500).json({ error: 'Failed to issue entitlement token' });

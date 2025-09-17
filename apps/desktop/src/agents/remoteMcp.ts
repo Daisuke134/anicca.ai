@@ -20,12 +20,25 @@ export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServe
       return null;
     }
     const statusUrl = `${PROXY_URL}/api/mcp/gcal/status`;
-    const token = await getAuthService().getProxyJwt();
+    let token: string | null = null;
+    try {
+      token = await getAuthService().getProxyJwt();
+    } catch (err: any) {
+      if (err?.code === 'PAYMENT_REQUIRED') {
+        console.warn('MCP status check skipped: payment required');
+        return null;
+      }
+      throw err;
+    }
+    if (!token) {
+      console.warn('No proxy token available for MCP status');
+      return null;
+    }
     const statusRes = await fetch(statusUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        ...(token ? { 'Authorization': `Bearer ${token}` } : {})
+        'Authorization': `Bearer ${token}`
       },
       body: JSON.stringify({ userId })
     });
@@ -59,10 +72,22 @@ export async function resolveGoogleCalendarMcp(userId: string): Promise<McpServe
  */
 export async function getGoogleCalendarOAuthUrl(userId: string): Promise<string | null> {
   try {
-    const token = await getAuthService().getProxyJwt();
+    let token: string | null = null;
+    try {
+      token = await getAuthService().getProxyJwt();
+    } catch (err: any) {
+      if (err?.code === 'PAYMENT_REQUIRED') {
+        console.warn('OAuth URL fetch skipped: payment required');
+        return null;
+      }
+      throw err;
+    }
+    if (!token) {
+      return null;
+    }
     const url = `${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`;
     const res = await fetch(url, {
-      headers: token ? { 'Authorization': `Bearer ${token}` } : undefined
+      headers: { 'Authorization': `Bearer ${token}` }
     });
     
     if (!res.ok) {

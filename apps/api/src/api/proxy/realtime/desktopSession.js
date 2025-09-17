@@ -1,22 +1,49 @@
 import logger from '../../../utils/logger.js';
+import requireAuth from '../../../middleware/requireAuth.js';
+import {
+  getEntitlementState,
+  incrementTodayUsage,
+  normalizePlanForResponse,
+  canUseRealtime
+} from '../../../services/subscriptionStore.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   try {
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+
     const openaiApiKey = process.env.OPENAI_API_KEY;
     if (!openaiApiKey) {
       return res.status(500).json({ error: 'OPENAI_API_KEY not configured on proxy' });
     }
 
-    const url = new URL(req.url, `http://${req.headers.host}`);
-    const userId = url.searchParams.get('userId') || 'anon';
-
-    // 直接トークンを取得してセッション構成を作る（/status を呼ばない）
     const WORKSPACE_MCP_URL = process.env.WORKSPACE_MCP_URL;
     if (!WORKSPACE_MCP_URL) {
       return res.status(500).json({ error: 'MCP service not configured' });
     }
+
+    const entitlement = await getEntitlementState(auth.sub);
+    const allowed = canUseRealtime(entitlement.plan, entitlement.usageRemaining);
+    if (!allowed) {
+      return res.status(402).json({
+        error: 'Quota exceeded',
+        message: '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。',
+        entitlement: normalizePlanForResponse(entitlement)
+      });
+    }
+
+    await incrementTodayUsage(auth.sub);
+    const updatedEntitlement = await getEntitlementState(auth.sub);
+
+    const url = new URL(req.url, `http://${req.headers.host}`);
+    const requestedUserId = url.searchParams.get('userId');
+    if (requestedUserId && requestedUserId !== auth.sub) {
+      logger.warn('desktopSession userId mismatch', { requestedUserId, tokenSub: auth.sub });
+    }
+    const userId = auth.sub;
+
     const { refreshAccessTokenIfNeeded } = await import('../../../services/googleTokens.js');
     const authorization = await refreshAccessTokenIfNeeded(userId);
     const connected = !!authorization;
@@ -34,7 +61,6 @@ export default async function handler(req, res) {
           type: 'mcp',
           server_label: 'google_calendar',
           server_url,
-          // server_url方式ではAuthorizationヘッダのみ有効
           headers: authHeader ? { Authorization: authHeader } : undefined,
           require_approval: 'never'
         }] : []
@@ -60,7 +86,8 @@ export default async function handler(req, res) {
       object: 'realtime.session',
       client_secret: { value: clientSecret.value, expires_at: clientSecret.expires_at || 0 },
       model: 'gpt-realtime',
-      voice: 'alloy'
+      voice: 'alloy',
+      entitlement: normalizePlanForResponse(updatedEntitlement)
     });
   } catch (err) {
     logger.error(`desktop-session error: ${err?.message || String(err)}`);

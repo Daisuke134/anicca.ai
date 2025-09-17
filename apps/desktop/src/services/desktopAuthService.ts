@@ -38,6 +38,15 @@ export class DesktopAuthService {
   private refreshInFlight: boolean = false;
   // Supabaseクライアント（公開設定のみ／PKCE）
   private supabase: SupabaseClient | null = null;
+  private entitlement = {
+    plan: 'free',
+    status: 'free',
+    current_period_end: null as string | null,
+    daily_usage_limit: null as number | null,
+    daily_usage_remaining: null as number | null,
+    daily_usage_count: 0
+  };
+  private lastEntitlementFetchedAt: number | null = null;
   
   constructor() {
     // 認証情報の保存パス
@@ -428,6 +437,17 @@ export class DesktopAuthService {
   async signOut(): Promise<void> {
     this.currentUser = null;
     this.currentSession = null;
+    this.proxyJwt = null;
+    this.proxyJwtExpiresAt = null;
+    this.entitlement = {
+      plan: 'free',
+      status: 'free',
+      current_period_end: null,
+      daily_usage_limit: null,
+      daily_usage_remaining: null,
+      daily_usage_count: 0
+    };
+    this.lastEntitlementFetchedAt = null;
     this.clearSavedSession();
     if (this.sessionCheckInterval) {
       clearTimeout(this.sessionCheckInterval);
@@ -456,7 +476,6 @@ export class DesktopAuthService {
    */
   async getProxyJwt(): Promise<string | null> {
     try {
-      // オフラインなら叩かない（静かに降格）
       if (!(await isOnline())) {
         if (shouldLog('getProxyJwt.offline', 30000)) {
           console.log('📶 オフライン検出 - Proxy JWT発行をスキップ');
@@ -475,22 +494,63 @@ export class DesktopAuthService {
         },
         body: JSON.stringify({})
       });
+      if (resp.status === 402) {
+        const data = await resp.json().catch(() => ({}));
+        this.updateEntitlement(data?.entitlement);
+        const err: any = new Error(data?.message || 'Quota exceeded');
+        err.code = 'PAYMENT_REQUIRED';
+        err.entitlement = this.getPlanInfo();
+        throw err;
+      }
       if (!resp.ok) {
         console.warn('Entitlement HTTP error:', resp.status);
         return null;
       }
       const data = await resp.json();
       if (!data?.token || !data?.expires_at) return null;
+      if (data?.entitlement) {
+        this.updateEntitlement(data.entitlement);
+      }
       this.proxyJwt = data.token;
       this.proxyJwtExpiresAt = Number(data.expires_at);
+      this.lastEntitlementFetchedAt = Date.now();
       console.log('🎫 Proxy JWT issued (short‑lived)');
       return this.proxyJwt;
     } catch (e: any) {
       if (shouldLog('getProxyJwt.error', 30000)) {
         console.warn('getProxyJwt error:', e?.message || e);
       }
-      return null;
+      throw e;
     }
+  }
+
+  private updateEntitlement(info?: any) {
+    if (!info) {
+      return;
+    }
+    this.entitlement = {
+      plan: info.plan || 'free',
+      status: info.status || info.plan || 'free',
+      current_period_end: info.current_period_end ?? null,
+      daily_usage_limit: typeof info.daily_usage_limit === 'number' ? info.daily_usage_limit : null,
+      daily_usage_remaining: typeof info.daily_usage_remaining === 'number' ? info.daily_usage_remaining : null,
+      daily_usage_count: typeof info.daily_usage_count === 'number' ? info.daily_usage_count : 0
+    };
+    this.lastEntitlementFetchedAt = Date.now();
+  }
+
+  getPlanInfo() {
+    return {
+      ...this.entitlement,
+      fetched_at: this.lastEntitlementFetchedAt
+    };
+  }
+
+  async refreshPlan() {
+    this.proxyJwt = null;
+    this.proxyJwtExpiresAt = null;
+    await this.getProxyJwt().catch(() => null);
+    return this.getPlanInfo();
   }
 }
 

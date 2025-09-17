@@ -10,3 +10,8 @@
   from = "/api/*"
   to = "https://anicca-proxy-production.up.railway.app/api/:splat"
   status = 200
+
+[[redirects]]
+  from = "/billing/manage"
+  to = "/"
+  status = 301

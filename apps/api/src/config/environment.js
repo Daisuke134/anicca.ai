@@ -48,6 +48,8 @@ export const API_KEYS = {
 
 const monthlyUsdRaw = process.env.PRO_PLAN_MONTHLY_USD || '';
 const monthlyUsdParsed = Number.parseFloat(monthlyUsdRaw);
+const proDailyLimitRaw = process.env.PRO_DAILY_LIMIT || '';
+const proDailyLimitParsed = Number.parseInt(proDailyLimitRaw, 10);
 const freeDailyLimitRaw = process.env.FREE_DAILY_LIMIT || '';
 const freeDailyLimitParsed = Number.parseInt(freeDailyLimitRaw, 10);
 
@@ -60,7 +62,8 @@ export const BILLING_CONFIG = {
   CHECKOUT_RETURN_URL: process.env.CHECKOUT_RETURN_URL || '',
   PORTAL_RETURN_URL: process.env.PORTAL_RETURN_URL || '',
   PRO_PLAN_MONTHLY_USD: Number.isFinite(monthlyUsdParsed) ? monthlyUsdParsed : null,
-  FREE_DAILY_LIMIT: Number.isFinite(freeDailyLimitParsed) ? freeDailyLimitParsed : null
+  FREE_DAILY_LIMIT: Number.isFinite(freeDailyLimitParsed) ? freeDailyLimitParsed : null,
+  PRO_DAILY_LIMIT: Number.isFinite(proDailyLimitParsed) ? proDailyLimitParsed : null
 };
 
 // ディレクトリ設定
@@ -125,8 +128,11 @@ export function validateEnvironment() {
     }
   }
 
-  if (BILLING_CONFIG.FREE_DAILY_LIMIT === null) {
+  if (process.env.FREE_DAILY_LIMIT && BILLING_CONFIG.FREE_DAILY_LIMIT === null) {
     warnings.push('FREE_DAILY_LIMIT is not a valid integer');
+  }
+  if (process.env.PRO_DAILY_LIMIT && BILLING_CONFIG.PRO_DAILY_LIMIT === null) {
+    warnings.push('PRO_DAILY_LIMIT is not a valid integer');
   }
   if (BILLING_CONFIG.PRO_PLAN_MONTHLY_USD === null) {
     warnings.push('PRO_PLAN_MONTHLY_USD is not a valid number');
@@ -145,6 +151,7 @@ export function logEnvironment() {
   console.log(`  - Server: ${SERVER_CONFIG.IS_RAILWAY ? 'Railway' : SERVER_CONFIG.IS_VERCEL ? 'Vercel' : 'Local'}`);
   console.log(`  - Stripe price: ${BILLING_CONFIG.STRIPE_PRICE_PRO_MONTHLY || 'unset'}`);
   console.log(`  - Free daily limit: ${BILLING_CONFIG.FREE_DAILY_LIMIT ?? 'unset'}`);
+  console.log(`  - Pro daily limit: ${BILLING_CONFIG.PRO_DAILY_LIMIT ?? 'default(1000)'}`);
   
   const warnings = validateEnvironment();
   if (warnings.length > 0) {

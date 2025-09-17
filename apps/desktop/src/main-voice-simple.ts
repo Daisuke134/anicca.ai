@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell, MenuItemConstructorOptions } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -828,11 +828,14 @@ function updateTrayMenu() {
     ? `残り ${planInfo?.daily_usage_remaining ?? 0}/${planInfo.daily_usage_limit}`
     : '制限なし';
 
-  const billingItems = [{
-    label: 'Upgrade to Anicca Pro ($5/月)',
-    enabled: isAuthenticated,
-    click: async () => { await openBillingCheckout(); }
-  }];
+  const billingItems: MenuItemConstructorOptions[] = [];
+  if (planKey !== 'pro') {
+    billingItems.push({
+      label: 'Upgrade to Anicca Pro ($5/月)',
+      enabled: isAuthenticated,
+      click: async () => { await openBillingCheckout(); }
+    });
+  }
   if (isAuthenticated) {
     billingItems.push({
       label: 'Manage Subscription',

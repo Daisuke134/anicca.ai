@@ -42,9 +42,11 @@ async function syncSubscriptionById(userId, customerId, subscriptionId) {
 async function handleSubscriptionObject(event, object) {
   const userId = await resolveUserId(object);
   if (!userId) return;
-  const customerId = object.customer;
+  const customerId = object?.customer;
   if (!customerId) return;
-  await updateSubscriptionFromStripe(userId, customerId, object);
+  const subscriptionId = object?.id;
+  if (!subscriptionId) return;
+  await syncSubscriptionById(userId, customerId, subscriptionId);
 }
 
 async function handleCheckoutSession(event, session) {

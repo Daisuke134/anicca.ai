@@ -136,4 +136,4 @@ Anicca Desktopアプリに月額課金機能（Proプラン：USD 5/月）を導
 - Entitlement API (`/api/auth/entitlement`) で `plan`, `status`, `daily_usage_limit`, `daily_usage_remaining` を JWT とレスポンスに封入。Proxy JWT の検証で同情報を参照し、Realtime セッション発行前に残枠を判定。
 - デスクトップは `DesktopAuthService` がプラン状態を保持し、トレイメニューに「現在のプラン」「Upgrade」「Manage Subscription」を表示。402 受信時は通知し、Stripe Hosted Checkout/Portal をブラウザで開く。
 - 新規環境変数: `STRIPE_SECRET_KEY`, `STRIPE_PRICE_PRO_MONTHLY`, `STRIPE_PRODUCT_PRO`, `STRIPE_WEBHOOK_SECRET`, `CHECKOUT_RETURN_URL`, `PORTAL_RETURN_URL`, `PRO_PLAN_MONTHLY_USD`, `FREE_DAILY_LIMIT`。Railway (staging/production) で設定済み。
-- ランディング (`apps/landing/billing/*`) に Checkout/Portal 戻り先の案内ページを追加。Netlify デプロイ時に自動で公開される。
+- ランディングの戻り先はトップページ（`/`）に統一し、Stripe Checkout/Portal 完了後はトップへリダイレクトする。専用案内ページは不要になった。

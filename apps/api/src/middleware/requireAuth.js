@@ -29,8 +29,16 @@ export default async function requireAuth(req, res) {
     }
     const decoded = verifyJwtHs256(token, secret);
     const sub = decoded?.sub || decoded?.uid || decoded?.user_id || decoded?.email || null;
+    if (!sub) {
+      res.status(401).json({ error: 'Token missing subject' });
+      return null;
+    }
     const email = decoded?.email || null;
-    return { sub, email, raw: decoded };
+    const plan = decoded?.plan || 'free';
+    const status = decoded?.status || 'free';
+    const usageLimit = Number.isFinite(decoded?.usage_limit) ? decoded.usage_limit : null;
+    const usageRemaining = Number.isFinite(decoded?.usage_remaining) ? decoded.usage_remaining : null;
+    return { sub, email, plan, status, usageLimit, usageRemaining, raw: decoded };
   } catch (e) {
     console.warn('JWT verification failed:', e?.message || String(e));
     res.status(401).json({ error: 'Invalid token' });

@@ -1,6 +1,7 @@
 import { RealtimeSession, OpenAIRealtimeWebSocket } from '@openai/agents/realtime';
 import { createAniccaAgent } from './mainAgent';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
+import { getAuthService } from '../services/desktopAuthService';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -173,7 +174,14 @@ export class AniccaSessionManager {
       const url = this.currentUserId
         ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
         : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-      const resp = await fetch(url);
+      const authService = getAuthService();
+      const proxyJwt = await authService.getProxyJwt();
+      if (!proxyJwt) throw new Error('missing proxy jwt');
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${proxyJwt}` } });
+      if (resp.status === 402) {
+        const payload = await resp.json().catch(() => ({ message: 'payment required' }));
+        throw new Error(`desktop-session quota exceeded: ${payload?.message || 'payment required'}`);
+      }
       if (!resp.ok) throw new Error(`desktop-session failed: ${resp.status}`);
       const data = await resp.json();
       const key = data?.client_secret?.value;
@@ -223,7 +231,7 @@ export class AniccaSessionManager {
               type: 'semantic_vad',
               createResponse: true,
               interruptResponse: true,
-              eagerness: 'auto'
+              eagerness: 'low'
             }
           },
           output: {
@@ -309,9 +317,39 @@ export class AniccaSessionManager {
         const sessionUrl = userId
           ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
           : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-        const response = await fetch(sessionUrl);
+        const authService = getAuthService();
+        let proxyJwt: string | null = null;
+        try {
+          proxyJwt = await authService.getProxyJwt();
+        } catch (err: any) {
+          if (err?.code === 'PAYMENT_REQUIRED') {
+            res.status(402).json({
+              error: 'Quota exceeded',
+              message: err?.message,
+              entitlement: err?.entitlement || authService.getPlanInfo()
+            });
+            return;
+          }
+          throw err;
+        }
+        if (!proxyJwt) {
+          res.status(401).json({ error: 'Not authenticated' });
+          return;
+        }
+        const response = await fetch(sessionUrl, {
+          headers: { Authorization: `Bearer ${proxyJwt}` }
+        });
+        if (response.status === 402) {
+          const payload = await response.json().catch(() => ({ error: 'Quota exceeded' }));
+          res.status(402).json(payload);
+          return;
+        }
+        if (!response.ok) {
+          const text = await response.text();
+          res.status(response.status).json({ error: 'Failed to get session', detail: text });
+          return;
+        }
         const data = await response.json();
-        
         res.json(data);
       } catch (error) {
         console.error('Session error:', error);
@@ -372,7 +410,14 @@ export class AniccaSessionManager {
             const sessionUrl = this.currentUserId
               ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
               : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-            const resp = await fetch(sessionUrl);
+            const authService = getAuthService();
+            const proxyJwt = await authService.getProxyJwt();
+            if (!proxyJwt) throw new Error('Missing proxy entitlement after OAuth');
+            const resp = await fetch(sessionUrl, { headers: { Authorization: `Bearer ${proxyJwt}` } });
+            if (resp.status === 402) {
+              const payload = await resp.json().catch(() => ({ message: 'Quota exceeded' }));
+              throw new Error(`Quota exceeded after OAuth: ${payload?.message || 'payment required'}`);
+            }
             if (!resp.ok) throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
             const data = await resp.json();
             const apiKey = data?.client_secret?.value;
@@ -726,7 +771,7 @@ export class AniccaSessionManager {
                 type: 'semantic_vad',
                 createResponse: true,
                 interruptResponse: true,
-                eagerness: 'auto'
+                eagerness: 'low'
               }
         }
       }

@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -36,6 +36,7 @@ let isListening = false;
 let authService: DesktopAuthService | null = null;
 let powerSaveBlockerId: number | null = null;
 let updateCheckIntervalId: NodeJS.Timeout | null = null;
+let planRefreshIntervalId: NodeJS.Timeout | null = null;
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -69,7 +70,12 @@ async function initializeApp() {
     authService = getAuthService();
     await authService.initialize();
     console.log('✅ Auth service initialized');
-    
+
+    await authService.refreshPlan().catch(() => null);
+    startPlanRefreshInterval();
+    updateTrayMenu();
+    startPlanRefreshInterval();
+
     // 認証状態をチェック
     if (!authService.isAuthenticated()) {
       console.log('⚠️ User not authenticated');
@@ -87,6 +93,7 @@ async function initializeApp() {
       // authServiceを更新
       if (authService) {
         await authService.initialize();
+        await authService.refreshPlan().catch(() => null);
       }
       
       // sessionManagerにユーザーIDを設定
@@ -148,17 +155,37 @@ async function initializeApp() {
       const sessionUrl = userId 
         ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
         : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-      const response = await fetch(sessionUrl);
-
-      if (response.ok) {
-        const data = await response.json();
-        const apiKey = data.client_secret?.value;
-        if (apiKey) {
-          await sessionManager.connect(apiKey);
-          console.log('✅ AniccaSessionManager connected with SDK');
+      let proxyJwt: string | null = null;
+      try {
+        proxyJwt = await authService.getProxyJwt();
+        updateTrayMenu();
+      } catch (err: any) {
+        if (err?.code === 'PAYMENT_REQUIRED') {
+          notifyQuotaExceeded(err?.message, err?.entitlement);
+        } else {
+          throw err;
         }
+      }
+      if (!proxyJwt) {
+        console.warn('⚠️ Proxy JWT not available, skipping realtime session bootstrap');
       } else {
-        console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
+        const response = await fetch(sessionUrl, {
+          headers: { Authorization: `Bearer ${proxyJwt}` }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const apiKey = data.client_secret?.value;
+          if (apiKey) {
+            await sessionManager.connect(apiKey);
+            console.log('✅ AniccaSessionManager connected with SDK');
+          }
+        } else if (response.status === 402) {
+          const payload = await response.json().catch(() => ({}));
+          notifyQuotaExceeded(payload?.message, payload?.entitlement);
+        } else {
+          console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
+        }
       }
     } catch (error) {
       console.error('❌ Failed to initialize SDK:', error);
@@ -236,7 +263,14 @@ async function initializeApp() {
         try { await authService.refreshSession(); } catch (e) {
           console.warn('Auth refresh on resume failed:', (e as any)?.message || e);
         }
-        try { await authService.getProxyJwt(); } catch { /* noop */ }
+        try {
+          await authService.getProxyJwt();
+          updateTrayMenu();
+        } catch (err: any) {
+          if (err?.code === 'PAYMENT_REQUIRED') {
+            notifyQuotaExceeded(err?.message, err?.entitlement);
+          }
+        }
       }
       // Realtime接続の即保証（少し遅延）
       setTimeout(() => {
@@ -787,10 +821,33 @@ function createSystemTray() {
 function updateTrayMenu() {
   const userName = authService?.isAuthenticated() ? authService.getCurrentUserName() : 'ゲスト';
   const isAuthenticated = authService?.isAuthenticated() || false;
-  
+  const planInfo = authService?.getPlanInfo();
+  const planKey = planInfo?.plan || 'free';
+  const planLabel = planKey === 'pro' ? 'Pro' : (planKey === 'grace' ? 'Grace' : 'Free');
+  const usageLabel = planInfo?.daily_usage_limit
+    ? `残り ${planInfo?.daily_usage_remaining ?? 0}/${planInfo.daily_usage_limit}`
+    : '制限なし';
+
+  const billingItems = [{
+    label: 'Upgrade to Anicca Pro ($5/月)',
+    enabled: isAuthenticated,
+    click: async () => { await openBillingCheckout(); }
+  }];
+  if (isAuthenticated) {
+    billingItems.push({
+      label: 'Manage Subscription',
+      enabled: planKey !== 'free',
+      click: async () => { await openBillingPortal(); }
+    });
+  }
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `👤 ${userName}`,
+      enabled: false
+    },
+    {
+      label: `⭐ 現在のプラン: ${planLabel}` + (planInfo?.daily_usage_limit ? ` (${usageLabel})` : ''),
       enabled: false
     },
     { type: 'separator' },
@@ -799,7 +856,6 @@ function updateTrayMenu() {
       click: async () => {
         const { shell } = require('electron');
         try {
-          // authServiceのメソッドを使用してOAuth URLを取得
           if (authService) {
             const oauthUrl = await authService.getGoogleOAuthUrl();
             shell.openExternal(oauthUrl);
@@ -820,17 +876,21 @@ function updateTrayMenu() {
           const userName = authService.getCurrentUserName();
           await authService.signOut();
           showNotification('ログアウト', `${userName}さん、さようなら`);
-          
-          // トレイメニューを更新
+
+          if (planRefreshIntervalId) {
+            clearInterval(planRefreshIntervalId);
+            planRefreshIntervalId = null;
+          }
           updateTrayMenu();
-          
-          // SessionManagerのユーザーIDをリセット
+
           if (sessionManager) {
             sessionManager.setCurrentUserId('desktop-user');
           }
         }
       }
     }] : []),
+    { type: 'separator' },
+    ...billingItems,
     { type: 'separator' },
     {
       label: 'Toggle Developer Tools',
@@ -864,6 +924,110 @@ function showNotification(title: string, body: string) {
   new Notification({ title, body }).show();
 }
 
+function startPlanRefreshInterval() {
+  if (planRefreshIntervalId) {
+    clearInterval(planRefreshIntervalId);
+    planRefreshIntervalId = null;
+  }
+  if (!authService) return;
+  planRefreshIntervalId = setInterval(async () => {
+    if (!authService || !authService.isAuthenticated()) return;
+    try {
+      await authService.refreshPlan();
+      updateTrayMenu();
+    } catch (err: any) {
+      console.warn('Plan refresh interval failed:', err?.message || err);
+    }
+  }, 10 * 60 * 1000);
+}
+
+let lastQuotaNotifiedAt = 0;
+
+function notifyQuotaExceeded(message?: string, entitlement?: any) {
+  const now = Date.now();
+  if (now - lastQuotaNotifiedAt < 60000) return;
+  lastQuotaNotifiedAt = now;
+  const body = message || '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。';
+  showNotification('利用上限に達しました', body);
+  if (authService) {
+    authService.refreshPlan().catch(() => null).finally(() => updateTrayMenu());
+  } else {
+    updateTrayMenu();
+  }
+}
+
+async function requestBillingUrl(kind: 'checkout' | 'portal') {
+  if (!authService) throw new Error('Auth service not initialized');
+  const endpoint = kind === 'checkout'
+    ? API_ENDPOINTS.BILLING.CHECKOUT_SESSION
+    : API_ENDPOINTS.BILLING.PORTAL_SESSION;
+  let jwt: string | null = null;
+  try {
+    jwt = await authService.getProxyJwt();
+  } catch (err: any) {
+    if (err?.code === 'PAYMENT_REQUIRED') {
+      notifyQuotaExceeded(err?.message, err?.entitlement);
+      return null;
+    }
+    throw err;
+  }
+  if (!jwt) {
+    throw new Error('Proxy JWT unavailable');
+  }
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${jwt}`
+    }
+  });
+  if (resp.status === 402) {
+    const payload = await resp.json().catch(() => ({}));
+    notifyQuotaExceeded(payload?.message, payload?.entitlement);
+    return null;
+  }
+  if (!resp.ok) {
+    const detail = await resp.text();
+    throw new Error(`Billing endpoint ${kind} failed: ${resp.status} ${detail}`);
+  }
+  const json = await resp.json();
+  return json?.url || null;
+}
+
+async function openBillingCheckout() {
+  try {
+    const url = await requestBillingUrl('checkout');
+    if (url) {
+      await shell.openExternal(url);
+      setTimeout(() => {
+        if (authService) {
+          authService.refreshPlan().catch(() => null).then(() => updateTrayMenu());
+        }
+      }, 5000);
+    }
+  } catch (err: any) {
+    console.error('Failed to open checkout session:', err);
+    showNotification('エラー', '決済ページの取得に失敗しました。しばらくしてから再度お試しください。');
+  }
+}
+
+async function openBillingPortal() {
+  try {
+    const url = await requestBillingUrl('portal');
+    if (url) {
+      await shell.openExternal(url);
+      setTimeout(() => {
+        if (authService) {
+          authService.refreshPlan().catch(() => null).then(() => updateTrayMenu());
+        }
+      }, 5000);
+    }
+  } catch (err: any) {
+    console.error('Failed to open billing portal:', err);
+    showNotification('エラー', '管理ページの取得に失敗しました。しばらくしてから再度お試しください。');
+  }
+}
+
 // アプリケーションイベント
 app.whenReady().then(initializeApp);
 
@@ -894,6 +1058,11 @@ app.on('before-quit', async (event) => {
     
     if (tray) {
       tray.destroy();
+    }
+    
+    if (planRefreshIntervalId) {
+      clearInterval(planRefreshIntervalId);
+      planRefreshIntervalId = null;
     }
   } catch (error) {
     console.error('Error during shutdown:', error);

@@ -375,13 +375,24 @@ export const connect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const jwt = await getAuthService().getProxyJwt();
+      let jwt: string | null = null;
+      try {
+        jwt = await getAuthService().getProxyJwt();
+      } catch (err: any) {
+        if (err?.code === 'PAYMENT_REQUIRED') {
+          return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
+        }
+        throw err;
+      }
+      if (!jwt) {
+        return 'ログインが必要です。';
+      }
       // ステータス確認
       const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {})
+          'Authorization': `Bearer ${jwt}`
         },
         body: JSON.stringify({ userId })
       });
@@ -436,12 +447,23 @@ export const disconnect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const jwt = await getAuthService().getProxyJwt();
+      let jwt: string | null = null;
+      try {
+        jwt = await getAuthService().getProxyJwt();
+      } catch (err: any) {
+        if (err?.code === 'PAYMENT_REQUIRED') {
+          return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
+        }
+        throw err;
+      }
+      if (!jwt) {
+        return 'ログインが必要です。';
+      }
       const resp = await fetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          ...(jwt ? { 'Authorization': `Bearer ${jwt}` } : {})
+          'Authorization': `Bearer ${jwt}`
         },
         body: JSON.stringify({ userId })
       });

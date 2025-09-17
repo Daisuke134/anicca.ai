@@ -130,6 +130,10 @@ export const API_ENDPOINTS = {
   OPENAI_PROXY: {
     DESKTOP_SESSION: `${PROXY_URL}/api/realtime/desktop`
   },
+  BILLING: {
+    CHECKOUT_SESSION: `${PROXY_URL}/api/billing/checkout-session`,
+    PORTAL_SESSION: `${PROXY_URL}/api/billing/portal-session`
+  },
   SLACK: {
     OAUTH_URL: `${PROXY_URL}/api/auth/slack/oauth/url`
   }

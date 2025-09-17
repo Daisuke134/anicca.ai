@@ -3,7 +3,7 @@
   "version": "0.6.7",
   "description": "anicca - AI Screen Narrator Desktop App",
   "main": "dist/main-voice-simple.js",
-  "homepage": "https://anicca.ai",
+  "homepage": "https://www.aniccaai.com",
   "appConfig": {
     "supabase": {
       "url": "https://auth.aniccaai.com",

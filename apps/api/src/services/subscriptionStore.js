@@ -9,6 +9,8 @@ const supabase = supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey)
   : null;
 
+const DEFAULT_PRO_DAILY_LIMIT = 1000;
+
 function requireSupabase() {
   if (!supabase) {
     throw new Error('Supabase service role client is not configured');
@@ -169,9 +171,17 @@ export async function incrementTodayUsage(userId) {
   return nextCount;
 }
 
-function resolveLimit() {
-  const limit = BILLING_CONFIG.FREE_DAILY_LIMIT;
-  return Number.isFinite(limit) && limit > 0 ? limit : 0;
+function resolveLimit(plan) {
+  if (plan === 'pro') {
+    const proLimit = BILLING_CONFIG.PRO_DAILY_LIMIT;
+    if (Number.isFinite(proLimit) && proLimit > 0) {
+      return proLimit;
+    }
+    return DEFAULT_PRO_DAILY_LIMIT;
+  }
+
+  const freeLimit = BILLING_CONFIG.FREE_DAILY_LIMIT;
+  return Number.isFinite(freeLimit) && freeLimit > 0 ? freeLimit : 0;
 }
 
 export async function getEntitlementState(userId) {
@@ -179,11 +189,12 @@ export async function getEntitlementState(userId) {
     fetchSubscriptionRow(userId),
     getTodayUsage(userId)
   ]);
-  const limit = resolveLimit();
+  const statusInfo = normalizeStripeStatus(subscription?.status);
+  const limit = resolveLimit(statusInfo.plan);
   const count = usage?.count || 0;
   const remaining = limit > 0 ? Math.max(limit - count, 0) : null;
 
-  const status = normalizeStripeStatus(subscription?.status);
+  const status = statusInfo;
   const currentPeriodEnd = subscription?.current_period_end || null;
 
   return {

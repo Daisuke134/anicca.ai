@@ -44,7 +44,7 @@ export default function SuccessPage() {
         <h1>決済が完了しました</h1>
         <p>ご登録ありがとうございます。数秒後にアプリへ戻り、プラン情報が更新されると利用上限が解除されます。</p>
         <p>アプリが自動で切り替わらない場合は、Anicca を再度開き直してください。</p>
-        <a style={buttonStyle} href="https://anicca.ai">Anicca トップへ戻る</a>
+        <a style={buttonStyle} href="https://www.aniccaai.com">Anicca トップへ戻る</a>
       </div>
     </main>
   );

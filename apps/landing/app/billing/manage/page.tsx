@@ -48,7 +48,7 @@ export default function ManagePage() {
           <li style={{ marginBottom: 8 }}>・キャンセル: 次回請求まで利用可能です。無料枠へ自動で戻ります。</li>
           <li>・お支払い方法の更新: Stripe Customer Portal で即時に反映されます。</li>
         </ul>
-        <a style={buttonStyle} href="https://anicca.ai">Anicca トップへ戻る</a>
+        <a style={buttonStyle} href="https://www.aniccaai.com">Anicca トップへ戻る</a>
       </div>
     </main>
   );

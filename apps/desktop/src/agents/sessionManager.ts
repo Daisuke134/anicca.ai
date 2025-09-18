@@ -231,7 +231,7 @@ export class AniccaSessionManager {
               type: 'semantic_vad',
               createResponse: true,
               interruptResponse: true,
-              eagerness: 'low'
+              eagerness: 'auto'
             }
           },
           output: {
@@ -771,7 +771,7 @@ export class AniccaSessionManager {
                 type: 'semantic_vad',
                 createResponse: true,
                 interruptResponse: true,
-                eagerness: 'low'
+                eagerness: 'auto'
               }
         }
       }

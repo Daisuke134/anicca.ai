@@ -37,6 +37,8 @@ let authService: DesktopAuthService | null = null;
 let powerSaveBlockerId: number | null = null;
 let updateCheckIntervalId: NodeJS.Timeout | null = null;
 let planRefreshIntervalId: NodeJS.Timeout | null = null;
+let planRefreshBurstIntervalId: NodeJS.Timeout | null = null;
+let planRefreshBurstDeadline = 0;
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -74,7 +76,6 @@ async function initializeApp() {
     await authService.refreshPlan().catch(() => null);
     startPlanRefreshInterval();
     updateTrayMenu();
-    startPlanRefreshInterval();
 
     // 認証状態をチェック
     if (!authService.isAuthenticated()) {
@@ -944,6 +945,33 @@ function startPlanRefreshInterval() {
   }, 10 * 60 * 1000);
 }
 
+function startPlanRefreshBurst(durationMs = 60 * 1000, intervalMs = 5 * 1000) {
+  if (!authService || !authService.isAuthenticated()) return;
+  if (planRefreshBurstIntervalId) {
+    clearInterval(planRefreshBurstIntervalId);
+    planRefreshBurstIntervalId = null;
+  }
+  planRefreshBurstDeadline = Date.now() + durationMs;
+  const tick = async () => {
+    if (!authService || !authService.isAuthenticated()) return;
+    if (Date.now() >= planRefreshBurstDeadline) {
+      if (planRefreshBurstIntervalId) {
+        clearInterval(planRefreshBurstIntervalId);
+        planRefreshBurstIntervalId = null;
+      }
+      return;
+    }
+    try {
+      await authService.refreshPlan();
+      updateTrayMenu();
+    } catch (err: any) {
+      console.warn('Plan refresh burst failed:', err?.message || err);
+    }
+  };
+  tick();
+  planRefreshBurstIntervalId = setInterval(tick, intervalMs);
+}
+
 let lastQuotaNotifiedAt = 0;
 
 function notifyQuotaExceeded(message?: string, entitlement?: any) {
@@ -1002,11 +1030,7 @@ async function openBillingCheckout() {
     const url = await requestBillingUrl('checkout');
     if (url) {
       await shell.openExternal(url);
-      setTimeout(() => {
-        if (authService) {
-          authService.refreshPlan().catch(() => null).then(() => updateTrayMenu());
-        }
-      }, 5000);
+      startPlanRefreshBurst();
     }
   } catch (err: any) {
     console.error('Failed to open checkout session:', err);
@@ -1019,11 +1043,7 @@ async function openBillingPortal() {
     const url = await requestBillingUrl('portal');
     if (url) {
       await shell.openExternal(url);
-      setTimeout(() => {
-        if (authService) {
-          authService.refreshPlan().catch(() => null).then(() => updateTrayMenu());
-        }
-      }, 5000);
+      startPlanRefreshBurst();
     }
   } catch (err: any) {
     console.error('Failed to open billing portal:', err);

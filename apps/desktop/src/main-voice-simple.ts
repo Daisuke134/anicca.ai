@@ -896,18 +896,6 @@ function updateTrayMenu() {
     { type: 'separator' },
     ...billingItems,
     { type: 'separator' },
-    {
-      label: 'Toggle Developer Tools',
-      click: () => {
-        if (hiddenWindow) {
-          if (hiddenWindow.webContents.isDevToolsOpened()) {
-            hiddenWindow.webContents.closeDevTools();
-          } else {
-            hiddenWindow.webContents.openDevTools({ mode: 'detach' });
-          }
-        }
-      }
-    },
     { type: 'separator' },
     {
       label: 'Quit',
@@ -945,7 +933,7 @@ function startPlanRefreshInterval() {
   }, 10 * 60 * 1000);
 }
 
-function startPlanRefreshBurst(durationMs = 60 * 1000, intervalMs = 5 * 1000) {
+function startPlanRefreshBurst(durationMs = 90 * 1000, intervalMs = 2 * 1000) {
   if (!authService || !authService.isAuthenticated()) return;
   if (planRefreshBurstIntervalId) {
     clearInterval(planRefreshBurstIntervalId);
@@ -970,6 +958,10 @@ function startPlanRefreshBurst(durationMs = 60 * 1000, intervalMs = 5 * 1000) {
   };
   tick();
   planRefreshBurstIntervalId = setInterval(tick, intervalMs);
+  setTimeout(() => {
+    if (!authService || !authService.isAuthenticated()) return;
+    authService.refreshPlan().catch(() => null).then(() => updateTrayMenu());
+  }, intervalMs);
 }
 
 let lastQuotaNotifiedAt = 0;

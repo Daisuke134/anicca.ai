@@ -81,6 +81,27 @@ async function handleSubscriptionDeleted(event, object) {
   await clearSubscription(userId);
 }
 
+async function handleChargeRefunded(event, charge) {
+  const invoiceId = charge?.invoice;
+  const chargeCustomerId = charge?.customer || null;
+  let invoice = null;
+  if (invoiceId) {
+    const stripe = getStripeClient();
+    invoice = typeof invoiceId === 'string'
+      ? await stripe.invoices.retrieve(invoiceId)
+      : invoiceId;
+  }
+  const userId = await resolveUserId(invoice || charge);
+  if (!userId) return;
+  const subscriptionId = invoice?.subscription || null;
+  const customerId = chargeCustomerId || invoice?.customer || null;
+  if (subscriptionId && customerId) {
+    await syncSubscriptionById(userId, customerId, subscriptionId);
+  } else {
+    await clearSubscription(userId);
+  }
+}
+
 export function constructStripeEvent(rawBody, signature) {
   const stripe = getStripeClient();
   const secret = getWebhookSecret();
@@ -103,6 +124,9 @@ export async function processStripeEvent(event) {
       break;
     case 'customer.subscription.deleted':
       await handleSubscriptionDeleted(event, object);
+      break;
+    case 'charge.refunded':
+      await handleChargeRefunded(event, object);
       break;
     case 'invoice.payment_failed':
     case 'invoice.paid':

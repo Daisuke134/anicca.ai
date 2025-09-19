@@ -1,7 +1,7 @@
 [build]
   base = "apps/landing"
-  publish = "."
-  command = ""
+  publish = "out"
+  command = "npm ci && npm run build"
 
 [build.environment]
   GIT_LFS_ENABLED = "false"
@@ -12,6 +12,6 @@
   status = 200
 
 [[redirects]]
-  from = "/*"
-  to = "/index.html"
-  status = 200
+  from = "/billing/manage"
+  to = "/"
+  status = 301

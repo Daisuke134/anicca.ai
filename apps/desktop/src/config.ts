@@ -13,7 +13,10 @@ try { dotenv.config({ path: '.env.defaults', override: false }); } catch {}
 
 // CIが埋め込む想定のメタデータ
 type ProxyMeta = { production?: string; staging?: string };
-type SupabaseMeta = { url?: string; anonKey?: string };
+type SupabaseProjectMeta = { url: string; anonKey: string };
+type SupabaseMeta =
+  | { url?: string; anonKey?: string }
+  | { production?: SupabaseProjectMeta; staging?: SupabaseProjectMeta };
 
 function readJsonSafe(p: string): any | undefined {
   try {
@@ -52,8 +55,7 @@ function loadEmbeddedSupabase(): SupabaseMeta | undefined {
   const embedded =
     pkg.appConfig?.supabase ||
     pkg.extraMetadata?.appConfig?.supabase;
-  if (embedded?.url && embedded?.anonKey) return embedded;
-  return undefined;
+  return embedded;
 }
 // アプリのバージョン文字列（ログ/推定用）
 const PKG = readPkg() || {};
@@ -130,6 +132,10 @@ export const API_ENDPOINTS = {
   OPENAI_PROXY: {
     DESKTOP_SESSION: `${PROXY_URL}/api/realtime/desktop`
   },
+  BILLING: {
+    CHECKOUT_SESSION: `${PROXY_URL}/api/billing/checkout-session`,
+    PORTAL_SESSION: `${PROXY_URL}/api/billing/portal-session`
+  },
   SLACK: {
     OAUTH_URL: `${PROXY_URL}/api/auth/slack/oauth/url`
   }
@@ -150,7 +156,37 @@ export const UPDATE_CONFIG = {
 
 // Supabase（公開設定のみを「埋め込みメタ」から解決。ランタイムENVは使用しない）
 const SUPABASE_EMBEDDED = loadEmbeddedSupabase();
+
+function resolveSupabaseConfig(): SupabaseProjectMeta {
+  const envProductionUrl = process.env.SUPABASE_URL_PRODUCTION;
+  const envProductionAnon = process.env.SUPABASE_ANON_KEY_PRODUCTION;
+  const envStagingUrl = process.env.SUPABASE_URL_STAGING;
+  const envStagingAnon = process.env.SUPABASE_ANON_KEY_STAGING;
+
+  if ('production' in (SUPABASE_EMBEDDED || {}) || 'staging' in (SUPABASE_EMBEDDED || {})) {
+    const embedded = SUPABASE_EMBEDDED as { production?: SupabaseProjectMeta; staging?: SupabaseProjectMeta };
+    const selected = UPDATE_CHANNEL === 'stable' ? embedded.production : embedded.staging;
+    if (selected?.url && selected?.anonKey) return selected;
+  }
+
+  if (UPDATE_CHANNEL === 'stable' && envProductionUrl && envProductionAnon) {
+    return { url: envProductionUrl, anonKey: envProductionAnon };
+  }
+  if (UPDATE_CHANNEL !== 'stable' && envStagingUrl && envStagingAnon) {
+    return { url: envStagingUrl, anonKey: envStagingAnon };
+  }
+
+  if ((SUPABASE_EMBEDDED as SupabaseProjectMeta | undefined)?.url && (SUPABASE_EMBEDDED as SupabaseProjectMeta | undefined)?.anonKey) {
+    return SUPABASE_EMBEDDED as SupabaseProjectMeta;
+  }
+
+  throw new Error(
+    `Supabase configuration missing. Provide appConfig.supabase.${UPDATE_CHANNEL === 'stable' ? 'production' : 'staging'} or set SUPABASE_URL_${UPDATE_CHANNEL === 'stable' ? 'PRODUCTION' : 'STAGING'} / SUPABASE_ANON_KEY_${UPDATE_CHANNEL === 'stable' ? 'PRODUCTION' : 'STAGING'}.`
+  );
+}
+
+const SUPABASE_PROJECT = resolveSupabaseConfig();
 export const SUPABASE_CONFIG = {
-  URL: SUPABASE_EMBEDDED?.url || '',
-  ANON_KEY: SUPABASE_EMBEDDED?.anonKey || ''
+  URL: SUPABASE_PROJECT.url,
+  ANON_KEY: SUPABASE_PROJECT.anonKey
 };

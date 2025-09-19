@@ -26,16 +26,23 @@ const corsOptions = {
   allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'anthropic-version', 'anthropic-beta']
 };
 app.use(cors(corsOptions));
-app.use(express.json({ limit: '50mb' }));
-app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+
+const stripeWebhookPath = '/api/billing/webhook/stripe';
+app.use(stripeWebhookPath, express.raw({ type: 'application/json' }));
+
+const jsonParser = express.json({ limit: '50mb' });
+const urlencodedParser = express.urlencoded({ extended: true, limit: '50mb' });
+app.use((req, res, next) => {
+  if (req.originalUrl === stripeWebhookPath) return next();
+  return jsonParser(req, res, next);
+});
+app.use((req, res, next) => {
+  if (req.originalUrl === stripeWebhookPath) return next();
+  return urlencodedParser(req, res, next);
+});
+
 // Preflight 全面対応
 app.options('*', cors(corsOptions));
-
-// Import auth middleware
-// import { authMiddleware } from './middleware/auth.js';
-
-// Apply auth middleware to all routes
-// app.use(authMiddleware);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -64,5 +71,4 @@ app.listen(PORT, () => {
   console.log(`🚀 Anicca Proxy Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
-  // console.log(`🔑 ACI_API_KEY: ${process.env.ACI_API_KEY ? 'Set' : '❌ Not set'}`);
 });

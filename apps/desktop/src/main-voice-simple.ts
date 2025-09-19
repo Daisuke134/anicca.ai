@@ -1,4 +1,4 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell, MenuItemConstructorOptions } from 'electron';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -36,6 +36,9 @@ let isListening = false;
 let authService: DesktopAuthService | null = null;
 let powerSaveBlockerId: number | null = null;
 let updateCheckIntervalId: NodeJS.Timeout | null = null;
+let planRefreshIntervalId: NodeJS.Timeout | null = null;
+let planRefreshBurstIntervalId: NodeJS.Timeout | null = null;
+let planRefreshBurstDeadline = 0;
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -69,7 +72,11 @@ async function initializeApp() {
     authService = getAuthService();
     await authService.initialize();
     console.log('✅ Auth service initialized');
-    
+
+    await authService.refreshPlan().catch(() => null);
+    startPlanRefreshInterval();
+    updateTrayMenu();
+
     // 認証状態をチェック
     if (!authService.isAuthenticated()) {
       console.log('⚠️ User not authenticated');
@@ -87,6 +94,7 @@ async function initializeApp() {
       // authServiceを更新
       if (authService) {
         await authService.initialize();
+        await authService.refreshPlan().catch(() => null);
       }
       
       // sessionManagerにユーザーIDを設定
@@ -148,17 +156,37 @@ async function initializeApp() {
       const sessionUrl = userId 
         ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
         : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-      const response = await fetch(sessionUrl);
-
-      if (response.ok) {
-        const data = await response.json();
-        const apiKey = data.client_secret?.value;
-        if (apiKey) {
-          await sessionManager.connect(apiKey);
-          console.log('✅ AniccaSessionManager connected with SDK');
+      let proxyJwt: string | null = null;
+      try {
+        proxyJwt = await authService.getProxyJwt();
+        updateTrayMenu();
+      } catch (err: any) {
+        if (err?.code === 'PAYMENT_REQUIRED') {
+          notifyQuotaExceeded(err?.message, err?.entitlement);
+        } else {
+          throw err;
         }
+      }
+      if (!proxyJwt) {
+        console.warn('⚠️ Proxy JWT not available, skipping realtime session bootstrap');
       } else {
-        console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
+        const response = await fetch(sessionUrl, {
+          headers: { Authorization: `Bearer ${proxyJwt}` }
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          const apiKey = data.client_secret?.value;
+          if (apiKey) {
+            await sessionManager.connect(apiKey);
+            console.log('✅ AniccaSessionManager connected with SDK');
+          }
+        } else if (response.status === 402) {
+          const payload = await response.json().catch(() => ({}));
+          notifyQuotaExceeded(payload?.message, payload?.entitlement);
+        } else {
+          console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
+        }
       }
     } catch (error) {
       console.error('❌ Failed to initialize SDK:', error);
@@ -236,7 +264,14 @@ async function initializeApp() {
         try { await authService.refreshSession(); } catch (e) {
           console.warn('Auth refresh on resume failed:', (e as any)?.message || e);
         }
-        try { await authService.getProxyJwt(); } catch { /* noop */ }
+        try {
+          await authService.getProxyJwt();
+          updateTrayMenu();
+        } catch (err: any) {
+          if (err?.code === 'PAYMENT_REQUIRED') {
+            notifyQuotaExceeded(err?.message, err?.entitlement);
+          }
+        }
       }
       // Realtime接続の即保証（少し遅延）
       setTimeout(() => {
@@ -313,9 +348,7 @@ function createHiddenWindow() {
         let sdkReady = false; // 監視用（送信ゲートには使用しない）
         // SDKステータスの前回値（差分時のみログ出力するためのキー）
         let lastSdkStatusKey = '';
-        let sendQueue = [];          // /audio/input 直列送信用キュー
-        let sending = false;         // 送信中フラグ
-        const queueHighWater = 8;    // 最大キュー長（約1.3秒分）
+        // 音声入力はWSバイナリ直送に一本化（送信キュー/HTTPは廃止）
         let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
 
         // --- 追加: 初回プレフライト接続 & 録音起動の待機ヘルパー ---
@@ -348,43 +381,7 @@ function createHiddenWindow() {
           })();
         }
 
-        function enqueueFrame(base64) {
-          try {
-            if (!base64 || base64.length === 0) return;
-            if (sendQueue.length >= queueHighWater) {
-              sendQueue.shift();
-            }
-            sendQueue.push(base64);
-            drainQueue();
-          } catch (e) {
-            console.error('enqueue error:', e);
-          }
-        }
-
-        async function drainQueue() {
-          if (sending) return;
-          sending = true;
-          try {
-            while (sendQueue.length) {
-              const b64 = sendQueue.shift();
-              try {
-                const resp = await fetch('/audio/input', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ audio: b64, format: 'pcm16', sampleRate: 24000 })
-                });
-                if (!resp.ok) {
-                  console.warn('audio/input not ok:', resp.status);
-                }
-              } catch (e) {
-                console.error('audio/input send error:', e);
-              }
-            }
-          } finally {
-            sending = false;
-            if (sendQueue.length) drainQueue();
-          }
-        }
+        // 送信キュー/HTTPは使用しない
 
         // SDK状態確認
         async function checkSDKStatus() {
@@ -418,6 +415,7 @@ function createHiddenWindow() {
         // WebSocket接続（音声出力受信用）
         function connectWebSocket() {
           ws = new WebSocket('ws://localhost:${PORTS.OAUTH_CALLBACK}');
+          ws.binaryType = 'arraybuffer';
 
           ws.onmessage = async (event) => {
             try {
@@ -451,17 +449,17 @@ function createHiddenWindow() {
               if (message.type === 'audio_stopped') {
                 isAgentSpeaking = false; // 視覚用
                 micPaused = false;       // 半二重解除
-                // 出力直後の誤割り込み抑止
-                micPostStopMuteUntil = Date.now() + 300;
+                // 出力直後の誤割り込み抑止（短縮）
+                micPostStopMuteUntil = Date.now() + 120;
               }
 
-              // 応答完了（フォールバックで半二重を確実に戻す）
-              if (message.type === 'turn_done') {
+              // 応答完了（公式イベントに一本化）
+              if (message.type === 'agent_end') {
                 isAgentSpeaking = false;
-                micPaused = false; // 半二重解除（保険）
-                console.log('🔁 turn_done: gates cleared');
-                // 出力直後の誤割り込み抑止
-                micPostStopMuteUntil = Date.now() + 300;
+                micPaused = false; // 半二重解除
+                console.log('🔁 agent_end: gates cleared');
+                // 出力直後の誤割り込み抑止（短縮）
+                micPostStopMuteUntil = Date.now() + 120;
               }
 
               // 音声中断処理
@@ -689,9 +687,8 @@ function createHiddenWindow() {
               return;
             }
 
-            // 監視ステータスに依らず録音を開始し、復旧は /audio/input 側で ensureConnected に任せる
+            // 監視ステータスに依らず録音を開始し、復旧は Bridge 側の WS で ensureConnected に任せる
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-            // 送信ゲートはサーバVADへ一本化（ローカルRMS/プリロールは撤廃）
 
             // マイクアクセス（16kHz PCM16用設定）
             const stream = await navigator.mediaDevices.getUserMedia({
@@ -731,16 +728,15 @@ function createHiddenWindow() {
                 int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
               }
 
-              // 常時ストリーミング送信（空データは送らない）
+              // 常時ストリーミング送信（WSバイナリ直送）
               if (!int16Array || int16Array.length === 0) return;
-              const base64 = btoa(String.fromCharCode(...new Uint8Array(int16Array.buffer)));
-              if (!base64 || base64.length === 0) return;
-              enqueueFrame(base64);
+              if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(int16Array.buffer);
+              }
 
-              // （ローカルRMS/プリロール運用は撤廃済み）
             };
 
-            console.log('🎤 Voice capture started (PCM16, no RMS pre-gate)');
+            console.log('🎤 Voice capture started (PCM16)');
 
           } catch (error) {
             console.error('Failed to start voice capture:', error);
@@ -826,10 +822,36 @@ function createSystemTray() {
 function updateTrayMenu() {
   const userName = authService?.isAuthenticated() ? authService.getCurrentUserName() : 'ゲスト';
   const isAuthenticated = authService?.isAuthenticated() || false;
-  
+  const planInfo = authService?.getPlanInfo();
+  const planKey = planInfo?.plan || 'free';
+  const planLabel = planKey === 'pro' ? 'Pro' : (planKey === 'grace' ? 'Grace' : 'Free');
+  const usageLabel = planInfo?.daily_usage_limit
+    ? `残り ${planInfo?.daily_usage_remaining ?? 0}/${planInfo.daily_usage_limit}`
+    : '制限なし';
+
+  const billingItems: MenuItemConstructorOptions[] = [];
+  if (planKey !== 'pro') {
+    billingItems.push({
+      label: 'Upgrade to Anicca Pro ($5/月)',
+      enabled: isAuthenticated,
+      click: async () => { await openBillingCheckout(); }
+    });
+  }
+  if (isAuthenticated) {
+    billingItems.push({
+      label: 'Manage Subscription',
+      enabled: planKey !== 'free',
+      click: async () => { await openBillingPortal(); }
+    });
+  }
+
   const contextMenu = Menu.buildFromTemplate([
     {
       label: `👤 ${userName}`,
+      enabled: false
+    },
+    {
+      label: `⭐ 現在のプラン: ${planLabel}` + (planInfo?.daily_usage_limit ? ` (${usageLabel})` : ''),
       enabled: false
     },
     { type: 'separator' },
@@ -838,7 +860,6 @@ function updateTrayMenu() {
       click: async () => {
         const { shell } = require('electron');
         try {
-          // authServiceのメソッドを使用してOAuth URLを取得
           if (authService) {
             const oauthUrl = await authService.getGoogleOAuthUrl();
             shell.openExternal(oauthUrl);
@@ -859,11 +880,13 @@ function updateTrayMenu() {
           const userName = authService.getCurrentUserName();
           await authService.signOut();
           showNotification('ログアウト', `${userName}さん、さようなら`);
-          
-          // トレイメニューを更新
+
+          if (planRefreshIntervalId) {
+            clearInterval(planRefreshIntervalId);
+            planRefreshIntervalId = null;
+          }
           updateTrayMenu();
-          
-          // SessionManagerのユーザーIDをリセット
+
           if (sessionManager) {
             sessionManager.setCurrentUserId('desktop-user');
           }
@@ -871,18 +894,8 @@ function updateTrayMenu() {
       }
     }] : []),
     { type: 'separator' },
-    {
-      label: 'Toggle Developer Tools',
-      click: () => {
-        if (hiddenWindow) {
-          if (hiddenWindow.webContents.isDevToolsOpened()) {
-            hiddenWindow.webContents.closeDevTools();
-          } else {
-            hiddenWindow.webContents.openDevTools({ mode: 'detach' });
-          }
-        }
-      }
-    },
+    ...billingItems,
+    { type: 'separator' },
     { type: 'separator' },
     {
       label: 'Quit',
@@ -901,6 +914,133 @@ function updateTrayMenu() {
 function showNotification(title: string, body: string) {
   const { Notification } = require('electron');
   new Notification({ title, body }).show();
+}
+
+function startPlanRefreshInterval() {
+  if (planRefreshIntervalId) {
+    clearInterval(planRefreshIntervalId);
+    planRefreshIntervalId = null;
+  }
+  if (!authService) return;
+  planRefreshIntervalId = setInterval(async () => {
+    if (!authService || !authService.isAuthenticated()) return;
+    try {
+      await authService.refreshPlan();
+      updateTrayMenu();
+    } catch (err: any) {
+      console.warn('Plan refresh interval failed:', err?.message || err);
+    }
+  }, 10 * 60 * 1000);
+}
+
+function startPlanRefreshBurst(durationMs = 90 * 1000, intervalMs = 2 * 1000) {
+  if (!authService || !authService.isAuthenticated()) return;
+  if (planRefreshBurstIntervalId) {
+    clearInterval(planRefreshBurstIntervalId);
+    planRefreshBurstIntervalId = null;
+  }
+  planRefreshBurstDeadline = Date.now() + durationMs;
+  const tick = async () => {
+    if (!authService || !authService.isAuthenticated()) return;
+    if (Date.now() >= planRefreshBurstDeadline) {
+      if (planRefreshBurstIntervalId) {
+        clearInterval(planRefreshBurstIntervalId);
+        planRefreshBurstIntervalId = null;
+      }
+      return;
+    }
+    try {
+      await authService.refreshPlan();
+      updateTrayMenu();
+    } catch (err: any) {
+      console.warn('Plan refresh burst failed:', err?.message || err);
+    }
+  };
+  tick();
+  planRefreshBurstIntervalId = setInterval(tick, intervalMs);
+  setTimeout(() => {
+    if (!authService || !authService.isAuthenticated()) return;
+    authService.refreshPlan().catch(() => null).then(() => updateTrayMenu());
+  }, intervalMs);
+}
+
+let lastQuotaNotifiedAt = 0;
+
+function notifyQuotaExceeded(message?: string, entitlement?: any) {
+  const now = Date.now();
+  if (now - lastQuotaNotifiedAt < 60000) return;
+  lastQuotaNotifiedAt = now;
+  const body = message || '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。';
+  showNotification('利用上限に達しました', body);
+  if (authService) {
+    authService.refreshPlan().catch(() => null).finally(() => updateTrayMenu());
+  } else {
+    updateTrayMenu();
+  }
+}
+
+async function requestBillingUrl(kind: 'checkout' | 'portal') {
+  if (!authService) throw new Error('Auth service not initialized');
+  const endpoint = kind === 'checkout'
+    ? API_ENDPOINTS.BILLING.CHECKOUT_SESSION
+    : API_ENDPOINTS.BILLING.PORTAL_SESSION;
+  let jwt: string | null = null;
+  try {
+    jwt = await authService.getProxyJwt();
+  } catch (err: any) {
+    if (err?.code === 'PAYMENT_REQUIRED') {
+      notifyQuotaExceeded(err?.message, err?.entitlement);
+      return null;
+    }
+    throw err;
+  }
+  if (!jwt) {
+    throw new Error('Proxy JWT unavailable');
+  }
+  const resp = await fetch(endpoint, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${jwt}`
+    }
+  });
+  if (resp.status === 402) {
+    const payload = await resp.json().catch(() => ({}));
+    notifyQuotaExceeded(payload?.message, payload?.entitlement);
+    return null;
+  }
+  if (!resp.ok) {
+    const detail = await resp.text();
+    throw new Error(`Billing endpoint ${kind} failed: ${resp.status} ${detail}`);
+  }
+  const json = await resp.json();
+  return json?.url || null;
+}
+
+async function openBillingCheckout() {
+  try {
+    const url = await requestBillingUrl('checkout');
+    if (url) {
+      await shell.openExternal(url);
+      startPlanRefreshBurst();
+    }
+  } catch (err: any) {
+    console.error('Failed to open checkout session:', err);
+    showNotification('エラー', '決済ページの取得に失敗しました。しばらくしてから再度お試しください。');
+  }
+}
+
+async function openBillingPortal() {
+  try {
+    const url = await requestBillingUrl('portal');
+    if (url) {
+      await shell.openExternal(url);
+      startPlanRefreshBurst();
+    }
+  } catch (err: any) {
+    console.error('Failed to open billing portal:', err);
+    showNotification('エラー', '管理ページの取得に失敗しました。しばらくしてから再度お試しください。');
+  }
 }
 
 // アプリケーションイベント
@@ -933,6 +1073,11 @@ app.on('before-quit', async (event) => {
     
     if (tray) {
       tray.destroy();
+    }
+    
+    if (planRefreshIntervalId) {
+      clearInterval(planRefreshIntervalId);
+      planRefreshIntervalId = null;
     }
   } catch (error) {
     console.error('Error during shutdown:', error);
@@ -1129,6 +1274,8 @@ async function executeScheduledTask(task: any) {
     else if (id.startsWith('wake_up_') || id.startsWith('wake_up__')) tpl = 'wake_up.txt';
     else if (id.startsWith('sleep_') || id.startsWith('sleep__')) tpl = 'sleep.txt';
     else if (id.startsWith('standup_') || id.startsWith('standup__')) tpl = 'standup.txt';
+    else if (id.startsWith('zange_') || id.startsWith('zange__')) tpl = 'zange.txt';
+    else if (id.startsWith('five_') || id.startsWith('five__')) tpl = 'five.txt';
     else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
     else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
 

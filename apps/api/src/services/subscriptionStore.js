@@ -18,6 +18,20 @@ function requireSupabase() {
   return supabase;
 }
 
+export async function supabaseUserExists(userId) {
+  if (!userId) return false;
+  const client = requireSupabase();
+  try {
+    const { data, error } = await client.auth.admin.getUserById(userId);
+    if (error) {
+      return false;
+    }
+    return !!data?.user;
+  } catch {
+    return false;
+  }
+}
+
 export async function fetchSubscriptionRow(userId) {
   const client = requireSupabase();
   const { data, error } = await client
@@ -69,9 +83,14 @@ export async function ensureStripeCustomer(userId, email) {
 
 export async function recordStripeEvent(event) {
   const client = requireSupabase();
+  const metadataUserId = event?.data?.object?.metadata?.userId || null;
+  const resolvedUserId =
+    metadataUserId && await supabaseUserExists(metadataUserId)
+      ? metadataUserId
+      : null;
   const payload = {
     event_id: event.id,
-    user_id: event.data?.object?.metadata?.userId || null,
+    user_id: resolvedUserId,
     type: event.type,
     payload: event.data?.object || null,
     created_at: new Date().toISOString()

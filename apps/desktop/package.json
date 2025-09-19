@@ -6,8 +6,14 @@
   "homepage": "https://www.aniccaai.com",
   "appConfig": {
     "supabase": {
-      "url": "https://auth.aniccaai.com",
-      "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16a3d0d291cnJrZHVxa3JzeHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzQ1NjYsImV4cCI6MjA2Njc1MDU2Nn0.ihBs1cpz_sgR6UUZpIrICuN3b-gJNrfzWsfNVlpP4hs"
+      "production": {
+        "url": "https://auth.aniccaai.com",
+        "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16a3d0d291cnJrZHVxa3JzeHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzQ1NjYsImV4cCI6MjA2Njc1MDU2Nn0.ihBs1cpz_sgR6UUZpIrICuN3b-gJNrfzWsfNVlpP4hs"
+      },
+      "staging": {
+        "url": "https://cltwnkpfjkipdtghiscd.supabase.co",
+        "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdHdua3BmamtpcGR0Z2hpc2NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTk5NTMsImV4cCI6MjA3Mzc3NTk1M30.uXbi3EZjPL3GRcbB6VYF14dPQkvlwyzFSHAgj-JG3ag"
+      }
     }
   },
   "scripts": {

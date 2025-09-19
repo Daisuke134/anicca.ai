@@ -3,7 +3,8 @@ import { getStripeClient } from './client.js';
 import {
   recordStripeEvent,
   updateSubscriptionFromStripe,
-  clearSubscription
+  clearSubscription,
+  supabaseUserExists
 } from '../subscriptionStore.js';
 
 function getWebhookSecret() {
@@ -42,6 +43,7 @@ async function syncSubscriptionById(userId, customerId, subscriptionId) {
 async function handleSubscriptionObject(event, object) {
   const userId = await resolveUserId(object);
   if (!userId) return;
+  if (!(await supabaseUserExists(userId))) return;
   const customerId = object?.customer;
   if (!customerId) return;
   const subscriptionId = object?.id;
@@ -52,6 +54,7 @@ async function handleSubscriptionObject(event, object) {
 async function handleCheckoutSession(event, session) {
   const userId = await resolveUserId(session);
   if (!userId) return;
+  if (!(await supabaseUserExists(userId))) return;
   const customerId = session.customer;
   if (!customerId) return;
   if (session.subscription) {
@@ -64,6 +67,7 @@ async function handleInvoice(event, invoice) {
   const customerId = invoice.customer;
   const userId = await resolveUserId(invoice);
   if (!userId || !customerId) return;
+  if (!(await supabaseUserExists(userId))) return;
   if (invoice.paid) {
     if (subscriptionId) {
       await syncSubscriptionById(userId, customerId, subscriptionId);
@@ -78,6 +82,7 @@ async function handleInvoice(event, invoice) {
 async function handleSubscriptionDeleted(event, object) {
   const userId = await resolveUserId(object);
   if (!userId) return;
+  if (!(await supabaseUserExists(userId))) return;
   await clearSubscription(userId);
 }
 
@@ -93,6 +98,7 @@ async function handleChargeRefunded(event, charge) {
   }
   const userId = await resolveUserId(invoice || charge);
   if (!userId) return;
+  if (!(await supabaseUserExists(userId))) return;
   const subscriptionId = invoice?.subscription || null;
   const customerId = chargeCustomerId || invoice?.customer || null;
   if (subscriptionId && customerId) {

@@ -55,6 +55,8 @@ const ANICCA_INSTRUCTIONS = `
 - 朝会: standup__HHMM
 - 歯磨き: brush_teeth_morning__HHMM / brush_teeth_night__HHMM
 - 慈悲の瞑想: jihi__HHMM
+- 懺悔の瞑想: zange__HHMM
+- 五戒の誓い: five__HHMM
 - 瞑想（通常・時間指定）: 開始 meditation__HHMM（descriptionに「瞑想開始（N分）」）／終了 meditation_end__HHMM（「瞑想終了」）
 - Slack（定刻の返信・送信など）: slack__HHMM_<slug>
 - Gmail（定刻の送信・下書き送信など）: gmail__HHMM_<slug>
@@ -65,6 +67,16 @@ const ANICCA_INSTRUCTIONS = `
 【慈悲の瞑想タスク設定ルール】
 - 依頼時は最小フォーマットで登録（例: { "id":"jihi__0610", "schedule":"10 6 * * *", "description":"6時10分に慈悲の瞑想" }）
 - 読み上げに text_to_speech を用いる場合でも多重呼び出しは絶対禁止
+
+【懺悔の瞑想タスク設定ルール】
+- タスクID: zange__HHMM（HHMM は0埋め24時間表記）
+- description例: 「毎日22時に懺悔の瞑想」
+- 読み上げは自分の声のみで行い、text_to_speechは一切使わない。
+
+【五戒誓約タスク設定ルール】
+- タスクID: five__HHMM
+- description例: 「毎朝6時に五戒を誓う」
+- 読み上げは自声のみで行い、text_to_speechは絶対に使用しない。
 
 【通常瞑想タスク設定ルール】
 - 瞑想時間（N分/1時間など）を把握して登録。必ず、descriptionに「瞑想開始（N分）」と「瞑想終了」を記載。
@@ -375,6 +387,18 @@ const ANICCA_INSTRUCTIONS = `
 2. commandは「慈悲の瞑想タスクを実行」とする
 3. descriptionは「毎日○時○分に慈悲の瞑想を行う」とする
 4. 瞑想時間を聞かない（慈悲の瞑想は決まった文言なので）
+
+【懺悔の瞑想タスク設定ルール】
+懺悔タスクを依頼された時：
+1. IDは必ず「zange__HHMM」形式にする。
+2. description例：「毎日22時に懺悔の瞑想」。
+3. 読み上げは自分の声のみを使い、text_to_speechは一切使わない。
+
+【五戒誓約タスク設定ルール】
+五戒タスクを依頼された時：
+1. IDは必ず「five__HHMM」形式にする。
+2. description例：「毎朝6時に五戒を誓う」。
+3. 読み上げは自声のみで行い、text_to_speechは絶対に使わない。
 
 【通常瞑想タスク設定ルール】：重要：コレは慈悲の瞑想とは違います！！！慈悲の瞑想はただスケジュールでそのまま登録する。瞑想と言われたら、以下をやる。
 瞑想の定期タスクを依頼された時：

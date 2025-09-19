@@ -1,167 +1,109 @@
-# anicca
+# Anicca — Voice Agent for Behavioral Change
 
-## 🎯 プロジェクト概要　
+## 概要
+Anicca（アニッチャ）は、行動変容のための音声エージェントです。日々の予定・リマインド・連絡・瞑想・情報取得を、声だけで完結させます。デスクトップでは「トレイ常駐・音声のみ・最小UI」を徹底し、手や目を塞がない体験を目指します。
 
-aniccaは、あなたを理想の自分へ導く音声エージェントです。デスクトップアプリ、Webアプリ、そしてプロキシサーバーから構成されています。
+- **ミッション**: ユーザーを行動変容させ、理想の自分へ導くこと。最終的には、Aniccaが自律的に生きとし生けるものの苦しみをなくすために行動します（Anicca＝無常）。
+- **基本方針**: 沈黙を原則とし、必要なときだけ短く的確に話す。外部送信（Slackなど）は必ずユーザー承認のうえ実行。
+---
 
-## 📁 リポジトリ構造
+## 主な機能
+- **音声完結**: 会話の開始/終了、指示、結果の確認まで声のみ。トレイのアイコンから基本操作。
+- **予定・リマインド**: 定期/単発のタスク登録・実行。起床/就寝/ミーティング前など。
+- **Google カレンダー連携**: hosted MCP を用いて予定の取得/作成/更新/削除。
+- **Slack 連携**: チャンネル一覧・履歴取得・スレッド返信案の作成と送信（送信は承認必須）。
+- **ローカル保存・プライバシー重視**: 設定/セッション/スケジュールは原則 `~/.anicca/` に保存（暗号化を含む）。
 
+---
+
+## リポジトリ構成
 ```
-anicca-project/
-├── src/                      # デスクトップアプリ (Electron + TypeScript)
-│   ├── main-voice-simple.ts  # メインエントリーポイント
-│   └── services/             # 各種サービス
-│       ├── voiceServer.ts    # 音声処理サーバー
-│       ├── desktopAuthService.ts
-│       ├── simpleEncryption.ts
-│       └── interfaces.ts
+.
+├── apps/
+│   ├── desktop/                 # デスクトップ（Electron + TypeScript）
+│   │   ├── assets/desktop/      # トレイ/アプリアイコン等
+│   │   ├── build/               # entitlements 等
+│   │   ├── electron-builder-voice.yml
+│   │   └── src/
+│   │       ├── main-voice-simple.ts   # エントリ。トレイ/Bridge/ホットキー等
+│   │       ├── config.ts              # Proxy解決・定数
+│   │       ├── agents/                # RealtimeAgent・SessionManager・MCP連携
+│   │       └── services/              # 認証(PKCE)・暗号化・ネットワーク
+│   │
+│   ├── api/                     # プロキシAPI（Express）
+│   │   └── src/
+│   │       ├── server.js        # CORS/JSON/ルーティング集約
+│   │       ├── routes/          # /api/* のエンドポイント集約
+│   │       ├── api/             # 各handler（realtime, mcp, auth など）
+│   │       ├── services/        # トークン/外部APIラッパ
+│   │       ├── config/          # 統合環境設定
+│   │       └── lib/utils/       # DB・暗号・ロガー
+│   │
+│   ├── web/                     # Webアプリ（Next.js）
+│   │   ├── app/                 # UIルート
+│   │   └── components/          # UIコンポーネント
+│   │
+│   ├── landing/                 # ランディング（静的）
+│   │   └── landing/             # HTML/CSS/JS
+│   │
+│   └── workspace-mcp/           # Google Workspace MCP（FastMCP）
+│       ├── gcalendar/ ほか      # gmail/gsheets/gdrive 等のMCPツール
+│       ├── core/                # tool_registry など
+│       └── fastmcp_server.py    # MCPエンドポイント
 │
-├── anicca-proxy-slack/       # プロキシサーバー (Express + TypeScript)
-│   ├── src/                  # サーバーソースコード
-│   ├── mcp-servers/          # MCP関連サーバー
-│   ├── supabase/             # Supabase設定
-│   └── debug-tools/          # デバッグツール
-│
-├── anicca-web/               # Webアプリ (Next.js + TypeScript)
-│   ├── app/                  # App Router
-│   ├── components/           # UIコンポーネント
-│   ├── hooks/                # カスタムフック
-│   └── lib/                  # ユーティリティ
-│
-├── landing/                  # ランディングページ
-├── scripts/                  # ビルドスクリプト
-└── assets/                   # アセットファイル
+├── docs/                        # 設計/要件/検証ノート
+├── examples/                    # 参考コード/外部例
+└── README.md
 ```
 
-## 🚀 主要コンポーネント
+- **apps/desktop**: 音声体験の中核。OpenAI Realtime への接続、音声入出力、トレイ常駐、定期タスクの自動実行など。
+- **apps/api**: クライアントの本人確認・短命認可・MCP/外部ツール連携などを担うプロキシ層。
+- **apps/web**: Anicca の Web アプリ（UI）。
+- **apps/landing**: プロダクトの紹介ページ。
+- **apps/workspace-mcp**: Google カレンダー等の hosted MCP サーバ。
 
-### 1. デスクトップアプリ (`src/`)
-- **技術スタック**: Electron + TypeScript
-- **主な機能**: 
-  - 音声認識と応答
-  - システムトレイ常駐
-  - MCP (Model Context Protocol) 統合
+---
 
-### 2. プロキシサーバー (`anicca-proxy-slack/`)
-- **技術スタック**: Express + TypeScript
-- **デプロイ先**: Railway (https://anicca-proxy-staging.up.railway.app)
-- **主な機能**:
-  - Claude API プロキシ
-  - Slack OAuth認証
-  - MCPツール統合
-  - DMGファイル配信
+## 体験の流れ
+1. デスクトップを起動するとトレイに常駐。音声入力の準備が整います。
+2. ホットキー（MediaPlayPause/F8）で会話モードに入り、声で指示します。定期タスクの場合は自動で会話モードがオンになり、適切な声掛けをしてくれます。
+3. 「今日の予定を教えて」「10分後に起こして」「9時に朝会をセット」などを音声で依頼。
+4. 予定作成や通知などは自動で進行。Slack 送信など外部送信は送信直前に承認を求めます。
+5. 無音/応答終了で自動的に沈黙モードへ戻り、トレイ常駐で待機します。
 
-### 3. Webアプリ (`anicca-web/`)
-- **技術スタック**: Next.js 14 + TypeScript
-- **デプロイ先**: Vercel (https://app.aniccaai.com)
-- **主な機能**:
-  - ブラウザベース音声アシスタント
-  - リアルタイム音声ストリーミング
-  - Supabase認証
+---
 
-## 📦 インストール
+## 仕組み（高レベルアーキテクチャ）
+- **Realtime 音声**: デスクトップ内の Bridge（小さな HTTP/WS サーバ）が音声をストリーミングし、OpenAI Realtime と接続。入力は PCM16、出力も PCM16 を再生。
+- **MCP（ツール）**:  
+  - **hosted MCP**（Google Calendar など）: サーバ側の MCP エンドポイントをエージェントに「hosted tool」として注入し、予定の取得/作成/更新/削除を音声から実行。  
+  - **ローカルMCP（filesystem）**: `~/.anicca` 下のファイル読み書きを安全に限定して実行。
+- **定期タスク**: `~/.anicca/scheduled_tasks.json` を唯一の真実とし、Voice 側が変更監視して `today_schedule.json`（読み上げビュー）を自動生成。読み上げはビューを参照し、ビューへの書き込みは行いません。
+- **認証と最小権限**: クライアントは公開可能な匿名キーを用いた PKCE でログインし、サーバ側で本人確認のうえ短命の認可トークンを発行して API を保護。秘匿キーはクライアントに配布しません。
+- **データ保存**: 原則ローカル（`~/.anicca`）。セッション/設定/スケジュール等を保持。必要に応じて暗号化を適用。
 
-```bash
-# リポジトリのクローン
-git clone <repository-url>
-cd anicca-project
+---
 
-# 依存関係のインストール
-npm install
+## セキュリティ/プライバシーの考え方
+- **ローカル優先**: 個人データは原則 `~/.anicca` に保存。セッションは暗号化。
+- **最小暴露**: クライアントは「公開可能な認証構成」のみを保持。権限の強い操作はサーバで実行。
+- **短命トークン**: サーバは短時間で失効する認可トークンを発行し、API 利用を限定。
+- **明示的承認**: 外部送信（Slack 等）は送信直前にユーザー承認を必須化。
+- **MCP の安全利用**: hosted MCP は必要なツールだけを許可し、ローカルMCPはアクセス範囲を限定。
 
-# プロキシサーバーの依存関係
-cd anicca-proxy-slack
-npm install
-cd ..
+---
 
-# Webアプリの依存関係
-cd anicca-web
-npm install
-cd ..
-```
+## Webとランディングの位置づけ
+- **Webアプリ**: Anicca の Webアプリ版。
+- **ランディング**: プロダクトの紹介/案内ページ。
 
-## 🛠️ 開発
+---
 
-### デスクトップアプリ
+## ライセンス
+MIT
 
-```bash
-# 開発モード（推奨）
-npm run voice:simple
+## コントリビューション
+Issue/PR を歓迎します。大きな変更は事前に議論をお願いします。
 
-# TypeScriptコンパイル
-npm run build:voice
-
-# DMGビルド（配布用）
-npm run dist:voice
-
-# コード品質チェック
-npm run lint
-npm run format
-```
-
-### プロキシサーバー
-
-```bash
-cd anicca-proxy-slack
-npm run dev  # ローカル開発
-```
-
-### Webアプリ
-
-```bash
-cd anicca-web
-npm run dev  # ローカル開発 (http://localhost:3000)
-```
-
-## 📝 環境変数
-
-### デスクトップアプリ
-最小限の`.env`設定。APIキーはOSのキーチェーンで暗号化管理。
-
-### プロキシサーバー
-`.env.example`を参考に`.env`ファイルを作成。
-
-### Webアプリ
-Vercelの環境変数設定で管理。
-
-## 🚢 デプロイ
-
-### デスクトップアプリ
-- GitHubリリース（プライベートリポジトリ）
-- DMGファイルはプロキシサーバー経由で配信
-
-### プロキシサーバー
-- Railway自動デプロイ（mainブランチプッシュ時）
-- Staging: https://anicca-proxy-staging.up.railway.app
-
-### Webアプリ
-- Vercel自動デプロイ（GitHubプッシュ時）
-- Production: https://app.aniccaai.com
-
-## 🔧 重要な開発ノート
-
-1. **DMGビルド前の確認**
-   ```bash
-   # マウントされているDMGを確認
-   ls /Volumes/
-   # Aniccaがマウントされていたら強制アンマウント
-   hdiutil detach "/Volumes/Anicca*" -force
-   ```
-
-2. **セッション永続化**: `~/.anicca/session.json`で会話コンテキストを保持
-
-3. **プライバシー優先設計**: すべてのデータは`~/.anicca/`にローカル保存
-
-4. **音声バージョンが主力**: UIバージョンは非推奨
-
-## 📄 ライセンス
-
-プロプライエタリ - 詳細は別途お問い合わせください。
-
-## 🤝 コントリビューション
-
-現在OSSとして運用中。
-
-## 📧 お問い合わせ
-
-[プロジェクトのサポートメール]
+## 連絡先
+keiodaisuke@gmail.com

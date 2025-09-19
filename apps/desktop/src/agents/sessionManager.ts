@@ -1,6 +1,7 @@
 import { RealtimeSession, OpenAIRealtimeWebSocket } from '@openai/agents/realtime';
 import { createAniccaAgent } from './mainAgent';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
+import { getAuthService } from '../services/desktopAuthService';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -62,6 +63,12 @@ export class AniccaSessionManager {
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
   private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（15s）
+  
+  // wake起床タスクの連続発話（sticky）制御
+  private stickyTask: 'wake_up' | null = null;
+  private wakeActive: boolean = false;
+  // wake専用：アシスタントの最初の発話（audio_start）までは解除判定を無効化
+  private stickyReady: boolean = false;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -167,7 +174,14 @@ export class AniccaSessionManager {
       const url = this.currentUserId
         ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
         : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-      const resp = await fetch(url);
+      const authService = getAuthService();
+      const proxyJwt = await authService.getProxyJwt();
+      if (!proxyJwt) throw new Error('missing proxy jwt');
+      const resp = await fetch(url, { headers: { Authorization: `Bearer ${proxyJwt}` } });
+      if (resp.status === 402) {
+        const payload = await resp.json().catch(() => ({ message: 'payment required' }));
+        throw new Error(`desktop-session quota exceeded: ${payload?.message || 'payment required'}`);
+      }
       if (!resp.ok) throw new Error(`desktop-session failed: ${resp.status}`);
       const data = await resp.json();
       const key = data?.client_secret?.value;
@@ -211,13 +225,13 @@ export class AniccaSessionManager {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
             // transcription 設定はデフォルト（言語ヒント未指定）
-            // noiseReduction: { type: 'near_field' }, // Disabled for Near Field cutover (echo behavior A/B)
+            // noiseReduction: { type: 'far_field' }, // Disabled for Near Field cutover (echo behavior A/B)
             // semantic_vad（慎重寄り）
             turnDetection: {
               type: 'semantic_vad',
               createResponse: true,
               interruptResponse: true,
-              eagerness: 'low'
+              eagerness: 'auto'
             }
           },
           output: {
@@ -303,9 +317,39 @@ export class AniccaSessionManager {
         const sessionUrl = userId
           ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
           : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-        const response = await fetch(sessionUrl);
+        const authService = getAuthService();
+        let proxyJwt: string | null = null;
+        try {
+          proxyJwt = await authService.getProxyJwt();
+        } catch (err: any) {
+          if (err?.code === 'PAYMENT_REQUIRED') {
+            res.status(402).json({
+              error: 'Quota exceeded',
+              message: err?.message,
+              entitlement: err?.entitlement || authService.getPlanInfo()
+            });
+            return;
+          }
+          throw err;
+        }
+        if (!proxyJwt) {
+          res.status(401).json({ error: 'Not authenticated' });
+          return;
+        }
+        const response = await fetch(sessionUrl, {
+          headers: { Authorization: `Bearer ${proxyJwt}` }
+        });
+        if (response.status === 402) {
+          const payload = await response.json().catch(() => ({ error: 'Quota exceeded' }));
+          res.status(402).json(payload);
+          return;
+        }
+        if (!response.ok) {
+          const text = await response.text();
+          res.status(response.status).json({ error: 'Failed to get session', detail: text });
+          return;
+        }
         const data = await response.json();
-        
         res.json(data);
       } catch (error) {
         console.error('Session error:', error);
@@ -366,7 +410,14 @@ export class AniccaSessionManager {
             const sessionUrl = this.currentUserId
               ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
               : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-            const resp = await fetch(sessionUrl);
+            const authService = getAuthService();
+            const proxyJwt = await authService.getProxyJwt();
+            if (!proxyJwt) throw new Error('Missing proxy entitlement after OAuth');
+            const resp = await fetch(sessionUrl, { headers: { Authorization: `Bearer ${proxyJwt}` } });
+            if (resp.status === 402) {
+              const payload = await resp.json().catch(() => ({ message: 'Quota exceeded' }));
+              throw new Error(`Quota exceeded after OAuth: ${payload?.message || 'payment required'}`);
+            }
             if (!resp.ok) throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
             const data = await resp.json();
             const apiKey = data?.client_secret?.value;
@@ -430,7 +481,6 @@ export class AniccaSessionManager {
           session: '/session',
           taskStatus: '/task-status',
           health: '/health',
-          audioInput: '/audio/input',
           sdkStatus: '/sdk/status',
           modeSet: '/mode/set',
           modeStatus: '/mode/status'
@@ -438,44 +488,6 @@ export class AniccaSessionManager {
       });
     });
     
-    // 7. 音声入力エンドポイント（短尺/空データは最終フィルタでドロップ）
-    this.app.post('/audio/input', async (req, res) => {
-      try {
-        // Silent中は受信自体をドロップ（帯域/CPU/バッファ滞留を防止）
-        if (this.mode !== 'conversation') {
-          res.json({ success: true, dropped: 'silent' });
-          return;
-        }
-        // 会話時のみ接続保証
-        await this.ensureConnected(true);
-
-        // ensureConnected は型上は this.session を非null化しないため、明示ガード
-        const session = this.session;
-        if (!session) {
-          res.status(503).json({ error: 'Session not connected' });
-          return;
-        }
-
-        // Base64エンコードされたPCM16音声データを受け取る
-        const audioData = Buffer.from(req.body.audio, 'base64');
-        // 短尺/空チャンクは捨てる（約80ms未満のみブロック）
-        const rate = Number(req.body?.sampleRate) || 24000;
-        const minMs = 80;
-        const minBytes = Math.floor(rate * (minMs / 1000)) * 2; // PCM16(16bit=2bytes)
-        if (audioData.byteLength < minBytes) {
-          res.json({ success: true, dropped: 'short', bytes: audioData.byteLength });
-          return;
-        }
-        
-        // SDKにPCM16形式の音声データを送信
-        await session.sendAudio(audioData.buffer as ArrayBuffer);
-        
-        res.json({ success: true, format: 'pcm16' });
-      } catch (error: any) {
-        console.error('Audio input error:', error);
-        res.status(503).json({ error: error.message });
-      }
-    });
 
     // 8. SDK状態確認エンドポイント（新規追加）
     this.app.get('/sdk/status', (req, res) => {
@@ -577,19 +589,27 @@ export class AniccaSessionManager {
         }
       };
       
-      // 定期タスクメッセージハンドラーを追加
-      ws.on('message', async (data: string) => {
+      // 定期タスク/音声フレームのメッセージハンドラー（isBinary で正確に判定）
+      ws.on('message', async (data: any, isBinary: boolean) => {
         try {
-          const message = JSON.parse(data);
+          // 1) バイナリ（PCM16）入力: SDKへ直結
+          if (isBinary) {
+            if (this.mode !== 'conversation') return;
+            await this.ensureConnected(true);
+            if (!this.session) return;
+            if (this.isElevenLabsPlaying) return;
+            const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
+            await this.sendAudio(new Uint8Array(buf));
+            return;
+          }
+
+          // 2) JSON メッセージ（BufferでもUTF-8文字列へ変換して解釈）
+          const text = typeof data === 'string' ? data : Buffer.from(data).toString('utf8');
+          const message = JSON.parse(text);
           
           if (message.type === 'scheduled_task') {
-            // T時点の入口で必ず復旧（プリフライト未達でもここで直る）
+            // T時点の入口で一度だけ復旧（重複ensureを排除）
             await this.ensureConnected(true);
-            // 直後に未接続なら、短期待機して一度だけ再試行（READY直前のゆらぎ吸収）
-            if (!this.isConnected()) {
-              await new Promise(r => setTimeout(r, 800));
-              await this.ensureConnected(true);
-            }
             console.log('📅 Scheduled task received:', message.command);
 
             // 念のため直前の出力を再チェック
@@ -600,7 +620,17 @@ export class AniccaSessionManager {
               console.log('🧘 慈悲の瞑想モード開始（ElevenLabs読み上げ）');
               // ElevenLabsで処理するため、特別な割り込み防止は不要
             }
-            // PTT: Cron開始時は会話モードへ
+            // wake_up の場合は第一声の前に sticky を先に有効化（ゲートを確実に先出し）
+            try {
+              const t = String(message.taskType || message.taskId || '').toLowerCase();
+              if (t.startsWith('wake_up')) {
+                this.stickyTask = 'wake_up';
+                this.wakeActive = true;
+                this.stickyReady = false; // audio_start が来るまで解除不可
+              }
+            } catch {}
+
+            // PTT: Cron開始時は会話モードへ（stickyを立てた後）
             try { await this.setMode('conversation', 'cron'); } catch {}
 
             // メッセージ送信（共通）
@@ -623,7 +653,7 @@ export class AniccaSessionManager {
               }));
             }
 
-            // 起床タスクも他の定期タスクと同様に“一発発火”のみ（ループは撤廃）
+            // 起床タスクは sticky により音声停止ごとに連鎖（audio_stopped 起点）
           }
         } catch (error) {
           console.error('WebSocket message error:', error);
@@ -713,6 +743,18 @@ export class AniccaSessionManager {
     this.clearAutoExitTimer();
   }
 
+  // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
+  private clearWakeSticky(reason: string) {
+    try {
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        this.wakeActive = false;
+        this.stickyTask = null;
+        this.stickyReady = false;
+        console.log('[WAKE_STICKY_CLEAR]', { reason });
+      }
+    } catch {}
+  }
+
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
     // 同じモードなら何もしない（冪等・安定化）
     if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
@@ -729,7 +771,7 @@ export class AniccaSessionManager {
                 type: 'semantic_vad',
                 createResponse: true,
                 interruptResponse: true,
-                eagerness: 'low'
+                eagerness: 'auto'
               }
         }
       }
@@ -827,8 +869,13 @@ export class AniccaSessionManager {
           this.enqueueSystemOp({ kind: 'mem' });
           this.enqueueSystemOp({ kind: 'tz' });
           this.flushSystemOpsIfIdle();
-          // 既定は沈黙モード
-          try { await this.setMode('silent', 'startup'); } catch {}
+          // モード復元：wake中 or 生成中 or 直前が会話なら conversation 維持
+          try {
+            const wakeSticky = (this.stickyTask === 'wake_up' && this.wakeActive);
+            const wantConversation = wakeSticky || this.isGenerating || this.mode === 'conversation';
+            const desired: 'silent' | 'conversation' = wantConversation ? 'conversation' : 'silent';
+            await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
+          } catch {}
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {
@@ -853,8 +900,8 @@ export class AniccaSessionManager {
       this.isGenerating = false;
       this.lastServerEventAt = Date.now();
       console.log('[AGENT_END]');
-      // UIへ完了のフォールバック通知（半二重戻し）
-      this.broadcast({ type: 'turn_done' });
+      // 公式イベントに一本化
+      this.broadcast({ type: 'agent_end' });
       this.flushSystemOpsIfIdle();
       // 自動終了は audio_stopped で開始する（ここでは開始しない）
     });
@@ -884,6 +931,10 @@ export class AniccaSessionManager {
         console.log('🔇 Ignoring Anicca audio_start during ElevenLabs playback');
         return;
       }
+      // wake中は最初の発話が始まった時点で解除ゲートを開く
+      if (this.stickyTask === 'wake_up' && this.wakeActive && !this.stickyReady) {
+        this.stickyReady = true;
+      }
       console.log('🔊 Agent started speaking');
       this.broadcast({ type: 'audio_start' });
     });
@@ -897,10 +948,14 @@ export class AniccaSessionManager {
       }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
-      // 発話が止まったら10秒カウント開始
-      if (this.mode === 'conversation') {
-        this.lastAgentEndAt = Date.now();
-        this.startAutoExitCountdown();
+      // 起床中は即連鎖。非wakeは通常の無応答タイマー開始（AUTO_EXIT_IDLE_MS）
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        try { (this.session as any)?.transport?.sendEvent?.({ type: 'response.create' }); } catch {}
+      } else {
+        if (this.mode === 'conversation') {
+          this.lastAgentEndAt = Date.now();
+          this.startAutoExitCountdown();
+        }
       }
     });
 
@@ -1198,10 +1253,20 @@ export class AniccaSessionManager {
     // 追加：増分1件でユーザー活動を即検知（軽量・確実）
     this.session.on('history_added', (item: any) => {
       try {
-        if (this.mode !== 'conversation') return;
+        // wake中はモードに関係なく、audio_start前の'user'は無視する
+        if (this.stickyTask !== 'wake_up' || !this.wakeActive) {
+          if (this.mode !== 'conversation') return;
+        }
         // RealtimeItemとの整合: ユーザー発話のみで判定
         const isUser = (item?.type === 'message' && item?.role === 'user');
-        if (isUser) this.noteUserActivity();
+        if (isUser) {
+          this.noteUserActivity();
+          if (this.stickyTask === 'wake_up' && this.wakeActive) {
+            // audio_start でゲートが開くまでは解除しない
+            if (!this.stickyReady) return;
+            this.clearWakeSticky('user_message');
+          }
+        }
       } catch { /* noop */ }
     });
   }

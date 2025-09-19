@@ -46,8 +46,6 @@ export const API_KEYS = {
   SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
 };
 
-const monthlyUsdRaw = process.env.PRO_PLAN_MONTHLY_USD || '';
-const monthlyUsdParsed = Number.parseFloat(monthlyUsdRaw);
 const proDailyLimitRaw = process.env.PRO_DAILY_LIMIT || '';
 const proDailyLimitParsed = Number.parseInt(proDailyLimitRaw, 10);
 const freeDailyLimitRaw = process.env.FREE_DAILY_LIMIT || '';
@@ -61,7 +59,6 @@ export const BILLING_CONFIG = {
   STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
   CHECKOUT_RETURN_URL: process.env.CHECKOUT_RETURN_URL || '',
   PORTAL_RETURN_URL: process.env.PORTAL_RETURN_URL || '',
-  PRO_PLAN_MONTHLY_USD: Number.isFinite(monthlyUsdParsed) ? monthlyUsdParsed : null,
   FREE_DAILY_LIMIT: Number.isFinite(freeDailyLimitParsed) ? freeDailyLimitParsed : null,
   PRO_DAILY_LIMIT: Number.isFinite(proDailyLimitParsed) ? proDailyLimitParsed : null
 };
@@ -134,10 +131,7 @@ export function validateEnvironment() {
   if (process.env.PRO_DAILY_LIMIT && BILLING_CONFIG.PRO_DAILY_LIMIT === null) {
     warnings.push('PRO_DAILY_LIMIT is not a valid integer');
   }
-  if (BILLING_CONFIG.PRO_PLAN_MONTHLY_USD === null) {
-    warnings.push('PRO_PLAN_MONTHLY_USD is not a valid number');
-  }
-  
+
   return warnings;
 }
 

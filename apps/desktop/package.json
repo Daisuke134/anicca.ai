@@ -33,7 +33,7 @@
     "build:voice": "tsc -p tsconfig.voice.json && cp src/recorder.html dist/",
     "clean": "rm -rf dist/",
     "clean-build": "npm run clean && npm run build",
-    "voice:simple": "npm run build:voice && NODE_ENV=development DESKTOP_MODE=true electron dist/main-voice-simple.js",
+    "voice:simple": "npm run build:voice && CHANNEL=${VOICE_CHANNEL:-beta} UPDATE_CHANNEL=$CHANNEL PROXY_URL_STAGING=${VOICE_PROXY_STAGING:-https://anicca-proxy-staging.up.railway.app} NODE_ENV=development DESKTOP_MODE=true electron dist/main-voice-simple.js",
     "dist:dev": "hdiutil detach /Volumes/Anicca* -force 2>/dev/null || true && NODE_ENV=development CSC_IDENTITY_AUTO_DISCOVERY=false npm run build:voice && dotenv -e .env.defaults -- sh -c 'EB_PROD=${PROXY_URL_PRODUCTION:-$PROXY_URL_STAGING}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$EB_PROD -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING'",
     "build:staging": "NODE_ENV=development npm run build:voice",
     "build:production": "NODE_ENV=production npm run build:voice",

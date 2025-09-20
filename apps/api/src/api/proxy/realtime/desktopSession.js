@@ -20,9 +20,7 @@ export default async function handler(req, res) {
     }
 
     const WORKSPACE_MCP_URL = process.env.WORKSPACE_MCP_URL;
-    if (!WORKSPACE_MCP_URL) {
-      return res.status(500).json({ error: 'MCP service not configured' });
-    }
+    const mcpAvailable = !!WORKSPACE_MCP_URL;
 
     const entitlement = await getEntitlementState(auth.sub);
     const allowed = canUseRealtime(entitlement.plan, entitlement.usageRemaining);
@@ -44,14 +42,18 @@ export default async function handler(req, res) {
     }
     const userId = auth.sub;
 
-    const { refreshAccessTokenIfNeeded } = await import('../../../services/googleTokens.js');
-    const authorization = await refreshAccessTokenIfNeeded(userId);
-    const connected = !!authorization;
-    const server_url = `${WORKSPACE_MCP_URL}/mcp`;
-    const authHeader =
-      authorization && authorization.startsWith('Bearer ')
+    let authorization = null;
+    let authHeader = null;
+    let server_url = null;
+    if (mcpAvailable) {
+      const { refreshAccessTokenIfNeeded } = await import('../../../services/googleTokens.js');
+      authorization = await refreshAccessTokenIfNeeded(userId);
+      server_url = `${WORKSPACE_MCP_URL}/mcp`;
+      authHeader = authorization && authorization.startsWith('Bearer ')
         ? authorization
         : (authorization ? `Bearer ${authorization}` : null);
+    }
+    const connected = mcpAvailable && !!authorization;
 
     const sessionBody = {
       session: {

@@ -63,7 +63,16 @@ export async function ensureStripeCustomer(userId, email) {
   const stripe = getStripeClient();
   const existing = await ensureSubscriptionRow(userId);
   if (existing?.stripe_customer_id) {
-    return existing.stripe_customer_id;
+    try {
+      const current = await stripe.customers.retrieve(existing.stripe_customer_id);
+      if (!current?.deleted) {
+        return existing.stripe_customer_id;
+      }
+    } catch (error) {
+      if (error?.statusCode !== 404 && error?.code !== 'resource_missing') {
+        throw error;
+      }
+    }
   }
   const customer = await stripe.customers.create({
     email: email || undefined,

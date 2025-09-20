@@ -1,4 +1,5 @@
 import { safeStorage } from 'electron';
+import { createHash } from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -22,6 +23,24 @@ interface AuthUser {
   user_metadata?: any;
 }
 
+type EntitlementState = {
+  plan: string;
+  status: string;
+  current_period_end: string | null;
+  daily_usage_limit: number | null;
+  daily_usage_remaining: number | null;
+  daily_usage_count: number;
+};
+
+interface StoredSessionPayload {
+  version: number;
+  project?: {
+    url?: string;
+    fingerprint?: string;
+  };
+  session: AuthSession;
+}
+
 export class DesktopAuthService {
   private currentUser: AuthUser | null = null;
   private currentSession: AuthSession | null = null;
@@ -38,15 +57,10 @@ export class DesktopAuthService {
   private refreshInFlight: boolean = false;
   // Supabaseクライアント（公開設定のみ／PKCE）
   private supabase: SupabaseClient | null = null;
-  private entitlement = {
-    plan: 'free',
-    status: 'free',
-    current_period_end: null as string | null,
-    daily_usage_limit: null as number | null,
-    daily_usage_remaining: null as number | null,
-    daily_usage_count: 0
-  };
+  private entitlement: EntitlementState;
   private lastEntitlementFetchedAt: number | null = null;
+  private readonly projectFingerprint: string;
+  private readonly currentSupabaseHost: string | null;
   
   constructor() {
     // 認証情報の保存パス
@@ -58,6 +72,9 @@ export class DesktopAuthService {
     
     // 暗号化サービスの初期化
     this.encryption = new SimpleEncryption();
+    this.entitlement = this.createDefaultEntitlement();
+    this.projectFingerprint = this.computeProjectFingerprint();
+    this.currentSupabaseHost = this.normalizeHost(SUPABASE_CONFIG.URL);
 
     // Supabaseクライアント初期化（PKCE／公開設定のみ使用。ENVは読まない）
     if (!SUPABASE_CONFIG.URL || !SUPABASE_CONFIG.ANON_KEY) {
@@ -85,6 +102,65 @@ export class DesktopAuthService {
     const now = Date.now();
     const expiresAt = session.expires_at * 1000; // Unix timestamp to ms
     return now < (expiresAt - buffer);
+  }
+
+  private createDefaultEntitlement(): EntitlementState {
+    return {
+      plan: 'free',
+      status: 'free',
+      current_period_end: null,
+      daily_usage_limit: null,
+      daily_usage_remaining: null,
+      daily_usage_count: 0
+    };
+  }
+
+  private computeProjectFingerprint(): string {
+    return createHash('sha256')
+      .update(`${SUPABASE_CONFIG.URL}::${SUPABASE_CONFIG.ANON_KEY}`)
+      .digest('hex');
+  }
+
+  private normalizeHost(url: string | null | undefined): string | null {
+    if (!url) return null;
+    try {
+      return new URL(url).host;
+    } catch {
+      return null;
+    }
+  }
+
+  private extractJwtIssuerHost(token: string | null | undefined): string | null {
+    if (!token) return null;
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    let normalized = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    while (normalized.length % 4 !== 0) normalized += '=';
+    try {
+      const decoded = Buffer.from(normalized, 'base64').toString('utf8');
+      const payload = JSON.parse(decoded);
+      if (typeof payload?.iss !== 'string') return null;
+      return this.normalizeHost(payload.iss);
+    } catch {
+      return null;
+    }
+  }
+
+  private sessionMatchesCurrentProject(
+    session: AuthSession,
+    projectMeta?: { url?: string; fingerprint?: string }
+  ): boolean {
+    if (!session) return false;
+    if (projectMeta?.fingerprint) {
+      return projectMeta.fingerprint === this.projectFingerprint;
+    }
+    if (projectMeta?.url && this.currentSupabaseHost) {
+      const storedHost = this.normalizeHost(projectMeta.url);
+      if (storedHost) return storedHost === this.currentSupabaseHost;
+    }
+    if (!this.currentSupabaseHost) return true;
+    const tokenHost = this.extractJwtIssuerHost(session.access_token);
+    return !tokenHost || tokenHost === this.currentSupabaseHost;
   }
 
   /**
@@ -324,15 +400,22 @@ export class DesktopAuthService {
    */
   private saveSession(session: AuthSession): void {
     try {
-      const sessionData = JSON.stringify({
-        access_token: session.access_token,
-        refresh_token: session.refresh_token,
-        expires_at: session.expires_at,
-        user: session.user
-      });
+      const sessionData: StoredSessionPayload = {
+        version: 2,
+        project: {
+          url: SUPABASE_CONFIG.URL,
+          fingerprint: this.projectFingerprint
+        },
+        session: {
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_at: session.expires_at,
+          user: session.user
+        }
+      };
       
       // 新しい暗号化方式で保存
-      const encrypted = this.encryption.encrypt(sessionData);
+      const encrypted = this.encryption.encrypt(JSON.stringify(sessionData));
       fs.writeFileSync(this.authFilePath, encrypted, 'utf8');
       console.log('💾 Session saved securely with dual encryption');
     } catch (error) {
@@ -350,11 +433,26 @@ export class DesktopAuthService {
         
         // 新しい暗号化方式で復号
         const decrypted = this.encryption.decrypt(encrypted);
-        const sessionData = JSON.parse(decrypted);
-        
-        // リフレッシュトークンがあれば期限切れでも返す
-        if (sessionData.refresh_token) {
-          return sessionData as AuthSession;
+        const payload = JSON.parse(decrypted);
+
+        if (payload?.version === 2 && payload?.session) {
+          const stored = payload as StoredSessionPayload;
+          if (!this.sessionMatchesCurrentProject(stored.session, stored.project)) {
+            console.warn('♻️ Saved Supabase session belongs to another project, resetting.');
+            this.reset('supabase project mismatch');
+            return null;
+          }
+          return stored.session;
+        }
+
+        if (payload?.refresh_token) {
+          const legacySession = payload as AuthSession;
+          if (!this.sessionMatchesCurrentProject(legacySession)) {
+            console.warn('♻️ Legacy Supabase session belongs to another project, resetting.');
+            this.reset('legacy supabase project mismatch');
+            return null;
+          }
+          return legacySession;
         }
       }
     } catch (error) {
@@ -365,7 +463,27 @@ export class DesktopAuthService {
     
     return null;
   }
-  
+
+  /**
+   * セッションと内部状態を完全にリセット
+   */
+  reset(reason?: string): void {
+    console.log(`♻️ DesktopAuthService reset${reason ? ` (${reason})` : ''}`);
+    this.currentUser = null;
+    this.currentSession = null;
+    this.proxyJwt = null;
+    this.proxyJwtExpiresAt = null;
+    this.refreshInFlight = false;
+    this.retryCount = 0;
+    if (this.sessionCheckInterval) {
+      clearTimeout(this.sessionCheckInterval);
+      this.sessionCheckInterval = null;
+    }
+    this.entitlement = this.createDefaultEntitlement();
+    this.lastEntitlementFetchedAt = null;
+    this.clearSavedSession();
+  }
+
   /**
    * 保存されたセッションをクリア
    */
@@ -435,24 +553,7 @@ export class DesktopAuthService {
    * ログアウト
    */
   async signOut(): Promise<void> {
-    this.currentUser = null;
-    this.currentSession = null;
-    this.proxyJwt = null;
-    this.proxyJwtExpiresAt = null;
-    this.entitlement = {
-      plan: 'free',
-      status: 'free',
-      current_period_end: null,
-      daily_usage_limit: null,
-      daily_usage_remaining: null,
-      daily_usage_count: 0
-    };
-    this.lastEntitlementFetchedAt = null;
-    this.clearSavedSession();
-    if (this.sessionCheckInterval) {
-      clearTimeout(this.sessionCheckInterval);
-      this.sessionCheckInterval = null;
-    }
+    this.reset('sign-out');
   }
 
   /**
@@ -494,6 +595,11 @@ export class DesktopAuthService {
         },
         body: JSON.stringify({})
       });
+      if (resp.status === 401) {
+        console.warn('Entitlement HTTP error: 401 - clearing stored Supabase session');
+        this.reset('proxy unauthorized');
+        return null;
+      }
       if (resp.status === 402) {
         const data = await resp.json().catch(() => ({}));
         this.updateEntitlement(data?.entitlement);

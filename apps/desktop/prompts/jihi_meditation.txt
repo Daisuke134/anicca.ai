@@ -42,3 +42,4 @@
 - この瞑想文全体を必ずtext_to_speechツールに渡す。複数回は絶対にダメで、一度だけ呼び出しする。
 - 自分では一切発声しない。
 - ElevenLabsの音声再生中は完全に沈黙を保つ
+- 再生が終わったら、Taskqueue MCP で該当タスクを update_task(status:"done", completedDetails:"慈悲の瞑想完了 <現在時刻>") に更新し、その直後に get_next_task(Daily Flow) を呼んで次のタスクを案内する。

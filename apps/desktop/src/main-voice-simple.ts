@@ -49,10 +49,54 @@ let cronInitialized = false; // 多重登録防止（冪等化フラグ）
 const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
 const todaySchedulePath = path.join(os.homedir(), '.anicca', 'today_schedule.json');
 
+async function ensurePromptsCopied() {
+  try {
+    const appRoot = app.getAppPath();
+    const candidates = [
+      path.join(appRoot, 'prompts'),
+      path.join(__dirname, 'prompts'),
+      path.join(process.cwd(), 'prompts'),
+    ];
+
+    const sourceDir = candidates.find((p) => {
+      try {
+        return fs.existsSync(p);
+      } catch {
+        return false;
+      }
+    });
+
+    if (!sourceDir) {
+      log.warn('⚠️ prompts directory not found for initial copy');
+      return;
+    }
+
+    const targetDir = path.join(os.homedir(), '.anicca', 'prompts');
+    await fs.promises.mkdir(targetDir, { recursive: true });
+
+    const entries = await fs.promises.readdir(sourceDir, { withFileTypes: true });
+    for (const entry of entries) {
+      if (!entry.isFile() || !entry.name.endsWith('.txt')) continue;
+
+      const destination = path.join(targetDir, entry.name);
+      try {
+        await fs.promises.access(destination);
+        continue; // ユーザーが編集したファイルは保持
+      } catch {
+        await fs.promises.copyFile(path.join(sourceDir, entry.name), destination);
+      }
+    }
+  } catch (error) {
+    log.error('❌ Failed to copy prompts:', error);
+  }
+}
+
 // アプリの初期化
 async function initializeApp() {
   // トレースを無効化（MCPツールの取得でエラーになるため）
   setTracingDisabled(true);
+
+  await ensurePromptsCopied();
   
   // 実行時のチャンネル/接続先を可視化
   try {

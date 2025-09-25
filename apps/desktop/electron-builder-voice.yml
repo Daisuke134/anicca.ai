@@ -9,6 +9,7 @@ files:
   - dist/agents/**/*
   - dist/recorder.html
   - node_modules/**/*
+  - resources/taskqueue-mcp/dist/**/*
   - prompts/*.txt
   # Desktop app assets (tray + app icon)
   - assets/desktop/tray-icon.png
@@ -25,6 +26,7 @@ files:
 asarUnpack:
   - "**/node_modules/@anthropic-ai/claude-code/**/*"
   - "**/node_modules/@modelcontextprotocol/server-filesystem/**/*"
+  - "resources/taskqueue-mcp/dist/**/*"
 mac:
   category: public.app-category.productivity
   icon: assets/desktop/icon.icns

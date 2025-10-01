@@ -6,6 +6,10 @@ import {
   normalizePlanForResponse,
   canUseRealtime
 } from '../../../services/subscriptionStore.js';
+import {
+  consumeGuestTurn,
+  snapshotGuestEntitlement
+} from '../../../services/guestSessions.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
@@ -22,38 +26,54 @@ export default async function handler(req, res) {
     const WORKSPACE_MCP_URL = process.env.WORKSPACE_MCP_URL;
     const mcpAvailable = !!WORKSPACE_MCP_URL;
 
-    const entitlement = await getEntitlementState(auth.sub);
-    const allowed = canUseRealtime(entitlement.plan, entitlement.usageRemaining);
-    if (!allowed) {
-      return res.status(402).json({
-        error: 'Quota exceeded',
-        message: '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。',
-        entitlement: normalizePlanForResponse(entitlement)
-      });
-    }
+    let entitlementState;
+    let normalizedEntitlement;
+    let authorization = null;
+    let authHeader = null;
+    let server_url = null;
+    let connected = false;
 
-    await incrementTodayUsage(auth.sub);
-    const updatedEntitlement = await getEntitlementState(auth.sub);
+    if (auth.tokenType === 'guest') {
+      const result = consumeGuestTurn(auth.guestSessionId);
+      if (!result.allowed) {
+        return res.status(402).json({
+          error: 'Guest quota exceeded',
+          message: 'ゲスト利用枠は終了しました。Google ログインで継続してください。'
+        });
+      }
+      entitlementState = snapshotGuestEntitlement(result.session);
+      normalizedEntitlement = normalizePlanForResponse(entitlementState);
+    } else {
+      entitlementState = await getEntitlementState(auth.sub);
+      const allowed = canUseRealtime(entitlementState.plan, entitlementState.usageRemaining);
+      if (!allowed) {
+        return res.status(402).json({
+          error: 'Quota exceeded',
+          message: '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。',
+          entitlement: normalizePlanForResponse(entitlementState)
+        });
+      }
+
+      await incrementTodayUsage(auth.sub);
+      entitlementState = await getEntitlementState(auth.sub);
+      normalizedEntitlement = normalizePlanForResponse(entitlementState);
+
+      if (mcpAvailable) {
+        const { refreshAccessTokenIfNeeded } = await import('../../../services/googleTokens.js');
+        authorization = await refreshAccessTokenIfNeeded(auth.sub);
+        server_url = `${WORKSPACE_MCP_URL}/mcp`;
+        authHeader = authorization && authorization.startsWith('Bearer ')
+          ? authorization
+          : (authorization ? `Bearer ${authorization}` : null);
+      }
+      connected = mcpAvailable && !!authorization;
+    }
 
     const url = new URL(req.url, `http://${req.headers.host}`);
     const requestedUserId = url.searchParams.get('userId');
     if (requestedUserId && requestedUserId !== auth.sub) {
       logger.warn('desktopSession userId mismatch', { requestedUserId, tokenSub: auth.sub });
     }
-    const userId = auth.sub;
-
-    let authorization = null;
-    let authHeader = null;
-    let server_url = null;
-    if (mcpAvailable) {
-      const { refreshAccessTokenIfNeeded } = await import('../../../services/googleTokens.js');
-      authorization = await refreshAccessTokenIfNeeded(userId);
-      server_url = `${WORKSPACE_MCP_URL}/mcp`;
-      authHeader = authorization && authorization.startsWith('Bearer ')
-        ? authorization
-        : (authorization ? `Bearer ${authorization}` : null);
-    }
-    const connected = mcpAvailable && !!authorization;
 
     const sessionBody = {
       session: {
@@ -89,7 +109,7 @@ export default async function handler(req, res) {
       client_secret: { value: clientSecret.value, expires_at: clientSecret.expires_at || 0 },
       model: 'gpt-realtime',
       voice: 'alloy',
-      entitlement: normalizePlanForResponse(updatedEntitlement)
+      entitlement: normalizedEntitlement
     });
   } catch (err) {
     logger.error(`desktop-session error: ${err?.message || String(err)}`);

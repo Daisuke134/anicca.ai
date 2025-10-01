@@ -541,6 +541,7 @@ export class DesktopAuthService {
       this.saveSession(newSession);
       this.scheduleNextRefresh(newSession.expires_at);
       console.log('✅ OAuth login successful');
+      await this.refreshPlan().catch(() => null);
       return true;
     } catch (error) {
       console.error('❌ OAuth callback error:', error);
@@ -586,13 +587,15 @@ export class DesktopAuthService {
       if (this.isProxyJwtValid()) return this.proxyJwt;
       const session = this.loadSavedSession() || this.currentSession;
       const access = session?.access_token || null;
-      if (!access) return null;
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json'
+      };
+      if (access) {
+        headers.Authorization = `Bearer ${access}`;
+      }
       const resp = await fetch(API_ENDPOINTS.AUTH.ENTITLEMENT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${access}`
-        },
+        headers,
         body: JSON.stringify({})
       });
       if (resp.status === 401) {

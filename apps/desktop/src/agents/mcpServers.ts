@@ -1,9 +1,7 @@
 import { MCPServerStdio, getAllMcpTools, withTrace } from '@openai/agents';
 import type { Tool } from '@openai/agents';
-import { app } from 'electron';
-import fs from 'fs';
-import os from 'os';
 import path from 'path';
+import os from 'os';
 const log = require('electron-log/main');
 
 function resolveFilesystemServerCli(): string {
@@ -11,18 +9,6 @@ function resolveFilesystemServerCli(): string {
   const pkg = require(pkgJsonPath);
   const binRel = typeof pkg.bin === 'string' ? pkg.bin : Object.values(pkg.bin)[0];
   return path.join(path.dirname(pkgJsonPath), binRel);
-}
-
-function resolveTaskqueueServerCli(): string {
-  const appRoot = app.getAppPath();
-  const packagedPath = path.join(appRoot, 'resources', 'taskqueue-mcp', 'dist', 'src', 'server', 'index.js');
-
-  if (fs.existsSync(packagedPath)) {
-    return packagedPath;
-  }
-
-  // 開発時（ts-node 実行）などで resources ディレクトリがそのまま存在するケースをカバー
-  return path.join(__dirname, '..', '..', 'resources', 'taskqueue-mcp', 'dist', 'src', 'server', 'index.js');
 }
 
 export async function initializeMCPServers(userId?: string | null) {
@@ -42,26 +28,6 @@ export async function initializeMCPServers(userId?: string | null) {
   });
 
   servers.push(filesystemServer);
-
-  try {
-    const taskqueueDataDir = path.join(app.getPath('userData'), 'taskqueue');
-    fs.mkdirSync(taskqueueDataDir, { recursive: true });
-
-    const taskqueueServer = new MCPServerStdio({
-      name: 'taskqueue-mcp',
-      command: process.execPath,
-      args: [resolveTaskqueueServerCli()],
-      env: {
-        ...process.env,
-        ELECTRON_RUN_AS_NODE: '1',
-        TASK_MANAGER_FILE_PATH: path.join(taskqueueDataDir, 'tasks.json'),
-      },
-    });
-
-    servers.push(taskqueueServer);
-  } catch (error) {
-    log.error('❌ Failed to initialize taskqueue-mcp:', error);
-  }
 
   for (const server of servers) {
     try {

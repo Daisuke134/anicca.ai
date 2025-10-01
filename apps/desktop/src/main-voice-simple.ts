@@ -145,6 +145,15 @@ async function initializeApp() {
       }
     };
     
+    // 認証完了後にRealtime接続を再保証
+    (async () => {
+      try {
+        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+      } catch (err) {
+        console.warn('Failed to ensure SDK connection after login:', err);
+      }
+    })();
+    
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
     

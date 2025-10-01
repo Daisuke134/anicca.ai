@@ -257,6 +257,15 @@ export class AniccaSessionManager {
       const stillNeed = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
       if (!stillNeed) return;
     }
+    if (this.session?.transport?.status === 'connecting') {
+      let waited = 0;
+      while (this.session?.transport?.status === 'connecting' && waited < 5000) {
+        await new Promise(r => setTimeout(r, 100));
+        waited += 100;
+      }
+      const stillNeedAfterConnect = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
+      if (!stillNeedAfterConnect) return;
+    }
     this.isEnsuring = true;
     console.log('[ENSURE] refreshing realtime session...');
     try {

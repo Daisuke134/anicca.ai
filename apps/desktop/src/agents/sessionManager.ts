@@ -9,6 +9,12 @@ import express, { Request, Response } from 'express';
 import * as http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 
+type ReadyWaiter = {
+  resolve: () => void;
+  reject: (error: Error) => void;
+  timeout: NodeJS.Timeout;
+};
+
 export class AniccaSessionManager {
   private session: RealtimeSession | null = null;
   private agent: any = null;
@@ -37,6 +43,8 @@ export class AniccaSessionManager {
   private httpServer: http.Server | null = null;
   private wss: WebSocketServer | null = null;
   private wsClients = new Set<WebSocket>();
+  private onboardingState: 'idle' | 'running' = 'idle';
+  private readyWaiters: ReadyWaiter[] = [];
   
   // 状態管理
   private currentUserId: string | null = null;
@@ -62,8 +70,8 @@ export class AniccaSessionManager {
   private autoExitDeadlineAt: number | null = null; // epoch(ms)
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
-  private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（15s）
-  
+  private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（約35秒）
+
   // wake起床タスクの連続発話（sticky）制御
   private stickyTask: 'wake_up' | null = null;
   private wakeActive: boolean = false;
@@ -75,7 +83,91 @@ export class AniccaSessionManager {
   constructor(private mainAgent?: any) {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
   }
-  
+
+  private async updateUserLanguageInProfile(timezone: string): Promise<void> {
+    if (!timezone) return;
+
+    try {
+      const profilePath = path.join(os.homedir(), '.anicca', 'anicca.md');
+      await fs.access(profilePath);
+      const content = await fs.readFile(profilePath, 'utf8');
+
+      const line = `- タイムゾーン: ${timezone}`;
+      let next = content;
+
+      if (content.includes('- タイムゾーン:')) {
+        next = content.replace(/- タイムゾーン:[^\r\n]*(\r?\n)/, `${line}$1`);
+      } else {
+        const nicknamePattern = /(- 呼び名:[^\r\n]*\r?\n)/;
+        if (nicknamePattern.test(content)) {
+          next = content.replace(nicknamePattern, `$1${line}\n`);
+        } else {
+          const headerPattern = /(# ユーザー情報\r?\n)/;
+          if (headerPattern.test(content)) {
+            next = content.replace(headerPattern, `$1${line}\n`);
+          } else {
+            next = `${line}\n${content}`;
+          }
+        }
+      }
+
+      if (next !== content) {
+        await fs.writeFile(profilePath, next, 'utf8');
+      }
+    } catch {
+      // プロファイル未生成などで失敗した場合は無視
+    }
+  }
+
+  private isOnboardingActive(): boolean {
+    return this.onboardingState === 'running';
+  }
+
+  public setOnboardingState(state: 'idle' | 'running') {
+    this.onboardingState = state;
+  }
+
+  private resolveReadyWaiters(error?: Error) {
+    if (this.readyWaiters.length === 0) return;
+    const waiters = [...this.readyWaiters];
+    this.readyWaiters = [];
+    waiters.forEach((waiter) => {
+      clearTimeout(waiter.timeout);
+      if (error) {
+        waiter.reject(error);
+      } else {
+        waiter.resolve();
+      }
+    });
+  }
+
+  public waitForReady(timeoutMs: number = 8000): Promise<void> {
+    if (this.isConnected()) {
+      return Promise.resolve();
+    }
+
+    return new Promise((resolve, reject) => {
+      const entry: ReadyWaiter = {
+        resolve: () => {
+          clearTimeout(entry.timeout);
+          this.readyWaiters = this.readyWaiters.filter((item) => item !== entry);
+          resolve();
+        },
+        reject: (error: Error) => {
+          clearTimeout(entry.timeout);
+          this.readyWaiters = this.readyWaiters.filter((item) => item !== entry);
+          reject(error);
+        },
+        timeout: setTimeout(() => {
+          this.readyWaiters = this.readyWaiters.filter((item) => item !== entry);
+          reject(new Error('waitForReady timeout'));
+        }, timeoutMs)
+      };
+
+      this.readyWaiters.push(entry);
+    });
+  }
+
   // ======= 自動送信（mem/TZ）: キュー運用 + 応答を起動しない送信 =======
   private enqueueSystemOp(op: {kind:'mem'|'tz'; payload?: any}) {
     if (op.kind === 'tz') {
@@ -224,14 +316,11 @@ export class AniccaSessionManager {
         audio: {
           input: {
             format: { type: 'audio/pcm', rate: 24000 },
-            // transcription 設定はデフォルト（言語ヒント未指定）
-            // noiseReduction: { type: 'far_field' }, // Disabled for Near Field cutover (echo behavior A/B)
-            // semantic_vad（慎重寄り）
             turnDetection: {
-              type: 'semantic_vad',
-              createResponse: true,
-              interruptResponse: true,
-              eagerness: 'auto'
+              type: 'server_vad',
+              threshold: 0.5,
+              prefixPaddingMs: 300,
+              silenceDurationMs: 500
             }
           },
           output: {
@@ -557,12 +646,13 @@ export class AniccaSessionManager {
     });
 
     // 1-1. ユーザーのタイムゾーンを受け取る（setupRoutes内に配置）
-    this.app.post('/user/timezone', (req, res) => {
+    this.app.post('/user/timezone', async (req, res) => {
       try {
         const tz = String(req.body?.timezone ?? '');
         if (tz && tz.length >= 3) {
           this.userTimezone = tz;
           console.log('🌐 User timezone set:', tz);
+          await this.updateUserLanguageInProfile(tz);
         }
         res.json({ ok: true, timezone: this.userTimezone });
       } catch (e: any) {
@@ -699,6 +789,10 @@ export class AniccaSessionManager {
   getUserTimezone(): string | null {
     return this.userTimezone;
   }
+
+  public async forceConversationMode(reason: string = 'manual'): Promise<void> {
+    await this.setMode('conversation', reason);
+  }
   
   // WebSocket Keep-alive機能
   private keepAliveErrors = 0;  // （無効化済みだが参照残し）
@@ -768,18 +862,19 @@ export class AniccaSessionManager {
           audio: {
             input: {
               turnDetection: {
-                type: 'semantic_vad',
-                createResponse: true,
-                interruptResponse: true,
-                eagerness: 'auto'
+                type: 'server_vad',
+                threshold: 0.5,
+                prefixPaddingMs: 300,
+                silenceDurationMs: 500
               }
-        }
-      }
-    });
+            }
+          }
+        });
         this.mode = 'conversation';
         this.clearAutoExitTimer();
         this.lastUserActivityAt = null;
       } else {
+        this.setOnboardingState('idle');
         // OFFは低レベル session.update を正しい階層＋必須フィールドで送る
         (this.session as any)?.transport?.sendEvent?.({
           type: 'session.update',
@@ -857,6 +952,7 @@ export class AniccaSessionManager {
         if (event?.type === 'session.created') {
           this.ready = true;
           console.log('[READY] session.created');
+          this.resolveReadyWaiters();
           if (!this.restoredOnce) {
             try {
               await this.restoreSession();
@@ -923,6 +1019,12 @@ export class AniccaSessionManager {
       });
     });
 
+    this.session.transport.on('input_audio_buffer.speech_started', () => {
+      if (this.mode === 'conversation') {
+        this.noteUserActivity();
+      }
+    });
+
     // 音声開始/終了
     this.session.on('audio_start', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
@@ -977,7 +1079,7 @@ export class AniccaSessionManager {
       this.session.transport.on('close', async () => {
         console.error('🔌 WebSocket disconnected!');
         this.broadcast({ type: 'websocket_disconnected' });
-        
+
         // 自動再接続
         if (!this.isReconnecting && this.apiKey) {
           await this.handleReconnection();
@@ -985,11 +1087,11 @@ export class AniccaSessionManager {
       });
       
       // WebSocketエラーイベント  
-      this.session.transport.on('error', (error: any) => {
-        console.error('🔌 WebSocket error:', error);
-        // エラー種別によって処理を分岐
-        if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
-          if (!this.isReconnecting && this.apiKey) {
+        this.session.transport.on('error', (error: any) => {
+          console.error('🔌 WebSocket error:', error);
+          // エラー種別によって処理を分岐
+          if (error.code === 'ECONNRESET' || error.code === 'ETIMEDOUT') {
+            if (!this.isReconnecting && this.apiKey) {
             this.handleReconnection();
           }
         }
@@ -1293,7 +1395,6 @@ export class AniccaSessionManager {
   async disconnect() {
     // keep-aliveを停止
     this.stopKeepAlive();
-    
     if (this.session) {
       this.session.close();
       console.log('🔌 Disconnected from OpenAI Realtime API');
@@ -1509,15 +1610,14 @@ export class AniccaSessionManager {
       // ファイルが存在しない場合は作成
       if (!await fs.access(aniccaPath).then(() => true).catch(() => false)) {
         const initialContent = `# ユーザー情報
-- 名前: 
+- 呼び名:
+- タイムゾーン:
+- 起床トーン:
+- 就寝場所:
 
-# Slack設定
-- よく使うチャンネル: 
-- 返信スタイル:
-
-# 習慣・ルーティン
-
-# 重要な会話履歴
+## ルーティン
+- 起床:
+- 就寝:
 `;
         await fs.writeFile(aniccaPath, initialContent, 'utf-8');
         console.log('📝 Created initial anicca.md');

@@ -9,7 +9,6 @@ import fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
 import cron from 'node-cron';
-
 /**
  * Worker - 汎用Workerエージェントの実装
  * 

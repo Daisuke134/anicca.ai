@@ -12,6 +12,10 @@ npm-debug.log*
 
 # Build outputs
 dist/
+!apps/desktop/resources/
+!apps/desktop/resources/taskqueue-mcp/
+!apps/desktop/resources/taskqueue-mcp/dist/
+!apps/desktop/resources/taskqueue-mcp/dist/**
 release/
 
 # Logs

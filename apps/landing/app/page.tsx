@@ -25,11 +25,13 @@ export default function Page() {
         <p className="mt-2 flex items-center justify-center gap-2">
           <a href="https://github.com/Daisuke134/anicca.ai" className="underline">GitHub</a>
           <span>•</span>
-          <a href="/privacy" className="underline">Privacy Policy</a>
+          <a href="/privacy" className="underline">プライバシーポリシー</a>
           <span>•</span>
-          <a href="/terms" className="underline">Terms of Service</a>
+          <a href="/terms" className="underline">利用規約</a>
           <span>•</span>
-          <a href="mailto:contact@anicca.ai" className="underline">Contact</a>
+          <a href="/tokushoho" className="underline">特定商取引法</a>
+          <span>•</span>
+          <a href="mailto:keiodaisuke@gmail.com" className="underline">お問い合わせ</a>
         </p>
       </footer>
     </>

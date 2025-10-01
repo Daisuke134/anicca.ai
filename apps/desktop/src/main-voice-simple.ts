@@ -1,4 +1,5 @@
 import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell, MenuItemConstructorOptions } from 'electron';
+import { jsonrepair } from 'jsonrepair';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
@@ -12,6 +13,13 @@ import { WebSocket } from 'ws';
 // SDK imports
 import { AniccaSessionManager } from './agents/sessionManager';
 import { createAniccaAgent } from './agents/mainAgent';
+import {
+  ensureBaselineFiles,
+  shouldRunOnboarding,
+  resolveOnboardingPrompt,
+  syncTodayTasksFromMarkdown
+} from './services/onboardingBootstrap';
+import { buildRoutinePrompt } from './services/routines';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -46,11 +54,20 @@ const isWorkerMode = process.env.WORKER_MODE === 'true';
 // 定期タスク管理
 const cronJobs = new Map<string, any>();
 let cronInitialized = false; // 多重登録防止（冪等化フラグ）
-const scheduledTasksPath = path.join(os.homedir(), '.anicca', 'scheduled_tasks.json');
-const todaySchedulePath = path.join(os.homedir(), '.anicca', 'today_schedule.json');
+let tasksWatcherRegistered = false;
+let onboardingQueued = false;
+const homeDir = os.homedir();
+const aniccaDir = path.join(homeDir, '.anicca');
+const scheduledTasksPath = path.join(aniccaDir, 'scheduled_tasks.json');
+const todaySchedulePath = path.join(aniccaDir, 'today_schedule.json');
+const tasksMarkdownPath = path.join(aniccaDir, 'tasks.md');
 
 // アプリの初期化
 async function initializeApp() {
+  await ensureBaselineFiles();
+  syncTodayTasksFromMarkdown();
+  const shouldLaunchOnboarding = shouldRunOnboarding();
+
   // トレースを無効化（MCPツールの取得でエラーになるため）
   setTracingDisabled(true);
   
@@ -110,11 +127,32 @@ async function initializeApp() {
       // 認証完了後に定期タスク登録を必ず一度だけ起動（冪等）
       if (!cronInitialized) {
         console.log('👤 Auth completed, starting scheduled tasks (post-login)...');
+        syncTodayTasksFromMarkdown();
         initializeScheduledTasks();
         cronInitialized = true;
         console.log('✅ Scheduled tasks started (post-login)');
+        if (!tasksWatcherRegistered) {
+          fs.watchFile(tasksMarkdownPath, { interval: 1000 }, () => {
+            try {
+              syncTodayTasksFromMarkdown();
+              rebuildTodayIndex();
+            } catch (err) {
+              console.warn('⚠️ tasks.md watch update failed:', err);
+            }
+          });
+          tasksWatcherRegistered = true;
+        }
       }
     };
+    
+    // 認証完了後にRealtime接続を再保証
+    (async () => {
+      try {
+        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+      } catch (err) {
+        console.warn('Failed to ensure SDK connection after login:', err);
+      }
+    })();
     
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
@@ -199,6 +237,32 @@ async function initializeApp() {
       console.log('✅ Bridge server started');
     } else {
       throw new Error('SessionManager not initialized');
+    }
+
+    if (shouldLaunchOnboarding && sessionManager && !onboardingQueued) {
+      onboardingQueued = true;
+      const manager = sessionManager;
+
+      const runOnboarding = async (attempt = 1): Promise<void> => {
+        try {
+          const prompt = resolveOnboardingPrompt();
+          await manager.waitForReady(8000);
+          manager.setOnboardingState('running');
+          await manager.forceConversationMode('onboarding');
+          await manager.sendMessage(prompt);
+          console.log('🚀 Onboarding prompt dispatched');
+        } catch (error) {
+          console.error(`❌ Failed to dispatch onboarding prompt (attempt ${attempt}):`, error);
+          manager.setOnboardingState('idle');
+          if (attempt < 3) {
+            setTimeout(() => {
+              void runOnboarding(attempt + 1);
+            }, 1000);
+          }
+        }
+      };
+
+      void runOnboarding();
     }
     
     // 少し待ってからBrowserWindowを作成
@@ -503,6 +567,31 @@ function createHiddenWindow() {
                     o.stop(ctx.currentTime + 0.14);
                   } catch (e) {
                     console.warn('mode_set beep failed:', e);
+                  }
+                }
+              } else if (message.type === 'mode_set' && message.mode === 'silent') {
+                const ok = await checkSDKStatus().catch(() => false);
+                if (!ok) {
+                  console.warn('mode_set (silent) but SDK not ready; skip beep');
+                } else {
+                  try {
+                    const Ctor = (window['AudioContext'] || window['webkitAudioContext']);
+                    if (!Ctor) throw new Error('No AudioContext available');
+                    const ctx = audioContext || new Ctor();
+                    if (!audioContext) { audioContext = ctx; }
+                    try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
+                    const o = ctx.createOscillator();
+                    const g = ctx.createGain();
+                    o.type = 'sine';
+                    o.frequency.value = 440; // A4
+                    g.gain.setValueAtTime(0.0, ctx.currentTime);
+                    g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.01);
+                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+                    o.connect(g).connect(ctx.destination);
+                    o.start();
+                    o.stop(ctx.currentTime + 0.22);
+                  } catch (e) {
+                    console.warn('mode_set silent beep failed:', e);
                   }
                 }
               }
@@ -1107,11 +1196,24 @@ process.on('unhandledRejection', (reason, promise) => {
   console.error('❌ Unhandled rejection at:', promise, 'reason:', reason);
 });
 
+function parseScheduledJson(content: string): { data: any; repaired: boolean; repairedContent: string } {
+  try {
+    return { data: JSON.parse(content), repaired: false, repairedContent: content };
+  } catch (err) {
+    const repairedContent = jsonrepair(content);
+    return { data: JSON.parse(repairedContent), repaired: true, repairedContent };
+  }
+}
+
 // 定期タスク管理関数
 function initializeScheduledTasks() {
   if (fs.existsSync(scheduledTasksPath)) {
     const content = fs.readFileSync(scheduledTasksPath, 'utf8');
-    const data = JSON.parse(content);
+    const { data, repaired, repairedContent } = parseScheduledJson(content);
+    if (repaired) {
+      fs.writeFileSync(scheduledTasksPath, repairedContent, 'utf8');
+      console.log('🛠️ scheduled_tasks.json を自動修復しました');
+    }
     const tasks = data.tasks || [];
 
     tasks.forEach((task: any) => {
@@ -1181,7 +1283,11 @@ function rebuildTodayIndex() {
     if (!fs.existsSync(scheduledTasksPath)) return;
     const content = fs.readFileSync(scheduledTasksPath, 'utf8');
     if (!content.trim()) return;
-    const data = JSON.parse(content);
+    const { data, repaired, repairedContent } = parseScheduledJson(content);
+    if (repaired) {
+      fs.writeFileSync(scheduledTasksPath, repairedContent, 'utf8');
+      console.log('🛠️ scheduled_tasks.json を自動修復しました');
+    }
     const tasks = Array.isArray((data as any)?.tasks) ? (data as any).tasks : [];
     const items = buildTodayIndex(tasks, new Date());
     writeTodayIndex(items);
@@ -1255,7 +1361,11 @@ function resolveTZ(task: any): string {
 function removeTaskFromJson(taskId: string) {
   if (fs.existsSync(scheduledTasksPath)) {
     const content = fs.readFileSync(scheduledTasksPath, 'utf8');
-    const data = JSON.parse(content);
+    const { data, repaired, repairedContent } = parseScheduledJson(content);
+    if (repaired) {
+      fs.writeFileSync(scheduledTasksPath, repairedContent, 'utf8');
+      console.log('🛠️ scheduled_tasks.json を自動修復しました');
+    }
     data.tasks = data.tasks.filter((t: any) => t.id !== taskId);
     fs.writeFileSync(scheduledTasksPath, JSON.stringify(data, null, 2));
     console.log(`✅ タスク削除完了: ${taskId}`);
@@ -1294,7 +1404,17 @@ async function executeScheduledTask(task: any) {
     let templateText = '';
     try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
     try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
-    const commandBody = [commonText, templateText]
+    let resolvedTemplate = templateText;
+    if (tpl === 'sleep.txt') {
+      try {
+        resolvedTemplate = buildRoutinePrompt('sleep', templateText, { reset: true });
+      } catch (routineError) {
+        console.warn('[sleep_routine] fallback to raw template:', routineError);
+        resolvedTemplate = templateText;
+      }
+    }
+
+    const commandBody = [commonText, resolvedTemplate]
       .filter(Boolean)
       .join('\n\n')
       .replace(/\$\{task\.description\}/g, String(task.description ?? ''));
@@ -1336,8 +1456,24 @@ function reloadScheduledTasks() {
           return;
         }
         
-        const data = JSON.parse(content);
-        const tasks = data.tasks || [];
+        const { data, repaired, repairedContent } = parseScheduledJson(content);
+        if (repaired) {
+          fs.writeFileSync(scheduledTasksPath, repairedContent, 'utf8');
+          console.log('🛠️ scheduled_tasks.json を自動修復しました');
+        }
+        const originalTasks = Array.isArray(data.tasks) ? data.tasks : [];
+        const unique = new Map<string, any>();
+        for (const task of originalTasks) {
+          if (!task?.id || !task?.schedule) continue;
+          const key = `${task.id}__${task.schedule}`;
+          if (!unique.has(key)) unique.set(key, task);
+        }
+        const tasks = Array.from(unique.values());
+        if (tasks.length !== originalTasks.length) {
+          console.log('🛠️ 重複していたスケジュールを自動調整しました');
+          data.tasks = tasks;
+          fs.writeFileSync(scheduledTasksPath, JSON.stringify(data, null, 2), 'utf8');
+        }
 
         tasks.forEach((task: any) => {
           registerCronJob(task);

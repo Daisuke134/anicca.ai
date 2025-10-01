@@ -13,6 +13,15 @@ function verifyJwtHs256(token, secret) {
   return JSON.parse(payloadJson);
 }
 
+function tryVerify(token, secret) {
+  if (!secret) return null;
+  try {
+    return verifyJwtHs256(token, secret);
+  } catch (e) {
+    return null;
+  }
+}
+
 export default async function requireAuth(req, res) {
   try {
     const auth = req.headers['authorization'] || '';
@@ -21,28 +30,43 @@ export default async function requireAuth(req, res) {
       return null;
     }
     const token = auth.slice('Bearer '.length).trim();
-    const secret = process.env.PROXY_AUTH_JWT_SECRET;
-    if (!secret) {
-      console.error('PROXY_AUTH_JWT_SECRET is not set');
-      res.status(500).json({ error: 'Server auth misconfigured' });
+
+    const memberSecret = process.env.PROXY_AUTH_JWT_SECRET;
+    const guestSecret = process.env.PROXY_GUEST_JWT_SECRET;
+
+    let decoded = tryVerify(token, memberSecret);
+    let tokenType = 'member';
+
+    if (!decoded) {
+      decoded = tryVerify(token, guestSecret);
+      tokenType = decoded ? 'guest' : null;
+    }
+
+    if (!decoded || !tokenType) {
+      console.warn('JWT verification failed: no matching secret');
+      res.status(401).json({ error: 'Invalid token' });
       return null;
     }
-    const decoded = verifyJwtHs256(token, secret);
+
     const sub = decoded?.sub || decoded?.uid || decoded?.user_id || decoded?.email || null;
     if (!sub) {
       res.status(401).json({ error: 'Token missing subject' });
       return null;
     }
+
     const email = decoded?.email || null;
-    const plan = decoded?.plan || 'free';
-    const status = decoded?.status || 'free';
+    const plan = decoded?.plan || (tokenType === 'guest' ? 'guest' : 'free');
+    const status = decoded?.status || plan;
     const usageLimit = Number.isFinite(decoded?.usage_limit) ? decoded.usage_limit : null;
     const usageRemaining = Number.isFinite(decoded?.usage_remaining) ? decoded.usage_remaining : null;
-    return { sub, email, plan, status, usageLimit, usageRemaining, raw: decoded };
+    const guestSessionId = tokenType === 'guest'
+      ? (decoded?.guest_session_id || sub)
+      : null;
+
+    return { sub, email, plan, status, usageLimit, usageRemaining, raw: decoded, tokenType, guestSessionId };
   } catch (e) {
     console.warn('JWT verification failed:', e?.message || String(e));
     res.status(401).json({ error: 'Invalid token' });
     return null;
   }
 }
-

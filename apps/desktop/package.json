@@ -55,15 +55,15 @@
   ],
   "author": {
     "name": "anicca",
-    "email": "contact@anicca.ai"
+    "email": "keiodaisuke@gmail.com"
   },
   "license": "MIT",
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.24",
     "@composio/core": "^0.1.45",
     "@google-cloud/text-to-speech": "^6.1.0",
-    "@modelcontextprotocol/server-filesystem": "*",
     "@modelcontextprotocol/sdk": "^1.12.1",
+    "@modelcontextprotocol/server-filesystem": "*",
     "@openai/agents": "^0.1.0",
     "@openai/agents-realtime": "^0.1.0",
     "@ricky0123/vad-web": "^0.0.24",
@@ -80,6 +80,7 @@
     "electron-updater": "^6.6.2",
     "express": "^5.1.0",
     "form-data": "^4.0.0",
+    "jsonrepair": "^3.13.1",
     "mcp-remote": "^0.1.14",
     "node-cron": "^3.0.3",
     "node-fetch": "^2.7.0",

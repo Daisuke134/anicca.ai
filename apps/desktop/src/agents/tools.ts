@@ -6,6 +6,7 @@ import path from 'path';
 import os from 'os';
 import { getAuthService } from '../services/desktopAuthService';
 import { PORTS, PROXY_URL, API_ENDPOINTS } from '../config';
+import { advanceRoutineStepForTool } from '../services/routines';
 
 // 1. get_hacker_news_stories
 export const get_hacker_news_stories = tool({
@@ -292,6 +293,27 @@ export const slack_get_thread_replies = tool({
 
 
 
+// 11. advance_routine_step
+export const advance_routine_step = tool({
+  name: 'advance_routine_step',
+  description: 'ルーティン手順を1つ進める。ユーザーが現在の手順を完了した直後に必ず呼び出す。',
+  parameters: z.object({
+    routineId: z.string().describe('ルーティンID（例: sleep）'),
+    acknowledgedStep: z.string().nullable().describe('完了した手順の補足メモ（任意）')
+  }),
+  execute: async ({ routineId, acknowledgedStep }) => {
+    try {
+      const result = advanceRoutineStepForTool(routineId, acknowledgedStep);
+      return JSON.stringify(result);
+    } catch (error: any) {
+      return JSON.stringify({
+        status: 'error',
+        message: error?.message || String(error)
+      });
+    }
+  }
+});
+
 // 15. text_to_speech (ElevenLabs)
 export const text_to_speech = tool({
   name: 'text_to_speech',
@@ -484,7 +506,24 @@ export const disconnect_google_calendar = tool({
   }
 });
 
-// 18. get_current_time（外部API非依存：OSのIANA TZを返す）
+// 18. start_google_login（音声からブラウザログインを起動）
+export const start_google_login = tool({
+  name: 'start_google_login',
+  description: 'Googleアカウントでのログインフローを開始する',
+  parameters: z.object({}),
+  execute: async () => {
+    const auth = getAuthService();
+    if (auth.isAuthenticated()) {
+      return JSON.stringify({ status: 'already_authenticated' });
+    }
+    const { shell } = require('electron');
+    const url = await auth.getGoogleOAuthUrl();
+    shell.openExternal(url);
+    return JSON.stringify({ status: 'launched', url });
+  }
+});
+
+// 19. get_current_time（外部API非依存：OSのIANA TZを返す）
 export const get_current_time = tool({
   name: 'get_current_time',
   description: '現在の時刻を取得（ユーザーの場所に基づく）',
@@ -496,7 +535,7 @@ export const get_current_time = tool({
   }
 });
 
-// 19. convert_time（ISO日時→指定IANA TZの人間可読表示）
+// 20. convert_time（ISO日時→指定IANA TZの人間可読表示）
 export const convert_time = tool({
   name: 'convert_time',
   description: 'ISO日時を指定IANAタイムゾーンのローカル時刻に変換（人間可読）',
@@ -535,10 +574,12 @@ export const allTools = [
   slack_add_reaction,
   slack_reply_to_thread,
   slack_get_thread_replies,
+  advance_routine_step,
   text_to_speech,
   open_url,
   connect_google_calendar,
   disconnect_google_calendar,
+  start_google_login,
   get_current_time,
   convert_time,
 ];

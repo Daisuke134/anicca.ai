@@ -120,6 +120,9 @@ export function validateEnvironment() {
     if (!BILLING_CONFIG.STRIPE_WEBHOOK_SECRET) {
       warnings.push('STRIPE_WEBHOOK_SECRET is not set');
     }
+    if (!process.env.PROXY_GUEST_JWT_SECRET) {
+      warnings.push('PROXY_GUEST_JWT_SECRET is not set');
+    }
     if (!BILLING_CONFIG.CHECKOUT_RETURN_URL || !BILLING_CONFIG.PORTAL_RETURN_URL) {
       warnings.push('Checkout/Portal return URLs are not set');
     }

@@ -145,14 +145,23 @@ async function initializeApp() {
       }
     };
     
-    // 認証完了後にRealtime接続を再保証
-    (async () => {
+    // 認証完了後にRealtime接続を再保証（Bridge起動を考慮してリトライ）
+    const ensureSdkAfterLogin = async (attempt = 1): Promise<void> => {
       try {
         await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
       } catch (err) {
-        console.warn('Failed to ensure SDK connection after login:', err);
+        if (attempt >= 6) {
+          console.error('Failed to ensure SDK connection after login (exhausted retries):', err);
+          return;
+        }
+        const backoff = Math.min(500, attempt * 150);
+        console.warn(`Failed to ensure SDK connection after login (attempt ${attempt}), retrying in ${backoff}ms`);
+        setTimeout(() => {
+          void ensureSdkAfterLogin(attempt + 1);
+        }, backoff);
       }
-    })();
+    };
+    void ensureSdkAfterLogin();
     
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');

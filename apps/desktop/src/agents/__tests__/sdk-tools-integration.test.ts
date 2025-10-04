@@ -3,6 +3,8 @@ import { createAniccaAgent } from '../mainAgent';
 import { allTools } from '../tools';
 import { AniccaSessionManager } from '../sessionManager';
 
+const TEST_BRIDGE_TOKEN = 'test-bridge-token-0123456789abcdef0123456789abcdef';
+
 describe('SDK Tool Integration - ツールがSDKに正しく登録される', () => {
   
   describe('RealtimeAgentへのツール登録', () => {
@@ -63,7 +65,7 @@ describe('SDK Tool Integration - ツールがSDKに正しく登録される', ()
     let sessionManager: AniccaSessionManager;
     
     beforeAll(() => {
-      sessionManager = new AniccaSessionManager();
+      sessionManager = new AniccaSessionManager(undefined, TEST_BRIDGE_TOKEN);
     });
     
     it('SessionManagerがinitialize時にツール付きエージェントを作成する', async () => {

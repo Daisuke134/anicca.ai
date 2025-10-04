@@ -12,6 +12,14 @@ export default async function handler(req, res) {
   }
   
   try {
+    const auth = req.auth;
+    if (!auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const bodyUserId = typeof req.body?.userId === 'string' ? req.body.userId : undefined;
+    if (bodyUserId && bodyUserId !== auth.sub) {
+      return res.status(403).json({ error: 'Forbidden: userId mismatch' });
+    }
     // MCPサービスを初期化（初回のみ）
     if (!isInitialized) {
       await exaMcpService.initialize();

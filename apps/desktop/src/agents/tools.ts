@@ -1,12 +1,42 @@
 import { tool } from '@openai/agents/realtime';
 import { z } from 'zod';
-import fetch from 'node-fetch';
+import fetch, { RequestInit } from 'node-fetch';
 import fs from 'fs/promises';
 import path from 'path';
 import os from 'os';
 import { getAuthService } from '../services/desktopAuthService';
 import { PORTS, PROXY_URL, API_ENDPOINTS } from '../config';
 import { advanceRoutineStepForTool } from '../services/routines';
+
+async function proxyFetch(url: string, init: RequestInit = {}) {
+  const auth = getAuthService();
+  const jwt = await auth.getProxyJwt();
+  if (!jwt) {
+    const err: any = new Error('ログインが必要です。');
+    err.name = 'ProxyAuthError';
+    throw err;
+  }
+  const headers: Record<string, string> = {};
+  const original = init.headers as any;
+  if (Array.isArray(original)) {
+    for (const [key, value] of original) {
+      headers[String(key)] = String(value);
+    }
+  } else if (original && typeof original.forEach === 'function') {
+    original.forEach((value: string, key: string) => {
+      headers[key] = value;
+    });
+  } else if (original) {
+    for (const [key, value] of Object.entries(original as Record<string, string>)) {
+      headers[key] = value;
+    }
+  }
+  if (init.body && !headers['Content-Type']) {
+    headers['Content-Type'] = 'application/json';
+  }
+  headers['Authorization'] = `Bearer ${jwt}`;
+  return fetch(url, { ...init, headers });
+}
 
 // 1. get_hacker_news_stories
 export const get_hacker_news_stories = tool({
@@ -17,7 +47,7 @@ export const get_hacker_news_stories = tool({
   }),
   execute: async ({ count }) => {
     try {
-      const response = await fetch(`${PROXY_URL}/api/tools/news`, {
+      const response = await proxyFetch(`${PROXY_URL}/api/tools/news`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ count })
@@ -40,7 +70,7 @@ export const search_exa = tool({
   }),
   execute: async ({ query, numResults }) => {
     try {
-      const response = await fetch(`${PROXY_URL}/api/tools/search_exa`, {
+      const response = await proxyFetch(`${PROXY_URL}/api/tools/search_exa`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ query, numResults })
@@ -63,7 +93,7 @@ export const think_with_claude = tool({
   execute: async ({ task }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${PROXY_URL}/api/tools/claude_code`, {
+      const response = await proxyFetch(`${PROXY_URL}/api/tools/claude_code`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -91,7 +121,7 @@ export const connect_slack = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(`${API_ENDPOINTS.SLACK.OAUTH_URL}?userId=${userId}`);
+      const response = await proxyFetch(`${API_ENDPOINTS.SLACK.OAUTH_URL}?userId=${userId}`);
       const data = await response.json();
       const launchUrl = data.url || data.authUrl; // 後方互換
       if (launchUrl) {
@@ -119,7 +149,7 @@ export const slack_list_channels = tool({
       const { limit = 30 } = params || {};
       
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
+      const response = await proxyFetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -147,7 +177,7 @@ export const slack_send_message = tool({
   execute: async ({ channel, message }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
+      const response = await proxyFetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -186,7 +216,7 @@ export const slack_get_channel_history = tool({
       }
       
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
+      const response = await proxyFetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -215,7 +245,7 @@ export const slack_add_reaction = tool({
   execute: async ({ channel, timestamp, name }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
+      const response = await proxyFetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -244,7 +274,7 @@ export const slack_reply_to_thread = tool({
   execute: async ({ channel, message, thread_ts }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
+      const response = await proxyFetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -272,7 +302,7 @@ export const slack_get_thread_replies = tool({
   execute: async ({ channel, thread_ts }) => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await fetch(API_ENDPOINTS.TOOLS.SLACK, {
+      const response = await proxyFetch(API_ENDPOINTS.TOOLS.SLACK, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -335,7 +365,7 @@ export const text_to_speech = tool({
       const voiceSimilarity = similarity_boost ?? 0.75;
       const voiceSpeed = speed ?? 1.0;
       
-      const response = await fetch(`${PROXY_URL}/api/mcp/elevenlabs`, {
+      const response = await proxyFetch(`${PROXY_URL}/api/mcp/elevenlabs`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -397,43 +427,45 @@ export const connect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      let jwt: string | null = null;
+      let statusResponse;
       try {
-        jwt = await getAuthService().getProxyJwt();
+        statusResponse = await proxyFetch(`${PROXY_URL}/api/mcp/gcal/status`, {
+          method: 'POST',
+          body: JSON.stringify({ userId })
+        });
       } catch (err: any) {
         if (err?.code === 'PAYMENT_REQUIRED') {
           return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
         }
+        if (err?.name === 'ProxyAuthError') {
+          return 'ログインが必要です。';
+        }
         throw err;
       }
-      if (!jwt) {
-        return 'ログインが必要です。';
-      }
-      // ステータス確認
-      const statusResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/status`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${jwt}`
-        },
-        body: JSON.stringify({ userId })
-      });
       if (!statusResponse.ok) {
         console.warn(`Google Calendar status check failed: ${statusResponse.status}`);
         return 'Google Calendar接続状態の確認に失敗しました。';
       }
 
       const statusData = await statusResponse.json();
-      // Reduce sensitive logging: do not print tokens
       console.log('Calendar MCP status:', {
         connected: !!statusData?.connected,
         server_url: statusData?.server_url || 'hidden'
       });
 
-      // authorization が無ければ未接続として扱い、必ず認可URLを開く
       if (!statusData.connected || !statusData.authorization) {
-        const oauthResponse = await fetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`,
-        { headers: jwt ? { 'Authorization': `Bearer ${jwt}` } : {} });
+        let oauthResponse;
+        try {
+          oauthResponse = await proxyFetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
+        } catch (err: any) {
+          if (err?.code === 'PAYMENT_REQUIRED') {
+            return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
+          }
+          if (err?.name === 'ProxyAuthError') {
+            return 'ログインが必要です。';
+          }
+          throw err;
+        }
         if (!oauthResponse.ok) {
           console.warn(`Google Calendar OAuth URL fetch failed: ${oauthResponse.status}`);
           return 'Google Calendar認証URLの取得に失敗しました。';
@@ -469,30 +501,24 @@ export const disconnect_google_calendar = tool({
   execute: async () => {
     try {
       const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      let jwt: string | null = null;
+      let resp;
       try {
-        jwt = await getAuthService().getProxyJwt();
+        resp = await proxyFetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
+          method: 'POST',
+          body: JSON.stringify({ userId })
+        });
       } catch (err: any) {
         if (err?.code === 'PAYMENT_REQUIRED') {
           return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
         }
+        if (err?.name === 'ProxyAuthError') {
+          return 'ログインが必要です。';
+        }
         throw err;
       }
-      if (!jwt) {
-        return 'ログインが必要です。';
-      }
-      const resp = await fetch(`${PROXY_URL}/api/mcp/gcal/disconnect`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${jwt}`
-        },
-        body: JSON.stringify({ userId })
-      });
       if (!resp.ok) {
         return `Google Calendarの接続解除に失敗しました（HTTP ${resp.status}）`;
       }
-      // Best-effort: Bridge に接続再初期化を依頼
       try {
         await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
           method: 'POST',

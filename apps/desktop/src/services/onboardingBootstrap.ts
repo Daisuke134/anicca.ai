@@ -36,19 +36,26 @@ function initialTasksTemplate(dateLabel: string): string {
 
 function ensureDir(): void {
   if (!fs.existsSync(baseDir)) {
-    fs.mkdirSync(baseDir, { recursive: true });
+    fs.mkdirSync(baseDir, { recursive: true, mode: 0o700 });
   }
+  try {
+    fs.chmodSync(baseDir, 0o700);
+  } catch {}
 }
 
 function ensureJson(pathname: string, defaultValue: object): void {
   if (!fs.existsSync(pathname)) {
-    fs.writeFileSync(pathname, JSON.stringify(defaultValue, null, 2), 'utf8');
+    fs.writeFileSync(pathname, JSON.stringify(defaultValue, null, 2), { encoding: 'utf8', mode: 0o600 });
+  } else {
+    try { fs.chmodSync(pathname, 0o600); } catch {}
   }
 }
 
 function ensureFile(pathname: string, template: string): void {
   if (!fs.existsSync(pathname)) {
-    fs.writeFileSync(pathname, template, 'utf8');
+    fs.writeFileSync(pathname, template, { encoding: 'utf8', mode: 0o600 });
+  } else {
+    try { fs.chmodSync(pathname, 0o600); } catch {}
   }
 }
 
@@ -66,7 +73,7 @@ export async function ensureBaselineFiles(): Promise<void> {
       ? ONBOARDING_TEMPLATE.replace('- タイムゾーン:', `- タイムゾーン: ${tz}`)
       : ONBOARDING_TEMPLATE;
 
-    fs.writeFileSync(aniccaPath, template, 'utf8');
+    fs.writeFileSync(aniccaPath, template, { encoding: 'utf8', mode: 0o600 });
   }
 
   const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? process.env.TZ ?? '';
@@ -85,7 +92,7 @@ export async function ensureBaselineFiles(): Promise<void> {
       }
 
       if (updated !== profile) {
-        fs.writeFileSync(aniccaPath, updated, 'utf8');
+        fs.writeFileSync(aniccaPath, updated, { encoding: 'utf8', mode: 0o600 });
       }
     } catch (error) {
       console.warn('⚠️ Failed to ensure timezone in profile:', error);
@@ -160,6 +167,7 @@ export function syncTodayTasksFromMarkdown(): void {
     return;
   }
 
+  try { fs.chmodSync(tasksPath, 0o600); } catch {}
   const markdown = fs.readFileSync(tasksPath, 'utf8');
   const sections = markdown
     .split(/\n(?=## )/)
@@ -174,6 +182,7 @@ export function syncTodayTasksFromMarkdown(): void {
 
   let scheduled;
   try {
+    try { fs.chmodSync(scheduledPath, 0o600); } catch {}
     scheduled = JSON.parse(fs.readFileSync(scheduledPath, 'utf8'));
   } catch {
     scheduled = { tasks: [] };
@@ -195,6 +204,7 @@ export function syncTodayTasksFromMarkdown(): void {
   const currentJson = JSON.stringify(scheduled, null, 2);
 
   if (nextJson !== currentJson) {
-    fs.writeFileSync(scheduledPath, nextJson, 'utf8');
+    fs.writeFileSync(scheduledPath, nextJson, { encoding: 'utf8', mode: 0o600 });
+    try { fs.chmodSync(scheduledPath, 0o600); } catch {}
   }
 }

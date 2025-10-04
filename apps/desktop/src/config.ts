@@ -67,7 +67,7 @@ export const APP_VERSION_STR: string = PKG.version || '';
 const IS_PROD = process.env.NODE_ENV === 'production';
 const VERSION_HAS_PRERELEASE = /-/.test(APP_VERSION_STR);
 // 開発時は既定で beta（staging）を指す
-const DEV_DEFAULT_CHANNEL = 'beta';
+const DEV_DEFAULT_CHANNEL = process.env.NODE_ENV === 'development' ? 'beta' : 'stable';
 const ENV_CH_RAW = process.env.UPDATE_CHANNEL?.toLowerCase();
 const ENV_CHANNEL = ENV_CH_RAW === 'beta' || ENV_CH_RAW === 'stable' ? ENV_CH_RAW : undefined;
 const UPDATE_CHANNEL = ENV_CHANNEL

@@ -8,6 +8,7 @@ files:
   - dist/services/**/*
   - dist/agents/**/*
   - dist/recorder.html
+  - dist/utils/**/*
   - node_modules/**/*
   - prompts/*.txt
   # Desktop app assets (tray + app icon)

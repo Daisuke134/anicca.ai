@@ -4,18 +4,6 @@
   "description": "anicca - AI Screen Narrator Desktop App",
   "main": "dist/main-voice-simple.js",
   "homepage": "https://www.aniccaai.com",
-  "appConfig": {
-    "supabase": {
-      "production": {
-        "url": "https://auth.aniccaai.com",
-        "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im16a3d0d291cnJrZHVxa3JzeHBjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTExNzQ1NjYsImV4cCI6MjA2Njc1MDU2Nn0.ihBs1cpz_sgR6UUZpIrICuN3b-gJNrfzWsfNVlpP4hs"
-      },
-      "staging": {
-        "url": "https://cltwnkpfjkipdtghiscd.supabase.co",
-        "anonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImNsdHdua3BmamtpcGR0Z2hpc2NkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTgxOTk5NTMsImV4cCI6MjA3Mzc3NTk1M30.uXbi3EZjPL3GRcbB6VYF14dPQkvlwyzFSHAgj-JG3ag"
-      }
-    }
-  },
   "scripts": {
     "preelectron": "npm run build",
     "electron": "electron .",
@@ -34,11 +22,11 @@
     "clean": "rm -rf dist/",
     "clean-build": "npm run clean && npm run build",
     "voice:simple": "npm run build:voice && CHANNEL=${VOICE_CHANNEL:-beta} UPDATE_CHANNEL=$CHANNEL PROXY_URL_STAGING=${VOICE_PROXY_STAGING:-https://anicca-proxy-staging.up.railway.app} NODE_ENV=development DESKTOP_MODE=true electron dist/main-voice-simple.js",
-    "dist:dev": "hdiutil detach /Volumes/Anicca* -force 2>/dev/null || true && NODE_ENV=development CSC_IDENTITY_AUTO_DISCOVERY=false npm run build:voice && dotenv -e .env.defaults -- sh -c 'EB_PROD=${PROXY_URL_PRODUCTION:-$PROXY_URL_STAGING}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$EB_PROD -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING'",
+    "dist:dev": "hdiutil detach /Volumes/Anicca* -force 2>/dev/null || true && NODE_ENV=development CSC_IDENTITY_AUTO_DISCOVERY=false npm run build:voice && dotenv -e .env -e .env.defaults -- sh -c 'EB_PROD=${PROXY_URL_PRODUCTION:-$PROXY_URL_STAGING}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$EB_PROD -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING\\\n      -c.extraMetadata.appConfig.supabase.production.url=$SUPABASE_URL_PRODUCTION\\\n      -c.extraMetadata.appConfig.supabase.production.anonKey=$SUPABASE_ANON_KEY_PRODUCTION\\\n      -c.extraMetadata.appConfig.supabase.staging.url=$SUPABASE_URL_STAGING\\\n      -c.extraMetadata.appConfig.supabase.staging.anonKey=$SUPABASE_ANON_KEY_STAGING'",
     "build:staging": "NODE_ENV=development npm run build:voice",
     "build:production": "NODE_ENV=production npm run build:voice",
-    "dist:staging": "NODE_ENV=development npm run build:voice && dotenv -e .env.defaults -- sh -c 'EB_PROD=${PROXY_URL_PRODUCTION:-$PROXY_URL_STAGING}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$EB_PROD -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING'",
-    "dist:production": "NODE_ENV=production npm run build:voice && dotenv -e .env.defaults -- sh -c 'EB_STAG=${PROXY_URL_STAGING:-$PROXY_URL_PRODUCTION}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$PROXY_URL_PRODUCTION -c.extraMetadata.appConfig.proxy.staging=$EB_STAG'",
+    "dist:staging": "NODE_ENV=development npm run build:voice && dotenv -e .env.defaults -- sh -c 'EB_PROD=${PROXY_URL_PRODUCTION:-$PROXY_URL_STAGING}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$EB_PROD -c.extraMetadata.appConfig.proxy.staging=$PROXY_URL_STAGING\\\n      -c.extraMetadata.appConfig.supabase.production.url=$SUPABASE_URL_PRODUCTION\\\n      -c.extraMetadata.appConfig.supabase.production.anonKey=$SUPABASE_ANON_KEY_PRODUCTION\\\n      -c.extraMetadata.appConfig.supabase.staging.url=$SUPABASE_URL_STAGING\\\n      -c.extraMetadata.appConfig.supabase.staging.anonKey=$SUPABASE_ANON_KEY_STAGING'",
+    "dist:production": "NODE_ENV=production npm run build:voice && dotenv -e .env.defaults -- sh -c 'EB_STAG=${PROXY_URL_STAGING:-$PROXY_URL_PRODUCTION}; electron-builder --mac --config electron-builder-voice.yml -c.extraMetadata.appConfig.proxy.production=$PROXY_URL_PRODUCTION -c.extraMetadata.appConfig.proxy.staging=$EB_STAG\\\n      -c.extraMetadata.appConfig.supabase.production.url=$SUPABASE_URL_PRODUCTION\\\n      -c.extraMetadata.appConfig.supabase.production.anonKey=$SUPABASE_ANON_KEY_PRODUCTION\\\n      -c.extraMetadata.appConfig.supabase.staging.url=$SUPABASE_URL_STAGING\\\n      -c.extraMetadata.appConfig.supabase.staging.anonKey=$SUPABASE_ANON_KEY_STAGING'",
     "release": "npm run build && electron-builder --publish=never",
     "exa-mcp-server": "ts-node src/services/startExaRemoteMcp.ts",
     "postinstall": "node scripts/fix-claude-cli.js"

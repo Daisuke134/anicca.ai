@@ -3,6 +3,8 @@ import { DesktopAuthService } from '../../services/desktopAuthService';
 import { AniccaSessionManager } from '../sessionManager';
 import fetch from 'node-fetch';
 
+const TEST_BRIDGE_TOKEN = 'test-bridge-token-0123456789abcdef0123456789abcdef';
+
 // Electronのテスト環境対応: safeStorageをモック
 vi.mock('electron', () => ({
   safeStorage: {
@@ -37,7 +39,7 @@ describe('認証フロー統合テスト - 実際の問題検証', () => {
     authService = new DesktopAuthService();
     await authService.initialize();
     
-    sessionManager = new AniccaSessionManager();
+    sessionManager = new AniccaSessionManager(undefined, TEST_BRIDGE_TOKEN);
     await sessionManager.initialize();
     await sessionManager.startBridge(8085); // 実際のポート番号
   }, 30000);

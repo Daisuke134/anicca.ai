@@ -117,37 +117,4 @@ export class SimpleEncryption {
       throw error;
     }
   }
-
-  /**
-   * 古い暗号化ファイルをクリーンアップ
-   */
-  cleanupOldFiles(): void {
-    try {
-      // 古い固定キーファイルを削除
-      const oldKeyPath = path.join(this.aniccaDir, 'encryption.key');
-      if (fs.existsSync(oldKeyPath)) {
-        fs.unlinkSync(oldKeyPath);
-        console.log('🗑️ Removed old encryption.key');
-      }
-      
-      // 古い形式の認証ファイルも削除（新形式で再作成される）
-      const oldAuthPath = path.join(this.aniccaDir, 'auth.encrypted');
-      if (fs.existsSync(oldAuthPath)) {
-        try {
-          // 古い形式かどうか確認（新形式は : で区切られている）
-          const content = fs.readFileSync(oldAuthPath, 'utf8');
-          if (!content.includes(':')) {
-            fs.unlinkSync(oldAuthPath);
-            console.log('🗑️ Removed old format auth.encrypted');
-          }
-        } catch (error) {
-          // バイナリファイルの場合（古いsafeStorage形式）
-          fs.unlinkSync(oldAuthPath);
-          console.log('🗑️ Removed old binary auth.encrypted');
-        }
-      }
-    } catch (error) {
-      console.error('❌ Failed to cleanup old files:', error);
-    }
-  }
 }

@@ -3,6 +3,9 @@ import { AniccaSessionManager } from '../sessionManager';
 import fetch from 'node-fetch';
 import WebSocket from 'ws';
 
+const TEST_BRIDGE_TOKEN = 'test-bridge-token-0123456789abcdef0123456789abcdef';
+process.env.BRIDGE_AUTH_TOKEN_OVERRIDE = TEST_BRIDGE_TOKEN;
+
 /**
  * TDD-RED-2: slack_list_channelsのSDK自動実行テスト
  * 
@@ -35,7 +38,7 @@ describe('SDK自動ツール実行（実API使用）', () => {
     console.log('✅ APIキー取得成功');
     
     // 2. SessionManager初期化と接続
-    sessionManager = new AniccaSessionManager();
+    sessionManager = new AniccaSessionManager(undefined, TEST_BRIDGE_TOKEN);
     await sessionManager.initialize();
     await sessionManager.startBridge(3838);
     

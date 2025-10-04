@@ -80,14 +80,26 @@ const embedded = loadEmbeddedProxy();
 const envProduction = process.env.PROXY_URL_PRODUCTION;
 const envStaging = process.env.PROXY_URL_STAGING;
 
+function normalizeProxyUrl(raw?: string): string | undefined {
+  if (!raw) return undefined;
+  return /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+}
+
 function resolveProxyUrl(): string {
   // 1) CI埋め込み最優先
   if (embedded?.production && embedded?.staging) {
-    return UPDATE_CHANNEL === 'stable' ? embedded.production : embedded.staging;
+    const candidate = UPDATE_CHANNEL === 'stable' ? embedded.production : embedded.staging;
+    const normalized = normalizeProxyUrl(candidate);
+    if (normalized) return normalized;
   }
   // 2) ENV（必要な片側のみでも可）
-  if (UPDATE_CHANNEL === 'stable' && envProduction) return envProduction;
-  if (UPDATE_CHANNEL === 'beta' && envStaging) return envStaging;
+  if (UPDATE_CHANNEL === 'stable') {
+    const normalized = normalizeProxyUrl(envProduction);
+    if (normalized) return normalized;
+  } else {
+    const normalized = normalizeProxyUrl(envStaging);
+    if (normalized) return normalized;
+  }
 
   // 3) いずれも無い場合は明確に失敗させる
   throw new Error(

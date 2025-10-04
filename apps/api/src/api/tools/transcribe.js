@@ -8,6 +8,14 @@ export default async function handler(req, res) {
   }
 
   try {
+    const auth = req.auth;
+    if (!auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const bodyUserId = req.body?.userId;
+    if (bodyUserId && bodyUserId !== auth.sub) {
+      return res.status(403).json({ error: 'Forbidden: userId mismatch' });
+    }
     // multipart/form-dataのパース
     const formData = await parseFormData(req);
     const audioFile = formData.audio;

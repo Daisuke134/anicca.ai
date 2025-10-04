@@ -34,13 +34,17 @@ export default async function handler(req, res) {
   }
 
   try {
+    const auth = req.auth;
+    if (!auth) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
     const { action, arguments: args, userId } = req.body;
 
     // 認可強化: JWTのsubとuserIdの一致を強制（TOOLS_AUTH_STRICT=true のとき）
     try {
       const strict = String(process.env.TOOLS_AUTH_STRICT || '').toLowerCase() === 'true';
       if (strict) {
-        const authSub = req?.auth?.sub || null;
+        const authSub = auth.sub || null;
         if (!authSub) {
           return res.status(401).json({ error: 'Unauthorized: missing auth subject' });
         }

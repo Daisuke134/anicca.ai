@@ -280,7 +280,6 @@ export class DesktopAuthService {
     console.log('🔐 Desktop Auth Service初期化中...');
     
     try {
-      this.encryption.cleanupOldFiles();
       const savedSession = this.loadSavedSession();
       
       if (savedSession) {

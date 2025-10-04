@@ -2,6 +2,7 @@ import { RealtimeSession, OpenAIRealtimeWebSocket } from '@openai/agents/realtim
 import { createAniccaAgent } from './mainAgent';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
 import { getAuthService } from '../services/desktopAuthService';
+import { SimpleEncryption } from '../services/simpleEncryption';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -45,6 +46,8 @@ export class AniccaSessionManager {
   private wsClients = new Set<WebSocket>();
   private onboardingState: 'idle' | 'running' = 'idle';
   private readyWaiters: ReadyWaiter[] = [];
+  private historyEncryption: SimpleEncryption;
+  private bridgeToken: string;
   
   // 状態管理
   private currentUserId: string | null = null;
@@ -80,8 +83,10 @@ export class AniccaSessionManager {
   
   // （wake専用ループ／独自ゲートは撤廃）
   
-  constructor(private mainAgent?: any) {
+  constructor(private mainAgent: any | undefined, bridgeToken: string) {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
+    this.historyEncryption = new SimpleEncryption();
+    this.bridgeToken = bridgeToken;
   }
 
   private async updateUserLanguageInProfile(timezone: string): Promise<void> {
@@ -372,12 +377,58 @@ export class AniccaSessionManager {
     // 注意: restoreSession()はconnect()の後で呼ぶ必要がある
   }
 
+  private ensureBridgeToken(): string {
+    if (!this.bridgeToken || this.bridgeToken.length === 0) {
+      throw new Error('Bridge token is not set');
+    }
+    return this.bridgeToken;
+  }
+
+  private isLoopbackAddress(address?: string | null): boolean {
+    if (!address) return false;
+    if (address === '127.0.0.1' || address === '::1') return true;
+    if (address.startsWith('::ffff:')) {
+      const mapped = address.split(':').pop();
+      return mapped === '127.0.0.1';
+    }
+    return false;
+  }
+
+  private matchesBridgeToken(value: string | string[] | undefined): boolean {
+    const token = this.ensureBridgeToken();
+    if (!value) return false;
+    const candidates = Array.isArray(value)
+      ? value
+      : value.split(',');
+    return candidates.map((item) => item.trim()).includes(token);
+  }
+
   // Express/WebSocketサーバー起動（新規追加）
   async startBridge(port: number) {
     if (this.app) return; // 既に起動済み
     
+    this.ensureBridgeToken();
     this.currentPort = port; // ポート番号を保存
     this.app = express();
+    this.app.use((req, res, next) => {
+      if (req.path === '/auth/callback') {
+        next();
+        return;
+      }
+      if (!this.isLoopbackAddress(req.socket.remoteAddress)) {
+        res.status(401).json({ error: 'unauthorized' });
+        return;
+      }
+      const queryToken = typeof req.query?.bridge_token === 'string' ? req.query.bridge_token : undefined;
+      if (!this.matchesBridgeToken(req.headers['x-anicca-bridge-token']) && !this.matchesBridgeToken(queryToken)) {
+        res.status(401).json({ error: 'unauthorized' });
+        return;
+      }
+      if (req.query && 'bridge_token' in req.query) {
+        delete (req.query as any).bridge_token;
+      }
+      next();
+    });
     this.app.use(express.json());
     
     // ルート設定
@@ -391,7 +442,7 @@ export class AniccaSessionManager {
     
     // サーバー起動
     await new Promise<void>((resolve) => {
-      this.httpServer!.listen(port, () => {
+      this.httpServer!.listen({ port, host: '::1', ipv6Only: false }, () => {
         console.log(`🌉 Bridge server started on port ${port}`);
         resolve();
       });
@@ -674,9 +725,27 @@ export class AniccaSessionManager {
   private setupWebSocket() {
     if (!this.httpServer) return;
     
-    this.wss = new WebSocketServer({ server: this.httpServer });
-    
-    this.wss.on('connection', (ws) => {
+    this.ensureBridgeToken();
+    this.wss = new WebSocketServer({
+      server: this.httpServer!,
+      verifyClient: (info, done) => {
+        if (!this.isLoopbackAddress(info.req.socket.remoteAddress)) {
+          done(false, 401, 'Unauthorized');
+          return;
+        }
+        if (!this.matchesBridgeToken(info.req.headers['sec-websocket-protocol'])) {
+          done(false, 401, 'Unauthorized');
+          return;
+        }
+        done(true);
+      }
+    });
+
+    this.wss.on('connection', (ws, req) => {
+      if (!this.matchesBridgeToken(req.headers['sec-websocket-protocol'])) {
+        ws.close(1008, 'unauthorized');
+        return;
+      }
       console.log('🔌 WebSocket client connected');
       this.wsClients.add(ws);
       
@@ -1442,18 +1511,21 @@ export class AniccaSessionManager {
   private async saveSession(history: any) {
     try {
       const dir = path.dirname(this.sessionFilePath);
-      await fs.mkdir(dir, { recursive: true });
+      await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+      try { await fs.chmod(dir, 0o700); } catch {}
       
       const sessionData = {
         history,
         timestamp: new Date().toISOString()
       };
       
+      const encrypted = this.historyEncryption.encrypt(JSON.stringify(sessionData));
       await fs.writeFile(
         this.sessionFilePath,
-        JSON.stringify(sessionData, null, 2),
-        'utf8'
+        encrypted,
+        { encoding: 'utf8', mode: 0o600 }
       );
+      try { await fs.chmod(this.sessionFilePath, 0o600); } catch {}
       
       if (!this.isElevenLabsPlaying) {
         console.log('💾 Session saved');
@@ -1466,17 +1538,23 @@ export class AniccaSessionManager {
   public async restoreSession() {
     try {
       const data = await fs.readFile(this.sessionFilePath, 'utf8');
-      
-      // 空ファイルチェック
       if (!data.trim()) {
         console.log('📂 Session file is empty, skipping restore');
         return;
       }
-      
-      // JSONパースエラー対策
+
+      let decrypted: string;
+      try {
+        decrypted = this.historyEncryption.decrypt(data);
+      } catch (decryptError) {
+        console.error('❌ Session file decryption failed, resetting:', decryptError);
+        await fs.unlink(this.sessionFilePath).catch(() => {});
+        return;
+      }
+
       let sessionData;
       try {
-        sessionData = JSON.parse(data);
+        sessionData = JSON.parse(decrypted);
       } catch (parseError) {
         console.error('❌ Session file corrupted, resetting:', parseError);
         // 壊れたセッションファイルを削除

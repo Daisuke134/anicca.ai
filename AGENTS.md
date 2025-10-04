@@ -130,6 +130,12 @@
 
 ※ ステージング配布が必要な場合は、上記とは別に `npm version X.Y.Z-beta.N --no-git-tag-version` → `git tag vX.Y.Z-beta.N` → `git push origin HEAD --tags` を行い、staging 接続のプレリリースを作成する。
 
+#### dist 系コマンドと環境変数の解決順
+- `npm run dist:*` は `dotenv --override -e .env.defaults -e .env.local` を経由して環境変数を読み込む。
+- `.env.defaults` はテンプレート（ステージング向け既定値）として維持し、実運用時は `.env.local` で本番値を上書きする。
+- `.env.local` を正しく用意した状態で `dist:production` を実行すれば、生成される DMG には本番設定（stable チャネル / 本番 Proxy / Supabase / Stripe）が焼き込まれる。
+- ローカル検証用の `npm run voice:simple` も `dotenv --override -e .env.defaults -e .env.local` を内部で呼び出すため、`.env.local` に書いた値がそのまま適用される。
+
 ---
 
 ## ランディング（Netlify）とダウンロード導線

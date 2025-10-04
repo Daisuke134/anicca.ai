@@ -6,6 +6,7 @@ import { autoUpdater } from 'electron-updater';
 import { setTracingDisabled } from '@openai/agents';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
 import { API_ENDPOINTS, PORTS, UPDATE_CONFIG, AUDIO_SAMPLE_RATE, WS_RECONNECT_DELAY_MS, CHECK_STATUS_INTERVAL_MS } from './config';
+import { resolveBridgeAuthToken } from './services/bridgeToken';
 import * as cron from 'node-cron';
 import * as fs from 'fs';
 import * as os from 'os';
@@ -23,6 +24,19 @@ import { buildRoutinePrompt } from './services/routines';
 
 // 環境変数を読み込み
 dotenv.config();
+let BRIDGE_AUTH_TOKEN: string | null = null;
+const BRIDGE_HEADER_NAME = 'X-Anicca-Bridge-Token';
+const getBridgeToken = (): string => {
+  if (!BRIDGE_AUTH_TOKEN) {
+    throw new Error('Bridge token not initialized');
+  }
+  return BRIDGE_AUTH_TOKEN;
+};
+
+const bridgeHeaders = (headers: Record<string, string> = {}) => ({
+  ...headers,
+  [BRIDGE_HEADER_NAME]: getBridgeToken(),
+});
 // ログ初期化（全環境でファイル出力）
 const log = require('electron-log/main');
 log.initialize();
@@ -64,6 +78,13 @@ const tasksMarkdownPath = path.join(aniccaDir, 'tasks.md');
 
 // アプリの初期化
 async function initializeApp() {
+  BRIDGE_AUTH_TOKEN = resolveBridgeAuthToken();
+  if (!BRIDGE_AUTH_TOKEN) {
+    throw new Error('Failed to resolve bridge auth token');
+  }
+  process.env.BRIDGE_AUTH_TOKEN = BRIDGE_AUTH_TOKEN;
+  (global as any).BRIDGE_AUTH_TOKEN = BRIDGE_AUTH_TOKEN;
+
   await ensureBaselineFiles();
   syncTodayTasksFromMarkdown();
   const shouldLaunchOnboarding = shouldRunOnboarding();
@@ -148,7 +169,10 @@ async function initializeApp() {
     // 認証完了後にRealtime接続を再保証（Bridge起動を考慮してリトライ）
     const ensureSdkAfterLogin = async (attempt = 1): Promise<void> => {
       try {
-        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
+          method: 'POST',
+          headers: bridgeHeaders()
+        });
       } catch (err) {
         if (attempt >= 6) {
           console.error('Failed to ensure SDK connection after login (exhausted retries):', err);
@@ -161,8 +185,7 @@ async function initializeApp() {
         }, backoff);
       }
     };
-    void ensureSdkAfterLogin();
-    
+
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
     
@@ -191,7 +214,7 @@ async function initializeApp() {
       
       // userIdを渡してエージェント作成
       mainAgent = await createAniccaAgent(userId);
-      sessionManager = new AniccaSessionManager(mainAgent);
+      sessionManager = new AniccaSessionManager(mainAgent, getBridgeToken());
       await sessionManager.initialize();
       
       // 認証済みユーザーIDを設定（SessionManager初期化後）
@@ -248,6 +271,8 @@ async function initializeApp() {
       throw new Error('SessionManager not initialized');
     }
 
+    void ensureSdkAfterLogin();
+
     if (shouldLaunchOnboarding && sessionManager && !onboardingQueued) {
       onboardingQueued = true;
       const manager = sessionManager;
@@ -300,21 +325,23 @@ async function initializeApp() {
     await createSystemTray();
     console.log('✅ System tray created');
     
-    // PTT: 単キー(F8=MediaPlayPause)で「開始のみ」（終了は自動終了に一本化）
-    try {
-      const okMedia = globalShortcut.register('MediaPlayPause', () => {
-        try {
-          fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/mode/set`, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ mode: 'conversation', reason: 'hotkey' })
-          }).catch(() => {});
-        } catch { /* noop */ }
-      });
-      console.log(okMedia ? '🎚️ PTT shortcut (MediaPlayPause/F8) registered' : '⚠️ Failed to register MediaPlayPause');
-    } catch (e) {
-      console.warn('PTT shortcut registration error:', (e as any)?.message || e);
-    }
+    // PTT: Option+Z を登録（失敗したら今は諦める）
+    const triggerConversation = () => {
+      try {
+        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/mode/set`, {
+          method: 'POST',
+          headers: bridgeHeaders({ 'Content-Type': 'application/json' }),
+          body: JSON.stringify({ mode: 'conversation', reason: 'hotkey' })
+        }).catch(() => {});
+      } catch { /* noop */ }
+    };
+
+    const hotkeyRegistered = globalShortcut.register('Option+Z', triggerConversation);
+    console.log(
+      hotkeyRegistered
+        ? '🎚️ PTT shortcut (Option+Z) registered'
+        : '⚠️ Failed to register PTT shortcut (Option+Z)'
+    );
     
   // スリープ防止の設定
   powerSaveBlockerId = powerSaveBlocker.start('prevent-app-suspension');
@@ -348,7 +375,10 @@ async function initializeApp() {
       }
       // Realtime接続の即保証（少し遅延）
       setTimeout(() => {
-        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' }).catch(() => {});
+        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
+          method: 'POST',
+          headers: bridgeHeaders()
+        }).catch(() => {});
       }, 300);
 
       // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
@@ -394,7 +424,7 @@ function createHiddenWindow() {
   });
   
   // voice-demoのクライアントページを開く
-  hiddenWindow.loadURL(`http://localhost:${PORTS.OAUTH_CALLBACK}`);
+  hiddenWindow.loadURL(`http://localhost:${PORTS.OAUTH_CALLBACK}?bridge_token=${encodeURIComponent(getBridgeToken())}`);
   
   // デバッグ用 - 開発環境でのみ開く
   if (!app.isPackaged) {
@@ -408,6 +438,18 @@ function createHiddenWindow() {
     setTimeout(() => {
       hiddenWindow?.webContents.executeJavaScript(`
         console.log('🎤 Starting SDK-based voice assistant...');
+        const BRIDGE_TOKEN = ${JSON.stringify(getBridgeToken())};
+        const originalFetch = window.fetch.bind(window);
+        const applyBridgeHeaders = (inputHeaders) => {
+          const headers = new Headers(inputHeaders || {});
+          headers.set('${BRIDGE_HEADER_NAME}', BRIDGE_TOKEN);
+          return headers;
+        };
+        window.fetch = (input, init = {}) => {
+          const nextInit = { ...(init || {}) };
+          nextInit.headers = applyBridgeHeaders(nextInit.headers);
+          return originalFetch(input, nextInit);
+        };
 
         let ws = null;
         let mediaRecorder = null;
@@ -487,7 +529,7 @@ function createHiddenWindow() {
 
         // WebSocket接続（音声出力受信用）
         function connectWebSocket() {
-          ws = new WebSocket('ws://localhost:${PORTS.OAUTH_CALLBACK}');
+          ws = new WebSocket('ws://localhost:${PORTS.OAUTH_CALLBACK}', BRIDGE_TOKEN);
           ws.binaryType = 'arraybuffer';
 
           ws.onmessage = async (event) => {
@@ -553,7 +595,7 @@ function createHiddenWindow() {
 
               // モード確定通知（会話モードに上がった事実に同期してビープ）
               if (message.type === 'mode_set' && message.mode === 'conversation' && message.reason === 'hotkey') {
-                // F8（hotkey）かつ SDK接続OKのときのみ効果音
+                // PTTホットキー起因かつ SDK接続OKのときのみ効果音
                 const ok = await checkSDKStatus().catch(() => false);
                 if (!ok) {
                   console.warn('mode_set (hotkey) but SDK not ready; skip beep');
@@ -1172,7 +1214,7 @@ app.on('before-quit', async (event) => {
     if (tray) {
       tray.destroy();
     }
-    
+
     if (planRefreshIntervalId) {
       clearInterval(planRefreshIntervalId);
       planRefreshIntervalId = null;
@@ -1335,7 +1377,10 @@ function registerCronJob(task: any) {
       const preSpec = `${preMinute} ${preHour} * * *`;
       const preflight = cron.schedule(preSpec, async () => {
         try {
-          await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, { method: 'POST' });
+          await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
+            method: 'POST',
+            headers: bridgeHeaders()
+          });
           console.log('[CRON_PREFLIGHT]', task.id);
         } catch (e) {
           console.warn('[CRON_PREFLIGHT_FAIL]', task.id, e);
@@ -1382,7 +1427,7 @@ function removeTaskFromJson(taskId: string) {
 }
 
 async function executeScheduledTask(task: any) {
-  const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`);
+  const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`, getBridgeToken());
   
   // テンプレートは task.id の接頭辞で選択（最小ロジック）
 

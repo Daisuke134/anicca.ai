@@ -114,30 +114,21 @@
     - `PROXY_URL_PRODUCTION`, `PROXY_URL_STAGING`（CI で `package.json` に埋め込み、ハードコードはしない）
 
 ---
-
-railway-mcp-server.list-variables({"workspacePath":"/Users/cbns03/Downloads/anicca-
-project","environment":"production","service":"API","json":true})
-
 ## デスクトップ：ローカル検証 → ベータ → 安定（Runbook）
-- ローカル最短確認（開発）
-  - `cd apps/desktop`
-  - `npm run voice:simple`
-- 署名なし DMG の最短確認（同梱物/起動確認）
-  - `cd apps/desktop`
-  - `npm run dist:dev`
-- ベータ配布（プレリリース）
-  - `cd apps/desktop`
-  - `npm version 0.6.8-beta.1 --no-git-tag-version`
-  - `git commit -am "chore(release): v0.6.8-beta.1"`
-  - `git tag v0.6.8-beta.1 && git push origin HEAD --tags`
-- 安定配布（正式リリース）
-  - `cd apps/desktop`
-  - `npm version 0.6.8 --no-git-tag-version`
-  - `git commit -am "chore(release): v0.6.8"`
-  - `git tag v0.6.8 && git push origin HEAD --tags`
-- 注意
-  - version を反映済みなら「タグ一発」で出荷可能（`git tag … && git push …`）
-  - Beta を staging 接続で検証したい場合、必ず `-beta.N` を付ける（アプリが Beta チャネルとして動作）
+※ すべて `apps/desktop` ディレクトリで実行する。
+
+1. `npm run voice:simple` … ローカル開発モードで音声入出力と課金導線を最短確認
+2. `npm run dist:dev` … 署名なし DMG を生成し、手元で起動確認
+3. （任意）`npm run dist:staging` … ステージング値の DMG が必要な場合だけ実施
+4. `git push` → `main` へマージ … リリース対象のソースを main に反映
+5. `npm version X.Y.Z --no-git-tag-version` … 本番リリースするバージョン番号を反映
+6. `npm run dist:production` … 署名・公証対象 DMG をローカルで検証
+7. `git commit -am "chore(release): vX.Y.Z"` … バージョン反映コミットを作成
+8. `git tag vX.Y.Z` … 配布トリガーとなるタグを作成
+9. `git push origin HEAD --tags` … タグを push して CI に notarize／Releases を実行させる
+10. GitHub Releases と Netlify のダウンロード導線が最新 DMG を配布しているか確認
+
+※ ステージング配布が必要な場合は、上記とは別に `npm version X.Y.Z-beta.N --no-git-tag-version` → `git tag vX.Y.Z-beta.N` → `git push origin HEAD --tags` を行い、staging 接続のプレリリースを作成する。
 
 ---
 
@@ -190,4 +181,3 @@ project","environment":"production","service":"API","json":true})
 2. ホットキー（MediaPlayPause/F8）で会話モードへ
 3. 予定確認/作成、リマインド、Slack 送信などを音声で依頼
 4. 外部送信は直前に明示承認、終了時は自動で待機
-

@@ -966,8 +966,8 @@ function updateTrayMenu() {
   const planKey = planInfo?.plan || 'free';
   const planLabel = planKey === 'pro' ? 'Pro' : (planKey === 'grace' ? 'Grace' : 'Free');
   const usageLabel = planInfo?.daily_usage_limit
-    ? `残り ${planInfo?.daily_usage_remaining ?? 0}/${planInfo.daily_usage_limit}`
-    : '制限なし';
+    ? `Usage ${planInfo?.daily_usage_remaining ?? 0}/${planInfo.daily_usage_limit}`
+    : 'Unlimited';
 
   const billingItems: MenuItemConstructorOptions[] = [];
   if (planKey !== 'pro') {
@@ -991,7 +991,7 @@ function updateTrayMenu() {
       enabled: false
     },
     {
-      label: `⭐ 現在のプラン: ${planLabel}` + (planInfo?.daily_usage_limit ? ` (${usageLabel})` : ''),
+      label: `⭐ Plan: ${planLabel}` + (planInfo?.daily_usage_limit ? ` (${usageLabel})` : ''),
       enabled: false
     },
     { type: 'separator' },
@@ -1464,6 +1464,13 @@ async function executeScheduledTask(task: any) {
         resolvedTemplate = buildRoutinePrompt('sleep', templateText, { reset: true });
       } catch (routineError) {
         console.warn('[sleep_routine] fallback to raw template:', routineError);
+        resolvedTemplate = templateText;
+      }
+    } else if (tpl === 'wake_up.txt') {
+      try {
+        resolvedTemplate = buildRoutinePrompt('wake', templateText, { reset: true });
+      } catch (routineError) {
+        console.warn('[wake_routine] fallback to raw template:', routineError);
         resolvedTemplate = templateText;
       }
     }

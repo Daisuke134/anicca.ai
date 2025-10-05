@@ -39,6 +39,7 @@ interface AdvanceResult {
 
 const routineStates = new Map<string, RoutineState>();
 const ROUTINE_LABEL_MAP: Record<string, string> = {
+  wake: '起床',
   sleep: '就寝',
 };
 

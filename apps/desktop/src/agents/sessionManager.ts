@@ -285,8 +285,11 @@ export class AniccaSessionManager {
       if (!proxyJwt) throw new Error('missing proxy jwt');
       const resp = await fetch(url, { headers: { Authorization: `Bearer ${proxyJwt}` } });
       if (resp.status === 402) {
-        const payload = await resp.json().catch(() => ({ message: 'payment required' }));
-        throw new Error(`desktop-session quota exceeded: ${payload?.message || 'payment required'}`);
+        const payload = await resp.json().catch(() => ({ message: null }));
+        const message = typeof payload?.message === 'string' && payload.message.trim().length > 0
+          ? payload.message
+          : 'You have reached the free tier limit. Please upgrade to Anicca Pro.';
+        throw new Error(`desktop-session quota exceeded: ${message}`);
       }
       if (!resp.ok) throw new Error(`desktop-session failed: ${resp.status}`);
       const data = await resp.json();
@@ -582,14 +585,14 @@ export class AniccaSessionManager {
         res.setHeader('Content-Type', 'text/html; charset=utf-8');
         res.send(`
           <!DOCTYPE html>
-          <html><head><meta charset="utf-8"><title>認証完了 - Anicca</title>
+          <html><head><meta charset="utf-8"><title>Authentication complete - Anicca</title>
           <style>
             body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;display:flex;justify-content:center;align-items:center;height:100vh;margin:0;background:#f5f5f5}
             .c{background:#fff;padding:40px;border-radius:10px;box-shadow:0 2px 10px rgba(0,0,0,.1);text-align:center}
             .ok{font-size:48px;color:#4CAF50}
             p{color:#666}
           </style></head>
-          <body><div class="c"><div class="ok">✅</div><h1>認証が完了しました</h1><p>このウィンドウは自動的に閉じられます...</p></div>
+          <body><div class="c"><div class="ok">✅</div><h1>Authentication complete</h1><p>This window will close automatically…</p></div>
           <script>setTimeout(()=>window.close(), 1500)</script></body></html>
         `);
       } catch (error) {

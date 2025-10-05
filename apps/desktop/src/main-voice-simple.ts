@@ -87,7 +87,7 @@ async function initializeApp() {
 
   await ensureBaselineFiles();
   syncTodayTasksFromMarkdown();
-  const shouldLaunchOnboarding = shouldRunOnboarding();
+  const shouldLaunchOnboarding = false; // TODO: Re-enable after onboarding prompt revamp
 
   // トレースを無効化（MCPツールの取得でエラーになるため）
   setTracingDisabled(true);
@@ -118,11 +118,11 @@ async function initializeApp() {
     // 認証状態をチェック
     if (!authService.isAuthenticated()) {
       console.log('⚠️ User not authenticated');
-      showNotification('ログインが必要です', 'システムトレイから「Login with Google」をクリックしてください');
+      showNotification('Login required', 'Open the tray icon and click "Login with Google" to continue.');
     } else {
       const userName = authService.getCurrentUserName();
       console.log(`✅ Authenticated as: ${userName}`);
-      showNotification('ようこそ', `${userName}さん、Aniccaへようこそ！`);
+      showNotification('Welcome', `Welcome to Anicca, ${userName}!`);
     }
     
     // 認証成功時のグローバルコールバックを設定
@@ -142,7 +142,7 @@ async function initializeApp() {
       }
       
       // 通知とトレイメニュー更新
-      showNotification('ログイン成功', `${user.email}でログインしました`);
+      showNotification('Login successful', `Signed in as ${user.email}`);
       updateTrayMenu();
 
       // 認証完了後に定期タスク登録を必ず一度だけ起動（冪等）
@@ -403,7 +403,7 @@ async function initializeApp() {
     }
 
     console.log('🚀 Anicca Voice Assistant started successfully!');
-    console.log('🎤 Say "アニカ" to begin conversation');
+    console.log('🎤 Say "Anicca" to begin conversation');
   } catch (error) {
     console.error('💥 Failed to initialize application:', error);
     throw error;
@@ -479,22 +479,18 @@ function createHiddenWindow() {
           }
         }
 
-        function startCaptureWhenReady(retryMs = 1000, maxAttempts = 15) {
-          (async () => {
-            try {
-              const ok = await checkSDKStatus();
-              if (ok) {
-                startVoiceCapture();
-                return;
-              }
-            } catch {}
-            if (maxAttempts > 0) {
-              setTimeout(() => startCaptureWhenReady(retryMs, maxAttempts - 1), retryMs);
-            } else {
-              console.warn('SDK not ready after retries; skipping auto start');
-            }
-          })();
-        }
+function startCaptureWhenReady(retryMs = 1000) {
+  (async () => {
+    try {
+      const ok = await checkSDKStatus();
+      if (ok) {
+        startVoiceCapture();
+        return;
+      }
+    } catch {}
+    setTimeout(() => startCaptureWhenReady(retryMs), retryMs);
+  })();
+}
 
         // 送信キュー/HTTPは使用しない
 
@@ -908,7 +904,7 @@ function createHiddenWindow() {
           // 接続監視ループ（1.5秒間隔）
           setInterval(() => { checkSDKStatus(); }, ${CHECK_STATUS_INTERVAL_MS});
           // SDKがReadyになったら録音開始（Readyでない場合はリトライ）
-          startCaptureWhenReady(1000, 15);
+          startCaptureWhenReady(1000);
         }
 
         // 開始
@@ -955,12 +951,12 @@ function createSystemTray() {
 
   tray = new Tray(trayIcon);
   updateTrayMenu();
-  tray.setToolTip('Anicca - Say "アニッチャ" to begin');
+  tray.setToolTip('Anicca - Say "Anicca" to begin');
 }
 
 // トレイメニューを更新
 function updateTrayMenu() {
-  const userName = authService?.isAuthenticated() ? authService.getCurrentUserName() : 'ゲスト';
+  const userName = authService?.isAuthenticated() ? authService.getCurrentUserName() : 'Guest';
   const isAuthenticated = authService?.isAuthenticated() || false;
   const planInfo = authService?.getPlanInfo();
   const planKey = planInfo?.plan || 'free';
@@ -972,7 +968,7 @@ function updateTrayMenu() {
   const billingItems: MenuItemConstructorOptions[] = [];
   if (planKey !== 'pro') {
     billingItems.push({
-      label: 'Upgrade to Anicca Pro ($5/月)',
+      label: 'Upgrade to Anicca Pro ($5/mo)',
       enabled: isAuthenticated,
       click: async () => { await openBillingCheckout(); }
     });
@@ -1005,11 +1001,11 @@ function updateTrayMenu() {
             shell.openExternal(oauthUrl);
           } else {
             console.error('Auth service not initialized');
-            showNotification('エラー', '認証サービスが初期化されていません');
+            showNotification('Error', 'Authentication service is not ready.');
           }
         } catch (error) {
           console.error('Failed to get Google OAuth URL:', error);
-          showNotification('エラー', 'ログインに失敗しました');
+          showNotification('Error', 'We could not start the login flow. Please try again.');
         }
       }
     }] : []),
@@ -1019,7 +1015,7 @@ function updateTrayMenu() {
         if (authService && authService.isAuthenticated()) {
           const userName = authService.getCurrentUserName();
           await authService.signOut();
-          showNotification('ログアウト', `${userName}さん、さようなら`);
+          showNotification('Signed out', `Goodbye, ${userName}`);
 
           if (planRefreshIntervalId) {
             clearInterval(planRefreshIntervalId);
@@ -1110,8 +1106,8 @@ function notifyQuotaExceeded(message?: string, entitlement?: any) {
   const now = Date.now();
   if (now - lastQuotaNotifiedAt < 60000) return;
   lastQuotaNotifiedAt = now;
-  const body = message || '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。';
-  showNotification('利用上限に達しました', body);
+  const body = message || 'You have reached the free plan limit. Please consider upgrading to Anicca Pro.';
+  showNotification('Usage limit reached', body);
   if (authService) {
     authService.refreshPlan().catch(() => null).finally(() => updateTrayMenu());
   } else {
@@ -1166,7 +1162,7 @@ async function openBillingCheckout() {
     }
   } catch (err: any) {
     console.error('Failed to open checkout session:', err);
-    showNotification('エラー', '決済ページの取得に失敗しました。しばらくしてから再度お試しください。');
+    showNotification('Error', 'We could not open the checkout page. Please try again shortly.');
   }
 }
 
@@ -1179,7 +1175,7 @@ async function openBillingPortal() {
     }
   } catch (err: any) {
     console.error('Failed to open billing portal:', err);
-    showNotification('エラー', '管理ページの取得に失敗しました。しばらくしてから再度お試しください。');
+    showNotification('Error', 'We could not open the billing portal. Please try again shortly.');
   }
 }
 

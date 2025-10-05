@@ -214,21 +214,21 @@ export default async function handler(req, res) {
 <body>
   <div class="container">
     <div class="checkmark">✅</div>
-    <h1>Slack認証が完了しました！</h1>
-    <p>Aniccaとの連携が正常に完了しました</p>
+    <h1>Slack connection complete!</h1>
+    <p>Anicca is now linked to your workspace.</p>
     ${data.team?.name ? `
     <div class="team-info">
-      <p>接続先: <strong>${data.team.name}</strong></p>
+      <p>Workspace: <strong>${data.team.name}</strong></p>
     </div>
     ` : ''}
-    <p style="margin-top: 2rem; font-size: 14px;">このタブは自動的に閉じます...</p>
+    <p style="margin-top: 2rem; font-size: 14px;">This tab will close automatically…</p>
   </div>
   <script>
-    // 3秒後に自動的にタブを閉じる
+    // Close the tab automatically after 3 seconds
     setTimeout(() => {
       window.close();
-      // window.close()が効かない場合のフォールバック
-      document.body.innerHTML = '<div style="text-align: center; padding: 2rem;"><h2>認証が完了しました</h2><p>このタブを閉じてAniccaに戻ってください</p></div>';
+      // Fallback if window.close() is blocked
+      document.body.innerHTML = '<div style="text-align: center; padding: 2rem;"><h2>Authentication complete</h2><p>You can close this tab and return to Anicca.</p></div>';
     }, 3000);
   </script>
 </body>

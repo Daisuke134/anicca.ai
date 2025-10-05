@@ -49,7 +49,7 @@ export default async function handler(req, res) {
       if (!allowed) {
         return res.status(402).json({
           error: 'Quota exceeded',
-          message: '無料枠の上限に達しました。Proプランへのアップグレードをご検討ください。',
+          message: 'You have reached the free tier limit. Please upgrade to Anicca Pro.',
           entitlement: normalizePlanForResponse(entitlementState)
         });
       }

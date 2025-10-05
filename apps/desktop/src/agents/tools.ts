@@ -12,7 +12,7 @@ async function proxyFetch(url: string, init: RequestInit = {}) {
   const auth = getAuthService();
   const jwt = await auth.getProxyJwt();
   if (!jwt) {
-    const err: any = new Error('ログインが必要です。');
+    const err: any = new Error('Login required.');
     err.name = 'ProxyAuthError';
     throw err;
   }
@@ -127,9 +127,9 @@ export const connect_slack = tool({
       if (launchUrl) {
         const { shell } = require('electron');
         shell.openExternal(launchUrl);
-        return 'Slackの認証ページを開きました。ブラウザで認証を完了してください。';
+        return 'Opened the Slack sign-in page. Please finish authentication in your browser.';
       }
-      return 'Slack接続URLの取得に失敗しました';
+      return 'Failed to retrieve the Slack connection URL.';
     } catch (error: any) {
       return `Error connecting to Slack: ${error.message}`;
     }
@@ -435,16 +435,16 @@ export const connect_google_calendar = tool({
         });
       } catch (err: any) {
         if (err?.code === 'PAYMENT_REQUIRED') {
-          return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
+          return 'The free tier limit has been reached. Use the tray menu to upgrade to Anicca Pro.';
         }
         if (err?.name === 'ProxyAuthError') {
-          return 'ログインが必要です。';
+          return 'Please sign in to continue.';
         }
         throw err;
       }
       if (!statusResponse.ok) {
         console.warn(`Google Calendar status check failed: ${statusResponse.status}`);
-        return 'Google Calendar接続状態の確認に失敗しました。';
+        return 'Failed to check the Google Calendar connection status.';
       }
 
       const statusData = await statusResponse.json();
@@ -459,36 +459,36 @@ export const connect_google_calendar = tool({
           oauthResponse = await proxyFetch(`${PROXY_URL}/api/mcp/gcal/oauth-url?userId=${userId}`);
         } catch (err: any) {
           if (err?.code === 'PAYMENT_REQUIRED') {
-            return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
+            return 'The free tier limit has been reached. Use the tray menu to upgrade to Anicca Pro.';
           }
           if (err?.name === 'ProxyAuthError') {
-            return 'ログインが必要です。';
+            return 'Please sign in to continue.';
           }
           throw err;
         }
         if (!oauthResponse.ok) {
           console.warn(`Google Calendar OAuth URL fetch failed: ${oauthResponse.status}`);
-          return 'Google Calendar認証URLの取得に失敗しました。';
+          return 'Failed to retrieve the Google Calendar authorization URL.';
         }
         const oauthData = await oauthResponse.json();
         if (oauthData.url) {
           const { shell } = require('electron');
           shell.openExternal(oauthData.url);
-          return 'Google Calendar認証ページを開きました。ブラウザで認証を完了してから、もう一度「カレンダーを確認して」と言ってください。';
+          return 'Opened the Google Calendar authorization page. Complete the sign-in in your browser, then ask me to check the calendar again.';
         }
         console.warn('Google Calendar OAuth URL payload did not include url');
-        return 'Google Calendar認証URLの取得に失敗しました。';
+        return 'Failed to retrieve the Google Calendar authorization URL.';
       }
 
       if (statusData.connected && statusData.authorization) {
-        return 'Google Calendarは既に接続されています。カレンダーの操作が可能です。';
+        return 'Google Calendar is already connected. You can manage your calendar now.';
       }
 
       console.warn('Google Calendar status response did not meet connected criteria');
-      return 'Google Calendar接続状態の確認に失敗しました。';
+      return 'Failed to check the Google Calendar connection status.';
     } catch (e: any) {
       console.error('connect_google_calendar failed:', e);
-      return 'Google Calendar接続で予期しないエラーが発生しました。';
+      return 'An unexpected error occurred while connecting Google Calendar.';
     }
   }
 });
@@ -509,15 +509,15 @@ export const disconnect_google_calendar = tool({
         });
       } catch (err: any) {
         if (err?.code === 'PAYMENT_REQUIRED') {
-          return '無料枠の上限に達しました。システムトレイからアップグレードしてください。';
+          return 'The free tier limit has been reached. Use the tray menu to upgrade to Anicca Pro.';
         }
         if (err?.name === 'ProxyAuthError') {
-          return 'ログインが必要です。';
+          return 'Please sign in to continue.';
         }
         throw err;
       }
       if (!resp.ok) {
-        return `Google Calendarの接続解除に失敗しました（HTTP ${resp.status}）`;
+        return `Failed to disconnect Google Calendar (HTTP ${resp.status}).`;
       }
       try {
         await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
@@ -525,9 +525,9 @@ export const disconnect_google_calendar = tool({
           headers: { 'Content-Type': 'application/json' }
         });
       } catch { /* noop */ }
-      return 'Google Calendarの接続を解除しました。';
+      return 'Google Calendar has been disconnected.';
     } catch (e: any) {
-      return `Google Calendarの接続解除でエラーが発生しました: ${e.message}`;
+      return `An error occurred while disconnecting Google Calendar: ${e.message}`;
     }
   }
 });

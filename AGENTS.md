@@ -68,9 +68,20 @@
 - ホスティング/配備
   - Railway: `apps/api`（Proxy/API）, `apps/workspace-mcp`（MCP）
   - Vercel: `apps/web`（Web アプリ）
-  - Netlify: `apps/landing`（ランディング）。`netlify.toml`（リポジトリ直下）がソース・オブ・トゥルース
+- Netlify: `apps/landing`（ランディング）。`netlify.toml`（リポジトリ直下）がソース・オブ・トゥルース
     - `[build] base = "apps/landing"`, `publish = "."`
     - `[[redirects]]` `/api/*` → Railway Production（プロキシ）など
+
+### Railway デプロイ運用（MCP 使用手順）
+- Proxy/API（`apps/api`）は Railway プロジェクト内の **API** サービスにデプロイされている（staging / production とも同一プロジェクト）。
+- デプロイは必ず Railway MCP（`railway-mcp-server`）を利用し、外部 CLI を直接叩かない。
+- 手順（例: staging）
+  1. リポジトリ直下（`/Users/.../anicca-project`）を `workspacePath` に指定し、`environment` は `staging`、`service` は `API` を指定する。
+     - 例: `railway-mcp-server.deploy({"workspacePath":"/path/to/anicca-project","environment":"staging","service":"API"})`
+  2. Railway 側でルートディレクトリは `apps/api` に設定されているため、追加のパス指定は不要。
+  3. デプロイ後、MCP のレスポンスに提示されるビルドログ URL で結果を確認する。
+- Production に deploy する場合も同じ手順で `environment` を `production` に変更する。
+- `npm run voice:simple` は staging プロキシを参照するため、staging を英語化したいときはこの手順で必ず再デプロイする。
 
 ---
 

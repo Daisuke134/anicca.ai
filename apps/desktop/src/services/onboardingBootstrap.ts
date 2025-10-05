@@ -120,15 +120,19 @@ export function resolveOnboardingPrompt(): string {
   const appRoot = path.resolve(__dirname, '..');
   const candidateDirs = [
     path.join(appRoot, 'prompts'),
+    path.join(appRoot, '..', 'prompts'),
     path.join(process.cwd(), 'prompts')
   ];
+
   const promptPath = candidateDirs
     .map((dir) => path.join(dir, 'onboarding.txt'))
     .find((fullPath) => fs.existsSync(fullPath));
 
-  const fallback = path.join(process.cwd(), 'prompts', 'onboarding.txt');
-  const resolved = promptPath ?? fallback;
-  return fs.readFileSync(resolved, 'utf8');
+  if (!promptPath) {
+    throw new Error(`onboarding.txt が見つかりません: ${candidateDirs.join(', ')}`);
+  }
+
+  return fs.readFileSync(promptPath, 'utf8');
 }
 
 function slugify(source: string): string {

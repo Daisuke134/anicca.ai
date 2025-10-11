@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "build:voice": "npm --prefix apps/desktop run build:voice"
+  },
   "dependencies": {
     "jsonrepair": "^3.13.1"
   }

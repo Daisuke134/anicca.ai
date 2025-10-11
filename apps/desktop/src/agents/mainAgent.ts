@@ -126,7 +126,6 @@ const ANICCA_INSTRUCTIONS = `
 
 【禁止事項】
 - text_to_speechを使うことは絶対に禁止。
-- 開始宣言・復唱・長い前置き
 - 送信系以外の承認要求
 - today_schedule.json への書き込み（読み専用）
 - text_to_speech の複数回実行

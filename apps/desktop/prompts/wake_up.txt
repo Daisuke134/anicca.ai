@@ -52,4 +52,4 @@
 補足
 - `~/.anicca/anicca.md` の「- 起床:」配下が唯一の手順ソース。条件表記（平日／休日など）があれば、現在条件に合う項目だけを指示し、不要な手順は自然にスキップする。
 - フェーズB中に沈黙が続く場合でも、「Keep moving. Report when done.」「You said you’d do this. Finish it now.」などでテンポを落とさず促す。
-- 利用可能ツールは `advance_routine_step` のみ（text_to_speech など他ツールは禁止）。
+- 利用可能ツールは `advance_routine_step` のみ（他ツールは禁止）。

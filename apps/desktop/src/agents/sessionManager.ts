@@ -6,14 +6,20 @@ import { SimpleEncryption } from '../services/simpleEncryption';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
-import express, { Request, Response } from 'express';
+import express from 'express';
+import type { Request, Response } from 'express';
 import * as http from 'http';
-import { WebSocketServer, WebSocket } from 'ws';
+import { EventEmitter } from 'events';
 
 type ReadyWaiter = {
   resolve: () => void;
   reject: (error: Error) => void;
   timeout: NodeJS.Timeout;
+};
+
+type ClientSecret = {
+  value: string;
+  expiresAt: number;
 };
 
 export class AniccaSessionManager {
@@ -42,12 +48,14 @@ export class AniccaSessionManager {
   // Express関連
   private app: express.Application | null = null;
   private httpServer: http.Server | null = null;
-  private wss: WebSocketServer | null = null;
-  private wsClients = new Set<WebSocket>();
+  private sidebandTransport: OpenAIRealtimeWebSocket | null = null;
+  private cachedClientSecret: ClientSecret | null = null;
+  private currentCallId: string | null = null;
   private onboardingState: 'idle' | 'running' = 'idle';
   private readyWaiters: ReadyWaiter[] = [];
   private historyEncryption: SimpleEncryption;
   private bridgeToken: string;
+  private eventEmitter = new EventEmitter();
   
   // 状態管理
   private currentUserId: string | null = null;
@@ -248,104 +256,71 @@ export class AniccaSessionManager {
     return !(transportOpen && this.ready === true && lastEvOk && ttlOk && ageOk);
   }
 
-  // --- 接続保証（入口一本化；並列抑止つき） ---
   private async ensureConnected(freshIfStale: boolean = true): Promise<void> {
-    const need = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
-    if (!need) return;
+    if (!this.session) {
+      await this.initialize();
+    }
+
+    const needsReconnect = !this.sidebandTransport || this.sidebandTransport.status !== 'connected';
+    const stale = freshIfStale && this.isStale();
+    if (!needsReconnect && !stale) {
+      return;
+    }
+
     if (this.isEnsuring) {
       let waited = 0;
-      while (this.isEnsuring && waited < 5000) { // 最大5s待つ
-        await new Promise(r => setTimeout(r, 100));
+      while (this.isEnsuring && waited < 5_000) {
+        await new Promise((resolve) => setTimeout(resolve, 100));
         waited += 100;
       }
-      // 既存ensure完了後に再評価。まだ必要ならこの呼び出しで接続を確立
-      const stillNeed = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
-      if (!stillNeed) return;
+      const stillNeeds = (!this.sidebandTransport || this.sidebandTransport.status !== 'connected' || this.isStale());
+      if (!stillNeeds) return;
     }
-    if (this.session?.transport?.status === 'connecting') {
-      let waited = 0;
-      while (this.session?.transport?.status === 'connecting' && waited < 5000) {
-        await new Promise(r => setTimeout(r, 100));
-        waited += 100;
-      }
-      const stillNeedAfterConnect = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
-      if (!stillNeedAfterConnect) return;
+
+    if (!this.currentCallId) {
+      console.warn('[ENSURE] Waiting for renderer call_id before reconnect');
+      return;
     }
+
     this.isEnsuring = true;
-    console.log('[ENSURE] refreshing realtime session...');
     try {
-      await this.disconnect();
-      await this.initialize();
-      const { API_ENDPOINTS } = require('../config');
-      const url = this.currentUserId
-        ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
-        : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-      const authService = getAuthService();
-      const proxyJwt = await authService.getProxyJwt();
-      if (!proxyJwt) throw new Error('missing proxy jwt');
-      const resp = await fetch(url, { headers: { Authorization: `Bearer ${proxyJwt}` } });
-      if (resp.status === 402) {
-        const payload = await resp.json().catch(() => ({ message: null }));
-        const message = typeof payload?.message === 'string' && payload.message.trim().length > 0
-          ? payload.message
-          : 'You have reached the free tier limit. Please upgrade to Anicca Pro.';
-        throw new Error(`desktop-session quota exceeded: ${message}`);
-      }
-      if (!resp.ok) throw new Error(`desktop-session failed: ${resp.status}`);
-      const data = await resp.json();
-      const key = data?.client_secret?.value;
-      const exp = data?.client_secret?.expires_at;
-      if (!key) throw new Error('no client_secret');
-      this.clientSecretExpiresAt = typeof exp === 'number' ? exp * 1000 : null;
-      console.log('[TOKEN_ISSUED]');
-      await this.connect(key);
-      console.log('[CONNECT_OK]');
-      // READY待ち（最大~6.3s）
-      let delay = 100;
-      for (let i = 0; i < 6; i++) {
-        if (this.isConnected()) break;
-        await new Promise(r => setTimeout(r, delay));
-        delay *= 2; // 100→200→400→800→1600→3200
-      }
-      if (!this.isConnected()) throw new Error('ready wait timeout');
-      console.log('[READY]');
-    } catch (e) {
-      console.error('[ENSURE_FAIL]', e);
-      throw e;
+      const secret = await this.getClientSecret();
+      await this.connectSideband(this.currentCallId, secret.value);
     } finally {
       this.isEnsuring = false;
     }
   }
 
   async initialize() {
-    // エージェント作成
-    this.agent = this.mainAgent || await createAniccaAgent(this.currentUserId);
+    if (!this.agent) {
+      this.agent = this.mainAgent || await createAniccaAgent(this.currentUserId);
+    }
+    if (this.session) {
+      return;
+    }
 
-    // WebSocketトランスポートのインスタンスを明示的に作成
-    const transport = new OpenAIRealtimeWebSocket();
-    
-    // セッション作成（GA構成の音声設定）
     this.session = new RealtimeSession(this.agent, {
       model: 'gpt-realtime',
-      transport: transport,
+      transport: new OpenAIRealtimeWebSocket(),
       config: {
         outputModalities: ['audio', 'text'],
         audio: {
           input: {
-            format: { type: 'audio/pcm', rate: 24000 },
+            format: { type: 'audio/pcm', rate: 24_000 },
             turnDetection: {
               type: 'server_vad',
               threshold: 0.5,
               prefixPaddingMs: 300,
-              silenceDurationMs: 500
-            }
+              silenceDurationMs: 500,
+            },
           },
           output: {
-            voice: 'alloy'
-          }
-        }
-      }
+            voice: 'alloy',
+          },
+        },
+      },
     });
+    this.sidebandTransport = this.session.transport as OpenAIRealtimeWebSocket;
 
     // --- Google Calendar hosted_mcp の定期リフレッシュ（20分間隔）---
     if (this.mcpRefreshInterval) {
@@ -380,6 +355,94 @@ export class AniccaSessionManager {
     // 注意: restoreSession()はconnect()の後で呼ぶ必要がある
   }
 
+  public async getClientSecret(force: boolean = false): Promise<ClientSecret> {
+    if (!force && this.cachedClientSecret) {
+      const remainingMs = this.cachedClientSecret.expiresAt - Date.now();
+      if (remainingMs > 60_000) {
+        return this.cachedClientSecret;
+      }
+    }
+    const fresh = await this.fetchClientSecret();
+    this.cachedClientSecret = fresh;
+    return fresh;
+  }
+
+  public async attachSideband(callId: string): Promise<void> {
+    this.currentCallId = callId;
+    console.log('[CALL_ID]', { callId });
+    await this.ensureConnected(true);
+  }
+
+  private async fetchClientSecret(): Promise<ClientSecret> {
+    const { API_ENDPOINTS } = require('../config');
+    const url = this.currentUserId
+      ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${this.currentUserId}`
+      : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
+
+    const authService = getAuthService();
+    const proxyJwt = await authService.getProxyJwt();
+    if (!proxyJwt) throw new Error('missing proxy jwt');
+
+    const resp = await fetch(url, { headers: { Authorization: `Bearer ${proxyJwt}` } });
+    if (resp.status === 402) {
+      const payload = await resp.json().catch(() => ({ message: null }));
+      const message = typeof payload?.message === 'string' && payload.message.trim().length > 0
+        ? payload.message
+        : 'You have reached the free tier limit. Please upgrade to Anicca Pro.';
+      throw new Error(`desktop-session quota exceeded: ${message}`);
+    }
+    if (!resp.ok) throw new Error(`desktop-session failed: ${resp.status}`);
+
+    const data = await resp.json();
+    const value = data?.client_secret?.value;
+    const expires = data?.client_secret?.expires_at;
+    if (!value || typeof expires !== 'number') {
+      throw new Error('invalid client_secret payload');
+    }
+
+    const expiresAt = expires * 1000;
+    this.clientSecretExpiresAt = expiresAt;
+    console.log('[TOKEN_ISSUED]');
+    return { value, expiresAt };
+  }
+
+  private async connectSideband(callId: string, apiKey: string): Promise<void> {
+    await this.initialize();
+    if (!this.session) {
+      throw new Error('Session not initialized');
+    }
+
+    const transport = (this.session.transport ?? null) as OpenAIRealtimeWebSocket | null;
+    if (!transport) {
+      throw new Error('Transport not available');
+    }
+
+    try {
+      transport.close?.();
+    } catch (e) {
+      console.warn('Failed to close existing transport:', e);
+    }
+
+    this.ready = false;
+    this.restoredOnce = false;
+    this.sessionStartedAt = Date.now();
+    this.apiKey = apiKey;
+
+    const wsUrl = new URL('wss://api.openai.com/v1/realtime');
+    wsUrl.searchParams.set('model', 'gpt-realtime');
+    wsUrl.searchParams.set('call_id', callId);
+
+    await this.session.connect({
+      apiKey,
+      url: wsUrl.toString(),
+    });
+
+    this.sidebandTransport = this.session.transport as OpenAIRealtimeWebSocket;
+    console.log('[CONNECT_OK]', { callId });
+
+    await this.checkSlackConnection();
+  }
+
   private ensureBridgeToken(): string {
     if (!this.bridgeToken || this.bridgeToken.length === 0) {
       throw new Error('Bridge token is not set');
@@ -406,7 +469,7 @@ export class AniccaSessionManager {
     return candidates.map((item) => item.trim()).includes(token);
   }
 
-  // Express/WebSocketサーバー起動（新規追加）
+  // Bridgeサーバー起動
   async startBridge(port: number) {
     if (this.app) return; // 既に起動済み
     
@@ -439,10 +502,6 @@ export class AniccaSessionManager {
     
     // HTTPサーバー起動
     this.httpServer = http.createServer(this.app);
-    
-    // WebSocket設定
-    this.setupWebSocket();
-    
     // サーバー起動
     await new Promise<void>((resolve) => {
       this.httpServer!.listen({ port, host: '::1', ipv6Only: false }, () => {
@@ -573,9 +632,15 @@ export class AniccaSessionManager {
             if (!resp.ok) throw new Error(`Failed to refresh client secret after OAuth: ${resp.status}`);
             const data = await resp.json();
             const apiKey = data?.client_secret?.value;
-            if (!apiKey) throw new Error('No client_secret returned after OAuth');
-            await this.connect(apiKey);
-            console.log('✅ Reconnected after OAuth with refreshed client secret');
+            const exp = data?.client_secret?.expires_at;
+            if (!apiKey || typeof exp !== 'number') throw new Error('No client_secret returned after OAuth');
+            this.cachedClientSecret = {
+              value: apiKey,
+              expiresAt: exp * 1000
+            };
+            this.clientSecretExpiresAt = this.cachedClientSecret.expiresAt;
+            await this.ensureConnected(true);
+            console.log('✅ Client secret refreshed after OAuth');
           } catch (e) {
             console.error('Failed to reinitialize session after auth:', e);
           }
@@ -724,132 +789,13 @@ export class AniccaSessionManager {
     });
   }
 
-  // WebSocket設定
-  private setupWebSocket() {
-    if (!this.httpServer) return;
-    
-    this.ensureBridgeToken();
-    this.wss = new WebSocketServer({
-      server: this.httpServer!,
-      verifyClient: (info, done) => {
-        if (!this.isLoopbackAddress(info.req.socket.remoteAddress)) {
-          done(false, 401, 'Unauthorized');
-          return;
-        }
-        if (!this.matchesBridgeToken(info.req.headers['sec-websocket-protocol'])) {
-          done(false, 401, 'Unauthorized');
-          return;
-        }
-        done(true);
-      }
-    });
-
-    this.wss.on('connection', (ws, req) => {
-      if (!this.matchesBridgeToken(req.headers['sec-websocket-protocol'])) {
-        ws.close(1008, 'unauthorized');
-        return;
-      }
-      console.log('🔌 WebSocket client connected');
-      this.wsClients.add(ws);
-      
-      // 衝突回避ヘルパ：進行中応答がある場合は interrupt → 短待ち
-      const interruptIfGenerating = async (delayMs = 100) => {
-        if (this.isGenerating) {
-          try { await this.session?.interrupt(); } catch {}
-          await new Promise(r => setTimeout(r, delayMs));
-        }
-      };
-      
-      // 定期タスク/音声フレームのメッセージハンドラー（isBinary で正確に判定）
-      ws.on('message', async (data: any, isBinary: boolean) => {
-        try {
-          // 1) バイナリ（PCM16）入力: SDKへ直結
-          if (isBinary) {
-            if (this.mode !== 'conversation') return;
-            await this.ensureConnected(true);
-            if (!this.session) return;
-            if (this.isElevenLabsPlaying) return;
-            const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
-            await this.sendAudio(new Uint8Array(buf));
-            return;
-          }
-
-          // 2) JSON メッセージ（BufferでもUTF-8文字列へ変換して解釈）
-          const text = typeof data === 'string' ? data : Buffer.from(data).toString('utf8');
-          const message = JSON.parse(text);
-          
-          if (message.type === 'scheduled_task') {
-            // T時点の入口で一度だけ復旧（重複ensureを排除）
-            await this.ensureConnected(true);
-            console.log('📅 Scheduled task received:', message.command);
-
-            // 念のため直前の出力を再チェック
-            await interruptIfGenerating(100);
-            
-            // 慈悲の瞑想タスクの場合の特別処理
-            if (message.taskType === 'jihi_meditation') {
-              console.log('🧘 慈悲の瞑想モード開始（ElevenLabs読み上げ）');
-              // ElevenLabsで処理するため、特別な割り込み防止は不要
-            }
-            // wake_up の場合は第一声の前に sticky を先に有効化（ゲートを確実に先出し）
-            try {
-              const t = String(message.taskType || message.taskId || '').toLowerCase();
-              if (t.startsWith('wake_up')) {
-                this.stickyTask = 'wake_up';
-                this.wakeActive = true;
-                this.stickyReady = false; // audio_start が来るまで解除不可
-              }
-            } catch {}
-
-            // PTT: Cron開始時は会話モードへ（stickyを立てた後）
-            try { await this.setMode('conversation', 'cron'); } catch {}
-
-            // メッセージ送信（共通）
-            if (this.session && this.isConnected()) {
-              // 念のため直前の出力を再チェック
-              await interruptIfGenerating(100);
-              await this.sendMessage(message.command);
-              console.log('✅ Task sent to Anicca');
-              
-              // タスク受付の応答
-              ws.send(JSON.stringify({
-                type: 'scheduled_task_accepted',
-                message: 'タスクを受け付けました'
-              }));
-            } else {
-              console.error('❌ Session not connected, cannot execute scheduled task');
-              ws.send(JSON.stringify({
-                type: 'error',
-                message: 'Session not connected'
-              }));
-            }
-
-            // 起床タスクは sticky により音声停止ごとに連鎖（audio_stopped 起点）
-          }
-        } catch (error) {
-          console.error('WebSocket message error:', error);
-        }
-      });
-      
-      ws.on('close', () => {
-        console.log('🔌 WebSocket client disconnected');
-        this.wsClients.delete(ws);
-      });
-      
-      ws.on('error', (error) => {
-        console.error('WebSocket error:', error);
-      });
-    });
+  private broadcast(message: any) {
+    this.eventEmitter.emit('event', message);
   }
 
-  // WebSocketブロードキャスト
-  private broadcast(message: any) {
-    const data = JSON.stringify(message);
-    this.wsClients.forEach(client => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(data);
-      }
-    });
+  public onEvent(listener: (message: any) => void): () => void {
+    this.eventEmitter.on('event', listener);
+    return () => this.eventEmitter.off('event', listener);
   }
 
   // ユーザーID管理
@@ -871,8 +817,38 @@ export class AniccaSessionManager {
     return this.userTimezone;
   }
 
+  public async setUserTimezone(timezone: string): Promise<void> {
+    if (!timezone || timezone.length < 3) return;
+    this.userTimezone = timezone;
+    console.log('🌐 User timezone set:', timezone);
+    await this.updateUserLanguageInProfile(timezone);
+  }
+
   public async forceConversationMode(reason: string = 'manual'): Promise<void> {
     await this.setMode('conversation', reason);
+  }
+
+  public async controlMode(mode: 'silent' | 'conversation', reason: string): Promise<void> {
+    await this.setMode(mode, reason);
+  }
+  
+  public async handleScheduledTask(command: string, taskType?: string | null, taskId?: string | null): Promise<void> {
+    await this.ensureConnected(true);
+    console.log('📅 Scheduled task received:', command);
+
+    await this.interruptIfGenerating(100);
+
+    const normalizedType = String(taskType ?? taskId ?? '').toLowerCase();
+    if (normalizedType.startsWith('wake_up')) {
+      this.stickyTask = 'wake_up';
+      this.wakeActive = true;
+      this.stickyReady = false;
+    }
+
+    await this.setMode('conversation', 'cron');
+    await this.interruptIfGenerating(100);
+    await this.sendMessage(command);
+    console.log('✅ Scheduled task dispatched');
   }
   
   // WebSocket Keep-alive機能
@@ -932,7 +908,35 @@ export class AniccaSessionManager {
 
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
     // 同じモードなら何もしない（冪等・安定化）
-    if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
+    if (newMode === this.mode) {
+      console.log('[MODE_SET:noop]', { mode: this.mode, reason });
+      if (newMode === 'conversation') {
+        const shouldRefresh = reason === 'hotkey' || !this.isConnected() || this.isStale();
+        if (shouldRefresh) {
+          await this.ensureConnected(true).catch(() => {});
+          try {
+            this.session?.transport?.updateSessionConfig({
+              audio: {
+                input: {
+                  turnDetection: {
+                    type: 'server_vad',
+                    threshold: 0.5,
+                    prefixPaddingMs: 300,
+                    silenceDurationMs: 500
+                  }
+                }
+              }
+            });
+          } catch (e) {
+            console.warn('setMode refresh failed:', e);
+          }
+          this.clearAutoExitTimer();
+          this.lastUserActivityAt = null;
+          this.broadcast({ type: 'mode_set', mode: this.mode, reason });
+        }
+      }
+      return;
+    }
     // 会話に上げる時だけ接続保証（下げるだけなら不要）
     if (newMode === 'conversation') { await this.ensureConnected(true).catch(() => {}); }
 
@@ -1453,31 +1457,12 @@ export class AniccaSessionManager {
       } catch { /* noop */ }
     });
   }
-  
-  async connect(apiKey: string) {
-    if (!this.session) throw new Error('Session not initialized');
-    
-    this.apiKey = apiKey;
-    // 新セッションの開始直後に age/ready を初期化
-    this.sessionStartedAt = Date.now();
-    this.ready = false;
-    this.restoredOnce = false;
-    await this.session.connect({ apiKey });
-    console.log('✅ Connected to OpenAI Realtime API');
-    
-    // 履歴復元は session.created（READY）後に行う
-
-    // Slack接続状態を確認
-    await this.checkSlackConnection();
-    
-    // （READY後に mem/TZ を“応答なし”で反映する。ここでは送らない）
-  }
-  
   async disconnect() {
     // keep-aliveを停止
     this.stopKeepAlive();
+    try { this.sidebandTransport?.close?.(); } catch {}
     if (this.session) {
-      this.session.close();
+      try { this.session.close(); } catch {}
       console.log('🔌 Disconnected from OpenAI Realtime API');
     }
     this.apiKey = null;
@@ -1485,18 +1470,6 @@ export class AniccaSessionManager {
       clearInterval(this.mcpRefreshInterval);
       this.mcpRefreshInterval = null;
     }
-  }
-  
-  async sendAudio(audioData: Uint8Array) {
-    if (!this.session) throw new Error('Session not connected');
-    
-    // ElevenLabs再生中は音声入力を無視（慈悲の瞑想はElevenLabsで処理）
-    if (this.isElevenLabsPlaying) {
-      console.log('🔇 Ignoring audio input during ElevenLabs');
-      return;
-    }
-    
-    await this.session.sendAudio(audioData.buffer as ArrayBuffer);
   }
   
   async sendMessage(message: string) {
@@ -1738,11 +1711,6 @@ ${memories}
   async stop() {
     // keep-aliveを停止
     this.stopKeepAlive();
-    
-    // WebSocket切断
-    this.wsClients.forEach(client => client.close());
-    this.wsClients.clear();
-    
     // サーバー停止
     if (this.httpServer) {
       await new Promise<void>((resolve) => {

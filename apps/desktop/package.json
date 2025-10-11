@@ -18,7 +18,7 @@
     "lint": "eslint . --ext .ts",
     "format": "prettier --write \"src/**/*.ts\"",
     "build": "tsc && cp src/ui/*.html dist/ui/ && cp src/ui/*.js dist/ui/",
-    "build:voice": "tsc -p tsconfig.voice.json && cp src/recorder.html dist/",
+    "build:voice": "tsc -p tsconfig.voice.json && tsc -p tsconfig.voice.renderer.json && mkdir -p dist/renderer && cp src/renderer/index.html dist/renderer/",
     "clean": "rm -rf dist/",
     "clean-build": "npm run clean && npm run build",
     "voice:simple": "dotenv --override -e .env.defaults -e .env.local -- sh -c 'npm run build:voice && CHANNEL=${VOICE_CHANNEL:-beta} UPDATE_CHANNEL=$CHANNEL PROXY_URL_STAGING=${VOICE_PROXY_STAGING:-https://anicca-proxy-staging.up.railway.app} NODE_ENV=development DESKTOP_MODE=true electron dist/main-voice-simple.js'",

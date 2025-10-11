@@ -584,23 +584,36 @@ export class DesktopAuthService {
         return null;
       }
       if (this.isProxyJwtValid()) return this.proxyJwt;
-      const session = this.loadSavedSession() || this.currentSession;
-      const access = session?.access_token || null;
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json'
-      };
-      if (access) {
-        headers.Authorization = `Bearer ${access}`;
+      let session = this.loadSavedSession() || this.currentSession;
+      if (!session || !this.isTokenValid(session)) {
+        session = await this.refreshSession().catch(() => null);
       }
-      const resp = await fetch(API_ENDPOINTS.AUTH.ENTITLEMENT, {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({})
-      });
+      const performRequest = async (authToken: string | null) => {
+        const headers: Record<string, string> = {
+          'Content-Type': 'application/json'
+        };
+        if (authToken) {
+          headers.Authorization = `Bearer ${authToken}`;
+        }
+        return fetch(API_ENDPOINTS.AUTH.ENTITLEMENT, {
+          method: 'POST',
+          headers,
+          body: JSON.stringify({})
+        });
+      };
+
+      let access = session?.access_token || null;
+      let resp = await performRequest(access);
       if (resp.status === 401) {
-        console.warn('Entitlement HTTP error: 401 - clearing stored Supabase session');
-        this.reset('proxy unauthorized');
-        return null;
+        console.warn('Entitlement HTTP error: 401 - attempting session refresh');
+        const refreshed = await this.refreshSession().catch(() => null);
+        access = refreshed?.access_token || null;
+        resp = await performRequest(access);
+        if (resp.status === 401) {
+          console.warn('Entitlement HTTP error: 401 - clearing stored Supabase session');
+          this.reset('proxy unauthorized');
+          return null;
+        }
       }
       if (resp.status === 402) {
         const data = await resp.json().catch(() => ({}));

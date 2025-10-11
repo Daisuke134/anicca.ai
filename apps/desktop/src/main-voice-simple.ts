@@ -1,16 +1,15 @@
-import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell, MenuItemConstructorOptions } from 'electron';
+import { app, Tray, Menu, nativeImage, BrowserWindow, powerSaveBlocker, dialog, powerMonitor, globalShortcut, shell, MenuItemConstructorOptions, ipcMain } from 'electron';
 import { jsonrepair } from 'jsonrepair';
 import * as path from 'path';
 import * as dotenv from 'dotenv';
 import { autoUpdater } from 'electron-updater';
 import { setTracingDisabled } from '@openai/agents';
 import { getAuthService, DesktopAuthService } from './services/desktopAuthService';
-import { API_ENDPOINTS, PORTS, UPDATE_CONFIG, AUDIO_SAMPLE_RATE, WS_RECONNECT_DELAY_MS, CHECK_STATUS_INTERVAL_MS } from './config';
+import { API_ENDPOINTS, PORTS, UPDATE_CONFIG } from './config';
 import { resolveBridgeAuthToken } from './services/bridgeToken';
 import * as cron from 'node-cron';
 import * as fs from 'fs';
 import * as os from 'os';
-import { WebSocket } from 'ws';
 // SDK imports
 import { AniccaSessionManager } from './agents/sessionManager';
 import { createAniccaAgent } from './agents/mainAgent';
@@ -25,18 +24,12 @@ import { buildRoutinePrompt } from './services/routines';
 // 環境変数を読み込み
 dotenv.config();
 let BRIDGE_AUTH_TOKEN: string | null = null;
-const BRIDGE_HEADER_NAME = 'X-Anicca-Bridge-Token';
 const getBridgeToken = (): string => {
   if (!BRIDGE_AUTH_TOKEN) {
     throw new Error('Bridge token not initialized');
   }
   return BRIDGE_AUTH_TOKEN;
 };
-
-const bridgeHeaders = (headers: Record<string, string> = {}) => ({
-  ...headers,
-  [BRIDGE_HEADER_NAME]: getBridgeToken(),
-});
 // ログ初期化（全環境でファイル出力）
 const log = require('electron-log/main');
 log.initialize();
@@ -61,6 +54,49 @@ let updateCheckIntervalId: NodeJS.Timeout | null = null;
 let planRefreshIntervalId: NodeJS.Timeout | null = null;
 let planRefreshBurstIntervalId: NodeJS.Timeout | null = null;
 let planRefreshBurstDeadline = 0;
+let sessionEventDisposer: (() => void) | null = null;
+
+const forwardSessionEvent = (payload: any) => {
+  try {
+    hiddenWindow?.webContents.send('realtime:event', payload);
+  } catch (error) {
+    console.warn('Failed to forward realtime event to renderer:', error);
+  }
+};
+
+const attachSessionEventSink = () => {
+  if (!sessionManager) return;
+  sessionEventDisposer?.();
+  sessionEventDisposer = sessionManager.onEvent(forwardSessionEvent);
+};
+
+ipcMain.handle('realtime:get-client-secret', async () => {
+  if (!sessionManager) throw new Error('Session manager not initialized');
+  return sessionManager.getClientSecret();
+});
+
+ipcMain.on('realtime:call-id', async (_event, callId: string) => {
+  if (!sessionManager) {
+    console.warn('call_id received before session manager init');
+    return;
+  }
+  await sessionManager.attachSideband(callId);
+});
+
+ipcMain.handle('realtime:set-mode', async (_event, payload: { mode: 'silent' | 'conversation'; reason: string }) => {
+  if (!sessionManager) throw new Error('Session manager not initialized');
+  await sessionManager.controlMode(payload.mode, payload.reason ?? 'ipc');
+});
+
+ipcMain.handle('realtime:restart', async () => {
+  if (!sessionManager) return;
+  await sessionManager.forceConversationMode('renderer_restart');
+});
+
+ipcMain.handle('realtime:set-timezone', async (_event, tz: string) => {
+  if (!sessionManager) throw new Error('Session manager not initialized');
+  await sessionManager.setUserTimezone(tz);
+});
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -166,26 +202,6 @@ async function initializeApp() {
       }
     };
     
-    // 認証完了後にRealtime接続を再保証（Bridge起動を考慮してリトライ）
-    const ensureSdkAfterLogin = async (attempt = 1): Promise<void> => {
-      try {
-        await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
-          method: 'POST',
-          headers: bridgeHeaders()
-        });
-      } catch (err) {
-        if (attempt >= 6) {
-          console.error('Failed to ensure SDK connection after login (exhausted retries):', err);
-          return;
-        }
-        const backoff = Math.min(500, attempt * 150);
-        console.warn(`Failed to ensure SDK connection after login (attempt ${attempt}), retrying in ${backoff}ms`);
-        setTimeout(() => {
-          void ensureSdkAfterLogin(attempt + 1);
-        }, backoff);
-      }
-    };
-
     // マイク権限をリクエスト
     const { systemPreferences } = require('electron');
     
@@ -216,6 +232,7 @@ async function initializeApp() {
       mainAgent = await createAniccaAgent(userId);
       sessionManager = new AniccaSessionManager(mainAgent, getBridgeToken());
       await sessionManager.initialize();
+      attachSessionEventSink();
       
       // 認証済みユーザーIDを設定（SessionManager初期化後）
       if (userId) {
@@ -223,55 +240,18 @@ async function initializeApp() {
         console.log(`✅ User ID set in session manager: ${userId}`);
       }
       
-      const sessionUrl = userId 
-        ? `${API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION}?userId=${userId}`
-        : API_ENDPOINTS.OPENAI_PROXY.DESKTOP_SESSION;
-      let proxyJwt: string | null = null;
-      try {
-        proxyJwt = await authService.getProxyJwt();
-        updateTrayMenu();
-      } catch (err: any) {
-        if (err?.code === 'PAYMENT_REQUIRED') {
-          notifyQuotaExceeded(err?.message, err?.entitlement);
-        } else {
-          throw err;
-        }
-      }
-      if (!proxyJwt) {
-        console.warn('⚠️ Proxy JWT not available, skipping realtime session bootstrap');
-      } else {
-        const response = await fetch(sessionUrl, {
-          headers: { Authorization: `Bearer ${proxyJwt}` }
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          const apiKey = data.client_secret?.value;
-          if (apiKey) {
-            await sessionManager.connect(apiKey);
-            console.log('✅ AniccaSessionManager connected with SDK');
-          }
-        } else if (response.status === 402) {
-          const payload = await response.json().catch(() => ({}));
-          notifyQuotaExceeded(payload?.message, payload?.entitlement);
-        } else {
-          console.warn('⚠️ Failed to get API key from proxy, continuing without SDK');
-        }
-      }
+      updateTrayMenu();
     } catch (error) {
-      console.error('❌ Failed to initialize SDK:', error);
-      // SDKエラーでも続行（voiceServerは動作可能）
+      console.error('❌ Failed to initialize session manager:', error);
+      throw error;
     }
     
-    // Bridgeサーバー起動（新規追加）
-    if (sessionManager) {
-      await sessionManager.startBridge(PORTS.OAUTH_CALLBACK);
-      console.log('✅ Bridge server started');
-    } else {
+    if (!sessionManager) {
       throw new Error('SessionManager not initialized');
     }
 
-    void ensureSdkAfterLogin();
+    await sessionManager.startBridge(PORTS.OAUTH_CALLBACK);
+    console.log('✅ Bridge server started');
 
     if (shouldLaunchOnboarding && sessionManager && !onboardingQueued) {
       onboardingQueued = true;
@@ -327,13 +307,10 @@ async function initializeApp() {
     
     // PTT: Option+Z を登録（失敗したら今は諦める）
     const triggerConversation = () => {
-      try {
-        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/mode/set`, {
-          method: 'POST',
-          headers: bridgeHeaders({ 'Content-Type': 'application/json' }),
-          body: JSON.stringify({ mode: 'conversation', reason: 'hotkey' })
-        }).catch(() => {});
-      } catch { /* noop */ }
+      if (!sessionManager) return;
+      sessionManager.controlMode('conversation', 'hotkey').catch((error) => {
+        console.warn('Failed to trigger conversation mode via hotkey:', error);
+      });
     };
 
     const hotkeyRegistered = globalShortcut.register('Option+Z', triggerConversation);
@@ -373,13 +350,10 @@ async function initializeApp() {
           }
         }
       }
-      // Realtime接続の即保証（少し遅延）
-      setTimeout(() => {
-        fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
-          method: 'POST',
-          headers: bridgeHeaders()
-        }).catch(() => {});
-      }, 300);
+      if (sessionManager) {
+        sessionManager.getClientSecret(true).catch(() => {});
+      }
+      hiddenWindow?.webContents.send('voice:restart');
 
       // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
       try {
@@ -414,503 +388,34 @@ async function initializeApp() {
 // 非表示のBrowserWindowを作成
 function createHiddenWindow() {
   hiddenWindow = new BrowserWindow({
-    show: false,  // 非表示
+    show: false,
     width: 800,
     height: 600,
     webPreferences: {
+      preload: path.join(__dirname, 'preload-webrtc.js'),
       nodeIntegration: false,
       contextIsolation: true,
-    }
+      sandbox: false,
+    },
   });
-  
-  // voice-demoのクライアントページを開く
-  hiddenWindow.loadURL(`http://localhost:${PORTS.OAUTH_CALLBACK}?bridge_token=${encodeURIComponent(getBridgeToken())}`);
-  
-  // デバッグ用 - 開発環境でのみ開く
+
+  hiddenWindow.loadFile(path.join(__dirname, 'renderer/index.html'));
+
   if (!app.isPackaged) {
     hiddenWindow.webContents.openDevTools({ mode: 'detach' });
   }
-  
-  // ページロード完了後、自動的に音声認識を開始
+
   hiddenWindow.webContents.on('did-finish-load', () => {
-    // ページが完全に読み込まれるまで少し待つ
-    const isDev = process.env.NODE_ENV === 'development';
-    setTimeout(() => {
-      hiddenWindow?.webContents.executeJavaScript(`
-        console.log('🎤 Starting SDK-based voice assistant...');
-        const BRIDGE_TOKEN = ${JSON.stringify(getBridgeToken())};
-        const originalFetch = window.fetch.bind(window);
-        const applyBridgeHeaders = (inputHeaders) => {
-          const headers = new Headers(inputHeaders || {});
-          headers.set('${BRIDGE_HEADER_NAME}', BRIDGE_TOKEN);
-          return headers;
-        };
-        window.fetch = (input, init = {}) => {
-          const nextInit = { ...(init || {}) };
-          nextInit.headers = applyBridgeHeaders(nextInit.headers);
-          return originalFetch(input, nextInit);
-        };
-
-        let ws = null;
-        let mediaRecorder = null;
-        let audioContext = null;
-        let audioQueue = [];
-        let isPlaying = false;
-        let currentSource = null;
-        let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
-        let isAgentSpeaking = false; // 視覚用フラグ（送信ゲートには使用しない）
-        let micPaused = false;       // 入力一時停止（ElevenLabs等の“システム再生時のみ”使用）
-        let sdkReady = false; // 監視用（送信ゲートには使用しない）
-        // SDKステータスの前回値（差分時のみログ出力するためのキー）
-        let lastSdkStatusKey = '';
-        // 音声入力はWSバイナリ直送に一本化（送信キュー/HTTPは廃止）
-        let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
-
-        // --- 追加: 初回プレフライト接続 & 録音起動の待機ヘルパー ---
-        async function ensureSDKConnection() {
-          try {
-            await fetch('/sdk/ensure', { method: 'POST', headers: { 'Content-Type': 'application/json' } });
-            const ok = await checkSDKStatus();
-            if (!ok) console.warn('SDK ensure completed but not ready yet');
-            return ok;
-          } catch (e) {
-            console.warn('SDK ensure failed:', e);
-            return false;
-          }
-        }
-
-function startCaptureWhenReady(retryMs = 1000) {
-  (async () => {
     try {
-      const ok = await checkSDKStatus();
-      if (ok) {
-        startVoiceCapture();
-        return;
-      }
-    } catch {}
-    setTimeout(() => startCaptureWhenReady(retryMs), retryMs);
-  })();
-}
+      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      hiddenWindow?.webContents.send('anisca:timezone', tz);
+    } catch (error) {
+      console.warn('Failed to send timezone to renderer:', error);
+    }
+  });
 
-        // 送信キュー/HTTPは使用しない
-
-        // SDK状態確認
-        async function checkSDKStatus() {
-          try {
-            const response = await fetch('/sdk/status');
-            const status = await response.json();
-            // 状態変化時のみログを出す（DevToolsノイズ・負荷を低減）
-            const key = [
-              status?.useSDK ? 1 : 0,
-              status?.connected ? 1 : 0,
-              status?.ready ? 1 : 0,
-              status?.transport || '',
-              // TTL/ageは秒単位で揺れるため丸めて比較（過剰出力を防止）
-              typeof status?.tokenTTL === 'number' ? Math.floor(status.tokenTTL / 30) : '',
-              typeof status?.sessionAge === 'number' ? Math.floor(status.sessionAge / 60) : ''
-            ].join('|');
-            if (key !== lastSdkStatusKey) {
-              console.log('SDK Status:', status);
-              lastSdkStatusKey = key;
-            }
-            const ok = status.useSDK && status.connected && status.transport === 'websocket';
-            sdkReady = !!ok;
-            return ok;
-          } catch (error) {
-            console.error('Failed to check SDK status:', error);
-            sdkReady = false;
-            return false;
-          }
-        }
-
-        // WebSocket接続（音声出力受信用）
-        function connectWebSocket() {
-          ws = new WebSocket('ws://localhost:${PORTS.OAUTH_CALLBACK}', BRIDGE_TOKEN);
-          ws.binaryType = 'arraybuffer';
-
-          ws.onmessage = async (event) => {
-            try {
-              const message = JSON.parse(event.data);
-
-              // PCM16音声出力データを受信
-              if (message.type === 'audio_output' && message.format === 'pcm16') {
-                // エージェント発話開始の合図（視覚用のみ）
-                isAgentSpeaking = true;
-                console.log('🔊 Received PCM16 audio from SDK');
-
-                // Base64デコードしてPCM16データを取得
-                const audioData = atob(message.data);
-                const arrayBuffer = new ArrayBuffer(audioData.length);
-                const view = new Uint8Array(arrayBuffer);
-                for (let i = 0; i < audioData.length; i++) {
-                  view[i] = audioData.charCodeAt(i);
-                }
-
-                // PCM16をWebAudio用に変換して再生
-                audioQueue.push(arrayBuffer);
-                if (!isPlaying) {
-                  playNextPCM16Audio();
-                }
-              }
-
-              // エージェント音声開始/終了（半二重制御用）
-              if (message.type === 'audio_start') {
-                isAgentSpeaking = true;  // 視覚用
-              }
-              if (message.type === 'audio_stopped') {
-                isAgentSpeaking = false; // 視覚用
-                micPaused = false;       // 半二重解除
-                // 出力直後の誤割り込み抑止（短縮）
-                micPostStopMuteUntil = Date.now() + 120;
-              }
-
-              // 応答完了（公式イベントに一本化）
-              if (message.type === 'agent_end') {
-                isAgentSpeaking = false;
-                micPaused = false; // 半二重解除
-                console.log('🔁 agent_end: gates cleared');
-                // 出力直後の誤割り込み抑止（短縮）
-                micPostStopMuteUntil = Date.now() + 120;
-              }
-
-              // 音声中断処理
-              if (message.type === 'audio_interrupted') {
-                console.log('🛑 Audio interrupted - clearing queue');
-                audioQueue = [];
-                isPlaying = false;
-                // 即時にマイクを解放し、ユーザー音声を継続送出（barge-in 確実化）
-                micPaused = false;
-                isAgentSpeaking = false;
-                console.log('[BARGE_IN_DETECTED]');
-                // 再生中の音声を停止（存在すれば）
-                if (currentSource) {
-                  currentSource.stop();
-                  currentSource = null;
-                }
-              }
-
-              // モード確定通知（会話モードに上がった事実に同期してビープ）
-              if (message.type === 'mode_set' && message.mode === 'conversation' && message.reason === 'hotkey') {
-                // PTTホットキー起因かつ SDK接続OKのときのみ効果音
-                const ok = await checkSDKStatus().catch(() => false);
-                if (!ok) {
-                  console.warn('mode_set (hotkey) but SDK not ready; skip beep');
-                } else {
-                  try {
-                    const Ctor = (window['AudioContext'] || window['webkitAudioContext']);
-                    if (!Ctor) throw new Error('No AudioContext available');
-                    const ctx = audioContext || new Ctor();
-                    if (!audioContext) { audioContext = ctx; }
-                    try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    o.type = 'sine';
-                    o.frequency.value = 880; // A5
-                    g.gain.setValueAtTime(0.0, ctx.currentTime);
-                    g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
-                    o.connect(g).connect(ctx.destination);
-                    o.start();
-                    o.stop(ctx.currentTime + 0.14);
-                  } catch (e) {
-                    console.warn('mode_set beep failed:', e);
-                  }
-                }
-              } else if (message.type === 'mode_set' && message.mode === 'silent') {
-                const ok = await checkSDKStatus().catch(() => false);
-                if (!ok) {
-                  console.warn('mode_set (silent) but SDK not ready; skip beep');
-                } else {
-                  try {
-                    const Ctor = (window['AudioContext'] || window['webkitAudioContext']);
-                    if (!Ctor) throw new Error('No AudioContext available');
-                    const ctx = audioContext || new Ctor();
-                    if (!audioContext) { audioContext = ctx; }
-                    try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
-                    const o = ctx.createOscillator();
-                    const g = ctx.createGain();
-                    o.type = 'sine';
-                    o.frequency.value = 440; // A4
-                    g.gain.setValueAtTime(0.0, ctx.currentTime);
-                    g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.01);
-                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
-                    o.connect(g).connect(ctx.destination);
-                    o.start();
-                    o.stop(ctx.currentTime + 0.22);
-                  } catch (e) {
-                    console.warn('mode_set silent beep failed:', e);
-                  }
-                }
-              }
-
-              // ツール実行通知
-              if (message.type === 'tool_execution_start') {
-                console.log('🔧 Tool executing:', message.toolName);
-              }
-
-              if (message.type === 'tool_execution_complete') {
-                console.log('✅ Tool completed:', message.toolName);
-              }
-
-              // ElevenLabs音声データの処理
-              if (message.type === 'elevenlabs_audio' && message.audioBase64) {
-                console.log('🎵 ElevenLabs audio received, length:', message.audioBase64.length);
-                
-                try {
-                  // Base64をBlobに変換
-                  const binaryString = atob(message.audioBase64);
-                  const bytes = new Uint8Array(binaryString.length);
-                  for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                  }
-                  
-                  // MP3形式として正しく設定
-                  const blob = new Blob([bytes], { type: 'audio/mpeg' });
-                  const audioUrl = URL.createObjectURL(blob);
-                  
-                  // Audio要素を作成して設定
-                  const audio = new Audio(audioUrl);
-                  audio.volume = 1.0;
-                  
-                  // 再生開始をsessionManagerに通知
-                  fetch('/elevenlabs/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'playing' })
-                  }).catch(error => {
-                    console.error('Failed to notify playback start:', error);
-                  });
-                  
-                  // システム音声再生フラグを設定（エコー防止）
-                  isSystemPlaying = true;
-                  
-                  // 再生完了時の処理
-                  audio.onended = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    console.log('✅ ElevenLabs playback completed');
-                    
-                    // システム音声再生フラグをクリア
-                    isSystemPlaying = false;
-                    
-                    // 再生完了をsessionManagerに通知
-                    fetch('/elevenlabs/status', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: 'completed' })
-                    }).catch(error => {
-                      console.error('Failed to notify playback completion:', error);
-                    });
-                  };
-                  
-                  // エラー時も通知
-                  audio.onerror = (e) => {
-                    console.error('❌ Audio error:', e);
-                    
-                    // システム音声再生フラグをクリア
-                    isSystemPlaying = false;
-                    
-                    // エラー時も再生完了として扱う
-                    fetch('/elevenlabs/status', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: 'completed' })
-                    }).catch(error => {
-                      console.error('Failed to notify error completion:', error);
-                    });
-                  };
-                  
-                  // 再生実行
-                  const playPromise = audio.play();
-                  if (playPromise !== undefined) {
-                    playPromise
-                      .then(() => {
-                        console.log('✅ ElevenLabs playback started successfully');
-                      })
-                      .catch((error) => {
-                        console.error('❌ Playback failed:', error);
-                        
-                        // システム音声再生フラグをクリア
-                        isSystemPlaying = false;
-                        
-                        // 再生失敗時も完了として扱う
-                        fetch('/elevenlabs/status', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: 'completed' })
-                        });
-                      });
-                  }
-                  
-                } catch (error) {
-                  console.error('❌ ElevenLabs processing failed:', error);
-                  
-                  // システム音声再生フラグをクリア
-                  isSystemPlaying = false;
-                  
-                  // エラー時も完了として扱う
-                  fetch('/elevenlabs/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'completed' })
-                  });
-                }
-              }
-
-            } catch (error) {
-              console.error('WebSocket message error:', error);
-            }
-          };
-
-          ws.onopen = () => console.log('✅ WebSocket connected');
-          ws.onclose = () => {
-            console.log('❌ WebSocket disconnected, reconnecting...');
-            setTimeout(connectWebSocket, ${WS_RECONNECT_DELAY_MS});
-          };
-        }
-
-        // PCM16音声再生（キュー処理）
-        async function playNextPCM16Audio() {
-          if (audioQueue.length === 0) {
-            isPlaying = false;
-            currentSource = null;
-            return;
-          }
-
-          isPlaying = true;
-          const pcm16Data = audioQueue.shift();
-
-          if (!audioContext) {
-            audioContext = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
-          }
-
-          try {
-            // PCM16データをFloat32に変換
-            const int16Array = new Int16Array(pcm16Data);
-            const float32Array = new Float32Array(int16Array.length);
-            
-            for (let i = 0; i < int16Array.length; i++) {
-              float32Array[i] = int16Array[i] / 32768.0;
-            }
-
-            // AudioBufferを作成
-            const audioBuffer = audioContext.createBuffer(1, float32Array.length, ${AUDIO_SAMPLE_RATE});
-            audioBuffer.copyToChannel(float32Array, 0);
-
-            // 再生
-            const source = audioContext.createBufferSource();
-            currentSource = source;  // 現在再生中のソースを保存
-            source.buffer = audioBuffer;
-            source.connect(audioContext.destination);
-            source.onended = () => {
-              currentSource = null;  // 再生終了時にクリア
-              playNextPCM16Audio();
-            };
-            source.start();
-          } catch (error) {
-            console.error('PCM16 playback error:', error);
-            currentSource = null;
-            playNextPCM16Audio();
-          }
-        }
-
-        // マイク音声取得とSDK送信（PCM16形式）
-        async function startVoiceCapture() {
-          try {
-            const useSDK = await checkSDKStatus();
-
-            if (!useSDK) {
-              console.error('SDK not ready, cannot start voice capture');
-              return;
-            }
-
-            // 監視ステータスに依らず録音を開始し、復旧は Bridge 側の WS で ensureConnected に任せる
-            console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
-
-            // マイクアクセス（16kHz PCM16用設定）
-            const stream = await navigator.mediaDevices.getUserMedia({
-              audio: {
-                channelCount: 1,
-                sampleRate: ${AUDIO_SAMPLE_RATE},
-                sampleSize: 16,
-                echoCancellation: true,
-                noiseSuppression: true
-              }
-            });
-
-            // AudioContextでPCM16形式に変換
-            const audioCtx = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
-            const source = audioCtx.createMediaStreamSource(stream);
-            const processor = audioCtx.createScriptProcessor(4096, 1, 1);
-
-            source.connect(processor);
-            processor.connect(audioCtx.destination);
-
-            // PCM16形式で音声データを送信（システム再生ガード）
-            processor.onaudioprocess = async (e) => {
-              const inputData = e.inputBuffer.getChannelData(0);
-              // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
-              if (Date.now() < micPostStopMuteUntil) {
-                return;
-              }
-              // システム再生中は送信しない（エコー防止）
-              if (isSystemPlaying) {
-                return;
-              }
-
-              // Float32をInt16に変換（プリロール保持のため先に作る）
-              const int16Array = new Int16Array(inputData.length);
-              for (let i = 0; i < inputData.length; i++) {
-                const s = Math.max(-1, Math.min(1, inputData[i]));
-                int16Array[i] = s < 0 ? s * 0x8000 : s * 0x7FFF;
-              }
-
-              // 常時ストリーミング送信（WSバイナリ直送）
-              if (!int16Array || int16Array.length === 0) return;
-              if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(int16Array.buffer);
-              }
-
-            };
-
-            console.log('🎤 Voice capture started (PCM16)');
-
-          } catch (error) {
-            console.error('Failed to start voice capture:', error);
-          }
-        }
-
-        // 初期化
-        async function initialize() {
-          console.log('🚀 Initializing SDK WebSocket voice mode...');
-          // ユーザーのタイムゾーンをBridgeへ通知
-          try {
-            const tz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            await fetch('/user/timezone', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ timezone: tz })
-            });
-            console.log('🌐 Reported user timezone:', tz);
-          } catch (e) {
-            console.warn('Failed to report timezone:', e);
-          }
-
-          // 追加: 起動直後に一度だけ接続を確立（デッドロック防止）
-          await ensureSDKConnection();
-
-          // WebSocket接続
-          connectWebSocket();
-
-          // 接続監視ループ（1.5秒間隔）
-          setInterval(() => { checkSDKStatus(); }, ${CHECK_STATUS_INTERVAL_MS});
-          // SDKがReadyになったら録音開始（Readyでない場合はリトライ）
-          startCaptureWhenReady(1000);
-        }
-
-        // 開始
-        initialize();
-      `);
-    }, 2000);
+  hiddenWindow.on('closed', () => {
+    hiddenWindow = null;
   });
 }
 
@@ -1373,10 +878,10 @@ function registerCronJob(task: any) {
       const preSpec = `${preMinute} ${preHour} * * *`;
       const preflight = cron.schedule(preSpec, async () => {
         try {
-          await fetch(`http://localhost:${PORTS.OAUTH_CALLBACK}/sdk/ensure`, {
-            method: 'POST',
-            headers: bridgeHeaders()
-          });
+          if (sessionManager) {
+            await sessionManager.getClientSecret(true);
+          }
+          hiddenWindow?.webContents.send('voice:restart');
           console.log('[CRON_PREFLIGHT]', task.id);
         } catch (e) {
           console.warn('[CRON_PREFLIGHT_FAIL]', task.id, e);
@@ -1423,73 +928,64 @@ function removeTaskFromJson(taskId: string) {
 }
 
 async function executeScheduledTask(task: any) {
-  const ws = new WebSocket(`ws://localhost:${PORTS.OAUTH_CALLBACK}/ws`, getBridgeToken());
-  
-  // テンプレートは task.id の接頭辞で選択（最小ロジック）
+  if (!sessionManager) {
+    console.warn('executeScheduledTask skipped: session manager not ready');
+    return;
+  }
 
-  ws.on('open', () => {
-    const id = String(task.id || '');
-    let tpl = 'default.txt';
-    if (id.startsWith('jihi_') || id.startsWith('jihi__')) tpl = 'jihi_meditation.txt';
-    else if (id.startsWith('wake_up_') || id.startsWith('wake_up__')) tpl = 'wake_up.txt';
-    else if (id.startsWith('sleep_') || id.startsWith('sleep__')) tpl = 'sleep.txt';
-    else if (id.startsWith('standup_') || id.startsWith('standup__')) tpl = 'standup.txt';
-    else if (id.startsWith('zange_') || id.startsWith('zange__')) tpl = 'zange.txt';
-    else if (id.startsWith('five_') || id.startsWith('five__')) tpl = 'five.txt';
-    else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
-    else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
+  const id = String(task.id || '');
+  let tpl = 'default.txt';
+  if (id.startsWith('jihi_') || id.startsWith('jihi__')) tpl = 'jihi_meditation.txt';
+  else if (id.startsWith('wake_up_') || id.startsWith('wake_up__')) tpl = 'wake_up.txt';
+  else if (id.startsWith('sleep_') || id.startsWith('sleep__')) tpl = 'sleep.txt';
+  else if (id.startsWith('standup_') || id.startsWith('standup__')) tpl = 'standup.txt';
+  else if (id.startsWith('zange_') || id.startsWith('zange__')) tpl = 'zange.txt';
+  else if (id.startsWith('five_') || id.startsWith('five__')) tpl = 'five.txt';
+  else if (id.startsWith('mtg_pre_')) tpl = 'mtg_pre.txt';
+  else if (id.startsWith('mtg_start_')) tpl = 'mtg_start.txt';
 
-    // Resolve prompts directory robustly (packaged/asar and dev both対応)
-    const appRoot = path.resolve(__dirname, '..'); // dist/ の1つ上（asar内）
-    const candidates = [
-      path.join(appRoot, 'prompts'),
-      path.join(process.cwd(), 'prompts'),
-    ];
-    const promptsDir = candidates.find(p => {
-      try { return fs.existsSync(p); } catch { return false; }
-    }) || path.join(process.cwd(), 'prompts');
-    const commonPath = path.join(promptsDir, 'common.txt');
-    const tplPath = path.join(promptsDir, tpl);
-    let commonText = '';
-    let templateText = '';
-    try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
-    try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
-    let resolvedTemplate = templateText;
-    if (tpl === 'sleep.txt') {
-      try {
-        resolvedTemplate = buildRoutinePrompt('sleep', templateText, { reset: true });
-      } catch (routineError) {
-        console.warn('[sleep_routine] fallback to raw template:', routineError);
-        resolvedTemplate = templateText;
-      }
-    } else if (tpl === 'wake_up.txt') {
-      try {
-        resolvedTemplate = buildRoutinePrompt('wake', templateText, { reset: true });
-      } catch (routineError) {
-        console.warn('[wake_routine] fallback to raw template:', routineError);
-        resolvedTemplate = templateText;
-      }
+  const appRoot = path.resolve(__dirname, '..');
+  const candidates = [
+    path.join(appRoot, 'prompts'),
+    path.join(process.cwd(), 'prompts'),
+  ];
+  const promptsDir = candidates.find(p => {
+    try { return fs.existsSync(p); } catch { return false; }
+  }) || path.join(process.cwd(), 'prompts');
+  const commonPath = path.join(promptsDir, 'common.txt');
+  const tplPath = path.join(promptsDir, tpl);
+  let commonText = '';
+  let templateText = '';
+  try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
+  try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
+  let resolvedTemplate = templateText;
+  if (tpl === 'sleep.txt') {
+    try {
+      resolvedTemplate = buildRoutinePrompt('sleep', templateText, { reset: true });
+    } catch (routineError) {
+      console.warn('[sleep_routine] fallback to raw template:', routineError);
+      resolvedTemplate = templateText;
     }
+  } else if (tpl === 'wake_up.txt') {
+    try {
+      resolvedTemplate = buildRoutinePrompt('wake', templateText, { reset: true });
+    } catch (routineError) {
+      console.warn('[wake_routine] fallback to raw template:', routineError);
+      resolvedTemplate = templateText;
+    }
+  }
 
-    const commandBody = [commonText, resolvedTemplate]
-      .filter(Boolean)
-      .join('\n\n')
-      .replace(/\$\{task\.description\}/g, String(task.description ?? ''));
+  const commandBody = [commonText, resolvedTemplate]
+    .filter(Boolean)
+    .join('\n\n')
+    .replace(/\$\{task\.description\}/g, String(task.description ?? ''));
 
-    ws.send(JSON.stringify({
-      type: 'scheduled_task',
-      taskId: task.id,
-      command: commandBody
-    }));
-  });
-  
-  ws.on('message', (data) => {
-    // console.log('📨 Response from server:', data); // 冗長な出力を抑制
-  });
-  
-  ws.on('error', (error) => {
-    console.error('❌ WebSocket error:', error);
-  });
+  try {
+    await sessionManager.handleScheduledTask(commandBody, task.taskType, task.id);
+    console.log('✅ Scheduled task dispatched via session manager');
+  } catch (error) {
+    console.error('❌ Scheduled task dispatch failed:', error);
+  }
 }
 
 function reloadScheduledTasks() {

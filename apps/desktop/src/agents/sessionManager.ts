@@ -3,6 +3,7 @@ import { createAniccaAgent } from './mainAgent';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
 import { getAuthService } from '../services/desktopAuthService';
 import { SimpleEncryption } from '../services/simpleEncryption';
+import { lockWakeAdvance, unlockWakeAdvance } from './wakeAdvanceGate';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -774,6 +775,7 @@ export class AniccaSessionManager {
                 this.stickyTask = 'wake_up';
                 this.wakeActive = true;
                 this.stickyReady = false; // audio_start が来るまで解除不可
+                lockWakeAdvance('cron_start');
               }
             } catch {}
 
@@ -900,12 +902,13 @@ export class AniccaSessionManager {
   // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
   private clearWakeSticky(reason: string) {
     try {
-      if (this.stickyTask === 'wake_up' && this.wakeActive) {
-        this.wakeActive = false;
-        this.stickyTask = null;
-        this.stickyReady = false;
-        console.log('[WAKE_STICKY_CLEAR]', { reason });
-      }
+    if (this.stickyTask === 'wake_up' && this.wakeActive) {
+      unlockWakeAdvance(reason);
+      this.wakeActive = false;
+      this.stickyTask = null;
+      this.stickyReady = false;
+      console.log('[WAKE_STICKY_CLEAR]', { reason });
+    }
     } catch {}
   }
 
@@ -1107,6 +1110,7 @@ export class AniccaSessionManager {
 
     // 音声中断処理（transport経由）
     this.session.transport.on('audio_interrupted', () => {
+      unlockWakeAdvance('audio_interrupted');
       console.log('⚠️ Audio interrupted');
       this.broadcast({ type: 'audio_interrupted' });
     });
@@ -1341,6 +1345,7 @@ export class AniccaSessionManager {
         const isUser = (item?.type === 'message' && item?.role === 'user');
         if (isUser) {
           this.noteUserActivity();
+          unlockWakeAdvance('user_message');
           if (this.stickyTask === 'wake_up' && this.wakeActive) {
             // audio_start でゲートが開くまでは解除しない
             if (!this.stickyReady) return;

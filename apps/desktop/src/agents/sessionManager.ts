@@ -338,7 +338,9 @@ export class AniccaSessionManager {
               type: 'server_vad',
               threshold: 0.5,
               prefixPaddingMs: 300,
-              silenceDurationMs: 500
+              silenceDurationMs: 500,
+              interruptResponse: true,
+              createResponse: true
             }
           },
           output: {

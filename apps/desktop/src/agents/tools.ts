@@ -7,7 +7,7 @@ import os from 'os';
 import { getAuthService } from '../services/desktopAuthService';
 import { PORTS, PROXY_URL, API_ENDPOINTS } from '../config';
 import { advanceRoutineStepForTool } from '../services/routines';
-import { ensureWakeAdvanceAllowed } from './wakeAdvanceGate';
+import { ensureWakeAdvanceAllowed, markWakeRoutineInactive } from './wakeAdvanceGate';
 
 async function proxyFetch(url: string, init: RequestInit = {}) {
   const auth = getAuthService();
@@ -306,6 +306,9 @@ export const advance_routine_step = tool({
     try {
       ensureWakeAdvanceAllowed(routineId);
       const result = advanceRoutineStepForTool(routineId, acknowledgedStep);
+      if (result.routineId === 'wake' && result.completed) {
+        markWakeRoutineInactive('routine_done');
+      }
       return JSON.stringify(result);
     } catch (error: any) {
       return JSON.stringify({

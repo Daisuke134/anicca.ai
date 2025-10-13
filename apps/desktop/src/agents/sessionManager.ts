@@ -3,7 +3,13 @@ import { createAniccaAgent } from './mainAgent';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
 import { getAuthService } from '../services/desktopAuthService';
 import { SimpleEncryption } from '../services/simpleEncryption';
-import { lockWakeAdvance, unlockWakeAdvance } from './wakeAdvanceGate';
+import {
+  lockWakeAdvance,
+  unlockWakeAdvance,
+  markWakeRoutineActive,
+  markWakeRoutineInactive,
+  isWakeRoutineActive
+} from './wakeAdvanceGate';
 import os from 'os';
 import fs from 'fs/promises';
 import path from 'path';
@@ -237,8 +243,11 @@ export class AniccaSessionManager {
     return Math.floor((Date.now() - this.sessionStartedAt) / 1000);
   }
   private isStale(): boolean {
+    if (isWakeRoutineActive()) {
+      return false;
+    }
     const transportOpen = (this.session?.transport?.status === 'connected');
-    const lastEvOk = (Date.now() - (this.lastServerEventAt ?? 0)) <= 30_000; // 30s
+    const lastEvOk = (Date.now() - (this.lastServerEventAt ?? 0)) <= 600_000; // 10min
     const ttlOk = this.tokenTTLSeconds() > 120; // >120s
     const ageOk = this.sessionAgeSeconds() < 3_000; // <50min
     return !(transportOpen && this.ready === true && lastEvOk && ttlOk && ageOk);
@@ -335,7 +344,8 @@ export class AniccaSessionManager {
               prefixPaddingMs: 300,
               silenceDurationMs: 500,
               interruptResponse: true,
-              createResponse: true
+              createResponse: true,
+              idleTimeoutMs: 600_000
             }
           },
           output: {
@@ -775,6 +785,7 @@ export class AniccaSessionManager {
                 this.stickyTask = 'wake_up';
                 this.wakeActive = true;
                 this.stickyReady = false; // audio_start が来るまで解除不可
+                markWakeRoutineActive('cron_start');
                 lockWakeAdvance('cron_start');
               }
             } catch {}
@@ -881,9 +892,8 @@ export class AniccaSessionManager {
 
   private startAutoExitCountdown() {
     this.clearAutoExitTimer();
-    const idleMs = (this.stickyTask === 'wake_up' && this.wakeActive)
-      ? this.AUTO_EXIT_IDLE_WAKE_MS
-      : this.AUTO_EXIT_IDLE_MS;
+    const wakeMode = isWakeRoutineActive();
+    const idleMs = wakeMode ? this.AUTO_EXIT_IDLE_WAKE_MS : this.AUTO_EXIT_IDLE_MS;
     this.autoExitDeadlineAt = Date.now() + idleMs;
     this.autoExitTimer = setTimeout(async () => {
       const userAfterAgent = (this.lastUserActivityAt ?? 0) > (this.lastAgentEndAt ?? 0);
@@ -902,13 +912,13 @@ export class AniccaSessionManager {
   // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
   private clearWakeSticky(reason: string) {
     try {
-    if (this.stickyTask === 'wake_up' && this.wakeActive) {
-      unlockWakeAdvance(reason);
-      this.wakeActive = false;
-      this.stickyTask = null;
-      this.stickyReady = false;
-      console.log('[WAKE_STICKY_CLEAR]', { reason });
-    }
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        unlockWakeAdvance(reason);
+        this.wakeActive = false;
+        this.stickyTask = null;
+        this.stickyReady = false;
+        console.log('[WAKE_STICKY_CLEAR]', { reason });
+      }
     } catch {}
   }
 
@@ -1518,7 +1528,7 @@ export class AniccaSessionManager {
   
   isConnected() {
     const transportOpen = (this.session?.transport?.status === 'connected');
-    const lastEvOk = (Date.now() - (this.lastServerEventAt ?? 0)) <= 30_000; // 30s
+    const lastEvOk = (Date.now() - (this.lastServerEventAt ?? 0)) <= 600_000; // 10min
     const ttlOk = this.tokenTTLSeconds() > 120; // >120s
     const ageOk = this.sessionAgeSeconds() < 3_000; // <50min
     return (transportOpen && this.ready === true && lastEvOk && ttlOk && ageOk);

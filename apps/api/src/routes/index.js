@@ -17,7 +17,6 @@ import billingRouter from './billing/index.js';
 
 // MCP
 import mcpGcalRouter from './mcp/gcal/index.js';
-import mcpElevenLabsRouter from './mcp/elevenlabs.js';
 
 // Tools
 import newsRouter from './tools/news.js';
@@ -49,7 +48,6 @@ router.use('/auth/entitlement', entitlementRouter);
 router.use('/billing', billingRouter);
 
 router.use('/mcp/gcal', mcpGcalRouter);
-router.use('/mcp/elevenlabs', mcpElevenLabsRouter);
 
 router.use('/tools/news', newsRouter);
 router.use('/tools/search/exa', searchExaRouter);
@@ -64,4 +62,3 @@ router.use('/worker-voice/message', workerVoiceMessageRouter);
 router.use('/worker-voice/interrupt', workerVoiceInterruptRouter);
 
 export default router;
-

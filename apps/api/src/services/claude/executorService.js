@@ -1000,19 +1000,6 @@ ${action.parameters.query || ''}`;
   initializeMCPServers() {
     this.mcpServers = {};
     
-    // ElevenLabs MCPの設定（常に有効）
-    const elevenLabsApiKey = process.env.ELEVENLABS_API_KEY;
-    if (elevenLabsApiKey) {
-      this.mcpServers.elevenlabs = {
-        command: "npx",
-        args: ["-y", "elevenlabs-mcp-enhanced"],
-        env: {
-          ELEVENLABS_API_KEY: elevenLabsApiKey
-        }
-      };
-      // console.log('✅ ElevenLabs MCP server configured');
-    }
-    
     // Browser Base MCPの設定（常に有効）
     if (process.env.BROWSERBASE_API_KEY && process.env.BROWSERBASE_PROJECT_ID) {
       this.mcpServers.browserbase = {
@@ -1080,9 +1067,6 @@ ${action.parameters.query || ''}`;
     const available = [];
     if (this.mcpServers.slack) {
       available.push('Slack');
-    }
-    if (this.mcpServers.elevenlabs) {
-      available.push('ElevenLabs');
     }
     if (this.mcpServers.http) {
       available.push('HTTP');

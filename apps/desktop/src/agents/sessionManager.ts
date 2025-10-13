@@ -74,6 +74,7 @@ export class AniccaSessionManager {
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
   private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（約35秒）
+  private readonly AUTO_EXIT_IDLE_WAKE_MS = 60_000; // 起床ルーチン中のみ延長（約60秒）
 
   // wake起床タスクの連続発話（sticky）制御
   private stickyTask: 'wake_up' | null = null;
@@ -903,13 +904,16 @@ export class AniccaSessionManager {
 
   private startAutoExitCountdown() {
     this.clearAutoExitTimer();
-    this.autoExitDeadlineAt = Date.now() + this.AUTO_EXIT_IDLE_MS;
+    const idleMs = (this.stickyTask === 'wake_up' && this.wakeActive)
+      ? this.AUTO_EXIT_IDLE_WAKE_MS
+      : this.AUTO_EXIT_IDLE_MS;
+    this.autoExitDeadlineAt = Date.now() + idleMs;
     this.autoExitTimer = setTimeout(async () => {
       const userAfterAgent = (this.lastUserActivityAt ?? 0) > (this.lastAgentEndAt ?? 0);
       if (this.mode === 'conversation' && !userAfterAgent) {
         try { await this.setMode('silent', 'auto_exit'); } catch (e) { console.warn('auto-exit failed:', e); }
       }
-    }, this.AUTO_EXIT_IDLE_MS);
+    }, idleMs);
   }
 
   private noteUserActivity() {

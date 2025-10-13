@@ -20,7 +20,7 @@ import {
   resolveOnboardingPrompt,
   syncTodayTasksFromMarkdown
 } from './services/onboardingBootstrap';
-import { buildRoutinePrompt } from './services/routines';
+import { buildRoutinePrompt, resetRoutineState } from './services/routines';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -279,6 +279,7 @@ async function initializeApp() {
 
       const runOnboarding = async (attempt = 1): Promise<void> => {
         try {
+          resetRoutineState('onboarding');
           const prompt = resolveOnboardingPrompt();
           await manager.waitForReady(8000);
           manager.setOnboardingState('running');

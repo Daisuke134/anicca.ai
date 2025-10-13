@@ -52,13 +52,7 @@ export class AniccaSessionManager {
   // 状態管理
   private currentUserId: string | null = null;
   private currentPort: number = 8085; // デフォルトポート
-  private isElevenLabsPlaying: boolean = false;
   private userTimezone: string | null = null;
-  
-  // text_to_speech重複防止
-  private lastElevenLabsExecutionTime = 0;
-  private readonly ELEVENLABS_COOLDOWN = 3000; // 3秒のクールダウン
-  private isElevenLabsExecuting = false; // ElevenLabs実行中フラグ追加
   private taskState = {
     isExecuting: false,
     currentTask: null as any,
@@ -696,21 +690,6 @@ export class AniccaSessionManager {
       });
     });
 
-    // 9. ElevenLabs再生状態の通知を受け取る
-    this.app.post('/elevenlabs/status', (req, res) => {
-      const { status } = req.body; // 'playing' | 'completed'
-      
-      if (status === 'playing') {
-        this.isElevenLabsPlaying = true;
-        console.log('🎵 ElevenLabs playback started - Anicca muted');
-      } else if (status === 'completed') {
-        this.isElevenLabsPlaying = false;
-        console.log('✅ ElevenLabs playback completed - Anicca unmuted');
-      }
-      
-      res.json({ success: true });
-    });
-
     // 1-1. ユーザーのタイムゾーンを受け取る（setupRoutes内に配置）
     this.app.post('/user/timezone', async (req, res) => {
       try {
@@ -771,7 +750,6 @@ export class AniccaSessionManager {
             if (this.mode !== 'conversation') return;
             await this.ensureConnected(true);
             if (!this.session) return;
-            if (this.isElevenLabsPlaying) return;
             const buf = Buffer.isBuffer(data) ? data : Buffer.from(data);
             await this.sendAudio(new Uint8Array(buf));
             return;
@@ -789,11 +767,6 @@ export class AniccaSessionManager {
             // 念のため直前の出力を再チェック
             await interruptIfGenerating(100);
             
-            // 慈悲の瞑想タスクの場合の特別処理
-            if (message.taskType === 'jihi_meditation') {
-              console.log('🧘 慈悲の瞑想モード開始（ElevenLabs読み上げ）');
-              // ElevenLabsで処理するため、特別な割り込み防止は不要
-            }
             // wake_up の場合は第一声の前に sticky を先に有効化（ゲートを確実に先出し）
             try {
               const t = String(message.taskType || message.taskId || '').toLowerCase();
@@ -1092,12 +1065,6 @@ export class AniccaSessionManager {
     // 音声データイベント（transport経由）
     this.session.transport.on('audio', (event: any) => {
       this.lastServerEventAt = Date.now();
-      // ElevenLabs再生中は音声出力を送信しない
-      if (this.isElevenLabsPlaying) {
-        // ログは出さない（大量に出るため）
-        return;
-      }
-      
       // PCM16形式の音声データをWebSocketにブロードキャスト
       this.broadcast({
         type: 'audio_output',
@@ -1115,11 +1082,6 @@ export class AniccaSessionManager {
     // 音声開始/終了
     this.session.on('audio_start', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
-      // ElevenLabs再生中は無視
-      if (this.isElevenLabsPlaying) {
-        console.log('🔇 Ignoring Anicca audio_start during ElevenLabs playback');
-        return;
-      }
       // wake中は最初の発話が始まった時点で解除ゲートを開く
       if (this.stickyTask === 'wake_up' && this.wakeActive && !this.stickyReady) {
         this.stickyReady = true;
@@ -1130,11 +1092,6 @@ export class AniccaSessionManager {
 
     this.session.on('audio_stopped', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
-      // ElevenLabs再生中は無視
-      if (this.isElevenLabsPlaying) {
-        console.log('🔇 Ignoring Anicca audio_stopped during ElevenLabs playback');
-        return;
-      }
       console.log('🔊 Agent stopped speaking');
       this.broadcast({ type: 'audio_stopped' });
       // 起床中は即連鎖。非wakeは通常の無応答タイマー開始（AUTO_EXIT_IDLE_MS）
@@ -1150,12 +1107,6 @@ export class AniccaSessionManager {
 
     // 音声中断処理（transport経由）
     this.session.transport.on('audio_interrupted', () => {
-      // ElevenLabs再生中は割り込みを無視（慈悲の瞑想はElevenLabsで処理）
-      if (this.isElevenLabsPlaying) {
-        console.log('🔇 ElevenLabs再生中 - 割り込みを無視');
-        return;
-      }
-      
       console.log('⚠️ Audio interrupted');
       this.broadcast({ type: 'audio_interrupted' });
     });
@@ -1216,26 +1167,6 @@ export class AniccaSessionManager {
         }
       }
       
-      // text_to_speech重複防止チェック
-      if (toolName === 'text_to_speech') {
-        // 実行中なら即座にブロック
-        if (this.isElevenLabsExecuting) {
-          console.warn('❌ ElevenLabs既に実行中 - 完全にブロック');
-          return;
-        }
-        
-        // クールダウンチェック
-        const now = Date.now();
-        if (now - this.lastElevenLabsExecutionTime < this.ELEVENLABS_COOLDOWN) {
-          console.warn('❌ ElevenLabs実行が3秒以内で重複 - ブロック');
-          return;
-        }
-        
-        // 実行開始をマーク
-        this.isElevenLabsExecuting = true;
-        this.lastElevenLabsExecutionTime = now;
-      }
-      
       // タスク状態更新
       this.taskState.isExecuting = true;
       this.taskState.currentTask = toolName;
@@ -1271,46 +1202,6 @@ export class AniccaSessionManager {
         console.log(`結果: ${JSON.stringify(result)}`);
       } catch (_) {
         // noop
-      }
-      
-      // ElevenLabs音声データの処理
-      if (toolName === 'text_to_speech') {
-        // 実行完了をマーク
-        this.isElevenLabsExecuting = false;
-        console.log('✅ ElevenLabs実行完了 - フラグクリア');
-        
-        // OpenAI SDKはツール結果を文字列化するので、パースが必要
-        let parsedResult = result;
-        if (typeof result === 'string') {
-          try {
-            parsedResult = JSON.parse(result);
-          } catch (e) {
-            console.error('Failed to parse result:', e);
-          }
-        }
-        
-        if (parsedResult?.audioBase64) {
-          console.log('🎵 Sending ElevenLabs audio to client for playback');
-          
-          // 即座にElevenLabs再生フラグを設定（interrupt前に設定）
-          this.isElevenLabsPlaying = true;
-          console.log('🔇 Pre-emptively muting Anicca for ElevenLabs playback');
-          
-          // OpenAI Realtimeの現在の応答を中断（音声競合回避）
-          if (this.session) {
-            try {
-              await this.session.interrupt();
-              console.log('🛑 OpenAI session interrupted for ElevenLabs playback');
-            } catch (error) {
-              console.warn('Failed to interrupt session:', error);
-            }
-          }
-          
-          this.broadcast({
-            type: 'elevenlabs_audio',
-            audioBase64: parsedResult.audioBase64
-          });
-        }
       }
       
       // タスク状態更新
@@ -1495,13 +1386,6 @@ export class AniccaSessionManager {
   
   async sendAudio(audioData: Uint8Array) {
     if (!this.session) throw new Error('Session not connected');
-    
-    // ElevenLabs再生中は音声入力を無視（慈悲の瞑想はElevenLabsで処理）
-    if (this.isElevenLabsPlaying) {
-      console.log('🔇 Ignoring audio input during ElevenLabs');
-      return;
-    }
-    
     await this.session.sendAudio(audioData.buffer as ArrayBuffer);
   }
   
@@ -1536,9 +1420,7 @@ export class AniccaSessionManager {
       );
       try { await fs.chmod(this.sessionFilePath, 0o600); } catch {}
       
-      if (!this.isElevenLabsPlaying) {
-        console.log('💾 Session saved');
-      }
+      console.log('💾 Session saved');
     } catch (error) {
       console.error('Failed to save session:', error);
     }

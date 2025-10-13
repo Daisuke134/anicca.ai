@@ -458,9 +458,7 @@ function createHiddenWindow() {
         let audioQueue = [];
         let isPlaying = false;
         let currentSource = null;
-        let isSystemPlaying = false; // システム音声再生中フラグ（エコー防止）
         let isAgentSpeaking = false; // 視覚用フラグ（送信ゲートには使用しない）
-        let micPaused = false;       // 入力一時停止（ElevenLabs等の“システム再生時のみ”使用）
         let sdkReady = false; // 監視用（送信ゲートには使用しない）
         // SDKステータスの前回値（差分時のみログ出力するためのキー）
         let lastSdkStatusKey = '';
@@ -560,7 +558,6 @@ function startCaptureWhenReady(retryMs = 1000) {
               }
               if (message.type === 'audio_stopped') {
                 isAgentSpeaking = false; // 視覚用
-                micPaused = false;       // 半二重解除
                 // 出力直後の誤割り込み抑止（短縮）
                 micPostStopMuteUntil = Date.now() + 120;
               }
@@ -568,7 +565,6 @@ function startCaptureWhenReady(retryMs = 1000) {
               // 応答完了（公式イベントに一本化）
               if (message.type === 'agent_end') {
                 isAgentSpeaking = false;
-                micPaused = false; // 半二重解除
                 console.log('🔁 agent_end: gates cleared');
                 // 出力直後の誤割り込み抑止（短縮）
                 micPostStopMuteUntil = Date.now() + 120;
@@ -579,8 +575,6 @@ function startCaptureWhenReady(retryMs = 1000) {
                 console.log('🛑 Audio interrupted - clearing queue');
                 audioQueue = [];
                 isPlaying = false;
-                // 即時にマイクを解放し、ユーザー音声を継続送出（barge-in 確実化）
-                micPaused = false;
                 isAgentSpeaking = false;
                 console.log('[BARGE_IN_DETECTED]');
                 // 再生中の音声を停止（存在すれば）
@@ -651,110 +645,6 @@ function startCaptureWhenReady(retryMs = 1000) {
 
               if (message.type === 'tool_execution_complete') {
                 console.log('✅ Tool completed:', message.toolName);
-              }
-
-              // ElevenLabs音声データの処理
-              if (message.type === 'elevenlabs_audio' && message.audioBase64) {
-                console.log('🎵 ElevenLabs audio received, length:', message.audioBase64.length);
-                
-                try {
-                  // Base64をBlobに変換
-                  const binaryString = atob(message.audioBase64);
-                  const bytes = new Uint8Array(binaryString.length);
-                  for (let i = 0; i < binaryString.length; i++) {
-                    bytes[i] = binaryString.charCodeAt(i);
-                  }
-                  
-                  // MP3形式として正しく設定
-                  const blob = new Blob([bytes], { type: 'audio/mpeg' });
-                  const audioUrl = URL.createObjectURL(blob);
-                  
-                  // Audio要素を作成して設定
-                  const audio = new Audio(audioUrl);
-                  audio.volume = 1.0;
-                  
-                  // 再生開始をsessionManagerに通知
-                  fetch('/elevenlabs/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'playing' })
-                  }).catch(error => {
-                    console.error('Failed to notify playback start:', error);
-                  });
-                  
-                  // システム音声再生フラグを設定（エコー防止）
-                  isSystemPlaying = true;
-                  
-                  // 再生完了時の処理
-                  audio.onended = () => {
-                    URL.revokeObjectURL(audioUrl);
-                    console.log('✅ ElevenLabs playback completed');
-                    
-                    // システム音声再生フラグをクリア
-                    isSystemPlaying = false;
-                    
-                    // 再生完了をsessionManagerに通知
-                    fetch('/elevenlabs/status', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: 'completed' })
-                    }).catch(error => {
-                      console.error('Failed to notify playback completion:', error);
-                    });
-                  };
-                  
-                  // エラー時も通知
-                  audio.onerror = (e) => {
-                    console.error('❌ Audio error:', e);
-                    
-                    // システム音声再生フラグをクリア
-                    isSystemPlaying = false;
-                    
-                    // エラー時も再生完了として扱う
-                    fetch('/elevenlabs/status', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({ status: 'completed' })
-                    }).catch(error => {
-                      console.error('Failed to notify error completion:', error);
-                    });
-                  };
-                  
-                  // 再生実行
-                  const playPromise = audio.play();
-                  if (playPromise !== undefined) {
-                    playPromise
-                      .then(() => {
-                        console.log('✅ ElevenLabs playback started successfully');
-                      })
-                      .catch((error) => {
-                        console.error('❌ Playback failed:', error);
-                        
-                        // システム音声再生フラグをクリア
-                        isSystemPlaying = false;
-                        
-                        // 再生失敗時も完了として扱う
-                        fetch('/elevenlabs/status', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ status: 'completed' })
-                        });
-                      });
-                  }
-                  
-                } catch (error) {
-                  console.error('❌ ElevenLabs processing failed:', error);
-                  
-                  // システム音声再生フラグをクリア
-                  isSystemPlaying = false;
-                  
-                  // エラー時も完了として扱う
-                  fetch('/elevenlabs/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ status: 'completed' })
-                  });
-                }
               }
 
             } catch (error) {
@@ -846,15 +736,11 @@ function startCaptureWhenReady(retryMs = 1000) {
             source.connect(processor);
             processor.connect(audioCtx.destination);
 
-            // PCM16形式で音声データを送信（システム再生ガード）
+            // PCM16形式で音声データを送信
             processor.onaudioprocess = async (e) => {
               const inputData = e.inputBuffer.getChannelData(0);
               // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
               if (Date.now() < micPostStopMuteUntil) {
-                return;
-              }
-              // システム再生中は送信しない（エコー防止）
-              if (isSystemPlaying) {
                 return;
               }
 

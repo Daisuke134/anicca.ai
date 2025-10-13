@@ -83,37 +83,7 @@ export const search_exa = tool({
   }
 });
 
-// 3. think_with_claude
-export const think_with_claude = tool({
-  name: 'think_with_claude',
-  description: 'Send complex tasks to Claude for execution. Use for app creation, coding, etc.',
-  parameters: z.object({
-    task: z.string().describe('Task description for Claude')
-  }),
-  execute: async ({ task }) => {
-    try {
-      const userId = process.env.CURRENT_USER_ID || 'desktop-user';
-      const response = await proxyFetch(`${PROXY_URL}/api/tools/claude_code`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId,
-          task: {
-            type: 'general',
-            originalRequest: task,
-            userId
-          }
-        })
-      });
-      const data = await response.json();
-      return JSON.stringify(data);
-    } catch (error: any) {
-      return `Error executing task: ${error.message}`;
-    }
-  }
-});
-
-// 4. connect_slack
+// 3. connect_slack
 export const connect_slack = tool({
   name: 'connect_slack',
   description: 'Connect to Slack workspace',
@@ -136,7 +106,7 @@ export const connect_slack = tool({
   }
 });
 
-// 5. slack_list_channels
+// 4. slack_list_channels
 export const slack_list_channels = tool({
   name: 'slack_list_channels',
   description: 'List all Slack channels',
@@ -166,7 +136,7 @@ export const slack_list_channels = tool({
   }
 });
 
-// 6. slack_send_message
+// 5. slack_send_message
 export const slack_send_message = tool({
   name: 'slack_send_message',
   description: 'Send a message to a Slack channel. DO NOT use for replies - use slack_reply_to_thread instead',
@@ -194,7 +164,7 @@ export const slack_send_message = tool({
   }
 });
 
-// 7. slack_get_channel_history
+// 6. slack_get_channel_history
 export const slack_get_channel_history = tool({
   name: 'slack_get_channel_history',
   description: 'Get message history from a Slack channel. Optionally specify limit parameter',
@@ -233,7 +203,7 @@ export const slack_get_channel_history = tool({
   }
 });
 
-// 8. slack_add_reaction
+// 7. slack_add_reaction
 export const slack_add_reaction = tool({
   name: 'slack_add_reaction',
   description: 'Add a reaction emoji to a Slack message',
@@ -262,7 +232,7 @@ export const slack_add_reaction = tool({
   }
 });
 
-// 9. slack_reply_to_thread
+// 8. slack_reply_to_thread
 export const slack_reply_to_thread = tool({
   name: 'slack_reply_to_thread',
   description: 'Reply to a message in a Slack thread',
@@ -291,7 +261,7 @@ export const slack_reply_to_thread = tool({
   }
 });
 
-// 10. slack_get_thread_replies
+// 9. slack_get_thread_replies
 export const slack_get_thread_replies = tool({
   name: 'slack_get_thread_replies',
   description: 'Get all replies in a Slack thread',
@@ -323,7 +293,7 @@ export const slack_get_thread_replies = tool({
 
 
 
-// 11. advance_routine_step
+// 10. advance_routine_step
 export const advance_routine_step = tool({
   name: 'advance_routine_step',
   description: 'ルーティン手順を1つ進める。ユーザーが現在の手順を完了した直後に必ず呼び出す。',
@@ -344,64 +314,7 @@ export const advance_routine_step = tool({
   }
 });
 
-// 15. text_to_speech (ElevenLabs)
-export const text_to_speech = tool({
-  name: 'text_to_speech',
-  description: 'Convert text to speech using ElevenLabs',
-  parameters: z.object({
-    text: z.string().describe('Text to convert to speech'),
-    voice_id: z.string().describe('Voice ID - default: pNInz6obpgDQGcFmaJgB (Adam)'),
-    model: z.string().describe('Model ID - default: eleven_turbo_v2_5'),
-    stability: z.number().describe('Voice stability (0-1) - default: 0.5'),
-    similarity_boost: z.number().describe('Voice similarity (0-1) - default: 0.75'),
-    speed: z.number().describe('Speech speed (0.5-2.0) - default: 1.0')
-  }),
-  execute: async ({ text, voice_id, model, stability, similarity_boost, speed }) => {
-    try {
-      // デフォルト値の設定（男性の深い声）
-      const voiceId = voice_id || 'pNInz6obpgDQGcFmaJgB'; // Adam（デフォルト）
-      const modelId = model || 'eleven_turbo_v2_5';
-      const voiceStability = stability ?? 0.5;
-      const voiceSimilarity = similarity_boost ?? 0.75;
-      const voiceSpeed = speed ?? 1.0;
-      
-      const response = await proxyFetch(`${PROXY_URL}/api/mcp/elevenlabs`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'text_to_speech',
-          params: { 
-            text, 
-            voice_id: voiceId,
-            model: modelId,
-            voice_settings: {
-              stability: voiceStability,
-              similarity_boost: voiceSimilarity,
-              speed: voiceSpeed
-            }
-          }
-        })
-      });
-      
-      const data = await response.json();
-      
-      if (data.success && data.audioBase64) {
-        // audioBase64を含めて返す（sessionManagerが処理する）
-        return {
-          type: 'text',
-          text: `音声生成完了（使用音声ID: ${voiceId}）`,
-          audioBase64: data.audioBase64
-        };
-      }
-      
-      return data.message || 'Audio generation failed';
-    } catch (error: any) {
-      return `Error generating speech: ${error.message}`;
-    }
-  }
-});
-
-// 16. open_url
+// 11. open_url
 export const open_url = tool({
   name: 'open_url',
   description: 'URLをデフォルトアプリケーションで開く（Webサイト、Zoomリンク等）',
@@ -419,7 +332,7 @@ export const open_url = tool({
   },
 });
 
-// 17. connect_google_calendar
+// 12. connect_google_calendar
 export const connect_google_calendar = tool({
   name: 'connect_google_calendar',
   description: 'Google Calendarを接続',
@@ -493,7 +406,7 @@ export const connect_google_calendar = tool({
   }
 });
 
-// 17.5 disconnect_google_calendar
+// 13. disconnect_google_calendar
 export const disconnect_google_calendar = tool({
   name: 'disconnect_google_calendar',
   description: 'Google Calendarの接続を解除する（音声コマンド用）',
@@ -532,7 +445,7 @@ export const disconnect_google_calendar = tool({
   }
 });
 
-// 18. start_google_login（音声からブラウザログインを起動）
+// 14. start_google_login（音声からブラウザログインを起動）
 export const start_google_login = tool({
   name: 'start_google_login',
   description: 'Googleアカウントでのログインフローを開始する',
@@ -549,7 +462,7 @@ export const start_google_login = tool({
   }
 });
 
-// 19. get_current_time（外部API非依存：OSのIANA TZを返す）
+// 15. get_current_time（外部API非依存：OSのIANA TZを返す）
 export const get_current_time = tool({
   name: 'get_current_time',
   description: '現在の時刻を取得（ユーザーの場所に基づく）',
@@ -561,7 +474,7 @@ export const get_current_time = tool({
   }
 });
 
-// 20. convert_time（ISO日時→指定IANA TZの人間可読表示）
+// 16. convert_time（ISO日時→指定IANA TZの人間可読表示）
 export const convert_time = tool({
   name: 'convert_time',
   description: 'ISO日時を指定IANAタイムゾーンのローカル時刻に変換（人間可読）',
@@ -592,7 +505,6 @@ export const convert_time = tool({
 export const allTools = [
   get_hacker_news_stories,
   search_exa,
-  think_with_claude,
   connect_slack,
   slack_list_channels,
   slack_send_message,
@@ -601,7 +513,6 @@ export const allTools = [
   slack_reply_to_thread,
   slack_get_thread_replies,
   advance_routine_step,
-  text_to_speech,
   open_url,
   connect_google_calendar,
   disconnect_google_calendar,

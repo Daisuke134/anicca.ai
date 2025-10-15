@@ -1166,7 +1166,6 @@ export class AniccaSessionManager {
 
     // 音声中断処理（transport経由）
     this.session.transport.on('audio_interrupted', () => {
-      unlockWakeAdvance('audio_interrupted');
       console.log('⚠️ Audio interrupted');
       this.broadcast({ type: 'audio_interrupted' });
     });

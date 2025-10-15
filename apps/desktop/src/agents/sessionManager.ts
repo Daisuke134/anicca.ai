@@ -345,7 +345,7 @@ export class AniccaSessionManager {
               silenceDurationMs: 500,
               interruptResponse: true,
               createResponse: true,
-              idleTimeoutMs: 600_000
+              idleTimeoutMs: 30_000
             }
           },
           output: {
@@ -922,6 +922,49 @@ export class AniccaSessionManager {
     } catch {}
   }
 
+  private extractTextFromHistoryItem(item: any): string {
+    try {
+      const content = item?.content;
+      if (!Array.isArray(content)) {
+        const direct = content ?? item?.text ?? '';
+        return typeof direct === 'string' ? direct : '';
+      }
+      const collected: string[] = [];
+      for (const chunk of content) {
+        if (chunk?.type === 'input_text' && typeof chunk?.text === 'string') {
+          collected.push(chunk.text);
+        } else if (chunk?.type === 'input_audio' && typeof chunk?.transcript === 'string') {
+          collected.push(chunk.transcript);
+        }
+      }
+      return collected.join(' ').trim();
+    } catch {
+      return '';
+    }
+  }
+
+  private isWakeConfirmation(raw: string): boolean {
+    if (!raw) return false;
+    const normalized = raw
+      .replace(/[\u2018\u2019]/g, "'")
+      .replace(/[\u3000]/g, ' ')
+      .toLowerCase()
+      .trim();
+    if (!normalized) return false;
+    if (normalized.includes('起きたく')) return false;
+    if (normalized.includes('起きたい')) return false;
+
+    const jpBoundary = '[\\s、。!！?？"\'\u3000「」『』（）()［］\\[\\]{}【】《》〈〉…\-ー〜~]';
+
+    const wakePatterns = [
+      new RegExp(`(?:^|${jpBoundary})起きた(?:${jpBoundary}|$)`, 'u'),
+      new RegExp(`(?:^|${jpBoundary})起床した(?:${jpBoundary}|$)`, 'u'),
+      /\bi\s*woke\s*up\b/,
+      /\bi\s*(?:am|'?m)\s*awake\b/
+    ];
+    return wakePatterns.some((pattern) => pattern.test(normalized));
+  }
+
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
     // 同じモードなら何もしない（冪等・安定化）
     if (newMode === this.mode) { console.log('[MODE_SET:noop]', { mode: this.mode, reason }); return; }
@@ -938,7 +981,10 @@ export class AniccaSessionManager {
                 type: 'server_vad',
                 threshold: 0.5,
                 prefixPaddingMs: 300,
-                silenceDurationMs: 500
+                silenceDurationMs: 500,
+                interruptResponse: true,
+                createResponse: true,
+                idleTimeoutMs: 30_000
               }
             }
           }
@@ -1355,12 +1401,17 @@ export class AniccaSessionManager {
         const isUser = (item?.type === 'message' && item?.role === 'user');
         if (isUser) {
           this.noteUserActivity();
-          unlockWakeAdvance('user_message');
           if (this.stickyTask === 'wake_up' && this.wakeActive) {
-            // audio_start でゲートが開くまでは解除しない
             if (!this.stickyReady) return;
-            this.clearWakeSticky('user_message');
+            const utterance = this.extractTextFromHistoryItem(item);
+            if (!this.isWakeConfirmation(utterance)) {
+              return;
+            }
+            unlockWakeAdvance('user_confirmed_awake');
+            this.clearWakeSticky('user_confirmed_awake');
+            return;
           }
+          unlockWakeAdvance('user_message');
         }
       } catch { /* noop */ }
     });

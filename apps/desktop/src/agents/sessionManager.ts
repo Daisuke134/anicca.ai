@@ -74,8 +74,8 @@ export class AniccaSessionManager {
   private autoExitDeadlineAt: number | null = null; // epoch(ms)
   private lastUserActivityAt: number | null = null; // epoch(ms)
   private lastAgentEndAt: number | null = null;     // epoch(ms)
-  private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（約35秒）
-  private readonly AUTO_EXIT_IDLE_WAKE_MS = 120_000; // 起床ルーチン中のみ延長（約120秒）
+  private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（約30秒）
+  private readonly AUTO_EXIT_IDLE_WAKE_MS = 30_000;  // 起床ルーチン中も同じ待機（約30秒）
 
   // wake起床タスクの連続発話（sticky）制御
   private stickyTask: 'wake_up' | null = null;

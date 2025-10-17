@@ -87,7 +87,10 @@ async function initializeApp() {
 
   await ensureBaselineFiles();
   syncTodayTasksFromMarkdown();
-  const shouldLaunchOnboarding = false; // TODO: Re-enable after onboarding prompt revamp
+  const shouldLaunchOnboarding = shouldRunOnboarding();
+  if (!shouldLaunchOnboarding) {
+    console.log('ℹ️ Onboarding skipped (profile already initialized)');
+  }
 
   // トレースを無効化（MCPツールの取得でエラーになるため）
   setTracingDisabled(true);
@@ -118,7 +121,6 @@ async function initializeApp() {
     // 認証状態をチェック
     if (!authService.isAuthenticated()) {
       console.log('⚠️ User not authenticated');
-      showNotification('Login required', 'Open the tray icon and click "Login with Google" to continue.');
     } else {
       const userName = authService.getCurrentUserName();
       console.log(`✅ Authenticated as: ${userName}`);
@@ -128,6 +130,8 @@ async function initializeApp() {
     // 認証成功時のグローバルコールバックを設定
     (global as any).onUserAuthenticated = async (user: any) => {
       console.log('🎉 User authenticated via browser:', user.email);
+
+      const wasOnboardingRunning = sessionManager?.isOnboardingRunning?.() === true;
       
       // authServiceを更新
       if (authService) {
@@ -164,6 +168,19 @@ async function initializeApp() {
           tasksWatcherRegistered = true;
         }
       }
+
+      void (async () => {
+        await ensureSdkAfterLogin();
+        if (wasOnboardingRunning && sessionManager) {
+          try {
+            await sessionManager.waitForReady();
+            sessionManager.setOnboardingState('running');
+            await sessionManager.forceConversationMode('onboarding');
+          } catch (err) {
+            console.warn('⚠️ Failed to resume onboarding after login:', err);
+          }
+        }
+      })();
     };
     
     // 認証完了後にRealtime接続を再保証（Bridge起動を考慮してリトライ）

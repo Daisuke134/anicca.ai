@@ -14,17 +14,6 @@ const ONBOARDING_TEMPLATE = `# ユーザー情報
 - タイムゾーン:
 - 起床トーン:
 - 就寝場所:
-
-## ルーティン
-- 起床:
-  1) 
-  2) 
-  3) 
-
-- 就寝:
-  1) 
-  2) 
-  3) 
 `;
 
 function initialTasksTemplate(dateLabel: string): string {
@@ -106,13 +95,16 @@ function isProfileEmpty(): boolean {
   try {
     const profile = fs.readFileSync(aniccaPath, 'utf8');
     const labels = ['- 呼び名:', '- 起床トーン:', '- 就寝場所:'];
-    return labels.every((label) => new RegExp(`${label}\s*$`, 'm').test(profile));
+    return labels.every((label) => new RegExp(`${label}\\s*$`, 'm').test(profile));
   } catch {
     return true;
   }
 }
 
 export function shouldRunOnboarding(): boolean {
+  if (!fs.existsSync(aniccaPath)) {
+    return true;
+  }
   return isProfileEmpty();
 }
 

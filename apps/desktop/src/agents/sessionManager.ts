@@ -134,6 +134,10 @@ export class AniccaSessionManager {
     this.onboardingState = state;
   }
 
+  public isOnboardingRunning(): boolean {
+    return this.onboardingState === 'running';
+  }
+
   private resolveReadyWaiters(error?: Error) {
     if (this.readyWaiters.length === 0) return;
     const waiters = [...this.readyWaiters];

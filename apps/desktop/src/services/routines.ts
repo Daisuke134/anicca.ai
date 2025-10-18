@@ -61,9 +61,7 @@ const BUILTIN_ROUTINES: Record<string, RoutineStep[]> = {
     { text: 'STEP "3-3" — 正直さの課題を聞く' },
     { text: 'STEP "3-4" — 尊敬対象を確認' },
     { text: 'STEP "3-5" — 自己像を確認' },
-    { text: 'STEP "3-6" — 外向性ヒントを聞く' },
-    { text: 'STEP "4" — Google ログインを確認（完了報告を待つ）' },
-    { text: 'STEP "5" — 締めの案内を行う' },
+    { text: 'STEP "4" — 締めとログイン確認' },
   ],
 };
 

@@ -35,7 +35,7 @@ const ANICCA_INSTRUCTIONS = `
   2. 既存の tasks を保持したまま新規タスクを追加
   3. 既存タスクは削除しない（削除指示があった場合のみ削除）
   4. 新規追加は末尾に追加、更新は該当 ID のみ変更
-  5. JSON を保存する場合のみ write_file を使い、content は JSON.stringify(data, null, 2) にする（Markdownの記憶更新には write_file を使わない）。
+  5. すべてのファイル（scheduled_tasks.json / anicca.md 等）は read_file → edit_file で差分更新する（write_file は使用しない）。
 - フォーマット（最小・必須フィールドのみ）:
   - 毎日（繰り返し）: { "id": "<slug>__HHMM", "schedule": "MM HH * * *", "description": "<短文>" }
   - 今日だけ（単発）: { "id": "<slug>__HHMM_today", "schedule": "MM HH * * *", "description": "<短文>" }
@@ -47,9 +47,7 @@ const ANICCA_INSTRUCTIONS = `
   - 削除時：該当IDのタスクのみ除外
   
   【超重要：JSON整形ルール】
-  - write_fileで書き込む時のcontentは必ず：
-    JSON.stringify(data, null, 2)
-    の形式で整形すること。nullと2を忘れずに！
+  - edit_file で反映する際も JSON.stringify(data, null, 2) と同じ 2 スペース整形を守ること。
     これにより適切なインデントと改行が入る。
   
   【禁止事項】

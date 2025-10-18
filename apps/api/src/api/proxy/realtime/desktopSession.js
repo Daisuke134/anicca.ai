@@ -98,8 +98,9 @@ export default async function handler(req, res) {
       body: JSON.stringify(sessionBody)
     });
     if (!createResp.ok) {
-      let detail = '';
-      try { detail = JSON.stringify(await createResp.json()); } catch { detail = await createResp.text(); }
+      const raw = await createResp.text();
+      let detail;
+      try { detail = JSON.parse(raw); } catch { detail = raw; }
       return res.status(502).json({ error: 'Failed to create client secret', status: createResp.status, detail });
     }
     const clientSecret = await createResp.json();

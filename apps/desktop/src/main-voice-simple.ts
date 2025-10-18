@@ -75,6 +75,18 @@ const aniccaDir = path.join(homeDir, '.anicca');
 const scheduledTasksPath = path.join(aniccaDir, 'scheduled_tasks.json');
 const todaySchedulePath = path.join(aniccaDir, 'today_schedule.json');
 const tasksMarkdownPath = path.join(aniccaDir, 'tasks.md');
+const profilePath = path.join(aniccaDir, 'anicca.md');
+
+async function resolveProfileLanguage(): Promise<'ja' | 'en'> {
+  try {
+    const profile = await fs.promises.readFile(profilePath, 'utf8');
+    const match = profile.match(/- タイムゾーン:\s*([^\n]+)/);
+    const tz = match?.[1]?.trim() ?? '';
+    return tz === 'Asia/Tokyo' ? 'ja' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 // アプリの初期化
 async function initializeApp() {
@@ -170,12 +182,16 @@ async function initializeApp() {
       }
 
       void (async () => {
-        await ensureSdkAfterLogin();
         if (wasOnboardingRunning && sessionManager) {
           try {
             await sessionManager.waitForReady();
             sessionManager.setOnboardingState('running');
             await sessionManager.forceConversationMode('onboarding');
+            const lang = await resolveProfileLanguage();
+            const finalMessage = lang === 'ja'
+              ? 'advance routine step: acknowledgedStep="オンボーディング完了" を実行した上で、「ログインを確認しました。決めた起床と就寝の時刻になったら私から声をかけますので、それまでは静かに待機しています。ありがとうございました。」とユーザーに伝えてください。'
+              : 'Please run `advance routine step: acknowledgedStep="オンボーディング完了"` and then tell the user, "Login confirmed. When the scheduled wake-up or bedtime arrives I will speak to you, and until then I will stay silent. Thank you."';
+            await sessionManager.sendMessage(finalMessage);
           } catch (err) {
             console.warn('⚠️ Failed to resume onboarding after login:', err);
           }
@@ -298,6 +314,10 @@ async function initializeApp() {
         try {
           resetRoutineState('onboarding');
           const prompt = resolveOnboardingPrompt();
+          const bridgeReady = await manager.waitForBridgeClient(5000);
+          if (!bridgeReady) {
+            throw new Error('bridge client not ready');
+          }
           await manager.waitForReady(8000);
           manager.setOnboardingState('running');
           await manager.forceConversationMode('onboarding');
@@ -472,6 +492,12 @@ function createHiddenWindow() {
         let ws = null;
         let mediaRecorder = null;
         let audioContext = null;
+        let inputAudioContext = null;
+        let micStream = null;
+        let sourceNode = null;
+        let muteGain = null;
+        let processor = null;
+        let isRendererPlaying = false;
         let audioQueue = [];
         let isPlaying = false;
         let currentSource = null;
@@ -481,6 +507,56 @@ function createHiddenWindow() {
         let lastSdkStatusKey = '';
         // 音声入力はWSバイナリ直送に一本化（送信キュー/HTTPは廃止）
         let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
+        async function cleanupAudioGraph() {
+          try {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+              await new Promise((resolve) => {
+                try {
+                  ws.addEventListener('close', resolve, { once: true });
+                } catch {
+                  resolve();
+                }
+                try { ws.close(); } catch { resolve(); }
+              });
+            }
+          } catch {}
+          ws = null;
+          mediaRecorder = null;
+          try { currentSource?.stop?.(0); } catch {}
+          try { currentSource?.disconnect?.(); } catch {}
+          currentSource = null;
+          try { sourceNode?.disconnect?.(); } catch {}
+          sourceNode = null;
+          try { muteGain?.disconnect?.(); } catch {}
+          muteGain = null;
+          if (processor) {
+            try { processor.disconnect(); } catch {}
+            processor.onaudioprocess = null;
+          }
+          processor = null;
+          if (micStream) {
+            try { micStream.getTracks().forEach(track => track.stop()); } catch {}
+          }
+          micStream = null;
+          audioQueue = [];
+          isPlaying = false;
+          isRendererPlaying = false;
+          try {
+            if (inputAudioContext) {
+              await inputAudioContext.close();
+            }
+          } catch {}
+          inputAudioContext = null;
+          try {
+            if (audioContext) {
+              await audioContext.close();
+            }
+          } catch {}
+          audioContext = null;
+        }
+        window.__ANICCA_CLEANUP__ = cleanupAudioGraph;
+        window.addEventListener('beforeunload', () => { void cleanupAudioGraph(); });
+        window.addEventListener('unload', () => { void cleanupAudioGraph(); });
 
         // --- 追加: 初回プレフライト接続 & 録音起動の待機ヘルパー ---
         async function ensureSDKConnection() {
@@ -553,6 +629,10 @@ function startCaptureWhenReady(retryMs = 1000) {
                 // エージェント発話開始の合図（視覚用のみ）
                 isAgentSpeaking = true;
                 console.log('🔊 Received PCM16 audio from SDK');
+                if (!isRendererPlaying) {
+                  isRendererPlaying = true;
+                  try { ws?.send(JSON.stringify({ type: 'playback_state', playing: true })); } catch {}
+                }
 
                 // Base64デコードしてPCM16データを取得
                 const audioData = atob(message.data);
@@ -679,12 +759,24 @@ function startCaptureWhenReady(retryMs = 1000) {
         // PCM16音声再生（キュー処理）
         async function playNextPCM16Audio() {
           if (audioQueue.length === 0) {
-            isPlaying = false;
+            if (isPlaying || isRendererPlaying) {
+              isPlaying = false;
+              isRendererPlaying = false;
+              try { ws?.send(JSON.stringify({ type: 'playback_state', playing: false })); } catch {}
+              try { ws?.send(JSON.stringify({ type: 'playback_idle' })); } catch {}
+            }
             currentSource = null;
             return;
           }
 
-          isPlaying = true;
+          if (!isPlaying) {
+            isPlaying = true;
+          }
+          if (!isRendererPlaying) {
+            isRendererPlaying = true;
+            try { ws?.send(JSON.stringify({ type: 'playback_state', playing: true })); } catch {}
+          }
+
           const pcm16Data = audioQueue.shift();
 
           if (!audioContext) {
@@ -735,7 +827,7 @@ function startCaptureWhenReady(retryMs = 1000) {
             console.log('✅ Starting voice capture (bridge will ensure connection as needed)');
 
             // マイクアクセス（16kHz PCM16用設定）
-            const stream = await navigator.mediaDevices.getUserMedia({
+            micStream = await navigator.mediaDevices.getUserMedia({
               audio: {
                 channelCount: 1,
                 sampleRate: ${AUDIO_SAMPLE_RATE},
@@ -746,15 +838,20 @@ function startCaptureWhenReady(retryMs = 1000) {
             });
 
             // AudioContextでPCM16形式に変換
-            const audioCtx = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
-            const source = audioCtx.createMediaStreamSource(stream);
-            const processor = audioCtx.createScriptProcessor(4096, 1, 1);
+            inputAudioContext = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
+            sourceNode = inputAudioContext.createMediaStreamSource(micStream);
+            processor = inputAudioContext.createScriptProcessor(4096, 1, 1);
+            muteGain = inputAudioContext.createGain();
+            muteGain.gain.value = 0;
 
-            source.connect(processor);
-            processor.connect(audioCtx.destination);
+            sourceNode.connect(processor);
+            processor.connect(muteGain);
+            muteGain.connect(inputAudioContext.destination);
 
             // PCM16形式で音声データを送信
             processor.onaudioprocess = async (e) => {
+              const outputData = e.outputBuffer.getChannelData(0);
+              outputData.fill(0);
               const inputData = e.inputBuffer.getChannelData(0);
               // 出力停止直後の短時間は送信を抑制（残り香による誤検知防止）
               if (Date.now() < micPostStopMuteUntil) {
@@ -1128,13 +1225,27 @@ app.on('before-quit', async (event) => {
 });
 
 // プロセス終了シグナルのハンドラー
-process.on('SIGINT', async () => {
+process.once('SIGINT', async () => {
   console.log('\n🛑 Received SIGINT, shutting down gracefully...');
+  try {
+    if (hiddenWindow?.webContents) {
+      await hiddenWindow.webContents.executeJavaScript('window.__ANICCA_CLEANUP__?.()');
+    }
+  } catch (error) {
+    console.warn('SIGINT cleanup failed:', error);
+  }
   app.quit();
 });
 
-process.on('SIGTERM', async () => {
+process.once('SIGTERM', async () => {
   console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
+  try {
+    if (hiddenWindow?.webContents) {
+      await hiddenWindow.webContents.executeJavaScript('window.__ANICCA_CLEANUP__?.()');
+    }
+  } catch (error) {
+    console.warn('SIGTERM cleanup failed:', error);
+  }
   app.quit();
 });
 

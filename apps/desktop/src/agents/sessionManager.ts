@@ -76,6 +76,9 @@ export class AniccaSessionManager {
   private lastAgentEndAt: number | null = null;     // epoch(ms)
   private readonly AUTO_EXIT_IDLE_MS = 30_000;      // 自動終了までの待機（約30秒）
   private readonly AUTO_EXIT_IDLE_WAKE_MS = 30_000;  // 起床ルーチン中も同じ待機（約30秒）
+  private awaitingPlaybackDrain: boolean = false;
+  private playbackDrainInterval: NodeJS.Timeout | null = null;
+  private isRendererPlaying: boolean = false;
 
   // wake起床タスクの連続発話（sticky）制御
   private stickyTask: 'wake_up' | null = null;
@@ -138,6 +141,23 @@ export class AniccaSessionManager {
     return this.onboardingState === 'running';
   }
 
+  public hasBridgeClient(): boolean {
+    return this.wsClients.size > 0;
+  }
+
+  public async waitForBridgeClient(timeoutMs = 5000): Promise<boolean> {
+    const interval = 100;
+    let waited = 0;
+    while (!this.hasBridgeClient()) {
+      if (waited >= timeoutMs) {
+        return false;
+      }
+      await new Promise((resolve) => setTimeout(resolve, interval));
+      waited += interval;
+    }
+    return true;
+  }
+
   private resolveReadyWaiters(error?: Error) {
     if (this.readyWaiters.length === 0) return;
     const waiters = [...this.readyWaiters];
@@ -178,6 +198,7 @@ export class AniccaSessionManager {
       this.readyWaiters.push(entry);
     });
   }
+
 
   // ======= 自動送信（mem/TZ）: キュー運用 + 応答を起動しない送信 =======
   private enqueueSystemOp(op: {kind:'mem'|'tz'; payload?: any}) {
@@ -773,6 +794,23 @@ export class AniccaSessionManager {
           // 2) JSON メッセージ（BufferでもUTF-8文字列へ変換して解釈）
           const text = typeof data === 'string' ? data : Buffer.from(data).toString('utf8');
           const message = JSON.parse(text);
+          if (message.type === 'playback_state') {
+            this.isRendererPlaying = !!message.playing;
+            if (!this.isRendererPlaying && this.awaitingPlaybackDrain) {
+              this.awaitingPlaybackDrain = false;
+              this.clearPlaybackDrainWatch();
+              this.startAutoExitCountdown();
+            }
+            return;
+          }
+          if (message.type === 'playback_idle') {
+            if (this.awaitingPlaybackDrain) {
+              this.awaitingPlaybackDrain = false;
+              this.clearPlaybackDrainWatch();
+              this.startAutoExitCountdown();
+            }
+            return;
+          }
           
           if (message.type === 'scheduled_task') {
             // T時点の入口で一度だけ復旧（重複ensureを排除）
@@ -826,6 +864,12 @@ export class AniccaSessionManager {
       
       ws.on('close', () => {
         console.log('🔌 WebSocket client disconnected');
+        this.isRendererPlaying = false;
+        if (this.awaitingPlaybackDrain) {
+          this.awaitingPlaybackDrain = false;
+          this.clearPlaybackDrainWatch();
+          this.startAutoExitCountdown();
+        }
         this.wsClients.delete(ws);
       });
       
@@ -892,6 +936,12 @@ export class AniccaSessionManager {
       this.autoExitTimer = null;
     }
     this.autoExitDeadlineAt = null;
+  }
+  private clearPlaybackDrainWatch() {
+    if (this.playbackDrainInterval) {
+      clearInterval(this.playbackDrainInterval);
+      this.playbackDrainInterval = null;
+    }
   }
 
   private startAutoExitCountdown() {
@@ -1145,6 +1195,9 @@ export class AniccaSessionManager {
     // 音声開始/終了
     this.session.on('audio_start', (_ctx: any, _agent: any) => {
       this.lastServerEventAt = Date.now();
+      this.clearPlaybackDrainWatch();
+      this.awaitingPlaybackDrain = false;
+      this.isRendererPlaying = true;
       // wake中は最初の発話が始まった時点で解除ゲートを開く
       if (this.stickyTask === 'wake_up' && this.wakeActive && !this.stickyReady) {
         this.stickyReady = true;
@@ -1163,7 +1216,33 @@ export class AniccaSessionManager {
       } else {
         if (this.mode === 'conversation') {
           this.lastAgentEndAt = Date.now();
-          this.startAutoExitCountdown();
+          this.awaitingPlaybackDrain = true;
+          this.clearPlaybackDrainWatch();
+          if (!this.isRendererPlaying) {
+            this.awaitingPlaybackDrain = false;
+            this.startAutoExitCountdown();
+          } else {
+            const startedAt = Date.now();
+            this.playbackDrainInterval = setInterval(() => {
+              if (!this.awaitingPlaybackDrain) {
+                this.clearPlaybackDrainWatch();
+                return;
+              }
+              if (!this.isRendererPlaying) {
+                this.awaitingPlaybackDrain = false;
+                this.clearPlaybackDrainWatch();
+                this.startAutoExitCountdown();
+                return;
+              }
+              if (Date.now() - startedAt >= this.AUTO_EXIT_IDLE_MS) {
+                console.warn('playback drain timeout (renderer still playing)');
+                this.awaitingPlaybackDrain = false;
+                this.isRendererPlaying = false;
+                this.clearPlaybackDrainWatch();
+                this.startAutoExitCountdown();
+              }
+            }, 200);
+          }
         }
       }
     });

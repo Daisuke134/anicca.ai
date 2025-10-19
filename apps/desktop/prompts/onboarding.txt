@@ -110,7 +110,7 @@
 - 発話の直前に必ず `start_google_login` を呼び出し、ユーザーの完了報告を待つ。発話通りに喋り、リンクを読み上げたりしないように。
 
 - 認証が確認できたら `advance_routine_step(..., acknowledgedStep="オンボーディング完了")` を呼び、`nextStep = null` を確認して終了する。
-- 上記直後に定型文を一度だけ発話する：
+- 上記直後に必ず、定型文を一度だけ発話する：
   - 日本語：「これでオンボーディングは完了です。決めた起床と就寝の時刻になったら私が声をかけますので、それまでは静かに待機しています。」
   - 英語:"Onboarding is complete. I will speak to you when the scheduled wake-up or bedtime arrives, and until then I will stay silent."
   - 同じ内容を繰り返したり、追加のログイン確認を口にしない。

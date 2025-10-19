@@ -16,6 +16,7 @@ import path from 'path';
 import express, { Request, Response } from 'express';
 import * as http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
+import net from 'net';
 
 type ReadyWaiter = {
   resolve: () => void;
@@ -49,6 +50,7 @@ export class AniccaSessionManager {
   // Express関連
   private app: express.Application | null = null;
   private httpServer: http.Server | null = null;
+  private httpSockets = new Set<net.Socket>();
   private wss: WebSocketServer | null = null;
   private wsClients = new Set<WebSocket>();
   private onboardingState: 'idle' | 'running' = 'idle';
@@ -472,6 +474,10 @@ export class AniccaSessionManager {
     
     // HTTPサーバー起動
     this.httpServer = http.createServer(this.app);
+    this.httpServer.on('connection', (socket) => {
+      this.httpSockets.add(socket);
+      socket.on('close', () => this.httpSockets.delete(socket));
+    });
     
     // WebSocket設定
     this.setupWebSocket();
@@ -608,6 +614,10 @@ export class AniccaSessionManager {
             const apiKey = data?.client_secret?.value;
             if (!apiKey) throw new Error('No client_secret returned after OAuth');
             await this.connect(apiKey);
+            if (!this.isConnected()) {
+              await this.waitForReady(8000);
+            }
+            await this.waitForBridgeClient(5000);
             console.log('✅ Reconnected after OAuth with refreshed client secret');
           } catch (e) {
             console.error('Failed to reinitialize session after auth:', e);
@@ -1781,9 +1791,16 @@ ${memories}
     
     // サーバー停止
     if (this.httpServer) {
-      await new Promise<void>((resolve) => {
-        this.httpServer!.close(() => resolve());
+      const server = this.httpServer;
+      this.httpServer = null;
+      this.httpSockets.forEach((socket) => {
+        try { socket.destroy(); } catch {}
       });
+      this.httpSockets.clear();
+      await Promise.race([
+        new Promise<void>((resolve) => server.close(() => resolve())),
+        new Promise<void>((resolve) => setTimeout(resolve, 500))
+      ]);
     }
     
     // セッション切断

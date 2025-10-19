@@ -52,6 +52,17 @@ function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function resolveGroundedLanguageLabel(): 'Japanese' | 'English' {
+  try {
+    const profile = fs.readFileSync(aniccaPath, 'utf8');
+    const match = profile.match(/- タイムゾーン:\s*([^\r\n]+)/);
+    const tz = match ? match[1].trim() : '';
+    return tz === 'Asia/Tokyo' ? 'Japanese' : 'English';
+  } catch {
+    return 'English';
+  }
+}
+
 export async function ensureBaselineFiles(): Promise<void> {
   ensureDir();
   ensureJson(scheduledPath, { tasks: [] });
@@ -124,7 +135,8 @@ export function resolveOnboardingPrompt(): string {
     throw new Error(`onboarding.txt が見つかりません: ${candidateDirs.join(', ')}`);
   }
 
-  return fs.readFileSync(promptPath, 'utf8');
+  const source = fs.readFileSync(promptPath, 'utf8');
+  return source.replace(/\${INTERNAL_LANGUAGE_LINE}/g, resolveGroundedLanguageLabel());
 }
 
 function slugify(source: string): string {

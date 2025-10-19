@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { resolveGroundedLanguageLabel } from './onboardingBootstrap';
 
 interface RoutineStep {
   text: string;
@@ -217,6 +218,7 @@ function applyPlaceholders(template: string, snapshot: RoutineSnapshot): string 
     '{{REMAINING_STEPS_MARKDOWN}}': formatStepsList(snapshot.remainingSteps),
     '{{TOTAL_STEPS}}': String(snapshot.totalSteps),
     '{{UPDATED_AT}}': snapshot.updatedAt,
+    '{{INTERNAL_LANGUAGE_LINE}}': resolveGroundedLanguageLabel(),
   };
   return Object.entries(replacements).reduce(
     (acc, [token, value]) => acc.split(token).join(value),

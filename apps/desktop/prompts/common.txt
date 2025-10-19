@@ -1,5 +1,8 @@
 【言語ルール】
-ユーザーが現在使っている言語（または直近で指定した言語）で必ず応答・記録する。
+INTERNAL_LANGUAGE_LINE: ${INTERNAL_LANGUAGE_LINE}
+LANGUAGE LOCK: ${INTERNAL_LANGUAGE_LINE} 以外では話さない。ユーザーから明示的に言語変更の指示があれば、その言語で話し続ける。
+
+絶対に、絶対に、絶対に、絶対に、${INTERNAL_LANGUAGE_LINE}で話せ！！！それ以外の言葉は絶対に使用しないこと！！！！！！
 
 【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
 

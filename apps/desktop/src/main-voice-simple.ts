@@ -18,6 +18,7 @@ import {
   ensureBaselineFiles,
   shouldRunOnboarding,
   resolveOnboardingPrompt,
+  resolveGroundedLanguageLabel,
   syncTodayTasksFromMarkdown
 } from './services/onboardingBootstrap';
 import { buildRoutinePrompt, resetRoutineState } from './services/routines';
@@ -61,6 +62,7 @@ let updateCheckIntervalId: NodeJS.Timeout | null = null;
 let planRefreshIntervalId: NodeJS.Timeout | null = null;
 let planRefreshBurstIntervalId: NodeJS.Timeout | null = null;
 let planRefreshBurstDeadline = 0;
+let onboardingFinalMessageSent = false;
 
 // 起動モードの判定
 const isWorkerMode = process.env.WORKER_MODE === 'true';
@@ -184,14 +186,22 @@ async function initializeApp() {
       void (async () => {
         if (wasOnboardingRunning && sessionManager) {
           try {
+            const bridgeReady = await sessionManager.waitForBridgeClient(5000);
+            if (!bridgeReady) {
+              throw new Error('bridge client not ready after login');
+            }
             await sessionManager.waitForReady();
             sessionManager.setOnboardingState('running');
             await sessionManager.forceConversationMode('onboarding');
+            if (onboardingFinalMessageSent) {
+              return;
+            }
             const lang = await resolveProfileLanguage();
             const finalMessage = lang === 'ja'
-              ? 'advance routine step: acknowledgedStep="オンボーディング完了" を実行した上で、「ログインを確認しました。決めた起床と就寝の時刻になったら私から声をかけますので、それまでは静かに待機しています。ありがとうございました。」とユーザーに伝えてください。'
-              : 'Please run `advance routine step: acknowledgedStep="オンボーディング完了"` and then tell the user, "Login confirmed. When the scheduled wake-up or bedtime arrives I will speak to you, and until then I will stay silent. Thank you."';
+              ? 'advance routine step: acknowledgedStep="オンボーディング完了" を実行した上で、「ログインを確認しました。決めた起床と就寝の時刻になったら私から声をかけますので、それまでは静かに待機しています。ありがとうございました。」とユーザーに一度だけ伝える。一度行ったらこれは２度と言わない！！ユーザーからの質問にはそれに対応して答える。同じ案内を繰り返さないでください。'
+              : 'Please run `advance routine step: acknowledgedStep="オンボーディング完了"` and then tell the user, "Login confirmed. When the scheduled wake-up or bedtime arrives I will speak to you, and until then I will stay silent. Thank you." Say this only once. NEVER SAY THIS AGAIN. and do not repeat the same login confirmation. after, answer the user\'s questions accordingly.';
             await sessionManager.sendMessage(finalMessage);
+            onboardingFinalMessageSent = true;
           } catch (err) {
             console.warn('⚠️ Failed to resume onboarding after login:', err);
           }
@@ -314,6 +324,7 @@ async function initializeApp() {
         try {
           resetRoutineState('onboarding');
           const prompt = resolveOnboardingPrompt();
+          const groundedLanguage = resolveGroundedLanguageLabel();
           const bridgeReady = await manager.waitForBridgeClient(5000);
           if (!bridgeReady) {
             throw new Error('bridge client not ready');
@@ -322,7 +333,8 @@ async function initializeApp() {
           manager.setOnboardingState('running');
           await manager.forceConversationMode('onboarding');
           await manager.sendMessage(prompt);
-          console.log('🚀 Onboarding prompt dispatched');
+          const inlineLanguageLine = (prompt.match(/INTERNAL_LANGUAGE_LINE:[^\n]*/) || ['INTERNAL_LANGUAGE_LINE: unknown'])[0];
+          console.log(`🚀 Onboarding prompt dispatched – ${inlineLanguageLine}`);
         } catch (error) {
           console.error(`❌ Failed to dispatch onboarding prompt (attempt ${attempt}):`, error);
           manager.setOnboardingState('idle');
@@ -508,51 +520,77 @@ function createHiddenWindow() {
         // 音声入力はWSバイナリ直送に一本化（送信キュー/HTTPは廃止）
         let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
         async function cleanupAudioGraph() {
-          try {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-              await new Promise((resolve) => {
-                try {
-                  ws.addEventListener('close', resolve, { once: true });
-                } catch {
-                  resolve();
-                }
-                try { ws.close(); } catch { resolve(); }
-              });
-            }
-          } catch {}
-          ws = null;
+          console.log('[CLEANUP] start');
+          const logWarn = (step, err) => console.warn('[CLEANUP] ' + step + ' failed:', err);
+          const run = (step, fn) => {
+            try { fn(); } catch (err) { logWarn(step, err); }
+          };
+          const runAsync = async (step, fn) => {
+            try { await fn(); } catch (err) { logWarn(step, err); }
+          };
+
           mediaRecorder = null;
-          try { currentSource?.stop?.(0); } catch {}
-          try { currentSource?.disconnect?.(); } catch {}
+          run('currentSource.stop', () => currentSource?.stop?.(0));
+          run('currentSource.disconnect', () => currentSource?.disconnect?.());
           currentSource = null;
-          try { sourceNode?.disconnect?.(); } catch {}
+          run('sourceNode.disconnect', () => sourceNode?.disconnect?.());
           sourceNode = null;
-          try { muteGain?.disconnect?.(); } catch {}
+          run('muteGain.disconnect', () => muteGain?.disconnect?.());
           muteGain = null;
+
           if (processor) {
-            try { processor.disconnect(); } catch {}
+            run('processor.disconnect', () => processor.disconnect());
             processor.onaudioprocess = null;
           }
           processor = null;
+
           if (micStream) {
-            try { micStream.getTracks().forEach(track => track.stop()); } catch {}
+            run('micStream.stopTracks', () => micStream.getTracks().forEach((track) => track.stop()));
           }
           micStream = null;
+
           audioQueue = [];
           isPlaying = false;
           isRendererPlaying = false;
-          try {
+
+          await runAsync('inputAudioContext.close', async () => {
             if (inputAudioContext) {
               await inputAudioContext.close();
             }
-          } catch {}
+          });
           inputAudioContext = null;
-          try {
+
+          await runAsync('audioContext.close', async () => {
             if (audioContext) {
               await audioContext.close();
             }
-          } catch {}
+          });
           audioContext = null;
+
+          if (ws) {
+            await runAsync('ws.close', async () => {
+              console.log('[CLEANUP] closing ws (state:', ws.readyState, ')');
+              if (ws.readyState === WebSocket.OPEN) {
+                await new Promise((resolve) => {
+                  let finished = false;
+                  const finish = () => {
+                    if (!finished) {
+                      finished = true;
+                      resolve();
+                    }
+                  };
+                  try { ws.addEventListener('close', finish, { once: true }); } catch (err) { logWarn('ws.close listener', err); finish(); }
+                  setTimeout(finish, 200);
+                  try { ws.close(); } catch (err) { logWarn('ws.close invoke', err); finish(); }
+                });
+              } else {
+                try { ws.close(); } catch (err) { logWarn('ws.close (non-open)', err); }
+              }
+            });
+          }
+          ws = null;
+          console.log('[CLEANUP] finished');
+          return true;
         }
         window.__ANICCA_CLEANUP__ = cleanupAudioGraph;
         window.addEventListener('beforeunload', () => { void cleanupAudioGraph(); });
@@ -1225,28 +1263,50 @@ app.on('before-quit', async (event) => {
 });
 
 // プロセス終了シグナルのハンドラー
-process.once('SIGINT', async () => {
-  console.log('\n🛑 Received SIGINT, shutting down gracefully...');
+async function shutdownFromSignal(signal: 'SIGINT' | 'SIGTERM') {
+  console.log(`\n🛑 Received ${signal}, shutting down gracefully...`);
+
+  const cleanupPromise = hiddenWindow?.webContents
+    ? hiddenWindow.webContents.executeJavaScript(`(() => {
+        try {
+          const fn = window.__ANICCA_CLEANUP__;
+          return fn ? Promise.resolve(fn()) : Promise.resolve(true);
+        } catch (err) {
+          return Promise.reject(err);
+        }
+      })()`)
+    : Promise.resolve(true);
+  const timeoutPromise = new Promise<void>((_, reject) => {
+    setTimeout(() => reject(new Error('renderer cleanup timeout (1s)')), 1000);
+  });
+
+  await Promise.race([cleanupPromise, timeoutPromise]).catch((error) => {
+    console.warn(`${signal} cleanup failed:`, error);
+  });
+
   try {
-    if (hiddenWindow?.webContents) {
-      await hiddenWindow.webContents.executeJavaScript('window.__ANICCA_CLEANUP__?.()');
-    }
+    hiddenWindow?.destroy();
   } catch (error) {
-    console.warn('SIGINT cleanup failed:', error);
+    console.warn(`${signal} hiddenWindow.destroy failed:`, error);
+  } finally {
+    hiddenWindow = null;
   }
+
+  const forceExitTimer = setTimeout(() => {
+    console.warn(`${signal} forcing exit after timeout`);
+    app.exit(0);
+  }, 1500);
+  (forceExitTimer as NodeJS.Timeout).unref?.();
+
   app.quit();
+}
+
+process.once('SIGINT', () => {
+  void shutdownFromSignal('SIGINT');
 });
 
-process.once('SIGTERM', async () => {
-  console.log('\n🛑 Received SIGTERM, shutting down gracefully...');
-  try {
-    if (hiddenWindow?.webContents) {
-      await hiddenWindow.webContents.executeJavaScript('window.__ANICCA_CLEANUP__?.()');
-    }
-  } catch (error) {
-    console.warn('SIGTERM cleanup failed:', error);
-  }
-  app.quit();
+process.once('SIGTERM', () => {
+  void shutdownFromSignal('SIGTERM');
 });
 
 // エラーハンドリング
@@ -1470,6 +1530,9 @@ async function executeScheduledTask(task: any) {
     try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
     try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
     let resolvedTemplate = templateText;
+    const groundedLanguage = resolveGroundedLanguageLabel();
+    const resolvedCommonText = commonText.replace(/\$\{INTERNAL_LANGUAGE_LINE\}/g, groundedLanguage);
+    resolvedTemplate = resolvedTemplate.replace(/\$\{INTERNAL_LANGUAGE_LINE\}/g, groundedLanguage);
     if (tpl === 'sleep.txt') {
       try {
         resolvedTemplate = buildRoutinePrompt('sleep', templateText, { reset: true });
@@ -1486,7 +1549,7 @@ async function executeScheduledTask(task: any) {
       }
     }
 
-    const commandBody = [commonText, resolvedTemplate]
+    const commandBody = [resolvedCommonText, resolvedTemplate]
       .filter(Boolean)
       .join('\n\n')
       .replace(/\$\{task\.description\}/g, String(task.description ?? ''));

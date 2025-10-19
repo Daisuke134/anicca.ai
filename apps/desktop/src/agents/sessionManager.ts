@@ -3,6 +3,7 @@ import { createAniccaAgent } from './mainAgent';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
 import { getAuthService } from '../services/desktopAuthService';
 import { SimpleEncryption } from '../services/simpleEncryption';
+import { resolveLanguageAssets } from '../services/onboardingBootstrap';
 import {
   lockWakeAdvance,
   unlockWakeAdvance,
@@ -87,6 +88,7 @@ export class AniccaSessionManager {
   private wakeActive: boolean = false;
   // wake専用：アシスタントの最初の発話（audio_start）までは解除判定を無効化
   private stickyReady: boolean = false;
+  private pendingAssistantResponse: boolean = false;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -100,27 +102,26 @@ export class AniccaSessionManager {
     if (!timezone) return;
 
     try {
+      const assets = resolveLanguageAssets();
       const profilePath = path.join(os.homedir(), '.anicca', 'anicca.md');
       await fs.access(profilePath);
       const content = await fs.readFile(profilePath, 'utf8');
+      const timezoneLine = `${assets.timezoneLinePrefix} ${timezone}`;
+      const languageLine = assets.languageLine;
+      const block = `${timezoneLine}\n${languageLine}\n`;
+      let next = content
+        .replace(/^- タイムゾーン:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^- Timezone:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^- 言語:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^- Language:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^Language:[^\r\n]*\r?\n?/gm, '');
 
-      const line = `- タイムゾーン: ${timezone}`;
-      let next = content;
-
-      if (content.includes('- タイムゾーン:')) {
-        next = content.replace(/- タイムゾーン:[^\r\n]*(\r?\n)/, `${line}$1`);
+      if (/# ユーザー情報\r?\n/.test(next)) {
+        next = next.replace(/(# ユーザー情報\r?\n)/, `$1${block}`);
+      } else if (/# USER PROFILE\r?\n/.test(next)) {
+        next = next.replace(/(# USER PROFILE\r?\n)/, `$1${block}`);
       } else {
-        const nicknamePattern = /(- 呼び名:[^\r\n]*\r?\n)/;
-        if (nicknamePattern.test(content)) {
-          next = content.replace(nicknamePattern, `$1${line}\n`);
-        } else {
-          const headerPattern = /(# ユーザー情報\r?\n)/;
-          if (headerPattern.test(content)) {
-            next = content.replace(headerPattern, `$1${line}\n`);
-          } else {
-            next = `${line}\n${content}`;
-          }
-        }
+        next = `${block}${next}`;
       }
 
       if (next !== content) {
@@ -1178,6 +1179,7 @@ export class AniccaSessionManager {
     this.session.on('agent_end', (_ctx: any, _agent: any, _output: string) => {
       this.isGenerating = false;
       this.lastServerEventAt = Date.now();
+      this.pendingAssistantResponse = false;
       console.log('[AGENT_END]');
       // 公式イベントに一本化
       this.broadcast({ type: 'agent_end' });
@@ -1427,6 +1429,9 @@ export class AniccaSessionManager {
         code === 'empty_array'
       );
       if (isLogicError) {
+        if (code === 'conversation_already_has_active_response') {
+          this.pendingAssistantResponse = false;
+        }
         // 論理エラーは会話制御の問題。再接続せずログのみ。
         return;
       }
@@ -1535,6 +1540,7 @@ export class AniccaSessionManager {
       this.session.close();
       console.log('🔌 Disconnected from OpenAI Realtime API');
     }
+    this.pendingAssistantResponse = false;
     this.apiKey = null;
     if (this.mcpRefreshInterval) {
       clearInterval(this.mcpRefreshInterval);
@@ -1556,7 +1562,17 @@ export class AniccaSessionManager {
       return;
     }
     
-    await this.session.sendMessage(message);
+    while (this.pendingAssistantResponse) {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+    }
+
+    this.pendingAssistantResponse = true;
+    try {
+      await this.session.sendMessage(message);
+    } catch (error) {
+      this.pendingAssistantResponse = false;
+      throw error;
+    }
   }
   
   private async saveSession(history: any) {

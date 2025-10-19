@@ -9,12 +9,22 @@ const tasksPath = path.join(baseDir, 'tasks.md');
 const scheduledPath = path.join(baseDir, 'scheduled_tasks.json');
 const todaySchedulePath = path.join(baseDir, 'today_schedule.json');
 
-const ONBOARDING_TEMPLATE = `# ユーザー情報
+const ONBOARDING_TEMPLATES = {
+  Japanese: `# ユーザー情報
 - 呼び名:
-- タイムゾーン:
+- タイムゾーン: {{TIMEZONE}}
+- 言語: 日本語
 - 起床トーン:
 - 就寝場所:
-`;
+`,
+  English: `# USER PROFILE
+- Name:
+- Timezone: {{TIMEZONE}}
+- Language: English
+- Wake Tone:
+- Sleep Location:
+`,
+};
 
 function initialTasksTemplate(dateLabel: string): string {
   return `# タスク一覧
@@ -63,16 +73,38 @@ export function resolveGroundedLanguageLabel(): 'Japanese' | 'English' {
   }
 }
 
+export function resolveLanguageAssets() {
+  const label = resolveGroundedLanguageLabel();
+  if (label === 'Japanese') {
+    return {
+      languageLabel: 'Japanese',
+      languageLine: '- 言語: 日本語',
+      speakOnlyLine: '今後は必ず日本語で書き、話します。',
+      wakeDescription: '起床',
+      sleepPrepDescription: '就寝準備',
+      profileTemplate: ONBOARDING_TEMPLATES.Japanese,
+      timezoneLinePrefix: '- タイムゾーン:',
+    };
+  }
+  return {
+    languageLabel: 'English',
+    languageLine: '- Language: English',
+    speakOnlyLine: 'From now on I will write and speak only in English.',
+    wakeDescription: 'Wake up',
+    sleepPrepDescription: 'Bedtime prep',
+    profileTemplate: ONBOARDING_TEMPLATES.English,
+    timezoneLinePrefix: '- Timezone:',
+  };
+}
+
 export async function ensureBaselineFiles(): Promise<void> {
   ensureDir();
   ensureJson(scheduledPath, { tasks: [] });
   ensureJson(todaySchedulePath, []);
+  const assets = resolveLanguageAssets();
   if (!fs.existsSync(aniccaPath)) {
     const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? process.env.TZ ?? '';
-    const template = tz
-      ? ONBOARDING_TEMPLATE.replace('- タイムゾーン:', `- タイムゾーン: ${tz}`)
-      : ONBOARDING_TEMPLATE;
-
+    const template = assets.profileTemplate.replace('{{TIMEZONE}}', tz ?? '');
     fs.writeFileSync(aniccaPath, template, { encoding: 'utf8', mode: 0o600 });
   }
 
@@ -80,15 +112,21 @@ export async function ensureBaselineFiles(): Promise<void> {
   if (tz) {
     try {
       const profile = fs.readFileSync(aniccaPath, 'utf8');
-      const line = `- タイムゾーン: ${tz}`;
-      let updated = profile;
+      const timezoneLine = `${assets.timezoneLinePrefix} ${tz}`;
+      const insertBlock = `${timezoneLine}\n${assets.languageLine}\n`;
+      let updated = profile
+        .replace(/^- タイムゾーン:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^- Timezone:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^- 言語:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^- Language:[^\r\n]*\r?\n?/gm, '')
+        .replace(/^Language:[^\r\n]*\r?\n?/gm, '');
 
-      if (profile.includes('- タイムゾーン:')) {
-        updated = profile.replace(/- タイムゾーン:[^\r\n]*/, line);
-      } else if (/# ユーザー情報\r?\n/.test(profile)) {
-        updated = profile.replace(/(# ユーザー情報\r?\n)/, `$1${line}\n`);
+      if (/# ユーザー情報\r?\n/.test(updated)) {
+        updated = updated.replace(/(# ユーザー情報\r?\n)/, `$1${insertBlock}`);
+      } else if (/# USER PROFILE\r?\n/.test(updated)) {
+        updated = updated.replace(/(# USER PROFILE\r?\n)/, `$1${insertBlock}`);
       } else {
-        updated = `${line}\n${profile}`;
+        updated = `${insertBlock}${updated}`;
       }
 
       if (updated !== profile) {
@@ -105,8 +143,13 @@ export async function ensureBaselineFiles(): Promise<void> {
 function isProfileEmpty(): boolean {
   try {
     const profile = fs.readFileSync(aniccaPath, 'utf8');
-    const labels = ['- 呼び名:', '- 起床トーン:', '- 就寝場所:'];
-    return labels.every((label) => new RegExp(`${label}\\s*$`, 'm').test(profile));
+    const labelGroups = [
+      ['- 呼び名:', '- 起床トーン:', '- 就寝場所:'],
+      ['- Name:', '- Wake Tone:', '- Sleep Location:'],
+    ];
+    return labelGroups.some((group) =>
+      group.every((label) => new RegExp(`${label}\\s*$`, 'm').test(profile))
+    );
   } catch {
     return true;
   }
@@ -136,7 +179,12 @@ export function resolveOnboardingPrompt(): string {
   }
 
   const source = fs.readFileSync(promptPath, 'utf8');
-  return source.replace(/\${INTERNAL_LANGUAGE_LINE}/g, resolveGroundedLanguageLabel());
+  const assets = resolveLanguageAssets();
+  return source
+    .replace(/\${INTERNAL_LANGUAGE_LINE}/g, assets.speakOnlyLine)
+    .replace(/\${INTERNAL_LANGUAGE_LABEL}/g, assets.languageLabel)
+    .replace(/\${WAKE_TASK_DESCRIPTION}/g, assets.wakeDescription)
+    .replace(/\${SLEEP_PREP_DESCRIPTION}/g, assets.sleepPrepDescription);
 }
 
 function slugify(source: string): string {

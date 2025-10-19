@@ -4,9 +4,12 @@ import { allTools } from './tools';
 import { getMCPTools } from './mcpServers';
 // import { getGoogleCalendarTools } from './googleCalendarMCP';
 import { resolveGoogleCalendarMcp } from './remoteMcp';
+import { resolveLanguageAssets } from '../services/onboardingBootstrap';
 
 // voiceServer.tsから完全移植したinstructions
 const ANICCA_INSTRUCTIONS = `
+LANGUAGE LOCK: {{LANGUAGE_LINE}}
+LANGUAGE LABEL: {{LANGUAGE_LABEL}}
 
 あなたの仕事は、~/.anicca/scheduled_tasks.json と ~/.anicca/anicca.md の内容を常に把握し、起床から就寝まで途切れずにユーザーを導くことである。
 
@@ -37,8 +40,8 @@ const ANICCA_INSTRUCTIONS = `
   4. 新規追加は末尾に追加、更新は該当 ID のみ変更
   5. すべてのファイル（scheduled_tasks.json / anicca.md 等）は read_file → edit_file で差分更新する（write_file は使用しない）。
 - フォーマット（最小・必須フィールドのみ）:
-  - 毎日（繰り返し）: { "id": "<slug>__HHMM", "schedule": "MM HH * * *", "description": "<短文>" }
-  - 今日だけ（単発）: { "id": "<slug>__HHMM_today", "schedule": "MM HH * * *", "description": "<短文>" }
+  - 毎日（繰り返し）: { "id": "<slug>__HHMM", "schedule": "MM HH * * *", "description": "{{WAKE_TASK_DESCRIPTION}}" }
+  - 今日だけ（単発）: { "id": "<slug>__HHMM_today", "schedule": "MM HH * * *", "description": "{{WAKE_TASK_DESCRIPTION}}" }
 - 同じ id + schedule が既にあれば「登録済みのため追加しない」（更新のみ）
 
   【実装手順】
@@ -184,12 +187,19 @@ export const createAniccaAgent = async (userId?: string | null) => {
     }
   }
 
+  const assets = resolveLanguageAssets();
+  const instructions = ANICCA_INSTRUCTIONS
+    .replace(/\{\{LANGUAGE_LINE\}\}/g, assets.speakOnlyLine)
+    .replace(/\{\{LANGUAGE_LABEL\}\}/g, assets.languageLabel)
+    .replace(/\{\{WAKE_TASK_DESCRIPTION\}\}/g, assets.wakeDescription)
+    .replace(/\{\{SLEEP_TASK_DESCRIPTION\}\}/g, assets.sleepPrepDescription);
+
   // 全ツール結合
   const combinedTools = [...allTools, ...mcpTools, ...hostedMcpTools];
   
   return new RealtimeAgent({
     name: 'Anicca',
-    instructions: ANICCA_INSTRUCTIONS,
+    instructions,
     tools: combinedTools,
     voice: 'alloy'
   });

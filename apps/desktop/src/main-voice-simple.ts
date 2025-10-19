@@ -1319,10 +1319,15 @@ process.on('unhandledRejection', (reason, promise) => {
 
 function parseScheduledJson(content: string): { data: any; repaired: boolean; repairedContent: string } {
   try {
-    return { data: JSON.parse(content), repaired: false, repairedContent: content };
+    const parsed = JSON.parse(content);
+    const normalized = JSON.stringify(parsed, null, 2);
+    const repaired = normalized !== content;
+    return { data: parsed, repaired, repairedContent: normalized };
   } catch (err) {
-    const repairedContent = jsonrepair(content);
-    return { data: JSON.parse(repairedContent), repaired: true, repairedContent };
+    const repairedRaw = jsonrepair(content);
+    const parsed = JSON.parse(repairedRaw);
+    const normalized = JSON.stringify(parsed, null, 2);
+    return { data: parsed, repaired: true, repairedContent: normalized };
   }
 }
 

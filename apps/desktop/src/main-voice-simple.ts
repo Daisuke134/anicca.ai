@@ -198,18 +198,8 @@ async function initializeApp() {
             }
             const lang = await resolveProfileLanguage();
             const finalMessage = lang === 'ja'
-              ? [
-                  '⚠️ advance routine step: acknowledgedStep="オンボーディング完了" を実行した直後に、以下を厳守すること。',
-                  '- 「ログインを確認しました。決めた起床と就寝の時刻になったら私から声をかけますので、それまでは静かに待機しています。ありがとうございました。」を一度だけ発話し、login_confirmation_sent=true を内部メモとして保持する。',
-                  '- 以降はログイン確認・同内容・類似表現を一切口にしない。ユーザーが尋ねても「ログインは既に確認済みです。他にどうしましょうか？」のように別表現で応答する。',
-                  '- 同じ文言を再発しそうになったら即座に別の応答へ切り替え、沈黙や繰り返しを行わない。'
-                ].join('\n')
-              : [
-                  '⚠️ Run `advance routine step: acknowledgedStep="オンボーディング完了"` and then follow these rules.',
-                  '- Say "Login confirmed. When the scheduled wake-up or bedtime arrives I will speak to you, and until then I will stay silent. Thank you." EXACTLY ONCE, then store login_confirmation_sent=true as an internal memory.',
-                  '- AFTER THAT, NEVER REPEAT the login confirmation or similar wording. If asked, reply with alternatives such as "Your login is already confirmed. What else should we handle?" without reusing the original sentence.',
-                  '- If you are about to restate that the login is confirmed, immediately pivot to a different helpful reply instead of repeating or going silent.'
-                ].join('\n');
+              ? 'run `advance routine step: routineId="onboarding", acknowledgedStep="オンボーディング完了"` immediately. '
+              : 'Run `advance routine step: routineId="onboarding", acknowledgedStep="オンボーディング完了"` immediately and do not speak any login confirmation or additional lines afterward.';
             await sessionManager.sendMessage(finalMessage);
             onboardingFinalMessageSent = true;
           } catch (err) {

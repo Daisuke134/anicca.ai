@@ -89,6 +89,7 @@ export class AniccaSessionManager {
   // wake専用：アシスタントの最初の発話（audio_start）までは解除判定を無効化
   private stickyReady: boolean = false;
   private pendingAssistantResponse: boolean = false;
+  private wakeFollowUpTimer: NodeJS.Timeout | null = null;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -982,6 +983,10 @@ export class AniccaSessionManager {
         this.wakeActive = false;
         this.stickyTask = null;
         this.stickyReady = false;
+        if (this.wakeFollowUpTimer) {
+          clearTimeout(this.wakeFollowUpTimer);
+          this.wakeFollowUpTimer = null;
+        }
         console.log('[WAKE_STICKY_CLEAR]', { reason });
       }
     } catch {}
@@ -1019,15 +1024,67 @@ export class AniccaSessionManager {
     if (normalized.includes('起きたく')) return false;
     if (normalized.includes('起きたい')) return false;
 
-    const jpBoundary = '[\\s、。!！?？"\'\u3000「」『』（）()［］\\[\\]{}【】《》〈〉…\-ー〜~]';
+    const canonicalize = (value: string) =>
+      value
+        .replace(/[!"#$%&()*+,./:;<=>?@[\\\]^_`{|}~]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim()
+        .toLowerCase();
+
+    const simplified = canonicalize(normalized);
+    const wakePhrases = [
+      '起きた',
+      '起きました',
+      '起床した',
+      '起きたよ',
+      '起きたね',
+      'i woke up',
+      'i am up',
+      "i'm up",
+      'im up',
+      'i am awake',
+      "i'm awake",
+      'im awake',
+      'awake now',
+      'up now'
+    ];
+    if (wakePhrases.some((phrase) => simplified.includes(canonicalize(phrase)))) {
+      return true;
+    }
+
+    const jpBoundary = "[\\s、。!！?？\"'\\u3000「」『』（）()［］\\[\\]{}【】《》〈〉…\\-ー〜~]";
 
     const wakePatterns = [
-      new RegExp(`(?:^|${jpBoundary})起きた(?:${jpBoundary}|$)`, 'u'),
+      new RegExp(`(?:^|${jpBoundary})起き(?:た|ました)(?:よ|ね|わ|ぜ)?(?:${jpBoundary}|$)`, 'u'),
       new RegExp(`(?:^|${jpBoundary})起床した(?:${jpBoundary}|$)`, 'u'),
       /\bi\s*woke\s*up\b/,
+      /\bi\s*(?:am|'?m)\s*(?:already\s*)?up\b/,
       /\bi\s*(?:am|'?m)\s*awake\b/
     ];
     return wakePatterns.some((pattern) => pattern.test(normalized));
+  }
+
+  private scheduleWakeFollowUp(delayMs = 30) {
+    if (!this.session) return;
+    if (this.wakeFollowUpTimer) {
+      clearTimeout(this.wakeFollowUpTimer);
+    }
+    this.wakeFollowUpTimer = setTimeout(() => {
+      this.wakeFollowUpTimer = null;
+      if (!this.session) return;
+      if (this.stickyTask !== 'wake_up' || !this.wakeActive) return;
+      if (this.isGenerating) {
+        this.scheduleWakeFollowUp(50);
+        return;
+      }
+      try {
+        this.pendingAssistantResponse = true;
+        (this.session as any)?.transport?.sendEvent?.({ type: 'response.create' });
+      } catch (e) {
+        this.pendingAssistantResponse = false;
+        console.warn('Failed to queue wake follow-up:', e);
+      }
+    }, delayMs);
   }
 
   private async setMode(newMode: 'silent' | 'conversation', reason: string = ''): Promise<void> {
@@ -1171,6 +1228,7 @@ export class AniccaSessionManager {
     // 応答の開始/終了を捕捉（競合回避とキュー解放）
     this.session.on('agent_start', (_ctx: any, _agent: any) => {
       this.isGenerating = true;
+      this.pendingAssistantResponse = true;
       this.lastServerEventAt = Date.now();
       console.log('[AGENT_START]');
       // 会話継続中は自動終了カウントを停止（次の agent_end で再度開始）
@@ -1224,7 +1282,7 @@ export class AniccaSessionManager {
       this.broadcast({ type: 'audio_stopped' });
       // 起床中は即連鎖。非wakeは通常の無応答タイマー開始（AUTO_EXIT_IDLE_MS）
       if (this.stickyTask === 'wake_up' && this.wakeActive) {
-        try { (this.session as any)?.transport?.sendEvent?.({ type: 'response.create' }); } catch {}
+        this.scheduleWakeFollowUp();
       } else {
         if (this.mode === 'conversation') {
           this.lastAgentEndAt = Date.now();
@@ -1524,6 +1582,20 @@ export class AniccaSessionManager {
     this.restoredOnce = false;
     await this.session.connect({ apiKey });
     console.log('✅ Connected to OpenAI Realtime API');
+
+    // transport が完全に open するまで待機（readyState 0 で send しない）
+    await new Promise<void>((resolve) => {
+      const transport: any = this.session?.transport;
+      if (!transport || transport.status === 'connected') {
+        resolve();
+        return;
+      }
+      const onConnected = () => {
+        transport.off('connected', onConnected);
+        resolve();
+      };
+      transport.once('connected', onConnected);
+    });
     
     // 履歴復元は session.created（READY）後に行う
 
@@ -1789,7 +1861,7 @@ ${memories}
 重要：新しい情報を得たら、必ずread_fileで既存内容を確認してからwrite_fileで更新すること。この指示への返答は不要です。`;
 
         // RealtimeSessionのsendMessageメソッドを使用
-        await this.session?.sendMessage(systemMessage);
+        await this.sendMessage(systemMessage);
         console.log('✅ User memories loaded successfully');
       }
     } catch (error) {

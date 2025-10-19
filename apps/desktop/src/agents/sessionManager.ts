@@ -784,7 +784,7 @@ export class AniccaSessionManager {
       
       // 衝突回避ヘルパ：進行中応答がある場合は interrupt → 短待ち
       const interruptIfGenerating = async (delayMs = 100) => {
-        if (this.isGenerating) {
+        if (this.isGenerating && this.isRendererPlaying) {
           try { await this.session?.interrupt(); } catch {}
           await new Promise(r => setTimeout(r, delayMs));
         }
@@ -992,78 +992,6 @@ export class AniccaSessionManager {
     } catch {}
   }
 
-  private extractTextFromHistoryItem(item: any): string {
-    try {
-      const content = item?.content;
-      if (!Array.isArray(content)) {
-        const direct = content ?? item?.text ?? '';
-        return typeof direct === 'string' ? direct : '';
-      }
-      const collected: string[] = [];
-      for (const chunk of content) {
-        if (chunk?.type === 'input_text' && typeof chunk?.text === 'string') {
-          collected.push(chunk.text);
-        } else if (chunk?.type === 'input_audio' && typeof chunk?.transcript === 'string') {
-          collected.push(chunk.transcript);
-        }
-      }
-      return collected.join(' ').trim();
-    } catch {
-      return '';
-    }
-  }
-
-  private isWakeConfirmation(raw: string): boolean {
-    if (!raw) return false;
-    const normalized = raw
-      .replace(/[\u2018\u2019]/g, "'")
-      .replace(/[\u3000]/g, ' ')
-      .toLowerCase()
-      .trim();
-    if (!normalized) return false;
-    if (normalized.includes('起きたく')) return false;
-    if (normalized.includes('起きたい')) return false;
-
-    const canonicalize = (value: string) =>
-      value
-        .replace(/[!"#$%&()*+,./:;<=>?@[\\\]^_`{|}~]/g, ' ')
-        .replace(/\s+/g, ' ')
-        .trim()
-        .toLowerCase();
-
-    const simplified = canonicalize(normalized);
-    const wakePhrases = [
-      '起きた',
-      '起きました',
-      '起床した',
-      '起きたよ',
-      '起きたね',
-      'i woke up',
-      'i am up',
-      "i'm up",
-      'im up',
-      'i am awake',
-      "i'm awake",
-      'im awake',
-      'awake now',
-      'up now'
-    ];
-    if (wakePhrases.some((phrase) => simplified.includes(canonicalize(phrase)))) {
-      return true;
-    }
-
-    const jpBoundary = "[\\s、。!！?？\"'\\u3000「」『』（）()［］\\[\\]{}【】《》〈〉…\\-ー〜~]";
-
-    const wakePatterns = [
-      new RegExp(`(?:^|${jpBoundary})起き(?:た|ました)(?:よ|ね|わ|ぜ)?(?:${jpBoundary}|$)`, 'u'),
-      new RegExp(`(?:^|${jpBoundary})起床した(?:${jpBoundary}|$)`, 'u'),
-      /\bi\s*woke\s*up\b/,
-      /\bi\s*(?:am|'?m)\s*(?:already\s*)?up\b/,
-      /\bi\s*(?:am|'?m)\s*awake\b/
-    ];
-    return wakePatterns.some((pattern) => pattern.test(normalized));
-  }
-
   private scheduleWakeFollowUp(delayMs = 30) {
     if (!this.session) return;
     if (this.wakeFollowUpTimer) {
@@ -1073,7 +1001,7 @@ export class AniccaSessionManager {
       this.wakeFollowUpTimer = null;
       if (!this.session) return;
       if (this.stickyTask !== 'wake_up' || !this.wakeActive) return;
-      if (this.isGenerating) {
+      if (this.isGenerating || this.pendingAssistantResponse) {
         this.scheduleWakeFollowUp(50);
         return;
       }
@@ -1213,6 +1141,14 @@ export class AniccaSessionManager {
             const desired: 'silent' | 'conversation' = wantConversation ? 'conversation' : 'silent';
             await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
           } catch {}
+        } else if (
+          event?.type === 'response.canceled' ||
+          event?.type === 'response.completed' ||
+          event?.type === 'response.done' ||
+          event?.type === 'response.failed'
+        ) {
+          this.pendingAssistantResponse = false;
+          this.flushSystemOpsIfIdle();
         }
         // セッション失効（60分上限）検出時は即時復旧
         try {
@@ -1558,12 +1494,8 @@ export class AniccaSessionManager {
           this.noteUserActivity();
           if (this.stickyTask === 'wake_up' && this.wakeActive) {
             if (!this.stickyReady) return;
-            const utterance = this.extractTextFromHistoryItem(item);
-            if (!this.isWakeConfirmation(utterance)) {
-              return;
-            }
-            unlockWakeAdvance('user_confirmed_awake');
-            this.clearWakeSticky('user_confirmed_awake');
+            unlockWakeAdvance('user_message');
+            this.clearWakeSticky('user_message');
             return;
           }
           unlockWakeAdvance('user_message');

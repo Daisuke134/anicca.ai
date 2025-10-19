@@ -18,7 +18,7 @@ import {
   ensureBaselineFiles,
   shouldRunOnboarding,
   resolveOnboardingPrompt,
-  resolveGroundedLanguageLabel,
+  resolveLanguageAssets,
   syncTodayTasksFromMarkdown
 } from './services/onboardingBootstrap';
 import { buildRoutinePrompt, resetRoutineState } from './services/routines';
@@ -198,8 +198,18 @@ async function initializeApp() {
             }
             const lang = await resolveProfileLanguage();
             const finalMessage = lang === 'ja'
-              ? 'advance routine step: acknowledgedStep="オンボーディング完了" を実行した上で、「ログインを確認しました。決めた起床と就寝の時刻になったら私から声をかけますので、それまでは静かに待機しています。ありがとうございました。」とユーザーに一度だけ伝える。一度行ったらこれは２度と言わない！！ユーザーからの質問にはそれに対応して答える。同じ案内を繰り返さないでください。'
-              : 'Please run `advance routine step: acknowledgedStep="オンボーディング完了"` and then tell the user, "Login confirmed. When the scheduled wake-up or bedtime arrives I will speak to you, and until then I will stay silent. Thank you." Say this only once. NEVER SAY THIS AGAIN. and do not repeat the same login confirmation. after, answer the user\'s questions accordingly.';
+              ? [
+                  '⚠️ advance routine step: acknowledgedStep="オンボーディング完了" を実行した直後に、以下を厳守すること。',
+                  '- 「ログインを確認しました。決めた起床と就寝の時刻になったら私から声をかけますので、それまでは静かに待機しています。ありがとうございました。」を一度だけ発話し、login_confirmation_sent=true を内部メモとして保持する。',
+                  '- 以降はログイン確認・同内容・類似表現を一切口にしない。ユーザーが尋ねても「ログインは既に確認済みです。他にどうしましょうか？」のように別表現で応答する。',
+                  '- 同じ文言を再発しそうになったら即座に別の応答へ切り替え、沈黙や繰り返しを行わない。'
+                ].join('\n')
+              : [
+                  '⚠️ Run `advance routine step: acknowledgedStep="オンボーディング完了"` and then follow these rules.',
+                  '- Say "Login confirmed. When the scheduled wake-up or bedtime arrives I will speak to you, and until then I will stay silent. Thank you." EXACTLY ONCE, then store login_confirmation_sent=true as an internal memory.',
+                  '- AFTER THAT, NEVER REPEAT the login confirmation or similar wording. If asked, reply with alternatives such as "Your login is already confirmed. What else should we handle?" without reusing the original sentence.',
+                  '- If you are about to restate that the login is confirmed, immediately pivot to a different helpful reply instead of repeating or going silent.'
+                ].join('\n');
             await sessionManager.sendMessage(finalMessage);
             onboardingFinalMessageSent = true;
           } catch (err) {
@@ -323,8 +333,8 @@ async function initializeApp() {
       const runOnboarding = async (attempt = 1): Promise<void> => {
         try {
           resetRoutineState('onboarding');
+          const assets = resolveLanguageAssets();
           const prompt = resolveOnboardingPrompt();
-          const groundedLanguage = resolveGroundedLanguageLabel();
           const bridgeReady = await manager.waitForBridgeClient(5000);
           if (!bridgeReady) {
             throw new Error('bridge client not ready');
@@ -333,8 +343,7 @@ async function initializeApp() {
           manager.setOnboardingState('running');
           await manager.forceConversationMode('onboarding');
           await manager.sendMessage(prompt);
-          const inlineLanguageLine = (prompt.match(/INTERNAL_LANGUAGE_LINE:[^\n]*/) || ['INTERNAL_LANGUAGE_LINE: unknown'])[0];
-          console.log(`🚀 Onboarding prompt dispatched – ${inlineLanguageLine}`);
+          console.log(`🚀 Onboarding prompt dispatched – ${assets.speakOnlyLine}`);
         } catch (error) {
           console.error(`❌ Failed to dispatch onboarding prompt (attempt ${attempt}):`, error);
           manager.setOnboardingState('idle');
@@ -1530,9 +1539,13 @@ async function executeScheduledTask(task: any) {
     try { commonText = fs.readFileSync(commonPath, 'utf8'); } catch {}
     try { templateText = fs.readFileSync(tplPath, 'utf8'); } catch { templateText = '今、{{taskDescription}}の時間になった。'; }
     let resolvedTemplate = templateText;
-    const groundedLanguage = resolveGroundedLanguageLabel();
-    const resolvedCommonText = commonText.replace(/\$\{INTERNAL_LANGUAGE_LINE\}/g, groundedLanguage);
-    resolvedTemplate = resolvedTemplate.replace(/\$\{INTERNAL_LANGUAGE_LINE\}/g, groundedLanguage);
+    const assets = resolveLanguageAssets();
+    const resolvedCommonText = commonText
+      .replace(/\$\{INTERNAL_LANGUAGE_LINE\}/g, assets.speakOnlyLine)
+      .replace(/\$\{INTERNAL_LANGUAGE_LABEL\}/g, assets.languageLabel);
+    resolvedTemplate = resolvedTemplate
+      .replace(/\$\{INTERNAL_LANGUAGE_LINE\}/g, assets.speakOnlyLine)
+      .replace(/\$\{INTERNAL_LANGUAGE_LABEL\}/g, assets.languageLabel);
     if (tpl === 'sleep.txt') {
       try {
         resolvedTemplate = buildRoutinePrompt('sleep', templateText, { reset: true });
@@ -1552,7 +1565,8 @@ async function executeScheduledTask(task: any) {
     const commandBody = [resolvedCommonText, resolvedTemplate]
       .filter(Boolean)
       .join('\n\n')
-      .replace(/\$\{task\.description\}/g, String(task.description ?? ''));
+      .replace(/\$\{task\.description\}/g, String(task.description ?? ''))
+      .replace(/\$\{task\.id\}/g, String(task.id ?? ''));
 
     ws.send(JSON.stringify({
       type: 'scheduled_task',

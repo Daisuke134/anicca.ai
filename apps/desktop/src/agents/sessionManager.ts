@@ -88,6 +88,8 @@ export class AniccaSessionManager {
   private wakeActive: boolean = false;
   // wake専用：アシスタントの最初の発話（audio_start）までは解除判定を無効化
   private stickyReady: boolean = false;
+  private wakeUserReplyCount: number = 0;
+  private static readonly WAKE_STICKY_RELEASE_THRESHOLD = 7;
   private pendingAssistantResponse: boolean = false;
   private wakeFollowUpTimer: NodeJS.Timeout | null = null;
   
@@ -839,6 +841,7 @@ export class AniccaSessionManager {
                 this.stickyTask = 'wake_up';
                 this.wakeActive = true;
                 this.stickyReady = false; // audio_start が来るまで解除不可
+                this.wakeUserReplyCount = 0;
                 markWakeRoutineActive('cron_start');
                 lockWakeAdvance('cron_start');
               }
@@ -983,6 +986,7 @@ export class AniccaSessionManager {
         this.wakeActive = false;
         this.stickyTask = null;
         this.stickyReady = false;
+        this.wakeUserReplyCount = 0;
         if (this.wakeFollowUpTimer) {
           clearTimeout(this.wakeFollowUpTimer);
           this.wakeFollowUpTimer = null;
@@ -1494,8 +1498,13 @@ export class AniccaSessionManager {
           this.noteUserActivity();
           if (this.stickyTask === 'wake_up' && this.wakeActive) {
             if (!this.stickyReady) return;
+            this.wakeUserReplyCount += 1;
+            console.log('[WAKE_STICKY_COUNT]', this.wakeUserReplyCount, '/', AniccaSessionManager.WAKE_STICKY_RELEASE_THRESHOLD);
             unlockWakeAdvance('user_message');
-            this.clearWakeSticky('user_message');
+            if (this.wakeUserReplyCount >= AniccaSessionManager.WAKE_STICKY_RELEASE_THRESHOLD) {
+              console.log('[WAKE_STICKY_RELEASE]', { reason: 'user_message' });
+              this.clearWakeSticky('user_message');
+            }
             return;
           }
           unlockWakeAdvance('user_message');

@@ -11,7 +11,7 @@
 - `PROFILE_PATH = ~/.anicca/anicca.md`
 - `SCHEDULE_PATH = ~/.anicca/scheduled_tasks.json`
 - `ROUTINE_ID = "onboarding"`
-- `STEP_IDS = ["1", "2-1", "2-2", "2-3", "2-4", "3-1", "3-2", "3-3", "3-4", "3-5", "4"]`
+- `STEP_IDS = ["1", "2-1", "2-2", "2-3", "3-1", "3-2", "3-3", "3-4", "3-5", "4"]`
 - `CURRENT_STEP_INDEX` は 0 始まり。開始時は 0、`CURRENT_STEP_ID = STEP_IDS[0]`。
 - `INTERNAL_LANGUAGE_LINE = ${INTERNAL_LANGUAGE_LINE}`
 - `INTERNAL_LANGUAGE_LABEL = ${INTERNAL_LANGUAGE_LABEL}`
@@ -56,19 +56,13 @@
 - 登録後に設定内容をユーザーへ復唱したり、Cron 設定を読み上げたりしない。指定された発話のみ行う。
 - `advance_routine_step(..., acknowledgedStep="起床時間登録またはスキップ")`。
 
-## STEP "2-2" — 起床トーン
-- 発話：「起きるとき、どんな声掛けが嬉しいですか？たとえば優しく起こしてほしい、厳しく叱ってほしい、などです。」
-- English: "When you wake up, what kind of encouragement feels best? Maybe a gentle reminder or a firm one."
-- 「- tone:」行を更新。
-- `advance_routine_step(..., acknowledgedStep="起床トーン更新")`。
-
-## STEP "2-3" — 起床環境
+## STEP "2-2" — 起床環境
 - 発話：「朝はどこで目を覚ましますか？たとえば寝室のベッド、リビングのソファなどです。」
 - English: "Where do you usually wake up? For example, in your bedroom or on the living-room sofa."
 - 「- sleep place:」行を更新。
 - `advance_routine_step(..., acknowledgedStep="起床環境更新")`。
 
-## STEP "2-4" — 起床後ルーティン
+## STEP "2-3" — 起床後ルーティン
 - 発話：「起きた後に行いたいルーティンがあれば教えてください。たとえば、顔を洗ってからストレッチをしたい、軽く瞑想してから朝食をとりたい、などです。」
 - English: "What routine would you like right after waking—maybe washing your face, stretching, or meditating?"
 - 「- Wake:」ブロックの番号行を回答順に `1) ...` 形式で差し替える（複数なら1行ずつ列挙。空なら既定の番号行を維持）。

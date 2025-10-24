@@ -18,6 +18,7 @@ import express, { Request, Response } from 'express';
 import * as http from 'http';
 import { WebSocketServer, WebSocket } from 'ws';
 import net from 'net';
+import { powerMonitor } from 'electron';
 
 type ReadyWaiter = {
   resolve: () => void;
@@ -83,15 +84,22 @@ export class AniccaSessionManager {
   private playbackDrainInterval: NodeJS.Timeout | null = null;
   private isRendererPlaying: boolean = false;
 
-  // wake起床タスクの連続発話（sticky）制御
-  private stickyTask: 'wake_up' | null = null;
+  // wake/sleep タスクの連続発話（sticky）制御
+  private stickyTask: 'wake_up' | 'sleep' | null = null;
   private wakeActive: boolean = false;
+  private sleepActive: boolean = false;
   // wake専用：アシスタントの最初の発話（audio_start）までは解除判定を無効化
   private stickyReady: boolean = false;
   private wakeUserReplyCount: number = 0;
+  private sleepUserReplyCount: number = 0;
   private static readonly WAKE_STICKY_RELEASE_THRESHOLD = 7;
+  private static readonly SLEEP_STICKY_RELEASE_THRESHOLD = 7;
+  private static readonly MIN_STICKY_DURATION_MS = 5 * 60 * 1000;
   private pendingAssistantResponse: boolean = false;
   private wakeFollowUpTimer: NodeJS.Timeout | null = null;
+  private sleepFollowUpTimer: NodeJS.Timeout | null = null;
+  private stickyStatePath = path.join(os.homedir(), '.anicca', 'sticky_state.json');
+  private stickyStartedAt: number | null = null;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -99,6 +107,86 @@ export class AniccaSessionManager {
     this.sessionFilePath = path.join(os.homedir(), '.anicca', 'session.json');
     this.historyEncryption = new SimpleEncryption();
     this.bridgeToken = bridgeToken;
+
+    try {
+      powerMonitor?.on?.('resume', async () => {
+        console.log('[SYSTEM_RESUME]');
+        await this.restoreStickyState();
+      });
+    } catch (e) {
+      console.warn('[POWER_MONITOR_UNAVAILABLE]', e);
+    }
+  }
+
+  private async persistStickyState() {
+    const state = {
+      stickyTask: this.stickyTask,
+      wakeActive: this.wakeActive,
+      sleepActive: this.sleepActive,
+      wakeUserReplyCount: this.wakeUserReplyCount,
+      sleepUserReplyCount: this.sleepUserReplyCount,
+      stickyReady: this.stickyReady,
+      stickyStartedAt: this.stickyStartedAt,
+      timestamp: Date.now()
+    };
+
+    try {
+      const dir = path.dirname(this.stickyStatePath);
+      await fs.mkdir(dir, { recursive: true, mode: 0o700 });
+      try { await fs.chmod(dir, 0o700); } catch {}
+      await fs.writeFile(this.stickyStatePath, JSON.stringify(state), { encoding: 'utf8', mode: 0o600 });
+      try { await fs.chmod(this.stickyStatePath, 0o600); } catch {}
+    } catch (e) {
+      console.warn('[STICKY_STATE_PERSIST_FAILED]', e);
+    }
+  }
+
+  private async restoreStickyState() {
+    try {
+      const raw = await fs.readFile(this.stickyStatePath, 'utf8');
+      if (!raw.trim()) return;
+      const state = JSON.parse(raw);
+      this.stickyTask = state.stickyTask ?? null;
+      this.wakeActive = !!state.wakeActive;
+      this.sleepActive = !!state.sleepActive;
+      this.wakeUserReplyCount = state.wakeUserReplyCount ?? 0;
+      this.sleepUserReplyCount = state.sleepUserReplyCount ?? 0;
+      this.stickyReady = !!state.stickyReady;
+      this.stickyStartedAt = typeof state.stickyStartedAt === 'number' ? state.stickyStartedAt : Date.now();
+
+      if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        lockWakeAdvance('restore');
+        markWakeRoutineActive('restore');
+        if (this.wakeFollowUpTimer) {
+          clearTimeout(this.wakeFollowUpTimer);
+          this.wakeFollowUpTimer = null;
+        }
+        this.scheduleWakeFollowUp();
+      } else if (this.stickyTask === 'sleep' && this.sleepActive) {
+        if (this.sleepFollowUpTimer) {
+          clearTimeout(this.sleepFollowUpTimer);
+          this.sleepFollowUpTimer = null;
+        }
+        this.scheduleSleepFollowUp();
+      }
+
+      console.log('[STICKY_STATE_RESTORED]', state);
+    } catch (e: any) {
+      if (e?.code === 'ENOENT') return;
+      console.warn('[STICKY_STATE_RESTORE_FAILED]', e);
+    }
+  }
+
+  private canReleaseSticky(task: 'wake_up' | 'sleep'): boolean {
+    if (this.stickyStartedAt === null) return false;
+    const elapsed = Date.now() - this.stickyStartedAt;
+    if (elapsed < AniccaSessionManager.MIN_STICKY_DURATION_MS) {
+      return false;
+    }
+    if (task === 'wake_up') {
+      return this.wakeUserReplyCount >= AniccaSessionManager.WAKE_STICKY_RELEASE_THRESHOLD;
+    }
+    return this.sleepUserReplyCount >= AniccaSessionManager.SLEEP_STICKY_RELEASE_THRESHOLD;
   }
 
   private async updateUserLanguageInProfile(timezone: string): Promise<void> {
@@ -842,8 +930,16 @@ export class AniccaSessionManager {
                 this.wakeActive = true;
                 this.stickyReady = false; // audio_start が来るまで解除不可
                 this.wakeUserReplyCount = 0;
+                this.stickyStartedAt = Date.now();
                 markWakeRoutineActive('cron_start');
                 lockWakeAdvance('cron_start');
+                await this.persistStickyState();
+              } else if (t.startsWith('sleep')) {
+                this.stickyTask = 'sleep';
+                this.sleepActive = true;
+                this.sleepUserReplyCount = 0;
+                this.stickyStartedAt = Date.now();
+                await this.persistStickyState();
               }
             } catch {}
 
@@ -961,8 +1057,8 @@ export class AniccaSessionManager {
 
   private startAutoExitCountdown() {
     this.clearAutoExitTimer();
-    const wakeMode = isWakeRoutineActive();
-    const idleMs = wakeMode ? this.AUTO_EXIT_IDLE_WAKE_MS : this.AUTO_EXIT_IDLE_MS;
+    const stickyMode = isWakeRoutineActive() || this.sleepActive;
+    const idleMs = stickyMode ? this.AUTO_EXIT_IDLE_WAKE_MS : this.AUTO_EXIT_IDLE_MS;
     this.autoExitDeadlineAt = Date.now() + idleMs;
     this.autoExitTimer = setTimeout(async () => {
       const userAfterAgent = (this.lastUserActivityAt ?? 0) > (this.lastAgentEndAt ?? 0);
@@ -979,19 +1075,45 @@ export class AniccaSessionManager {
   }
 
   // 起床タスクの粘着モードを明示的に解除し、差分指示をベースに戻す
-  private clearWakeSticky(reason: string) {
+  private async clearWakeSticky(reason: string, force: boolean = false) {
     try {
       if (this.stickyTask === 'wake_up' && this.wakeActive) {
+        if (!force && !this.canReleaseSticky('wake_up')) {
+          return;
+        }
         unlockWakeAdvance(reason);
         this.wakeActive = false;
         this.stickyTask = null;
         this.stickyReady = false;
         this.wakeUserReplyCount = 0;
+        markWakeRoutineInactive(reason);
         if (this.wakeFollowUpTimer) {
           clearTimeout(this.wakeFollowUpTimer);
           this.wakeFollowUpTimer = null;
         }
+        this.stickyStartedAt = null;
         console.log('[WAKE_STICKY_CLEAR]', { reason });
+        await this.persistStickyState();
+      }
+    } catch {}
+  }
+
+  private async clearSleepSticky(reason: string, force: boolean = false) {
+    try {
+      if (this.stickyTask === 'sleep' && this.sleepActive) {
+        if (!force && !this.canReleaseSticky('sleep')) {
+          return;
+        }
+        this.sleepActive = false;
+        this.stickyTask = null;
+        this.sleepUserReplyCount = 0;
+        if (this.sleepFollowUpTimer) {
+          clearTimeout(this.sleepFollowUpTimer);
+          this.sleepFollowUpTimer = null;
+        }
+        this.stickyStartedAt = null;
+        console.log('[SLEEP_STICKY_CLEAR]', { reason });
+        await this.persistStickyState();
       }
     } catch {}
   }
@@ -1015,6 +1137,29 @@ export class AniccaSessionManager {
       } catch (e) {
         this.pendingAssistantResponse = false;
         console.warn('Failed to queue wake follow-up:', e);
+      }
+    }, delayMs);
+  }
+
+  private scheduleSleepFollowUp(delayMs = 30) {
+    if (!this.session) return;
+    if (this.sleepFollowUpTimer) {
+      clearTimeout(this.sleepFollowUpTimer);
+    }
+    this.sleepFollowUpTimer = setTimeout(() => {
+      this.sleepFollowUpTimer = null;
+      if (!this.session) return;
+      if (this.stickyTask !== 'sleep' || !this.sleepActive) return;
+      if (this.isGenerating || this.pendingAssistantResponse) {
+        this.scheduleSleepFollowUp(50);
+        return;
+      }
+      try {
+        this.pendingAssistantResponse = true;
+        (this.session as any)?.transport?.sendEvent?.({ type: 'response.create' });
+      } catch (e) {
+        this.pendingAssistantResponse = false;
+        console.warn('Failed to queue sleep follow-up:', e);
       }
     }, delayMs);
   }
@@ -1133,6 +1278,7 @@ export class AniccaSessionManager {
             } catch (e) {
               console.warn('restoreSession after READY failed:', e);
             }
+            await this.restoreStickyState();
           }
           // READY後に一度だけ mem/TZ を“応答なし”で反映（多重抑止つき）
           this.enqueueSystemOp({ kind: 'mem' });
@@ -1140,10 +1286,12 @@ export class AniccaSessionManager {
           this.flushSystemOpsIfIdle();
           // モード復元：wake中 or 生成中 or 直前が会話なら conversation 維持
           try {
-            const wakeSticky = (this.stickyTask === 'wake_up' && this.wakeActive);
-            const wantConversation = wakeSticky || this.isGenerating || this.mode === 'conversation';
+            const stickyActive =
+              (this.stickyTask === 'wake_up' && this.wakeActive) ||
+              (this.stickyTask === 'sleep' && this.sleepActive);
+            const wantConversation = stickyActive || this.isGenerating || this.mode === 'conversation';
             const desired: 'silent' | 'conversation' = wantConversation ? 'conversation' : 'silent';
-            await this.setMode(desired, wakeSticky ? 'ready_wake_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
+            await this.setMode(desired, stickyActive ? 'ready_sticky' : (wantConversation ? 'ready_restore' : 'startup'));
           } catch {}
         } else if (
           event?.type === 'response.canceled' ||
@@ -1223,6 +1371,8 @@ export class AniccaSessionManager {
       // 起床中は即連鎖。非wakeは通常の無応答タイマー開始（AUTO_EXIT_IDLE_MS）
       if (this.stickyTask === 'wake_up' && this.wakeActive) {
         this.scheduleWakeFollowUp();
+      } else if (this.stickyTask === 'sleep' && this.sleepActive) {
+        this.scheduleSleepFollowUp();
       } else {
         if (this.mode === 'conversation') {
           this.lastAgentEndAt = Date.now();
@@ -1486,30 +1636,47 @@ export class AniccaSessionManager {
     });
 
     // 追加：増分1件でユーザー活動を即検知（軽量・確実）
-    this.session.on('history_added', (item: any) => {
+    this.session.on('history_added', async (item: any) => {
       try {
         // wake中はモードに関係なく、audio_start前の'user'は無視する
-        if (this.stickyTask !== 'wake_up' || !this.wakeActive) {
+        const wakeSticky = this.stickyTask === 'wake_up' && this.wakeActive;
+        const sleepSticky = this.stickyTask === 'sleep' && this.sleepActive;
+        if (!wakeSticky && !sleepSticky) {
           if (this.mode !== 'conversation') return;
         }
         // RealtimeItemとの整合: ユーザー発話のみで判定
         const isUser = (item?.type === 'message' && item?.role === 'user');
         if (isUser) {
           this.noteUserActivity();
-          if (this.stickyTask === 'wake_up' && this.wakeActive) {
+          if (wakeSticky) {
             if (!this.stickyReady) return;
             this.wakeUserReplyCount += 1;
             console.log('[WAKE_STICKY_COUNT]', this.wakeUserReplyCount, '/', AniccaSessionManager.WAKE_STICKY_RELEASE_THRESHOLD);
             unlockWakeAdvance('user_message');
-            if (this.wakeUserReplyCount >= AniccaSessionManager.WAKE_STICKY_RELEASE_THRESHOLD) {
+            if (this.canReleaseSticky('wake_up')) {
               console.log('[WAKE_STICKY_RELEASE]', { reason: 'user_message' });
-              this.clearWakeSticky('user_message');
+              await this.clearWakeSticky('user_message');
+            } else {
+              await this.persistStickyState();
+            }
+            return;
+          } else if (sleepSticky) {
+            this.sleepUserReplyCount += 1;
+            console.log('[SLEEP_STICKY_COUNT]', this.sleepUserReplyCount, '/', AniccaSessionManager.SLEEP_STICKY_RELEASE_THRESHOLD);
+            unlockWakeAdvance('user_message');
+            if (this.canReleaseSticky('sleep')) {
+              console.log('[SLEEP_STICKY_RELEASE]', { reason: 'user_message' });
+              await this.clearSleepSticky('user_message');
+            } else {
+              await this.persistStickyState();
             }
             return;
           }
           unlockWakeAdvance('user_message');
         }
-      } catch { /* noop */ }
+      } catch (error) {
+        console.warn('[HISTORY_ADDED_STICKY_FAILED]', error);
+      }
     });
   }
   
@@ -1777,12 +1944,23 @@ export class AniccaSessionManager {
         const initialContent = `# ユーザー情報
 - 呼び名:
 - タイムゾーン:
-- 起床トーン:
-- 就寝場所:
+- 言語:
+- sleep place:
 
-## ルーティン
-- 起床:
-- 就寝:
+# ルーティン
+- Wake:
+  1)
+  2)
+  3)
+  4)
+- Sleep:
+  1)
+  2)
+  3)
+  4)
+- habits to quit:
+- respect:
+- self-image:
 `;
         await fs.writeFile(aniccaPath, initialContent, 'utf-8');
         console.log('📝 Created initial anicca.md');

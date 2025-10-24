@@ -45,21 +45,20 @@ interface AdvanceResult {
 }
 
 const routineStates = new Map<string, RoutineState>();
-const ROUTINE_LABEL_MAP: Record<string, string> = {
-  wake: '起床',
-  sleep: '就寝',
+const ROUTINE_LABEL_MAP: Record<string, string[]> = {
+  wake: ['起床', 'Wake'],
+  sleep: ['就寝', 'Sleep'],
 };
 
 const BUILTIN_ROUTINES: Record<string, RoutineStep[]> = {
   onboarding: [
     { text: 'STEP "1" — 呼び名確認' },
     { text: 'STEP "2-1" — 理想の起床時間を確認' },
-    { text: 'STEP "2-2" — 起床トーンを聞く' },
-    { text: 'STEP "2-3" — 朝の就寝場所を確認' },
-    { text: 'STEP "2-4" — 起床後に身につけたい習慣を聞く' },
+    { text: 'STEP "2-2" — 朝の就寝場所を確認' },
+    { text: 'STEP "2-3" — 起床後ルーティンを聞く' },
     { text: 'STEP "3-1" — 理想の就寝時間を確認' },
-    { text: 'STEP "3-2" — 辞めたい習慣を聞く' },
-    { text: 'STEP "3-3" — 正直さの課題を聞く' },
+    { text: 'STEP "3-2" — 就寝前ルーティンを聞く' },
+    { text: 'STEP "3-3" — 辞めたい習慣を聞く' },
     { text: 'STEP "3-4" — 尊敬対象を確認' },
     { text: 'STEP "3-5" — 自己像を確認' },
     { text: 'STEP "4" — 締めとログイン確認' },
@@ -79,7 +78,8 @@ const aniccaMarkdownPath = path.join(os.homedir(), '.anicca', 'anicca.md');
 export function buildRoutinePrompt(routineId: string, template: string, options: BuildOptions = {}): string {
   const steps = loadRoutineSteps(routineId);
   if (steps.length === 0) {
-    throw new Error(`ルーティン "${routineId}" の手順が ~/.anicca/anicca.md に見つかりません`);
+    console.warn(`[${routineId}_routine] no steps found in profile; using empty fallback`);
+    return applyPlaceholders(template, emptyRoutineSnapshot(routineId));
   }
   const state = ensureRoutineState(routineId, steps, options.reset ?? false);
   const snapshot = snapshotState(state);
@@ -97,11 +97,37 @@ export function resetRoutineState(routineId: string): void {
 export function advanceRoutineStepForTool(routineId: string, acknowledgedStep: string | null = null): AdvanceResult {
   const state = routineStates.get(routineId);
   if (!state) {
-    throw new Error(`ルーティン "${routineId}" は初期化されていません`);
+    const updatedAt = new Date().toISOString();
+    return {
+      status: 'done',
+      routineId,
+      acknowledgedStep: acknowledgedStep ?? null,
+      currentIndex: 0,
+      totalSteps: 0,
+      nextStep: null,
+      nextStepInstructions: null,
+      remainingSteps: [],
+      completed: true,
+      updatedAt,
+      allSteps: [],
+    };
   }
   const steps = state.steps;
   if (steps.length === 0) {
-    throw new Error(`ルーティン "${routineId}" のステップが空です`);
+    const updatedAt = new Date().toISOString();
+    return {
+      status: 'done',
+      routineId,
+      acknowledgedStep: acknowledgedStep ?? null,
+      currentIndex: 0,
+      totalSteps: 0,
+      nextStep: null,
+      nextStepInstructions: null,
+      remainingSteps: [],
+      completed: true,
+      updatedAt,
+      allSteps: [],
+    };
   }
 
   const previousIndex = state.currentIndex;
@@ -142,8 +168,14 @@ function loadRoutineSteps(routineId: string): RoutineStep[] {
     throw new Error('~/.anicca/anicca.md が存在しません');
   }
   const markdown = fs.readFileSync(aniccaMarkdownPath, 'utf8');
-  const label = ROUTINE_LABEL_MAP[routineId] ?? routineId;
-  return parseRoutineSteps(markdown, label);
+  const labels = ROUTINE_LABEL_MAP[routineId] ?? [routineId];
+  for (const label of labels) {
+    const steps = parseRoutineSteps(markdown, label);
+    if (steps.length > 0) {
+      return steps;
+    }
+  }
+  return [];
 }
 
 function parseRoutineSteps(markdown: string, label: string): RoutineStep[] {
@@ -203,6 +235,20 @@ function snapshotState(state: RoutineState): RoutineSnapshot {
     remainingSteps: state.steps.slice(state.currentIndex).map((step) => ({ ...step })),
     totalSteps: state.steps.length,
     updatedAt: state.updatedAt,
+  };
+}
+
+function emptyRoutineSnapshot(routineId: string): RoutineSnapshot {
+  const now = new Date().toISOString();
+  return {
+    routineId,
+    steps: [],
+    currentIndex: 0,
+    currentStep: null,
+    nextStep: null,
+    remainingSteps: [],
+    totalSteps: 0,
+    updatedAt: now,
   };
 }
 

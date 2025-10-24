@@ -429,6 +429,15 @@ async function initializeApp() {
           headers: bridgeHeaders()
         }).catch(() => {});
       }, 300);
+      setTimeout(() => {
+        try {
+          hiddenWindow?.webContents?.executeJavaScript(
+            `window.__ANICCA_FORCE_MIC_RESTART__?.("system_resume")`
+          ).catch(() => {});
+        } catch (micErr) {
+          console.warn('Failed to trigger mic restart after resume:', micErr);
+        }
+      }, 600);
 
       // 復帰時にも認証が有効なら、定期タスク登録を確実に起動（冪等）
       try {
@@ -516,8 +525,24 @@ function createHiddenWindow() {
         let sdkReady = false; // 監視用（送信ゲートには使用しない）
         // SDKステータスの前回値（差分時のみログ出力するためのキー）
         let lastSdkStatusKey = '';
+        let micTrack = null;
+        let micRestartInFlight = false;
+        const trackCleanupFns = [];
+        const streamCleanupFns = [];
         // 音声入力はWSバイナリ直送に一本化（送信キュー/HTTPは廃止）
         let micPostStopMuteUntil = 0; // 出力停止直後の送信クールダウン(ms)
+        async function restartMic(reason) {
+          if (micRestartInFlight) return;
+          micRestartInFlight = true;
+          console.warn('[MIC] track ' + reason + '; restarting capture');
+          try {
+            await cleanupAudioGraph();
+            await ensureSDKConnection();
+            startCaptureWhenReady(250);
+          } finally {
+            micRestartInFlight = false;
+          }
+        }
         async function cleanupAudioGraph() {
           console.log('[CLEANUP] start');
           const logWarn = (step, err) => console.warn('[CLEANUP] ' + step + ' failed:', err);
@@ -527,7 +552,15 @@ function createHiddenWindow() {
           const runAsync = async (step, fn) => {
             try { await fn(); } catch (err) { logWarn(step, err); }
           };
-
+          while (trackCleanupFns.length > 0) {
+            const dispose = trackCleanupFns.pop();
+            try { dispose?.(); } catch (err) { logWarn('track cleanup', err); }
+          }
+          while (streamCleanupFns.length > 0) {
+            const dispose = streamCleanupFns.pop();
+            try { dispose?.(); } catch (err) { logWarn('stream cleanup', err); }
+          }
+          micTrack = null;
           mediaRecorder = null;
           run('currentSource.stop', () => currentSource?.stop?.(0));
           run('currentSource.disconnect', () => currentSource?.disconnect?.());
@@ -592,6 +625,7 @@ function createHiddenWindow() {
           return true;
         }
         window.__ANICCA_CLEANUP__ = cleanupAudioGraph;
+        window.__ANICCA_FORCE_MIC_RESTART__ = (reason = 'manual') => restartMic(reason);
         window.addEventListener('beforeunload', () => { void cleanupAudioGraph(); });
         window.addEventListener('unload', () => { void cleanupAudioGraph(); });
 
@@ -873,6 +907,14 @@ function startCaptureWhenReady(retryMs = 1000) {
                 noiseSuppression: true
               }
             });
+            while (trackCleanupFns.length > 0) {
+              const dispose = trackCleanupFns.pop();
+              try { dispose?.(); } catch {}
+            }
+            while (streamCleanupFns.length > 0) {
+              const dispose = streamCleanupFns.pop();
+              try { dispose?.(); } catch {}
+            }
 
             // AudioContextでPCM16形式に変換
             inputAudioContext = new AudioContext({ sampleRate: ${AUDIO_SAMPLE_RATE} });
@@ -880,6 +922,28 @@ function startCaptureWhenReady(retryMs = 1000) {
             processor = inputAudioContext.createScriptProcessor(4096, 1, 1);
             muteGain = inputAudioContext.createGain();
             muteGain.gain.value = 0;
+            const [track] = micStream.getAudioTracks();
+            micTrack = track || null;
+            if (micTrack) {
+              const onEnded = () => restartMic('ended');
+              const onMute = () => restartMic('mute');
+              const onUnmute = () => { /* unmute 時は再起動不要 */ };
+              micTrack.addEventListener('ended', onEnded);
+              micTrack.addEventListener('mute', onMute);
+              micTrack.addEventListener('unmute', onUnmute);
+              trackCleanupFns.push(() => {
+                micTrack?.removeEventListener('ended', onEnded);
+                micTrack?.removeEventListener('mute', onMute);
+                micTrack?.removeEventListener('unmute', onUnmute);
+              });
+            }
+            if (micStream && typeof micStream.addEventListener === 'function') {
+              const onInactive = () => restartMic('inactive');
+              micStream.addEventListener('inactive', onInactive);
+              streamCleanupFns.push(() => {
+                try { micStream.removeEventListener('inactive', onInactive); } catch {}
+              });
+            }
 
             sourceNode.connect(processor);
             processor.connect(muteGain);

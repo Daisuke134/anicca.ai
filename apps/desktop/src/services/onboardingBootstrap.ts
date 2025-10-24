@@ -65,8 +65,18 @@ function formatDate(date: Date): string {
 export function resolveGroundedLanguageLabel(): 'Japanese' | 'English' {
   try {
     const profile = fs.readFileSync(aniccaPath, 'utf8');
-    const match = profile.match(/- タイムゾーン:\s*([^\r\n]+)/);
-    const tz = match ? match[1].trim() : '';
+    const languageMatch = profile.match(/-\s*(?:言語|Language):\s*([^\r\n]+)/);
+    if (languageMatch) {
+      const normalized = languageMatch[1].trim().toLowerCase();
+      if (normalized.startsWith('日') || normalized.startsWith('japanese')) {
+        return 'Japanese';
+      }
+      if (normalized.startsWith('英') || normalized.startsWith('english')) {
+        return 'English';
+      }
+    }
+    const tzMatch = profile.match(/-\s*(?:タイムゾーン|Timezone):\s*([^\r\n]+)/);
+    const tz = tzMatch ? tzMatch[1].trim() : '';
     return tz === 'Asia/Tokyo' ? 'Japanese' : 'English';
   } catch {
     return 'English';

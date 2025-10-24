@@ -54,9 +54,8 @@ const BUILTIN_ROUTINES: Record<string, RoutineStep[]> = {
   onboarding: [
     { text: 'STEP "1" — 呼び名確認' },
     { text: 'STEP "2-1" — 理想の起床時間を確認' },
-    { text: 'STEP "2-2" — 起床トーンを聞く' },
-    { text: 'STEP "2-3" — 朝の就寝場所を確認' },
-    { text: 'STEP "2-4" — 起床後ルーティンを聞く' },
+    { text: 'STEP "2-2" — 朝の就寝場所を確認' },
+    { text: 'STEP "2-3" — 起床後ルーティンを聞く' },
     { text: 'STEP "3-1" — 理想の就寝時間を確認' },
     { text: 'STEP "3-2" — 就寝前ルーティンを聞く' },
     { text: 'STEP "3-3" — 辞めたい習慣を聞く' },

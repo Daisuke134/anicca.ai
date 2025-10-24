@@ -14,15 +14,43 @@ const ONBOARDING_TEMPLATES = {
 - 呼び名:
 - タイムゾーン: {{TIMEZONE}}
 - 言語: 日本語
-- 起床トーン:
-- 就寝場所:
+- sleep place:
+
+# ルーティン
+- Wake:
+  1)
+  2)
+  3)
+  4)
+- Sleep:
+  1)
+  2)
+  3)
+  4)
+- habits to quit:
+- respect:
+- self-image:
 `,
   English: `# USER PROFILE
 - Name:
 - Timezone: {{TIMEZONE}}
 - Language: English
-- Wake Tone:
-- Sleep Location:
+- sleep place:
+
+# ROUTINES
+- Wake:
+  1)
+  2)
+  3)
+  4)
+- Sleep:
+  1)
+  2)
+  3)
+  4)
+- habits to quit:
+- respect:
+- self-image:
 `,
 };
 
@@ -154,8 +182,8 @@ function isProfileEmpty(): boolean {
   try {
     const profile = fs.readFileSync(aniccaPath, 'utf8');
     const labelGroups = [
-      ['- 呼び名:', '- 起床トーン:', '- 就寝場所:'],
-      ['- Name:', '- Wake Tone:', '- Sleep Location:'],
+      ['- 呼び名:', '- habits to quit:', '- self-image:'],
+      ['- Name:', '- habits to quit:', '- self-image:'],
     ];
     return labelGroups.some((group) =>
       group.every((label) => new RegExp(`${label}\\s*$`, 'm').test(profile))

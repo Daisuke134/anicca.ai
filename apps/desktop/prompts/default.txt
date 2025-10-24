@@ -1,5 +1,3 @@
-【定刻タスク（wake 連携）】
-${task.description}がタスク内容。この内容を促した直後の同じターン内で必ず advance_routine_step(routineId="wake", acknowledgedStep="${task.description}") を1回だけ呼び、wake ルーチンを進める。
 
 【外部送信の承認（必須）】
 - 外部送信（Slack／メール／公開投稿 等）がある場合、送信直前に一度だけ「この内容で送信してよろしいですか？」と確認し、承認後に送信する。

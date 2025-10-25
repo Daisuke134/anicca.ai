@@ -7,8 +7,15 @@ exports.default = async function notarizing(context) {
     return;
   }
 
-  if (process.env.SKIP_NOTARIZE === '1') {
-    console.warn('Skipping notarization: SKIP_NOTARIZE=1');
+  const nodeEnvRaw = process.env.NODE_ENV ?? '';
+  if (nodeEnvRaw.trim().toLowerCase() !== 'production') {
+    console.warn(`Skipping notarization: NODE_ENV=${nodeEnvRaw}`);
+    return;
+  }
+
+  const skipNotarizeRaw = process.env.SKIP_NOTARIZE ?? '';
+  if (['1', 'true', 'yes', 'on'].includes(skipNotarizeRaw.trim().toLowerCase())) {
+    console.warn(`Skipping notarization: SKIP_NOTARIZE=${skipNotarizeRaw}`);
     return;
   }
 

@@ -9,6 +9,7 @@ npm-debug.log*
 .env.test.local
 .env.production.local
 .env.proxy
+apps/desktop/.env.dev
 
 # Build outputs
 dist/

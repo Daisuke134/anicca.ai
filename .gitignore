@@ -119,6 +119,7 @@ highlights_cache.json
 .netlify
 
 # 別リポジトリ由来の参考ソース（examples 配下のみ非追跡）
+examples/
 examples/openai-realtime-agents/
 examples/openai-agents-js-latest/
 examples/slack-mcp-server/

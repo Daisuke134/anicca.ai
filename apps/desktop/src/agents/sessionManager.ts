@@ -92,14 +92,16 @@ export class AniccaSessionManager {
   private stickyReady: boolean = false;
   private wakeUserReplyCount: number = 0;
   private sleepUserReplyCount: number = 0;
-  private static readonly WAKE_STICKY_RELEASE_THRESHOLD = 7;
-  private static readonly SLEEP_STICKY_RELEASE_THRESHOLD = 7;
-  private static readonly MIN_STICKY_DURATION_MS = 5 * 60 * 1000;
+  private static readonly WAKE_STICKY_RELEASE_THRESHOLD = 8;
+  private static readonly SLEEP_STICKY_RELEASE_THRESHOLD = 8;
+  // private static readonly MIN_STICKY_DURATION_MS = 5 * 60 * 1000;
+  private static readonly STICKY_MAX_RESUME_MS = 30 * 60 * 1000;
   private pendingAssistantResponse: boolean = false;
   private wakeFollowUpTimer: NodeJS.Timeout | null = null;
   private sleepFollowUpTimer: NodeJS.Timeout | null = null;
   private stickyStatePath = path.join(os.homedir(), '.anicca', 'sticky_state.json');
   private stickyStartedAt: number | null = null;
+  private stickySingleShot: boolean = false;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -127,6 +129,7 @@ export class AniccaSessionManager {
       sleepUserReplyCount: this.sleepUserReplyCount,
       stickyReady: this.stickyReady,
       stickyStartedAt: this.stickyStartedAt,
+      stickySingleShot: this.stickySingleShot,
       timestamp: Date.now()
     };
 
@@ -152,7 +155,36 @@ export class AniccaSessionManager {
       this.wakeUserReplyCount = state.wakeUserReplyCount ?? 0;
       this.sleepUserReplyCount = state.sleepUserReplyCount ?? 0;
       this.stickyReady = !!state.stickyReady;
-      this.stickyStartedAt = typeof state.stickyStartedAt === 'number' ? state.stickyStartedAt : Date.now();
+      const now = Date.now();
+      const startedAt = typeof state.stickyStartedAt === 'number' ? state.stickyStartedAt : now;
+      this.stickyStartedAt = startedAt;
+      this.stickySingleShot = !!state.stickySingleShot;
+      const elapsed = now - startedAt;
+
+      if (this.stickySingleShot || elapsed >= AniccaSessionManager.STICKY_MAX_RESUME_MS) {
+        console.log('[STICKY_STATE_STALE]', {
+          task: this.stickyTask,
+          elapsedMs: elapsed,
+          singleShot: this.stickySingleShot
+        });
+        if (this.stickyTask === 'wake_up' && this.wakeActive) {
+          await this.clearWakeSticky('stale_resume', true);
+        } else if (this.stickyTask === 'sleep' && this.sleepActive) {
+          await this.clearSleepSticky('stale_resume', true);
+        } else {
+          this.stickyTask = null;
+          this.wakeActive = false;
+          this.sleepActive = false;
+          this.wakeUserReplyCount = 0;
+          this.sleepUserReplyCount = 0;
+          this.stickyReady = false;
+          this.stickyStartedAt = null;
+          this.stickySingleShot = false;
+          await this.persistStickyState();
+        }
+        await fs.unlink(this.stickyStatePath).catch(() => {});
+        return;
+      }
 
       if (this.stickyTask === 'wake_up' && this.wakeActive) {
         lockWakeAdvance('restore');
@@ -179,10 +211,10 @@ export class AniccaSessionManager {
 
   private canReleaseSticky(task: 'wake_up' | 'sleep'): boolean {
     if (this.stickyStartedAt === null) return false;
-    const elapsed = Date.now() - this.stickyStartedAt;
-    if (elapsed < AniccaSessionManager.MIN_STICKY_DURATION_MS) {
-      return false;
-    }
+    // const elapsed = Date.now() - this.stickyStartedAt;
+    // if (elapsed < AniccaSessionManager.MIN_STICKY_DURATION_MS) {
+    //   return false;
+    // }
     if (task === 'wake_up') {
       return this.wakeUserReplyCount >= AniccaSessionManager.WAKE_STICKY_RELEASE_THRESHOLD;
     }
@@ -931,6 +963,7 @@ export class AniccaSessionManager {
                 this.stickyReady = false; // audio_start が来るまで解除不可
                 this.wakeUserReplyCount = 0;
                 this.stickyStartedAt = Date.now();
+                this.stickySingleShot = String(message.id || message.taskId || '').includes('_today');
                 markWakeRoutineActive('cron_start');
                 lockWakeAdvance('cron_start');
                 await this.persistStickyState();
@@ -939,6 +972,7 @@ export class AniccaSessionManager {
                 this.sleepActive = true;
                 this.sleepUserReplyCount = 0;
                 this.stickyStartedAt = Date.now();
+                this.stickySingleShot = String(message.id || message.taskId || '').includes('_today');
                 await this.persistStickyState();
               }
             } catch {}
@@ -1092,6 +1126,7 @@ export class AniccaSessionManager {
           this.wakeFollowUpTimer = null;
         }
         this.stickyStartedAt = null;
+        this.stickySingleShot = false;
         console.log('[WAKE_STICKY_CLEAR]', { reason });
         await this.persistStickyState();
       }
@@ -1112,13 +1147,14 @@ export class AniccaSessionManager {
           this.sleepFollowUpTimer = null;
         }
         this.stickyStartedAt = null;
+        this.stickySingleShot = false;
         console.log('[SLEEP_STICKY_CLEAR]', { reason });
         await this.persistStickyState();
       }
     } catch {}
   }
 
-  private scheduleWakeFollowUp(delayMs = 30) {
+  private scheduleWakeFollowUp(delayMs = 1000) {
     if (!this.session) return;
     if (this.wakeFollowUpTimer) {
       clearTimeout(this.wakeFollowUpTimer);
@@ -1128,7 +1164,7 @@ export class AniccaSessionManager {
       if (!this.session) return;
       if (this.stickyTask !== 'wake_up' || !this.wakeActive) return;
       if (this.isGenerating || this.pendingAssistantResponse) {
-        this.scheduleWakeFollowUp(50);
+        this.scheduleWakeFollowUp(500);
         return;
       }
       try {
@@ -1141,7 +1177,7 @@ export class AniccaSessionManager {
     }, delayMs);
   }
 
-  private scheduleSleepFollowUp(delayMs = 30) {
+  private scheduleSleepFollowUp(delayMs = 1000) {
     if (!this.session) return;
     if (this.sleepFollowUpTimer) {
       clearTimeout(this.sleepFollowUpTimer);
@@ -1151,7 +1187,7 @@ export class AniccaSessionManager {
       if (!this.session) return;
       if (this.stickyTask !== 'sleep' || !this.sleepActive) return;
       if (this.isGenerating || this.pendingAssistantResponse) {
-        this.scheduleSleepFollowUp(50);
+        this.scheduleSleepFollowUp(500);
         return;
       }
       try {

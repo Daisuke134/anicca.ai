@@ -70,11 +70,18 @@ const VERSION_HAS_PRERELEASE = /-/.test(APP_VERSION_STR);
 const DEV_DEFAULT_CHANNEL = process.env.NODE_ENV === 'development' ? 'beta' : 'stable';
 const ENV_CH_RAW = process.env.UPDATE_CHANNEL?.toLowerCase();
 const ENV_CHANNEL = ENV_CH_RAW === 'beta' || ENV_CH_RAW === 'stable' ? ENV_CH_RAW : undefined;
+const EMBEDDED_CH_RAW = (() => {
+  const meta = PKG.appConfig?.updateChannel ?? PKG.extraMetadata?.appConfig?.updateChannel;
+  return typeof meta === 'string' ? meta.toLowerCase() : undefined;
+})();
+const EMBEDDED_CHANNEL = EMBEDDED_CH_RAW === 'beta' || EMBEDDED_CH_RAW === 'stable' ? EMBEDDED_CH_RAW : undefined;
 const UPDATE_CHANNEL = ENV_CHANNEL
   ? ENV_CHANNEL
-  : IS_PROD
-    ? (VERSION_HAS_PRERELEASE ? 'beta' : 'stable')
-    : DEV_DEFAULT_CHANNEL;
+  : EMBEDDED_CHANNEL
+    ? EMBEDDED_CHANNEL
+    : IS_PROD
+      ? (VERSION_HAS_PRERELEASE ? 'beta' : 'stable')
+      : DEV_DEFAULT_CHANNEL;
 
 const embedded = loadEmbeddedProxy();
 const envProduction = process.env.PROXY_URL_PRODUCTION;

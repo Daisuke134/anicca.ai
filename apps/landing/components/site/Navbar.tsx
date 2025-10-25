@@ -13,7 +13,6 @@ export default function Navbar() {
             <a href="#features">Features</a>
             <a href="#privacy">Privacy</a>
             <a href="#how-it-works">How It Works</a>
-            <a href="/pricing">Pricing</a>
             <a href="/faq">FAQ</a>
             <a href="#download">Download</a>
             <a href="https://app.aniccaai.com" target="_blank" rel="noreferrer" className="font-semibold">Web App</a>
@@ -23,5 +22,4 @@ export default function Navbar() {
     </nav>
   )
 }
-
 

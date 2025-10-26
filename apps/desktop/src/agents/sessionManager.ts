@@ -95,7 +95,7 @@ export class AniccaSessionManager {
   private static readonly WAKE_STICKY_RELEASE_THRESHOLD = 8;
   private static readonly SLEEP_STICKY_RELEASE_THRESHOLD = 8;
   // private static readonly MIN_STICKY_DURATION_MS = 5 * 60 * 1000;
-  private static readonly STICKY_MAX_RESUME_MS = 30 * 60 * 1000;
+  private static readonly STICKY_MAX_RESUME_MS = 15 * 60 * 1000;
   private pendingAssistantResponse: boolean = false;
   private wakeFollowUpTimer: NodeJS.Timeout | null = null;
   private sleepFollowUpTimer: NodeJS.Timeout | null = null;
@@ -167,9 +167,12 @@ export class AniccaSessionManager {
           elapsedMs: elapsed,
           singleShot: this.stickySingleShot
         });
+        let staleModeReason: string | null = null;
         if (this.stickyTask === 'wake_up' && this.wakeActive) {
+          staleModeReason = 'stale_wake';
           await this.clearWakeSticky('stale_resume', true);
         } else if (this.stickyTask === 'sleep' && this.sleepActive) {
+          staleModeReason = 'stale_sleep';
           await this.clearSleepSticky('stale_resume', true);
         } else {
           this.stickyTask = null;
@@ -181,6 +184,9 @@ export class AniccaSessionManager {
           this.stickyStartedAt = null;
           this.stickySingleShot = false;
           await this.persistStickyState();
+        }
+        if (staleModeReason) {
+          try { await this.setMode('silent', staleModeReason); } catch {}
         }
         await fs.unlink(this.stickyStatePath).catch(() => {});
         return;
@@ -978,15 +984,30 @@ export class AniccaSessionManager {
             } catch {}
 
             // PTT: Cron開始時は会話モードへ（stickyを立てた後）
-            try { await this.setMode('conversation', 'cron'); } catch {}
+            let raisedConversation = false;
+            try {
+              await this.setMode('conversation', 'cron');
+              raisedConversation = true;
+            } catch (err) {
+              console.warn('Failed to enter conversation mode for cron:', err);
+            }
 
             // メッセージ送信（共通）
             if (this.session && this.isConnected()) {
               // 念のため直前の出力を再チェック
               await interruptIfGenerating(100);
-              await this.sendMessage(message.command);
-              console.log('✅ Task sent to Anicca');
-              
+              try {
+                await this.sendMessage(message.command);
+                console.log('✅ Task sent to Anicca');
+              } catch (err) {
+                console.error('❌ Cron send failed:', err);
+                if (raisedConversation) {
+                  try { await this.setMode('silent', 'cron_send_failed'); } catch {}
+                }
+                ws.send(JSON.stringify({ type: 'error', message: 'Cron send failed' }));
+                return;
+              }
+
               // タスク受付の応答
               ws.send(JSON.stringify({
                 type: 'scheduled_task_accepted',
@@ -998,6 +1019,9 @@ export class AniccaSessionManager {
                 type: 'error',
                 message: 'Session not connected'
               }));
+              if (raisedConversation) {
+                try { await this.setMode('silent', 'cron_not_connected'); } catch {}
+              }
             }
 
             // 起床タスクは sticky により音声停止ごとに連鎖（audio_stopped 起点）

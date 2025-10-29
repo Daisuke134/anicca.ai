@@ -1,109 +1,109 @@
 # anicca — Voice Agent for Behavioral Change
 
-## 概要
-anicca（アニッチャ）は、行動変容のための音声エージェントです。日々の予定・リマインド・連絡・瞑想・情報取得を、声だけで完結させます。デスクトップでは「トレイ常駐・音声のみ・最小UI」を徹底し、手や目を塞がない体験を目指します。
+## Overview
+anicca is a voice agent designed for behavioral change. It handles daily schedules, reminders, communications, meditation, and information retrieval through voice commands alone. The desktop experience focuses on "system tray residence, voice-only, minimal UI" to create a hands-free, eyes-free experience.
 
-- **ミッション**: ユーザーを行動変容させ、理想の自分へ導くこと。最終的には、Aniccaが自律的に生きとし生けるものの苦しみをなくすために行動します（Anicca＝無常）。
-- **基本方針**: 沈黙を原則とし、必要なときだけ短く的確に話す。外部送信（Slackなど）は必ずユーザー承認のうえ実行。
+- **Mission**: Transform user behavior and guide them toward their ideal self. Ultimately, Anicca will act autonomously to alleviate the suffering of all living beings (Anicca = impermanence).
+- **Core Principle**: Silence by default—speak only when necessary, briefly and precisely. External transmissions (Slack, etc.) require explicit user approval before execution.
 ---
 
-## 主な機能
-- **音声完結**: 会話の開始/終了、指示、結果の確認まで声のみ。トレイのアイコンから基本操作。
-- **予定・リマインド**: 定期/単発のタスク登録・実行。起床/就寝/ミーティング前など。
-- **Google カレンダー連携**: hosted MCP を用いて予定の取得/作成/更新/削除。
-- **Slack 連携**: チャンネル一覧・履歴取得・スレッド返信案の作成と送信（送信は承認必須）。
-- **ローカル保存・プライバシー重視**: 設定/セッション/スケジュールは原則 `~/.anicca/` に保存（暗号化を含む）。
+## Key Features
+- **Voice-Complete**: Conversation start/end, instructions, and result confirmation all via voice. Basic operations from tray icon.
+- **Schedules & Reminders**: Register and execute recurring/one-time tasks. Wake-up, bedtime, pre-meeting notifications, etc.
+- **Google Calendar Integration**: Fetch, create, update, and delete calendar events using hosted MCP.
+- **Slack Integration**: Retrieve channel lists and history, draft and send thread replies (sending requires approval).
+- **Local Storage & Privacy-First**: Settings/sessions/schedules are primarily stored in `~/.anicca/` (with encryption).
 
 ---
 
-## リポジトリ構成
+## Repository Structure
 ```
 .
 ├── apps/
-│   ├── desktop/                 # デスクトップ（Electron + TypeScript）
-│   │   ├── assets/desktop/      # トレイ/アプリアイコン等
-│   │   ├── build/               # entitlements 等
+│   ├── desktop/                 # Desktop app (Electron + TypeScript)
+│   │   ├── assets/desktop/      # Tray/app icons, etc.
+│   │   ├── build/               # entitlements, etc.
 │   │   ├── electron-builder-voice.yml
 │   │   └── src/
-│   │       ├── main-voice-simple.ts   # エントリ。トレイ/Bridge/ホットキー等
-│   │       ├── config.ts              # Proxy解決・定数
-│   │       ├── agents/                # RealtimeAgent・SessionManager・MCP連携
-│   │       └── services/              # 認証(PKCE)・暗号化・ネットワーク
+│   │       ├── main-voice-simple.ts   # Entry point: tray/bridge/hotkey, etc.
+│   │       ├── config.ts              # Proxy resolution, constants
+│   │       ├── agents/                # RealtimeAgent, SessionManager, MCP integration
+│   │       └── services/              # Auth (PKCE), encryption, networking
 │   │
-│   ├── api/                     # プロキシAPI（Express）
+│   ├── api/                     # Proxy API (Express)
 │   │   └── src/
-│   │       ├── server.js        # CORS/JSON/ルーティング集約
-│   │       ├── routes/          # /api/* のエンドポイント集約
-│   │       ├── api/             # 各handler（realtime, mcp, auth など）
-│   │       ├── services/        # トークン/外部APIラッパ
-│   │       ├── config/          # 統合環境設定
-│   │       └── lib/utils/       # DB・暗号・ロガー
+│   │       ├── server.js        # CORS/JSON/routing aggregation
+│   │       ├── routes/          # /api/* endpoint aggregation
+│   │       ├── api/             # Handlers (realtime, mcp, auth, etc.)
+│   │       ├── services/        # Token/external API wrappers
+│   │       ├── config/          # Integrated environment config
+│   │       └── lib/utils/       # DB, encryption, logger
 │   │
-│   ├── web/                     # Webアプリ（Next.js）
-│   │   ├── app/                 # UIルート
-│   │   └── components/          # UIコンポーネント
+│   ├── web/                     # Web app (Next.js)
+│   │   ├── app/                 # UI routes
+│   │   └── components/          # UI components
 │   │
-│   ├── landing/                 # ランディング（静的）
+│   ├── landing/                 # Landing page (static)
 │   │   └── landing/             # HTML/CSS/JS
 │   │
-│   └── workspace-mcp/           # Google Workspace MCP（FastMCP）
-│       ├── gcalendar/ ほか      # gmail/gsheets/gdrive 等のMCPツール
-│       ├── core/                # tool_registry など
-│       └── fastmcp_server.py    # MCPエンドポイント
+│   └── workspace-mcp/           # Google Workspace MCP (FastMCP)
+│       ├── gcalendar/ etc.      # gmail/gsheets/gdrive MCP tools
+│       ├── core/                # tool_registry, etc.
+│       └── fastmcp_server.py    # MCP endpoint
 │
-├── docs/                        # 設計/要件/検証ノート
-├── examples/                    # 参考コード/外部例
+├── docs/                        # Design/requirements/validation notes
+├── examples/                    # Reference code/external examples
 └── README.md
 ```
 
-- **apps/desktop**: 音声体験の中核。OpenAI Realtime への接続、音声入出力、トレイ常駐、定期タスクの自動実行など。
-- **apps/api**: クライアントの本人確認・短命認可・MCP/外部ツール連携などを担うプロキシ層。
-- **apps/web**: Anicca の Web アプリ（UI）。
-- **apps/landing**: プロダクトの紹介ページ。
-- **apps/workspace-mcp**: Google カレンダー等の hosted MCP サーバ。
+- **apps/desktop**: Core of the voice experience. Connects to OpenAI Realtime, handles audio I/O, system tray residence, automatic execution of scheduled tasks, etc.
+- **apps/api**: Proxy layer handling client identity verification, short-lived authorization, MCP/external tool integration, etc.
+- **apps/web**: Anicca's web application (UI).
+- **apps/landing**: Product introduction page.
+- **apps/workspace-mcp**: Hosted MCP server for Google Calendar, etc.
 
 ---
 
-## 体験の流れ
-1. デスクトップを起動するとトレイに常駐。音声入力の準備が整います。
-2. ホットキー（MediaPlayPause/F8）で会話モードに入り、声で指示します。定期タスクの場合は自動で会話モードがオンになり、適切な声掛けをしてくれます。
-3. 「今日の予定を教えて」「10分後に起こして」「9時に朝会をセット」などを音声で依頼。
-4. 予定作成や通知などは自動で進行。Slack 送信など外部送信は送信直前に承認を求めます。
-5. 無音/応答終了で自動的に沈黙モードへ戻り、トレイ常駐で待機します。
+## User Experience Flow
+1. Desktop app launches and resides in system tray. Voice input is ready.
+2. Enter conversation mode with hotkey (MediaPlayPause/F8) and give voice commands. For scheduled tasks, conversation mode activates automatically with appropriate prompts.
+3. Make voice requests like "Tell me today's schedule," "Wake me up in 10 minutes," "Set a morning meeting at 9 AM."
+4. Schedule creation and notifications proceed automatically. External transmissions (Slack, etc.) require approval just before sending.
+5. After silence/response completion, automatically returns to silent mode and waits in system tray.
 
 ---
 
-## 仕組み（高レベルアーキテクチャ）
-- **Realtime 音声**: デスクトップ内の Bridge（小さな HTTP/WS サーバ）が音声をストリーミングし、OpenAI Realtime と接続。入力は PCM16、出力も PCM16 を再生。
-- **MCP（ツール）**:  
-  - **hosted MCP**（Google Calendar など）: サーバ側の MCP エンドポイントをエージェントに「hosted tool」として注入し、予定の取得/作成/更新/削除を音声から実行。  
-  - **ローカルMCP（filesystem）**: `~/.anicca` 下のファイル読み書きを安全に限定して実行。
-- **定期タスク**: `~/.anicca/scheduled_tasks.json` を唯一の真実とし、Voice 側が変更監視して `today_schedule.json`（読み上げビュー）を自動生成。読み上げはビューを参照し、ビューへの書き込みは行いません。
-- **認証と最小権限**: クライアントは公開可能な匿名キーを用いた PKCE でログインし、サーバ側で本人確認のうえ短命の認可トークンを発行して API を保護。秘匿キーはクライアントに配布しません。
-- **データ保存**: 原則ローカル（`~/.anicca`）。セッション/設定/スケジュール等を保持。必要に応じて暗号化を適用。
+## Architecture (High-Level)
+- **Realtime Voice**: Bridge (a small HTTP/WS server) in the desktop app streams audio and connects to OpenAI Realtime. Input is PCM16, output is also PCM16 for playback.
+- **MCP (Tools)**:
+  - **Hosted MCP** (Google Calendar, etc.): Server-side MCP endpoints are injected into the agent as "hosted tools" to fetch/create/update/delete events via voice.
+  - **Local MCP (filesystem)**: Safely limited read/write access to files under `~/.anicca`.
+- **Scheduled Tasks**: `~/.anicca/scheduled_tasks.json` is the single source of truth. Voice side monitors changes and auto-generates `today_schedule.json` (read-only view). Announcements reference the view; no writes to the view.
+- **Authentication & Least Privilege**: Client uses publicly shareable anonymous key with PKCE login. Server verifies identity and issues short-lived authorization tokens to protect APIs. Secret keys are never distributed to clients.
+- **Data Storage**: Primarily local (`~/.anicca`). Stores sessions/settings/schedules. Encryption applied as needed.
 
 ---
 
-## セキュリティ/プライバシーの考え方
-- **ローカル優先**: 個人データは原則 `~/.anicca` に保存。セッションは暗号化。
-- **最小暴露**: クライアントは「公開可能な認証構成」のみを保持。権限の強い操作はサーバで実行。
-- **短命トークン**: サーバは短時間で失効する認可トークンを発行し、API 利用を限定。
-- **明示的承認**: 外部送信（Slack 等）は送信直前にユーザー承認を必須化。
-- **MCP の安全利用**: hosted MCP は必要なツールだけを許可し、ローカルMCPはアクセス範囲を限定。
+## Security/Privacy Approach
+- **Local-First**: Personal data is primarily stored in `~/.anicca`. Sessions are encrypted.
+- **Minimal Exposure**: Client holds only "publicly shareable auth config." Privileged operations execute on server.
+- **Short-Lived Tokens**: Server issues authorization tokens that expire quickly, limiting API access.
+- **Explicit Approval**: External transmissions (Slack, etc.) require user approval immediately before sending.
+- **Safe MCP Usage**: Hosted MCP permits only necessary tools; local MCP limits access scope.
 
 ---
 
-## Webとランディングの位置づけ
-- **Webアプリ**: Anicca の Webアプリ版。
-- **ランディング**: プロダクトの紹介/案内ページ。
+## Web and Landing Positioning
+- **Web App**: Web version of Anicca.
+- **Landing**: Product introduction/guidance page.
 
 ---
 
-## ライセンス
+## License
 MIT
 
-## コントリビューション
-Issue/PR を歓迎します。大きな変更は事前に議論をお願いします。
+## Contribution
+Issues and PRs are welcome. Please discuss major changes in advance.
 
-## 連絡先
+## Contact
 keiodaisuke@gmail.com

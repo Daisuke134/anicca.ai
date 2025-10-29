@@ -19,6 +19,7 @@ import {
   shouldRunOnboarding,
   resolveOnboardingPrompt,
   resolveLanguageAssets,
+  resolveSystemTimezoneLabel,
   syncTodayTasksFromMarkdown
 } from './services/onboardingBootstrap';
 import { buildRoutinePrompt, resetRoutineState } from './services/routines';
@@ -82,12 +83,16 @@ const profilePath = path.join(aniccaDir, 'anicca.md');
 async function resolveProfileLanguage(): Promise<'ja' | 'en'> {
   try {
     const profile = await fs.promises.readFile(profilePath, 'utf8');
-    const match = profile.match(/- タイムゾーン:\s*([^\n]+)/);
+    const match = profile.match(/-\s*(?:タイムゾーン|Timezone):\s*([^\n]+)/);
     const tz = match?.[1]?.trim() ?? '';
-    return tz === 'Asia/Tokyo' ? 'ja' : 'en';
+    if (tz) {
+      return tz === 'Asia/Tokyo' ? 'ja' : 'en';
+    }
   } catch {
-    return 'en';
+    // fallthrough
   }
+  const systemTz = resolveSystemTimezoneLabel();
+  return systemTz === 'Asia/Tokyo' ? 'ja' : 'en';
 }
 
 // アプリの初期化
@@ -200,8 +205,19 @@ async function initializeApp() {
             const finalMessage = lang === 'ja'
               ? 'run `advance routine step: routineId="onboarding", acknowledgedStep="オンボーディング完了"` immediately. '
               : 'Run `advance routine step: routineId="onboarding", acknowledgedStep="オンボーディング完了"` immediately and do not speak any login confirmation or additional lines afterward.';
-            await sessionManager.sendMessage(finalMessage);
-            onboardingFinalMessageSent = true;
+            try {
+              await sessionManager.sendMessage(finalMessage);
+              onboardingFinalMessageSent = true;
+            } catch (err) {
+              console.warn('⚠️ Failed to send onboarding final message, retrying once:', err);
+              try {
+                await sessionManager.waitForReady();
+                await sessionManager.sendMessage(finalMessage);
+                onboardingFinalMessageSent = true;
+              } catch (retryErr) {
+                console.error('⚠️ Final onboarding message did not send after retry:', retryErr);
+              }
+            }
           } catch (err) {
             console.warn('⚠️ Failed to resume onboarding after login:', err);
           }
@@ -767,14 +783,15 @@ function startCaptureWhenReady(retryMs = 1000) {
                     try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
                     const o = ctx.createOscillator();
                     const g = ctx.createGain();
-                    o.type = 'sine';
-                    o.frequency.value = 880; // A5
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(440, ctx.currentTime);
+                    o.frequency.linearRampToValueAtTime(960, ctx.currentTime + 0.2);
                     g.gain.setValueAtTime(0.0, ctx.currentTime);
-                    g.gain.linearRampToValueAtTime(0.12, ctx.currentTime + 0.01);
-                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.12);
+                    g.gain.linearRampToValueAtTime(0.24, ctx.currentTime + 0.03);
+                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.32);
                     o.connect(g).connect(ctx.destination);
                     o.start();
-                    o.stop(ctx.currentTime + 0.14);
+                    o.stop(ctx.currentTime + 0.34);
                   } catch (e) {
                     console.warn('mode_set beep failed:', e);
                   }
@@ -792,14 +809,15 @@ function startCaptureWhenReady(retryMs = 1000) {
                     try { if (typeof ctx.resume === 'function') { ctx.resume(); } } catch (_) {}
                     const o = ctx.createOscillator();
                     const g = ctx.createGain();
-                    o.type = 'sine';
-                    o.frequency.value = 440; // A4
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(960, ctx.currentTime);
+                    o.frequency.linearRampToValueAtTime(360, ctx.currentTime + 0.32);
                     g.gain.setValueAtTime(0.0, ctx.currentTime);
-                    g.gain.linearRampToValueAtTime(0.1, ctx.currentTime + 0.01);
-                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.2);
+                    g.gain.linearRampToValueAtTime(0.26, ctx.currentTime + 0.03);
+                    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.42);
                     o.connect(g).connect(ctx.destination);
                     o.start();
-                    o.stop(ctx.currentTime + 0.22);
+                    o.stop(ctx.currentTime + 0.44);
                   } catch (e) {
                     console.warn('mode_set silent beep failed:', e);
                   }

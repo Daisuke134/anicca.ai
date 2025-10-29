@@ -44,6 +44,7 @@ export class AniccaSessionManager {
   private systemOpQueue: Array<{ kind: 'mem'|'tz'; payload?: any }> = [];
   private hasInformedTimezoneThisSession: boolean = false;
   private lastInformedTimezone: string | null = null;
+  private isConnecting: boolean = false;
   
   // Keep-alive機能
   private keepAliveInterval: NodeJS.Timeout | null = null;
@@ -423,6 +424,15 @@ export class AniccaSessionManager {
       // 既存ensure完了後に再評価。まだ必要ならこの呼び出しで接続を確立
       const stillNeed = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
       if (!stillNeed) return;
+    }
+    if (this.isConnecting) {
+      let waited = 0;
+      while (this.isConnecting && waited < 5000) {
+        await new Promise(r => setTimeout(r, 100));
+        waited += 100;
+      }
+      const stillNeedAfterConnecting = (!this.session || !this.isConnected() || (freshIfStale && this.isStale()));
+      if (!stillNeedAfterConnecting) return;
     }
     if (this.session?.transport?.status === 'connecting') {
       let waited = 0;
@@ -1742,33 +1752,54 @@ export class AniccaSessionManager {
   
   async connect(apiKey: string) {
     if (!this.session) throw new Error('Session not initialized');
-    
-    this.apiKey = apiKey;
-    // 新セッションの開始直後に age/ready を初期化
-    this.sessionStartedAt = Date.now();
-    this.ready = false;
-    this.restoredOnce = false;
-    await this.session.connect({ apiKey });
-    console.log('✅ Connected to OpenAI Realtime API');
 
-    // transport が完全に open するまで待機（readyState 0 で send しない）
-    await new Promise<void>((resolve) => {
-      const transport: any = this.session?.transport;
-      if (!transport || transport.status === 'connected') {
-        resolve();
+    if (this.isConnected()) {
+      return;
+    }
+
+    if (this.isConnecting) {
+      let waited = 0;
+      while (this.isConnecting && waited < 5000) {
+        await new Promise(r => setTimeout(r, 50));
+        waited += 50;
+      }
+      if (this.isConnected()) {
         return;
       }
-      const onConnected = () => {
-        transport.off('connected', onConnected);
-        resolve();
-      };
-      transport.once('connected', onConnected);
-    });
-    
-    // 履歴復元は session.created（READY）後に行う
+    }
 
-    // Slack接続状態を確認
-    await this.checkSlackConnection();
+    this.isConnecting = true;
+
+    try {
+      this.apiKey = apiKey;
+      // 新セッションの開始直後に age/ready を初期化
+      this.sessionStartedAt = Date.now();
+      this.ready = false;
+      this.restoredOnce = false;
+      await this.session.connect({ apiKey });
+      console.log('✅ Connected to OpenAI Realtime API');
+
+      // transport が完全に open するまで待機（readyState 0 で send しない）
+      await new Promise<void>((resolve) => {
+        const transport: any = this.session?.transport;
+        if (!transport || transport.status === 'connected') {
+          resolve();
+          return;
+        }
+        const onConnected = () => {
+          transport.off('connected', onConnected);
+          resolve();
+        };
+        transport.once('connected', onConnected);
+      });
+
+      // 履歴復元は session.created（READY）後に行う
+
+      // Slack接続状態を確認
+      await this.checkSlackConnection();
+    } finally {
+      this.isConnecting = false;
+    }
     
     // （READY後に mem/TZ を“応答なし”で反映する。ここでは送らない）
   }

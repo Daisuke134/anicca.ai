@@ -491,17 +491,36 @@ export const convert_time = tool({
   execute: async ({ datetime, to_timezone, locale }) => {
     try {
       const d = new Date(datetime);
-      if (isNaN(d.getTime())) return 'Invalid datetime';
+      if (isNaN(d.getTime())) {
+        return JSON.stringify({
+          error: 'invalid_datetime',
+          message: 'Failed to parse datetime',
+          input: datetime
+        });
+      }
       // locale が null の場合は OS 既定ロケール（Intl に undefined を渡す）
-      const fmt = new Intl.DateTimeFormat(locale ?? undefined, {
-        timeZone: to_timezone,
-        year: 'numeric', month: '2-digit', day: '2-digit',
-        hour: '2-digit', minute: '2-digit'
-      });
+      let fmt: Intl.DateTimeFormat;
+      try {
+        fmt = new Intl.DateTimeFormat(locale ?? undefined, {
+          timeZone: to_timezone,
+          year: 'numeric', month: '2-digit', day: '2-digit',
+          hour: '2-digit', minute: '2-digit'
+        });
+      } catch (tzError: any) {
+        return JSON.stringify({
+          error: 'invalid_timezone',
+          message: tzError?.message || 'Invalid time zone',
+          input: to_timezone
+        });
+      }
       const human = fmt.format(d);
       return JSON.stringify({ human, timezone: to_timezone, source: datetime });
     } catch (e: any) {
-      return `convert_time error: ${e.message}`;
+      return JSON.stringify({
+        error: 'convert_time_failed',
+        message: e?.message || String(e),
+        input: { datetime, to_timezone, locale }
+      });
     }
   }
 });

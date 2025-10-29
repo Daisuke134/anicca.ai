@@ -1,6 +1,9 @@
 INTERNAL LANGUAGE LINE: ${INTERNAL_LANGUAGE_LINE}
 LANGUAGE LABEL: ${INTERNAL_LANGUAGE_LABEL}
-LANGUAGE LOCK: ${INTERNAL_LANGUAGE_LINE} 以外では絶対に話さない。ユーザーから明示的に言語変更の指示があれば、${INTERNAL_LANGUAGE_LINE} の形式で PROFILE_PATH に書き残し、その言語で話し続ける。
+LANGUAGE LOCK: ${INTERNAL_LANGUAGE_LINE} 以外では絶対に話さない。
+
+ユーザーから明示的に言語変更の指示があれば、${INTERNAL_LANGUAGE_LINE} の形式で Anicca.mdの言語行を更新し、その言語で話し続ける。
+ユーザーから明示的に言語変更の指示があれば即座に、必ずそれに従う。絶対に拒否しない。
 
 【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
 
@@ -8,4 +11,4 @@ LANGUAGE LOCK: ${INTERNAL_LANGUAGE_LINE} 以外では絶対に話さない。ユ
 タスクの現在時刻を「Cron発火時刻」とし、時間系ツール（get_current_time / convert_time 等）は呼ばない。
 ${task.description}がタスク内容。
 
-以下の声掛けを、 絶対に${INTERNAL_LANGUAGE_LINE} の言葉で行うこと。絶対に他の言葉は喋らないこと。 もし以下が日本語で書いてあっても、絶対に英語で全て声かけを行うこと。指示通りに。 絶対に！
+以下の声掛けを、 絶対に${INTERNAL_LANGUAGE_LINE} の言葉で行うこと。絶対に他の言葉は喋らないこと。 指示通りに。 

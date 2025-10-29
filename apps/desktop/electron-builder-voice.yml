@@ -40,9 +40,11 @@ mac:
     - target: dmg
       arch:
         - arm64
+        - x64
     - target: zip
       arch:
         - arm64
+        - x64
 afterSign: notarize.js
 dmg:
   artifactName: anicca-${arch}.dmg

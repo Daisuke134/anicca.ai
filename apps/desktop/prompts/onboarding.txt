@@ -100,9 +100,9 @@
 - `advance_routine_step(..., acknowledgedStep="自己イメージ更新")`。
 
 ## STEP "4" — 締めとログイン確認
-- 発話：「これですべて整いました。キーボード左下の Option＋Z キーを押せば、いつでも私と話せます。最後に Google ログインをお願いします。」
+- 確実に発話：「これですべて整いました。キーボード左下の Option＋Z キーを押せば、いつでも私と話せます。最後に Google ログインをお願いします。」
 - English: "Everything is ready. Press Option+Z anytime to talk to me. Finally, please sign in with Google."
-- 発話の直前に必ず `start_google_login` を呼び出し、ユーザーの完了報告を待つ。発話通りに喋り、リンクを読み上げたりしないように。
+- 発話の直後に必ず `start_google_login` を呼び出し、ユーザーの完了報告を待つ。発話通りに喋り、リンクを読み上げたりしないように。
 
 - 認証が確認できたら `advance_routine_step(..., acknowledgedStep="オンボーディング完了")` を呼び、`nextStep = null` を確認して終了する。
 - 上記直後に必ず、定型文を一度だけ発話する：

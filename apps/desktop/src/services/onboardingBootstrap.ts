@@ -9,27 +9,35 @@ const tasksPath = path.join(baseDir, 'tasks.md');
 const scheduledPath = path.join(baseDir, 'scheduled_tasks.json');
 const todaySchedulePath = path.join(baseDir, 'today_schedule.json');
 
+function resolveSystemTimezone(): string {
+  return Intl.DateTimeFormat().resolvedOptions().timeZone ?? process.env.TZ ?? '';
+}
+
+function decideLanguageByTimezone(tz: string): 'Japanese' | 'English' {
+  return tz === 'Asia/Tokyo' ? 'Japanese' : 'English';
+}
+
 const ONBOARDING_TEMPLATES = {
   Japanese: `# ユーザー情報
 - 呼び名:
 - タイムゾーン: {{TIMEZONE}}
 - 言語: 日本語
-- sleep place:
+- 寝る場所:
 
 # ルーティン
-- Wake:
+- 起床:
   1)
   2)
   3)
   4)
-- Sleep:
+- 就寝:
   1)
   2)
   3)
   4)
-- habits to quit:
-- respect:
-- self-image:
+- やめたい習慣:
+- 尊敬する人:
+- 自分のイメージ:
 `,
   English: `# USER PROFILE
 - Name:
@@ -90,6 +98,10 @@ function formatDate(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
 
+export function resolveSystemTimezoneLabel(): string {
+  return resolveSystemTimezone();
+}
+
 export function resolveGroundedLanguageLabel(): 'Japanese' | 'English' {
   try {
     const profile = fs.readFileSync(aniccaPath, 'utf8');
@@ -105,14 +117,17 @@ export function resolveGroundedLanguageLabel(): 'Japanese' | 'English' {
     }
     const tzMatch = profile.match(/-\s*(?:タイムゾーン|Timezone):\s*([^\r\n]+)/);
     const tz = tzMatch ? tzMatch[1].trim() : '';
-    return tz === 'Asia/Tokyo' ? 'Japanese' : 'English';
+    if (tz) {
+      return decideLanguageByTimezone(tz);
+    }
   } catch {
-    return 'English';
+    // fallthrough
   }
+  return decideLanguageByTimezone(resolveSystemTimezone());
 }
 
-export function resolveLanguageAssets() {
-  const label = resolveGroundedLanguageLabel();
+export function resolveLanguageAssets(forcedLabel?: 'Japanese' | 'English') {
+  const label = forcedLabel ?? resolveGroundedLanguageLabel();
   if (label === 'Japanese') {
     return {
       languageLabel: 'Japanese',
@@ -139,14 +154,15 @@ export async function ensureBaselineFiles(): Promise<void> {
   ensureDir();
   ensureJson(scheduledPath, { tasks: [] });
   ensureJson(todaySchedulePath, []);
-  const assets = resolveLanguageAssets();
+  const languageLabel = resolveGroundedLanguageLabel();
+  const assets = resolveLanguageAssets(languageLabel);
   if (!fs.existsSync(aniccaPath)) {
-    const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? process.env.TZ ?? '';
-    const template = assets.profileTemplate.replace('{{TIMEZONE}}', tz ?? '');
+    const tz = resolveSystemTimezone();
+    const template = assets.profileTemplate.replace('{{TIMEZONE}}', tz);
     fs.writeFileSync(aniccaPath, template, { encoding: 'utf8', mode: 0o600 });
   }
 
-  const tz = Intl.DateTimeFormat().resolvedOptions().timeZone ?? process.env.TZ ?? '';
+  const tz = resolveSystemTimezone();
   if (tz) {
     try {
       const profile = fs.readFileSync(aniccaPath, 'utf8');
@@ -182,7 +198,7 @@ function isProfileEmpty(): boolean {
   try {
     const profile = fs.readFileSync(aniccaPath, 'utf8');
     const labelGroups = [
-      ['- 呼び名:', '- habits to quit:', '- self-image:'],
+      ['- 呼び名:', '- やめたい習慣:', '- 自分のイメージ:'],
       ['- Name:', '- habits to quit:', '- self-image:'],
     ];
     return labelGroups.some((group) =>

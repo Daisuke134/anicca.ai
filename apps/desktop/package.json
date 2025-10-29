@@ -1,6 +1,6 @@
 {
   "name": "anicca-agi",
-  "version": "0.6.15",
+  "version": "0.6.16",
   "description": "anicca - AI Screen Narrator Desktop App",
   "main": "dist/main-voice-simple.js",
   "homepage": "https://www.aniccaai.com",

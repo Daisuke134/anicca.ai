@@ -1,0 +1,50 @@
+name: Anicca
+options:
+  minimumXcodeGenVersion: 2.38.0
+settings:
+  base:
+    SWIFT_VERSION: 5.10
+    IPHONEOS_DEPLOYMENT_TARGET: 16.4
+targets:
+  Anicca:
+    type: application
+    platform: iOS
+    deploymentTarget: "16.4"
+    sources:
+      - path: ../Sources
+      - path: ../Features
+      - path: ../Services
+      - path: ../Resources
+        type: folder
+    resources:
+      - path: ../Resources/Assets.xcassets
+    settings:
+      PRODUCT_BUNDLE_IDENTIFIER: ai.anicca.app.ios
+      INFOPLIST_FILE: Info.plist
+      PRODUCT_NAME: Anicca
+      DEVELOPMENT_TEAM: S5U8UH3JLJ
+    entitlements:
+      path: ../Resources/Anicca.entitlements
+  AniccaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - path: ../Tests/Unit
+    dependencies:
+      - target: Anicca
+  AniccaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources:
+      - path: ../Tests/UI
+    dependencies:
+      - target: Anicca
+schemes:
+  Anicca:
+    build:
+      targets:
+        Anicca: all
+    test:
+      targets:
+        - AniccaTests
+        - AniccaUITests

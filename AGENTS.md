@@ -1,3 +1,5 @@
+Pythonなどのコード実行を禁止します。
+
 # Repository Guidelines
 日本語で簡潔かつ丁寧に回答してください
 

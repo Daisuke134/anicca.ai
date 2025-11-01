@@ -14,9 +14,9 @@
 
 ## 1. クリティカルパス（時系列）
 
-1. リポジトリ初期化と依存導入
-2. オーディオ基盤（AVAudioSession + AVAudioEngine）
-3. LiveKit接続と再接続制御
+1. [x] リポジトリ初期化と依存導入
+2. [x] オーディオ基盤（AVAudioSession + AVAudioEngine）
+3. [ ] LiveKit接続と再接続制御
 4. 通知基盤（Time‑Sensitive、後でCritical Alert）
 5. BGTaskによる前夜プリロード
 6. 音声合成と文字起こしのプラガブル実装（Realtime/Deepgram/ElevenLabs）
@@ -56,10 +56,10 @@
 
 ### 3.1 リポジトリ初期化（IOS‑001）
 
-目標: `apps/ios` に Xcode プロジェクトを作成し、SPM依存を固定タグで導入する。
+目標: `Anicca/Smart` に既存Xcodeプロジェクトを配置し、SPM依存を固定タグで導入する。
 手順:
 
-1. `apps/ios/Anicca.xcodeproj` を作成
+1. `Anicca/Smart/Smart.xcodeproj` をベースに構成
 2. Package Dependencies: livekit-client-ios、RevenueCat
 3. ターゲット設定: iOS 17最小、Signingは開発チームを設定
 4. Info.plist 自動生成とバンドルID `com.anicca.ios`

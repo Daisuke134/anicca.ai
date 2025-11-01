@@ -8,7 +8,7 @@
 ## 1. 目的と範囲
 
 1.1 目的
-Anicca のiOS版を新規フォルダ `apps/ios` として実装し、低遅延の双方向音声対話・確実な起床介入・日中の短時間ナッジ・就寝前の内省・段階的フェードアウトを安定提供する。説得のための音声エージェントとして、ユーザーのセルフトークを内在化させ、「卒業」に至る体験を実現する。
+Anicca のiOS版を公式フォルダ `Anicca/Smart` として実装し、低遅延の双方向音声対話・確実な起床介入・日中の短時間ナッジ・就寝前の内省・段階的フェードアウトを安定提供する。説得のための音声エージェントとして、ユーザーのセルフトークを内在化させ、「卒業」に至る体験を実現する。
 
 1.2 スコープ（MVP）
 
@@ -244,55 +244,22 @@ POST /metrics → { event, ts, props{} }
 
 ## 8. フォルダ構造（リポジトリ）
 
-8.1 iOS 側（新規）
+8.1 iOS 側（公式）
 
 ```
-apps/ios/
-  Anicca.xcodeproj
-  App/
-    AniccaApp.swift
-    SceneDelegate.swift
-  Features/
-    Onboarding/
-      OnboardingView.swift
-      OnboardingCoordinator.swift
-    Voice/
-      RealtimeSession.swift
-      VoiceProfileManager.swift
-    Schedule/
-      WakeScheduler.swift
-      CriticalAlertManager.swift
-    Meditation/
-      MeditationController.swift
-    Reflection/
-      ReflectionFlow.swift
-    Sermon/
-      DhammaRAGService.swift
-    Auth/
-      PasskeyClient.swift
-    Billing/
-      RevenueCatAdapter.swift
-  Services/
-    API/
-      MobileAPIClient.swift
-    Storage/
-      CoreDataStack.swift
-    Notifications/
-      NotificationCenter.swift
-      SoundAssets/wake.caf
-  Resources/
-    Prompts/
-      onboarding_ios.json
-      meditation.guided.json
-      sermon_base.txt
-  Config/
-    Environments.xcconfig
-    Features.plist
-  Tests/
-    Unit/
-    UI/
-  Scripts/
-    generate_wake_audio.sh
+Anicca/
+  Smart/
+    Smart.xcodeproj
+    Smart/
+      SmartApp.swift
+      ContentView.swift
+      Audio/
+        AudioSessionConfigurator.swift
+        VoiceEngine.swift
+        LatencyMonitor.swift
+      Permissions/
+        MicrophonePermissionManager.swift
+      (今後追加予定: Features/, Services/, Config/, Resources/, Tests/)
 ```
 
 8.2 Agents 側（参考。既存 monorepo 内の apps/api を想定）
@@ -458,4 +425,4 @@ LIVEKIT_URL = wss://rtc.anicca.ai
 FEATURE_USE_CRITICAL_ALERT = NO
 ```
 
-以上。これを起点に Codex は `apps/ios` を作成し、順にモジュールとテストを実装する。
+以上。これを起点に Codex は `Anicca/Smart` を拡張し、順にモジュールとテストを実装する。

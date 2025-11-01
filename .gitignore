@@ -127,3 +127,7 @@ examples/composio/
 apps/api/.npmrc
 
 examples/app_assistant_voice_agents.ipynb
+-e 
+# Environment files
+*.env
+*.env.*

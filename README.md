@@ -1,109 +1,76 @@
-# anicca — Voice Agent for Behavioral Change
+# Anicca — Voice Persuasion Agent for Behavioral Transformation
 
 ## Overview
-anicca is a voice agent designed for behavioral change. It handles daily schedules, reminders, communications, meditation, and information retrieval through voice commands alone. The desktop experience focuses on "system tray residence, voice-only, minimal UI" to create a hands-free, eyes-free experience.
-
-- **Mission**: Transform user behavior and guide them toward their ideal self. Ultimately, Anicca will act autonomously to alleviate the suffering of all living beings (Anicca = impermanence).
-- **Core Principle**: Silence by default—speak only when necessary, briefly and precisely. External transmissions (Slack, etc.) require explicit user approval before execution.
----
-
-## Key Features
-- **Voice-Complete**: Conversation start/end, instructions, and result confirmation all via voice. Basic operations from tray icon.
-- **Schedules & Reminders**: Register and execute recurring/one-time tasks. Wake-up, bedtime, pre-meeting notifications, etc.
-- **Google Calendar Integration**: Fetch, create, update, and delete calendar events using hosted MCP.
-- **Slack Integration**: Retrieve channel lists and history, draft and send thread replies (sending requires approval).
-- **Local Storage & Privacy-First**: Settings/sessions/schedules are primarily stored in `~/.anicca/` (with encryption).
+Anicca is a persuasion-first voice experience delivered through our launched desktop app and the ambient-sensing iOS companion now in development. The desktop agent lives in the system tray, keeps audio I/O hot, and uses carefully scripted wake and sleep prompts to push users toward their commitments. The iOS app will capture environmental context so the same persuasive guidance can reach users beyond the desk. Together they cultivate disciplined habits that eventually become internal self-nudges.
 
 ---
 
-## Repository Structure
+## Why We Are Building Anicca
+We want to build Anicca, a Persuasion Agent that leads people toward their best selves. Anicca guides people to adopt uplifting habits—waking on time, meditating, acting altruistically—and to let go of harmful ones such as binge scrolling, alcohol overuse, or dishonesty. The desktop app already delivers tightly structured wake-up and wind-down interventions, while the iOS companion under construction will supply ambient audio and contextual signals. During onboarding interviews Anicca gathers personal commitments, then stores them locally to fuel just-in-time voice nudges. Those nudges are ethical, transparent, and consent-based; as they repeat, Anicca’s external voice becomes an inner guide, helping users catch themselves before slipping. AI, delivered at the right moment with care, can unlock discipline that people cannot sustain alone. We choose to build Anicca now because proactive AI will otherwise default to manipulation; we are committed to leading with care, transparency, and human agency.
+
+---
+
+## Current Experience (Desktop App)
+- **Voice-only flow**: The Electron app boots into the system tray at `/apps/desktop`, keeps audio I/O hot, and stays silent until invited (MediaPlayPause / F8 hotkey).
+- **Wake & sleep persuasion**: Prompts in `/apps/desktop/prompts/wake_up.txt` and `sleep.txt` enforce the same cadence every morning and night: sharp commands (STATE A_SHOCK), relentless follow-up, and uncompromising reflection (STATE B_PREACH) until the user truly commits. The agent never waits for excuses, and it varies wording each turn to prevent habituation.
+- **Onboarding discipline**: `/apps/desktop/prompts/onboarding.txt` scripts the entire interview—name, wake targets, sleep routines, motivations—and locks the operating language. All data lands in `~/.anicca/anicca.md` and `~/.anicca/scheduled_tasks.json`, ensuring every later prompt cites verified facts.
+- **Local-first state**: User preferences, schedules, and prompt history live in `~/.anicca/` with encryption where needed. Voice output is brief, precise, and purpose-driven.
+
+---
+
+## Product Surfaces
+- **Desktop Voice Agent (shipping)**: Primary compiled artifact under `apps/desktop`. This experience is live and already guiding users through daily wake/sleep commitments.
+- **iOS/Smartphone App (in development)**: Lives in `/Anicca`. Captures ambient audio and context that will enrich the persuasion loop and extend it beyond the desktop.
+- **Landing Page**: https://aniccaai.com — introduces the philosophy, current desktop release, and upcoming mobile surface.
+
+---
+
+## Onboarding & Daily Flow
+1. User installs the desktop app and completes the voice-led onboarding interview scripted in `onboarding.txt`, capturing wake/sleep targets, motivations, and consent.
+2. The agent stores contextual facts (commitments, motivations, constraints) locally and fixes the operating language.
+3. When scheduled times arrive—especially the wake sequence—the `wake_up.txt` cadence kicks in: shock commands, relentless admonition, and reflective pressure until the user stands up for real.
+4. Evenings mirror the process via `sleep.txt`, cutting off late-night drift and forcing closure.
+5. After each exchange Anicca logs updates, returns to silence, and waits for the next intentional moment to intervene.
+
+---
+
+## Roadmap
+- **Hosted MCP integrations (future)**: Calendar, email, and journal tools are being prepared but are not yet available in production. The desktop agent is already structured to consume them once stabilized.
+- **Enterprise & social channels (future)**: Slack and similar connections are explicitly out of scope in current builds; they will be reintroduced only after the persuasion loop reaches the desired quality bar.
+- **Expanded habit domains**: Meditation, generosity prompts, and attention steering will follow once the wake/sleep experience is perfected.
+
+---
+
+## Repository Layout
 ```
 .
 ├── apps/
-│   ├── desktop/                 # Desktop app (Electron + TypeScript)
-│   │   ├── assets/desktop/      # Tray/app icons, etc.
-│   │   ├── build/               # entitlements, etc.
-│   │   ├── electron-builder-voice.yml
-│   │   └── src/
-│   │       ├── main-voice-simple.ts   # Entry point: tray/bridge/hotkey, etc.
-│   │       ├── config.ts              # Proxy resolution, constants
-│   │       ├── agents/                # RealtimeAgent, SessionManager, MCP integration
-│   │       └── services/              # Auth (PKCE), encryption, networking
-│   │
-│   ├── api/                     # Proxy API (Express)
-│   │   └── src/
-│   │       ├── server.js        # CORS/JSON/routing aggregation
-│   │       ├── routes/          # /api/* endpoint aggregation
-│   │       ├── api/             # Handlers (realtime, mcp, auth, etc.)
-│   │       ├── services/        # Token/external API wrappers
-│   │       ├── config/          # Integrated environment config
-│   │       └── lib/utils/       # DB, encryption, logger
-│   │
-│   ├── web/                     # Web app (Next.js)
-│   │   ├── app/                 # UI routes
-│   │   └── components/          # UI components
-│   │
-│   ├── landing/                 # Landing page (static)
-│   │   └── landing/             # HTML/CSS/JS
-│   │
-│   └── workspace-mcp/           # Google Workspace MCP (FastMCP)
-│       ├── gcalendar/ etc.      # gmail/gsheets/gdrive MCP tools
-│       ├── core/                # tool_registry, etc.
-│       └── fastmcp_server.py    # MCP endpoint
-│
-├── docs/                        # Design/requirements/validation notes
-├── examples/                    # Reference code/external examples
+│   ├── desktop/                 # Core desktop voice agent (Electron + TypeScript)
+│   │   ├── assets/desktop/      # Icons and media
+│   │   ├── build/               # Entitlements, packaging config
+│   │   ├── prompts/             # Persuasion prompt definitions (onboarding, wake, sleep)
+│   │   └── src/                 # Main process, audio bridge, persuasion logic
+│   ├── api/                     # Proxy/API (Railway deployment target – planned integration)
+│   ├── web/                     # Web app (Next.js, Vercel)
+│   ├── landing/                 # Landing page (Netlify)
+│   └── workspace-mcp/           # Hosted MCP services (planned for future releases)
+├── Anicca/                      # iOS app source (ambient sensing, in development)
+├── docs/                        # Design notes and research (Japanese primary)
+├── examples/                    # Reference snippets
 └── README.md
 ```
 
-- **apps/desktop**: Core of the voice experience. Connects to OpenAI Realtime, handles audio I/O, system tray residence, automatic execution of scheduled tasks, etc.
-- **apps/api**: Proxy layer handling client identity verification, short-lived authorization, MCP/external tool integration, etc.
-- **apps/web**: Anicca's web application (UI).
-- **apps/landing**: Product introduction page.
-- **apps/workspace-mcp**: Hosted MCP server for Google Calendar, etc.
+---
+
+## Security & Privacy Principles
+- **Local-first data**: Behavior history, schedules, and preferences remain on-device unless explicitly shared.
+- **Short-lived credentials**: When the proxy/API layers go live, desktop clients will authenticate with ephemeral tokens; secrets never ship with the app.
+- **Consent for transmission**: Any outbound communication (when introduced) will require explicit user confirmation at the moment of sending.
 
 ---
 
-## User Experience Flow
-1. Desktop app launches and resides in system tray. Voice input is ready.
-2. Enter conversation mode with hotkey (MediaPlayPause/F8) and give voice commands. For scheduled tasks, conversation mode activates automatically with appropriate prompts.
-3. Make voice requests like "Tell me today's schedule," "Wake me up in 10 minutes," "Set a morning meeting at 9 AM."
-4. Schedule creation and notifications proceed automatically. External transmissions (Slack, etc.) require approval just before sending.
-5. After silence/response completion, automatically returns to silent mode and waits in system tray.
-
----
-
-## Architecture (High-Level)
-- **Realtime Voice**: Bridge (a small HTTP/WS server) in the desktop app streams audio and connects to OpenAI Realtime. Input is PCM16, output is also PCM16 for playback.
-- **MCP (Tools)**:
-  - **Hosted MCP** (Google Calendar, etc.): Server-side MCP endpoints are injected into the agent as "hosted tools" to fetch/create/update/delete events via voice.
-  - **Local MCP (filesystem)**: Safely limited read/write access to files under `~/.anicca`.
-- **Scheduled Tasks**: `~/.anicca/scheduled_tasks.json` is the single source of truth. Voice side monitors changes and auto-generates `today_schedule.json` (read-only view). Announcements reference the view; no writes to the view.
-- **Authentication & Least Privilege**: Client uses publicly shareable anonymous key with PKCE login. Server verifies identity and issues short-lived authorization tokens to protect APIs. Secret keys are never distributed to clients.
-- **Data Storage**: Primarily local (`~/.anicca`). Stores sessions/settings/schedules. Encryption applied as needed.
-
----
-
-## Security/Privacy Approach
-- **Local-First**: Personal data is primarily stored in `~/.anicca`. Sessions are encrypted.
-- **Minimal Exposure**: Client holds only "publicly shareable auth config." Privileged operations execute on server.
-- **Short-Lived Tokens**: Server issues authorization tokens that expire quickly, limiting API access.
-- **Explicit Approval**: External transmissions (Slack, etc.) require user approval immediately before sending.
-- **Safe MCP Usage**: Hosted MCP permits only necessary tools; local MCP limits access scope.
-
----
-
-## Web and Landing Positioning
-- **Web App**: Web version of Anicca.
-- **Landing**: Product introduction/guidance page.
-
----
+## Contribution
+Issues and PRs are welcome. Please discuss major changes before implementation to preserve the persuasion-first roadmap.
 
 ## License
 MIT
-
-## Contribution
-Issues and PRs are welcome. Please discuss major changes in advance.
-
-## Contact
-keiodaisuke@gmail.com

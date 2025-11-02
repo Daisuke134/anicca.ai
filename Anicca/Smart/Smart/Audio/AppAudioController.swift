@@ -20,15 +20,22 @@ final class AppAudioController: ObservableObject {
     private var didPrepare = false
 
     init(
-        identityStore: DeviceIdentityProviding = DeviceIdentityStore.shared,
-        realtimeSession: RealtimeSession = RealtimeSession(
-            mobileClient: MobileAPIClient.shared,
-            userResolver: DeviceIdentityStore.shared
-        )
+        identityStore: DeviceIdentityProviding,
+        realtimeSession: RealtimeSession
     ) {
         self.identityStore = identityStore
         self.realtimeSession = realtimeSession
         bindRealtimeSession()
+    }
+
+    convenience init() {
+        self.init(
+            identityStore: DeviceIdentityStore.shared,
+            realtimeSession: RealtimeSession(
+                mobileClient: MobileAPIClient.shared,
+                userResolver: DeviceIdentityStore.shared
+            )
+        )
     }
 
     func prepare() async {

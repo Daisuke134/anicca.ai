@@ -49,7 +49,13 @@ async function createAgentJob({ identity, room }) {
     throw new Error(`Failed to create agent job (status=${response.status}, detail=${detail})`);
   }
 
-  return response.json();
+  const contentType = response.headers.get('content-type') || '';
+  if (contentType.includes('application/json')) {
+    return response.json();
+  }
+
+  const text = (await response.text()).trim();
+  return { id: text || `${identity}-${Date.now()}` };
 }
 
 async function deleteAgentJob(jobId) {

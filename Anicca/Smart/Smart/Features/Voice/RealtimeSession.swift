@@ -15,7 +15,7 @@ final class RealtimeSession: NSObject, ObservableObject {
     private let room: Room
     private let logger = Logger(subsystem: "com.anicca.ios", category: "RTC")
     private var hasAttachedDelegate = false
-    private var isConnecting = false
+    private var connectTask: Task<LiveKitTokenResponse, Error>?
     private var retryAttempts = 0
     private var remoteRenderer: LiveKit.AudioPlayerRenderer?
     private weak var currentRemoteTrack: RemoteAudioTrack?
@@ -29,20 +29,31 @@ final class RealtimeSession: NSObject, ObservableObject {
     }
 
     func connect(userId: String) async throws -> LiveKitTokenResponse {
-        if isConnecting {
-            logger.debug("Skip connect because another attempt is in progress")
-            if let cached = lastTokenResponse { return cached }
-            throw APIError.realtimeTokenFetchFailed(statusCode: -1)
+        if let cached = lastTokenResponse, room.connectionState == .connected {
+            logger.debug("Returning cached LiveKit token (already connected)")
+            return cached
         }
 
-        if room.connectionState == .connected || room.connectionState == .connecting {
-            logger.debug("Room already connected or connecting")
-            if let cached = lastTokenResponse { return cached }
-            throw APIError.realtimeTokenFetchFailed(statusCode: -1)
+        if let task = connectTask {
+            logger.debug("Awaiting existing LiveKit connect task")
+            return try await task.value
         }
 
-        isConnecting = true
-        defer { isConnecting = false }
+        let task = Task<LiveKitTokenResponse, Error> { [weak self] in
+            guard let self else { throw CancellationError() }
+            return try await self.performConnect(userId: userId)
+        }
+        connectTask = task
+        defer { connectTask = nil }
+
+        return try await task.value
+    }
+
+    private func performConnect(userId: String) async throws -> LiveKitTokenResponse {
+        if room.connectionState == .connected, let cached = lastTokenResponse {
+            logger.debug("Room already connected, returning cached token")
+            return cached
+        }
 
         statusMessage = "LiveKitトークン取得中"
         lastErrorMessage = nil
@@ -72,7 +83,11 @@ final class RealtimeSession: NSObject, ObservableObject {
         statusMessage = "LiveKit接続中"
 
         do {
-            try await room.connect(url: response.url.absoluteString, token: response.token, connectOptions: AppConfig.liveKitConnectOptions)
+            try await room.connect(
+                url: response.url.absoluteString,
+                token: response.token,
+                connectOptions: AppConfig.liveKitConnectOptions
+            )
             try await room.localParticipant.setMicrophone(enabled: true)
             await stopRemoteRenderer()
 
@@ -103,6 +118,7 @@ final class RealtimeSession: NSObject, ObservableObject {
         connectionState = .disconnected
         statusMessage = "LiveKit切断済み"
         lastTokenResponse = nil
+        connectTask = nil
     }
 
     func handleForegroundResume() async {

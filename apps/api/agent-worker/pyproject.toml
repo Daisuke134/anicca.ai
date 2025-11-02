@@ -1,0 +1,12 @@
+[project]
+name = "mobile-agent"
+version = "0.1.0"
+requires-python = ">=3.9"
+dependencies = [
+  "livekit-agents[openai]~=1.2",
+  "python-dotenv>=1.0"
+]
+
+[build-system]
+requires = ["setuptools>=67", "wheel"]
+build-backend = "setuptools.build_meta"

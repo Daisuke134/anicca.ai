@@ -8,6 +8,7 @@
     "dev": "vercel dev",
     "deploy": "vercel --prod",
     "start": "node src/server.js",
+    "start:agent": "python apps/api/agents/mobile_voice_agent.py",
     "dev:railway": "nodemon src/server.js"
   },
   "keywords": [

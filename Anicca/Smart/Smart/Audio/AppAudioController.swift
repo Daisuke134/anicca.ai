@@ -158,7 +158,7 @@ final class AppAudioController: ObservableObject {
 
     private func configureAudioManager() throws {
         audioManager.audioSession.isAutomaticConfigurationEnabled = false
-        audioManager.isVoiceProcessingEnabled = true
+        try audioManager.setVoiceProcessingEnabled(true)
         try audioManager.setManualRenderingMode(true)
         audioManager.mixer.micVolume = 1.0
         audioManager.mixer.appVolume = 1.0

@@ -1,3 +1,4 @@
+import { AccessToken } from '@livekit/livekit-server-sdk';
 import { LIVEKIT_CONFIG } from '../config/environment.js';
 import baseLogger from '../utils/logger.js';
 
@@ -10,9 +11,14 @@ function resolveAgentBaseUrl() {
   return LIVEKIT_CONFIG.WS_URL.replace(/^wss:/i, 'https:').replace(/^ws:/i, 'http:');
 }
 
-function buildAuthHeader() {
-  const credentials = `${LIVEKIT_CONFIG.API_KEY}:${LIVEKIT_CONFIG.API_SECRET}`;
-  return `Basic ${Buffer.from(credentials).toString('base64')}`;
+async function buildAuthHeader() {
+  const token = new AccessToken(LIVEKIT_CONFIG.API_KEY, LIVEKIT_CONFIG.API_SECRET, {
+    identity: 'mobile-agent-backend',
+    ttl: 60
+  });
+  token.addGrant({ agent: true });
+  const jwt = await token.toJwt();
+  return `Bearer ${jwt}`;
 }
 
 async function createAgentJob({ identity, room }) {
@@ -28,11 +34,12 @@ async function createAgentJob({ identity, room }) {
     }
   };
 
+  const authHeader = await buildAuthHeader();
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: buildAuthHeader()
+      Authorization: authHeader
     },
     body: JSON.stringify(payload)
   });
@@ -48,10 +55,11 @@ async function createAgentJob({ identity, room }) {
 async function deleteAgentJob(jobId) {
   const baseUrl = resolveAgentBaseUrl();
   const endpoint = new URL(`/agents/v1/jobs/${jobId}`, baseUrl);
+  const authHeader = await buildAuthHeader();
   const response = await fetch(endpoint, {
     method: 'DELETE',
     headers: {
-      Authorization: buildAuthHeader()
+      Authorization: authHeader
     }
   });
 

@@ -43,7 +43,9 @@ export const LIVEKIT_CONFIG = {
   API_KEY: process.env.LIVEKIT_API_KEY || '',
   API_SECRET: process.env.LIVEKIT_API_SECRET || '',
   DEFAULT_ROOM: process.env.LIVEKIT_DEFAULT_ROOM || '',
-  TOKEN_TTL: Number.isFinite(livekitTokenTtlParsed) && livekitTokenTtlParsed > 0 ? livekitTokenTtlParsed : 600
+  TOKEN_TTL: Number.isFinite(livekitTokenTtlParsed) && livekitTokenTtlParsed > 0 ? livekitTokenTtlParsed : 600,
+  AGENT_NAME: process.env.LIVEKIT_AGENT_NAME?.trim() || 'mobile-assistant',
+  AGENT_VOICE: process.env.LIVEKIT_AGENT_VOICE?.trim() || 'alloy'
 };
 
 // API Keys（存在チェックのみ、実際の値は環境変数から直接参照）

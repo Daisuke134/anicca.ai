@@ -11,14 +11,16 @@ function resolveAgentBaseUrl() {
   return LIVEKIT_CONFIG.WS_URL.replace(/^wss:/i, 'https:').replace(/^ws:/i, 'http:');
 }
 
-async function buildAuthHeader() {
+async function buildAgentAuthorization(room) {
   const token = new AccessToken(LIVEKIT_CONFIG.API_KEY, LIVEKIT_CONFIG.API_SECRET, {
-    identity: 'mobile-agent-backend',
-    ttl: 60
+    ttl: '60s'
   });
-  token.addGrant({ agent: true });
-  const jwt = await token.toJwt();
-  return `Bearer ${jwt}`;
+  token.addGrant({
+    room,
+    roomAdmin: true,
+    agent: true
+  });
+  return `Bearer ${await token.toJwt()}`;
 }
 
 async function createAgentJob({ identity, room }) {
@@ -27,19 +29,19 @@ async function createAgentJob({ identity, room }) {
   const payload = {
     identity,
     room,
+    agentName: LIVEKIT_CONFIG.AGENT_NAME,
     instructions: "You are Anicca's Japanese voice coach. Keep replies brief and empathetic.",
     model: {
       type: 'openai-realtime',
-      voice: 'alloy'
+      voice: LIVEKIT_CONFIG.AGENT_VOICE
     }
   };
 
-  const authHeader = await buildAuthHeader();
   const response = await fetch(endpoint, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: authHeader
+      Authorization: await buildAgentAuthorization(room)
     },
     body: JSON.stringify(payload)
   });
@@ -49,23 +51,22 @@ async function createAgentJob({ identity, room }) {
     throw new Error(`Failed to create agent job (status=${response.status}, detail=${detail})`);
   }
 
-  const contentType = response.headers.get('content-type') || '';
-  if (contentType.includes('application/json')) {
-    return response.json();
+  const body = await response.json();
+  const job = body.job ?? body;
+  const sessionId = job?.id ?? job?.jobId ?? job?.job_id;
+  if (!sessionId) {
+    throw new Error(`Agent job response missing identifier: ${JSON.stringify(body)}`);
   }
-
-  const text = (await response.text()).trim();
-  return { id: text || `${identity}-${Date.now()}` };
+  return { sessionId, job };
 }
 
-async function deleteAgentJob(jobId) {
+async function deleteAgentJob({ jobId, room }) {
   const baseUrl = resolveAgentBaseUrl();
   const endpoint = new URL(`/agents/v1/jobs/${jobId}`, baseUrl);
-  const authHeader = await buildAuthHeader();
   const response = await fetch(endpoint, {
     method: 'DELETE',
     headers: {
-      Authorization: authHeader
+      Authorization: await buildAgentAuthorization(room)
     }
   });
 
@@ -77,23 +78,19 @@ async function deleteAgentJob(jobId) {
 
 export async function startMobileVoiceAgent({ deviceId, room }) {
   const identity = `${deviceId}-assistant`;
-  const job = await createAgentJob({ identity, room });
-  const sessionId = job.id || job.jobId || job.job_id;
-  if (!sessionId) {
-    throw new Error('Agent job response did not include an identifier');
-  }
-
-  sessions.set(sessionId, { identity, room });
+  const { sessionId, job } = await createAgentJob({ identity, room });
+  sessions.set(sessionId, { identity, room, job });
   logger.info(`Started mobile voice agent job (session=${sessionId}, room=${room})`);
   return { sessionId };
 }
 
 export async function stopMobileVoiceAgent(sessionId) {
-  if (!sessions.has(sessionId)) {
+  const session = sessions.get(sessionId);
+  if (!session) {
     return false;
   }
 
-  await deleteAgentJob(sessionId);
+  await deleteAgentJob({ jobId: sessionId, room: session.room });
   sessions.delete(sessionId);
   logger.info(`Stopped mobile voice agent job (session=${sessionId})`);
   return true;

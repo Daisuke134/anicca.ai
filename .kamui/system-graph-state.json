@@ -16375,6 +16375,9 @@
     ".github/workflows/release-beta.yml",
     ".github/workflows/release-stable.yml",
     ".gitignore",
+    ".kamui/model-versions-cache.json",
+    ".kamui/system-graph-state.json",
+    ".kamui/tasks-state.json",
     ".serena/.gitignore",
     ".serena/cache/typescript/document_symbols_cache_v23-06-25.pkl",
     ".serena/memories/ABSOLUTE_CODING_RULES.md",
@@ -16405,20 +16408,31 @@
     ".serena/memories/voice_agents_sdk_implementation.md",
     ".serena/memories/worker_voice_implementation_plan.md",
     ".serena/project.yml",
+    ".worktrees/task-1761990295908-b2e49d",
+    ".worktrees/task-1761990298422-63dac9",
+    ".worktrees/task-1761990301087-fcc9d8",
     "AGENTS.md",
     "Anicca/Smart/Smart.xcodeproj/project.pbxproj",
     "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+    "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
     "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
     "Anicca/Smart/Smart.xcodeproj/xcuserdata/cbns03.xcuserdatad/xcschemes/xcschememanagement.plist",
     "Anicca/Smart/Smart/Assets.xcassets/AccentColor.colorset/Contents.json",
     "Anicca/Smart/Smart/Assets.xcassets/AppIcon.appiconset/Contents.json",
     "Anicca/Smart/Smart/Assets.xcassets/Contents.json",
     "Anicca/Smart/Smart/Audio/AppAudioController.swift",
+    "Anicca/Smart/Smart/Audio/AudioManager.swift",
+    "Anicca/Smart/Smart/Audio/AudioPlayerRenderer.swift",
     "Anicca/Smart/Smart/Audio/AudioSessionConfigurator.swift",
     "Anicca/Smart/Smart/Audio/LatencyMonitor.swift",
     "Anicca/Smart/Smart/Audio/VoiceEngine.swift",
+    "Anicca/Smart/Smart/Config/AppConfig.swift",
     "Anicca/Smart/Smart/ContentView.swift",
+    "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
     "Anicca/Smart/Smart/Permissions/MicrophonePermissionManager.swift",
+    "Anicca/Smart/Smart/Services/API/APIError.swift",
+    "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
+    "Anicca/Smart/Smart/Services/Identity/DeviceIdentityStore.swift",
     "Anicca/Smart/Smart/SmartApp.swift",
     "CLAUDE.md",
     "README.md",
@@ -16478,6 +16492,8 @@
     "apps/api/src/routes/billing/webhook/stripe.js",
     "apps/api/src/routes/index.js",
     "apps/api/src/routes/mcp/gcal/index.js",
+    "apps/api/src/routes/mobile/index.js",
+    "apps/api/src/routes/mobile/rtc.js",
     "apps/api/src/routes/preview/app.js",
     "apps/api/src/routes/proxy/claude.js",
     "apps/api/src/routes/realtime/desktop.js",
@@ -16495,6 +16511,7 @@
     "apps/api/src/services/claude/sessionManager.js",
     "apps/api/src/services/googleTokens.js",
     "apps/api/src/services/guestSessions.js",
+    "apps/api/src/services/livekitTokenService.js",
     "apps/api/src/services/mcp-clients/exaClient.js",
     "apps/api/src/services/mcp-clients/playwrightClient.js",
     "apps/api/src/services/parallel-sdk/IPCProtocol.js",
@@ -16552,6 +16569,7 @@
     "apps/desktop/prompts/slack_reply.txt",
     "apps/desktop/prompts/sleep.txt",
     "apps/desktop/prompts/standup.txt",
+    "apps/desktop/prompts/wake_strict.txt",
     "apps/desktop/prompts/wake_up.txt",
     "apps/desktop/prompts/zange.txt",
     "apps/desktop/scripts/fix-claude-cli.js",
@@ -16747,6 +16765,7 @@
     "docs/desktop-billing-subscription-plan.md",
     "docs/electron.md",
     "docs/emergent.md",
+    "docs/expo-evaluation.md",
     "docs/implement.md",
     "docs/ios.md",
     "docs/manage-conv.md",
@@ -16757,6 +16776,7 @@
     "docs/promptguide.md",
     "docs/realtime-api-new-features-2025.md",
     "docs/security.md",
+    "docs/step3.md",
     "docs/todo.md",
     "docs/tweet.md",
     "docs/voice-realtime-lessons.md",
@@ -17004,7 +17024,7 @@
     "mode": "full",
     "isPartial": false,
     "branchPulse": {
-      "generatedAt": 1762058625623,
+      "generatedAt": 1762058984961,
       "targets": [
         "main",
         "feature/desktop-debug",
@@ -17028,10 +17048,10 @@
       "statsByBranch": {
         "main": {
           "branch": "main",
-          "head": "36519447683be3736d865316ebb3fa10841f38db",
+          "head": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "baseRef": "origin/main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "divergence": {
             "aheadCount": 0,
             "fileCount": 0
@@ -17040,40 +17060,6 @@
             "aheadCount": 0,
             "behindCount": 0,
             "fileCount": 0
-          },
-          "upstream": null
-        },
-        "task/task-1761990295908-b2e49d": {
-          "branch": "task/task-1761990295908-b2e49d",
-          "head": "36519447683be3736d865316ebb3fa10841f38db",
-          "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 0,
-            "fileCount": 0
-          },
-          "upstream": null
-        },
-        "feature/desktop-debug": {
-          "branch": "feature/desktop-debug",
-          "head": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
-          "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 285,
-            "fileCount": 454
           },
           "upstream": null
         },
@@ -17081,7 +17067,7 @@
           "branch": "feature/improvements",
           "head": "68205e57a8a176035bf0f35d70dc6bc1a2907cc7",
           "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "mergeBase": "68205e57a8a176035bf0f35d70dc6bc1a2907cc7",
           "divergence": {
             "aheadCount": 0,
@@ -17089,8 +17075,25 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 290,
-            "fileCount": 440
+            "behindCount": 291,
+            "fileCount": 460
+          },
+          "upstream": null
+        },
+        "feature/desktop-debug": {
+          "branch": "feature/desktop-debug",
+          "head": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
+          "baseRef": "main",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 286,
+            "fileCount": 474
           },
           "upstream": null
         },
@@ -17098,7 +17101,7 @@
           "branch": "feature/parallel-system",
           "head": "863d4a241d9d261d92f5a7b0daac504af7450de6",
           "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "mergeBase": "863d4a241d9d261d92f5a7b0daac504af7450de6",
           "divergence": {
             "aheadCount": 0,
@@ -17106,8 +17109,25 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 276,
-            "fileCount": 456
+            "behindCount": 277,
+            "fileCount": 476
+          },
+          "upstream": null
+        },
+        "task/task-1761990295908-b2e49d": {
+          "branch": "task/task-1761990295908-b2e49d",
+          "head": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseRef": "main",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 1,
+            "fileCount": 34
           },
           "upstream": null
         },
@@ -17115,7 +17135,7 @@
           "branch": "task/task-1761990298422-63dac9",
           "head": "36519447683be3736d865316ebb3fa10841f38db",
           "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
           "divergence": {
             "aheadCount": 0,
@@ -17123,8 +17143,8 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 0,
-            "fileCount": 0
+            "behindCount": 1,
+            "fileCount": 34
           },
           "upstream": null
         },
@@ -17132,7 +17152,7 @@
           "branch": "task/task-1761990301087-fcc9d8",
           "head": "36519447683be3736d865316ebb3fa10841f38db",
           "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
           "divergence": {
             "aheadCount": 0,
@@ -17140,8 +17160,42 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 0,
+            "behindCount": 1,
+            "fileCount": 34
+          },
+          "upstream": null
+        },
+        "feature/claude-sdk-integration": {
+          "branch": "feature/claude-sdk-integration",
+          "head": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
+          "baseRef": "main",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
+          "divergence": {
+            "aheadCount": 0,
             "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 300,
+            "fileCount": 458
+          },
+          "upstream": null
+        },
+        "feature/agent-s-integration-clean": {
+          "branch": "feature/agent-s-integration-clean",
+          "head": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
+          "baseRef": "main",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 318,
+            "fileCount": 450
           },
           "upstream": null
         },
@@ -17162,57 +17216,6 @@
           },
           "upstream": null
         },
-        "feature/claude-sdk-integration": {
-          "branch": "feature/claude-sdk-integration",
-          "head": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
-          "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 299,
-            "fileCount": 438
-          },
-          "upstream": null
-        },
-        "feature/mastra-complete": {
-          "branch": "feature/mastra-complete",
-          "head": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
-          "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 302,
-            "fileCount": 445
-          },
-          "upstream": null
-        },
-        "feature/agent-s-integration-clean": {
-          "branch": "feature/agent-s-integration-clean",
-          "head": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
-          "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 317,
-            "fileCount": 430
-          },
-          "upstream": null
-        },
         "feature/remote-mcp-google-calendar": {
           "branch": "feature/remote-mcp-google-calendar",
           "head": "8970e577247e5a0db9e24bad36d8aab47ff3d4a6",
@@ -17230,20 +17233,20 @@
           },
           "upstream": null
         },
-        "feature/claude-unified": {
-          "branch": "feature/claude-unified",
-          "head": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
+        "feature/mastra-complete": {
+          "branch": "feature/mastra-complete",
+          "head": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
           "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
-          "mergeBase": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
           "divergence": {
             "aheadCount": 0,
             "fileCount": 0
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 279,
-            "fileCount": 458
+            "behindCount": 303,
+            "fileCount": 465
           },
           "upstream": null
         },
@@ -17251,7 +17254,7 @@
           "branch": "feature/user-profile",
           "head": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
           "baseRef": "main",
-          "baseHead": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "mergeBase": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
           "divergence": {
             "aheadCount": 0,
@@ -17259,8 +17262,25 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 309,
-            "fileCount": 451
+            "behindCount": 310,
+            "fileCount": 471
+          },
+          "upstream": null
+        },
+        "feature/claude-unified": {
+          "branch": "feature/claude-unified",
+          "head": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
+          "baseRef": "main",
+          "baseHead": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "mergeBase": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 280,
+            "fileCount": 478
           },
           "upstream": null
         }
@@ -17269,7 +17289,7 @@
   },
   "gitHistoryState": {
     "selectedTimelineIndex": 1,
-    "activeCommitHash": null,
+    "activeCommitHash": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
     "entries": [
       {
         "type": "live",
@@ -17278,7 +17298,7 @@
         "branch": "task/task-1761990298422-63dac9",
         "targetCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-        "timestamp": 1762058625653,
+        "timestamp": 1762058984986,
         "lane": 0,
         "branchLabel": "task/task-1761990298422-63dac9",
         "branchTags": [
@@ -17289,6 +17309,85 @@
         "index": 0
       },
       {
+        "type": "commit",
+        "label": "chore: apply pending changes",
+        "commit": {
+          "hash": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+          "subject": "chore: apply pending changes",
+          "author": "codex-bot",
+          "timestamp": 1762058850,
+          "parents": [
+            "36519447683be3736d865316ebb3fa10841f38db"
+          ],
+          "parent": "36519447683be3736d865316ebb3fa10841f38db",
+          "refs": "origin/main, origin/HEAD, main",
+          "branches": [
+            "origin/main",
+            "origin/HEAD",
+            "main"
+          ]
+        },
+        "commitHash": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+        "lane": 0,
+        "parentLinks": [
+          {
+            "hash": "36519447683be3736d865316ebb3fa10841f38db",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "main",
+        "branchColor": "#4f85e8",
+        "branchTags": [],
+        "worktrees": [
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project",
+            "head": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
+            "branch": "main",
+            "isMerged": true,
+            "mergeCommitHash": "bd44e004258697c503802ffdb4ede632dc627f45",
+            "status": {
+              "staged": [
+                {
+                  "path": "kamui/model-versions-cache.json",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "kamui/model-versions-cache.json",
+                  "timestamp": 1762058983931
+                }
+              ],
+              "unstaged": [
+                {
+                  "path": ".kamui/system-graph-state.json",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": ".kamui/system-graph-state.json",
+                  "timestamp": 1762058983931
+                },
+                {
+                  "path": ".worktrees/task-1761990298422-63dac9",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": ".worktrees/task-1761990298422-63dac9",
+                  "timestamp": 1762058983931
+                },
+                {
+                  "path": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "timestamp": 1762058983931
+                }
+              ],
+              "untracked": [],
+              "capturedAt": 1762058983931
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project",
+            "lane": 0
+          }
+        ],
+        "index": 1
+      },
+      {
         "type": "unstaged",
         "label": "未ステージ (1)",
         "files": [
@@ -17297,11 +17396,11 @@
         "branch": "task/task-1761990298422-63dac9",
         "targetCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-        "timestamp": 1762058625653,
+        "timestamp": 1762058984986,
         "sortOrder": 0,
-        "lane": 6,
+        "lane": 5,
         "branchColor": "#e84f4f",
-        "index": 1
+        "index": 2
       },
       {
         "type": "anchor",
@@ -17323,7 +17422,7 @@
         "taskName": "CodexCLI1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる",
         "tooltip": "タスク: CodexCLI1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる\nステータス: 作業中\nID: task-1761990295908-b2e49d\nBranch: task/task-1761990295908-b2e49d\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
         "branchColor": "#4fe84f",
-        "index": 2
+        "index": 3
       },
       {
         "type": "anchor",
@@ -17331,7 +17430,7 @@
         "branch": "task/task-1761990301087-fcc9d8",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
         "parentCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
-        "lane": 5,
+        "lane": 6,
         "isMerged": false,
         "mergeCommitHash": null,
         "statusChildren": [],
@@ -17345,7 +17444,7 @@
         "taskName": "ClaudeCode1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる",
         "tooltip": "タスク: ClaudeCode1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる\nステータス: 作業中\nID: task-1761990301087-fcc9d8\nBranch: task/task-1761990301087-fcc9d8\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
         "branchColor": "#4f85e8",
-        "index": 3
+        "index": 4
       },
       {
         "type": "commit",
@@ -17359,11 +17458,9 @@
             "07051fa7974bf90fa21ff6f639e6b1c2967894e4"
           ],
           "parent": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
-          "refs": "HEAD -> task/task-1761990298422-63dac9, origin/main, origin/HEAD, task/task-1761990301087-fcc9d8, task/task-1761990295908-b2e49d, main",
+          "refs": "HEAD -> task/task-1761990298422-63dac9, task/task-1761990301087-fcc9d8, task/task-1761990295908-b2e49d",
           "branches": [
             "HEAD -> task/task-1761990298422-63dac9",
-            "origin/main",
-            "origin/HEAD",
             "task/task-1761990301087-fcc9d8",
             "task/task-1761990295908-b2e49d",
             "main",
@@ -17385,242 +17482,6 @@
         ],
         "worktrees": [
           {
-            "path": "/Users/cbns03/Downloads/anicca-project",
-            "head": "36519447683be3736d865316ebb3fa10841f38db",
-            "branch": "main",
-            "isMerged": true,
-            "mergeCommitHash": "bd44e004258697c503802ffdb4ede632dc627f45",
-            "status": {
-              "staged": [
-                {
-                  "path": "nicca/Smart/Smart.xcodeproj/project.pbxproj",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "nicca/Smart/Smart.xcodeproj/project.pbxproj",
-                  "timestamp": 1762058624166
-                }
-              ],
-              "unstaged": [
-                {
-                  "path": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Audio/AppAudioController.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/Audio/AppAudioController.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/ContentView.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/ContentView.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "README.md",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "README.md",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/package-lock.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/package-lock.json",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/package.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/package.json",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/src/config/environment.js",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/src/config/environment.js",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/src/routes/index.js",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/src/routes/index.js",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/desktop/src/agents/mainAgent.ts",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/desktop/src/agents/mainAgent.ts",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/desktop/src/agents/sessionManager.ts",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/desktop/src/agents/sessionManager.ts",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "docs/emergent.md",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "docs/emergent.md",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "docs/implement.md",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "docs/implement.md",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "package-lock.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "package-lock.json",
-                  "timestamp": 1762058624166
-                }
-              ],
-              "untracked": [
-                {
-                  "path": ".kamui/model-versions-cache.json",
-                  "status": "untracked",
-                  "rawPath": ".kamui/model-versions-cache.json",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": ".kamui/system-graph-state.json",
-                  "status": "untracked",
-                  "rawPath": ".kamui/system-graph-state.json",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": ".kamui/tasks-state.json",
-                  "status": "untracked",
-                  "rawPath": ".kamui/tasks-state.json",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": ".worktrees/task-1761990295908-b2e49d/",
-                  "status": "untracked",
-                  "rawPath": ".worktrees/task-1761990295908-b2e49d/",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": ".worktrees/task-1761990298422-63dac9/",
-                  "status": "untracked",
-                  "rawPath": ".worktrees/task-1761990298422-63dac9/",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": ".worktrees/task-1761990301087-fcc9d8/",
-                  "status": "untracked",
-                  "rawPath": ".worktrees/task-1761990301087-fcc9d8/",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Audio/AudioManager.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Audio/AudioManager.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Audio/AudioPlayerRenderer.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Audio/AudioPlayerRenderer.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Config/AppConfig.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Config/AppConfig.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Services/API/APIError.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Services/API/APIError.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Services/Identity/DeviceIdentityStore.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Services/Identity/DeviceIdentityStore.swift",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/src/routes/mobile/index.js",
-                  "status": "untracked",
-                  "rawPath": "apps/api/src/routes/mobile/index.js",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/src/routes/mobile/rtc.js",
-                  "status": "untracked",
-                  "rawPath": "apps/api/src/routes/mobile/rtc.js",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/api/src/services/livekitTokenService.js",
-                  "status": "untracked",
-                  "rawPath": "apps/api/src/services/livekitTokenService.js",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "apps/desktop/prompts/wake_strict.txt",
-                  "status": "untracked",
-                  "rawPath": "apps/desktop/prompts/wake_strict.txt",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "docs/expo-evaluation.md",
-                  "status": "untracked",
-                  "rawPath": "docs/expo-evaluation.md",
-                  "timestamp": 1762058624166
-                },
-                {
-                  "path": "docs/step3.md",
-                  "status": "untracked",
-                  "rawPath": "docs/step3.md",
-                  "timestamp": 1762058624166
-                }
-              ],
-              "capturedAt": 1762058624166
-            },
-            "normalizedPath": "/Users/cbns03/Downloads/anicca-project",
-            "lane": 0
-          },
-          {
             "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
             "head": "36519447683be3736d865316ebb3fa10841f38db",
             "branch": "task/task-1761990295908-b2e49d",
@@ -17630,7 +17491,7 @@
               "staged": [],
               "unstaged": [],
               "untracked": [],
-              "capturedAt": 1762058624200
+              "capturedAt": 1762058983915
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
             "lane": 4
@@ -17649,13 +17510,13 @@
                   "path": "apps/web/public/novel-ui.html",
                   "status": "untracked",
                   "rawPath": "apps/web/public/novel-ui.html",
-                  "timestamp": 1762058624207
+                  "timestamp": 1762058983938
                 }
               ],
-              "capturedAt": 1762058624207
+              "capturedAt": 1762058983938
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-            "lane": 6
+            "lane": 5
           },
           {
             "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
@@ -17667,13 +17528,13 @@
               "staged": [],
               "unstaged": [],
               "untracked": [],
-              "capturedAt": 1762058624235
+              "capturedAt": 1762058983955
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
-            "lane": 5
+            "lane": 6
           }
         ],
-        "index": 4
+        "index": 5
       },
       {
         "type": "commit",
@@ -17705,7 +17566,7 @@
         "branchTags": [
           "emergent-copy"
         ],
-        "index": 5
+        "index": 6
       },
       {
         "type": "commit",
@@ -17732,7 +17593,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 6
+        "index": 7
       },
       {
         "type": "commit",
@@ -17751,8 +17612,8 @@
             "emergent-clone",
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
@@ -17768,7 +17629,7 @@
         "branchTags": [
           "emergent-clone"
         ],
-        "index": 7
+        "index": 8
       },
       {
         "type": "commit",
@@ -17800,7 +17661,7 @@
         "branchTags": [
           "emergent-web"
         ],
-        "index": 8
+        "index": 9
       },
       {
         "type": "commit",
@@ -17820,7 +17681,7 @@
         "parentLinks": [],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 9
+        "index": 10
       },
       {
         "type": "commit",
@@ -17838,8 +17699,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "16930a1087e102f004e74c98d9417d16b166dca4",
@@ -17853,7 +17714,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 10
+        "index": 11
       },
       {
         "type": "commit",
@@ -17871,8 +17732,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "24f2373db589af553bcb50d3643f349736285eac",
@@ -17886,7 +17747,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 11
+        "index": 12
       },
       {
         "type": "commit",
@@ -17904,8 +17765,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "05043de30d039a1f47a422d7c3a68bd9f0005217",
@@ -17919,7 +17780,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 12
+        "index": 13
       },
       {
         "type": "commit",
@@ -17937,8 +17798,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "036a5d83bd6bcacf1a0d4d5366a1f433be7567f6",
@@ -17952,7 +17813,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 13
+        "index": 14
       },
       {
         "type": "commit",
@@ -17970,8 +17831,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "56383e51e2e7cf430bd0593e61effa0a9d394497",
@@ -17985,7 +17846,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 14
+        "index": 15
       },
       {
         "type": "commit",
@@ -18003,8 +17864,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "c04dc187ed5211b15abf442c2e238b261fa7c6f7",
@@ -18018,7 +17879,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 15
+        "index": 16
       },
       {
         "type": "commit",
@@ -18036,8 +17897,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "6478912c7301e9112cdc0bf2764e446d549981ee",
@@ -18051,7 +17912,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 16
+        "index": 17
       },
       {
         "type": "commit",
@@ -18069,8 +17930,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "370209b16f89c3a84351b1687bf7f7a0b63aa7ed",
@@ -18084,7 +17945,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 17
+        "index": 18
       },
       {
         "type": "commit",
@@ -18102,8 +17963,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "c8c1d9e4bf63d27bb03cd7512f6e7f2793f12724",
@@ -18117,7 +17978,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 18
+        "index": 19
       },
       {
         "type": "commit",
@@ -18136,8 +17997,8 @@
           "branches": [
             "main",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
             "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8",
             "feature/wake-routine-tags"
           ]
         },
@@ -18158,7 +18019,7 @@
         "branchTags": [
           "feature/wake-routine-tags"
         ],
-        "index": 19
+        "index": 20
       },
       {
         "type": "commit",
@@ -18177,8 +18038,8 @@
             "origin/feature/wake-routine-tags",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "035b35a7561b859ccb45eb0dcf79143405c47ae0",
@@ -18192,7 +18053,7 @@
         "primaryBranchName": "feature/wake-routine-tags",
         "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 20
+        "index": 21
       },
       {
         "type": "commit",
@@ -18210,8 +18071,8 @@
           "branches": [
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "3916a97a2825e6f3d057bbac3976e0cccf6fdebf",
@@ -18225,7 +18086,7 @@
         "primaryBranchName": "feature/wake-routine-tags",
         "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 21
+        "index": 22
       },
       {
         "type": "commit",
@@ -18244,8 +18105,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "051f65e9dd560d54edaef749519ee9dd262c574a",
@@ -18259,7 +18120,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 22
+        "index": 23
       },
       {
         "type": "commit",
@@ -18278,8 +18139,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "b40b24c4affaa798206eeca6eba846abb13cf917",
@@ -18293,7 +18154,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 23
+        "index": 24
       },
       {
         "type": "commit",
@@ -18312,8 +18173,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "f393ef4dc647027dca66792372e681b28dffabec",
@@ -18327,7 +18188,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 24
+        "index": 25
       },
       {
         "type": "commit",
@@ -18346,8 +18207,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "04acd81d6edf879f86b1bc8154a6c0fee595b603",
@@ -18361,7 +18222,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 25
+        "index": 26
       },
       {
         "type": "commit",
@@ -18380,8 +18241,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "b2d101b83f9700c7b370a1652bb84c638051f9c5",
@@ -18395,7 +18256,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 26
+        "index": 27
       },
       {
         "type": "commit",
@@ -18414,8 +18275,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "2e7c1e79dda9e5bdfc28229351194161acae18d9",
@@ -18429,7 +18290,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 27
+        "index": 28
       },
       {
         "type": "commit",
@@ -18448,8 +18309,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "8da469984471de3b0144c44145a48ddbb287e5df",
@@ -18463,7 +18324,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 28
+        "index": 29
       },
       {
         "type": "commit",
@@ -18482,8 +18343,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "6992f50af18b08f74c609cdc93d260475180eec4",
@@ -18497,7 +18358,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 29
+        "index": 30
       },
       {
         "type": "commit",
@@ -18516,8 +18377,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "2d0463f1e1d6b853d25b5f7cc7209d53b82dbbc7",
@@ -18531,7 +18392,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 30
+        "index": 31
       },
       {
         "type": "commit",
@@ -18550,8 +18411,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "091a978e230bb8565e6e8903a3b8d41b12e4d5e1",
@@ -18565,7 +18426,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 31
+        "index": 32
       },
       {
         "type": "commit",
@@ -18584,8 +18445,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "a46908ca8063289e0fd96adbd4282d9f3cd9598d",
@@ -18599,7 +18460,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 32
+        "index": 33
       },
       {
         "type": "commit",
@@ -18618,8 +18479,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "bc01d475e97730b17bdb28d13a1a465d8c2ccac7",
@@ -18633,7 +18494,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 33
+        "index": 34
       },
       {
         "type": "commit",
@@ -18652,8 +18513,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "30a63062850ccb250d497c4ba336a1d0fee818c9",
@@ -18667,7 +18528,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 34
+        "index": 35
       },
       {
         "type": "commit",
@@ -18686,8 +18547,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "4379d9b2a0c584945e46f97264e2b0669c5035e3",
@@ -18701,7 +18562,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 35
+        "index": 36
       },
       {
         "type": "commit",
@@ -18720,8 +18581,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "8bb24ce8d9e8ff5d52d6fa318c31dad2d66d795a",
@@ -18735,7 +18596,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 36
+        "index": 37
       },
       {
         "type": "commit",
@@ -18754,8 +18615,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "6b9ce6c42ff4e1fcfe336b63458ef0c4d66025e8",
@@ -18769,7 +18630,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 37
+        "index": 38
       },
       {
         "type": "commit",
@@ -18788,8 +18649,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "26c363d5b6f26aa86adadbd4b4e7875888d4d51d",
@@ -18803,7 +18664,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 38
+        "index": 39
       },
       {
         "type": "commit",
@@ -18822,8 +18683,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "67efd2f6f28f5eb4b9a58a6bf11ccc70e7317c14",
@@ -18837,7 +18698,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 39
+        "index": 40
       },
       {
         "type": "commit",
@@ -18856,8 +18717,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "4d156cb65f9a35123a2b0ca25bca9d73391ba9b6",
@@ -18871,7 +18732,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 40
+        "index": 41
       },
       {
         "type": "commit",
@@ -18890,8 +18751,8 @@
             "main",
             "feature/wake-routine-tags",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990298422-63dac9"
+            "task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "91bf1f6efc9a6ec2664ea9950efb30b262ebed75",
@@ -18905,7 +18766,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 41
+        "index": 42
       },
       {
         "type": "commit",
@@ -18947,7 +18808,7 @@
         "branchTags": [
           "refs/stash"
         ],
-        "index": 42
+        "index": 43
       },
       {
         "type": "commit",
@@ -18974,17 +18835,17 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 43
+        "index": 44
       },
       {
         "type": "empty",
         "label": "初期状態 (初回コミット以前)",
         "files": [],
         "marker": "pre-history",
-        "index": 44
+        "index": 45
       }
     ]
   },
   "projectRoot": "/Users/cbns03/Downloads/anicca-project",
-  "savedAt": 1762058683679
+  "savedAt": 1762059043671
 }

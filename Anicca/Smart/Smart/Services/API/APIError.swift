@@ -16,7 +16,7 @@ enum APIError: LocalizedError {
         case .decodingFailed:
             return "サーバー応答の解析に失敗しました"
         case .realtimeTokenFetchFailed(let statusCode):
-            return "LiveKitトークンの取得に失敗しました (status: \(statusCode))"
+            return "Realtime client_secret の取得に失敗しました (status: \(statusCode))"
         case .transportError(let underlying):
             return "ネットワークエラー: \(underlying.localizedDescription)"
         }

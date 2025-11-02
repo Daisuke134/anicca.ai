@@ -1,8 +1,8 @@
 import express from 'express';
-import rtcRouter from './rtc.js';
+import realtimeRouter from './realtime.js';
 
 const router = express.Router();
 
-router.use('/rtc', rtcRouter);
+router.use('/realtime', realtimeRouter);
 
 export default router;

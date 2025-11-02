@@ -24,6 +24,15 @@ struct ContentView: View {
                 )
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
+            HStack(spacing: 12) {
+                Button("会話開始") {
+                    Task { await audioController.startConversation() }
+                }
+                Button("終了") {
+                    Task { await audioController.stopConversation() }
+                }
+            }
+            .buttonStyle(.borderedProminent)
         }
         .padding()
     }

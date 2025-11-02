@@ -1,10 +1,23 @@
-import asyncio
 import os
-    session = AgentSession(
+
+from livekit import agents
+from livekit.agents import Agent, AgentSession, JobContext, WorkerOptions
+from livekit.plugins import openai
+
+
+def build_session() -> AgentSession:
+    return AgentSession(
         llm=openai.realtime.RealtimeModel(
             voice=os.getenv("LIVEKIT_AGENT_VOICE", "alloy"),
             model=os.getenv("OPENAI_REALTIME_MODEL", "gpt-4o-mini-realtime-preview"),
+        )
+    )
 
+
+async def entrypoint(ctx: JobContext) -> None:
+    await ctx.connect()
+
+    session = build_session()
     agent = Agent(
         instructions="You are Anicca's Japanese voice coach. Greet the user, keep replies brief, empathetic, and action-oriented."
     )
@@ -21,4 +34,5 @@ def main():
     agents.cli.run_app(workers)
 
 
-    asyncio.run(main())
+if __name__ == "__main__":
+    main()

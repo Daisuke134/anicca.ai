@@ -7,7 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8471AD1A2EB4ACE7002CECAA /* LiveKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AD192EB4ACE7002CECAA /* LiveKit */; };
+		8471AD1A2EB4ACE7002CECAA /* LiveKitWebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AD192EB4ACE7002CECAA /* LiveKitWebRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -40,7 +40,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8471AD1A2EB4ACE7002CECAA /* LiveKit in Frameworks */,
+				8471AD1A2EB4ACE7002CECAA /* LiveKitWebRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -83,7 +83,7 @@
 			);
 			name = Smart;
 			packageProductDependencies = (
-				8471AD192EB4ACE7002CECAA /* LiveKit */,
+				8471AD192EB4ACE7002CECAA /* LiveKitWebRTC */,
 			);
 			productName = Smart;
 			productReference = 8471ACFE2EB4ACE4002CECAA /* Smart.app */;
@@ -114,7 +114,7 @@
 			mainGroup = 8471ACF52EB4ACE4002CECAA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+				8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "webrtc-xcframework" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471ACFF2EB4ACE4002CECAA /* Products */;
@@ -366,21 +366,21 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+		8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "webrtc-xcframework" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			repositoryURL = "https://github.com/livekit/webrtc-xcframework";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
+				minimumVersion = 118.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8471AD192EB4ACE7002CECAA /* LiveKit */ = {
+		8471AD192EB4ACE7002CECAA /* LiveKitWebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
-			productName = LiveKit;
+			package = 8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "webrtc-xcframework" */;
+			productName = LiveKitWebRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

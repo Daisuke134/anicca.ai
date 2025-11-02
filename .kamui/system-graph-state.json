@@ -17076,12 +17076,13 @@
     "mode": "full",
     "isPartial": false,
     "branchPulse": {
-      "generatedAt": 1762089105809,
+      "generatedAt": 1762093692621,
       "targets": [
         "main",
         "feature/desktop-debug",
         "feature/improvements",
         "feature/parallel-system",
+        "feature/nitwork3-desktop-improvement",
         "task/task-1761990295908-b2e49d",
         "task/task-1761990298422-63dac9",
         "task/task-1761990301087-fcc9d8",
@@ -17100,10 +17101,10 @@
       "statsByBranch": {
         "main": {
           "branch": "main",
-          "head": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "baseRef": "origin/main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-          "mergeBase": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "mergeBase": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "divergence": {
             "aheadCount": 0,
             "fileCount": 0
@@ -17115,20 +17116,20 @@
           },
           "upstream": null
         },
-        "task/task-1761990295908-b2e49d": {
-          "branch": "task/task-1761990295908-b2e49d",
-          "head": "36519447683be3736d865316ebb3fa10841f38db",
-          "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
+        "feature/nitwork3-desktop-improvement": {
+          "branch": "feature/nitwork3-desktop-improvement",
+          "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "origin/main",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "mergeBase": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "divergence": {
             "aheadCount": 0,
             "fileCount": 0
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 12,
-            "fileCount": 52
+            "behindCount": 0,
+            "fileCount": 0
           },
           "upstream": null
         },
@@ -17136,7 +17137,7 @@
           "branch": "feature/improvements",
           "head": "68205e57a8a176035bf0f35d70dc6bc1a2907cc7",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "68205e57a8a176035bf0f35d70dc6bc1a2907cc7",
           "divergence": {
             "aheadCount": 0,
@@ -17144,7 +17145,7 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 302,
+            "behindCount": 303,
             "fileCount": 478
           },
           "upstream": null
@@ -17153,7 +17154,7 @@
           "branch": "feature/desktop-debug",
           "head": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
           "divergence": {
             "aheadCount": 0,
@@ -17161,7 +17162,7 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 297,
+            "behindCount": 298,
             "fileCount": 492
           },
           "upstream": null
@@ -17170,7 +17171,7 @@
           "branch": "feature/parallel-system",
           "head": "863d4a241d9d261d92f5a7b0daac504af7450de6",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "863d4a241d9d261d92f5a7b0daac504af7450de6",
           "divergence": {
             "aheadCount": 0,
@@ -17178,16 +17179,16 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 288,
+            "behindCount": 289,
             "fileCount": 494
           },
           "upstream": null
         },
-        "task/task-1761990298422-63dac9": {
-          "branch": "task/task-1761990298422-63dac9",
+        "task/task-1761990295908-b2e49d": {
+          "branch": "task/task-1761990295908-b2e49d",
           "head": "36519447683be3736d865316ebb3fa10841f38db",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
           "divergence": {
             "aheadCount": 0,
@@ -17195,7 +17196,24 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 12,
+            "behindCount": 13,
+            "fileCount": 52
+          },
+          "upstream": null
+        },
+        "task/task-1761990298422-63dac9": {
+          "branch": "task/task-1761990298422-63dac9",
+          "head": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseRef": "main",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 13,
             "fileCount": 52
           },
           "upstream": null
@@ -17204,7 +17222,7 @@
           "branch": "task/task-1761990301087-fcc9d8",
           "head": "36519447683be3736d865316ebb3fa10841f38db",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
           "divergence": {
             "aheadCount": 0,
@@ -17212,25 +17230,8 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 12,
+            "behindCount": 13,
             "fileCount": 52
-          },
-          "upstream": null
-        },
-        "feature/claude-sdk-integration": {
-          "branch": "feature/claude-sdk-integration",
-          "head": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
-          "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-          "mergeBase": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 311,
-            "fileCount": 476
           },
           "upstream": null
         },
@@ -17238,7 +17239,7 @@
           "branch": "feature/agent-s-integration-clean",
           "head": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
           "divergence": {
             "aheadCount": 0,
@@ -17246,8 +17247,25 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 329,
+            "behindCount": 330,
             "fileCount": 468
+          },
+          "upstream": null
+        },
+        "feature/claude-sdk-integration": {
+          "branch": "feature/claude-sdk-integration",
+          "head": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
+          "baseRef": "main",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "mergeBase": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 312,
+            "fileCount": 476
           },
           "upstream": null
         },
@@ -17289,7 +17307,7 @@
           "branch": "feature/mastra-complete",
           "head": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
           "divergence": {
             "aheadCount": 0,
@@ -17297,25 +17315,8 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 314,
+            "behindCount": 315,
             "fileCount": 483
-          },
-          "upstream": null
-        },
-        "feature/user-profile": {
-          "branch": "feature/user-profile",
-          "head": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
-          "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-          "mergeBase": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 321,
-            "fileCount": 489
           },
           "upstream": null
         },
@@ -17323,7 +17324,7 @@
           "branch": "feature/claude-unified",
           "head": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
           "baseRef": "main",
-          "baseHead": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "mergeBase": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
           "divergence": {
             "aheadCount": 0,
@@ -17331,8 +17332,25 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 291,
+            "behindCount": 292,
             "fileCount": 496
+          },
+          "upstream": null
+        },
+        "feature/user-profile": {
+          "branch": "feature/user-profile",
+          "head": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
+          "baseRef": "main",
+          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "mergeBase": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 322,
+            "fileCount": 489
           },
           "upstream": null
         }
@@ -17341,7 +17359,7 @@
   },
   "gitHistoryState": {
     "selectedTimelineIndex": 1,
-    "activeCommitHash": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+    "activeCommitHash": null,
     "entries": [
       {
         "type": "live",
@@ -17350,7 +17368,7 @@
         "branch": "task/task-1761990298422-63dac9",
         "targetCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-        "timestamp": 1762089105840,
+        "timestamp": 1762093692652,
         "lane": 0,
         "branchLabel": "task/task-1761990298422-63dac9",
         "branchTags": [
@@ -17359,6 +17377,385 @@
         "isDefaultWorktree": true,
         "branchColor": "#4f85e8",
         "index": 0
+      },
+      {
+        "type": "anchor",
+        "label": "[feature/nitwork3-desktop-improvement]",
+        "branch": "feature/nitwork3-desktop-improvement",
+        "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
+        "parentCommitHash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+        "lane": 4,
+        "isMerged": false,
+        "mergeCommitHash": null,
+        "statusChildren": [],
+        "isDefaultWorktree": false,
+        "renderMode": "node",
+        "shouldHide": false,
+        "tagLabel": "feature/nitwork3-desktop-improvement",
+        "taskId": "nitwork3-desktop-improvement",
+        "taskStatus": null,
+        "taskStatusLabel": null,
+        "taskName": null,
+        "tooltip": "ID: nitwork3-desktop-improvement\nBranch: feature/nitwork3-desktop-improvement\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
+        "branchColor": "#e84f7f",
+        "index": 1
+      },
+      {
+        "type": "commit",
+        "label": "chore: sync ios project state",
+        "commit": {
+          "hash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "subject": "chore: sync ios project state",
+          "author": "codex-bot",
+          "timestamp": 1762089225,
+          "parents": [
+            "d4dc3adec5517ade36e617317dbab2280c287f0d"
+          ],
+          "parent": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+          "refs": "origin/main, origin/HEAD, main, feature/nitwork3-desktop-improvement",
+          "branches": [
+            "origin/main",
+            "origin/HEAD",
+            "main",
+            "feature/nitwork3-desktop-improvement"
+          ]
+        },
+        "commitHash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+        "lane": 0,
+        "parentLinks": [
+          {
+            "hash": "d4dc3adec5517ade36e617317dbab2280c287f0d",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "main",
+        "branchColor": "#4f85e8",
+        "branchTags": [],
+        "worktrees": [
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project",
+            "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+            "branch": "main",
+            "isMerged": true,
+            "mergeCommitHash": "bd44e004258697c503802ffdb4ede632dc627f45",
+            "status": {
+              "staged": [
+                {
+                  "path": "kamui/model-versions-cache.json",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "kamui/model-versions-cache.json",
+                  "timestamp": 1762093691304
+                }
+              ],
+              "unstaged": [
+                {
+                  "path": ".kamui/system-graph-state.json",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": ".kamui/system-graph-state.json",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": ".worktrees/task-1761990298422-63dac9",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": ".worktrees/task-1761990298422-63dac9",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "AGENTS.md",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "AGENTS.md",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart.xcodeproj/project.pbxproj",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.pbxproj",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Audio/AppAudioController.swift",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart/Audio/AppAudioController.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Audio/VoiceEngine.swift",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart/Audio/VoiceEngine.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Config/AppConfig.swift",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart/Config/AppConfig.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/ContentView.swift",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart/ContentView.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Features/Voice/VoicePipeline.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "Anicca/Smart/Smart/Features/Voice/VoicePipeline.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Services/API/APIError.swift",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart/Services/API/APIError.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/agents/mobile_voice_agent.py",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "apps/api/agents/mobile_voice_agent.py",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/config/environment.js",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "apps/api/src/config/environment.js",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/routes/mobile/index.js",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "apps/api/src/routes/mobile/index.js",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/routes/mobile/rtc.js",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/api/src/routes/mobile/rtc.js",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/services/livekitTokenService.js",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/api/src/services/livekitTokenService.js",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/services/mobileVoiceAgent.js",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/api/src/services/mobileVoiceAgent.js",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Resources/Anicca.entitlements",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Resources/Anicca.entitlements",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Resources/Assets.xcassets/Contents.json",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Resources/Assets.xcassets/Contents.json",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Resources/Preview Content/Preview Assets.xcassets/Contents.json",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "\"apps/will-delete/Resources/Preview Content/Preview Assets.xcassets/Contents.json\"",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Sources/AniccaApp.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Sources/AniccaApp.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Sources/ContentView.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Sources/ContentView.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITests.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITests.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITestsLaunchTests.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITestsLaunchTests.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/Tests/Unit/AniccaTests/AniccaTests.swift",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/Tests/Unit/AniccaTests/AniccaTests.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/Anicca.xcodeproj/project.pbxproj",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/project.pbxproj",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/Anicca.xcodeproj/xcshareddata/xcschemes/Anicca.xcscheme",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/xcshareddata/xcschemes/Anicca.xcscheme",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/Info.plist",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/Info.plist",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/project.yml",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/project.yml",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/will-delete/ios/xcodegen",
+                  "originalPath": null,
+                  "status": "deleted",
+                  "rawPath": "apps/will-delete/ios/xcodegen",
+                  "timestamp": 1762093691304
+                }
+              ],
+              "untracked": [
+                {
+                  "path": ".worktrees/feature-nitwork3-desktop-improvement/",
+                  "status": "untracked",
+                  "rawPath": ".worktrees/feature-nitwork3-desktop-improvement/",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Audio/AudioManager.swift",
+                  "status": "untracked",
+                  "rawPath": "Anicca/Smart/Smart/Audio/AudioManager.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "Anicca/Smart/Smart/Features/Voice/OpenAIRealtimeSession.swift",
+                  "status": "untracked",
+                  "rawPath": "Anicca/Smart/Smart/Features/Voice/OpenAIRealtimeSession.swift",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/routes/mobile/realtime.js",
+                  "status": "untracked",
+                  "rawPath": "apps/api/src/routes/mobile/realtime.js",
+                  "timestamp": 1762093691304
+                },
+                {
+                  "path": "apps/api/src/services/openaiRealtimeService.js",
+                  "status": "untracked",
+                  "rawPath": "apps/api/src/services/openaiRealtimeService.js",
+                  "timestamp": 1762093691304
+                }
+              ],
+              "capturedAt": 1762093691304
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project",
+            "lane": 0
+          },
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
+            "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+            "branch": "feature/nitwork3-desktop-improvement",
+            "isMerged": false,
+            "mergeCommitHash": null,
+            "status": {
+              "staged": [],
+              "unstaged": [],
+              "untracked": [],
+              "capturedAt": 1762093691286
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
+            "lane": 4
+          }
+        ],
+        "index": 2
       },
       {
         "type": "commit",
@@ -17372,11 +17769,10 @@
             "a89ca1c0c9b28a1a00144a483981b0a5d13ff73d"
           ],
           "parent": "a89ca1c0c9b28a1a00144a483981b0a5d13ff73d",
-          "refs": "origin/main, origin/HEAD, main",
+          "refs": "",
           "branches": [
-            "origin/main",
-            "origin/HEAD",
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "d4dc3adec5517ade36e617317dbab2280c287f0d",
@@ -17390,61 +17786,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "worktrees": [
-          {
-            "path": "/Users/cbns03/Downloads/anicca-project",
-            "head": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-            "branch": "main",
-            "isMerged": true,
-            "mergeCommitHash": "bd44e004258697c503802ffdb4ede632dc627f45",
-            "status": {
-              "staged": [
-                {
-                  "path": "kamui/model-versions-cache.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "kamui/model-versions-cache.json",
-                  "timestamp": 1762089104102
-                }
-              ],
-              "unstaged": [
-                {
-                  "path": ".kamui/system-graph-state.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": ".kamui/system-graph-state.json",
-                  "timestamp": 1762089104102
-                },
-                {
-                  "path": ".worktrees/task-1761990298422-63dac9",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": ".worktrees/task-1761990298422-63dac9",
-                  "timestamp": 1762089104102
-                },
-                {
-                  "path": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "timestamp": 1762089104102
-                },
-                {
-                  "path": "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "timestamp": 1762089104102
-                }
-              ],
-              "untracked": [],
-              "capturedAt": 1762089104102
-            },
-            "normalizedPath": "/Users/cbns03/Downloads/anicca-project",
-            "lane": 0
-          }
-        ],
-        "index": 1
+        "index": 3
       },
       {
         "type": "commit",
@@ -17460,7 +17802,8 @@
           "parent": "9db0c72d783d377832091e2a421aae7795edf5c4",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "a89ca1c0c9b28a1a00144a483981b0a5d13ff73d",
@@ -17474,7 +17817,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 2
+        "index": 4
       },
       {
         "type": "commit",
@@ -17490,7 +17833,8 @@
           "parent": "42e003b1832999afc9402dc7e112d3324ce62884",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "9db0c72d783d377832091e2a421aae7795edf5c4",
@@ -17504,7 +17848,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 3
+        "index": 5
       },
       {
         "type": "commit",
@@ -17520,7 +17864,8 @@
           "parent": "8069b17752defd716f638c8382f98c4f3679e56c",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "42e003b1832999afc9402dc7e112d3324ce62884",
@@ -17534,7 +17879,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 4
+        "index": 6
       },
       {
         "type": "commit",
@@ -17550,7 +17895,8 @@
           "parent": "5eed4cc4c5f69b46e8e344321870687797617817",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "8069b17752defd716f638c8382f98c4f3679e56c",
@@ -17564,7 +17910,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 5
+        "index": 7
       },
       {
         "type": "commit",
@@ -17580,7 +17926,8 @@
           "parent": "e7a297807ec2d951d140283e133a3b0e5f562ac3",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "5eed4cc4c5f69b46e8e344321870687797617817",
@@ -17594,7 +17941,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 6
+        "index": 8
       },
       {
         "type": "commit",
@@ -17610,7 +17957,8 @@
           "parent": "b0212a8b49950f2361307043d96c036dc1915394",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "e7a297807ec2d951d140283e133a3b0e5f562ac3",
@@ -17624,7 +17972,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 7
+        "index": 9
       },
       {
         "type": "commit",
@@ -17640,7 +17988,8 @@
           "parent": "347d17613538896c3176a02717fa0fe55bdff052",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "b0212a8b49950f2361307043d96c036dc1915394",
@@ -17654,7 +18003,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 8
+        "index": 10
       },
       {
         "type": "commit",
@@ -17670,7 +18019,8 @@
           "parent": "923869a4d65e2961b04a7b3ff3d3a4b4f4a4034c",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "347d17613538896c3176a02717fa0fe55bdff052",
@@ -17684,7 +18034,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 9
+        "index": 11
       },
       {
         "type": "commit",
@@ -17700,7 +18050,8 @@
           "parent": "38c7f42fccc5b433bcd19588910a872763858ce7",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "923869a4d65e2961b04a7b3ff3d3a4b4f4a4034c",
@@ -17714,7 +18065,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 10
+        "index": 12
       },
       {
         "type": "commit",
@@ -17730,7 +18081,8 @@
           "parent": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "38c7f42fccc5b433bcd19588910a872763858ce7",
@@ -17744,7 +18096,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 11
+        "index": 13
       },
       {
         "type": "commit",
@@ -17760,7 +18112,8 @@
           "parent": "36519447683be3736d865316ebb3fa10841f38db",
           "refs": "",
           "branches": [
-            "main"
+            "main",
+            "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
@@ -17774,7 +18127,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 12
+        "index": 14
       },
       {
         "type": "unstaged",
@@ -17785,11 +18138,11 @@
         "branch": "task/task-1761990298422-63dac9",
         "targetCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-        "timestamp": 1762089105840,
+        "timestamp": 1762093692652,
         "sortOrder": 0,
-        "lane": 5,
+        "lane": 6,
         "branchColor": "#e84f4f",
-        "index": 13
+        "index": 15
       },
       {
         "type": "anchor",
@@ -17797,7 +18150,7 @@
         "branch": "task/task-1761990295908-b2e49d",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
         "parentCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
-        "lane": 4,
+        "lane": 5,
         "isMerged": false,
         "mergeCommitHash": null,
         "statusChildren": [],
@@ -17811,7 +18164,7 @@
         "taskName": "CodexCLI1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる",
         "tooltip": "タスク: CodexCLI1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる\nステータス: 作業中\nID: task-1761990295908-b2e49d\nBranch: task/task-1761990295908-b2e49d\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
         "branchColor": "#4fe84f",
-        "index": 14
+        "index": 16
       },
       {
         "type": "anchor",
@@ -17819,7 +18172,7 @@
         "branch": "task/task-1761990301087-fcc9d8",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
         "parentCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
-        "lane": 6,
+        "lane": 7,
         "isMerged": false,
         "mergeCommitHash": null,
         "statusChildren": [],
@@ -17833,7 +18186,7 @@
         "taskName": "ClaudeCode1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる",
         "tooltip": "タスク: ClaudeCode1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる\nステータス: 作業中\nID: task-1761990301087-fcc9d8\nBranch: task/task-1761990301087-fcc9d8\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
         "branchColor": "#4f85e8",
-        "index": 15
+        "index": 17
       },
       {
         "type": "commit",
@@ -17853,6 +18206,7 @@
             "task/task-1761990301087-fcc9d8",
             "task/task-1761990295908-b2e49d",
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990298422-63dac9"
           ]
         },
@@ -17880,10 +18234,10 @@
               "staged": [],
               "unstaged": [],
               "untracked": [],
-              "capturedAt": 1762089104057
+              "capturedAt": 1762093691312
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
-            "lane": 4
+            "lane": 5
           },
           {
             "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
@@ -17899,13 +18253,13 @@
                   "path": "apps/web/public/novel-ui.html",
                   "status": "untracked",
                   "rawPath": "apps/web/public/novel-ui.html",
-                  "timestamp": 1762089104098
+                  "timestamp": 1762093691330
                 }
               ],
-              "capturedAt": 1762089104098
+              "capturedAt": 1762093691330
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-            "lane": 5
+            "lane": 6
           },
           {
             "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
@@ -17917,13 +18271,13 @@
               "staged": [],
               "unstaged": [],
               "untracked": [],
-              "capturedAt": 1762089104134
+              "capturedAt": 1762093691337
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
-            "lane": 6
+            "lane": 7
           }
         ],
-        "index": 16
+        "index": 18
       },
       {
         "type": "commit",
@@ -17955,7 +18309,7 @@
         "branchTags": [
           "emergent-copy"
         ],
-        "index": 17
+        "index": 19
       },
       {
         "type": "commit",
@@ -17982,7 +18336,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 18
+        "index": 20
       },
       {
         "type": "commit",
@@ -18000,6 +18354,7 @@
           "branches": [
             "emergent-clone",
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18018,7 +18373,7 @@
         "branchTags": [
           "emergent-clone"
         ],
-        "index": 19
+        "index": 21
       },
       {
         "type": "commit",
@@ -18050,7 +18405,7 @@
         "branchTags": [
           "emergent-web"
         ],
-        "index": 20
+        "index": 22
       },
       {
         "type": "commit",
@@ -18070,7 +18425,7 @@
         "parentLinks": [],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 21
+        "index": 23
       },
       {
         "type": "commit",
@@ -18087,6 +18442,7 @@
           "refs": "tag: v0.6.16",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18103,7 +18459,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 22
+        "index": 24
       },
       {
         "type": "commit",
@@ -18120,6 +18476,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18136,7 +18493,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 23
+        "index": 25
       },
       {
         "type": "commit",
@@ -18153,6 +18510,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18169,7 +18527,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 24
+        "index": 26
       },
       {
         "type": "commit",
@@ -18186,6 +18544,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18202,7 +18561,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 25
+        "index": 27
       },
       {
         "type": "commit",
@@ -18219,6 +18578,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18235,7 +18595,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 26
+        "index": 28
       },
       {
         "type": "commit",
@@ -18252,6 +18612,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18268,7 +18629,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 27
+        "index": 29
       },
       {
         "type": "commit",
@@ -18285,6 +18646,7 @@
           "refs": "tag: v0.6.15",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18301,7 +18663,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 28
+        "index": 30
       },
       {
         "type": "commit",
@@ -18318,6 +18680,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18334,7 +18697,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 29
+        "index": 31
       },
       {
         "type": "commit",
@@ -18351,6 +18714,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18367,7 +18731,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 30
+        "index": 32
       },
       {
         "type": "commit",
@@ -18385,6 +18749,7 @@
           "refs": "",
           "branches": [
             "main",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8",
@@ -18408,7 +18773,7 @@
         "branchTags": [
           "feature/wake-routine-tags"
         ],
-        "index": 31
+        "index": 33
       },
       {
         "type": "commit",
@@ -18426,6 +18791,7 @@
           "branches": [
             "origin/feature/wake-routine-tags",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18442,7 +18808,7 @@
         "primaryBranchName": "feature/wake-routine-tags",
         "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 32
+        "index": 34
       },
       {
         "type": "commit",
@@ -18459,6 +18825,7 @@
           "refs": "",
           "branches": [
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18475,7 +18842,7 @@
         "primaryBranchName": "feature/wake-routine-tags",
         "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 33
+        "index": 35
       },
       {
         "type": "commit",
@@ -18493,6 +18860,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18509,7 +18877,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 34
+        "index": 36
       },
       {
         "type": "commit",
@@ -18527,6 +18895,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18543,7 +18912,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 35
+        "index": 37
       },
       {
         "type": "commit",
@@ -18561,6 +18930,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18577,7 +18947,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 36
+        "index": 38
       },
       {
         "type": "commit",
@@ -18595,6 +18965,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18611,7 +18982,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 37
+        "index": 39
       },
       {
         "type": "commit",
@@ -18629,6 +19000,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18645,7 +19017,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 38
+        "index": 40
       },
       {
         "type": "commit",
@@ -18663,6 +19035,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18679,7 +19052,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 39
+        "index": 41
       },
       {
         "type": "commit",
@@ -18697,6 +19070,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18713,7 +19087,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 40
+        "index": 42
       },
       {
         "type": "commit",
@@ -18731,6 +19105,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18747,7 +19122,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 41
+        "index": 43
       },
       {
         "type": "commit",
@@ -18765,6 +19140,7 @@
           "branches": [
             "main",
             "feature/wake-routine-tags",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
             "task/task-1761990301087-fcc9d8"
@@ -18781,7 +19157,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 42
+        "index": 44
       },
       {
         "type": "commit",
@@ -18815,7 +19191,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 43
+        "index": 45
       },
       {
         "type": "commit",
@@ -18849,7 +19225,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 44
+        "index": 46
       },
       {
         "type": "commit",
@@ -18883,7 +19259,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 45
+        "index": 47
       },
       {
         "type": "commit",
@@ -18917,7 +19293,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 46
+        "index": 48
       },
       {
         "type": "commit",
@@ -18944,7 +19320,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 47
+        "index": 49
       },
       {
         "type": "commit",
@@ -18971,7 +19347,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 48
+        "index": 50
       },
       {
         "type": "commit",
@@ -19005,7 +19381,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 49
+        "index": 51
       },
       {
         "type": "commit",
@@ -19039,7 +19415,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 50
+        "index": 52
       },
       {
         "type": "commit",
@@ -19066,7 +19442,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 51
+        "index": 53
       },
       {
         "type": "commit",
@@ -19100,7 +19476,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 52
+        "index": 54
       },
       {
         "type": "commit",
@@ -19134,7 +19510,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 53
+        "index": 55
       },
       {
         "type": "commit",
@@ -19156,7 +19532,7 @@
           ]
         },
         "commitHash": "4a565d791ef935168d72e8e8402be0a551768156",
-        "lane": 7,
+        "lane": 8,
         "parentLinks": [
           {
             "hash": "f994577c46f89ca035436d0725f748f948df8331",
@@ -19176,7 +19552,7 @@
         "branchTags": [
           "refs/stash"
         ],
-        "index": 54
+        "index": 56
       },
       {
         "type": "commit",
@@ -19203,17 +19579,17 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 55
+        "index": 57
       },
       {
         "type": "empty",
         "label": "初期状態 (初回コミット以前)",
         "files": [],
         "marker": "pre-history",
-        "index": 56
+        "index": 58
       }
     ]
   },
   "projectRoot": "/Users/cbns03/Downloads/anicca-project",
-  "savedAt": 1762089163670
+  "savedAt": 1762093750967
 }

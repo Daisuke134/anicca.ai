@@ -35,19 +35,6 @@ export const SERVER_CONFIG = {
   PUBLIC_DOMAIN: process.env.RAILWAY_PUBLIC_DOMAIN || process.env.VERCEL_URL
 };
 
-const livekitTokenTtlRaw = process.env.LIVEKIT_TOKEN_TTL_SECONDS || '';
-const livekitTokenTtlParsed = Number.parseInt(livekitTokenTtlRaw, 10);
-
-export const LIVEKIT_CONFIG = {
-  WS_URL: process.env.LIVEKIT_WS_URL || '',
-  API_KEY: process.env.LIVEKIT_API_KEY || '',
-  API_SECRET: process.env.LIVEKIT_API_SECRET || '',
-  DEFAULT_ROOM: process.env.LIVEKIT_DEFAULT_ROOM || '',
-  TOKEN_TTL: Number.isFinite(livekitTokenTtlParsed) && livekitTokenTtlParsed > 0 ? livekitTokenTtlParsed : 600,
-  AGENT_NAME: process.env.LIVEKIT_AGENT_NAME?.trim() || 'mobile-assistant',
-  AGENT_VOICE: process.env.LIVEKIT_AGENT_VOICE?.trim() || 'alloy'
-};
-
 // API Keys（存在チェックのみ、実際の値は環境変数から直接参照）
 export const API_KEYS = {
   ANTHROPIC: !!process.env.ANTHROPIC_API_KEY,
@@ -147,8 +134,8 @@ export function validateEnvironment() {
   if (process.env.PRO_DAILY_LIMIT && BILLING_CONFIG.PRO_DAILY_LIMIT === null) {
     warnings.push('PRO_DAILY_LIMIT is not a valid integer');
   }
-  if (livekitTokenTtlRaw && !Number.isFinite(livekitTokenTtlParsed)) {
-    warnings.push('LIVEKIT_TOKEN_TTL_SECONDS is not a valid integer');
+  if (!API_KEYS.OPENAI) {
+    warnings.push('OPENAI_API_KEY must be set');
   }
 
   return warnings;
@@ -165,9 +152,6 @@ export function logEnvironment() {
   console.log(`  - Stripe price: ${BILLING_CONFIG.STRIPE_PRICE_PRO_MONTHLY || 'unset'}`);
   console.log(`  - Free daily limit: ${BILLING_CONFIG.FREE_DAILY_LIMIT ?? 'unset'}`);
   console.log(`  - Pro daily limit: ${BILLING_CONFIG.PRO_DAILY_LIMIT ?? 'default(1000)'}`);
-  console.log(`  - LiveKit URL: ${LIVEKIT_CONFIG.WS_URL || 'unset'}`);
-  console.log(`  - LiveKit default room: ${LIVEKIT_CONFIG.DEFAULT_ROOM || 'unset (server decides)'}`);
-  console.log(`  - LiveKit token ttl: ${LIVEKIT_CONFIG.TOKEN_TTL}s`);
   
   const warnings = validateEnvironment();
   if (warnings.length > 0) {

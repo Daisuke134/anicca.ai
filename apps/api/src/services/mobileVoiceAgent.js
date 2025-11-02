@@ -43,6 +43,7 @@ async function createAgentJob({ identity, room }) {
       'Content-Type': 'application/json',
       Authorization: await buildAgentAuthorization(room)
     },
+    redirect: 'manual',
     body: JSON.stringify(payload)
   });
 

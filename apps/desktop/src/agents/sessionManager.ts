@@ -103,6 +103,7 @@ export class AniccaSessionManager {
   private stickyStatePath = path.join(os.homedir(), '.anicca', 'sticky_state.json');
   private stickyStartedAt: number | null = null;
   private stickySingleShot: boolean = false;
+  private userSpeechActive: boolean = false;
   
   // （wake専用ループ／独自ゲートは撤廃）
   
@@ -1188,7 +1189,7 @@ export class AniccaSessionManager {
     } catch {}
   }
 
-  private scheduleWakeFollowUp(delayMs = 1000) {
+  private scheduleWakeFollowUp(delayMs = 3000) {
     if (!this.session) return;
     if (this.wakeFollowUpTimer) {
       clearTimeout(this.wakeFollowUpTimer);
@@ -1197,7 +1198,7 @@ export class AniccaSessionManager {
       this.wakeFollowUpTimer = null;
       if (!this.session) return;
       if (this.stickyTask !== 'wake_up' || !this.wakeActive) return;
-      if (this.isGenerating || this.pendingAssistantResponse) {
+      if (this.isGenerating || this.pendingAssistantResponse || this.userSpeechActive) {
         this.scheduleWakeFollowUp(500);
         return;
       }
@@ -1211,7 +1212,7 @@ export class AniccaSessionManager {
     }, delayMs);
   }
 
-  private scheduleSleepFollowUp(delayMs = 1000) {
+  private scheduleSleepFollowUp(delayMs = 3000) {
     if (!this.session) return;
     if (this.sleepFollowUpTimer) {
       clearTimeout(this.sleepFollowUpTimer);
@@ -1220,7 +1221,7 @@ export class AniccaSessionManager {
       this.sleepFollowUpTimer = null;
       if (!this.session) return;
       if (this.stickyTask !== 'sleep' || !this.sleepActive) return;
-      if (this.isGenerating || this.pendingAssistantResponse) {
+      if (this.isGenerating || this.pendingAssistantResponse || this.userSpeechActive) {
         this.scheduleSleepFollowUp(500);
         return;
       }
@@ -1247,10 +1248,8 @@ export class AniccaSessionManager {
           audio: {
             input: {
               turnDetection: {
-                type: 'server_vad',
-                threshold: 0.5,
-                prefixPaddingMs: 300,
-                silenceDurationMs: 500,
+                type: 'semantic_vad',
+                eagerness: 'low',
                 interruptResponse: true,
                 createResponse: true,
                 idleTimeoutMs: 30_000
@@ -1415,9 +1414,14 @@ export class AniccaSessionManager {
     });
 
     this.session.transport.on('input_audio_buffer.speech_started', () => {
+      this.userSpeechActive = true;
       if (this.mode === 'conversation') {
         this.noteUserActivity();
       }
+    });
+
+    this.session.transport.on('input_audio_buffer.speech_stopped', () => {
+      this.userSpeechActive = false;
     });
 
     // 音声開始/終了

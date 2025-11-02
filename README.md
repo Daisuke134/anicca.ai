@@ -37,7 +37,7 @@ We want to build Anicca, a Persuasion Agent that leads people toward their best 
 ## Roadmap
 - **Hosted MCP integrations (future)**: Calendar, email, and journal tools are being prepared but are not yet available in production. The desktop agent is already structured to consume them once stabilized.
 - **Enterprise & social channels (future)**: Slack and similar connections are explicitly out of scope in current builds; they will be reintroduced only after the persuasion loop reaches the desired quality bar.
-- **Expanded habit domains**: Meditation, generosity prompts, and attention steering will follow once the wake/sleep experience is perfected.
+- **Expanded habit domains**: Meditation, generosity prompts, and attention steering will follow with better context engineering. 
 
 ---
 

@@ -1,8 +1,8 @@
 import { AccessToken } from '@livekit/livekit-server-sdk';
 import { LIVEKIT_CONFIG } from '../config/environment.js';
-import Logger from '../utils/logger.js';
+import baseLogger from '../utils/logger.js';
 
-const logger = new Logger('LiveKitTokenService');
+const logger = baseLogger.withContext('LiveKitTokenService');
 const DEFAULT_TTL = 600;
 
 function ensureLiveKitConfiguration() {

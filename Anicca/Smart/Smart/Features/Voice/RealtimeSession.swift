@@ -17,7 +17,9 @@ final class RealtimeSession: NSObject, ObservableObject {
     private var hasAttachedDelegate = false
     private var isConnecting = false
     private var retryAttempts = 0
-    private var remoteRenderer: AudioPlayerRenderer?
+    private var remoteRenderer: LiveKit.AudioPlayerRenderer?
+    private weak var currentRemoteTrack: RemoteAudioTrack?
+    private var lastTokenResponse: LiveKitTokenResponse?
 
     init(mobileClient: MobileAPIClientProtocol, userResolver: DeviceIdentityProviding) {
         self.mobileClient = mobileClient
@@ -26,15 +28,17 @@ final class RealtimeSession: NSObject, ObservableObject {
         super.init()
     }
 
-    func connect(userId: String) async throws {
-        guard !isConnecting else {
+    func connect(userId: String) async throws -> LiveKitTokenResponse {
+        if isConnecting {
             logger.debug("Skip connect because another attempt is in progress")
-            return
+            if let cached = lastTokenResponse { return cached }
+            throw APIError.realtimeTokenFetchFailed(statusCode: -1)
         }
 
         if room.connectionState == .connected || room.connectionState == .connecting {
             logger.debug("Room already connected or connecting")
-            return
+            if let cached = lastTokenResponse { return cached }
+            throw APIError.realtimeTokenFetchFailed(statusCode: -1)
         }
 
         isConnecting = true
@@ -70,8 +74,7 @@ final class RealtimeSession: NSObject, ObservableObject {
         do {
             try await room.connect(url: response.url.absoluteString, token: response.token, connectOptions: AppConfig.liveKitConnectOptions)
             try await room.localParticipant.setMicrophone(enabled: true)
-            AudioManager.shared.stopAllRemoteRenderers()
-            remoteRenderer = nil
+            await stopRemoteRenderer()
 
             isConnected = true
             connectionState = room.connectionState
@@ -79,6 +82,8 @@ final class RealtimeSession: NSObject, ObservableObject {
             lastErrorMessage = nil
             retryAttempts = 0
             logger.info("LiveKit room connected")
+            lastTokenResponse = response
+            return response
         } catch {
             let message = "LiveKit接続に失敗しました: \(error.localizedDescription)"
             statusMessage = message
@@ -93,11 +98,11 @@ final class RealtimeSession: NSObject, ObservableObject {
         guard room.connectionState != .disconnected else { return }
         logger.info("Disconnecting LiveKit room")
         await room.disconnect()
-        AudioManager.shared.stopAllRemoteRenderers()
-        remoteRenderer = nil
+        await stopRemoteRenderer()
         isConnected = false
         connectionState = .disconnected
         statusMessage = "LiveKit切断済み"
+        lastTokenResponse = nil
     }
 
     func handleForegroundResume() async {
@@ -108,7 +113,7 @@ final class RealtimeSession: NSObject, ObservableObject {
             return
         }
         do {
-            try await connect(userId: userId)
+            _ = try await connect(userId: userId)
         } catch {
             logger.error("Foreground reconnect failed: \(error.localizedDescription, privacy: .public)")
         }
@@ -120,19 +125,19 @@ final class RealtimeSession: NSObject, ObservableObject {
             lastErrorMessage = statusMessage
             return
         }
-        guard retryAttempts < AppConfig.maxRealtimeReconnectAttempts else {
-            statusMessage = "接続できませんでした。ネットワーク状態を確認してください。"
-            lastErrorMessage = statusMessage
+        guard self.retryAttempts < AppConfig.maxRealtimeReconnectAttempts else {
+            self.statusMessage = "接続できませんでした。ネットワーク状態を確認してください。"
+            self.lastErrorMessage = self.statusMessage
             logger.error("Exceeded maximum LiveKit reconnect attempts")
             return
         }
-        retryAttempts += 1
-        statusMessage = "LiveKit再接続中 (\(retryAttempts)/\(AppConfig.maxRealtimeReconnectAttempts))"
-        logger.info("Scheduling LiveKit reconnect attempt \(retryAttempts)")
+        self.retryAttempts += 1
+        self.statusMessage = "LiveKit再接続中 (\(self.retryAttempts)/\(AppConfig.maxRealtimeReconnectAttempts))"
+        logger.info("Scheduling LiveKit reconnect attempt \(self.retryAttempts)")
 
         Task { [weak self, weak userResolver] in
             guard let self else { return }
-            let delay = UInt64(Double(retryAttempts) * 1_000_000_000)
+            let delay = UInt64(Double(self.retryAttempts) * 1_000_000_000)
             try? await Task.sleep(nanoseconds: delay)
 
             guard let userId = userResolver?.userId else {
@@ -144,7 +149,7 @@ final class RealtimeSession: NSObject, ObservableObject {
             }
 
             do {
-                try await self.connect(userId: userId)
+                _ = try await self.connect(userId: userId)
             } catch {
                 await MainActor.run {
                     self.lastErrorMessage = error.localizedDescription
@@ -153,68 +158,112 @@ final class RealtimeSession: NSObject, ObservableObject {
             }
         }
     }
+
+    @MainActor
+    private func attachRemoteRenderer(to track: RemoteAudioTrack) async {
+        await stopRemoteRenderer()
+        let renderer = LiveKit.AudioPlayerRenderer()
+        do {
+            try await renderer.start()
+            track.add(audioRenderer: renderer)
+            remoteRenderer = renderer
+            currentRemoteTrack = track
+            statusMessage = "音声受信中"
+        } catch {
+            lastErrorMessage = "音声再生初期化に失敗しました: \(error.localizedDescription)"
+            statusMessage = "LiveKit音声の取得に失敗しました"
+        }
+    }
+
+    @MainActor
+    private func stopRemoteRenderer() async {
+        guard let renderer = remoteRenderer else { return }
+        currentRemoteTrack?.remove(audioRenderer: renderer)
+        renderer.stop()
+        remoteRenderer = nil
+        currentRemoteTrack = nil
+    }
 }
 
+@MainActor
 extension RealtimeSession: RoomDelegate {
-    func room(_ room: Room, didUpdateConnectionState connectionState: ConnectionState, from oldConnectionState: ConnectionState) {
-        logger.debug("Connection state changed \(String(describing: oldConnectionState)) -> \(String(describing: connectionState))")
-        self.connectionState = connectionState
-        isConnected = connectionState == .connected
+    nonisolated func room(_ room: Room, didUpdateConnectionState connectionState: ConnectionState, from oldConnectionState: ConnectionState) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.debug("Connection state changed \(String(describing: oldConnectionState)) -> \(String(describing: connectionState))")
+            self.connectionState = connectionState
+            self.isConnected = connectionState == .connected
+        }
     }
 
-    func roomDidConnect(_ room: Room) {
-        logger.info("LiveKit room did connect delegate")
-        statusMessage = "LiveKit接続完了"
-        isConnected = true
-        lastErrorMessage = nil
-        retryAttempts = 0
+    nonisolated func roomDidConnect(_ room: Room) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.info("LiveKit room did connect delegate")
+            self.statusMessage = "LiveKit接続完了"
+            self.isConnected = true
+            self.lastErrorMessage = nil
+            self.retryAttempts = 0
+        }
     }
 
-    func roomIsReconnecting(_ room: Room) {
-        logger.warning("LiveKit room is reconnecting")
-        statusMessage = "LiveKit再接続中"
+    nonisolated func roomIsReconnecting(_ room: Room) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.warning("LiveKit room is reconnecting")
+            self.statusMessage = "LiveKit再接続中"
+        }
     }
 
-    func roomDidReconnect(_ room: Room) {
-        logger.info("LiveKit room did reconnect")
-        statusMessage = "LiveKit再接続完了"
-        isConnected = true
-        lastErrorMessage = nil
-        retryAttempts = 0
+    nonisolated func roomDidReconnect(_ room: Room) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.info("LiveKit room did reconnect")
+            self.statusMessage = "LiveKit再接続完了"
+            self.isConnected = true
+            self.lastErrorMessage = nil
+            self.retryAttempts = 0
+        }
     }
 
-    func room(_ room: Room, didDisconnectWithError error: LiveKitError?) {
-        let message = error?.localizedDescription ?? "不明なエラー"
-        logger.error("LiveKit room disconnected: \(message, privacy: .public)")
-        isConnected = false
-        connectionState = room.connectionState
-        statusMessage = "LiveKit切断: \(message)"
-        lastErrorMessage = message
-        AudioManager.shared.stopAllRemoteRenderers()
-        remoteRenderer = nil
-        scheduleReconnect()
+    nonisolated func room(_ room: Room, didDisconnectWithError error: LiveKitError?) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            let message = error?.localizedDescription ?? "不明なエラー"
+            self.logger.error("LiveKit room disconnected: \(message, privacy: .public)")
+            self.isConnected = false
+            self.connectionState = room.connectionState
+            self.statusMessage = "LiveKit切断: \(message)"
+            self.lastErrorMessage = message
+            await self.stopRemoteRenderer()
+            self.scheduleReconnect()
+        }
     }
 
-    func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
+    nonisolated func room(_ room: Room, participant: RemoteParticipant, didSubscribeTrack publication: RemoteTrackPublication) {
         guard let audioTrack = publication.track as? RemoteAudioTrack else { return }
-        logger.info("Subscribed remote audio track")
-        let renderer = AudioPlayerRenderer(track: audioTrack)
-        AudioManager.shared.add(remoteAudioRenderer: renderer)
-        remoteRenderer = renderer
-        statusMessage = "音声受信中"
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.info("Subscribed remote audio track")
+            await self.attachRemoteRenderer(to: audioTrack)
+        }
     }
 
-    func room(_ room: Room, participant: RemoteParticipant, didUnsubscribeTrack publication: RemoteTrackPublication) {
-        guard let renderer = remoteRenderer else { return }
-        logger.info("Unsubscribed remote audio track")
-        AudioManager.shared.remove(remoteAudioRenderer: renderer)
-        remoteRenderer = nil
-        statusMessage = "音声待機中"
+    nonisolated func room(_ room: Room, participant: RemoteParticipant, didUnsubscribeTrack publication: RemoteTrackPublication) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.info("Unsubscribed remote audio track")
+            await self.stopRemoteRenderer()
+            self.statusMessage = "音声待機中"
+        }
     }
 
-    func room(_ room: Room, participant: RemoteParticipant, didFailToSubscribeTrackWithSid trackSid: Track.Sid, error: LiveKitError) {
-        logger.error("Failed to subscribe remote track: \(error.localizedDescription, privacy: .public)")
-        lastErrorMessage = error.localizedDescription
-        statusMessage = "LiveKit音声の取得に失敗しました"
+    nonisolated func room(_ room: Room, participant: RemoteParticipant, didFailToSubscribeTrackWithSid trackSid: Track.Sid, error: LiveKitError) {
+        Task { @MainActor [weak self] in
+            guard let self else { return }
+            self.logger.error("Failed to subscribe remote track: \(error.localizedDescription, privacy: .public)")
+            self.lastErrorMessage = error.localizedDescription
+            self.statusMessage = "LiveKit音声の取得に失敗しました"
+        }
     }
 }

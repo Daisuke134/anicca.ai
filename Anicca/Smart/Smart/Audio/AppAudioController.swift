@@ -16,6 +16,7 @@ final class AppAudioController: ObservableObject {
     private let permissionManager = MicrophonePermissionManager()
     private let identityStore: DeviceIdentityProviding
     private let realtimeSession: RealtimeSession
+    private let voicePipeline = VoicePipeline()
     private var cancellables: Set<AnyCancellable> = []
     private var didPrepare = false
 
@@ -72,7 +73,11 @@ final class AppAudioController: ObservableObject {
                 await realtimeSession.handleForegroundResume()
             }
         case .inactive, .background:
-            Task { await realtimeSession.disconnect() }
+            Task {
+                await voicePipeline.stopSession()
+                await realtimeSession.disconnect()
+                voicePipeline.reset()
+            }
             sessionConfigurator.deactivate()
             voiceEngine.stop()
             logger.info("Audio engine paused for background state")
@@ -101,12 +106,14 @@ final class AppAudioController: ObservableObject {
         }
 
         do {
-            try await realtimeSession.connect(userId: userId)
+            let connection = try await realtimeSession.connect(userId: userId)
+            try await voicePipeline.startSession(userId: userId, token: connection)
         } catch {
             let message = "LiveKitトークン取得失敗: \(error.localizedDescription)"
             await updateStatus(message)
             realtimeStatus = message
             hasRealtimeError = true
+            voicePipeline.reset()
         }
     }
 

@@ -1,15 +1,22 @@
 import Foundation
 import OSLog
 
-struct LiveKitTokenResponse: Decodable {
-    let token: String
-    let url: URL
-    let ttl: TimeInterval
-    let room: String
+struct RealtimeClientSecretResponse: Decodable {
+    let value: String
+    let expiresAt: TimeInterval
+    let model: String
+    let voice: String
+
+    private enum CodingKeys: String, CodingKey {
+        case value
+        case expiresAt = "expires_at"
+        case model
+        case voice
+    }
 }
 
 protocol MobileAPIClientProtocol: AnyObject {
-    func fetchLiveKitToken(userId: String) async throws -> LiveKitTokenResponse
+    func fetchRealtimeClientSecret(userId: String) async throws -> RealtimeClientSecretResponse
 }
 
 @MainActor
@@ -25,48 +32,70 @@ final class MobileAPIClient: MobileAPIClientProtocol {
         self.decoder = decoder
     }
 
-    func fetchLiveKitToken(userId: String) async throws -> LiveKitTokenResponse {
-        guard var components = URLComponents(url: AppConfig.liveKitTokenURL, resolvingAgainstBaseURL: false) else {
-            logger.error("Failed to build LiveKit token URL components")
+    func fetchRealtimeClientSecret(userId: String) async throws -> RealtimeClientSecretResponse {
+        guard var components = URLComponents(url: AppConfig.realtimeSessionURL, resolvingAgainstBaseURL: false) else {
+            logger.error("Failed to build realtime session URL components")
             throw APIError.invalidEndpoint
         }
         components.queryItems = [URLQueryItem(name: "deviceId", value: userId)]
         guard let url = components.url else {
-            logger.error("Failed to resolve LiveKit token URL with query")
+            logger.error("Failed to resolve realtime session URL with query")
             throw APIError.invalidEndpoint
         }
 
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
-        request.setValue(userId, forHTTPHeaderField: "deviceId")
+        request.setValue(userId, forHTTPHeaderField: "device-id")
 
-        logger.debug("Requesting LiveKit token for userId \(userId, privacy: .private(mask: .hash))")
+        logger.debug("Requesting realtime client_secret for userId \(userId, privacy: .private(mask: .hash))")
 
         do {
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                logger.error("LiveKit token response missing HTTPURLResponse")
+                logger.error("Realtime session response missing HTTPURLResponse")
                 throw APIError.requestFailed(statusCode: -1)
             }
 
             guard 200 ..< 300 ~= httpResponse.statusCode else {
-                logger.error("LiveKit token request failed (status \(httpResponse.statusCode))")
+                logger.error("Realtime session request failed (status \(httpResponse.statusCode))")
                 throw APIError.realtimeTokenFetchFailed(statusCode: httpResponse.statusCode)
             }
 
             do {
-                let response = try decoder.decode(LiveKitTokenResponse.self, from: data)
-                logger.info("Received LiveKit token (ttl=\(response.ttl, format: .fixed(precision: 0))s)")
-                return response
+                let root = try decoder.decode(RealtimeSessionEnvelope.self, from: data)
+                logger.info("Received client_secret (expires_at=\(root.clientSecret.expiresAt))")
+                return root.clientSecret
             } catch {
-                logger.error("Failed to decode LiveKit token response: \(error.localizedDescription, privacy: .public)")
+                logger.error("Failed to decode realtime session response: \(error.localizedDescription, privacy: .public)")
                 throw APIError.decodingFailed
             }
         } catch let apiError as APIError {
             throw apiError
         } catch {
-            logger.error("LiveKit token request transport error: \(error.localizedDescription, privacy: .public)")
+            logger.error("Realtime session request transport error: \(error.localizedDescription, privacy: .public)")
             throw APIError.transportError(underlying: error)
         }
+    }
+}
+
+private struct RealtimeSessionEnvelope: Decodable {
+    struct ClientSecretPayload: Decodable {
+        let value: String
+        let expiresAt: TimeInterval
+        let model: String
+        let voice: String
+
+        private enum CodingKeys: String, CodingKey {
+            case value
+            case expiresAt = "expires_at"
+            case model
+            case voice
+        }
+    }
+
+    let clientSecret: ClientSecretPayload
+
+    private enum CodingKeys: String, CodingKey {
+        case clientSecret = "client_secret"
     }
 }

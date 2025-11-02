@@ -1,13 +1,12 @@
 import AVFoundation
 import Combine
-import LiveKit
 import OSLog
 import SwiftUI
 
 @MainActor
 final class AppAudioController: ObservableObject {
     @Published var status: String = "音声準備前"
-    @Published private(set) var realtimeStatus: String = "LiveKit未接続"
+    @Published private(set) var realtimeStatus: String = "Realtime未接続"
     @Published private(set) var isRealtimeConnected: Bool = false
     @Published private(set) var hasRealtimeError: Bool = false
 
@@ -17,30 +16,24 @@ final class AppAudioController: ObservableObject {
     private let audioManager = AudioManager.shared
     private let permissionManager = MicrophonePermissionManager()
     private let identityStore: DeviceIdentityProviding
-    private let realtimeSession: RealtimeSession
-    private let voicePipeline = VoicePipeline()
+    private let realtimeSession: OpenAIRealtimeSession
     private var cancellables: Set<AnyCancellable> = []
     private var didPrepare = false
 
     init(
         identityStore: DeviceIdentityProviding,
-        realtimeSession: RealtimeSession
+        realtimeSession: OpenAIRealtimeSession
     ) {
         self.identityStore = identityStore
         self.realtimeSession = realtimeSession
-        voiceEngine.onMicrophoneFrame = { buffer, _ in
-            AudioManager.shared.mixer.capture(appAudio: buffer)
-        }
+        voiceEngine.onMicrophoneFrame = nil
         bindRealtimeSession()
     }
 
     convenience init() {
         self.init(
             identityStore: DeviceIdentityStore.shared,
-            realtimeSession: RealtimeSession(
-                mobileClient: MobileAPIClient.shared,
-                userResolver: DeviceIdentityStore.shared
-            )
+            realtimeSession: OpenAIRealtimeSession(apiClient: MobileAPIClient.shared)
         )
     }
 
@@ -76,13 +69,15 @@ final class AppAudioController: ObservableObject {
         case .active:
             Task {
                 await ensureSessionActive()
-                await realtimeSession.handleForegroundResume()
+                if let userId = identityStore.userId {
+                    await realtimeSession.handleForegroundResume(userId: userId)
+                } else {
+                    await updateStatus("デバイス識別子の取得に失敗しました")
+                }
             }
         case .inactive, .background:
             Task {
-                await voicePipeline.stopSession()
                 await realtimeSession.disconnect()
-                voicePipeline.reset()
             }
             try? audioManager.setManualRenderingMode(false)
             sessionConfigurator.deactivate()
@@ -91,6 +86,15 @@ final class AppAudioController: ObservableObject {
         @unknown default:
             break
         }
+    }
+
+    func startConversation() async {
+        guard let userId = identityStore.userId else { return }
+        await connectRealtime(userId: userId)
+    }
+
+    func stopConversation() async {
+        await realtimeSession.disconnect()
     }
 
     private func ensureSessionActive() async {
@@ -113,16 +117,7 @@ final class AppAudioController: ObservableObject {
             return
         }
 
-        do {
-            let connection = try await realtimeSession.connect(userId: userId)
-            try await voicePipeline.startSession(userId: userId, token: connection)
-        } catch {
-            let message = "LiveKitトークン取得失敗: \(error.localizedDescription)"
-            await updateStatus(message)
-            realtimeStatus = message
-            hasRealtimeError = true
-            voicePipeline.reset()
-        }
+        await connectRealtime(userId: userId)
     }
 
     private func bindRealtimeSession() {
@@ -139,11 +134,6 @@ final class AppAudioController: ObservableObject {
                 self?.isRealtimeConnected = isConnected
                 if isConnected {
                     self?.hasRealtimeError = false
-                } else {
-                    Task {
-                        await self?.voicePipeline.stopSession()
-                        self?.voicePipeline.reset()
-                    }
                 }
             }
             .store(in: &cancellables)
@@ -157,7 +147,6 @@ final class AppAudioController: ObservableObject {
     }
 
     private func configureAudioManager() throws {
-        audioManager.audioSession.isAutomaticConfigurationEnabled = false
         try audioManager.setVoiceProcessingEnabled(true)
         try audioManager.setManualRenderingMode(true)
         audioManager.mixer.micVolume = 1.0
@@ -166,5 +155,17 @@ final class AppAudioController: ObservableObject {
 
     private nonisolated func updateStatus(_ text: String) async {
         await MainActor.run { self.status = text }
+    }
+
+    private func connectRealtime(userId: String) async {
+        do {
+            await realtimeSession.connect(userId: userId)
+        } catch {
+            let message = "Realtime接続に失敗しました: \(error.localizedDescription)"
+            await updateStatus(message)
+            realtimeStatus = message
+            hasRealtimeError = true
+            await realtimeSession.disconnect()
+        }
     }
 }

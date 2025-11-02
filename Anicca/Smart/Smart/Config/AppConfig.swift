@@ -1,12 +1,11 @@
 import Foundation
-import LiveKit
 import OSLog
 
 enum AppConfig {
     private static let proxyBaseKey = "ANICCA_PROXY_BASE_URL"
     private static let logger = Logger(subsystem: "com.anicca.ios", category: "AppConfig")
 
-    static let liveKitTokenPath = "/rtc/ephemeral-token"
+    static let realtimeSessionPath = "/mobile/realtime/session"
     static let maxRealtimeReconnectAttempts = 3
 
     private static func infoValue(for key: String) -> String {
@@ -31,21 +30,7 @@ enum AppConfig {
         return url
     }
 
-    static var liveKitTokenURL: URL {
-        let base = proxyBaseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        let path = liveKitTokenPath.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        guard let url = URL(string: "\(base)/\(path)") else {
-            logger.fault("Failed to compose LiveKit token URL from base \(base, privacy: .public) and path \(path, privacy: .public)")
-            fatalError("Failed to compose LiveKit token URL")
-        }
-        return url
+    static var realtimeSessionURL: URL {
+        proxyBaseURL.appendingPathComponent(realtimeSessionPath.trimmingCharacters(in: CharacterSet(charactersIn: "/")))
     }
-
-    static let liveKitConnectOptions: ConnectOptions = ConnectOptions(
-        autoSubscribe: true,
-        reconnectAttempts: 10,
-        reconnectAttemptDelay: 0.5,
-        reconnectMaxDelay: 6.0,
-        enableMicrophone: true
-    )
 }

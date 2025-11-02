@@ -1,9 +1,9 @@
 import express from 'express';
 import { issueEphemeralToken } from '../../services/livekitTokenService.js';
-import Logger from '../../utils/logger.js';
+import baseLogger from '../../utils/logger.js';
 
 const router = express.Router();
-const logger = new Logger('MobileRTC');
+const logger = baseLogger.withContext('MobileRTC');
 
 router.get('/ephemeral-token', async (req, res) => {
   const deviceId = (req.query.deviceId || req.get('deviceId') || '').toString().trim();

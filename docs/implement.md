@@ -19,8 +19,8 @@
 3. [ ] LiveKit接続と再接続制御
 4. 通知基盤（Time‑Sensitive、後でCritical Alert）
 5. BGTaskによる前夜プリロード
-6. 音声合成と文字起こしのプラガブル実装（Realtime/Deepgram/ElevenLabs）
-7. オンボーディングの音声駆動化（権限、起床セット、ボイス選択、呼び出し導線、試走）
+6. オンボーディング（UI入力＋音声ガイド）
+7. 音声パイプライン拡張（Realtime/Deepgram/ElevenLabs）
 8. データ保存（Core Data + CloudKit）
 9. 決済導入（RevenueCat + StoreKit2）
 10. 観測性とイベント計測
@@ -114,53 +114,32 @@
 3. スケジュール時刻の±1分で確実に通知発火
 4. 失敗時にリトライし、ログに残す
 
-### 3.6 音声パイプライン（IOS‑006）
+### 3.6 オンボーディング（IOS‑007）
 
-3. 実装TODO（順番と受け入れ基準付き）
-
-3.6 音声パイプライン（IOS‑006）
-
-目標: Phase 1→Phase 2 の順に構築。まずGPT‑Realtime APIで会話MVPを完成させ、次にDeepgram STTとElevenLabs TTSへ拡張する。
+目標: フォーム入力と音声ガイドを組み合わせ、ユーザーが数分で起床設定まで完了できる導線を提供する。
 手順:
 
-VoicePipeline プロトコルを定義（start, stop, switchTTS, switchSTT）
-
-Phase 1 実装: Realtime APIによる一体処理（STT＋LLM＋TTS）
-
-Phase 2 実装: Deepgram STT ＋ ElevenLabs TTS に差し替え可能にする
-
-オフライン: AVSpeechSynthesizer でフォールバック
-受け入れ基準:
-
-Phase 1完了時点で音声対話が2秒以内に開始し、起床〜会話〜終了まで通しで動作
-
-Phase 2導入後も構成切替がセッション中に即時反映
-
-
-
-目標: Realtime一体処理を基本に、Deepgram STT と ElevenLabs TTS を差し替え可能。
-手順:
-
-1. `VoicePipeline` プロトコルを定義（start, stop, switchTTS, switchSTT）
-2. 実装 A: Realtime 実装
-3. 実装 B: Deepgram+ElevenLabs 実装
-4. オフライン: AVSpeechSynthesizer でフォールバック
+1. `Features/Onboarding/OnboardingFlow.swift` を新設し、SwiftUI でステップ型フォームを構築（名前、起床時刻、休日設定、優先習慣、連絡先など）。
+2. 権限取得（マイク / 通知 / 背景オーディオ）をフォーム途中で案内し、許可状態は音声でフィードバック。拒否時は UI で再設定導線を表示。
+3. 入力確定後、`CoreData`（または暫定のローカルモデル）に保存し、`RealtimeSession` へ引き渡す初期コンテキストを生成。
+4. 起床テストモードを用意し、ユーザーが「起床シミュレーションを再生」ボタンから事前確認できるようにする（ローカル音声の再生のみ）。
+5. フォーム完了時に「日中の呼び出し」「オンデマンド呼び出し」のためのショートカット（Siri / Widget）案内を表示。
    受け入れ基準:
-5. いずれの構成でも音声応答が2秒以内に開始
-6. 構成切替はセッション中に即時反映
+6. 入力必須項目が全て揃った状態で保存され、アプリ再起動後も参照できる。
+7. 権限が拒否された場合でもユーザーに再設定手順を即提示し、フォーム離脱ゼロを目指す。
 
-### 3.7 オンボーディング音声化（IOS‑007）
+### 3.7 音声パイプライン拡張（IOS‑006）
 
-目標: ボタン操作を最小化し、音声応答だけで権限取得と起床セットを完了可能。
+目標: Phase 1 では OpenAI Realtime 音声を直結し、Phase 2 で Deepgram STT／ElevenLabs TTS に切り替え可能なプラガブル構成を整える。
 手順:
 
-1. `Features/Onboarding/OnboardingCoordinator.swift`
-2. 発話誘導で権限を要求し、許可状態を読み上げ
-3. 起床時刻、合図語の取得、テスト再生
-4. クローンボイス録音（30〜60秒）→暗号化→アップロード→voiceId保存
+1. `VoicePipeline` プロトコルを定義（`start`, `stop`, `switchTTS`, `switchSTT`）。
+2. Phase 1：`RealtimeVoicePipeline`（Realtime API のストリーミングを使用）を実装し、`RealtimeSession` と `VoiceEngine` の間に挿入。レスポンス開始が2秒以内であることを保証。
+3. Phase 2：`DeepgramElevenLabsPipeline` を実装し、STT/TTS を差し替え可能にする。切り替えは `VoiceMode` スイッチだけで即時反映。
+4. オフライン時は `AVSpeechSynthesizer` によるフォールバック処理を組み込み、ネットワーク断でも指示が継続するようにする。
    受け入れ基準:
-5. 音声のみでオンボ完走
-6. 許可拒否時は代替の音声ガイドで再試行誘導
+5. どのパイプラインでも対話開始から最初のレスポンスまで 2 秒以内。
+6. パイプライン切替後もセッションを維持し、ユーザーへの音声が途切れない。
 
 ### 3.8 データ保存（IOS‑008）
 

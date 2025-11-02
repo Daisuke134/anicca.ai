@@ -27,11 +27,13 @@
     "@anthropic-ai/claude-code": "^1.0.35",
     "@composio/core": "latest",
     "@composio/openai": "latest",
+    "@google-cloud/kms": "^3.3.0",
     "@google-cloud/text-to-speech": "^6.1.0",
     "@modelcontextprotocol/sdk": "^1.13.0",
     "@slack/web-api": "^7.9.3",
     "@supabase/supabase-js": "^2.50.2",
     "@vercel/mcp-adapter": "^0.11.1",
+    "@livekit/livekit-server-sdk": "npm:livekit-server-sdk@^2.14.0",
     "axios": "^1.10.0",
     "busboy": "^1.6.0",
     "cors": "^2.8.5",
@@ -42,8 +44,7 @@
     "mime-types": "^2.1.35",
     "node-cron": "^3.0.3",
     "pg": "^8.16.3",
-    "@google-cloud/kms": "^3.3.0",
-    "uuid": "^9.0.0",
-    "stripe": "^16.6.0"
+    "stripe": "^16.6.0",
+    "uuid": "^9.0.0"
   }
 }

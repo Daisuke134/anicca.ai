@@ -15,6 +15,15 @@ struct ContentView: View {
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal, 24)
+            Text(audioController.realtimeStatus)
+                .font(.footnote)
+                .foregroundStyle(
+                    audioController.hasRealtimeError
+                    ? Color.red
+                    : (audioController.isRealtimeConnected ? Color.green : Color.secondary)
+                )
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 24)
         }
         .padding()
     }

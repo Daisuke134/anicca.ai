@@ -14,9 +14,22 @@
 		8471ACFE2EB4ACE4002CECAA /* Smart.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Smart.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		8471AE6F2EB74192002CECAA /* Exceptions for "Smart" folder in "Smart" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8471ACFD2EB4ACE4002CECAA /* Smart */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8471AD002EB4ACE4002CECAA /* Smart */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				8471AE6F2EB74192002CECAA /* Exceptions for "Smart" folder in "Smart" target */,
+			);
 			path = Smart;
 			sourceTree = "<group>";
 		};
@@ -100,15 +113,15 @@
 			);
 			mainGroup = 8471ACF52EB4ACE4002CECAA;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "client-sdk-swift" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471ACFF2EB4ACE4002CECAA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				8471ACFD2EB4ACE4002CECAA /* Smart */,
-			);
-			packageReferences = (
-				8471AD1B2EB4ACE7002CECAA /* https://github.com/livekit/client-sdk-swift.git */,
 			);
 		};
 /* End PBXProject section */
@@ -265,9 +278,10 @@
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Smart/Info.plist;
+				INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api/mobile";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "音声対話を行うためマイクを使用します。";
-				INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = "https://proxy.anicca.ai/api/mobile";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -301,9 +315,10 @@
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = Smart/Info.plist;
+				INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api/mobile";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "音声対話を行うためマイクを使用します。";
-				INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = "https://proxy.anicca.ai/api/mobile";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -329,25 +344,6 @@
 		};
 /* End XCBuildConfiguration section */
 
-/* Begin XCRemoteSwiftPackageReference section */
-		8471AD1B2EB4ACE7002CECAA /* https://github.com/livekit/client-sdk-swift.git */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.0.0;
-			};
-		};
-/* End XCRemoteSwiftPackageReference section */
-
-/* Begin XCSwiftPackageProductDependency section */
-		8471AD192EB4ACE7002CECAA /* LiveKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8471AD1B2EB4ACE7002CECAA /* https://github.com/livekit/client-sdk-swift.git */;
-			productName = LiveKit;
-		};
-/* End XCSwiftPackageProductDependency section */
-
 /* Begin XCConfigurationList section */
 		8471ACF92EB4ACE4002CECAA /* Build configuration list for PBXProject "Smart" */ = {
 			isa = XCConfigurationList;
@@ -368,6 +364,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "client-sdk-swift" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/livekit/client-sdk-swift.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 2.0.0;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		8471AD192EB4ACE7002CECAA /* LiveKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "client-sdk-swift" */;
+			productName = LiveKit;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 8471ACF62EB4ACE4002CECAA /* Project object */;
 }

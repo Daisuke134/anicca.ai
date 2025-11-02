@@ -5,6 +5,7 @@ struct LiveKitTokenResponse: Decodable {
     let token: String
     let url: URL
     let ttl: TimeInterval
+    let room: String
 }
 
 protocol MobileAPIClientProtocol: AnyObject {

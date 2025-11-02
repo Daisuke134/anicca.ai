@@ -15,6 +15,7 @@ export async function issueEphemeralToken({ deviceId }) {
   ensureLiveKitConfiguration();
 
   const ttl = LIVEKIT_CONFIG.TOKEN_TTL > 0 ? LIVEKIT_CONFIG.TOKEN_TTL : DEFAULT_TTL;
+  const roomName = `${LIVEKIT_CONFIG.DEFAULT_ROOM || 'mobile'}-${deviceId}`;
 
   try {
     const accessToken = new AccessToken(LIVEKIT_CONFIG.API_KEY, LIVEKIT_CONFIG.API_SECRET, {
@@ -26,7 +27,7 @@ export async function issueEphemeralToken({ deviceId }) {
       roomJoin: true,
       canPublish: true,
       canSubscribe: true,
-      room: LIVEKIT_CONFIG.DEFAULT_ROOM || undefined
+      room: roomName
     });
 
     const token = await accessToken.toJwt();
@@ -36,7 +37,8 @@ export async function issueEphemeralToken({ deviceId }) {
     return {
       token,
       url: LIVEKIT_CONFIG.WS_URL,
-      ttl
+      ttl,
+      room: roomName
     };
   } catch (error) {
     logger.error('Failed to generate LiveKit token', error);

@@ -1,5 +1,6 @@
 import AVFoundation
 import Combine
+import LiveKit
 import OSLog
 import SwiftUI
 
@@ -13,6 +14,7 @@ final class AppAudioController: ObservableObject {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "AudioBootstrap")
     private let sessionConfigurator = AudioSessionConfigurator.shared
     private let voiceEngine = VoiceEngine.shared
+    private let audioManager = AudioManager.shared
     private let permissionManager = MicrophonePermissionManager()
     private let identityStore: DeviceIdentityProviding
     private let realtimeSession: RealtimeSession
@@ -26,6 +28,9 @@ final class AppAudioController: ObservableObject {
     ) {
         self.identityStore = identityStore
         self.realtimeSession = realtimeSession
+        voiceEngine.onMicrophoneFrame = { buffer, _ in
+            AudioManager.shared.mixer.capture(appAudio: buffer)
+        }
         bindRealtimeSession()
     }
 
@@ -54,6 +59,7 @@ final class AppAudioController: ObservableObject {
         }
         do {
             try sessionConfigurator.configure()
+            try configureAudioManager()
             try voiceEngine.start()
             didPrepare = true
             await updateStatus("音声エンジン稼働中")
@@ -78,6 +84,7 @@ final class AppAudioController: ObservableObject {
                 await realtimeSession.disconnect()
                 voicePipeline.reset()
             }
+            try? audioManager.setManualRenderingMode(false)
             sessionConfigurator.deactivate()
             voiceEngine.stop()
             logger.info("Audio engine paused for background state")
@@ -89,6 +96,7 @@ final class AppAudioController: ObservableObject {
     private func ensureSessionActive() async {
         do {
             try sessionConfigurator.activate()
+            try configureAudioManager()
             try voiceEngine.start()
             await updateStatus("音声エンジン稼働中")
         } catch {
@@ -131,6 +139,11 @@ final class AppAudioController: ObservableObject {
                 self?.isRealtimeConnected = isConnected
                 if isConnected {
                     self?.hasRealtimeError = false
+                } else {
+                    Task {
+                        await self?.voicePipeline.stopSession()
+                        self?.voicePipeline.reset()
+                    }
                 }
             }
             .store(in: &cancellables)
@@ -141,6 +154,14 @@ final class AppAudioController: ObservableObject {
                 self?.hasRealtimeError = errorMessage != nil
             }
             .store(in: &cancellables)
+    }
+
+    private func configureAudioManager() throws {
+        audioManager.audioSession.isAutomaticConfigurationEnabled = false
+        audioManager.isVoiceProcessingEnabled = true
+        try audioManager.setManualRenderingMode(true)
+        audioManager.mixer.micVolume = 1.0
+        audioManager.mixer.appVolume = 1.0
     }
 
     private nonisolated func updateStatus(_ text: String) async {

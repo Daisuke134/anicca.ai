@@ -46,16 +46,38 @@ async function createAgentJob({ identity, room }) {
     body: JSON.stringify(payload)
   });
 
+  const locationHeader = response.headers.get('location')?.trim() ?? '';
+  const rawBody = await response.text();
+  const trimmed = rawBody.trim();
+
   if (!response.ok) {
-    const detail = await response.text();
-    throw new Error(`Failed to create agent job (status=${response.status}, detail=${detail})`);
+    throw new Error(`Failed to create agent job (status=${response.status}, detail=${trimmed || 'EMPTY'})`);
   }
 
-  const body = await response.json();
-  const job = body.job ?? body;
+  if ((!trimmed || trimmed.toUpperCase() === 'OK') && locationHeader) {
+    const guessedId = locationHeader.split('/').pop();
+    if (guessedId) {
+      return { sessionId: guessedId, job: { id: guessedId } };
+    }
+  }
+
+  if (!trimmed) {
+    throw new Error('Agent job response was empty. Verify LiveKit Agents is enabled for this project.');
+  }
+
+  let parsed;
+  try {
+    parsed = JSON.parse(trimmed);
+  } catch {
+    throw new Error(
+      `Agent job response was not JSON ("${trimmed}"). Confirm LIVEKIT_AGENT_BASE_URL points to the Agents API endpoint and LiveKit Agents is enabled.`
+    );
+  }
+
+  const job = parsed.job ?? parsed;
   const sessionId = job?.id ?? job?.jobId ?? job?.job_id;
   if (!sessionId) {
-    throw new Error(`Agent job response missing identifier: ${JSON.stringify(body)}`);
+    throw new Error(`Agent job response missing identifier: ${JSON.stringify(parsed)}`);
   }
   return { sessionId, job };
 }

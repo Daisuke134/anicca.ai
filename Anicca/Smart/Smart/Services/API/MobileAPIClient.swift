@@ -62,9 +62,14 @@ final class MobileAPIClient: MobileAPIClientProtocol {
             }
 
             do {
-                let root = try decoder.decode(RealtimeSessionEnvelope.self, from: data)
-                logger.info("Received client_secret (expires_at=\(root.clientSecret.expiresAt))")
-                return root.clientSecret
+                let envelope = try decoder.decode(RealtimeSessionEnvelope.self, from: data)
+                logger.info("Received client_secret (expires_at=\(envelope.clientSecret.expiresAt))")
+                return RealtimeClientSecretResponse(
+                    value: envelope.clientSecret.value,
+                    expiresAt: envelope.clientSecret.expiresAt,
+                    model: envelope.model,
+                    voice: envelope.voice
+                )
             } catch {
                 logger.error("Failed to decode realtime session response: \(error.localizedDescription, privacy: .public)")
                 throw APIError.decodingFailed
@@ -82,20 +87,20 @@ private struct RealtimeSessionEnvelope: Decodable {
     struct ClientSecretPayload: Decodable {
         let value: String
         let expiresAt: TimeInterval
-        let model: String
-        let voice: String
 
         private enum CodingKeys: String, CodingKey {
             case value
             case expiresAt = "expires_at"
-            case model
-            case voice
         }
     }
 
     let clientSecret: ClientSecretPayload
+    let model: String
+    let voice: String
 
     private enum CodingKeys: String, CodingKey {
         case clientSecret = "client_secret"
+        case model
+        case voice
     }
 }

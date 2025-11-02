@@ -20,22 +20,12 @@ final class VoiceEngine {
 
         let inputNode = engine.inputNode
         let session = AVAudioSession.sharedInstance()
-        let sampleRate = session.sampleRate > 0 ? session.sampleRate : inputNode.outputFormat(forBus: 0).sampleRate
-
-        guard let format = AVAudioFormat(
-            commonFormat: .pcmFormatFloat32,
-            sampleRate: sampleRate,
-            channels: 1,
-            interleaved: false
-        ) else {
-            logger.error("Failed to create AVAudioFormat")
-            throw VoiceEngineError.invalidFormat
-        }
-
-        let preferredFrames = AVAudioFrameCount(max(256, min(1024, Int(sampleRate * 0.02))))
+        let tapFormat = inputNode.inputFormat(forBus: 0)
+        let sampleRate = session.sampleRate > 0 ? session.sampleRate : tapFormat.sampleRate
+        let preferredFrames = AVAudioFrameCount(max(256, min(1024, Int(tapFormat.sampleRate * 0.02))))
 
         inputNode.removeTap(onBus: 0)
-        inputNode.installTap(onBus: 0, bufferSize: preferredFrames, format: format) { [weak self] buffer, time in
+        inputNode.installTap(onBus: 0, bufferSize: preferredFrames, format: tapFormat) { [weak self] buffer, time in
             self?.latencyMonitor.captureInput(at: time)
             self?.onMicrophoneFrame?(buffer, time)
         }

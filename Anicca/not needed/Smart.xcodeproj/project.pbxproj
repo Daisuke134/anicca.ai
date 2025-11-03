@@ -7,58 +7,58 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AF7A2EB7B8F4002CECAA /* WebRTC */; };
+		8471AD1A2EB4ACE7002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AD192EB4ACE7002CECAA /* WebRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8471ACFE2EB4ACE4002CECAA /* Smart.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Smart.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */ = {
+		8471AE6F2EB74192002CECAA /* Exceptions for "Smart" folder in "Smart" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
 			);
-			target = 8471AE7A2EB783E1002CECAA /* aniccaios */;
+			target = 8471ACFD2EB4ACE4002CECAA /* Smart */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		8471AE7D2EB783E1002CECAA /* aniccaios */ = {
+		8471AD002EB4ACE4002CECAA /* Smart */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */,
+				8471AE6F2EB74192002CECAA /* Exceptions for "Smart" folder in "Smart" target */,
 			);
-			path = aniccaios;
+			path = Smart;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		8471AE782EB783E1002CECAA /* Frameworks */ = {
+		8471ACFB2EB4ACE4002CECAA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */,
+				8471AD1A2EB4ACE7002CECAA /* WebRTC in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
-		8471AE722EB783E1002CECAA = {
+		8471ACF52EB4ACE4002CECAA = {
 			isa = PBXGroup;
 			children = (
-				8471AE7D2EB783E1002CECAA /* aniccaios */,
-				8471AE7C2EB783E1002CECAA /* Products */,
+				8471AD002EB4ACE4002CECAA /* Smart */,
+				8471ACFF2EB4ACE4002CECAA /* Products */,
 			);
 			sourceTree = "<group>";
 		};
-		8471AE7C2EB783E1002CECAA /* Products */ = {
+		8471ACFF2EB4ACE4002CECAA /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8471AE7B2EB783E1002CECAA /* aniccaios.app */,
+				8471ACFE2EB4ACE4002CECAA /* Smart.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -66,68 +66,68 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8471AE7A2EB783E1002CECAA /* aniccaios */ = {
+		8471ACFD2EB4ACE4002CECAA /* Smart */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8471AE862EB783E3002CECAA /* Build configuration list for PBXNativeTarget "aniccaios" */;
+			buildConfigurationList = 8471AD092EB4ACE6002CECAA /* Build configuration list for PBXNativeTarget "Smart" */;
 			buildPhases = (
-				8471AE772EB783E1002CECAA /* Sources */,
-				8471AE782EB783E1002CECAA /* Frameworks */,
-				8471AE792EB783E1002CECAA /* Resources */,
+				8471ACFA2EB4ACE4002CECAA /* Sources */,
+				8471ACFB2EB4ACE4002CECAA /* Frameworks */,
+				8471ACFC2EB4ACE4002CECAA /* Resources */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 			);
 			fileSystemSynchronizedGroups = (
-				8471AE7D2EB783E1002CECAA /* aniccaios */,
+				8471AD002EB4ACE4002CECAA /* Smart */,
 			);
-			name = aniccaios;
+			name = Smart;
 			packageProductDependencies = (
-				8471AF7A2EB7B8F4002CECAA /* WebRTC */,
+				8471AD192EB4ACE7002CECAA /* WebRTC */,
 			);
-			productName = aniccaios;
-			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
+			productName = Smart;
+			productReference = 8471ACFE2EB4ACE4002CECAA /* Smart.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
-		8471AE732EB783E1002CECAA /* Project object */ = {
+		8471ACF62EB4ACE4002CECAA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
-					8471AE7A2EB783E1002CECAA = {
+					8471ACFD2EB4ACE4002CECAA = {
 						CreatedOnToolsVersion = 26.1;
 					};
 				};
 			};
-			buildConfigurationList = 8471AE762EB783E1002CECAA /* Build configuration list for PBXProject "aniccaios" */;
+			buildConfigurationList = 8471ACF92EB4ACE4002CECAA /* Build configuration list for PBXProject "Smart" */;
 			developmentRegion = en;
 			hasScannedForEncodings = 0;
 			knownRegions = (
 				en,
 				Base,
 			);
-			mainGroup = 8471AE722EB783E1002CECAA;
+			mainGroup = 8471ACF52EB4ACE4002CECAA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */,
+				8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "stasel-webrtc" */,
 			);
 			preferredProjectObjectVersion = 77;
-			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
+			productRefGroup = 8471ACFF2EB4ACE4002CECAA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8471AE7A2EB783E1002CECAA /* aniccaios */,
+				8471ACFD2EB4ACE4002CECAA /* Smart */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		8471AE792EB783E1002CECAA /* Resources */ = {
+		8471ACFC2EB4ACE4002CECAA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -137,7 +137,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		8471AE772EB783E1002CECAA /* Sources */ = {
+		8471ACFA2EB4ACE4002CECAA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -147,7 +147,7 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
-		8471AE842EB783E3002CECAA /* Debug */ = {
+		8471AD072EB4ACE6002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -200,7 +200,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
 				MTL_FAST_MATH = YES;
@@ -211,7 +211,7 @@
 			};
 			name = Debug;
 		};
-		8471AE852EB783E3002CECAA /* Release */ = {
+		8471AD082EB4ACE6002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
@@ -258,7 +258,7 @@
 				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
 				GCC_WARN_UNUSED_FUNCTION = YES;
 				GCC_WARN_UNUSED_VARIABLE = YES;
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
 				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
@@ -268,7 +268,7 @@
 			};
 			name = Release;
 		};
-		8471AE872EB783E3002CECAA /* Debug */ = {
+		8471AD0A2EB4ACE6002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -278,38 +278,34 @@
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
-				);
-				INFOPLIST_FILE = aniccaios/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_FILE = Smart/Info.plist;
+				INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api/mobile";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "音声対話を行うためマイクを使用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Anicca.aniccaios;
+				PRODUCT_BUNDLE_IDENTIFIER = Anicca.Smart;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.9;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Debug;
 		};
-		8471AE882EB783E3002CECAA /* Release */ = {
+		8471AD0B2EB4ACE6002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -319,33 +315,29 @@
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
-				);
-				INFOPLIST_FILE = aniccaios/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_FILE = Smart/Info.plist;
+				INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api/mobile";
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "音声対話を行うためマイクを使用します。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = Anicca.aniccaios;
+				PRODUCT_BUNDLE_IDENTIFIER = Anicca.Smart;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.9;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
@@ -353,20 +345,20 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
-		8471AE762EB783E1002CECAA /* Build configuration list for PBXProject "aniccaios" */ = {
+		8471ACF92EB4ACE4002CECAA /* Build configuration list for PBXProject "Smart" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				8471AE842EB783E3002CECAA /* Debug */,
-				8471AE852EB783E3002CECAA /* Release */,
+				8471AD072EB4ACE6002CECAA /* Debug */,
+				8471AD082EB4ACE6002CECAA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8471AE862EB783E3002CECAA /* Build configuration list for PBXNativeTarget "aniccaios" */ = {
+		8471AD092EB4ACE6002CECAA /* Build configuration list for PBXNativeTarget "Smart" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
-				8471AE872EB783E3002CECAA /* Debug */,
-				8471AE882EB783E3002CECAA /* Release */,
+				8471AD0A2EB4ACE6002CECAA /* Debug */,
+				8471AD0B2EB4ACE6002CECAA /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
@@ -374,23 +366,23 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+		8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "stasel-webrtc" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/stasel/WebRTC.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 141.0.0;
+				minimumVersion = 138.0.0;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		8471AF7A2EB7B8F4002CECAA /* WebRTC */ = {
+		8471AD192EB4ACE7002CECAA /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */;
+			package = 8471AD1B2EB4ACE7002CECAA /* XCRemoteSwiftPackageReference "stasel-webrtc" */;
 			productName = WebRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
-	rootObject = 8471AE732EB783E1002CECAA /* Project object */;
+	rootObject = 8471ACF62EB4ACE4002CECAA /* Project object */;
 }

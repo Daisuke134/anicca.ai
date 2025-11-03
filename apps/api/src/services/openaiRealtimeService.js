@@ -9,15 +9,16 @@ export async function issueRealtimeClientSecret({ deviceId }) {
     throw new Error('OPENAI_API_KEY not configured');
   }
 
-  const response = await fetch(OPENAI_REALTIME_URL, {
+const response = await fetch(OPENAI_REALTIME_URL, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${apiKey}`,
-      'Content-Type': 'application/json'
+      'Content-Type': 'application/json',
+      'OpenAI-Beta': 'realtime=v1'
     },
     body: JSON.stringify({
-      model: 'gpt-4o-realtime-preview-2024-10-01',
-      modalities: ['audio'],
+      model: 'gpt-4o-mini-realtime-preview-2024-12-17',
+      modalities: ['text', 'audio'],
       voice: 'alloy',
       metadata: { device_id: deviceId }
     })
@@ -26,7 +27,7 @@ export async function issueRealtimeClientSecret({ deviceId }) {
   if (!response.ok) {
     const detail = await response.text();
     logger.error('Realtime session creation failed', detail);
-    throw new Error(`Realtime API error: ${response.status}`);
+    throw new Error(`Realtime API error: ${response.status} ${detail}`);
   }
 
   return response.json();

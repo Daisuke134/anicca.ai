@@ -16446,39 +16446,34 @@
     ".worktrees/task-1761990298422-63dac9",
     ".worktrees/task-1761990301087-fcc9d8",
     "AGENTS.md",
-    "Anicca/Smart/Smart.xcodeproj/project.pbxproj",
-    "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
-    "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
-    "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-    "Anicca/Smart/Smart.xcodeproj/xcuserdata/cbns03.xcuserdatad/xcschemes/xcschememanagement.plist",
-    "Anicca/Smart/Smart/Assets.xcassets/AccentColor.colorset/Contents.json",
-    "Anicca/Smart/Smart/Assets.xcassets/AppIcon.appiconset/Contents.json",
-    "Anicca/Smart/Smart/Assets.xcassets/Contents.json",
-    "Anicca/Smart/Smart/Audio/AppAudioController.swift",
-    "Anicca/Smart/Smart/Audio/AudioSessionConfigurator.swift",
-    "Anicca/Smart/Smart/Audio/LatencyMonitor.swift",
-    "Anicca/Smart/Smart/Audio/VoiceEngine.swift",
-    "Anicca/Smart/Smart/Config/AppConfig.swift",
-    "Anicca/Smart/Smart/ContentView.swift",
-    "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
-    "Anicca/Smart/Smart/Features/Voice/VoicePipeline.swift",
-    "Anicca/Smart/Smart/Info.plist",
-    "Anicca/Smart/Smart/Permissions/MicrophonePermissionManager.swift",
-    "Anicca/Smart/Smart/Services/API/APIError.swift",
-    "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
-    "Anicca/Smart/Smart/Services/Identity/DeviceIdentityStore.swift",
-    "Anicca/Smart/Smart/SmartApp.swift",
+    "Anicca/ios.xcodeproj/project.pbxproj",
+    "Anicca/ios.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+    "Anicca/ios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
+    "Anicca/ios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+    "Anicca/ios.xcodeproj/xcuserdata/cbns03.xcuserdatad/xcschemes/xcschememanagement.plist",
+    "Anicca/ios/Assets.xcassets/AccentColor.colorset/Contents.json",
+    "Anicca/ios/Assets.xcassets/AppIcon.appiconset/Contents.json",
+    "Anicca/ios/Assets.xcassets/Contents.json",
+    "Anicca/ios/ContentView.swift",
+    "Anicca/ios/Info.plist",
+    "Anicca/ios/iosApp.swift",
+    "Anicca/not needed",
     "CLAUDE.md",
     "README.md",
     "anicca-agi@0.6.2",
     "aniccaios/aniccaios.xcodeproj/project.pbxproj",
     "aniccaios/aniccaios.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
+    "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved",
     "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
     "aniccaios/aniccaios.xcodeproj/xcuserdata/cbns03.xcuserdatad/xcschemes/xcschememanagement.plist",
     "aniccaios/aniccaios/Assets.xcassets/AccentColor.colorset/Contents.json",
     "aniccaios/aniccaios/Assets.xcassets/AppIcon.appiconset/Contents.json",
     "aniccaios/aniccaios/Assets.xcassets/Contents.json",
+    "aniccaios/aniccaios/Config.swift",
     "aniccaios/aniccaios/ContentView.swift",
+    "aniccaios/aniccaios/Info.plist",
+    "aniccaios/aniccaios/VoiceSessionController.swift",
+    "aniccaios/aniccaios/WebRTCShims/sdk/objc/base/RTCMacros.h",
     "aniccaios/aniccaios/aniccaiosApp.swift",
     "apps/api/.dockerignore",
     "apps/api/.env.example",
@@ -16544,7 +16539,7 @@
     "apps/api/src/routes/index.js",
     "apps/api/src/routes/mcp/gcal/index.js",
     "apps/api/src/routes/mobile/index.js",
-    "apps/api/src/routes/mobile/rtc.js",
+    "apps/api/src/routes/mobile/realtime.js",
     "apps/api/src/routes/preview/app.js",
     "apps/api/src/routes/proxy/claude.js",
     "apps/api/src/routes/realtime/desktop.js",
@@ -16562,10 +16557,9 @@
     "apps/api/src/services/claude/sessionManager.js",
     "apps/api/src/services/googleTokens.js",
     "apps/api/src/services/guestSessions.js",
-    "apps/api/src/services/livekitTokenService.js",
     "apps/api/src/services/mcp-clients/exaClient.js",
     "apps/api/src/services/mcp-clients/playwrightClient.js",
-    "apps/api/src/services/mobileVoiceAgent.js",
+    "apps/api/src/services/openaiRealtimeService.js",
     "apps/api/src/services/parallel-sdk/IPCProtocol.js",
     "apps/api/src/services/parallel-sdk/config/instructions/worker1.md",
     "apps/api/src/services/parallel-sdk/config/instructions/worker2.md",
@@ -16702,23 +16696,6 @@
     "apps/web/postcss.config.mjs",
     "apps/web/public/slack.svg",
     "apps/web/tsconfig.json",
-    "apps/will-delete/Resources/Anicca.entitlements",
-    "apps/will-delete/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
-    "apps/will-delete/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json",
-    "apps/will-delete/Resources/Assets.xcassets/Contents.json",
-    "apps/will-delete/Resources/Preview Content/Preview Assets.xcassets/Contents.json",
-    "apps/will-delete/Sources/AniccaApp.swift",
-    "apps/will-delete/Sources/ContentView.swift",
-    "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITests.swift",
-    "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITestsLaunchTests.swift",
-    "apps/will-delete/Tests/Unit/AniccaTests/AniccaTests.swift",
-    "apps/will-delete/ios/Anicca.xcodeproj/project.pbxproj",
-    "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
-    "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-    "apps/will-delete/ios/Anicca.xcodeproj/xcshareddata/xcschemes/Anicca.xcscheme",
-    "apps/will-delete/ios/Info.plist",
-    "apps/will-delete/ios/project.yml",
-    "apps/will-delete/ios/xcodegen",
     "apps/workspace-mcp/.dockerignore",
     "apps/workspace-mcp/.dxtignore",
     "apps/workspace-mcp/.env.oauth21",
@@ -16813,6 +16790,7 @@
     "docs/anicca-ios.md",
     "docs/backup-composio-implementation.md",
     "docs/billing-operations.md",
+    "docs/coco.md",
     "docs/desktop-auth-and-mcp-token-architecture.md",
     "docs/desktop-billing-subscription-plan.md",
     "docs/electron.md",
@@ -17076,9 +17054,9 @@
     "mode": "full",
     "isPartial": false,
     "branchPulse": {
-      "generatedAt": 1762093692621,
+      "generatedAt": 1762138145367,
       "targets": [
-        "main",
+        "feature/ios-voice-session",
         "feature/desktop-debug",
         "feature/improvements",
         "feature/parallel-system",
@@ -17089,6 +17067,7 @@
         "feature/agent-s-integration-clean",
         "feature/claude-sdk-integration",
         "feature/mastra-complete",
+        "main",
         "master",
         "feature/wake-routine-tags",
         "feature/remote-mcp-google-calendar",
@@ -17099,45 +17078,28 @@
         "Daisuke134/add-claude-github-actions-1748920452321"
       ],
       "statsByBranch": {
-        "main": {
-          "branch": "main",
-          "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+        "feature/ios-voice-session": {
+          "branch": "feature/ios-voice-session",
+          "head": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
           "baseRef": "origin/main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-          "mergeBase": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+          "mergeBase": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
+            "aheadCount": 3,
+            "fileCount": 48
           },
           "baseline": {
-            "aheadCount": 0,
+            "aheadCount": 3,
             "behindCount": 0,
-            "fileCount": 0
-          },
-          "upstream": null
-        },
-        "feature/nitwork3-desktop-improvement": {
-          "branch": "feature/nitwork3-desktop-improvement",
-          "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-          "baseRef": "origin/main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-          "mergeBase": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 0,
-            "fileCount": 0
+            "fileCount": 48
           },
           "upstream": null
         },
         "feature/improvements": {
           "branch": "feature/improvements",
           "head": "68205e57a8a176035bf0f35d70dc6bc1a2907cc7",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "68205e57a8a176035bf0f35d70dc6bc1a2907cc7",
           "divergence": {
             "aheadCount": 0,
@@ -17145,16 +17107,16 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 303,
-            "fileCount": 478
+            "behindCount": 304,
+            "fileCount": 460
           },
           "upstream": null
         },
         "feature/desktop-debug": {
           "branch": "feature/desktop-debug",
           "head": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "9ad6b20ed4c327b28ed5a91a406c809c2b4b3cf9",
           "divergence": {
             "aheadCount": 0,
@@ -17162,16 +17124,16 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 298,
-            "fileCount": 492
+            "behindCount": 299,
+            "fileCount": 474
           },
           "upstream": null
         },
         "feature/parallel-system": {
           "branch": "feature/parallel-system",
           "head": "863d4a241d9d261d92f5a7b0daac504af7450de6",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "863d4a241d9d261d92f5a7b0daac504af7450de6",
           "divergence": {
             "aheadCount": 0,
@@ -17179,33 +17141,33 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 289,
-            "fileCount": 494
+            "behindCount": 290,
+            "fileCount": 476
           },
           "upstream": null
         },
-        "task/task-1761990295908-b2e49d": {
-          "branch": "task/task-1761990295908-b2e49d",
-          "head": "36519447683be3736d865316ebb3fa10841f38db",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
+        "feature/nitwork3-desktop-improvement": {
+          "branch": "feature/nitwork3-desktop-improvement",
+          "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+          "mergeBase": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
           "divergence": {
             "aheadCount": 0,
             "fileCount": 0
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 13,
-            "fileCount": 52
+            "behindCount": 1,
+            "fileCount": 40
           },
           "upstream": null
         },
         "task/task-1761990298422-63dac9": {
           "branch": "task/task-1761990298422-63dac9",
           "head": "36519447683be3736d865316ebb3fa10841f38db",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
           "divergence": {
             "aheadCount": 0,
@@ -17213,16 +17175,33 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 13,
-            "fileCount": 52
+            "behindCount": 14,
+            "fileCount": 63
+          },
+          "upstream": null
+        },
+        "task/task-1761990295908-b2e49d": {
+          "branch": "task/task-1761990295908-b2e49d",
+          "head": "36519447683be3736d865316ebb3fa10841f38db",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+          "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 14,
+            "fileCount": 63
           },
           "upstream": null
         },
         "task/task-1761990301087-fcc9d8": {
           "branch": "task/task-1761990301087-fcc9d8",
           "head": "36519447683be3736d865316ebb3fa10841f38db",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "36519447683be3736d865316ebb3fa10841f38db",
           "divergence": {
             "aheadCount": 0,
@@ -17230,16 +17209,16 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 13,
-            "fileCount": 52
+            "behindCount": 14,
+            "fileCount": 63
           },
           "upstream": null
         },
         "feature/agent-s-integration-clean": {
           "branch": "feature/agent-s-integration-clean",
           "head": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "3b63de34e9c02ef7ddc21b48606a0098359fb4a0",
           "divergence": {
             "aheadCount": 0,
@@ -17247,25 +17226,8 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 330,
-            "fileCount": 468
-          },
-          "upstream": null
-        },
-        "feature/claude-sdk-integration": {
-          "branch": "feature/claude-sdk-integration",
-          "head": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-          "mergeBase": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
-          "divergence": {
-            "aheadCount": 0,
-            "fileCount": 0
-          },
-          "baseline": {
-            "aheadCount": 0,
-            "behindCount": 312,
-            "fileCount": 476
+            "behindCount": 331,
+            "fileCount": 450
           },
           "upstream": null
         },
@@ -17303,11 +17265,28 @@
           },
           "upstream": null
         },
+        "feature/claude-sdk-integration": {
+          "branch": "feature/claude-sdk-integration",
+          "head": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+          "mergeBase": "59e55fc1f6fa3e306a52772e65b5687a1369b658",
+          "divergence": {
+            "aheadCount": 0,
+            "fileCount": 0
+          },
+          "baseline": {
+            "aheadCount": 0,
+            "behindCount": 313,
+            "fileCount": 458
+          },
+          "upstream": null
+        },
         "feature/mastra-complete": {
           "branch": "feature/mastra-complete",
           "head": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "e7f65c35180d4fd4c16a014dd893ee2c361519c3",
           "divergence": {
             "aheadCount": 0,
@@ -17315,16 +17294,16 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 315,
-            "fileCount": 483
+            "behindCount": 316,
+            "fileCount": 465
           },
           "upstream": null
         },
         "feature/claude-unified": {
           "branch": "feature/claude-unified",
           "head": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "e8ea2c6bb0d7b0fab5f4fe4c62ff9935476cc20d",
           "divergence": {
             "aheadCount": 0,
@@ -17332,16 +17311,16 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 292,
-            "fileCount": 496
+            "behindCount": 293,
+            "fileCount": 478
           },
           "upstream": null
         },
         "feature/user-profile": {
           "branch": "feature/user-profile",
           "head": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
-          "baseRef": "main",
-          "baseHead": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "baseRef": "refs/remotes/origin/main",
+          "baseHead": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
           "mergeBase": "8391e72ab82e533ea6b3815645f42e7d64d7d8ad",
           "divergence": {
             "aheadCount": 0,
@@ -17349,8 +17328,8 @@
           },
           "baseline": {
             "aheadCount": 0,
-            "behindCount": 322,
-            "fileCount": 489
+            "behindCount": 323,
+            "fileCount": 471
           },
           "upstream": null
         }
@@ -17368,37 +17347,308 @@
         "branch": "task/task-1761990298422-63dac9",
         "targetCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-        "timestamp": 1762093692652,
-        "lane": 0,
+        "timestamp": 1762138147776,
+        "lane": 3,
         "branchLabel": "task/task-1761990298422-63dac9",
         "branchTags": [
           "task/task-1761990298422-63dac9"
         ],
         "isDefaultWorktree": true,
-        "branchColor": "#4f85e8",
+        "branchColor": "#e84f4f",
         "index": 0
       },
       {
+        "type": "unstaged",
+        "label": "未ステージ [feature/ios-voice-session] (2)",
+        "files": [
+          "Anicca/ios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+          "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate"
+        ],
+        "branch": "feature/ios-voice-session",
+        "targetCommitHash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+        "worktreePath": "/Users/cbns03/Downloads/anicca-project",
+        "timestamp": 1762138143727,
+        "sortOrder": 0,
+        "lane": 1,
+        "branchColor": "#4fe8b8",
+        "index": 1
+      },
+      {
+        "type": "staged",
+        "label": "ステージ済み [feature/ios-voice-session] (1)",
+        "files": [
+          "kamui/system-graph-state.json"
+        ],
+        "branch": "feature/ios-voice-session",
+        "targetCommitHash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+        "worktreePath": "/Users/cbns03/Downloads/anicca-project",
+        "timestamp": 1762138143727,
+        "sortOrder": 1,
+        "lane": 1,
+        "branchColor": "#4fe8b8",
+        "index": 2
+      },
+      {
+        "type": "commit",
+        "label": "feat(ios): restructure project layout",
+        "commit": {
+          "hash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+          "subject": "feat(ios): restructure project layout",
+          "author": "codex-bot",
+          "timestamp": 1762138134,
+          "parents": [
+            "9d937254eb17ee69b5daaf9f457f2a37b87110b0"
+          ],
+          "parent": "9d937254eb17ee69b5daaf9f457f2a37b87110b0",
+          "refs": "feature/ios-voice-session",
+          "branches": [
+            "feature/ios-voice-session"
+          ]
+        },
+        "commitHash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+        "lane": 1,
+        "parentLinks": [
+          {
+            "hash": "9d937254eb17ee69b5daaf9f457f2a37b87110b0",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
+        "branchTags": [],
+        "worktrees": [
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project",
+            "head": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+            "branch": "feature/ios-voice-session",
+            "isMerged": false,
+            "mergeCommitHash": null,
+            "status": {
+              "staged": [
+                {
+                  "path": "kamui/system-graph-state.json",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "kamui/system-graph-state.json",
+                  "timestamp": 1762138143727
+                }
+              ],
+              "unstaged": [
+                {
+                  "path": ".worktrees/task-1761990298422-63dac9",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": ".worktrees/task-1761990298422-63dac9",
+                  "timestamp": 1762138143727
+                },
+                {
+                  "path": "Anicca/ios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "Anicca/ios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "timestamp": 1762138143727
+                },
+                {
+                  "path": "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "originalPath": null,
+                  "status": "modified",
+                  "rawPath": "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+                  "timestamp": 1762138143727
+                }
+              ],
+              "untracked": [
+                {
+                  "path": ".worktrees/feature-nitwork3-desktop-improvement/",
+                  "status": "untracked",
+                  "rawPath": ".worktrees/feature-nitwork3-desktop-improvement/",
+                  "timestamp": 1762138143727
+                }
+              ],
+              "capturedAt": 1762138143727
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project",
+            "lane": 1
+          }
+        ],
+        "index": 3
+      },
+      {
         "type": "anchor",
-        "label": "[feature/nitwork3-desktop-improvement]",
-        "branch": "feature/nitwork3-desktop-improvement",
-        "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
-        "parentCommitHash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-        "lane": 4,
+        "label": "[feature/ios-voice-session]",
+        "branch": "feature/ios-voice-session",
+        "worktreePath": "/Users/cbns03/Downloads/anicca-project",
+        "parentCommitHash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+        "lane": 1,
         "isMerged": false,
         "mergeCommitHash": null,
-        "statusChildren": [],
+        "statusChildren": [
+          {
+            "type": "unstaged",
+            "label": "未ステージ [feature/ios-voice-session] (2)",
+            "files": [
+              "Anicca/ios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
+              "aniccaios/aniccaios.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate"
+            ],
+            "branch": "feature/ios-voice-session",
+            "targetCommitHash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+            "worktreePath": "/Users/cbns03/Downloads/anicca-project",
+            "timestamp": 1762138143727,
+            "sortOrder": 0,
+            "lane": 1,
+            "branchColor": "#4fe8b8",
+            "index": 1
+          },
+          {
+            "type": "staged",
+            "label": "ステージ済み [feature/ios-voice-session] (1)",
+            "files": [
+              "kamui/system-graph-state.json"
+            ],
+            "branch": "feature/ios-voice-session",
+            "targetCommitHash": "8bdc7f21c07cb23a964161e19cffb40ab27045eb",
+            "worktreePath": "/Users/cbns03/Downloads/anicca-project",
+            "timestamp": 1762138143727,
+            "sortOrder": 1,
+            "lane": 1,
+            "branchColor": "#4fe8b8",
+            "index": 2
+          }
+        ],
         "isDefaultWorktree": false,
         "renderMode": "node",
         "shouldHide": false,
-        "tagLabel": "feature/nitwork3-desktop-improvement",
-        "taskId": "nitwork3-desktop-improvement",
+        "tagLabel": "feature/ios-voice-session",
+        "taskId": "ios-voice-session",
         "taskStatus": null,
         "taskStatusLabel": null,
         "taskName": null,
-        "tooltip": "ID: nitwork3-desktop-improvement\nBranch: feature/nitwork3-desktop-improvement\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
-        "branchColor": "#e84f7f",
-        "index": 1
+        "tooltip": "ID: ios-voice-session\nBranch: feature/ios-voice-session\nWorktree: Users/cbns03/Downloads/anicca-project",
+        "branchColor": "#4fe8b8",
+        "index": 4
+      },
+      {
+        "type": "commit",
+        "label": "feat(ios): restructure project layout",
+        "commit": {
+          "hash": "b53bab662e471c6a44c8d191f1792cd2fba43e63",
+          "subject": "feat(ios): restructure project layout",
+          "author": "codex-bot",
+          "timestamp": 1762138021,
+          "parents": [
+            "9d937254eb17ee69b5daaf9f457f2a37b87110b0"
+          ],
+          "parent": "9d937254eb17ee69b5daaf9f457f2a37b87110b0",
+          "refs": "feature/ios-voice-session",
+          "branches": [
+            "feature/ios-voice-session"
+          ]
+        },
+        "commitHash": "b53bab662e471c6a44c8d191f1792cd2fba43e63",
+        "lane": 1,
+        "parentLinks": [
+          {
+            "hash": "9d937254eb17ee69b5daaf9f457f2a37b87110b0",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
+        "branchTags": [],
+        "index": 5
+      },
+      {
+        "type": "commit",
+        "label": "feat(ios): add realtime voice session scaffold",
+        "commit": {
+          "hash": "9d937254eb17ee69b5daaf9f457f2a37b87110b0",
+          "subject": "feat(ios): add realtime voice session scaffold",
+          "author": "codex-bot",
+          "timestamp": 1762100220,
+          "parents": [
+            "8defd82954a1585467c2687c1c5cd1a31b749994"
+          ],
+          "parent": "8defd82954a1585467c2687c1c5cd1a31b749994",
+          "refs": "",
+          "branches": [
+            "feature/ios-voice-session"
+          ]
+        },
+        "commitHash": "9d937254eb17ee69b5daaf9f457f2a37b87110b0",
+        "lane": 1,
+        "parentLinks": [
+          {
+            "hash": "8defd82954a1585467c2687c1c5cd1a31b749994",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
+        "branchTags": [],
+        "index": 6
+      },
+      {
+        "type": "commit",
+        "label": "fix: align webrtc package and realtime secret parsing",
+        "commit": {
+          "hash": "8defd82954a1585467c2687c1c5cd1a31b749994",
+          "subject": "fix: align webrtc package and realtime secret parsing",
+          "author": "codex-bot",
+          "timestamp": 1762096303,
+          "parents": [
+            "f6538327d33358367e49f2f3b5fe709e8cc9696b"
+          ],
+          "parent": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+          "refs": "",
+          "branches": [
+            "feature/ios-voice-session"
+          ]
+        },
+        "commitHash": "8defd82954a1585467c2687c1c5cd1a31b749994",
+        "lane": 1,
+        "parentLinks": [
+          {
+            "hash": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
+        "branchTags": [],
+        "index": 7
+      },
+      {
+        "type": "commit",
+        "label": "feat: migrate mobile realtime to openai webrtc",
+        "commit": {
+          "hash": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+          "subject": "feat: migrate mobile realtime to openai webrtc",
+          "author": "codex-bot",
+          "timestamp": 1762095339,
+          "parents": [
+            "2b99fa9d82f942ca93c8acb230fd13bb0e193b74"
+          ],
+          "parent": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+          "refs": "origin/main, origin/HEAD",
+          "branches": [
+            "origin/main",
+            "origin/HEAD",
+            "feature/ios-voice-session"
+          ]
+        },
+        "commitHash": "f6538327d33358367e49f2f3b5fe709e8cc9696b",
+        "lane": 0,
+        "parentLinks": [
+          {
+            "hash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "main",
+        "branchColor": "#4f85e8",
+        "branchTags": [
+          "main"
+        ],
+        "index": 8
       },
       {
         "type": "commit",
@@ -17412,333 +17662,24 @@
             "d4dc3adec5517ade36e617317dbab2280c287f0d"
           ],
           "parent": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-          "refs": "origin/main, origin/HEAD, main, feature/nitwork3-desktop-improvement",
+          "refs": "feature/nitwork3-desktop-improvement",
           "branches": [
-            "origin/main",
-            "origin/HEAD",
-            "main",
-            "feature/nitwork3-desktop-improvement"
+            "feature/nitwork3-desktop-improvement",
+            "feature/ios-voice-session"
           ]
         },
         "commitHash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-        "lane": 0,
+        "lane": 2,
         "parentLinks": [
           {
             "hash": "d4dc3adec5517ade36e617317dbab2280c287f0d",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/nitwork3-desktop-improvement",
+        "branchColor": "#e84f7f",
         "branchTags": [],
         "worktrees": [
-          {
-            "path": "/Users/cbns03/Downloads/anicca-project",
-            "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
-            "branch": "main",
-            "isMerged": true,
-            "mergeCommitHash": "bd44e004258697c503802ffdb4ede632dc627f45",
-            "status": {
-              "staged": [
-                {
-                  "path": "kamui/model-versions-cache.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "kamui/model-versions-cache.json",
-                  "timestamp": 1762093691304
-                }
-              ],
-              "unstaged": [
-                {
-                  "path": ".kamui/system-graph-state.json",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": ".kamui/system-graph-state.json",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": ".worktrees/task-1761990298422-63dac9",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": ".worktrees/task-1761990298422-63dac9",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "AGENTS.md",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "AGENTS.md",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart.xcodeproj/project.pbxproj",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.pbxproj",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Audio/AppAudioController.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/Audio/AppAudioController.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Audio/VoiceEngine.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/Audio/VoiceEngine.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Config/AppConfig.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/Config/AppConfig.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/ContentView.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/ContentView.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "Anicca/Smart/Smart/Features/Voice/RealtimeSession.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Features/Voice/VoicePipeline.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "Anicca/Smart/Smart/Features/Voice/VoicePipeline.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Services/API/APIError.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/Services/API/APIError.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "Anicca/Smart/Smart/Services/API/MobileAPIClient.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/agents/mobile_voice_agent.py",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/agents/mobile_voice_agent.py",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/config/environment.js",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/src/config/environment.js",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/routes/mobile/index.js",
-                  "originalPath": null,
-                  "status": "modified",
-                  "rawPath": "apps/api/src/routes/mobile/index.js",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/routes/mobile/rtc.js",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/api/src/routes/mobile/rtc.js",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/services/livekitTokenService.js",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/api/src/services/livekitTokenService.js",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/services/mobileVoiceAgent.js",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/api/src/services/mobileVoiceAgent.js",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Resources/Anicca.entitlements",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Resources/Anicca.entitlements",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Resources/Assets.xcassets/AccentColor.colorset/Contents.json",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Resources/Assets.xcassets/AppIcon.appiconset/Contents.json",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Resources/Assets.xcassets/Contents.json",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Resources/Assets.xcassets/Contents.json",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Resources/Preview Content/Preview Assets.xcassets/Contents.json",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "\"apps/will-delete/Resources/Preview Content/Preview Assets.xcassets/Contents.json\"",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Sources/AniccaApp.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Sources/AniccaApp.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Sources/ContentView.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Sources/ContentView.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITests.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITests.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITestsLaunchTests.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Tests/UI/AniccaUITests/AniccaUITestsLaunchTests.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/Tests/Unit/AniccaTests/AniccaTests.swift",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/Tests/Unit/AniccaTests/AniccaTests.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/Anicca.xcodeproj/project.pbxproj",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/project.pbxproj",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/contents.xcworkspacedata",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/project.xcworkspace/xcuserdata/cbns03.xcuserdatad/UserInterfaceState.xcuserstate",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/Anicca.xcodeproj/xcshareddata/xcschemes/Anicca.xcscheme",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/Anicca.xcodeproj/xcshareddata/xcschemes/Anicca.xcscheme",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/Info.plist",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/Info.plist",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/project.yml",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/project.yml",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/will-delete/ios/xcodegen",
-                  "originalPath": null,
-                  "status": "deleted",
-                  "rawPath": "apps/will-delete/ios/xcodegen",
-                  "timestamp": 1762093691304
-                }
-              ],
-              "untracked": [
-                {
-                  "path": ".worktrees/feature-nitwork3-desktop-improvement/",
-                  "status": "untracked",
-                  "rawPath": ".worktrees/feature-nitwork3-desktop-improvement/",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Audio/AudioManager.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Audio/AudioManager.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "Anicca/Smart/Smart/Features/Voice/OpenAIRealtimeSession.swift",
-                  "status": "untracked",
-                  "rawPath": "Anicca/Smart/Smart/Features/Voice/OpenAIRealtimeSession.swift",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/routes/mobile/realtime.js",
-                  "status": "untracked",
-                  "rawPath": "apps/api/src/routes/mobile/realtime.js",
-                  "timestamp": 1762093691304
-                },
-                {
-                  "path": "apps/api/src/services/openaiRealtimeService.js",
-                  "status": "untracked",
-                  "rawPath": "apps/api/src/services/openaiRealtimeService.js",
-                  "timestamp": 1762093691304
-                }
-              ],
-              "capturedAt": 1762093691304
-            },
-            "normalizedPath": "/Users/cbns03/Downloads/anicca-project",
-            "lane": 0
-          },
           {
             "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
             "head": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
@@ -17749,13 +17690,35 @@
               "staged": [],
               "unstaged": [],
               "untracked": [],
-              "capturedAt": 1762093691286
+              "capturedAt": 1762138143715
             },
             "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
-            "lane": 4
+            "lane": 2
           }
         ],
-        "index": 2
+        "index": 9
+      },
+      {
+        "type": "anchor",
+        "label": "[feature/nitwork3-desktop-improvement]",
+        "branch": "feature/nitwork3-desktop-improvement",
+        "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
+        "parentCommitHash": "2b99fa9d82f942ca93c8acb230fd13bb0e193b74",
+        "lane": 2,
+        "isMerged": false,
+        "mergeCommitHash": null,
+        "statusChildren": [],
+        "isDefaultWorktree": false,
+        "renderMode": "node",
+        "shouldHide": false,
+        "tagLabel": "feature/nitwork3-desktop-improvement",
+        "taskId": "nitwork3-desktop-improvement",
+        "taskStatus": null,
+        "taskStatusLabel": null,
+        "taskName": null,
+        "tooltip": "ID: nitwork3-desktop-improvement\nBranch: feature/nitwork3-desktop-improvement\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/feature-nitwork3-desktop-improvement",
+        "branchColor": "#e84f7f",
+        "index": 10
       },
       {
         "type": "commit",
@@ -17771,22 +17734,22 @@
           "parent": "a89ca1c0c9b28a1a00144a483981b0a5d13ff73d",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "d4dc3adec5517ade36e617317dbab2280c287f0d",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "a89ca1c0c9b28a1a00144a483981b0a5d13ff73d",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 3
+        "index": 11
       },
       {
         "type": "commit",
@@ -17802,22 +17765,22 @@
           "parent": "9db0c72d783d377832091e2a421aae7795edf5c4",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "a89ca1c0c9b28a1a00144a483981b0a5d13ff73d",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "9db0c72d783d377832091e2a421aae7795edf5c4",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 4
+        "index": 12
       },
       {
         "type": "commit",
@@ -17833,22 +17796,22 @@
           "parent": "42e003b1832999afc9402dc7e112d3324ce62884",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "9db0c72d783d377832091e2a421aae7795edf5c4",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "42e003b1832999afc9402dc7e112d3324ce62884",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 5
+        "index": 13
       },
       {
         "type": "commit",
@@ -17864,22 +17827,22 @@
           "parent": "8069b17752defd716f638c8382f98c4f3679e56c",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "42e003b1832999afc9402dc7e112d3324ce62884",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "8069b17752defd716f638c8382f98c4f3679e56c",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 6
+        "index": 14
       },
       {
         "type": "commit",
@@ -17895,22 +17858,22 @@
           "parent": "5eed4cc4c5f69b46e8e344321870687797617817",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "8069b17752defd716f638c8382f98c4f3679e56c",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "5eed4cc4c5f69b46e8e344321870687797617817",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 7
+        "index": 15
       },
       {
         "type": "commit",
@@ -17926,22 +17889,22 @@
           "parent": "e7a297807ec2d951d140283e133a3b0e5f562ac3",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "5eed4cc4c5f69b46e8e344321870687797617817",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "e7a297807ec2d951d140283e133a3b0e5f562ac3",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 8
+        "index": 16
       },
       {
         "type": "commit",
@@ -17957,22 +17920,22 @@
           "parent": "b0212a8b49950f2361307043d96c036dc1915394",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "e7a297807ec2d951d140283e133a3b0e5f562ac3",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "b0212a8b49950f2361307043d96c036dc1915394",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 9
+        "index": 17
       },
       {
         "type": "commit",
@@ -17988,22 +17951,22 @@
           "parent": "347d17613538896c3176a02717fa0fe55bdff052",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "b0212a8b49950f2361307043d96c036dc1915394",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "347d17613538896c3176a02717fa0fe55bdff052",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 10
+        "index": 18
       },
       {
         "type": "commit",
@@ -18019,22 +17982,22 @@
           "parent": "923869a4d65e2961b04a7b3ff3d3a4b4f4a4034c",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "347d17613538896c3176a02717fa0fe55bdff052",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "923869a4d65e2961b04a7b3ff3d3a4b4f4a4034c",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 11
+        "index": 19
       },
       {
         "type": "commit",
@@ -18050,22 +18013,22 @@
           "parent": "38c7f42fccc5b433bcd19588910a872763858ce7",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "923869a4d65e2961b04a7b3ff3d3a4b4f4a4034c",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "38c7f42fccc5b433bcd19588910a872763858ce7",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 12
+        "index": 20
       },
       {
         "type": "commit",
@@ -18081,22 +18044,22 @@
           "parent": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "38c7f42fccc5b433bcd19588910a872763858ce7",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 13
+        "index": 21
       },
       {
         "type": "commit",
@@ -18112,22 +18075,22 @@
           "parent": "36519447683be3736d865316ebb3fa10841f38db",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement"
           ]
         },
         "commitHash": "3797f164c8e80b43e0e9374ad010eb920cc0c20a",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "36519447683be3736d865316ebb3fa10841f38db",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 14
+        "index": 22
       },
       {
         "type": "unstaged",
@@ -18138,11 +18101,102 @@
         "branch": "task/task-1761990298422-63dac9",
         "targetCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-        "timestamp": 1762093692652,
+        "timestamp": 1762138147776,
         "sortOrder": 0,
-        "lane": 6,
+        "lane": 3,
         "branchColor": "#e84f4f",
-        "index": 15
+        "index": 23
+      },
+      {
+        "type": "commit",
+        "label": "chore: sync recent updates",
+        "commit": {
+          "hash": "36519447683be3736d865316ebb3fa10841f38db",
+          "subject": "chore: sync recent updates",
+          "author": "codex-bot",
+          "timestamp": 1761975538,
+          "parents": [
+            "07051fa7974bf90fa21ff6f639e6b1c2967894e4"
+          ],
+          "parent": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
+          "refs": "HEAD -> task/task-1761990298422-63dac9, task/task-1761990301087-fcc9d8, task/task-1761990295908-b2e49d",
+          "branches": [
+            "HEAD -> task/task-1761990298422-63dac9",
+            "task/task-1761990301087-fcc9d8",
+            "task/task-1761990295908-b2e49d",
+            "feature/ios-voice-session",
+            "feature/nitwork3-desktop-improvement",
+            "task/task-1761990298422-63dac9"
+          ]
+        },
+        "commitHash": "36519447683be3736d865316ebb3fa10841f38db",
+        "lane": 3,
+        "parentLinks": [
+          {
+            "hash": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
+            "lane": 0
+          }
+        ],
+        "primaryBranchName": "task/task-1761990298422-63dac9",
+        "branchColor": "#e84f4f",
+        "branchTags": [
+          "task/task-1761990298422-63dac9"
+        ],
+        "worktrees": [
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
+            "head": "36519447683be3736d865316ebb3fa10841f38db",
+            "branch": "task/task-1761990295908-b2e49d",
+            "isMerged": false,
+            "mergeCommitHash": null,
+            "status": {
+              "staged": [],
+              "unstaged": [],
+              "untracked": [],
+              "capturedAt": 1762138143737
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
+            "lane": 5
+          },
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
+            "head": "36519447683be3736d865316ebb3fa10841f38db",
+            "branch": "task/task-1761990298422-63dac9",
+            "isMerged": false,
+            "mergeCommitHash": null,
+            "status": {
+              "staged": [],
+              "unstaged": [],
+              "untracked": [
+                {
+                  "path": "apps/web/public/novel-ui.html",
+                  "status": "untracked",
+                  "rawPath": "apps/web/public/novel-ui.html",
+                  "timestamp": 1762138143749
+                }
+              ],
+              "capturedAt": 1762138143749
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
+            "lane": 3
+          },
+          {
+            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
+            "head": "36519447683be3736d865316ebb3fa10841f38db",
+            "branch": "task/task-1761990301087-fcc9d8",
+            "isMerged": false,
+            "mergeCommitHash": null,
+            "status": {
+              "staged": [],
+              "unstaged": [],
+              "untracked": [],
+              "capturedAt": 1762138143758
+            },
+            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
+            "lane": 4
+          }
+        ],
+        "index": 24
       },
       {
         "type": "anchor",
@@ -18164,7 +18218,7 @@
         "taskName": "CodexCLI1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる",
         "tooltip": "タスク: CodexCLI1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる\nステータス: 作業中\nID: task-1761990295908-b2e49d\nBranch: task/task-1761990295908-b2e49d\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
         "branchColor": "#4fe84f",
-        "index": 16
+        "index": 25
       },
       {
         "type": "anchor",
@@ -18172,7 +18226,7 @@
         "branch": "task/task-1761990301087-fcc9d8",
         "worktreePath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
         "parentCommitHash": "36519447683be3736d865316ebb3fa10841f38db",
-        "lane": 7,
+        "lane": 4,
         "isMerged": false,
         "mergeCommitHash": null,
         "statusChildren": [],
@@ -18186,98 +18240,7 @@
         "taskName": "ClaudeCode1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる",
         "tooltip": "タスク: ClaudeCode1: AIコンペ: HTMLとCSSで小説閲覧用の簡易アプリUIを作成し、複数モデルにカード一覧とモーダル表示案を提案させる\nステータス: 作業中\nID: task-1761990301087-fcc9d8\nBranch: task/task-1761990301087-fcc9d8\nWorktree: Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
         "branchColor": "#4f85e8",
-        "index": 17
-      },
-      {
-        "type": "commit",
-        "label": "chore: sync recent updates",
-        "commit": {
-          "hash": "36519447683be3736d865316ebb3fa10841f38db",
-          "subject": "chore: sync recent updates",
-          "author": "codex-bot",
-          "timestamp": 1761975538,
-          "parents": [
-            "07051fa7974bf90fa21ff6f639e6b1c2967894e4"
-          ],
-          "parent": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
-          "refs": "HEAD -> task/task-1761990298422-63dac9, task/task-1761990301087-fcc9d8, task/task-1761990295908-b2e49d",
-          "branches": [
-            "HEAD -> task/task-1761990298422-63dac9",
-            "task/task-1761990301087-fcc9d8",
-            "task/task-1761990295908-b2e49d",
-            "main",
-            "feature/nitwork3-desktop-improvement",
-            "task/task-1761990298422-63dac9"
-          ]
-        },
-        "commitHash": "36519447683be3736d865316ebb3fa10841f38db",
-        "lane": 0,
-        "parentLinks": [
-          {
-            "hash": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
-            "lane": 0
-          }
-        ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
-        "branchTags": [
-          "task/task-1761990298422-63dac9"
-        ],
-        "worktrees": [
-          {
-            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
-            "head": "36519447683be3736d865316ebb3fa10841f38db",
-            "branch": "task/task-1761990295908-b2e49d",
-            "isMerged": false,
-            "mergeCommitHash": null,
-            "status": {
-              "staged": [],
-              "unstaged": [],
-              "untracked": [],
-              "capturedAt": 1762093691312
-            },
-            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990295908-b2e49d",
-            "lane": 5
-          },
-          {
-            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-            "head": "36519447683be3736d865316ebb3fa10841f38db",
-            "branch": "task/task-1761990298422-63dac9",
-            "isMerged": false,
-            "mergeCommitHash": null,
-            "status": {
-              "staged": [],
-              "unstaged": [],
-              "untracked": [
-                {
-                  "path": "apps/web/public/novel-ui.html",
-                  "status": "untracked",
-                  "rawPath": "apps/web/public/novel-ui.html",
-                  "timestamp": 1762093691330
-                }
-              ],
-              "capturedAt": 1762093691330
-            },
-            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990298422-63dac9",
-            "lane": 6
-          },
-          {
-            "path": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
-            "head": "36519447683be3736d865316ebb3fa10841f38db",
-            "branch": "task/task-1761990301087-fcc9d8",
-            "isMerged": false,
-            "mergeCommitHash": null,
-            "status": {
-              "staged": [],
-              "unstaged": [],
-              "untracked": [],
-              "capturedAt": 1762093691337
-            },
-            "normalizedPath": "/Users/cbns03/Downloads/anicca-project/.worktrees/task-1761990301087-fcc9d8",
-            "lane": 7
-          }
-        ],
-        "index": 18
+        "index": 26
       },
       {
         "type": "commit",
@@ -18297,11 +18260,11 @@
           ]
         },
         "commitHash": "cc32a247508a274a732e56de7e4fa66d644f3e4c",
-        "lane": 1,
+        "lane": 6,
         "parentLinks": [
           {
             "hash": "8c442bfb2e1edb84b2922159b41a656f2cb980f4",
-            "lane": 1
+            "lane": 2
           }
         ],
         "primaryBranchName": "emergent-copy",
@@ -18309,7 +18272,7 @@
         "branchTags": [
           "emergent-copy"
         ],
-        "index": 19
+        "index": 27
       },
       {
         "type": "commit",
@@ -18331,12 +18294,12 @@
         "parentLinks": [
           {
             "hash": "3c997d597cd355ea7315fedc05d7410e654a6d27",
-            "lane": 1
+            "lane": 2
           }
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 20
+        "index": 28
       },
       {
         "type": "commit",
@@ -18353,7 +18316,7 @@
           "refs": "emergent-clone",
           "branches": [
             "emergent-clone",
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18361,19 +18324,19 @@
           ]
         },
         "commitHash": "07051fa7974bf90fa21ff6f639e6b1c2967894e4",
-        "lane": 0,
+        "lane": 7,
         "parentLinks": [
           {
             "hash": "16930a1087e102f004e74c98d9417d16b166dca4",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "emergent-clone",
+        "branchColor": "#4fe8b8",
         "branchTags": [
           "emergent-clone"
         ],
-        "index": 21
+        "index": 29
       },
       {
         "type": "commit",
@@ -18393,7 +18356,7 @@
           ]
         },
         "commitHash": "089637ac06da38f9c0f1a66b88cb30ab9cb20263",
-        "lane": 2,
+        "lane": 8,
         "parentLinks": [
           {
             "hash": "16930a1087e102f004e74c98d9417d16b166dca4",
@@ -18405,7 +18368,7 @@
         "branchTags": [
           "emergent-web"
         ],
-        "index": 22
+        "index": 30
       },
       {
         "type": "commit",
@@ -18425,7 +18388,7 @@
         "parentLinks": [],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 23
+        "index": 31
       },
       {
         "type": "commit",
@@ -18441,7 +18404,7 @@
           "parent": "24f2373db589af553bcb50d3643f349736285eac",
           "refs": "tag: v0.6.16",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18449,17 +18412,17 @@
           ]
         },
         "commitHash": "16930a1087e102f004e74c98d9417d16b166dca4",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "24f2373db589af553bcb50d3643f349736285eac",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 24
+        "index": 32
       },
       {
         "type": "commit",
@@ -18475,7 +18438,7 @@
           "parent": "05043de30d039a1f47a422d7c3a68bd9f0005217",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18483,17 +18446,17 @@
           ]
         },
         "commitHash": "24f2373db589af553bcb50d3643f349736285eac",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "05043de30d039a1f47a422d7c3a68bd9f0005217",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 25
+        "index": 33
       },
       {
         "type": "commit",
@@ -18509,7 +18472,7 @@
           "parent": "036a5d83bd6bcacf1a0d4d5366a1f433be7567f6",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18517,17 +18480,17 @@
           ]
         },
         "commitHash": "05043de30d039a1f47a422d7c3a68bd9f0005217",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "036a5d83bd6bcacf1a0d4d5366a1f433be7567f6",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 26
+        "index": 34
       },
       {
         "type": "commit",
@@ -18543,7 +18506,7 @@
           "parent": "56383e51e2e7cf430bd0593e61effa0a9d394497",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18551,17 +18514,17 @@
           ]
         },
         "commitHash": "036a5d83bd6bcacf1a0d4d5366a1f433be7567f6",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "56383e51e2e7cf430bd0593e61effa0a9d394497",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 27
+        "index": 35
       },
       {
         "type": "commit",
@@ -18577,7 +18540,7 @@
           "parent": "c04dc187ed5211b15abf442c2e238b261fa7c6f7",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18585,17 +18548,17 @@
           ]
         },
         "commitHash": "56383e51e2e7cf430bd0593e61effa0a9d394497",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "c04dc187ed5211b15abf442c2e238b261fa7c6f7",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 28
+        "index": 36
       },
       {
         "type": "commit",
@@ -18611,7 +18574,7 @@
           "parent": "6478912c7301e9112cdc0bf2764e446d549981ee",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18619,17 +18582,17 @@
           ]
         },
         "commitHash": "c04dc187ed5211b15abf442c2e238b261fa7c6f7",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "6478912c7301e9112cdc0bf2764e446d549981ee",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 29
+        "index": 37
       },
       {
         "type": "commit",
@@ -18645,7 +18608,7 @@
           "parent": "370209b16f89c3a84351b1687bf7f7a0b63aa7ed",
           "refs": "tag: v0.6.15",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18653,17 +18616,17 @@
           ]
         },
         "commitHash": "6478912c7301e9112cdc0bf2764e446d549981ee",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "370209b16f89c3a84351b1687bf7f7a0b63aa7ed",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 30
+        "index": 38
       },
       {
         "type": "commit",
@@ -18679,7 +18642,7 @@
           "parent": "c8c1d9e4bf63d27bb03cd7512f6e7f2793f12724",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18687,17 +18650,17 @@
           ]
         },
         "commitHash": "370209b16f89c3a84351b1687bf7f7a0b63aa7ed",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "c8c1d9e4bf63d27bb03cd7512f6e7f2793f12724",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 31
+        "index": 39
       },
       {
         "type": "commit",
@@ -18713,7 +18676,7 @@
           "parent": "e643495f9548b1b92646d7d8218decdb3f40be98",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18721,17 +18684,17 @@
           ]
         },
         "commitHash": "c8c1d9e4bf63d27bb03cd7512f6e7f2793f12724",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "e643495f9548b1b92646d7d8218decdb3f40be98",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [],
-        "index": 32
+        "index": 40
       },
       {
         "type": "commit",
@@ -18748,7 +18711,7 @@
           "parent": "051f65e9dd560d54edaef749519ee9dd262c574a",
           "refs": "",
           "branches": [
-            "main",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18757,7 +18720,7 @@
           ]
         },
         "commitHash": "e643495f9548b1b92646d7d8218decdb3f40be98",
-        "lane": 0,
+        "lane": 1,
         "parentLinks": [
           {
             "hash": "051f65e9dd560d54edaef749519ee9dd262c574a",
@@ -18765,15 +18728,15 @@
           },
           {
             "hash": "035b35a7561b859ccb45eb0dcf79143405c47ae0",
-            "lane": 3
+            "lane": 4
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/ios-voice-session",
+        "branchColor": "#4fe8b8",
         "branchTags": [
           "feature/wake-routine-tags"
         ],
-        "index": 33
+        "index": 41
       },
       {
         "type": "commit",
@@ -18791,6 +18754,7 @@
           "branches": [
             "origin/feature/wake-routine-tags",
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18798,17 +18762,17 @@
           ]
         },
         "commitHash": "035b35a7561b859ccb45eb0dcf79143405c47ae0",
-        "lane": 3,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "3916a97a2825e6f3d057bbac3976e0cccf6fdebf",
-            "lane": 3
+            "lane": 4
           }
         ],
         "primaryBranchName": "feature/wake-routine-tags",
         "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 34
+        "index": 42
       },
       {
         "type": "commit",
@@ -18825,6 +18789,7 @@
           "refs": "",
           "branches": [
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18832,7 +18797,7 @@
           ]
         },
         "commitHash": "3916a97a2825e6f3d057bbac3976e0cccf6fdebf",
-        "lane": 3,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "051f65e9dd560d54edaef749519ee9dd262c574a",
@@ -18842,7 +18807,7 @@
         "primaryBranchName": "feature/wake-routine-tags",
         "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 35
+        "index": 43
       },
       {
         "type": "commit",
@@ -18858,8 +18823,8 @@
           "parent": "b40b24c4affaa798206eeca6eba846abb13cf917",
           "refs": "tag: v0.6.13",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18867,17 +18832,17 @@
           ]
         },
         "commitHash": "051f65e9dd560d54edaef749519ee9dd262c574a",
-        "lane": 0,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "b40b24c4affaa798206eeca6eba846abb13cf917",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/wake-routine-tags",
+        "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 36
+        "index": 44
       },
       {
         "type": "commit",
@@ -18893,8 +18858,8 @@
           "parent": "f393ef4dc647027dca66792372e681b28dffabec",
           "refs": "",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18902,17 +18867,17 @@
           ]
         },
         "commitHash": "b40b24c4affaa798206eeca6eba846abb13cf917",
-        "lane": 0,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "f393ef4dc647027dca66792372e681b28dffabec",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/wake-routine-tags",
+        "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 37
+        "index": 45
       },
       {
         "type": "commit",
@@ -18928,8 +18893,8 @@
           "parent": "04acd81d6edf879f86b1bc8154a6c0fee595b603",
           "refs": "",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18937,17 +18902,17 @@
           ]
         },
         "commitHash": "f393ef4dc647027dca66792372e681b28dffabec",
-        "lane": 0,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "04acd81d6edf879f86b1bc8154a6c0fee595b603",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/wake-routine-tags",
+        "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 38
+        "index": 46
       },
       {
         "type": "commit",
@@ -18963,8 +18928,8 @@
           "parent": "b2d101b83f9700c7b370a1652bb84c638051f9c5",
           "refs": "tag: v0.6.12",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -18972,17 +18937,17 @@
           ]
         },
         "commitHash": "04acd81d6edf879f86b1bc8154a6c0fee595b603",
-        "lane": 0,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "b2d101b83f9700c7b370a1652bb84c638051f9c5",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/wake-routine-tags",
+        "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 39
+        "index": 47
       },
       {
         "type": "commit",
@@ -18998,8 +18963,8 @@
           "parent": "2e7c1e79dda9e5bdfc28229351194161acae18d9",
           "refs": "",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
+            "feature/ios-voice-session",
             "feature/nitwork3-desktop-improvement",
             "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
@@ -19007,17 +18972,17 @@
           ]
         },
         "commitHash": "b2d101b83f9700c7b370a1652bb84c638051f9c5",
-        "lane": 0,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "2e7c1e79dda9e5bdfc28229351194161acae18d9",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/wake-routine-tags",
+        "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 40
+        "index": 48
       },
       {
         "type": "commit",
@@ -19033,26 +18998,26 @@
           "parent": "8da469984471de3b0144c44145a48ddbb287e5df",
           "refs": "",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
-            "feature/nitwork3-desktop-improvement",
-            "task/task-1761990295908-b2e49d",
+            "feature/ios-voice-session",
             "task/task-1761990298422-63dac9",
+            "task/task-1761990295908-b2e49d",
+            "feature/nitwork3-desktop-improvement",
             "task/task-1761990301087-fcc9d8"
           ]
         },
         "commitHash": "2e7c1e79dda9e5bdfc28229351194161acae18d9",
-        "lane": 0,
+        "lane": 9,
         "parentLinks": [
           {
             "hash": "8da469984471de3b0144c44145a48ddbb287e5df",
             "lane": 0
           }
         ],
-        "primaryBranchName": "main",
-        "branchColor": "#4f85e8",
+        "primaryBranchName": "feature/wake-routine-tags",
+        "branchColor": "#b84fe8",
         "branchTags": [],
-        "index": 41
+        "index": 49
       },
       {
         "type": "commit",
@@ -19068,12 +19033,12 @@
           "parent": "6992f50af18b08f74c609cdc93d260475180eec4",
           "refs": "",
           "branches": [
-            "main",
             "feature/wake-routine-tags",
+            "main",
             "feature/nitwork3-desktop-improvement",
+            "task/task-1761990301087-fcc9d8",
             "task/task-1761990295908-b2e49d",
-            "task/task-1761990298422-63dac9",
-            "task/task-1761990301087-fcc9d8"
+            "task/task-1761990298422-63dac9"
           ]
         },
         "commitHash": "8da469984471de3b0144c44145a48ddbb287e5df",
@@ -19087,7 +19052,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 42
+        "index": 50
       },
       {
         "type": "commit",
@@ -19106,9 +19071,9 @@
             "main",
             "feature/wake-routine-tags",
             "feature/nitwork3-desktop-improvement",
-            "task/task-1761990295908-b2e49d",
             "task/task-1761990298422-63dac9",
-            "task/task-1761990301087-fcc9d8"
+            "task/task-1761990301087-fcc9d8",
+            "task/task-1761990295908-b2e49d"
           ]
         },
         "commitHash": "6992f50af18b08f74c609cdc93d260475180eec4",
@@ -19122,7 +19087,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 43
+        "index": 51
       },
       {
         "type": "commit",
@@ -19157,7 +19122,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 44
+        "index": 52
       },
       {
         "type": "commit",
@@ -19191,7 +19156,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 45
+        "index": 53
       },
       {
         "type": "commit",
@@ -19225,7 +19190,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 46
+        "index": 54
       },
       {
         "type": "commit",
@@ -19259,7 +19224,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 47
+        "index": 55
       },
       {
         "type": "commit",
@@ -19293,7 +19258,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 48
+        "index": 56
       },
       {
         "type": "commit",
@@ -19320,7 +19285,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 49
+        "index": 57
       },
       {
         "type": "commit",
@@ -19347,7 +19312,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 50
+        "index": 58
       },
       {
         "type": "commit",
@@ -19381,7 +19346,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 51
+        "index": 59
       },
       {
         "type": "commit",
@@ -19415,7 +19380,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 52
+        "index": 60
       },
       {
         "type": "commit",
@@ -19442,7 +19407,7 @@
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 53
+        "index": 61
       },
       {
         "type": "commit",
@@ -19476,7 +19441,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 54
+        "index": 62
       },
       {
         "type": "commit",
@@ -19510,7 +19475,7 @@
         "primaryBranchName": "main",
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 55
+        "index": 63
       },
       {
         "type": "commit",
@@ -19532,19 +19497,19 @@
           ]
         },
         "commitHash": "4a565d791ef935168d72e8e8402be0a551768156",
-        "lane": 8,
+        "lane": 10,
         "parentLinks": [
           {
             "hash": "f994577c46f89ca035436d0725f748f948df8331",
-            "lane": 4
-          },
-          {
-            "hash": "38663f6240324f3e3e0354051bcb523113c99619",
             "lane": 5
           },
           {
-            "hash": "0f23ae1e84c378c419d030acae773bdbe1552c3e",
+            "hash": "38663f6240324f3e3e0354051bcb523113c99619",
             "lane": 6
+          },
+          {
+            "hash": "0f23ae1e84c378c419d030acae773bdbe1552c3e",
+            "lane": 7
           }
         ],
         "primaryBranchName": "refs/stash",
@@ -19552,7 +19517,7 @@
         "branchTags": [
           "refs/stash"
         ],
-        "index": 56
+        "index": 64
       },
       {
         "type": "commit",
@@ -19574,22 +19539,22 @@
         "parentLinks": [
           {
             "hash": "f994577c46f89ca035436d0725f748f948df8331",
-            "lane": 4
+            "lane": 5
           }
         ],
         "branchColor": "#4f85e8",
         "branchTags": [],
-        "index": 57
+        "index": 65
       },
       {
         "type": "empty",
         "label": "初期状態 (初回コミット以前)",
         "files": [],
         "marker": "pre-history",
-        "index": 58
+        "index": 66
       }
     ]
   },
   "projectRoot": "/Users/cbns03/Downloads/anicca-project",
-  "savedAt": 1762093750967
+  "savedAt": 1762138203403
 }

@@ -19,8 +19,7 @@ const response = await fetch(OPENAI_REALTIME_URL, {
     body: JSON.stringify({
       model: 'gpt-4o-mini-realtime-preview-2024-12-17',
       modalities: ['text', 'audio'],
-      voice: 'alloy',
-      metadata: { device_id: deviceId }
+      voice: 'alloy'
     })
   });
 

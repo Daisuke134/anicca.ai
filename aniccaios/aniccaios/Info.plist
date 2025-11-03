@@ -3,7 +3,7 @@
 <plist version="1.0">
 <dict>
 	<key>ANICCA_PROXY_BASE_URL</key>
-	<string>https://anicca-proxy-production.up.railway.app/api/mobile</string>
+	<string>https://anicca-proxy-production.up.railway.app/api</string>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

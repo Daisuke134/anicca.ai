@@ -29,11 +29,6 @@ enum AppConfig {
     }
 
     static var realtimeSessionURL: URL {
-        let trimmed = proxyBaseURL.absoluteString.trimmingCharacters(in: CharacterSet(charactersIn: "/"))
-        guard let base = URL(string: trimmed) else {
-            logger.fault("Failed to trim proxy base URL: \(trimmed, privacy: .public)")
-            fatalError("Invalid realtime session URL base")
-        }
-        return base.appendingPathComponent("mobile/realtime/session")
+        proxyBaseURL.appendingPathComponent("mobile/realtime/session")
     }
 }

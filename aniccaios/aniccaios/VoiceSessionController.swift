@@ -1,4 +1,5 @@
 import AVFoundation
+import Combine
 import OSLog
 import WebRTC
 
@@ -11,6 +12,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var dataChannel: RTCDataChannel?
     private var audioTrack: RTCAudioTrack?
     private var cachedSecret: ClientSecret?
+    private var sessionModel: String = "gpt-4o-realtime-preview-2024-10-01"
 
     func start() {
         guard connectionStatus != .connecting else { return }
@@ -60,6 +62,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         let payload = try JSONDecoder().decode(RealtimeSessionResponse.self, from: data)
+        sessionModel = payload.model ?? sessionModel
         let secret = payload.clientSecretModel
         cachedSecret = secret
         return secret
@@ -77,7 +80,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         let constraints = RTCMediaConstraints(mandatoryConstraints: ["OfferToReceiveAudio": "true"],
                                               optionalConstraints: nil)
 
-        let offer = try await withCheckedThrowingContinuation { continuation in
+        let offer: RTCSessionDescription = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<RTCSessionDescription, Error>) in
             peerConnection.offer(for: constraints) { sdp, error in
                 if let error {
                     continuation.resume(throwing: error)
@@ -89,12 +92,12 @@ final class VoiceSessionController: NSObject, ObservableObject {
             }
         }
 
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             peerConnection.setLocalDescription(offer) { error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {
-                    continuation.resume()
+                    continuation.resume(returning: ())
                 }
             }
         }
@@ -102,12 +105,12 @@ final class VoiceSessionController: NSObject, ObservableObject {
         let answerSDP = try await fetchRemoteSDP(secret: secret, localSdp: offer.sdp)
         let answer = RTCSessionDescription(type: .answer, sdp: answerSDP)
 
-        try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
             peerConnection.setRemoteDescription(answer) { error in
                 if let error {
                     continuation.resume(throwing: error)
                 } else {
-                    continuation.resume()
+                    continuation.resume(returning: ())
                 }
             }
         }
@@ -120,7 +123,13 @@ final class VoiceSessionController: NSObject, ObservableObject {
             throw VoiceSessionError.missingClientSecret
         }
 
-        var request = URLRequest(url: URL(string: "https://api.openai.com/v1/realtime")!)
+        var components = URLComponents(string: "https://api.openai.com/v1/realtime")
+        components?.queryItems = [URLQueryItem(name: "model", value: sessionModel)]
+        guard let url = components?.url else {
+            throw VoiceSessionError.remoteSDPFailed
+        }
+
+        var request = URLRequest(url: url)
         request.httpMethod = "POST"
         request.setValue("application/sdp", forHTTPHeaderField: "Content-Type")
         request.setValue("Bearer \(secret.value)", forHTTPHeaderField: "Authorization")
@@ -128,6 +137,9 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
+            if let http = response as? HTTPURLResponse {
+                logger.error("Realtime SDP exchange failed with status \(http.statusCode)")
+            }
             cachedSecret = nil
             throw VoiceSessionError.remoteSDPFailed
         }
@@ -165,7 +177,10 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     private func configureAudioSession() throws {
         let session = AVAudioSession.sharedInstance()
-        try session.setCategory(.playAndRecord, options: [.defaultToSpeaker, .allowBluetooth])
+        try session.setCategory(
+            .playAndRecord,
+            options: [.defaultToSpeaker, .allowBluetoothA2DP, .allowBluetoothHFP]
+        )
         try session.setMode(.voiceChat)
         try session.setPreferredSampleRate(48_000)
         try session.setPreferredIOBufferDuration(0.005)
@@ -259,9 +274,11 @@ private struct RealtimeSessionResponse: Decodable {
     }
 
     let clientSecret: ClientSecretPayload
+    let model: String?
 
     enum CodingKeys: String, CodingKey {
         case clientSecret = "client_secret"
+        case model
     }
 
     var clientSecretModel: ClientSecret {

@@ -30,26 +30,35 @@ struct ContentView: View {
     }
 
     private var sessionButton: some View {
+        let config = buttonConfig
+        return Button(config.title) {
+            config.action()
+        }
+        .buttonStyle(BorderedProminentButtonStyle())
+        .controlSize(.large)
+        .disabled(config.disabled)
+    }
+
+    private var buttonConfig: (title: String, disabled: Bool, action: () -> Void) {
         switch controller.connectionStatus {
         case .connected:
-            Button("End Session") {
-                controller.stop()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
-
+            return (
+                title: "End Session",
+                disabled: false,
+                action: { controller.stop() }
+            )
         case .connecting:
-            Button("Connecting…") {}
-                .buttonStyle(.bordered)
-                .controlSize(.large)
-                .disabled(true)
-
+            return (
+                title: "Connecting…",
+                disabled: true,
+                action: {}
+            )
         case .disconnected:
-            Button("Start Voice Session") {
-                controller.start()
-            }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            return (
+                title: "Start Voice Session",
+                disabled: false,
+                action: { controller.start() }
+            )
         }
     }
 }

@@ -33,11 +33,14 @@ struct WakePromptBuilder {
     }
 
     private func loadPrompt(named name: String) -> String? {
-        guard let url = Bundle.main.url(
-            forResource: name,
-            withExtension: "txt",
-            subdirectory: promptsDirectory
-        ) else { return nil }
-        return try? String(contentsOf: url, encoding: .utf8)
+        if let url = Bundle.main.url(forResource: name, withExtension: "txt") {
+            return try? String(contentsOf: url, encoding: .utf8)
+        }
+        let fallback = Bundle.main.bundleURL
+            .appendingPathComponent("Resources", isDirectory: true)
+            .appendingPathComponent(promptsDirectory, isDirectory: true)
+            .appendingPathComponent("\(name).txt")
+        guard FileManager.default.fileExists(atPath: fallback.path) else { return nil }
+        return try? String(contentsOf: fallback, encoding: .utf8)
     }
 }

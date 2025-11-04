@@ -8,17 +8,12 @@
 
 /* Begin PBXBuildFile section */
 		8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AF7A2EB7B8F4002CECAA /* WebRTC */; };
-		8471B0DC2EBA1068002CECAA /* Production.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 8471B0DB2EBA1068002CECAA /* Production.xcconfig */; };
-		8471B0DE2EBA1070002CECAA /* Staging.xcconfig in Resources */ = {isa = PBXBuildFile; fileRef = 8471B0DD2EBA1070002CECAA /* Staging.xcconfig */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		8471B06F2EB8C4C0002CECAA /* aniccaios copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "aniccaios copy-Info.plist"; path = "/Users/cbns03/Downloads/anicca-project/aniccaios/aniccaios copy-Info.plist"; sourceTree = "<absolute>"; };
 		8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
 		8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
-		8471B0DB2EBA1068002CECAA /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Production.xcconfig; sourceTree = "<group>"; };
-		8471B0DD2EBA1070002CECAA /* Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Staging.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -58,13 +53,16 @@
 			isa = PBXGroup;
 			children = (
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
-				8471B06F2EB8C4C0002CECAA /* aniccaios copy-Info.plist */,
 				8471AE7C2EB783E1002CECAA /* Products */,
 				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
 				8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */,
-				8471B0DB2EBA1068002CECAA /* Production.xcconfig */,
-				8471B0DD2EBA1070002CECAA /* Staging.xcconfig */,
+				8471C1A22EC12345002CECAA /* WebRTCShims */,
 			);
+			sourceTree = "<group>";
+		};
+		8471C1A22EC12345002CECAA /* WebRTCShims */ = {
+			isa = PBXGroup;
+			path = aniccaios/WebRTCShims;
 			sourceTree = "<group>";
 		};
 		8471AE7C2EB783E1002CECAA /* Products */ = {
@@ -143,8 +141,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				8471B0DE2EBA1070002CECAA /* Staging.xcconfig in Resources */,
-				8471B0DC2EBA1068002CECAA /* Production.xcconfig in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -163,7 +159,7 @@
 /* Begin XCBuildConfiguration section */
 		8471AE842EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DB2EBA1068002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -228,7 +224,7 @@
 		};
 		8471AE852EB783E3002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DB2EBA1068002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -286,7 +282,7 @@
 		};
 		8471AE872EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DB2EBA1068002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -328,7 +324,7 @@
 		};
 		8471AE882EB783E3002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DB2EBA1068002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -370,7 +366,7 @@
 		};
 		8471B0732EB8CD64002CECAA /* staging Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DD2EBA1070002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -435,7 +431,7 @@
 		};
 		8471B0742EB8CD64002CECAA /* staging Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DD2EBA1070002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -477,7 +473,7 @@
 		};
 		8471B0762EB8CD69002CECAA /* staging Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DD2EBA1070002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
@@ -535,7 +531,7 @@
 		};
 		8471B0772EB8CD69002CECAA /* staging Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0DD2EBA1070002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;

@@ -6,7 +6,8 @@ const router = express.Router();
 const logger = baseLogger.withContext('MobileRealtime');
 
 router.get('/session', async (req, res) => {
-  const deviceId = (req.query.deviceId || req.get('device-id') || '').toString().trim();
+  const deviceId = (req.get('device-id') || '').toString().trim();
+  // 将来クエリ対応を復活させる場合はここに再追加
   if (!deviceId) {
     logger.warn('Missing deviceId for client_secret request');
     return res.status(400).json({ error: 'deviceId is required' });

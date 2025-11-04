@@ -1,7 +1,10 @@
 import baseLogger from '../utils/logger.js';
+import { fetch } from 'undici';
 
 const logger = baseLogger.withContext('OpenAIRealtimeService');
 const OPENAI_REALTIME_URL = 'https://api.openai.com/v1/realtime/sessions';
+const DEFAULT_MODEL = 'gpt-realtime';
+const DEFAULT_VOICE = 'alloy';
 
 export async function issueRealtimeClientSecret({ deviceId }) {
   const apiKey = process.env.OPENAI_API_KEY;
@@ -17,9 +20,9 @@ const response = await fetch(OPENAI_REALTIME_URL, {
       'OpenAI-Beta': 'realtime=v1'
     },
     body: JSON.stringify({
-      model: 'gpt-4o-mini-realtime-preview-2024-12-17',
+      model: process.env.OPENAI_REALTIME_MODEL ?? DEFAULT_MODEL,
       modalities: ['text', 'audio'],
-      voice: 'alloy'
+      voice: process.env.OPENAI_REALTIME_VOICE ?? DEFAULT_VOICE
     })
   });
 

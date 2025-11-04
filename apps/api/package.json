@@ -8,7 +8,6 @@
     "dev": "vercel dev",
     "deploy": "vercel --prod",
     "start": "node src/server.js",
-    "start:agent": "python apps/api/agents/mobile_voice_agent.py",
     "dev:railway": "nodemon src/server.js"
   },
   "keywords": [
@@ -34,7 +33,6 @@
     "@slack/web-api": "^7.9.3",
     "@supabase/supabase-js": "^2.50.2",
     "@vercel/mcp-adapter": "^0.11.1",
-    "@livekit/livekit-server-sdk": "npm:livekit-server-sdk@^2.14.0",
     "axios": "^1.10.0",
     "busboy": "^1.6.0",
     "cors": "^2.8.5",

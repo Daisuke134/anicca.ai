@@ -56,9 +56,11 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         var request = URLRequest(url: AppConfig.realtimeSessionURL)
-        request.httpMethod = "GET"
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString,
                          forHTTPHeaderField: "device-id")
+        request.httpBody = Data("{}".utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
@@ -66,7 +68,11 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         let payload = try JSONDecoder().decode(RealtimeSessionResponse.self, from: data)
-        sessionModel = payload.model ?? "gpt-realtime"
+        if let latest = payload.model, latest == "gpt-realtime" {
+            sessionModel = latest
+        } else {
+            sessionModel = "gpt-realtime"
+        }
         let secret = payload.clientSecretModel
         cachedSecret = secret
         return secret
@@ -279,26 +285,15 @@ private extension VoiceSessionController {
         }
 
         if shouldTriggerWakeResponse {
-            // { "type": "response.create" } を dataChannel に送信して
-            // モデルに即時の第一声生成を命令する
-            // 送信成功後に AppState.shared.clearPendingWakeTrigger() を呼び出し、
-            // shouldStartSessionImmediately もここでリセットする
-            let responseCreate: [String: Any] = [
-                "type": "response.create"
-            ]
-            
-            do {
-                let json = try JSONSerialization.data(withJSONObject: responseCreate, options: [.fragmentsAllowed])
-                let buffer = RTCDataBuffer(data: json, isBinary: false)
-                channel.sendData(buffer)
-                logger.debug("Sent response.create event for wake prompt")
-                AppState.shared.clearPendingWakeTrigger()
-            } catch {
-                logger.error("Failed to send response.create: \(error.localizedDescription, privacy: .public)")
-                // エラーが発生した場合でも、クリーンアップは実行する
-                AppState.shared.clearPendingWakeTrigger()
-            }
+            sendWakeResponseCreate()
+            AppState.shared.clearPendingWakeTrigger()
         }
+    }
+
+    private func sendWakeResponseCreate() {
+        guard let channel = dataChannel, channel.readyState == .open else { return }
+        guard let data = try? JSONSerialization.data(withJSONObject: ["type": "response.create"]) else { return }
+        channel.sendData(RTCDataBuffer(data: data, isBinary: false))
     }
 }
 

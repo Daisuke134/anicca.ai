@@ -30,9 +30,6 @@ import transcribeRouter from './tools/transcribe.js';
 // Preview
 import previewAppRouter from './preview/app.js';
 
-// Worker voice (kept to preserve current functionality under new routing layer)
-import workerVoiceMessageRouter from './worker-voice/message.js';
-import workerVoiceInterruptRouter from './worker-voice/interrupt.js';
 
 const router = express.Router();
 
@@ -59,8 +56,5 @@ router.use('/tools/playwright', playwrightRouter);
 router.use('/tools/transcribe', transcribeRouter);
 
 router.use('/preview/app', previewAppRouter);
-
-router.use('/worker-voice/message', workerVoiceMessageRouter);
-router.use('/worker-voice/interrupt', workerVoiceInterruptRouter);
 
 export default router;

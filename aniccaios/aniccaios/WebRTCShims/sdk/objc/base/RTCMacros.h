@@ -1,6 +1,7 @@
-#ifndef ANICCA_WEBRTC_SHIM_RTCMACROS_H
-#define ANICCA_WEBRTC_SHIM_RTCMACROS_H
+#ifndef RTCMACROS_SHIM_H
+#define RTCMACROS_SHIM_H
 
-#include <WebRTC/RTCMacros.h>
+#import <WebRTC/RTCMacros.h>
 
 #endif
+

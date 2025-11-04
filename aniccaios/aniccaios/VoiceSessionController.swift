@@ -68,7 +68,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         let payload = try JSONDecoder().decode(RealtimeSessionResponse.self, from: data)
-        if let latest = payload.model, latest == "gpt-realtime" {
+        if let latest = payload.model {
             sessionModel = latest
         } else {
             sessionModel = "gpt-realtime"

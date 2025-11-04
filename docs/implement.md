@@ -56,11 +56,11 @@
 
 ### 3.1 リポジトリ初期化（IOS‑001）
 
-目標: `Anicca/Smart` に既存Xcodeプロジェクトを配置し、SPM依存を固定タグで導入する。
+目標: `aniccaios/` に既存Xcodeプロジェクトを配置し、SPM依存を固定タグで導入する。
 手順:
 
-1. `Anicca/Smart/Smart.xcodeproj` をベースに構成
-2. Package Dependencies: livekit-client-ios、RevenueCat
+1. `aniccaios/aniccaios/aniccaios.xcodeproj` をベースに構成
+2. Package Dependencies: RevenueCat（必要に応じて追加）
 3. ターゲット設定: iOS 17最小、Signingは開発チームを設定
 4. Info.plist 自動生成とバンドルID `com.anicca.ios`
    受け入れ基準:

@@ -54,7 +54,7 @@ We want to build Anicca, a Persuasion Agent that leads people toward their best 
 │   ├── web/                     # Web app (Next.js, Vercel)
 │   ├── landing/                 # Landing page (Netlify)
 │   └── workspace-mcp/           # Hosted MCP services (planned for future releases)
-├── Anicca/                      # iOS app source (ambient sensing, in development)
+├── aniccaios/                   # iOS app source (ambient sensing, in development)
 ├── docs/                        # Design notes and research (Japanese primary)
 ├── examples/                    # Reference snippets
 └── README.md

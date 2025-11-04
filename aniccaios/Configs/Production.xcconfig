@@ -1,0 +1,3 @@
+ANICCA_PROXY_BASE_URL = https://anicca-proxy-production.up.railway.app/api
+INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = $(ANICCA_PROXY_BASE_URL)
+

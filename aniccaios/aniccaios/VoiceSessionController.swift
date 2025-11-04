@@ -3,6 +3,7 @@ import Combine
 import OSLog
 import WebRTC
 
+@MainActor
 final class VoiceSessionController: NSObject, ObservableObject {
     @Published private(set) var connectionStatus: ConnectionState = .disconnected
 
@@ -12,13 +13,13 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var dataChannel: RTCDataChannel?
     private var audioTrack: RTCAudioTrack?
     private var cachedSecret: ClientSecret?
-    private var sessionModel: String = "gpt-4o-realtime-preview-2024-10-01"
+    private var sessionModel: String = "gpt-realtime"   // Desktop と examples の最新版に合わせる
 
-    func start() {
+    func start(shouldResumeImmediately: Bool = false) {
         guard connectionStatus != .connecting else { return }
         setStatus(.connecting)
         Task { [weak self] in
-            await self?.establishSession()
+            await self?.establishSession(resumeImmediately: shouldResumeImmediately)
         }
     }
 
@@ -33,13 +34,16 @@ final class VoiceSessionController: NSObject, ObservableObject {
         deactivateAudioSession()
     }
 
-    private func establishSession() async {
+    private func establishSession(resumeImmediately: Bool) async {
         do {
             let secret = try await obtainClientSecret()
-            try configureAudioSession()
+            if !resumeImmediately {
+                try configureAudioSession()
+            }
             setupPeerConnection()
             setupLocalAudio()
             try await negotiateWebRTC(using: secret)
+            sendSessionUpdate()
         } catch {
             logger.error("Failed to establish session: \(error.localizedDescription, privacy: .public)")
             stop()
@@ -62,7 +66,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         let payload = try JSONDecoder().decode(RealtimeSessionResponse.self, from: data)
-        sessionModel = payload.model ?? sessionModel
+        sessionModel = payload.model ?? "gpt-realtime"
         let secret = payload.clientSecretModel
         cachedSecret = secret
         return secret
@@ -181,10 +185,11 @@ final class VoiceSessionController: NSObject, ObservableObject {
             .playAndRecord,
             options: [.defaultToSpeaker, .allowBluetoothA2DP, .allowBluetoothHFP]
         )
-        try session.setMode(.voiceChat)
+        try session.setMode(.videoChat)
         try session.setPreferredSampleRate(48_000)
         try session.setPreferredIOBufferDuration(0.005)
         try session.setActive(true, options: .notifyOthersOnDeactivation)
+        try session.overrideOutputAudioPort(.speaker)
     }
 
     private func deactivateAudioSession() {
@@ -203,7 +208,9 @@ extension VoiceSessionController: RTCPeerConnectionDelegate {
     func peerConnection(_ peerConnection: RTCPeerConnection, didOpen dataChannel: RTCDataChannel) {
         logger.debug("Data channel opened")
         dataChannel.delegate = self
-        sendSessionUpdate()
+        Task { @MainActor in
+            self.sendSessionUpdate()
+        }
     }
 
     func peerConnection(_ peerConnection: RTCPeerConnection, didChange stateChanged: RTCIceConnectionState) {
@@ -223,7 +230,7 @@ extension VoiceSessionController: RTCDataChannelDelegate {
     func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
         logger.debug("Data channel state: \(dataChannel.readyState.rawValue)")
         if dataChannel.readyState == .open {
-            sendSessionUpdate()
+            self.sendSessionUpdate()
         }
     }
 
@@ -234,30 +241,63 @@ extension VoiceSessionController: RTCDataChannelDelegate {
 }
 
 private extension VoiceSessionController {
+    @MainActor
     func sendSessionUpdate() {
         guard let channel = dataChannel, channel.readyState == .open else { return }
+        var sessionPayload: [String: Any] = [
+            "modalities": ["text", "audio"],
+            "voice": "alloy",
+            "input_audio_format": "pcm16",
+            "output_audio_format": "pcm16",
+            "turn_detection": [
+                "type": "server_vad",
+                "threshold": 0.5,
+                "prefix_padding_ms": 300,
+                "silence_duration_ms": 500,
+                "create_response": true
+            ],
+            "max_response_output_tokens": "inf"
+        ]
+
+        var shouldTriggerWakeResponse = false
+        if let prompt = AppState.shared.consumeWakePrompt() {
+            sessionPayload["instructions"] = prompt
+            shouldTriggerWakeResponse = true   // wake プロンプト送信を記録
+        }
+
         let update: [String: Any] = [
             "type": "session.update",
-            "session": [
-                "modalities": ["audio"],
-                "voice": "alloy",
-                "turn_detection": [
-                    "type": "server_vad",
-                    "threshold": 0.5,
-                    "prefix_padding_ms": 300,
-                    "silence_duration_ms": 500,
-                    "create_response": true
-                ],
-                "max_response_output_tokens": "inf"
-            ]
+            "session": sessionPayload
         ]
 
         do {
-            let json = try JSONSerialization.data(withJSONObject: update)
+            let json = try JSONSerialization.data(withJSONObject: update, options: [.fragmentsAllowed])
             let buffer = RTCDataBuffer(data: json, isBinary: false)
             channel.sendData(buffer)
         } catch {
             logger.error("Failed to send session.update: \(error.localizedDescription, privacy: .public)")
+        }
+
+        if shouldTriggerWakeResponse {
+            // { "type": "response.create" } を dataChannel に送信して
+            // モデルに即時の第一声生成を命令する
+            // 送信成功後に AppState.shared.clearPendingWakeTrigger() を呼び出し、
+            // shouldStartSessionImmediately もここでリセットする
+            let responseCreate: [String: Any] = [
+                "type": "response.create"
+            ]
+            
+            do {
+                let json = try JSONSerialization.data(withJSONObject: responseCreate, options: [.fragmentsAllowed])
+                let buffer = RTCDataBuffer(data: json, isBinary: false)
+                channel.sendData(buffer)
+                logger.debug("Sent response.create event for wake prompt")
+                AppState.shared.clearPendingWakeTrigger()
+            } catch {
+                logger.error("Failed to send response.create: \(error.localizedDescription, privacy: .public)")
+                // エラーが発生した場合でも、クリーンアップは実行する
+                AppState.shared.clearPendingWakeTrigger()
+            }
         }
     }
 }

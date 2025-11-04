@@ -49,6 +49,24 @@ Pythonなどのコード実行を禁止します。
   3. 各ワークツリーで実装・テスト後に `git add` → `git commit` → `git push origin feature/<topic>` を順に実行して GitHub でプルリクエストを作成する。
   4. 採用案のみプルリクエストをマージし、不要案はプルリクエストを作らずクローズするか、`git push origin --delete feature/<topic>` でブランチを削除する。
   5. 作業完了後は必ず `git worktree remove .worktrees/<topic>` でワークツリーを削除し、対応するローカルブランチも `git branch -d feature/<topic>` で整理する。
+- よく使うコマンド:
+  - `git worktree add ../新しいフォルダ名 ブランチ名` : 新しい作業環境を追加
+  - `git worktree list` : 現在追加されている作業環境一覧を表示
+  - `git worktree remove ../フォルダ名` : 作業後に環境を削除
+  - `git worktree prune` : 管理ファイルを整理
+#### 並列実装時の Git Worktree 運用指針
+- 基本方針: 1ワークツリー = 1専用ブランチ。ワークツリー内で新たなブランチを派生させない。
+- 手順:
+  1. ルートディレクトリで `main` を最新化する（例: `git fetch origin && git rebase origin/main`）。
+  2. 並列案ごとに `git worktree add .worktrees/<topic> -b feature/<topic> origin/main` を実行し、専用作業ディレクトリを作成する。
+  3. 各ワークツリーで実装・テスト後に `git add` → `git commit` → `git push origin feature/<topic>` を順に実行して GitHub でプルリクエストを作成する。
+  4. 採用案のみプルリクエストをマージし、不要案はプルリクエストを作らずクローズするか、`git push origin --delete feature/<topic>` でブランチを削除する。
+  5. 作業完了後は必ず `git worktree remove .worktrees/<topic>` でワークツリーを削除し、対応するローカルブランチも `git branch -d feature/<topic>` で整理する。
+- よく使うコマンド:
+  - `git worktree add ../新しいフォルダ名 ブランチ名` : 新しい作業環境を追加
+  - `git worktree list` : 現在追加されている作業環境一覧を表示
+  - `git worktree remove ../フォルダ名` : 作業後に環境を削除
+  - `git worktree prune` : 管理ファイルを整理
 
 ### ドキュメント言語ポリシー（重要）
 - 新規に追加・更新する MD/MDX ドキュメントは必ず日本語で記載する。

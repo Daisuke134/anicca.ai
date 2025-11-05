@@ -108,7 +108,12 @@ struct HabitSetupStepView: View {
                                     showingTimePicker = habit
                                 } else {
                                     selectedHabits.insert(habit)
-                                    showingTimePicker = habit
+                                    // Set default time immediately when enabling
+                                    if habitTimes[habit] == nil {
+                                        if let defaultDate = Calendar.current.date(from: habit.defaultTime) {
+                                            habitTimes[habit] = defaultDate
+                                        }
+                                    }
                                 }
                             }
                         )

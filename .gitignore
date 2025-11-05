@@ -96,6 +96,8 @@ test-*.ts
 # Worktrees and submodules
 # anicca-*/  # コメントアウトしてanicca-desktopを追加可能に
 anicca-agent-s/
+.kamui/
+.worktrees/
 
 # Google Cloud credentials
 gen-lang-client-*.json

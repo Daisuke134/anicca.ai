@@ -16,20 +16,14 @@ struct SessionView: View {
                         .font(.title3)
                 }
                 .buttonStyle(.bordered)
-                .padding(.top, 8)
-                .padding(.trailing, 8)
             }
-
-            Spacer()
+            .frame(maxWidth: .infinity, alignment: .trailing)
+            .padding(.top)
 
             Text("Anicca")
                 .font(.system(size: 32, weight: .bold))
 
-            Text(controller.connectionStatus.subtitle)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal, 24)
+            Spacer(minLength: 24)
 
             sessionButton
         }
@@ -75,7 +69,7 @@ struct SessionView: View {
             )
         case .disconnected:
             return (
-                title: "Talk To Anicca",
+                title: "Talk to Anicca",
                 disabled: false,
                 action: { controller.start() }
             )

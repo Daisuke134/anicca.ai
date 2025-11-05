@@ -2,6 +2,7 @@ import Foundation
 
 enum OnboardingStep: Int {
     case welcome
-    case permissions
-    case wakeSetup
+    case microphone
+    case notifications
+    case habitSetup
 }

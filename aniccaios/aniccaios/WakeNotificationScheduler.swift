@@ -10,18 +10,39 @@ final class WakeNotificationScheduler {
     private init() {}
 
     func registerCategories() {
-        let action = UNNotificationAction(
+        var categories: [UNNotificationCategory] = []
+        
+        // Register category for each habit type
+        for habit in HabitType.allCases {
+            let action = UNNotificationAction(
+                identifier: "start_conversation",
+                title: "Start Conversation",
+                options: [.foreground]
+            )
+            let category = UNNotificationCategory(
+                identifier: habit.notificationIdentifier,
+                actions: [action],
+                intentIdentifiers: [],
+                options: []
+            )
+            categories.append(category)
+        }
+        
+        // Also register legacy category for backward compatibility
+        let legacyAction = UNNotificationAction(
             identifier: "start_conversation",
             title: "Start Conversation",
             options: [.foreground]
         )
-        let category = UNNotificationCategory(
+        let legacyCategory = UNNotificationCategory(
             identifier: requestIdentifier,
-            actions: [action],
+            actions: [legacyAction],
             intentIdentifiers: [],
             options: []
         )
-        center.setNotificationCategories([category])
+        categories.append(legacyCategory)
+        
+        center.setNotificationCategories(Set(categories))
     }
 
     func requestAuthorization() async -> Bool {
@@ -57,5 +78,44 @@ final class WakeNotificationScheduler {
 
     func cancelWakeNotification() async {
         center.removePendingNotificationRequests(withIdentifiers: [requestIdentifier])
+    }
+
+    // New method for multiple habits
+    func scheduleNotifications(for schedules: [HabitType: DateComponents]) async {
+        // Cancel all existing habit notifications
+        await cancelAllNotifications()
+        
+        // Schedule new notifications for each habit
+        for (habit, components) in schedules {
+            let content = UNMutableNotificationContent()
+            content.title = habit.title
+            content.body = "Tap to talk with Anicca about your \(habit.title.lowercased()) routine."
+            content.categoryIdentifier = habit.notificationIdentifier
+            content.sound = UNNotificationSound.default
+            
+            var triggerComponents = components
+            triggerComponents.second = 0
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: true)
+            
+            let request = UNNotificationRequest(
+                identifier: habit.notificationIdentifier,
+                content: content,
+                trigger: trigger
+            )
+            
+            do {
+                try await center.add(request)
+            } catch {
+                NSLog("Failed to schedule notification for \(habit.rawValue): %@", error.localizedDescription)
+            }
+        }
+    }
+
+    func cancelAllNotifications() async {
+        var identifiers: [String] = [requestIdentifier] // Legacy
+        for habit in HabitType.allCases {
+            identifiers.append(habit.notificationIdentifier)
+        }
+        center.removePendingNotificationRequests(withIdentifiers: identifiers)
     }
 }

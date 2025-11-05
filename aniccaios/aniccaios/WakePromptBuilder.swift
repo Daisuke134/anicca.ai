@@ -1,12 +1,25 @@
 import Foundation
 
-struct WakePromptBuilder {
+struct HabitPromptBuilder {
     private let promptsDirectory = "Prompts"
 
+    // Legacy method for backward compatibility
     func buildWakePrompt(wakeTime: DateComponents?, date: Date) -> String {
-        let wakeTemplate = loadPrompt(named: "wake_up")?.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let prompt = wakeTemplate, !prompt.isEmpty else {
-            return "Wake up."
+        return buildPrompt(for: .wake, scheduledTime: wakeTime, now: date)
+    }
+
+    func buildPrompt(for habit: HabitType, scheduledTime: DateComponents?, now: Date) -> String {
+        let promptTemplate = loadPrompt(named: habit.promptFileName)?.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let prompt = promptTemplate, !prompt.isEmpty else {
+            // Fallback messages
+            switch habit {
+            case .wake:
+                return "Wake up."
+            case .training:
+                return "It's time for your workout. Let's get moving!"
+            case .bedtime:
+                return "It's bedtime. Time to wind down and sleep."
+            }
         }
         return prompt
     }

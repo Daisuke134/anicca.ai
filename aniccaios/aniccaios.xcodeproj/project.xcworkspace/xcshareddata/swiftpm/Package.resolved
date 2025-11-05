@@ -1,6 +1,24 @@
 {
-  "originHash" : "7ca243407a3b132834ec3b117a3aea85a8f743151ef868a872c8bbf8082921f6",
+  "originHash" : "540aa2b9e2acc89ca9143237f0b018b79e6e476061ed197a5cfb235dfbbc15d4",
   "pins" : [
+    {
+      "identity" : "autolayout",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/componentskit/AutoLayout",
+      "state" : {
+        "revision" : "fb4d7ea7ad5cfbaaf972506e6e23f87824345e4d",
+        "version" : "1.0.1"
+      }
+    },
+    {
+      "identity" : "componentskit",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/componentskit/ComponentsKit",
+      "state" : {
+        "revision" : "fe56aaf6a1a633ce59944b737ce93a46f161e2fd",
+        "version" : "1.5.4"
+      }
+    },
     {
       "identity" : "webrtc",
       "kind" : "remoteSourceControl",

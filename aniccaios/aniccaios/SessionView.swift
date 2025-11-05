@@ -9,8 +9,11 @@ struct SessionView: View {
         VStack(spacing: 24) {
             HStack {
                 Spacer()
-                Button("Settings") {
+                Button(action: {
                     isShowingSettings = true
+                }) {
+                    Image(systemName: "gearshape")
+                        .font(.title3)
                 }
                 .buttonStyle(.bordered)
             }
@@ -35,12 +38,12 @@ struct SessionView: View {
             SettingsView()
                 .environmentObject(appState)
         }
-        .onChange(of: appState.pendingWakeTrigger) { trigger in
+        .onChange(of: appState.pendingHabitTrigger) { trigger in
             guard trigger != nil else { return }
             controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
         }
         .onAppear {
-            if appState.pendingWakeTrigger != nil {
+            if appState.pendingHabitTrigger != nil {
                 controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
             }
         }

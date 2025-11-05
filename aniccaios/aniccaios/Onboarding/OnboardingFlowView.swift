@@ -8,20 +8,24 @@ struct OnboardingFlowView: View {
         switch step {
         case .welcome:
             WelcomeStepView(next: advance)
-        case .permissions:
-            PermissionsStepView(next: advance)
-        case .wakeSetup:
-            WakeSetupStepView(next: advance)
+        case .microphone:
+            MicrophonePermissionStepView(next: advance)
+        case .notifications:
+            NotificationPermissionStepView(next: advance)
+        case .habitSetup:
+            HabitSetupStepView(next: advance)
         }
     }
 
     private func advance() {
         switch step {
         case .welcome:
-            step = .permissions
-        case .permissions:
-            step = .wakeSetup
-        case .wakeSetup:
+            step = .microphone
+        case .microphone:
+            step = .notifications
+        case .notifications:
+            step = .habitSetup
+        case .habitSetup:
             appState.markOnboardingComplete()
         }
     }

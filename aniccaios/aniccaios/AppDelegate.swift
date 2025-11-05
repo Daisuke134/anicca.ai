@@ -26,17 +26,27 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         defer { completionHandler() }
 
         let identifier = response.actionIdentifier
-        if identifier == "start_conversation" || identifier == UNNotificationDefaultActionIdentifier ||
-           response.notification.request.identifier == "wake.alarm" {
+        let notificationIdentifier = response.notification.request.identifier
+        
+        // Check if this is a habit notification or legacy wake notification
+        var habit: HabitType?
+        if notificationIdentifier == "wake.alarm" {
+            habit = .wake
+        } else {
+            // Try to find matching habit from notification identifier
+            for h in HabitType.allCases {
+                if notificationIdentifier == h.notificationIdentifier {
+                    habit = h
+                    break
+                }
+            }
+        }
+        
+        if identifier == "start_conversation" || identifier == UNNotificationDefaultActionIdentifier, let habit = habit {
             Task {
-                try? AVAudioSession.sharedInstance().setCategory(
-                    .playAndRecord,
-                    options: [.defaultToSpeaker, .allowBluetoothA2DP, .allowBluetoothHFP]
-                )
-                try? AVAudioSession.sharedInstance().setActive(true, options: [.notifyOthersOnDeactivation])
-                try? AVAudioSession.sharedInstance().overrideOutputAudioPort(.speaker)
+                try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
                 await MainActor.run {
-                    AppState.shared.prepareForImmediateSession()
+                    AppState.shared.prepareForImmediateSession(habit: habit)
                 }
             }
         }

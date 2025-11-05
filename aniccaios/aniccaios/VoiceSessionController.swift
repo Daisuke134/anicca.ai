@@ -37,9 +37,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private func establishSession(resumeImmediately: Bool) async {
         do {
             let secret = try await obtainClientSecret()
-            if !resumeImmediately {
-                try configureAudioSession()
-            }
+            try AudioSessionCoordinator.shared.configureForRealtime(reactivating: resumeImmediately)
             setupPeerConnection()
             setupLocalAudio()
             try await negotiateWebRTC(using: secret)
@@ -56,11 +54,10 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         var request = URLRequest(url: AppConfig.realtimeSessionURL)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpMethod = "GET"
+        request.setValue("application/json", forHTTPHeaderField: "Accept")
         request.setValue(UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString,
                          forHTTPHeaderField: "device-id")
-        request.httpBody = Data("{}".utf8)
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
@@ -181,18 +178,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         audioTrack = track
     }
 
-    private func configureAudioSession() throws {
-        let session = AVAudioSession.sharedInstance()
-        try session.setCategory(
-            .playAndRecord,
-            options: [.defaultToSpeaker, .allowBluetoothA2DP, .allowBluetoothHFP]
-        )
-        try session.setMode(.videoChat)
-        try session.setPreferredSampleRate(48_000)
-        try session.setPreferredIOBufferDuration(0.005)
-        try session.setActive(true, options: .notifyOthersOnDeactivation)
-        try session.overrideOutputAudioPort(.speaker)
-    }
+    // 音声セッション設定は AudioSessionCoordinator に集約したため削除
 
     private func deactivateAudioSession() {
         let session = AVAudioSession.sharedInstance()
@@ -261,10 +247,10 @@ private extension VoiceSessionController {
             "max_response_output_tokens": "inf"
         ]
 
-        var shouldTriggerWakeResponse = false
-        if let prompt = AppState.shared.consumeWakePrompt() {
+        var shouldTriggerHabitResponse = false
+        if let prompt = AppState.shared.consumePendingPrompt() {
             sessionPayload["instructions"] = prompt
-            shouldTriggerWakeResponse = true   // wake プロンプト送信を記録
+            shouldTriggerHabitResponse = true   // habit プロンプト送信を記録
         }
 
         let update: [String: Any] = [
@@ -280,9 +266,9 @@ private extension VoiceSessionController {
             logger.error("Failed to send session.update: \(error.localizedDescription, privacy: .public)")
         }
 
-        if shouldTriggerWakeResponse {
+        if shouldTriggerHabitResponse {
             sendWakeResponseCreate()
-            AppState.shared.clearPendingWakeTrigger()
+            AppState.shared.clearPendingHabitTrigger()
         }
     }
 

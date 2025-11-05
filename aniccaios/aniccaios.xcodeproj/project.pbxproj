@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AF7A2EB7B8F4002CECAA /* WebRTC */; };
+		8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8471B3412EBB6AFA002CECAA /* ComponentsKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -43,6 +44,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */,
+				8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -56,13 +58,8 @@
 				8471AE7C2EB783E1002CECAA /* Products */,
 				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
 				8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */,
-				8471C1A22EC12345002CECAA /* WebRTCShims */,
+				8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */,
 			);
-			sourceTree = "<group>";
-		};
-		8471C1A22EC12345002CECAA /* WebRTCShims */ = {
-			isa = PBXGroup;
-			path = aniccaios/WebRTCShims;
 			sourceTree = "<group>";
 		};
 		8471AE7C2EB783E1002CECAA /* Products */ = {
@@ -71,6 +68,13 @@
 				8471AE7B2EB783E1002CECAA /* aniccaios.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			path = aniccaios/WebRTCShims;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -94,6 +98,7 @@
 			name = aniccaios;
 			packageProductDependencies = (
 				8471AF7A2EB7B8F4002CECAA /* WebRTC */,
+				8471B3412EBB6AFA002CECAA /* ComponentsKit */,
 			);
 			productName = aniccaios;
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
@@ -125,6 +130,7 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */,
+				8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
@@ -607,6 +613,14 @@
 				minimumVersion = 141.0.0;
 			};
 		};
+		8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/componentskit/ComponentsKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.4;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -614,6 +628,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
+		};
+		8471B3412EBB6AFA002CECAA /* ComponentsKit */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */;
+			productName = ComponentsKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

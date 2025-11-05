@@ -16,14 +16,14 @@ struct SessionView: View {
                         .font(.title3)
                 }
                 .buttonStyle(.bordered)
+                .padding(.top, 8)
+                .padding(.trailing, 8)
             }
-            .padding(.top)
 
-            Text("Anicca Voice")
+            Spacer()
+
+            Text("Anicca")
                 .font(.system(size: 32, weight: .bold))
-
-            Text(controller.connectionStatus.label)
-                .font(.headline)
 
             Text(controller.connectionStatus.subtitle)
                 .font(.subheadline)
@@ -75,7 +75,7 @@ struct SessionView: View {
             )
         case .disconnected:
             return (
-                title: "Start Voice Session",
+                title: "Talk To Anicca",
                 disabled: false,
                 action: { controller.start() }
             )

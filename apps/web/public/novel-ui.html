@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>小説閲覧UI提案</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg-primary: #f4f7fb;
+        --bg-card: #ffffff;
+        --bg-accent: linear-gradient(135deg, #5561ff, #8f2fff);
+        --border-soft: rgba(12, 25, 68, 0.08);
+        --text-main: #1c2145;
+        --text-sub: #4f5680;
+        --text-accent: #5561ff;
+        --shadow-soft: 0 20px 60px rgba(31, 51, 102, 0.12);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", sans-serif;
+        background: radial-gradient(circle at top right, #ecf1ff 0%, #f7f9fc 55%, #edf0ff 100%);
+        color: var(--text-main);
+        line-height: 1.7;
+      }
+
+      header {
+        padding: 48px 24px 16px;
+      }
+
+      header h1 {
+        margin: 0 auto 12px;
+        max-width: 1100px;
+        font-size: 32px;
+        letter-spacing: 0.08em;
+      }
+
+      header p {
+        margin: 0 auto;
+        max-width: 1100px;
+        color: var(--text-sub);
+        font-size: 15px;
+      }
+
+      main {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 24px;
+        display: grid;
+        gap: 24px;
+        grid-template-columns: 1.1fr 1fr;
+        align-items: start;
+      }
+
+      .reading-pane {
+        position: sticky;
+        top: 24px;
+        background: var(--bg-card);
+        border-radius: 28px;
+        padding: 28px 32px;
+        box-shadow: var(--shadow-soft);
+        border: 1px solid var(--border-soft);
+        display: flex;
+        flex-direction: column;
+        gap: 24px;
+      }
+
+      .chapter-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .chapter-meta span {
+        font-size: 14px;
+        color: var(--text-sub);
+      }
+
+      .chapter-title {
+        font-size: 20px;
+        font-weight: 600;
+        margin: 0;
+        color: var(--text-main);
+      }
+
+      .scroll-area {
+        background: rgba(85, 97, 255, 0.04);
+        border-radius: 20px;
+        padding: 24px;
+        height: 340px;
+        overflow-y: auto;
+        scrollbar-width: thin;
+        scrollbar-color: #99a3ff rgba(85, 97, 255, 0.08);
+      }
+
+      .scroll-area::-webkit-scrollbar {
+        width: 6px;
+      }
+
+      .scroll-area::-webkit-scrollbar-thumb {
+        background: #99a3ff;
+        border-radius: 10px;
+      }
+
+      .control-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+      }
+
+      .chip {
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-size: 13px;
+        font-weight: 500;
+        background: rgba(85, 97, 255, 0.12);
+        color: var(--text-accent);
+      }
+
+      #model-proposals {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+      }
+
+      .cards-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 18px;
+      }
+
+      .model-card {
+        background: var(--bg-card);
+        border-radius: 22px;
+        padding: 22px;
+        border: 1px solid var(--border-soft);
+        box-shadow: 0 8px 30px rgba(34, 52, 94, 0.1);
+        display: flex;
+        flex-direction: column;
+        gap: 16px;
+      }
+
+      .model-card h3 {
+        margin: 0;
+        font-size: 18px;
+      }
+
+      .model-card p {
+        margin: 0;
+        font-size: 14px;
+        color: var(--text-sub);
+      }
+
+      .card-tags {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .card-tags span {
+        font-size: 12px;
+        padding: 6px 12px;
+        border-radius: 999px;
+        background: rgba(12, 25, 68, 0.08);
+        color: var(--text-main);
+      }
+
+      .card-link {
+        align-self: flex-start;
+        padding: 10px 16px;
+        border-radius: 12px;
+        background: var(--bg-accent);
+        color: #fff;
+        font-size: 13px;
+        font-weight: 600;
+        text-decoration: none;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        box-shadow: 0 12px 30px rgba(85, 97, 255, 0.26);
+      }
+
+      .card-link:focus,
+      .card-link:hover {
+        transform: translateY(-2px);
+      }
+
+      .modal {
+        position: fixed;
+        inset: 0;
+        background: rgba(9, 17, 49, 0.45);
+        display: none;
+        align-items: center;
+        justify-content: center;
+        padding: 32px 16px;
+        z-index: 20;
+      }
+
+      .modal:target {
+        display: flex;
+      }
+
+      .modal-content {
+        max-width: 560px;
+        width: 100%;
+        background: var(--bg-card);
+        border-radius: 28px;
+        padding: 32px;
+        border: 1px solid var(--border-soft);
+        box-shadow: var(--shadow-soft);
+        display: grid;
+        gap: 16px;
+      }
+
+      .modal-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 16px;
+      }
+
+      .modal-header h3 {
+        margin: 0;
+        font-size: 20px;
+      }
+
+      .modal-close {
+        font-size: 13px;
+        color: var(--text-accent);
+        text-decoration: none;
+        border: 1px solid rgba(85, 97, 255, 0.3);
+        padding: 8px 14px;
+        border-radius: 999px;
+        font-weight: 600;
+      }
+
+      .modal-body p {
+        margin: 0;
+        color: var(--text-sub);
+        font-size: 14px;
+      }
+
+      .modal-body ul {
+        margin: 0;
+        padding-left: 20px;
+        font-size: 14px;
+        color: var(--text-main);
+      }
+
+      .modal-body li + li {
+        margin-top: 6px;
+      }
+
+      .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+      }
+
+      @media (max-width: 960px) {
+        main {
+          grid-template-columns: 1fr;
+        }
+
+        .reading-pane {
+          position: static;
+        }
+      }
+
+      @media (max-width: 600px) {
+        header h1 {
+          font-size: 26px;
+        }
+
+        .reading-pane {
+          padding: 24px;
+        }
+
+        .modal-content {
+          padding: 24px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>AIコンペ用: 小説閲覧ミニアプリUI</h1>
+      <p>
+        読書体験を確認できるプレビューと、複数モデルが考案したUI改善案をカード＋モーダルで提示します。カードを開くと、各モデルの提案ポイントが詳細に表示されます。
+      </p>
+    </header>
+    <main id="model-proposals">
+      <section class="reading-pane" aria-labelledby="preview-heading">
+        <div class="chapter-meta">
+          <span>連載: 光の残響　第12話</span>
+          <span>読了率 42%</span>
+        </div>
+        <h2 id="preview-heading" class="chapter-title">海霧の港、目覚める灯台守</h2>
+        <div class="scroll-area" aria-label="本文プレビュー">
+          <p>
+            夜明けが近づくほどに、港を包む霧は淡い銀色へと変わっていった。潮騒に紛れて遠くから鐘の音が聞こえる。灯台守のミラは、濡れた石段を一段ずつ確かめるように踏み締めながら、まだ見ぬ来訪者の気配を探っていた。
+          </p>
+          <p>
+            霧を裂くように鳴いた海鳥が、北東の空を指し示す。そこには、夜明けの光をかすかに映す小さな帆影があった。ミラは息を呑み、胸元で輝く旧都の紋章にそっと触れる。
+          </p>
+          <p>
+            「この符丁を知る者が、再びここを訪れるなんて…」彼女は冷え切った指先を擦り合わせ、灯台の明かりを最大まで引き上げた。霧の中に一本の金色の導線が差し込み、船影は確かな存在感を帯びて近づいてくる。
+          </p>
+        </div>
+        <div class="control-row" aria-label="リーディング設定">
+          <span class="chip">明朝体</span>
+          <span class="chip">行間 1.8</span>
+          <span class="chip">オートスクロール: オフ</span>
+          <span class="chip">テーマ: 夜明け</span>
+        </div>
+      </section>
+      <section aria-labelledby="proposal-heading">
+        <h2 id="proposal-heading" class="chapter-title">モデル別 UI 提案</h2>
+        <div class="cards-grid">
+          <article class="model-card">
+            <h3>GPT-4.1</h3>
+            <p>没入感を優先し、本文との距離を最小化するインタラクションを推奨。</p>
+            <div class="card-tags">
+              <span>没入設計</span>
+              <span>ショートカット強化</span>
+            </div>
+            <a class="card-link" href="#modal-gpt" role="button" aria-haspopup="dialog">詳細を見る</a>
+          </article>
+          <article class="model-card">
+            <h3>Claude 3.5 Sonnet</h3>
+            <p>長編読書の疲労軽減を狙い、マルチペインの並列閲覧を提案。</p>
+            <div class="card-tags">
+              <span>集中モード</span>
+              <span>対話サマリ</span>
+            </div>
+            <a class="card-link" href="#modal-claude" role="button" aria-haspopup="dialog">詳細を見る</a>
+          </article>
+          <article class="model-card">
+            <h3>Gemini 1.5 Pro</h3>
+            <p>翻訳や脚注参照を即座に行える、補助情報レイヤーを強化。</p>
+            <div class="card-tags">
+              <span>語句解説</span>
+              <span>多言語同期</span>
+            </div>
+            <a class="card-link" href="#modal-gemini" role="button" aria-haspopup="dialog">詳細を見る</a>
+          </article>
+          <article class="model-card">
+            <h3>Llama 3 70B</h3>
+            <p>ローカル動作を想定し、最小リソースでの快適性を確保するUIを提案。</p>
+            <div class="card-tags">
+              <span>軽量UI</span>
+              <span>オフライン</span>
+            </div>
+            <a class="card-link" href="#modal-llama" role="button" aria-haspopup="dialog">詳細を見る</a>
+          </article>
+        </div>
+      </section>
+    </main>
+
+    <section id="modal-gpt" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-gpt-title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-gpt-title">GPT-4.1 の提案</h3>
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+        <div class="modal-body">
+          <p>視線移動を減らし、作品世界への没入継続をサポートする構成です。</p>
+          <ul>
+            <li>本文スクロール領域を中央揃えにし、余白は柔らかなグラデーションで演出。</li>
+            <li>ホットキー（J/K）による段落単位のスクロールを常時表示。</li>
+            <li>栞・マーカーの操作を右下フローティングボタンに集約。</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="modal-claude" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-claude-title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-claude-title">Claude 3.5 Sonnet の提案</h3>
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+        <div class="modal-body">
+          <p>長時間読書の姿勢変化を想定したリフロー型レイアウトを提案します。</p>
+          <ul>
+            <li>本文とメモ欄を左右に分割し、読書→要約→引用の流れを滑らかに。</li>
+            <li>AI要約パネルはスクロールに追従し、最新の要約候補を提示。</li>
+            <li>夜間モードで背景を#0b1428とし、コントラスト比を確保。</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="modal-gemini" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-gemini-title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-gemini-title">Gemini 1.5 Pro の提案</h3>
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+        <div class="modal-body">
+          <p>語学学習と同時読書を重視した補助レイヤー構成です。</p>
+          <ul>
+            <li>未知語をタップすると即座に脚注レイヤーが開き、翻訳と例文を表示。</li>
+            <li>位置情報を基に、地図や設定資料をサイドパネルへ自動展開。</li>
+            <li>章ごとの読解クイズを用意し、理解度を可視化。</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+      </div>
+    </section>
+
+    <section id="modal-llama" class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-llama-title">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3 id="modal-llama-title">Llama 3 70B の提案</h3>
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+        <div class="modal-body">
+          <p>ローカル端末での軽快さを担保しつつ、必要機能を厳選する構成です。</p>
+          <ul>
+            <li>CSS変数でカラーテーマを切り替え、端末性能に応じた描画を実現。</li>
+            <li>オフライン辞書データを活用した単語検索バーを常備。</li>
+            <li>章のロードを分割し、表示中コンテンツのみDOMに保持。</li>
+          </ul>
+        </div>
+        <div class="modal-footer">
+          <a class="modal-close" href="#model-proposals">閉じる</a>
+        </div>
+      </div>
+    </section>
+  </body>
+</html>

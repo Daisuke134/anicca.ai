@@ -344,7 +344,7 @@ enum ConnectionState {
     var subtitle: String {
         switch self {
         case .disconnected:
-            "Tap to restart the voice session."
+            "Tap to talk to Anicca"
         case .connecting:
             "Hold still, wiring the call…"
         case .connected:

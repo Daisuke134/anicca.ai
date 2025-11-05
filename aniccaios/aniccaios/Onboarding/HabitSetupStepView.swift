@@ -7,6 +7,7 @@ struct HabitSetupStepView: View {
     @EnvironmentObject private var appState: AppState
     @State private var selectedHabits: Set<HabitType> = []
     @State private var habitTimes: [HabitType: Date] = [:]
+    @State private var sheetTime = Date()
     @State private var showingTimePicker: HabitType?
     @State private var isSaving = false
 
@@ -104,16 +105,14 @@ struct HabitSetupStepView: View {
                                 return vm
                             }(),
                             action: {
+                                let initialTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
+                                sheetTime = initialTime
+
                                 if isSelected {
                                     showingTimePicker = habit
                                 } else {
                                     selectedHabits.insert(habit)
-                                    // Set default time immediately when enabling
-                                    if habitTimes[habit] == nil {
-                                        if let defaultDate = Calendar.current.date(from: habit.defaultTime) {
-                                            habitTimes[habit] = defaultDate
-                                        }
-                                    }
+                                    showingTimePicker = habit
                                 }
                             }
                         )
@@ -133,14 +132,7 @@ struct HabitSetupStepView: View {
 
                 DatePicker(
                     "Time",
-                    selection: Binding(
-                        get: {
-                            habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
-                        },
-                        set: { newValue in
-                            habitTimes[habit] = newValue
-                        }
-                    ),
+                    selection: $sheetTime,
                     displayedComponents: [.hourAndMinute]
                 )
                 .datePickerStyle(.wheel)
@@ -158,6 +150,7 @@ struct HabitSetupStepView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
+                        habitTimes[habit] = sheetTime
                         showingTimePicker = nil
                     }
                 }

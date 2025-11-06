@@ -15,7 +15,10 @@ final class AuthCoordinator {
     func startSignIn() {
         let nonce = randomNonceString()
         currentNonce = nonce
-        let hashedNonce = sha256(nonce)
+        guard let hashedNonce = sha256Base64(nonce) else {
+            logger.error("Failed to compute nonce hash")
+            return
+        }
         
         let appleIDProvider = ASAuthorizationAppleIDProvider()
         let request = appleIDProvider.createRequest()
@@ -26,7 +29,7 @@ final class AuthCoordinator {
         authorizationController.delegate = presentationDelegate
         authorizationController.presentationContextProvider = presentationDelegate
         
-        AppState.shared.authStatus = .signingIn
+        AppState.shared.setAuthStatus(.signingIn)
         authorizationController.performRequests()
     }
     
@@ -36,7 +39,7 @@ final class AuthCoordinator {
             handleAuthorization(authorization)
         case .failure(let error):
             logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
-            AppState.shared.authStatus = .signedOut
+            AppState.shared.setAuthStatus(.signedOut)
         }
     }
     
@@ -48,15 +51,16 @@ final class AuthCoordinator {
     private func handleAuthorization(_ authorization: ASAuthorization) {
         guard let appleIDCredential = authorization.credential as? ASAuthorizationAppleIDCredential else {
             logger.error("Invalid credential type")
-            AppState.shared.authStatus = .signedOut
+            AppState.shared.setAuthStatus(.signedOut)
             return
         }
         
         guard let nonce = currentNonce,
-              let hashedNonce = sha256(nonce),
-              let identityTokenString = String(data: appleIDCredential.identityToken ?? Data(), encoding: .utf8) else {
+              let hashedNonce = sha256Base64(nonce),
+              let identityTokenData = appleIDCredential.identityToken,
+              let identityTokenString = String(data: identityTokenData, encoding: .utf8) else {
             logger.error("Missing identity token or nonce")
-            AppState.shared.authStatus = .signedOut
+            AppState.shared.setAuthStatus(.signedOut)
             return
         }
         
@@ -109,7 +113,7 @@ final class AuthCoordinator {
                   (200..<300).contains(httpResponse.statusCode) else {
                 logger.error("Auth backend returned error status")
                 await MainActor.run {
-                    AppState.shared.authStatus = .signedOut
+                    AppState.shared.setAuthStatus(.signedOut)
                 }
                 return
             }
@@ -132,13 +136,13 @@ final class AuthCoordinator {
             } else {
                 logger.error("Invalid backend response format")
                 await MainActor.run {
-                    AppState.shared.authStatus = .signedOut
+                    AppState.shared.setAuthStatus(.signedOut)
                 }
             }
         } catch {
             logger.error("Failed to verify with backend: \(error.localizedDescription, privacy: .public)")
             await MainActor.run {
-                AppState.shared.authStatus = .signedOut
+                AppState.shared.setAuthStatus(.signedOut)
             }
         }
     }
@@ -176,15 +180,13 @@ final class AuthCoordinator {
         return result
     }
     
-    private func sha256(_ input: String) -> String {
+    private func sha256Base64(_ input: String) -> String? {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
-        let hashString = hashedData.compactMap { String(format: "%02x", $0) }.joined()
-        return hashString
+        return Data(hashedData).base64EncodedString()
     }
     
     lazy var presentationDelegate: AuthPresentationDelegate = {
         AuthPresentationDelegate(coordinator: self)
     }()
 }
-

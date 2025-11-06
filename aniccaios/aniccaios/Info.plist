@@ -2,8 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>ANICCA_PROXY_BASE_URL</key>
-	<string>$(ANICCA_PROXY_BASE_URL)</string>
 	<key>NSUserNotificationUsageDescription</key>
 	<string>We use notifications to wake you up at the time you set.</string>
 	<key>UIApplicationSceneManifest</key>
@@ -15,5 +13,7 @@
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>ANICCA_PROXY_BASE_URL</key>
+	<string>$(ANICCA_PROXY_BASE_URL)</string>
 </dict>
 </plist>

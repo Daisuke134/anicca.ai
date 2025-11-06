@@ -36,50 +36,47 @@ Training習慣の声かけ例 (日19:00):
 > 「Akiraさん、Push-upメニューの時間だよ。準備ができたら10回1セットから始めようか。」
 
 
-
-
-iOSパーソナライズ強化計画
-
-
+iOSログイン＋パーソナライズ統合計画
 <タスク分析>
 
-主要タスク: iOSオンボーディングに個人情報入力フローを追加し、取得データをバックエンドと同期した上でプロンプトに反映できるよう設計・実装する。
-技術スタック確認: iOS( SwiftUI, Combine ), Node.js/Express(API), PostgreSQL(Supabase互換) を既存バージョンのまま利用する。
-重要要件/制約: UIテキストは英語維持・プロンプトは日本語化、情報取得は選択式中心、言語は自動判定+手動切替、プレースホルダーを Resources/Prompts に集約、重複処理は共通化。
-潜在課題: 無権限での地域推定可否、ユーザー識別(現状はdevice-id)、テンプレート置換の整合性、オンボーディング離脱率への影響。
-実装ステップ(概要): ①ユーザープロファイルモデル整備 ②オンボーディング/設定UI拡張 ③プロファイル永続化＆バックエンド同期 ④プロンプトテンプレート刷新 ⑤バックエンドAPI+DB拡張 ⑥UXフロー記述&図解。
-最適順序: モデル→UI→保存/同期→プロンプト→バックエンド→ドキュメント/検証。
+主要タスク: Sign in with Apple をオンボーディング中盤に挿入し、選択した習慣に応じたフォローアップ質問を同画面で行い、取得データをプロンプトへ反映させる。
+技術スタック: iOS (SwiftUI・Combine・AuthenticationServices・WebRTC)、Node.js/Express、PostgreSQL。既存バージョンは据え置き。
+重要要件: UIテキストは英語、プロンプトは日本語。言語は端末ロケールで自動設定し、設定画面でのみ変更可能。Wake/Bedtime で共通の寝場所、Training は毎日のフォーカスを入力させる。Sign in with Apple は純正ボタン・優先配置。
+潜在課題: Apple IDの氏名は初回のみ→即保存必須、匿名状態でのデータ保存防止、同期失敗時のリトライ、Completionカードの近日スケジュール算出。
+実装順序: 認証基盤 → ルーティング＆ガード → UserProfile/同期 → ハビット選択＋フォローアップUI → 設定画面拡張 → プロンプトテンプレート更新 → API/DB → Completionロジック → ドキュメント。
+重複実装防止: AppState と HabitPromptBuilder を拡張し、質問はハビットカード内で完結。新API は /auth/apple と /mobile/profile のみ追加。
 </タスク分析>
 実装ステップ
-ユーザープロファイル基盤追加  
-aniccaios/aniccaios/Models/UserProfile.swift 新規作成: UserProfile, LanguagePreference enum, 初期推定ヘルパを実装。  
-AppState.swift (L8付近、プロパティ宣言部) に @Published var userProfile と保存キーを追加。saveUserProfile()/loadUserProfile() を init (L35-L63) 内に組み込み、updateUserProfile(_:sync:) を新設。
-オンボーディングUI拡張  
-OnboardingStep.swift に .personalizeIntro, .personalInfo, .sleepContext, .habitContext を追加。  
-新規SwiftUIファイル追加:  
-Onboarding/PersonalizeIntroStepView.swift (説明＋Skip/Continue)。  
-Onboarding/PersonalInfoStepView.swift (名前入力 + 言語選択、デフォルトは LanguagePreference.detectDefault() を使用)。  
-Onboarding/SleepContextStepView.swift (寝る場所プリセット＋フリーテキスト。SUOptionPicker 等で選択式)。  
-Onboarding/HabitContextStepView.swift (続けたい/やめたい習慣を TagPicker 形式で複数選択、その他テキスト対応)。  
-OnboardingFlowView.swift (L5-L31) を新ステップに合わせて更新し、Skip時は markOnboardingComplete() を即時実行。
-設定画面での後編集  
-SettingsView.swift に「Personalization」セクションを追加(L27以降)。モーダル PersonalizationFormView(新規ファイル) を表示し、オンボーディングと同じフォームを再利用できるよう PersonalizationFormViewModel を導入。
-プロフィール同期サービス  
-Services/ProfileSyncService.swift 新設: sync(profile:deviceId:) で PUT /mobile/profile を呼び出し、レスポンスを UserProfile に反映。ネットワーク層は AppConfig.proxyBaseURL.  
-AppState.updateUserProfile 内で ProfileSyncService.shared.sync を非同期呼び出し、失敗時はリトライ用にログ＆PendingSync フラグを保持。
-プロンプトテンプレート刷新  
-Resources/Prompts/common.txt を日本語で再整理し、${USER_NAME} ${SLEEP_LOCATION} ${CONTINUING_HABITS} ${QUIT_HABITS} ${LANGUAGE_LINE} 等のプレースホルダーを明示。  
-wake_up.txt bedtime.txt training.txt を日本語ベースに書き換え、共通テンプレートと結合される前提で {{HABIT_NAME}} などは使わず自然文に ${...} を差し込む。  
-WakePromptBuilder.swift (L3-L58) を改修: buildPrompt で common.txt を読み込み結合、TemplateRenderer ヘルパ(同ファイル内に追加)で UserProfile 値とスケジュール情報(例:formattedTime)を置換。INTERNAL_LANGUAGE_LINE/LABEL は LanguagePreference から取得。フォールバック文も日本語/英語両対応に更新。
-Backend: プロファイルAPIと永続化  
-apps/api/docs/migrations/003_create_mobile_profiles.sql を作成し、mobile_profiles テーブル(device_id unique, profile jsonb, language, updated_at) を追加。  
-apps/api/src/services/mobile/profileService.js 新設: getProfile(deviceId)/upsertProfile(deviceId, payload) を pg で実装。  
-apps/api/src/routes/mobile/profile.js を追加し、GET /mobile/profile と PUT /mobile/profile を実装。バリデーションは zod を使用(既存依存確認)。  
-apps/api/src/routes/mobile/index.js (L6付近) で router.use('/profile', profileRouter); を追加。  
-エラーハンドリング/ログは baseLogger.withContext('MobileProfile') を使用し、デバイスID必須ヘッダーを共通化。
-グラウンディングドキュメント整備  
-Resources/Prompts/common.txt 冒頭に LanguagePreference で埋める言語宣言を揃え、必要に応じ common.txt コメントを更新。  
-必要に応じ docs/ に UXガイドラインを追記(日本語)。
-検証と図解  
-シミュレータでオンボーディング導線を確認し、取得データが UserDefaults/API に保存されること、プロンプトに反映されることをログで検証。  
-最終回答で初回起動→声かけまでのテキスト説明とASCII矢印図(例:"Welcome → Permissions → Habit Setup → Personalize → Voice Nudge") を添付。
+AppState 認証対応  
+AppState.swift に AuthStatus と UserCredentials を追加し、authStatus を導入。init で保存済みクレデンシャルを復元し、updateHabit 系は .signedIn のみ許可。userProfile を sleepLocation / trainingFocus など新フィールド付きで保持。
+ContentView ルーティング更新  
+ContentView.swift を authStatus ベースで分岐。AuthenticationProcessingView を追加し、サインイン処理中の待機UIを提供。
+Auth調停レイヤー  
+Authentication/AuthCoordinator.swift と AuthPresentationDelegate.swift を新設し、startSignIn() → /auth/apple 連携 → AppState 更新 → エラー時リセット。signOut() は AppState.resetState() を呼ぶ。
+オンボーディング拡張  
+OnboardingStep を welcome → microphone → notifications → account → habits の順に整理し、ハビットカード内でフォローアップを表示する。Wake選択時にテキストフィールド “Where do you usually wake up?” を一度だけ表示（プレースホルダー “Third-floor bedroom”）。Trainingでは “Which training do you want to focus on every day?” のタイル選択。Bedtime固有質問は省略し、寝場所は Wake で収集した値を再利用。保存時に AppState.updateUserProfile を呼び、sleepLocation/trainingFocus を更新。
+Completion画面追加  
+新規 Onboarding/CompletionStepView.swift を作成し、You’re all set! Next up: {closestHabit} 形式で近日予定を表示。最短スケジュールを計算するヘルパを AppState か HabitScheduleFormatter として実装。
+設定画面拡張  
+SettingsView.swift に常設のギアメニューとして、Habit時間編集＋Follow-up回答編集（Sleep location, Training focus）＋ Language Picker ＋ Sign Out ボタンを提供。フォローアップ編集は新規 Settings/PersonalizationFormView.swift をシートで表示し、共通フォームを再利用。
+Profile同期サービス  
+Services/ProfileSyncService.swift を actor として実装し、enqueue(profile:) → /mobile/profile PUT を行う。Wake/Trainingのフォローアップ保存時に呼び出し、失敗時は再試行キューに残す。
+プロンプトテンプレート更新  
+Resources/Prompts/common.txt を日本語で再構成し、${LANGUAGE_LINE}, ${USER_NAME}, ${TASK_TIME}, ${TASK_DESCRIPTION} のみ保持。wake_up.txt と bedtime.txt に ${SLEEP_LOCATION} を埋め込む文を用意し、training.txt には ${TRAINING_FOCUS_LIST} を差し込む文を用意。HabitPromptBuilder にレンダリングヘルパを追加し、空値は行ごと除去。
+バックエンド拡張  
+apps/api/docs/migrations/003_create_mobile_profiles.sql を追加し、mobile_profiles テーブルを作成 (device_id PK, user_id, profile jsonb, language)。
+apps/api/src/routes/auth/apple.js ＋ services/auth/appleService.js を追加し、Identity Token検証とユーザーupsertを実装。
+apps/api/src/routes/mobile/profile.js ＋ services/mobile/profileService.js を新設し、GET/PUT /mobile/profile を提供。
+apps/api/src/routes/mobile/realtime.js を修正し、user-id ヘッダー必須＋issueRealtimeClientSecret({ deviceId, userId }) を呼ぶ。
+Completion計算ロジックとテスト  
+AppState か専用ヘルパに「次に到来するハビット」を返す関数を追加し、Completion画面と検証用ログで使用。シミュレータ検証で Wake/Training 両方が正しく案内されることを確認。
+ドキュメント整備  
+docs/Login.md を更新し、ログイン→フォローアップ→Completion の流れを追記。docs/ios-personalization.md を作成して体験ストーリーとプロンプト仕様、Completionメッセージのロジックを記載。
+実装TODO
+auth-routing: AppState/AuthCoordinator/ContentView を整備しサインイン状態を制御
+habit-followups: ハビットカード内で寝場所・Trainingフォーカスを取得し保存
+profile-sync: UserProfile 永続化と /mobile/profile 同期を実装
+prompt-render: プロンプトとビルダーを寝場所/フォーカス挿入に対応
+backend-auth: Apple認証APIと mobile_profiles テーブルを追加
+backend-profile: /mobile/profile エンドポイントとRealtime userId必須化を実装
+docs-ux: Completionカード含むUXフローと検証手順をドキュメント化

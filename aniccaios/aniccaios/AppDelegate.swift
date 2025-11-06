@@ -4,6 +4,9 @@ import AVFoundation
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
+        let proxy = Bundle.main.object(forInfoDictionaryKey: "ANICCA_PROXY_BASE_URL") as? String ?? "nil"
+        print("ANICCA_PROXY_BASE_URL =", proxy)
+        
         if ProcessInfo.processInfo.arguments.contains("-resetOnLaunch") {
             UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier ?? "")
             UserDefaults.standard.synchronize()

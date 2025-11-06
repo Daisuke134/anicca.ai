@@ -1,12 +1,11 @@
 import baseLogger from '../../utils/logger.js';
 import { query } from '../../lib/db.js';
 import crypto from 'crypto';
+import { createRemoteJWKSet, jwtVerify } from 'jose';
 
 const logger = baseLogger.withContext('AppleAuthService');
-
-// Cache for Apple's public keys (should be refreshed periodically)
-let appleKeysCache = null;
-let appleKeysCacheExpiry = null;
+const appleAudience = process.env.APPLE_SIGN_IN_AUD;
+const appleJWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 
 /**
  * Verify Apple identity token
@@ -17,33 +16,30 @@ let appleKeysCacheExpiry = null;
  */
 export async function verifyIdentityToken(identityToken, nonce, appleUserId) {
   try {
-    // TODO: Implement full JWT verification with Apple's public keys
-    // For now, basic structure - full implementation would:
-    // 1. Decode JWT header and payload
-    // 2. Fetch Apple's public keys from https://appleid.apple.com/auth/keys
-    // 3. Verify signature
-    // 4. Verify nonce hash
-    // 5. Verify expiry and issuer
-    
-    // Placeholder: Extract basic info (in production, decode and verify JWT properly)
-    const decoded = parseJWT(identityToken);
-    
-    if (!decoded) {
-      logger.error('Failed to parse identity token');
-      return null;
+    if (!appleAudience) {
+      throw new Error('APPLE_SIGN_IN_AUD is not configured');
     }
-    
-    // Verify nonce (should match SHA256 hash in token's nonce claim)
-    const nonceHash = crypto.createHash('sha256').update(nonce).digest('base64url');
-    if (decoded.nonce && decoded.nonce !== nonceHash) {
+
+    const { payload } = await jwtVerify(identityToken, appleJWKS, {
+      issuer: 'https://appleid.apple.com',
+      audience: appleAudience
+    });
+
+    const expectedNonce = crypto.createHash('sha256').update(nonce).digest('base64');
+    if (!payload.nonce || payload.nonce !== expectedNonce) {
       logger.warn('Nonce mismatch');
       return null;
     }
-    
-    // Extract user info
-    const sub = decoded.sub || appleUserId;
-    const email = decoded.email;
-    const emailVerified = decoded.email_verified;
+
+    const sub = payload.sub || appleUserId;
+    if (!sub) {
+      logger.warn('Missing subject in Apple token');
+      return null;
+    }
+
+    const email = payload.email || null;
+    const emailVerified =
+      payload.email_verified === true || payload.email_verified === 'true';
     
     // Upsert user in database
     const userId = await upsertAppleUser({
@@ -54,31 +50,11 @@ export async function verifyIdentityToken(identityToken, nonce, appleUserId) {
     
     return {
       userId,
-      displayName: decoded.name?.givenName || decoded.name?.familyName || 'User',
+      displayName: payload.name?.firstName || payload.name?.lastName || 'User',
       email: email
     };
   } catch (error) {
     logger.error('Token verification failed', error);
-    return null;
-  }
-}
-
-/**
- * Parse JWT (basic implementation - should use proper JWT library)
- * @private
- */
-function parseJWT(token) {
-  try {
-    const parts = token.split('.');
-    if (parts.length !== 3) {
-      return null;
-    }
-    
-    // Decode payload (base64url)
-    const payload = Buffer.from(parts[1], 'base64url').toString('utf8');
-    return JSON.parse(payload);
-  } catch (error) {
-    logger.error('JWT parsing failed', error);
     return null;
   }
 }
@@ -138,16 +114,5 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
     logger.error('Failed to upsert Apple user', error);
     throw error;
   }
-}
-
-/**
- * Fetch Apple's public keys (for JWT verification)
- * Should be implemented for production
- * @private
- */
-async function fetchApplePublicKeys() {
-  // TODO: Implement fetching from https://appleid.apple.com/auth/keys
-  // Cache the keys for a reasonable period
-  return null;
 }
 

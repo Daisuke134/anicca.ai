@@ -87,7 +87,7 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
         `UPDATE public.profiles 
          SET 
            email = COALESCE(NULLIF($2, ''), email),
-           metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('apple_user_id', $1),
+           metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('apple_user_id', $1::text),
            updated_at = NOW()
          WHERE id = $3`,
         [appleUserId, email, userId]
@@ -99,7 +99,7 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
       
       await query(
         `INSERT INTO public.profiles (id, email, metadata, created_at, updated_at)
-         VALUES ($1, NULLIF($2, ''), jsonb_build_object('apple_user_id', $3), NOW(), NOW())
+         VALUES ($1, NULLIF($2, ''), jsonb_build_object('apple_user_id', $3::text), NOW(), NOW())
          ON CONFLICT (id) DO NOTHING`,
         [userId, email, appleUserId]
       );

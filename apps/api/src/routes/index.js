@@ -12,6 +12,7 @@ import claudeProxyRouter from './proxy/claude.js';
 import googleAuthRouter from './auth/google/index.js';
 import slackAuthRouter from './auth/slack/index.js';
 import entitlementRouter from './auth/entitlement.js';
+import appleAuthRouter from './auth/apple.js';
 
 // Billing
 import billingRouter from './billing/index.js';
@@ -43,6 +44,7 @@ router.use('/proxy/claude', claudeProxyRouter);
 router.use('/auth/google', googleAuthRouter);
 router.use('/auth/slack', slackAuthRouter);
 router.use('/auth/entitlement', entitlementRouter);
+router.use('/auth/apple', appleAuthRouter);
 
 router.use('/billing', billingRouter);
 

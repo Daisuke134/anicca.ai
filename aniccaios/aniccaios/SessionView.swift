@@ -5,7 +5,16 @@ struct SessionView: View {
     @StateObject private var controller = VoiceSessionController()
     @State private var isShowingSettings = false
 
+    @ViewBuilder
     var body: some View {
+        if case .signedIn = appState.authStatus {
+            authenticatedContent
+        } else {
+            AuthRequiredPlaceholderView()
+        }
+    }
+    
+    private var authenticatedContent: some View {
         VStack(spacing: 24) {
             HStack {
                 Spacer()

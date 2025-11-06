@@ -7,14 +7,20 @@ const logger = baseLogger.withContext('MobileRealtime');
 
 router.get('/session', async (req, res) => {
   const deviceId = (req.get('device-id') || '').toString().trim();
-  // 将来クエリ対応を復活させる場合はここに再追加
+  const userId = (req.get('user-id') || '').toString().trim();
+  
   if (!deviceId) {
     logger.warn('Missing deviceId for client_secret request');
     return res.status(400).json({ error: 'deviceId is required' });
   }
+  
+  if (!userId) {
+    logger.warn('Missing userId for client_secret request');
+    return res.status(401).json({ error: 'user-id is required' });
+  }
 
   try {
-    const payload = await issueRealtimeClientSecret({ deviceId });
+    const payload = await issueRealtimeClientSecret({ deviceId, userId });
     return res.json(payload);
   } catch (error) {
     logger.error('Failed to issue client_secret', error);

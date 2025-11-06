@@ -12,8 +12,12 @@ struct OnboardingFlowView: View {
             MicrophonePermissionStepView(next: advance)
         case .notifications:
             NotificationPermissionStepView(next: advance)
+        case .account:
+            AuthenticationStepView(next: advance)
         case .habitSetup:
             HabitSetupStepView(next: advance)
+        case .completion:
+            CompletionStepView(next: advance)
         }
     }
 
@@ -24,8 +28,12 @@ struct OnboardingFlowView: View {
         case .microphone:
             step = .notifications
         case .notifications:
+            step = .account
+        case .account:
             step = .habitSetup
         case .habitSetup:
+            step = .completion
+        case .completion:
             appState.markOnboardingComplete()
         }
     }

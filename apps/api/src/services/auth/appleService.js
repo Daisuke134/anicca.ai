@@ -69,7 +69,11 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
     const existingUser = await query(
       `SELECT id FROM public.profiles 
        WHERE (metadata->>'apple_user_id') = $1
-         OR ($2 IS NOT NULL AND email IS NOT NULL AND lower(email) = lower($2)) 
+         OR (
+              $2::text IS NOT NULL 
+              AND email IS NOT NULL 
+              AND lower(email) = lower($2::text)
+            )
        LIMIT 1`,
       [appleUserId, email]
     );

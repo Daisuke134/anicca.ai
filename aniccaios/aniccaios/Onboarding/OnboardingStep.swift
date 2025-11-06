@@ -5,6 +5,7 @@ enum OnboardingStep: Int {
     case microphone
     case notifications
     case account
+    case profile
     case habitSetup
     case completion
 }

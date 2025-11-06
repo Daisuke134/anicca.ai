@@ -68,7 +68,8 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
     // Check if user exists by apple_user_id or email
     const existingUser = await query(
       `SELECT id FROM public.profiles 
-       WHERE (metadata->>'apple_user_id' = $1 OR email = $2) 
+       WHERE (metadata->>'apple_user_id') = $1
+         OR ($2 IS NOT NULL AND email IS NOT NULL AND lower(email) = lower($2)) 
        LIMIT 1`,
       [appleUserId, email]
     );
@@ -81,7 +82,7 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
       await query(
         `UPDATE public.profiles 
          SET 
-           email = COALESCE($2, email),
+           email = COALESCE(NULLIF($2, ''), email),
            metadata = COALESCE(metadata, '{}'::jsonb) || jsonb_build_object('apple_user_id', $1),
            updated_at = NOW()
          WHERE id = $3`,
@@ -94,9 +95,9 @@ async function upsertAppleUser({ appleUserId, email, emailVerified }) {
       
       await query(
         `INSERT INTO public.profiles (id, email, metadata, created_at, updated_at)
-         VALUES ($1, $2, jsonb_build_object('apple_user_id', $3), NOW(), NOW())
+         VALUES ($1, NULLIF($2, ''), jsonb_build_object('apple_user_id', $3), NOW(), NOW())
          ON CONFLICT (id) DO NOTHING`,
-        [userId, email || null, appleUserId]
+        [userId, email, appleUserId]
       );
       
       // Create user_settings entry

@@ -11,7 +11,8 @@ actor ProfileSyncService {
     private init() {}
     
     func enqueue(profile: UserProfile) async {
-        guard case .signedIn = AppState.shared.authStatus else {
+        let authStatus = await MainActor.run { AppState.shared.authStatus }
+        guard case .signedIn = authStatus else {
             logger.debug("Not signed in, skipping profile sync")
             return
         }
@@ -34,14 +35,15 @@ actor ProfileSyncService {
         
         isSyncing = true
         
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else {
+        let authStatus = await MainActor.run { AppState.shared.authStatus }
+        guard case .signedIn(let credentials) = authStatus else {
             logger.warning("Lost authentication during sync")
             isSyncing = false
             pendingSync = nil
             return
         }
         
-        let deviceId = AppState.shared.resolveDeviceId()
+        let deviceId = await MainActor.run { AppState.shared.resolveDeviceId() }
         
         do {
             try await syncProfile(

@@ -11,6 +11,7 @@ final class AppState: ObservableObject {
     @Published private(set) var habitSchedules: [HabitType: DateComponents] = [:]
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
+    @Published private(set) var onboardingStep: OnboardingStep
     private(set) var shouldStartSessionImmediately = false
 
     // Legacy support: computed property for backward compatibility
@@ -29,6 +30,7 @@ final class AppState: ObservableObject {
     private let wakeTimeKey = "com.anicca.wakeTime"
     private let habitSchedulesKey = "com.anicca.habitSchedules"
     private let onboardingKey = "com.anicca.onboardingComplete"
+    private let onboardingStepKey = "com.anicca.onboardingStep"
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
 
@@ -42,6 +44,7 @@ final class AppState: ObservableObject {
         self.habitSchedules = [:]
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
         self.pendingHabitTrigger = nil
+        self.onboardingStep = OnboardingStep(rawValue: defaults.integer(forKey: onboardingStepKey)) ?? .welcome
         
         // Load user credentials and profile
         self.authStatus = loadUserCredentials()
@@ -129,6 +132,7 @@ final class AppState: ObservableObject {
         guard !isOnboardingComplete else { return }
         isOnboardingComplete = true
         defaults.set(true, forKey: onboardingKey)
+        setOnboardingStep(.completion)
         defaults.synchronize()
     }
 
@@ -181,14 +185,26 @@ final class AppState: ObservableObject {
         isOnboardingComplete = false
         pendingHabitTrigger = nil
         pendingHabitPrompt = nil
+        onboardingStep = .welcome
         userProfile = UserProfile()
         clearUserCredentials()
+        defaults.removeObject(forKey: onboardingStepKey)
         Task {
             await scheduler.cancelAllNotifications()
         }
     }
     
+    func setOnboardingStep(_ step: OnboardingStep) {
+        onboardingStep = step
+        defaults.set(step.rawValue, forKey: onboardingStepKey)
+        defaults.synchronize()
+    }
+    
     // MARK: - Authentication
+    
+    func setAuthStatus(_ status: AuthStatus) {
+        authStatus = status
+    }
     
     func updateUserCredentials(_ credentials: UserCredentials) {
         authStatus = .signedIn(credentials)

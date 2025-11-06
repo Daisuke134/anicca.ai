@@ -19,6 +19,9 @@ struct OnboardingFlowView: View {
         case .completion:
             CompletionStepView(next: advance)
         }
+        .onAppear {
+            step = appState.onboardingStep
+        }
     }
 
     private func advance() {
@@ -35,6 +38,8 @@ struct OnboardingFlowView: View {
             step = .completion
         case .completion:
             appState.markOnboardingComplete()
+            return
         }
+        appState.setOnboardingStep(step)
     }
 }

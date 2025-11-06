@@ -23,22 +23,29 @@ struct AuthenticationStepView: View {
             
             SignInWithAppleButton(.signIn) { request in
                 isProcessing = true
-                AuthCoordinator.shared.startSignIn()
+                AuthCoordinator.shared.configure(request)
             } onCompletion: { result in
-                // Handled by AuthCoordinator
+                AuthCoordinator.shared.completeSignIn(result: result)
             }
             .signInWithAppleButtonStyle(.black)
             .frame(height: 50)
             .padding(.horizontal, 40)
             .onChange(of: appState.authStatus) { status in
-                if case .signedIn = status {
+                switch status {
+                case .signedIn:
                     isProcessing = false
-                    // Small delay before advancing for better UX
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         next()
                     }
-                } else if case .signedOut = status {
+                case .signingIn:
+                    isProcessing = true
+                case .signedOut:
                     isProcessing = false
+                }
+            }
+            .onAppear {
+                if case .signedIn = appState.authStatus {
+                    next()
                 }
             }
             

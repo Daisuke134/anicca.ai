@@ -12,25 +12,17 @@ final class AuthCoordinator {
     
     private init() {}
     
-    func startSignIn() {
+    func configure(_ request: ASAuthorizationAppleIDRequest) {
         let nonce = randomNonceString()
         currentNonce = nonce
         guard let hashedNonce = sha256Base64(nonce) else {
             logger.error("Failed to compute nonce hash")
+            AppState.shared.setAuthStatus(.signedOut)
             return
         }
         
-        let appleIDProvider = ASAuthorizationAppleIDProvider()
-        let request = appleIDProvider.createRequest()
         request.requestedScopes = [.fullName, .email]
         request.nonce = hashedNonce
-        
-        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
-        authorizationController.delegate = presentationDelegate
-        authorizationController.presentationContextProvider = presentationDelegate
-        
-        AppState.shared.setAuthStatus(.signingIn)
-        authorizationController.performRequests()
     }
     
     func completeSignIn(result: Result<ASAuthorization, Error>) {
@@ -186,7 +178,4 @@ final class AuthCoordinator {
         return Data(hashedData).base64EncodedString()
     }
     
-    lazy var presentationDelegate: AuthPresentationDelegate = {
-        AuthPresentationDelegate(coordinator: self)
-    }()
 }

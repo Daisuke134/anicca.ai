@@ -15,6 +15,8 @@ struct OnboardingFlowView: View {
                 NotificationPermissionStepView(next: advance)
             case .account:
                 AuthenticationStepView(next: advance)
+            case .profile:
+                ProfileInfoStepView(next: advance)
             case .habitSetup:
                 HabitSetupStepView(next: advance)
             case .completion:
@@ -35,6 +37,8 @@ struct OnboardingFlowView: View {
         case .notifications:
             step = .account
         case .account:
+            step = .profile
+        case .profile:
             step = .habitSetup
         case .habitSetup:
             step = .completion

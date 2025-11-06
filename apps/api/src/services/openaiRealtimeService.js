@@ -6,7 +6,7 @@ const OPENAI_REALTIME_URL = 'https://api.openai.com/v1/realtime/sessions';
 const REALTIME_MODEL = 'gpt-realtime';
 const DEFAULT_VOICE = 'alloy';
 
-export async function issueRealtimeClientSecret({ deviceId }) {
+export async function issueRealtimeClientSecret({ deviceId, userId }) {
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY not configured');

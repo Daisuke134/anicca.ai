@@ -25,20 +25,22 @@ struct SettingsView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Personalization section
+                    personalizationCard
+                    
+                    // Habits section
                     ForEach(HabitType.allCases, id: \.self) { habit in
                         habitCard(for: habit)
                     }
+                    
+                    // Sign Out button
+                    signOutButton
                 }
                 .padding()
             }
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
-                        dismiss()
-                    }
-                }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button("Save") {
                         save()
@@ -50,6 +52,77 @@ struct SettingsView: View {
                 timePickerSheet(for: habit)
             }
         }
+    }
+    
+    private var personalizationCard: some View {
+        SUCard(
+            model: {
+                var vm = CardVM()
+                vm.isTappable = false
+                return vm
+            }(),
+            content: {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text("Personalization")
+                        .font(.headline)
+                    
+                    VStack(alignment: .leading, spacing: 8) {
+                        HStack {
+                            Text("Name:")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Text(appState.userProfile.displayName.isEmpty ? "Not set" : appState.userProfile.displayName)
+                                .font(.subheadline)
+                        }
+                        
+                        HStack {
+                            Text("Language:")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Text(appState.userProfile.preferredLanguage.languageLine)
+                                .font(.subheadline)
+                        }
+                        
+                        if !appState.userProfile.sleepLocation.isEmpty {
+                            HStack {
+                                Text("Sleep Location:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Text(appState.userProfile.sleepLocation)
+                                    .font(.subheadline)
+                            }
+                        }
+                        
+                        if !appState.userProfile.trainingFocus.isEmpty {
+                            HStack {
+                                Text("Training Focus:")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Text(appState.userProfile.trainingFocus.joined(separator: ", "))
+                                    .font(.subheadline)
+                            }
+                        }
+                    }
+                }
+            }
+        )
+    }
+    
+    private var signOutButton: some View {
+        Button(action: {
+            AuthCoordinator.shared.signOut()
+            dismiss()
+        }) {
+            Text("Sign Out")
+                .frame(maxWidth: .infinity)
+                .padding()
+                .foregroundStyle(.red)
+                .background(
+                    RoundedRectangle(cornerRadius: 8)
+                        .fill(Color.red.opacity(0.1))
+                )
+        }
+        .buttonStyle(.plain)
     }
 
     @ViewBuilder

@@ -53,11 +53,17 @@ final class VoiceSessionController: NSObject, ObservableObject {
             return cached
         }
 
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else {
+            throw VoiceSessionError.missingAuthentication
+        }
+
         var request = URLRequest(url: AppConfig.realtimeSessionURL)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(UIDevice.current.identifierForVendor?.uuidString ?? UUID().uuidString,
+        request.setValue(AppState.shared.resolveDeviceId(),
                          forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId,
+                         forHTTPHeaderField: "user-id")
 
         let (data, response) = try await URLSession.shared.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
@@ -323,6 +329,7 @@ private enum VoiceSessionError: Error {
     case remoteSDPFailed
     case remoteSDPDecoding
     case missingClientSecret
+    case missingAuthentication
 }
 
 enum ConnectionState {

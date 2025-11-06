@@ -9,19 +9,105 @@ struct HabitPromptBuilder {
     }
 
     func buildPrompt(for habit: HabitType, scheduledTime: DateComponents?, now: Date) -> String {
-        let promptTemplate = loadPrompt(named: habit.promptFileName)?.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let prompt = promptTemplate, !prompt.isEmpty else {
-            // Fallback messages
-            switch habit {
-            case .wake:
-                return "Wake up."
-            case .training:
-                return "It's time for your workout. Let's get moving!"
-            case .bedtime:
-                return "It's bedtime. Time to wind down and sleep."
+        // Load common and habit-specific templates
+        let commonTemplate = loadPrompt(named: "common")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        let habitTemplate = loadPrompt(named: habit.promptFileName)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+        
+        // Merge templates
+        let mergedTemplate = "\(commonTemplate)\n\n\(habitTemplate)"
+        
+        // Render with user profile data
+        return render(template: mergedTemplate, habit: habit, scheduledTime: scheduledTime, now: now)
+    }
+    
+    private func render(template: String, habit: HabitType, scheduledTime: DateComponents?, now: Date) -> String {
+        let profile = AppState.shared.userProfile
+        
+        // Build replacement dictionary
+        var replacements: [String: String] = [:]
+        
+        // Language
+        replacements["LANGUAGE_LINE"] = profile.preferredLanguage.languageLine
+        
+        // User name
+        let userName = profile.displayName.isEmpty ? "ユーザー" : profile.displayName
+        replacements["USER_NAME"] = userName
+        
+        // Task time and description
+        let timeString: String
+        if let scheduled = scheduledTime,
+           let hour = scheduled.hour,
+           let minute = scheduled.minute {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            let calendar = Calendar.current
+            var components = DateComponents()
+            components.hour = hour
+            components.minute = minute
+            if let date = calendar.date(from: components) {
+                timeString = formatter.string(from: date)
+            } else {
+                timeString = String(format: "%02d:%02d", hour, minute)
+            }
+        } else {
+            let formatter = DateFormatter()
+            formatter.timeStyle = .short
+            timeString = formatter.string(from: now)
+        }
+        replacements["TASK_TIME"] = timeString
+        
+        let taskDescription: String
+        switch habit {
+        case .wake:
+            taskDescription = "起床"
+        case .training:
+            taskDescription = "トレーニング"
+        case .bedtime:
+            taskDescription = "就寝"
+        }
+        replacements["TASK_DESCRIPTION"] = taskDescription
+        
+        // Habit-specific replacements
+        switch habit {
+        case .wake, .bedtime:
+            if !profile.sleepLocation.isEmpty {
+                replacements["SLEEP_LOCATION"] = profile.sleepLocation
+            } else {
+                replacements["SLEEP_LOCATION"] = "ベッド"
+            }
+        case .training:
+            if !profile.trainingFocus.isEmpty {
+                replacements["TRAINING_FOCUS_LIST"] = profile.trainingFocus.joined(separator: "、")
+            } else {
+                replacements["TRAINING_FOCUS_LIST"] = "トレーニング"
             }
         }
-        return prompt
+        
+        // Perform replacements
+        var result = template
+        for (key, value) in replacements {
+            result = result.replacingOccurrences(of: "${\(key)}", with: value)
+        }
+        
+        // Remove any remaining placeholder patterns (shouldn't happen, but safety check)
+        let placeholderPattern = "\\$\\{[^}]+\\}"
+        if let regex = try? NSRegularExpression(pattern: placeholderPattern, options: []) {
+            result = regex.stringByReplacingMatches(in: result, options: [], range: NSRange(location: 0, length: result.utf16.count), withTemplate: "")
+        }
+        
+        // Fallback if result is empty
+        if result.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            switch habit {
+            case .wake:
+                return profile.preferredLanguage == .ja ? "おはよう、\(userName)さん。" : "Good morning, \(userName)."
+            case .training:
+                return profile.preferredLanguage == .ja ? "\(userName)さん、トレーニングの時間です。" : "\(userName), it's time for your workout."
+            case .bedtime:
+                return profile.preferredLanguage == .ja ? "\(userName)さん、就寝時間です。" : "\(userName), it's bedtime."
+            }
+        }
+        
+        return result
     }
 
     private func normalizedComponents(from components: DateComponents?, fallbackDate: Date) -> DateComponents {

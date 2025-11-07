@@ -1,5 +1,6 @@
 [build]
 builder = "nixpacks"
+watchPatterns = ["apps/api/src/**"]
 
 [deploy]
 startCommand = "bash -lc 'printf \"%s\" \"$GCP_SA_KEY_JSON\" > /tmp/gcp.json && export GOOGLE_APPLICATION_CREDENTIALS=/tmp/gcp.json && npm start'"

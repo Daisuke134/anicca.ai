@@ -10,7 +10,7 @@ struct WelcomeStepView: View {
             Text("Welcome to Anicca")
                 .font(.system(size: 32, weight: .bold))
 
-            Text("Let’s configure your wake-up routine.")
+            Text("Let's configure your routines.")
                 .font(.body)
                 .foregroundStyle(.secondary)
 

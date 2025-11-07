@@ -68,7 +68,8 @@ actor ProfileSyncService {
         userId: String,
         profile: UserProfile
     ) async throws {
-        var request = URLRequest(url: AppConfig.profileSyncURL)
+        let profileSyncURL = await MainActor.run { AppConfig.profileSyncURL }
+        var request = URLRequest(url: profileSyncURL)
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceId, forHTTPHeaderField: "device-id")

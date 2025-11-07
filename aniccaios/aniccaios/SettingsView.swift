@@ -7,6 +7,12 @@ struct SettingsView: View {
     @State private var habitTimes: [HabitType: Date] = [:]
     @State private var showingTimePicker: HabitType?
     @State private var isSaving = false
+    @State private var displayName: String = ""
+    @State private var preferredLanguage: LanguagePreference = .en
+    @State private var sleepLocation: String = ""
+    @State private var trainingFocus: String = ""
+
+    private let trainingFocusOptions = ["Push-up", "Core", "Cardio", "Stretch"]
 
     init() {
         // Initialize habitTimes from AppState
@@ -51,7 +57,17 @@ struct SettingsView: View {
             .sheet(item: $showingTimePicker) { habit in
                 timePickerSheet(for: habit)
             }
+            .onAppear {
+                loadPersonalizationData()
+            }
         }
+    }
+    
+    private func loadPersonalizationData() {
+        displayName = appState.userProfile.displayName
+        preferredLanguage = appState.userProfile.preferredLanguage
+        sleepLocation = appState.userProfile.sleepLocation
+        trainingFocus = appState.userProfile.trainingFocus.first ?? ""
     }
     
     private var personalizationCard: some View {
@@ -62,45 +78,57 @@ struct SettingsView: View {
                 return vm
             }(),
             content: {
-                VStack(alignment: .leading, spacing: 12) {
+                VStack(alignment: .leading, spacing: 16) {
                     Text("Personalization")
                         .font(.headline)
                     
-                    VStack(alignment: .leading, spacing: 8) {
-                        HStack {
-                            Text("Name:")
+                    VStack(alignment: .leading, spacing: 16) {
+                        // Name
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Name")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            Text(appState.userProfile.displayName.isEmpty ? "Not set" : appState.userProfile.displayName)
-                                .font(.subheadline)
+                            TextField("John", text: $displayName)
+                                .textFieldStyle(.roundedBorder)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
                         }
                         
-                        HStack {
-                            Text("Language:")
+                        // Language
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Language")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            Text(appState.userProfile.preferredLanguage.languageLine)
+                            Picker("Language", selection: $preferredLanguage) {
+                                Text("日本語").tag(LanguagePreference.ja)
+                                Text("English").tag(LanguagePreference.en)
+                            }
+                            .pickerStyle(.segmented)
+                        }
+                        
+                        // Sleep Location
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Sleep Location")
                                 .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            TextField("Third-floor bedroom", text: $sleepLocation)
+                                .textFieldStyle(.roundedBorder)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
                         }
                         
-                        if !appState.userProfile.sleepLocation.isEmpty {
-                            HStack {
-                                Text("Sleep Location:")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Text(appState.userProfile.sleepLocation)
-                                    .font(.subheadline)
+                        // Training Focus
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text("Training Focus")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            Picker("Training Focus", selection: $trainingFocus) {
+                                Text("None").tag("")
+                                ForEach(trainingFocusOptions, id: \.self) { option in
+                                    Text(option).tag(option)
+                                }
                             }
-                        }
-                        
-                        if !appState.userProfile.trainingFocus.isEmpty {
-                            HStack {
-                                Text("Training Focus:")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                                Text(appState.userProfile.trainingFocus.joined(separator: ", "))
-                                    .font(.subheadline)
-                            }
+                            .pickerStyle(.menu)
                         }
                     }
                 }
@@ -236,12 +264,21 @@ struct SettingsView: View {
         isSaving = true
 
         Task {
+            // Update habit schedules
             var schedules: [HabitType: Date] = [:]
             for (habit, time) in habitTimes {
                 schedules[habit] = time
             }
-
             await appState.updateHabits(schedules)
+            
+            // Update user profile
+            var updatedProfile = appState.userProfile
+            updatedProfile.displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+            updatedProfile.preferredLanguage = preferredLanguage
+            updatedProfile.sleepLocation = sleepLocation.trimmingCharacters(in: .whitespacesAndNewlines)
+            updatedProfile.trainingFocus = trainingFocus.isEmpty ? [] : [trainingFocus]
+            appState.updateUserProfile(updatedProfile, sync: true)
+            
             await MainActor.run {
                 isSaving = false
                 dismiss()

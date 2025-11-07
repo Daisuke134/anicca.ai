@@ -12,6 +12,7 @@ final class AppState: ObservableObject {
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
     @Published private(set) var onboardingStep: OnboardingStep
+    @Published private(set) var pendingHabitFollowUps: [OnboardingStep] = []
     private(set) var shouldStartSessionImmediately = false
 
     // Legacy support: computed property for backward compatibility
@@ -211,6 +212,7 @@ final class AppState: ObservableObject {
         saveUserCredentials(credentials)
         
         // Update displayName in profile if empty and Apple provided a name
+        // Don't overwrite if credentials.displayName is empty (user will set it in profile step)
         if userProfile.displayName.isEmpty && !credentials.displayName.isEmpty {
             userProfile.displayName = credentials.displayName
             saveUserProfile()
@@ -249,14 +251,6 @@ final class AppState: ObservableObject {
                 await ProfileSyncService.shared.enqueue(profile: profile)
             }
         }
-    }
-    
-    private func loadUserProfile() -> UserProfile {
-        guard let data = defaults.data(forKey: userProfileKey),
-              let profile = try? JSONDecoder().decode(UserProfile.self, from: data) else {
-            return UserProfile()
-        }
-        return profile
     }
     
     private func saveUserProfile() {
@@ -334,5 +328,64 @@ final class AppState: ObservableObject {
             return nil
         }
         return components
+    }
+    
+    // MARK: - Habit Follow-up Questions
+    
+    func prepareHabitFollowUps(selectedHabits: Set<HabitType>) {
+        var followUps: [OnboardingStep] = []
+        
+        // Wake location: if Wake is selected, ask wake location
+        // If both Wake and Bedtime are selected, only ask wake location (reuse for bedtime)
+        if selectedHabits.contains(.wake) {
+            followUps.append(.habitWakeLocation)
+        } else if selectedHabits.contains(.bedtime) {
+            // Only Bedtime selected, ask sleep location
+            followUps.append(.habitSleepLocation)
+        }
+        
+        // Training focus: if Training is selected, ask training focus
+        if selectedHabits.contains(.training) {
+            followUps.append(.habitTrainingFocus)
+        }
+        
+        pendingHabitFollowUps = followUps
+    }
+    
+    func consumeNextHabitFollowUp() -> OnboardingStep? {
+        guard !pendingHabitFollowUps.isEmpty else { return nil }
+        return pendingHabitFollowUps.removeFirst()
+    }
+    
+    func clearHabitFollowUps() {
+        pendingHabitFollowUps = []
+    }
+    
+    func updateSleepLocation(_ location: String) {
+        var profile = userProfile
+        profile.sleepLocation = location
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateTrainingFocus(_ focus: [String]) {
+        var profile = userProfile
+        profile.trainingFocus = focus
+        updateUserProfile(profile, sync: true)
+    }
+    
+    // MARK: - Language Detection
+    
+    private func loadUserProfile() -> UserProfile {
+        guard let data = defaults.data(forKey: userProfileKey),
+              let profile = try? JSONDecoder().decode(UserProfile.self, from: data) else {
+            // Initialize with detected language from device locale
+            return UserProfile(preferredLanguage: LanguagePreference.detectDefault())
+        }
+        // If preferredLanguage is not set or invalid, detect from locale
+        var loadedProfile = profile
+        if loadedProfile.preferredLanguage.rawValue.isEmpty {
+            loadedProfile.preferredLanguage = LanguagePreference.detectDefault()
+        }
+        return loadedProfile
     }
 }

@@ -48,7 +48,6 @@ final class AuthCoordinator {
         }
         
         guard let nonce = currentNonce,
-              let hashedNonce = sha256Base64(nonce),
               let identityTokenData = appleIDCredential.identityToken,
               let identityTokenString = String(data: identityTokenData, encoding: .utf8) else {
             logger.error("Missing identity token or nonce")
@@ -65,13 +64,16 @@ final class AuthCoordinator {
             .compactMap { $0 }
             .joined(separator: " ")
         
+        // Set signing in status
+        AppState.shared.setAuthStatus(.signingIn)
+        
         // Send to backend for verification
         Task {
             await verifyWithBackend(
                 identityToken: identityTokenString,
                 nonce: nonce,
                 userId: userId,
-                displayName: displayName.isEmpty ? "User" : displayName,
+                displayName: displayName.isEmpty ? "" : displayName,
                 email: email
             )
         }

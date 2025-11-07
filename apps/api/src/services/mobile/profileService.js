@@ -11,7 +11,11 @@ const logger = baseLogger.withContext('MobileProfileService');
 export async function getProfile(deviceId) {
   try {
     const result = await query(
-      'SELECT profile, language, updated_at FROM mobile_profiles WHERE device_id = $1',
+      `SELECT mp.profile, mp.language, mp.user_id, mp.updated_at, 
+              COALESCE(us.language, 'en') as user_settings_language
+       FROM mobile_profiles mp
+       LEFT JOIN user_settings us ON mp.user_id = us.user_id
+       WHERE mp.device_id = $1`,
       [deviceId]
     );
     
@@ -23,6 +27,8 @@ export async function getProfile(deviceId) {
     return {
       profile: row.profile,
       language: row.language,
+      userSettingsLanguage: row.user_settings_language,
+      userId: row.user_id,
       updatedAt: row.updated_at
     };
   } catch (error) {
@@ -42,6 +48,7 @@ export async function getProfile(deviceId) {
  */
 export async function upsertProfile({ deviceId, userId, profile, language }) {
   try {
+    // Upsert mobile_profiles
     await query(
       `INSERT INTO mobile_profiles (device_id, user_id, profile, language, updated_at)
        VALUES ($1, $2, $3, $4, NOW())
@@ -54,7 +61,20 @@ export async function upsertProfile({ deviceId, userId, profile, language }) {
       [deviceId, userId, JSON.stringify(profile), language]
     );
     
-    logger.info(`Profile upserted for device: ${deviceId}`);
+    // Update user_settings.language if preferredLanguage is provided
+    if (language && (language === 'ja' || language === 'en')) {
+      await query(
+        `INSERT INTO user_settings (user_id, language, updated_at)
+         VALUES ($1, $2, NOW())
+         ON CONFLICT (user_id)
+         DO UPDATE SET
+           language = EXCLUDED.language,
+           updated_at = NOW()`,
+        [userId, language]
+      );
+    }
+    
+    logger.info(`Profile upserted for device: ${deviceId}, language: ${language}`);
   } catch (error) {
     logger.error('Failed to upsert profile', error);
     throw error;

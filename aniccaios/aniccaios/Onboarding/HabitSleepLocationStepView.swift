@@ -1,25 +1,25 @@
 import ComponentsKit
 import SwiftUI
 
-struct ProfileInfoStepView: View {
+struct HabitSleepLocationStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
-    @State private var displayName: String = ""
+    @State private var sleepLocation: String = ""
     @State private var isSaving = false
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Tell us your name")
+            Text("Where do you usually sleep?")
                 .font(.title)
                 .padding(.top, 40)
 
-            Text("We'll use your name when Anicca speaks to you.")
+            Text("This helps Anicca personalize your bedtime experience.")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            TextField("John", text: $displayName)
+            AccessorylessTextField("Third-floor bedroom", text: $sleepLocation)
                 .textFieldStyle(.roundedBorder)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
@@ -34,7 +34,7 @@ struct ProfileInfoStepView: View {
                     vm.style = .filled
                     vm.size = .large
                     vm.isFullWidth = true
-                    vm.isEnabled = !displayName.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
+                    vm.isEnabled = !sleepLocation.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
                     vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
                     return vm
                 }(),
@@ -43,25 +43,14 @@ struct ProfileInfoStepView: View {
             .padding(.horizontal)
             .padding(.bottom)
         }
-        .onAppear {
-            let currentName = appState.userProfile.displayName.trimmingCharacters(in: .whitespaces)
-            // Don't pre-fill with "User" - show placeholder instead
-            if currentName.isEmpty || currentName == "User" {
-                displayName = ""
-            } else {
-                displayName = currentName
-            }
-        }
     }
 
     private func save() {
-        let trimmed = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmed = sleepLocation.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, !isSaving else { return }
         isSaving = true
         Task {
-            var profile = appState.userProfile
-            profile.displayName = trimmed
-            appState.updateUserProfile(profile, sync: true)
+            appState.updateSleepLocation(trimmed)
             await MainActor.run {
                 isSaving = false
                 next()

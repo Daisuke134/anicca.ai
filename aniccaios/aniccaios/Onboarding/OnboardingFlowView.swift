@@ -19,6 +19,12 @@ struct OnboardingFlowView: View {
                 ProfileInfoStepView(next: advance)
             case .habitSetup:
                 HabitSetupStepView(next: advance)
+            case .habitWakeLocation:
+                HabitWakeLocationStepView(next: advance)
+            case .habitSleepLocation:
+                HabitSleepLocationStepView(next: advance)
+            case .habitTrainingFocus:
+                HabitTrainingFocusStepView(next: advance)
             case .completion:
                 CompletionStepView(next: advance)
             }
@@ -41,7 +47,19 @@ struct OnboardingFlowView: View {
         case .profile:
             step = .habitSetup
         case .habitSetup:
-            step = .completion
+            // Check if there are follow-up questions
+            if let nextFollowUp = appState.consumeNextHabitFollowUp() {
+                step = nextFollowUp
+            } else {
+                step = .completion
+            }
+        case .habitWakeLocation, .habitSleepLocation, .habitTrainingFocus:
+            // Check if there are more follow-up questions
+            if let nextFollowUp = appState.consumeNextHabitFollowUp() {
+                step = nextFollowUp
+            } else {
+                step = .completion
+            }
         case .completion:
             appState.markOnboardingComplete()
             return

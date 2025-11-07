@@ -46,10 +46,16 @@ router.get('/', async (req, res) => {
     }
     
     // Merge profile JSONB with defaults
+    // Priority: profile.preferredLanguage > mobile_profiles.language > user_settings.language > 'en'
     const profile = profileData.profile || {};
+    const preferredLanguage = profile.preferredLanguage || 
+                              profileData.language || 
+                              profileData.userSettingsLanguage || 
+                              'en';
+    
     return res.json({
       displayName: profile.displayName || '',
-      preferredLanguage: profile.preferredLanguage || profileData.language || 'en',
+      preferredLanguage: preferredLanguage,
       sleepLocation: profile.sleepLocation || '',
       trainingFocus: profile.trainingFocus || []
     });

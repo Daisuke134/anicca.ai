@@ -11,10 +11,6 @@ struct HabitSetupStepView: View {
     @State private var showingTimePicker: HabitType?
     @State private var isSaving = false
     
-    // Follow-up questions state
-    @State private var sleepLocation: String = ""
-    @State private var selectedTrainingFocus: Set<String> = []
-    
     private let trainingFocusOptions = ["Push-up", "Core", "Cardio", "Stretch"]
 
     var body: some View {
@@ -126,76 +122,9 @@ struct HabitSetupStepView: View {
                                 )
                             }
                         }
-                        
-                        // Follow-up questions
-                        if isSelected && hasTime {
-                            followUpSection(for: habit)
-                        }
                     }
                 }
             )
-        }
-    }
-    
-    @ViewBuilder
-    private func followUpSection(for habit: HabitType) -> some View {
-        VStack(alignment: .leading, spacing: 12) {
-            Divider()
-            
-            switch habit {
-            case .wake:
-                wakeFollowUp
-            case .training:
-                trainingFollowUp
-            case .bedtime:
-                EmptyView() // Bedtime uses sleepLocation from Wake, no additional question
-            }
-        }
-    }
-    
-    private var wakeFollowUp: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Where do you usually wake up?")
-                .font(.subheadline)
-                .fontWeight(.medium)
-            
-            TextField("Third-floor bedroom", text: $sleepLocation)
-                .textFieldStyle(.roundedBorder)
-        }
-    }
-    
-    private var trainingFollowUp: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Which training do you want to focus on every day?")
-                .font(.subheadline)
-                .fontWeight(.medium)
-            
-            LazyVGrid(columns: [GridItem(.flexible()), GridItem(.flexible())], spacing: 8) {
-                ForEach(trainingFocusOptions, id: \.self) { option in
-                    Button(action: {
-                        if selectedTrainingFocus.contains(option) {
-                            selectedTrainingFocus.remove(option)
-                        } else {
-                            selectedTrainingFocus.insert(option)
-                        }
-                    }) {
-                        HStack {
-                            Image(systemName: selectedTrainingFocus.contains(option) ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(selectedTrainingFocus.contains(option) ? .blue : .secondary)
-                            Text(option)
-                                .font(.caption)
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 12)
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTrainingFocus.contains(option) ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
-                        )
-                    }
-                    .buttonStyle(.plain)
-                }
-            }
         }
     }
 
@@ -260,22 +189,8 @@ struct HabitSetupStepView: View {
 
             await appState.updateHabits(schedules)
             
-            // Update user profile with follow-up answers
-            var updatedProfile = appState.userProfile
-            
-            // Sleep location: if Wake or Bedtime is selected, use sleepLocation
-            if selectedHabits.contains(.wake) || selectedHabits.contains(.bedtime) {
-                if !sleepLocation.isEmpty {
-                    updatedProfile.sleepLocation = sleepLocation
-                }
-            }
-            
-            // Training focus: if Training is selected, use selectedTrainingFocus
-            if selectedHabits.contains(.training) {
-                updatedProfile.trainingFocus = Array(selectedTrainingFocus)
-            }
-            
-            appState.updateUserProfile(updatedProfile, sync: true)
+            // Prepare follow-up questions based on selected habits
+            appState.prepareHabitFollowUps(selectedHabits: selectedHabits)
             
             await MainActor.run {
                 isSaving = false

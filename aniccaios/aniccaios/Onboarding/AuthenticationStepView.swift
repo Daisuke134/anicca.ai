@@ -21,22 +21,36 @@ struct AuthenticationStepView: View {
             
             Spacer()
             
-            SignInWithAppleButton(.signIn) { request in
-                isProcessing = true
-                AuthCoordinator.shared.configure(request)
-            } onCompletion: { result in
-                AuthCoordinator.shared.completeSignIn(result: result)
+            ZStack {
+                SignInWithAppleButton(.signIn) { request in
+                    isProcessing = true
+                    AppState.shared.setAuthStatus(.signingIn)
+                    AuthCoordinator.shared.configure(request)
+                } onCompletion: { result in
+                    AuthCoordinator.shared.completeSignIn(result: result)
+                }
+                .signInWithAppleButtonStyle(.black)
+                .frame(height: 50)
+                .padding(.horizontal, 40)
+                .disabled(isProcessing)
+                
+                if isProcessing {
+                    ZStack {
+                        Color.black.opacity(0.5)
+                            .cornerRadius(8)
+                        Text("Signing in…")
+                            .foregroundStyle(.white)
+                            .font(.headline)
+                    }
+                    .frame(height: 50)
+                    .padding(.horizontal, 40)
+                }
             }
-            .signInWithAppleButtonStyle(.black)
-            .frame(height: 50)
-            .padding(.horizontal, 40)
             .onChange(of: appState.authStatus) { status in
                 switch status {
                 case .signedIn:
                     isProcessing = false
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        next()
-                    }
+                    next()
                 case .signingIn:
                     isProcessing = true
                 case .signedOut:
@@ -47,17 +61,6 @@ struct AuthenticationStepView: View {
                 if case .signedIn = appState.authStatus {
                     next()
                 }
-            }
-            
-            if isProcessing {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("Signing in...")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding()
             }
             
             Spacer()

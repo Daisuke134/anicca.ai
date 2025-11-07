@@ -7,5 +7,8 @@ enum OnboardingStep: Int {
     case account
     case profile
     case habitSetup
+    case habitWakeLocation
+    case habitSleepLocation
+    case habitTrainingFocus
     case completion
 }

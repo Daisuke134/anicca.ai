@@ -3,7 +3,7 @@ import { SignJWT, importPKCS8 } from 'jose';
 const APNS_KEY_ID = process.env.APNS_KEY_ID;
 const APNS_TEAM_ID = process.env.APNS_TEAM_ID;
 const APNS_VOIP_KEY = process.env.APNS_VOIP_KEY;
-const APNS_TOPIC = process.env.APNS_TOPIC || 'com.anicca.app.voip';
+const APNS_TOPIC = process.env.APNS_TOPIC || 'ai.anicca.app.ios.voip';
 const APNS_ENVIRONMENT = process.env.APNS_ENVIRONMENT || 'production';
 
 const APNS_URL = APNS_ENVIRONMENT === 'development'
@@ -51,6 +51,7 @@ export async function sendVoIPPush(deviceToken, payload) {
         'apns-push-type': 'voip',
         'apns-priority': '10',
         'apns-expiration': '0',
+        'apns-collapse-id': payload.session_id || payload.habit_type || 'anicca-voip',
         'Content-Type': 'application/json'
       },
       body: JSON.stringify(payload)

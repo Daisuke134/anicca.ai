@@ -19,15 +19,15 @@ export function startVoIPAlarmDispatcher() {
     try {
       const now = new Date();
       console.log(`[VoIP Alarm Dispatcher] Checking alarms at ${now.toISOString()}`);
-      const oneMinuteLater = new Date(now.getTime() + 60 * 1000);
 
-      // Find alarms that should fire within the next minute
+      // Find alarms within ±60 second window (Apple PushKit best practice for immediate delivery)
+      const windowStart = new Date(now.getTime() - 60 * 1000);
+      const windowEnd = new Date(now.getTime() + 60 * 1000);
       const result = await query(
         `SELECT id, user_id, habit_type, next_fire_at, repeat_rule
          FROM mobile_alarm_schedules
-         WHERE next_fire_at <= $1
-         AND next_fire_at >= $2`,
-        [oneMinuteLater, now]
+         WHERE next_fire_at BETWEEN $1 AND $2`,
+        [windowStart, windowEnd]
       );
 
       if (result.rows.length > 0) {
@@ -79,7 +79,8 @@ export function startVoIPAlarmDispatcher() {
         if (nextFire) {
           await query(
             `UPDATE mobile_alarm_schedules
-             SET next_fire_at = $1
+             SET next_fire_at = $1,
+                 updated_at = NOW()
              WHERE id = $2`,
             [nextFire, alarm.id]
           );

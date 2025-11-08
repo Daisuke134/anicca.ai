@@ -32,6 +32,19 @@ struct SessionView: View {
             Text("Anicca")
                 .font(.system(size: 32, weight: .bold))
 
+            if shouldShowWakeSilentNotice {
+                Text(String(localized: "session_wake_silent_notice"))
+                    .multilineTextAlignment(.center)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(16)
+                    .frame(maxWidth: .infinity)
+                    .background(
+                        RoundedRectangle(cornerRadius: 16, style: .continuous)
+                            .fill(.thinMaterial)
+                    )
+            }
+
             Spacer(minLength: 24)
 
             sessionButton
@@ -83,5 +96,9 @@ struct SessionView: View {
                 action: { controller.start() }
             )
         }
+    }
+
+    private var shouldShowWakeSilentNotice: Bool {
+        appState.habitSchedules[HabitType.wake] != nil
     }
 }

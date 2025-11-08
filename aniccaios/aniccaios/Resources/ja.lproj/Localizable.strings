@@ -77,6 +77,7 @@
 "session_button_talk" = "Anicca と話す";
 "session_button_end" = "セッションを終了";
 "session_button_connecting" = "接続中…";
+"session_wake_silent_notice" = "起床アラームを確実に鳴らすために、寝る前に端末左側のサイレントスイッチを上げてマナーモードを解除してください。";
 
 "settings_title" = "設定";
 "settings_personalization_title" = "パーソナライズ";

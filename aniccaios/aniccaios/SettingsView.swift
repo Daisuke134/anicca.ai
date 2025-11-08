@@ -166,7 +166,7 @@ struct SettingsView: View {
     @ViewBuilder
     private func habitCard(for habit: HabitType) -> some View {
         let hasTime = habitTimes[habit] != nil
-        let isEnabled = appState.habitSchedules[habit] != nil
+        let isEnabled = hasTime
 
         SUCard(
             model: {

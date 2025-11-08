@@ -77,7 +77,22 @@ struct HabitPromptBuilder {
             }
         case .training:
             if !profile.trainingFocus.isEmpty {
-                replacements["TRAINING_FOCUS_LIST"] = profile.trainingFocus.joined(separator: "、")
+                // 英語IDを日本語名に変換
+                let japaneseNames = profile.trainingFocus.map { id in
+                    switch id {
+                    case "Push-up":
+                        return "腕立て伏せ"
+                    case "Core":
+                        return "体幹"
+                    case "Cardio":
+                        return "有酸素"
+                    case "Stretch":
+                        return "ストレッチ"
+                    default:
+                        return id
+                    }
+                }
+                replacements["TRAINING_FOCUS_LIST"] = japaneseNames.joined(separator: "、")
             } else {
                 replacements["TRAINING_FOCUS_LIST"] = "トレーニング"
             }

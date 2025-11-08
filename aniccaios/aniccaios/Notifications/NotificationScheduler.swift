@@ -22,7 +22,9 @@ final class NotificationScheduler {
     @discardableResult
     func requestAuthorization() async -> Bool {
         do {
-            return try await center.requestAuthorization(options: [.alert, .sound, .badge, .timeSensitive])
+            // .timeSensitive は iOS 15 以降で非推奨。テスト済みのエンタイトルメント
+            // (com.apple.developer.usernotifications.time-sensitive) を利用する。
+            return try await center.requestAuthorization(options: [.alert, .sound, .badge])
         } catch {
             logger.error("Notification authorization error: \(error.localizedDescription, privacy: .public)")
             return false
@@ -152,10 +154,10 @@ final class NotificationScheduler {
                     trigger: trigger
                 )
 
-                center.add(request) { error in
-                    if let error {
-                        self.logger.error("Follow-up scheduling error: \(error.localizedDescription, privacy: .public)")
-                    }
+                do {
+                    try await center.add(request)
+                } catch {
+                    self.logger.error("Follow-up scheduling error: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }

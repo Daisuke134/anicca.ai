@@ -77,6 +77,7 @@
 "session_button_talk" = "Talk to Anicca";
 "session_button_end" = "End Session";
 "session_button_connecting" = "Connecting…";
+"session_wake_silent_notice" = "To guarantee the wake alarm plays, flip the side silent switch back up before going to bed so that silent mode is off.";
 
 "settings_title" = "Settings";
 "settings_personalization_title" = "Personalization";

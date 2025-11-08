@@ -14,8 +14,8 @@ enum LanguagePreference: String, Codable {
     }
     
     static func detectDefault(locale: Locale = .current) -> Self {
-        let preferredLang = locale.language.languageCode?.identifier ?? "en"
-        if preferredLang == "ja" || locale.identifier.hasPrefix("ja") {
+        let preferred = Locale.preferredLanguages.first ?? locale.identifier
+        if preferred.hasPrefix("ja") || locale.identifier.hasPrefix("ja") {
             return .ja
         }
         return .en
@@ -63,4 +63,5 @@ enum AuthStatus: Codable, Equatable {
         }
     }
 }
+
 

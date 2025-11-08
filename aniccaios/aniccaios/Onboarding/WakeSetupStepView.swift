@@ -9,20 +9,20 @@ struct WakeSetupStepView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Set Your Wake Time")
+            Text("wake_setup_title")
                 .font(.title)
                 .padding(.top, 40)
 
-            DatePicker("Wake Time", selection: $selectedDate, displayedComponents: [.hourAndMinute])
+            DatePicker(String(localized: "common_time"), selection: $selectedDate, displayedComponents: [.hourAndMinute])
                 .datePickerStyle(.wheel)
                 .labelsHidden()
 
-            Text("Anicca will ring exactly at this minute every day.")
+            Text("wake_setup_description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
             HStack(spacing: 16) {
-                Button("Preview Alarm") {
+                Button(String(localized: "common_preview_alarm")) {
                     // TODO: Local preview implementation
                 }
                 .buttonStyle(.bordered)
@@ -35,7 +35,7 @@ struct WakeSetupStepView: View {
                             .tint(.white)
                             .frame(maxWidth: .infinity)
                     } else {
-                        Text("Save Wake Time")
+                        Text(LocalizedStringKey("common_save_wake_time"))
                             .frame(maxWidth: .infinity)
                     }
                 }

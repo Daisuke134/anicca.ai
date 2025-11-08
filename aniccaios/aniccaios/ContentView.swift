@@ -11,22 +11,17 @@ struct ContentRouterView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        switch appState.authStatus {
-        case .signedOut:
+        if !appState.isOnboardingComplete {
             OnboardingFlowView()
-        case .signingIn:
-            AuthenticationProcessingView()
-        case .signedIn:
-            rootAfterOnboarding
-        }
-    }
-    
-    @ViewBuilder
-    private var rootAfterOnboarding: some View {
-        if appState.isOnboardingComplete {
-            SessionView()
         } else {
-            OnboardingFlowView()
+            switch appState.authStatus {
+            case .signedOut:
+                OnboardingFlowView()
+            case .signingIn:
+                AuthenticationProcessingView()
+            case .signedIn:
+                SessionView()
+            }
         }
     }
 }
@@ -36,7 +31,7 @@ struct AuthenticationProcessingView: View {
         VStack(spacing: 24) {
             ProgressView()
                 .scaleEffect(1.5)
-            Text("Signing in...")
+            Text("common_signing_in")
                 .font(.headline)
                 .foregroundStyle(.secondary)
         }

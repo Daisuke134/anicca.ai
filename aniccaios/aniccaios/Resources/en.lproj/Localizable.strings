@@ -1,0 +1,93 @@
+"common_continue" = "Continue";
+"common_done" = "Done";
+"common_saving" = "Saving…";
+"common_requesting" = "Requesting…";
+"common_enabled" = "Enabled";
+"common_enable" = "Enable";
+"common_change" = "Change";
+"common_set_time" = "Set Time";
+"common_not_selected" = "Not Selected";
+"common_cancel" = "Cancel";
+"common_save" = "Save";
+"common_time" = "Time";
+"common_allow_microphone" = "Allow Microphone";
+"common_allow_notifications" = "Allow Notifications";
+"common_preview_alarm" = "Preview Alarm";
+"common_save_wake_time" = "Save Wake Time";
+"common_signing_in" = "Signing in...";
+"settings_language_label" = "Language";
+
+"onboarding_welcome_title" = "Welcome to Anicca";
+"onboarding_welcome_subtitle" = "Let's configure your routines.";
+"onboarding_welcome_cta" = "Get Started";
+
+"onboarding_account_title" = "Sign in with Apple";
+"onboarding_account_description" = "Sign in to sync your habits and preferences across your devices.";
+
+"onboarding_microphone_title" = "Microphone Access";
+"onboarding_microphone_card_title" = "Microphone Access";
+"onboarding_microphone_description" = "Anicca needs microphone access to have voice conversations with you. This allows us to provide personalized wake-up calls and habit reminders.";
+
+"onboarding_notifications_title" = "Time-Sensitive Alerts";
+"onboarding_notifications_card_title" = "Notification Access";
+"onboarding_notifications_description" = "Anicca needs notification access to remind you about your scheduled habits (wake-up, training, bedtime). These alerts will work even when your phone is silenced.";
+
+"onboarding_habit_title" = "Set Your Habits";
+"onboarding_habit_description" = "Choose which habits you want to build and set their times.";
+"onboarding_habit_time_title_format" = "Set %@ Time";
+
+"onboarding_profile_title" = "Tell us your name";
+"onboarding_profile_description" = "We'll use your name when Anicca speaks to you.";
+"onboarding_profile_continue" = "Continue";
+"onboarding_profile_placeholder" = "John";
+
+"onboarding_habit_wake_location_title" = "Where do you usually wake up?";
+"onboarding_habit_wake_location_description" = "This helps Anicca personalize your wake-up experience.";
+"onboarding_habit_sleep_location_title" = "Where do you usually sleep?";
+"onboarding_habit_sleep_location_description" = "This helps Anicca personalize your bedtime experience.";
+"onboarding_habit_location_placeholder" = "Third-floor bedroom";
+
+"onboarding_habit_training_title" = "Which training do you want to focus on every day?";
+"onboarding_habit_training_description" = "Choose one training focus that you want to build as a habit.";
+"training_focus_option_pushup" = "Push-up";
+"training_focus_option_core" = "Core";
+"training_focus_option_cardio" = "Cardio";
+"training_focus_option_stretch" = "Stretch";
+
+"onboarding_completion_title" = "You're All Set!";
+"onboarding_completion_ready" = "Your habits are ready to go!";
+"onboarding_completion_next_format" = "Next up: %@";
+"onboarding_completion_continue" = "Continue";
+
+"wake_setup_title" = "Set Your Wake Time";
+"wake_setup_description" = "Anicca will ring exactly at this minute every day.";
+
+"habit_title_wake" = "Wake Up";
+"habit_title_training" = "Training";
+"habit_title_bedtime" = "Bedtime";
+"habit_detail_wake" = "Get woken up at your preferred time";
+"habit_detail_training" = "Reminders to start your workout";
+"habit_detail_bedtime" = "Gentle reminders to wind down and sleep";
+
+"next_schedule_message" = "%@ I'll nudge you for %@";
+"next_schedule_habit_wake" = "wake-up";
+"next_schedule_habit_training" = "training";
+"next_schedule_habit_bedtime" = "bedtime";
+
+"session_button_talk" = "Talk to Anicca";
+"session_button_end" = "End Session";
+"session_button_connecting" = "Connecting…";
+
+"settings_title" = "Settings";
+"settings_personalization_title" = "Personalization";
+"settings_name_label" = "Name";
+"settings_name_placeholder" = "John";
+"settings_sleep_location_label" = "Sleep Location";
+"settings_sleep_location_placeholder" = "Third-floor bedroom";
+"settings_training_focus_label" = "Training Focus";
+"settings_training_focus_none" = "None";
+"settings_sign_out" = "Sign Out";
+"settings_time_not_set" = "Not Set";
+
+"common_sign_out" = "Sign Out";
+

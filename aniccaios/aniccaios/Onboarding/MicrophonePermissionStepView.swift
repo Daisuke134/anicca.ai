@@ -1,4 +1,7 @@
 import AVFoundation
+#if canImport(AVFAudio)
+import AVFAudio
+#endif
 import ComponentsKit
 import SwiftUI
 
@@ -10,7 +13,7 @@ struct MicrophonePermissionStepView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Microphone Access")
+            Text("onboarding_microphone_title")
                 .font(.title)
                 .padding(.top, 40)
 
@@ -18,9 +21,9 @@ struct MicrophonePermissionStepView: View {
                 model: .init(),
                 content: {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Microphone Access")
+                        Text("onboarding_microphone_card_title")
                             .font(.headline)
-                        Text("Anicca needs microphone access to have voice conversations with you. This allows us to provide personalized wake-up calls and habit reminders.")
+                        Text("onboarding_microphone_description")
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -28,7 +31,7 @@ struct MicrophonePermissionStepView: View {
                             HStack {
                                 SUBadge(model: {
                                     var vm = BadgeVM()
-                                    vm.title = "Enabled"
+                                    vm.title = String(localized: "common_enabled")
                                     vm.color = .init(main: .success, contrast: .white)
                                     return vm
                                 }())
@@ -38,7 +41,9 @@ struct MicrophonePermissionStepView: View {
                             SUButton(
                                 model: {
                                     var vm = ButtonVM()
-                                    vm.title = isRequesting ? "Requesting…" : "Allow Microphone"
+                                    vm.title = isRequesting
+                                        ? String(localized: "common_requesting")
+                                        : String(localized: "common_allow_microphone")
                                     vm.style = .filled
                                     vm.size = .medium
                                     vm.isFullWidth = true
@@ -57,7 +62,11 @@ struct MicrophonePermissionStepView: View {
         }
         .padding(24)
         .onAppear {
-            micGranted = AVAudioSession.sharedInstance().recordPermission == .granted
+            if #available(iOS 17.0, *) {
+                micGranted = AVAudioApplication.shared.recordPermission == .granted
+            } else {
+                micGranted = AVAudioSession.sharedInstance().recordPermission == .granted
+            }
             if micGranted {
                 // Auto-advance if already granted
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -70,15 +79,25 @@ struct MicrophonePermissionStepView: View {
     private func requestMicrophone() {
         guard !isRequesting else { return }
         isRequesting = true
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            DispatchQueue.main.async {
-                self.micGranted = granted
-                self.isRequesting = false
-                if granted {
-                    // Small delay before advancing for better UX
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        next()
-                    }
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { granted in
+                updatePermissionState(granted: granted)
+            }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                updatePermissionState(granted: granted)
+            }
+        }
+    }
+    
+    private func updatePermissionState(granted: Bool) {
+        DispatchQueue.main.async {
+            self.micGranted = granted
+            self.isRequesting = false
+            if granted {
+                // Small delay before advancing for better UX
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    next()
                 }
             }
         }

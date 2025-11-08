@@ -12,7 +12,17 @@ struct SettingsView: View {
     @State private var sleepLocation: String = ""
     @State private var trainingFocus: String = ""
 
-    private let trainingFocusOptions = ["Push-up", "Core", "Cardio", "Stretch"]
+    private struct TrainingFocusOption: Identifiable {
+        let id: String
+        let label: LocalizedStringKey
+    }
+
+    private let trainingFocusOptions: [TrainingFocusOption] = [
+        .init(id: "Push-up", label: "training_focus_option_pushup"),
+        .init(id: "Core", label: "training_focus_option_core"),
+        .init(id: "Cardio", label: "training_focus_option_cardio"),
+        .init(id: "Stretch", label: "training_focus_option_stretch")
+    ]
 
     init() {
         // Initialize habitTimes from AppState
@@ -44,11 +54,11 @@ struct SettingsView: View {
                 }
                 .padding()
             }
-            .navigationTitle("Settings")
+            .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(String(localized: "common_save")) {
                         save()
                     }
                     .disabled(isSaving)
@@ -79,16 +89,16 @@ struct SettingsView: View {
             }(),
             content: {
                 VStack(alignment: .leading, spacing: 16) {
-                    Text("Personalization")
+                    Text("settings_personalization_title")
                         .font(.headline)
                     
                     VStack(alignment: .leading, spacing: 16) {
                         // Name
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Name")
+                            Text("settings_name_label")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            TextField("John", text: $displayName)
+                            TextField(String(localized: "settings_name_placeholder"), text: $displayName)
                                 .textFieldStyle(.roundedBorder)
                                 .textInputAutocapitalization(.words)
                                 .autocorrectionDisabled()
@@ -96,7 +106,7 @@ struct SettingsView: View {
                         
                         // Language
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Language")
+                            Text("settings_language_label")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             Picker("Language", selection: $preferredLanguage) {
@@ -108,10 +118,10 @@ struct SettingsView: View {
                         
                         // Sleep Location
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Sleep Location")
+                            Text("settings_sleep_location_label")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            TextField("Third-floor bedroom", text: $sleepLocation)
+                            TextField(String(localized: "settings_sleep_location_placeholder"), text: $sleepLocation)
                                 .textFieldStyle(.roundedBorder)
                                 .textInputAutocapitalization(.words)
                                 .autocorrectionDisabled()
@@ -119,13 +129,13 @@ struct SettingsView: View {
                         
                         // Training Focus
                         VStack(alignment: .leading, spacing: 4) {
-                            Text("Training Focus")
+                            Text("settings_training_focus_label")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            Picker("Training Focus", selection: $trainingFocus) {
-                                Text("None").tag("")
-                                ForEach(trainingFocusOptions, id: \.self) { option in
-                                    Text(option).tag(option)
+                            Picker("settings_training_focus_label", selection: $trainingFocus) {
+                                Text("settings_training_focus_none").tag("")
+                                ForEach(trainingFocusOptions, id: \.id) { option in
+                                    Text(option.label).tag(option.id)
                                 }
                             }
                             .pickerStyle(.menu)
@@ -141,7 +151,7 @@ struct SettingsView: View {
             AuthCoordinator.shared.signOut()
             dismiss()
         }) {
-            Text("Sign Out")
+            Text("settings_sign_out")
                 .frame(maxWidth: .infinity)
                 .padding()
                 .foregroundStyle(.red)
@@ -182,7 +192,7 @@ struct SettingsView: View {
                                 .font(.headline)
                                 .foregroundStyle(.primary)
                         } else {
-                            Text("Not Set")
+                            Text("settings_time_not_set")
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                         }
@@ -190,7 +200,9 @@ struct SettingsView: View {
                         SUButton(
                             model: {
                                 var vm = ButtonVM()
-                                vm.title = isEnabled ? (hasTime ? "Change" : "Set Time") : "Enable"
+                                vm.title = isEnabled
+                                    ? (hasTime ? String(localized: "common_change") : String(localized: "common_set_time"))
+                                    : String(localized: "common_enable")
                                 vm.style = isEnabled ? .bordered(.medium) : .filled
                                 vm.size = .small
                                 vm.color = isEnabled ? .init(main: .universal(.uiColor(.systemBlue)), contrast: .white) : .init(main: .success, contrast: .white)
@@ -215,12 +227,12 @@ struct SettingsView: View {
     private func timePickerSheet(for habit: HabitType) -> some View {
         NavigationView {
             VStack(spacing: 24) {
-                Text("Set \(habit.title) Time")
+                Text(String(format: NSLocalizedString("onboarding_habit_time_title_format", comment: ""), habit.title))
                     .font(.title2)
                     .padding(.top)
 
                 DatePicker(
-                    "Time",
+                    String(localized: "common_time"),
                     selection: Binding(
                         get: {
                             habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
@@ -240,12 +252,12 @@ struct SettingsView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(String(localized: "common_cancel")) {
                         showingTimePicker = nil
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(String(localized: "common_save")) {
                         showingTimePicker = nil
                     }
                 }

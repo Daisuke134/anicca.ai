@@ -35,7 +35,7 @@ final class AppState: ObservableObject {
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
 
-    private let scheduler = WakeNotificationScheduler.shared
+    private let scheduler = HabitAlarmScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
 
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
@@ -73,6 +73,11 @@ final class AppState: ObservableObject {
                 self.habitSchedules[.wake] = oldWakeTime
             }
         }
+        
+        // Sync scheduled alarms on app launch
+        Task {
+            await scheduler.syncScheduledAlarms(from: habitSchedules)
+        }
     }
 
     // Legacy method for backward compatibility
@@ -92,7 +97,7 @@ final class AppState: ObservableObject {
         habitSchedules[habit] = components
         saveHabitSchedules()
 
-        await scheduler.scheduleNotifications(for: habitSchedules)
+        await scheduler.scheduleAlarms(for: habitSchedules)
     }
 
     func updateHabits(_ schedules: [HabitType: Date]) async {
@@ -112,7 +117,7 @@ final class AppState: ObservableObject {
         habitSchedules = componentsMap
         saveHabitSchedules()
 
-        await scheduler.scheduleNotifications(for: habitSchedules)
+        await scheduler.scheduleAlarms(for: habitSchedules)
     }
 
     private func saveHabitSchedules() {
@@ -191,7 +196,7 @@ final class AppState: ObservableObject {
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
         Task {
-            await scheduler.cancelAllNotifications()
+            await scheduler.cancelAll()
         }
     }
     
@@ -210,6 +215,9 @@ final class AppState: ObservableObject {
     func updateUserCredentials(_ credentials: UserCredentials) {
         authStatus = .signedIn(credentials)
         saveUserCredentials(credentials)
+        
+        // Register pending VoIP token if available
+        VoIPPushRegistry.shared.registerPendingTokenIfNeeded()
         
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty (user will set it in profile step)
@@ -305,18 +313,21 @@ final class AppState: ObservableObject {
         formatter.timeStyle = .short
         let timeString = formatter.string(from: closest.date)
         
-        let habitName: String
+        let habitNameKey: String
         switch closest.habit {
         case .wake:
-            habitName = "Wake-up"
+            habitNameKey = "next_schedule_habit_wake"
         case .training:
-            habitName = "Training"
+            habitNameKey = "next_schedule_habit_training"
         case .bedtime:
-            habitName = "Bedtime"
+            habitNameKey = "next_schedule_habit_bedtime"
         }
+        let habitName = NSLocalizedString(habitNameKey, comment: "")
+        let messageFormat = NSLocalizedString("next_schedule_message", comment: "")
+        let message = String(format: messageFormat, timeString, habitName)
         
         let components = calendar.dateComponents([.hour, .minute], from: closest.date)
-        return (habit: closest.habit, time: components, message: "\(timeString) I'll nudge you for \(habitName)")
+        return (habit: closest.habit, time: components, message: message)
     }
 
     private static func loadWakeTime(from defaults: UserDefaults, key: String) -> DateComponents? {

@@ -10,16 +10,14 @@ struct HabitSetupStepView: View {
     @State private var sheetTime = Date()
     @State private var showingTimePicker: HabitType?
     @State private var isSaving = false
-    
-    private let trainingFocusOptions = ["Push-up", "Core", "Cardio", "Stretch"]
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Set Your Habits")
+            Text("onboarding_habit_title")
                 .font(.title)
                 .padding(.top, 40)
 
-            Text("Choose which habits you want to build and set their times.")
+            Text("onboarding_habit_description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -39,7 +37,7 @@ struct HabitSetupStepView: View {
             SUButton(
                 model: {
                     var vm = ButtonVM()
-                    vm.title = isSaving ? "Saving…" : "Done"
+                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "common_done")
                     vm.style = .filled
                     vm.size = .large
                     vm.isFullWidth = true
@@ -89,12 +87,12 @@ struct HabitSetupStepView: View {
                                             .font(.headline)
                                             .foregroundStyle(.primary)
                                     } else {
-                                        Text("Set Time")
+                                        Text(LocalizedStringKey("common_set_time"))
                                             .font(.subheadline)
                                             .foregroundStyle(.secondary)
                                     }
                                 } else {
-                                    Text("Not Selected")
+                                    Text(LocalizedStringKey("common_not_selected"))
                                         .font(.subheadline)
                                         .foregroundStyle(.secondary)
                                 }
@@ -102,7 +100,9 @@ struct HabitSetupStepView: View {
                                 SUButton(
                                     model: {
                                         var vm = ButtonVM()
-                                        vm.title = isSelected ? (hasTime ? "Change" : "Set Time") : "Enable"
+                                        vm.title = isSelected
+                                            ? (hasTime ? String(localized: "common_change") : String(localized: "common_set_time"))
+                                            : String(localized: "common_enable")
                                         vm.style = isSelected ? .bordered(.medium) : .filled
                                         vm.size = .small
                                         vm.color = isSelected ? .init(main: .universal(.uiColor(.systemBlue)), contrast: .white) : .init(main: .success, contrast: .white)
@@ -132,12 +132,12 @@ struct HabitSetupStepView: View {
     private func timePickerSheet(for habit: HabitType) -> some View {
         NavigationView {
             VStack(spacing: 24) {
-                Text("Set \(habit.title) Time")
+                Text(String(format: NSLocalizedString("onboarding_habit_time_title_format", comment: ""), habit.title))
                     .font(.title2)
                     .padding(.top)
 
                 DatePicker(
-                    "Time",
+                    String(localized: "common_time"),
                     selection: $sheetTime,
                     displayedComponents: [.hourAndMinute]
                 )
@@ -150,12 +150,12 @@ struct HabitSetupStepView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
-                    Button("Cancel") {
+                    Button(String(localized: "common_cancel")) {
                         showingTimePicker = nil
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button("Save") {
+                    Button(String(localized: "common_save")) {
                         habitTimes[habit] = sheetTime
                         showingTimePicker = nil
                     }

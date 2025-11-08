@@ -8,22 +8,22 @@ enum HabitType: String, Codable, CaseIterable {
     var title: String {
         switch self {
         case .wake:
-            return "Wake Up"
+            return String(localized: "habit_title_wake")
         case .training:
-            return "Training"
+            return String(localized: "habit_title_training")
         case .bedtime:
-            return "Bedtime"
+            return String(localized: "habit_title_bedtime")
         }
     }
 
     var detail: String {
         switch self {
         case .wake:
-            return "Get woken up at your preferred time"
+            return String(localized: "habit_detail_wake")
         case .training:
-            return "Reminders to start your workout"
+            return String(localized: "habit_detail_training")
         case .bedtime:
-            return "Gentle reminders to wind down and sleep"
+            return String(localized: "habit_detail_bedtime")
         }
     }
 

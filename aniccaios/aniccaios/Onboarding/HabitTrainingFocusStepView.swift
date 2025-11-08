@@ -7,29 +7,39 @@ struct HabitTrainingFocusStepView: View {
     @State private var selectedTrainingFocus: String = ""
     @State private var isSaving = false
 
-    private let trainingFocusOptions = ["Push-up", "Core", "Cardio", "Stretch"]
+    private struct TrainingFocusOption: Identifiable {
+        let id: String
+        let labelKey: LocalizedStringKey
+    }
+
+    private let trainingFocusOptions: [TrainingFocusOption] = [
+        .init(id: "Push-up", labelKey: "training_focus_option_pushup"),
+        .init(id: "Core", labelKey: "training_focus_option_core"),
+        .init(id: "Cardio", labelKey: "training_focus_option_cardio"),
+        .init(id: "Stretch", labelKey: "training_focus_option_stretch")
+    ]
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Which training do you want to focus on every day?")
+            Text("onboarding_habit_training_title")
                 .font(.title)
                 .padding(.top, 40)
 
-            Text("Choose one training focus that you want to build as a habit.")
+            Text("onboarding_habit_training_description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
             VStack(spacing: 12) {
-                ForEach(trainingFocusOptions, id: \.self) { option in
+                ForEach(trainingFocusOptions) { option in
                     Button(action: {
-                        selectedTrainingFocus = option
+                        selectedTrainingFocus = option.id
                     }) {
                         HStack {
-                            Image(systemName: selectedTrainingFocus == option ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(selectedTrainingFocus == option ? .blue : .secondary)
-                            Text(option)
+                            Image(systemName: selectedTrainingFocus == option.id ? "checkmark.circle.fill" : "circle")
+                                .foregroundStyle(selectedTrainingFocus == option.id ? .blue : .secondary)
+                            Text(option.labelKey)
                                 .font(.body)
                                 .foregroundStyle(.primary)
                             Spacer()
@@ -37,7 +47,7 @@ struct HabitTrainingFocusStepView: View {
                         .padding()
                         .background(
                             RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTrainingFocus == option ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
+                                .fill(selectedTrainingFocus == option.id ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
                         )
                     }
                     .buttonStyle(.plain)
@@ -50,7 +60,7 @@ struct HabitTrainingFocusStepView: View {
             SUButton(
                 model: {
                     var vm = ButtonVM()
-                    vm.title = isSaving ? "Saving…" : "Continue"
+                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "common_continue")
                     vm.style = .filled
                     vm.size = .large
                     vm.isFullWidth = true
@@ -77,4 +87,5 @@ struct HabitTrainingFocusStepView: View {
         }
     }
 }
+
 

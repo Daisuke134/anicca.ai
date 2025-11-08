@@ -72,6 +72,15 @@ if (missingVars.length > 0) {
   console.error('Please set these variables in Railway or your environment');
 }
 
+// Check APNs configuration (warn only, not fatal)
+const apnsVars = ['APNS_KEY_ID', 'APNS_TEAM_ID', 'APNS_VOIP_KEY', 'APNS_TOPIC'];
+const missingApns = apnsVars.filter(varName => !process.env[varName]);
+if (missingApns.length > 0) {
+  console.warn('⚠️  Missing APNs environment variables:', missingApns);
+  console.warn('⚠️  VoIP push notifications will not work without these variables');
+}
+console.log(`[APNs Config] Environment: ${process.env.APNS_ENVIRONMENT || 'production'}, Topic: ${process.env.APNS_TOPIC || 'not set'}`);
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Anicca Proxy Server running on port ${PORT}`);

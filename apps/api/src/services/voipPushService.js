@@ -37,6 +37,11 @@ export async function sendVoIPPush(deviceToken, payload) {
   try {
     const jwtToken = await generateAPNsJWT();
     const url = `${APNS_URL}/3/device/${deviceToken}`;
+    
+    console.log(`[VoIP Push] Attempting to send to device: ${deviceToken.substring(0, 20)}...`);
+    console.log(`[VoIP Push] APNs URL: ${APNS_URL}`);
+    console.log(`[VoIP Push] Topic: ${APNS_TOPIC}`);
+    console.log(`[VoIP Push] Payload:`, JSON.stringify(payload));
 
     const response = await fetch(url, {
       method: 'POST',
@@ -54,12 +59,15 @@ export async function sendVoIPPush(deviceToken, payload) {
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`APNs error: ${response.status} - ${errorText}`);
+      console.error(`[VoIP Push] Failed to send. Status: ${response.status}, Body: ${errorText}`);
       return false;
     }
 
+    console.log(`[VoIP Push] Successfully sent to device: ${deviceToken.substring(0, 20)}...`);
     return true;
   } catch (error) {
     console.error('Error sending VoIP push:', error);
+    console.error(`[VoIP Push] Exception details:`, error.message, error.stack);
     return false;
   }
 }

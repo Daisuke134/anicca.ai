@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { initDatabase } from './services/tokens/slackTokens.supabase.js';
+import { ensureMobileTables } from './services/mobile/setup.js';
 import apiRouter from './routes/index.js';
 
 // Only load dotenv in development
@@ -14,6 +15,7 @@ import './jobs/voipAlarmDispatcher.js';
 // サーバー起動時の初期化処理（DB初期化のみ）
 async function initializeServer() {
   await initDatabase();
+  await ensureMobileTables();
   console.log('✅ Database initialized. Using user-based token management.');
 }
 
@@ -26,7 +28,7 @@ const PORT = process.env.PORT || 3000;
 const corsOptions = {
   origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'anthropic-version', 'anthropic-beta']
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'anthropic-version', 'anthropic-beta', 'user-id', 'device-id']
 };
 app.use(cors(corsOptions));
 

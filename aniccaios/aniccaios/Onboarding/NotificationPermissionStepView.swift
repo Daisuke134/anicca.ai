@@ -10,7 +10,7 @@ struct NotificationPermissionStepView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Time-Sensitive Alerts")
+            Text(String(localized: "onboarding_notifications_title"))
                 .font(.title)
                 .padding(.top, 40)
 
@@ -18,9 +18,9 @@ struct NotificationPermissionStepView: View {
                 model: .init(),
                 content: {
                     VStack(alignment: .leading, spacing: 12) {
-                        Text("Notification Access")
+                        Text(String(localized: "onboarding_notifications_card_title"))
                             .font(.headline)
-                        Text("Anicca needs notification access to remind you about your scheduled habits (wake-up, training, bedtime). These alerts will work even when your phone is silenced.")
+                        Text(String(localized: "onboarding_notifications_description"))
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
 
@@ -28,7 +28,7 @@ struct NotificationPermissionStepView: View {
                             HStack {
                                 SUBadge(model: {
                                     var vm = BadgeVM()
-                                    vm.title = "Enabled"
+                                    vm.title = String(localized: "common_enabled")
                                     vm.color = .init(main: .success, contrast: .white)
                                     return vm
                                 }())
@@ -38,7 +38,7 @@ struct NotificationPermissionStepView: View {
                             SUButton(
                                 model: {
                                     var vm = ButtonVM()
-                                    vm.title = isRequesting ? "Requesting…" : "Allow Notifications"
+                                    vm.title = isRequesting ? String(localized: "common_requesting") : String(localized: "common_allow_notifications")
                                     vm.style = .filled
                                     vm.size = .medium
                                     vm.isFullWidth = true

@@ -18,6 +18,7 @@ export function startVoIPAlarmDispatcher() {
   cronJob = cron.schedule('* * * * *', async () => {
     try {
       const now = new Date();
+      console.log(`[VoIP Alarm Dispatcher] Checking alarms at ${now.toISOString()}`);
       const oneMinuteLater = new Date(now.getTime() + 60 * 1000);
 
       // Find alarms that should fire within the next minute
@@ -31,6 +32,7 @@ export function startVoIPAlarmDispatcher() {
 
       if (result.rows.length > 0) {
         console.log(`[VoIP Alarm Dispatcher] Found ${result.rows.length} alarm(s) to fire`);
+        console.log(`[VoIP Alarm Dispatcher] Alarms:`, result.rows.map(r => ({ id: r.id, habit: r.habit_type, fireAt: r.next_fire_at })));
       }
 
       for (const alarm of result.rows) {

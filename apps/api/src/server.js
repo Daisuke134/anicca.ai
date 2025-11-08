@@ -1,7 +1,6 @@
 import express from 'express';
 import cors from 'cors';
 import { initDatabase } from './services/tokens/slackTokens.supabase.js';
-import { ensureMobileTables } from './services/mobile/setup.js';
 import apiRouter from './routes/index.js';
 
 // Only load dotenv in development
@@ -12,12 +11,7 @@ if (process.env.NODE_ENV !== 'production') {
 // サーバー起動時の初期化処理（DB初期化のみ）
 async function initializeServer() {
   await initDatabase();
-  await ensureMobileTables();
-  console.log('✅ Database initialized. Using user-based token management.');
-  
-  // Start VoIP alarm dispatcher after tables are created
-  const { startVoIPAlarmDispatcher } = await import('./jobs/voipAlarmDispatcher.js');
-  startVoIPAlarmDispatcher();
+  console.log('✅ Database initialized. VoIP dispatcher disabled.');
 }
 
 initializeServer();
@@ -71,15 +65,6 @@ if (missingVars.length > 0) {
   console.error('❌ Missing required environment variables:', missingVars);
   console.error('Please set these variables in Railway or your environment');
 }
-
-// Check APNs configuration (warn only, not fatal)
-const apnsVars = ['APNS_KEY_ID', 'APNS_TEAM_ID', 'APNS_VOIP_KEY', 'APNS_TOPIC'];
-const missingApns = apnsVars.filter(varName => !process.env[varName]);
-if (missingApns.length > 0) {
-  console.warn('⚠️  Missing APNs environment variables:', missingApns);
-  console.warn('⚠️  VoIP push notifications will not work without these variables');
-}
-console.log(`[APNs Config] Environment: ${process.env.APNS_ENVIRONMENT || 'production'}, Topic: ${process.env.APNS_TOPIC || 'not set'}`);
 
 // Start server
 app.listen(PORT, () => {

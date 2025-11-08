@@ -1,6 +1,5 @@
 import UIKit
 import UserNotifications
-import AVFoundation
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -13,13 +12,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             AppState.shared.resetState()
         }
         
-        // Configure CallKit and VoIP Push
-        CallManager.shared.configure()
-        VoIPPushRegistry.shared.start()
-        
         UNUserNotificationCenter.current().delegate = self
+        NotificationScheduler.shared.registerCategories()
         Task {
-            _ = await HabitAlarmScheduler.shared.requestAuthorizationIfNeeded()
+            _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
         }
         return true
     }
@@ -38,27 +34,22 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let identifier = response.actionIdentifier
         let notificationIdentifier = response.notification.request.identifier
         
-        // Check if this is a habit notification or legacy wake notification
-        var habit: HabitType?
-        if notificationIdentifier == "wake.alarm" {
-            habit = .wake
-        } else {
-            // Try to find matching habit from notification identifier
-            for h in HabitType.allCases {
-                if notificationIdentifier == h.notificationIdentifier {
-                    habit = h
-                    break
-                }
-            }
-        }
-        
-        if identifier == "start_conversation" || identifier == UNNotificationDefaultActionIdentifier, let habit = habit {
+        guard let habit = NotificationScheduler.shared.habit(fromIdentifier: notificationIdentifier) else { return }
+
+        switch identifier {
+        case NotificationScheduler.Action.startConversation.rawValue,
+             UNNotificationDefaultActionIdentifier:
+            NotificationScheduler.shared.cancelFollowups(for: habit)
             Task {
                 try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
                 await MainActor.run {
                     AppState.shared.prepareForImmediateSession(habit: habit)
                 }
             }
+        case NotificationScheduler.Action.dismissAll.rawValue:
+            NotificationScheduler.shared.cancelFollowups(for: habit)
+        default:
+            break
         }
     }
 }

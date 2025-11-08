@@ -39,12 +39,4 @@ enum AppConfig {
     static var profileSyncURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/profile")
     }
-    
-    static var voipTokenURL: URL? {
-        proxyBaseURL.appendingPathComponent("mobile/voip-token")
-    }
-    
-    static var alarmScheduleURL: URL? {
-        proxyBaseURL.appendingPathComponent("mobile/alarms")
-    }
 }

@@ -35,7 +35,7 @@ final class AppState: ObservableObject {
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
 
-    private let scheduler = HabitAlarmScheduler.shared
+    private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
 
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
@@ -76,7 +76,7 @@ final class AppState: ObservableObject {
         
         // Sync scheduled alarms on app launch
         Task {
-            await scheduler.syncScheduledAlarms(from: habitSchedules)
+            await scheduler.applySchedules(habitSchedules)
         }
     }
 
@@ -97,7 +97,7 @@ final class AppState: ObservableObject {
         habitSchedules[habit] = components
         saveHabitSchedules()
 
-        await scheduler.scheduleAlarms(for: habitSchedules)
+        await scheduler.applySchedules(habitSchedules)
     }
 
     func updateHabits(_ schedules: [HabitType: Date]) async {
@@ -117,7 +117,7 @@ final class AppState: ObservableObject {
         habitSchedules = componentsMap
         saveHabitSchedules()
 
-        await scheduler.scheduleAlarms(for: habitSchedules)
+        await scheduler.applySchedules(habitSchedules)
     }
 
     private func saveHabitSchedules() {
@@ -215,9 +215,6 @@ final class AppState: ObservableObject {
     func updateUserCredentials(_ credentials: UserCredentials) {
         authStatus = .signedIn(credentials)
         saveUserCredentials(credentials)
-        
-        // Register pending VoIP token if available
-        VoIPPushRegistry.shared.registerPendingTokenIfNeeded()
         
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty (user will set it in profile step)

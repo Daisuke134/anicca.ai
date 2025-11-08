@@ -59,7 +59,7 @@ struct NotificationPermissionStepView: View {
         .onAppear {
             // Check current authorization status
             Task {
-                let granted = await HabitAlarmScheduler.shared.alarmAuthorizationState()
+                let granted = await NotificationScheduler.shared.isAuthorizedForAlerts()
                 await MainActor.run {
                     notificationGranted = granted
                     if granted {
@@ -77,7 +77,7 @@ struct NotificationPermissionStepView: View {
         guard !isRequesting else { return }
         isRequesting = true
         Task {
-            let granted = await HabitAlarmScheduler.shared.requestAuthorization()
+            let granted = await NotificationScheduler.shared.requestAuthorization()
             await MainActor.run {
                 notificationGranted = granted
                 isRequesting = false

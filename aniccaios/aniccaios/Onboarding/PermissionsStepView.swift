@@ -93,7 +93,7 @@ struct PermissionsStepView: View {
     private func requestNotifications() {
         requestingNotifications = true
         Task {
-            let granted = await HabitAlarmScheduler.shared.requestAuthorization()
+            let granted = await NotificationScheduler.shared.requestAuthorization()
             await MainActor.run {
                 notificationGranted = granted
                 requestingNotifications = false

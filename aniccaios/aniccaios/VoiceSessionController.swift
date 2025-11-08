@@ -264,15 +264,11 @@ private extension VoiceSessionController {
             "voice": "alloy",
             "input_audio_format": "pcm16",
             "output_audio_format": "pcm16",
-            "audio": [
-                "input": [
-                    "turn_detection": [
-                        "type": "semantic_vad",
-                        "eagerness": "low",
-                        "interrupt_response": true,
-                        "create_response": true
-                    ]
-                ]
+            "turn_detection": [
+                "type": "semantic_vad",
+                "eagerness": "low",
+                "interrupt_response": true,
+                "create_response": true
             ],
             "max_response_output_tokens": "inf"
         ]

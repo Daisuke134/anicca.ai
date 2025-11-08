@@ -16,8 +16,9 @@ final class CallManager: NSObject {
     }
     
     func configure() {
-        let configuration = CXProviderConfiguration()
+        let configuration = CXProviderConfiguration(localizedName: "Anicca")
         configuration.supportsVideo = false
+        configuration.includesCallsInRecents = false
         configuration.maximumCallsPerCallGroup = 1
         configuration.supportedHandleTypes = [.generic]
         

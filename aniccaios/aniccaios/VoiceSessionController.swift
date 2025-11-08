@@ -264,6 +264,9 @@ private extension VoiceSessionController {
             "voice": "alloy",
             "input_audio_format": "pcm16",
             "output_audio_format": "pcm16",
+            "input_audio_noise_reduction": [
+                "type": "near_field"
+            ],
             "turn_detection": [
                 "type": "semantic_vad",
                 "eagerness": "low",

@@ -18,7 +18,12 @@ const appleAuthSchema = z.object({
  */
 router.post('/', async (req, res) => {
   try {
-    const validationResult = appleAuthSchema.safeParse(req.body);
+    const normalizedBody = {
+      identity_token: req.body.identity_token ?? req.body.identityToken,
+      nonce: req.body.nonce ?? req.body.nonceToken ?? req.body.hashedNonce,
+      user_id: req.body.user_id ?? req.body.userId ?? req.body.user
+    };
+    const validationResult = appleAuthSchema.safeParse(normalizedBody);
     
     if (!validationResult.success) {
       logger.warn('Invalid Apple auth payload', validationResult.error);

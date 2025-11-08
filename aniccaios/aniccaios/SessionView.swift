@@ -2,7 +2,7 @@ import SwiftUI
 
 struct SessionView: View {
     @EnvironmentObject private var appState: AppState
-    @StateObject private var controller = VoiceSessionController()
+    @ObservedObject private var controller = VoiceSessionController.shared
     @State private var isShowingSettings = false
 
     @ViewBuilder
@@ -41,8 +41,8 @@ struct SessionView: View {
             SettingsView()
                 .environmentObject(appState)
         }
-        .onChange(of: appState.pendingHabitTrigger) { trigger in
-            guard trigger != nil else { return }
+        .onChange(of: appState.pendingHabitTrigger) { _, newValue in
+            guard newValue != nil else { return }
             controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
         }
         .onAppear {
@@ -66,19 +66,19 @@ struct SessionView: View {
         switch controller.connectionStatus {
         case .connected:
             return (
-                title: "End Session",
+                title: String(localized: "session_button_end"),
                 disabled: false,
                 action: { controller.stop() }
             )
         case .connecting:
             return (
-                title: "Connecting…",
+                title: String(localized: "session_button_connecting"),
                 disabled: true,
                 action: {}
             )
         case .disconnected:
             return (
-                title: "Talk to Anicca",
+                title: String(localized: "session_button_talk"),
                 disabled: false,
                 action: { controller.start() }
             )

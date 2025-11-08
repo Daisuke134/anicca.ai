@@ -1,4 +1,7 @@
 import AVFoundation
+#if canImport(AVFAudio)
+import AVFAudio
+#endif
 import SwiftUI
 
 struct PermissionsStepView: View {
@@ -35,7 +38,11 @@ struct PermissionsStepView: View {
         }
         .padding(24)
         .onAppear {
-            micGranted = AVAudioSession.sharedInstance().recordPermission == .granted
+            if #available(iOS 17.0, *) {
+                micGranted = AVAudioApplication.shared.recordPermission == .granted
+            } else {
+                micGranted = AVAudioSession.sharedInstance().recordPermission == .granted
+            }
         }
     }
 
@@ -65,18 +72,28 @@ struct PermissionsStepView: View {
     }
 
     private func requestMicrophone() {
-        AVAudioSession.sharedInstance().requestRecordPermission { granted in
-            DispatchQueue.main.async {
-                self.micGranted = granted
-                self.checkCompletion()
+        if #available(iOS 17.0, *) {
+            AVAudioApplication.requestRecordPermission { granted in
+                updateMicPermission(granted: granted)
             }
+        } else {
+            AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                updateMicPermission(granted: granted)
+            }
+        }
+    }
+    
+    private func updateMicPermission(granted: Bool) {
+        DispatchQueue.main.async {
+            self.micGranted = granted
+            self.checkCompletion()
         }
     }
 
     private func requestNotifications() {
         requestingNotifications = true
         Task {
-            let granted = await WakeNotificationScheduler.shared.requestAuthorization()
+            let granted = await HabitAlarmScheduler.shared.requestAuthorization()
             await MainActor.run {
                 notificationGranted = granted
                 requestingNotifications = false

@@ -5,6 +5,8 @@ import WebRTC
 
 @MainActor
 final class VoiceSessionController: NSObject, ObservableObject {
+    static let shared = VoiceSessionController()
+    
     @Published private(set) var connectionStatus: ConnectionState = .disconnected
 
     private let logger = Logger(subsystem: "com.anicca.ios", category: "VoiceSession")
@@ -14,12 +16,28 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var audioTrack: RTCAudioTrack?
     private var cachedSecret: ClientSecret?
     private var sessionModel: String = "gpt-realtime"   // Desktop と examples の最新版に合わせる
+    
+    private override init() {
+        super.init()
+    }
 
     func start(shouldResumeImmediately: Bool = false) {
         guard connectionStatus != .connecting else { return }
         setStatus(.connecting)
         Task { [weak self] in
             await self?.establishSession(resumeImmediately: shouldResumeImmediately)
+        }
+    }
+    
+    func startFromVoip(habit: HabitType) {
+        guard connectionStatus != .connecting else { return }
+        setStatus(.connecting)
+        
+        // Prepare prompt for the habit
+        AppState.shared.prepareForImmediateSession(habit: habit)
+        
+        Task { [weak self] in
+            await self?.establishSession(resumeImmediately: true)
         }
     }
 
@@ -34,6 +52,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         deactivateAudioSession()
     }
 
+    @MainActor
     private func establishSession(resumeImmediately: Bool) async {
         do {
             let secret = try await obtainClientSecret()
@@ -224,7 +243,9 @@ extension VoiceSessionController: RTCDataChannelDelegate {
     func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
         logger.debug("Data channel state: \(dataChannel.readyState.rawValue)")
         if dataChannel.readyState == .open {
-            self.sendSessionUpdate()
+            Task { @MainActor in
+                self.sendSessionUpdate()
+            }
         }
     }
 
@@ -274,7 +295,9 @@ private extension VoiceSessionController {
 
         if shouldTriggerHabitResponse {
             sendWakeResponseCreate()
-            AppState.shared.clearPendingHabitTrigger()
+            Task { @MainActor in
+                AppState.shared.clearPendingHabitTrigger()
+            }
         }
     }
 

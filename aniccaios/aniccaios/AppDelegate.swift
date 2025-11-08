@@ -12,8 +12,15 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             UserDefaults.standard.synchronize()
             AppState.shared.resetState()
         }
+        
+        // Configure CallKit and VoIP Push
+        CallManager.shared.configure()
+        VoIPPushRegistry.shared.start()
+        
         UNUserNotificationCenter.current().delegate = self
-        WakeNotificationScheduler.shared.registerCategories()
+        Task {
+            _ = await HabitAlarmScheduler.shared.requestAuthorizationIfNeeded()
+        }
         return true
     }
 

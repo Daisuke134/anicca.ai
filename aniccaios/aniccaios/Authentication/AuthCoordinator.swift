@@ -12,6 +12,10 @@ final class AuthCoordinator {
     
     private init() {}
     
+    lazy var presentationDelegate: AuthPresentationDelegate = {
+        AuthPresentationDelegate(coordinator: self)
+    }()
+    
     func configure(_ request: ASAuthorizationAppleIDRequest) {
         let nonce = randomNonceString()
         currentNonce = nonce
@@ -23,6 +27,27 @@ final class AuthCoordinator {
         
         request.requestedScopes = [.fullName, .email]
         request.nonce = hashedNonce
+    }
+    
+    func startSignIn() {
+        let nonce = randomNonceString()
+        currentNonce = nonce
+        guard let hashedNonce = sha256Base64(nonce) else {
+            logger.error("Failed to compute nonce hash")
+            return
+        }
+        
+        let appleIDProvider = ASAuthorizationAppleIDProvider()
+        let request = appleIDProvider.createRequest()
+        request.requestedScopes = [.fullName, .email]
+        request.nonce = hashedNonce
+        
+        let authorizationController = ASAuthorizationController(authorizationRequests: [request])
+        authorizationController.delegate = presentationDelegate
+        authorizationController.presentationContextProvider = presentationDelegate
+        
+        AppState.shared.setAuthStatus(.signingIn)
+        authorizationController.performRequests()
     }
     
     func completeSignIn(result: Result<ASAuthorization, Error>) {
@@ -48,6 +73,7 @@ final class AuthCoordinator {
         }
         
         guard let nonce = currentNonce,
+              sha256Base64(nonce) != nil,
               let identityTokenData = appleIDCredential.identityToken,
               let identityTokenString = String(data: identityTokenData, encoding: .utf8) else {
             logger.error("Missing identity token or nonce")
@@ -64,16 +90,13 @@ final class AuthCoordinator {
             .compactMap { $0 }
             .joined(separator: " ")
         
-        // Set signing in status
-        AppState.shared.setAuthStatus(.signingIn)
-        
         // Send to backend for verification
         Task {
             await verifyWithBackend(
                 identityToken: identityTokenString,
                 nonce: nonce,
                 userId: userId,
-                displayName: displayName.isEmpty ? "" : displayName,
+                displayName: displayName.isEmpty ? "User" : displayName,
                 email: email
             )
         }

@@ -19,3 +19,4 @@ COMMENT ON COLUMN mobile_profiles.user_id IS 'User ID from authentication system
 COMMENT ON COLUMN mobile_profiles.profile IS 'JSONB object containing user profile data (displayName, sleepLocation, trainingFocus, etc.)';
 COMMENT ON COLUMN mobile_profiles.language IS 'Preferred language code (ja, en, etc.)';
 
+

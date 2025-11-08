@@ -1,0 +1,91 @@
+"common_continue" = "続ける";
+"common_done" = "完了";
+"common_saving" = "保存中…";
+"common_requesting" = "リクエスト中…";
+"common_enabled" = "許可済み";
+"common_enable" = "有効化";
+"common_change" = "変更";
+"common_set_time" = "時刻を設定";
+"common_not_selected" = "未選択";
+"common_cancel" = "キャンセル";
+"common_save" = "保存";
+"common_time" = "時刻";
+"common_allow_microphone" = "マイクを許可";
+"common_allow_notifications" = "通知を許可";
+"common_preview_alarm" = "テスト再生";
+"common_save_wake_time" = "起床時刻を保存";
+"common_signing_in" = "サインイン中…";
+"settings_language_label" = "言語";
+
+"onboarding_welcome_title" = "Aniccaへようこそ";
+"onboarding_welcome_subtitle" = "一緒にルーティンを整えましょう。";
+"onboarding_welcome_cta" = "はじめる";
+
+"onboarding_account_title" = "Sign in with Apple";
+"onboarding_account_description" = "デバイス間で習慣や設定を同期するためにサインインしてください。";
+
+"onboarding_microphone_title" = "マイクアクセス";
+"onboarding_microphone_card_title" = "マイクアクセス";
+"onboarding_microphone_description" = "Aniccaが音声で会話するためにマイクへのアクセスが必要です。これにより、パーソナライズされた起床コールやリマインダーが提供されます。";
+
+"onboarding_notifications_title" = "時限アラート";
+"onboarding_notifications_card_title" = "通知アクセス";
+"onboarding_notifications_description" = "Aniccaが起床・トレーニング・就寝の予定をリマインドできるよう通知を許可してください。おやすみモードでも届きます。";
+
+"onboarding_habit_title" = "習慣を設定";
+"onboarding_habit_description" = "続けたい習慣を選び、時刻を設定しましょう。";
+"onboarding_habit_time_title_format" = "%@の時刻を設定";
+
+"onboarding_profile_title" = "お名前を教えてください";
+"onboarding_profile_description" = "Aniccaが呼びかける際に使用します。";
+"onboarding_profile_continue" = "続ける";
+"onboarding_profile_placeholder" = "太郎";
+
+"onboarding_habit_wake_location_title" = "普段どこで目覚めますか？";
+"onboarding_habit_wake_location_description" = "起床体験をパーソナライズするために使います。";
+"onboarding_habit_sleep_location_title" = "普段どこで就寝しますか？";
+"onboarding_habit_sleep_location_description" = "就寝体験をパーソナライズするために使います。";
+"onboarding_habit_location_placeholder" = "3階ベッドルーム";
+
+"onboarding_habit_training_title" = "毎日集中したいトレーニングはどれですか？";
+"onboarding_habit_training_description" = "習慣化したいトレーニングを1つ選んでください。";
+"training_focus_option_pushup" = "腕立て伏せ";
+"training_focus_option_core" = "体幹";
+"training_focus_option_cardio" = "有酸素";
+"training_focus_option_stretch" = "ストレッチ";
+
+"onboarding_completion_title" = "準備が整いました！";
+"onboarding_completion_ready" = "習慣の準備が完了しました。";
+"onboarding_completion_next_format" = "次は：%@";
+"onboarding_completion_continue" = "つづける";
+
+"wake_setup_title" = "起床時刻を設定";
+"wake_setup_description" = "Anicca は毎日この分単位で呼びかけます。";
+
+"habit_title_wake" = "起床";
+"habit_title_training" = "トレーニング";
+"habit_title_bedtime" = "就寝";
+"habit_detail_wake" = "設定した時刻に起こします";
+"habit_detail_training" = "ワークアウト開始を促します";
+"habit_detail_bedtime" = "やすらかな就寝をサポートします";
+
+"next_schedule_message" = "%@に%@をお知らせします";
+"next_schedule_habit_wake" = "起床";
+"next_schedule_habit_training" = "トレーニング";
+"next_schedule_habit_bedtime" = "就寝";
+
+"session_button_talk" = "Anicca と話す";
+"session_button_end" = "セッションを終了";
+"session_button_connecting" = "接続中…";
+
+"settings_title" = "設定";
+"settings_personalization_title" = "パーソナライズ";
+"settings_name_label" = "名前";
+"settings_name_placeholder" = "太郎";
+"settings_sleep_location_label" = "寝る場所";
+"settings_sleep_location_placeholder" = "3階ベッドルーム";
+"settings_training_focus_label" = "トレーニング内容";
+"settings_training_focus_none" = "なし";
+"settings_sign_out" = "サインアウト";
+"settings_time_not_set" = "未設定";
+

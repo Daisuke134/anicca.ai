@@ -9,17 +9,20 @@ struct HabitSleepLocationStepView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Where do you usually sleep?")
+            Text("onboarding_habit_sleep_location_title")
                 .font(.title)
                 .padding(.top, 40)
 
-            Text("This helps Anicca personalize your bedtime experience.")
+            Text("onboarding_habit_sleep_location_description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            AccessorylessTextField(placeholder: "Third-floor bedroom", text: $sleepLocation)
+            AccessorylessTextField(
+                placeholder: String(localized: "onboarding_habit_location_placeholder"),
+                text: $sleepLocation
+            )
                 .textFieldStyle(.roundedBorder)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
@@ -30,7 +33,7 @@ struct HabitSleepLocationStepView: View {
             SUButton(
                 model: {
                     var vm = ButtonVM()
-                    vm.title = isSaving ? "Saving…" : "Continue"
+                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "common_continue")
                     vm.style = .filled
                     vm.size = .large
                     vm.isFullWidth = true

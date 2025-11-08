@@ -9,17 +9,17 @@ struct ProfileInfoStepView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("Tell us your name")
+            Text("onboarding_profile_title")
                 .font(.title)
                 .padding(.top, 40)
 
-            Text("We'll use your name when Anicca speaks to you.")
+            Text("onboarding_profile_description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            TextField("John", text: $displayName)
+            TextField(String(localized: "onboarding_profile_placeholder"), text: $displayName)
                 .textFieldStyle(.roundedBorder)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()
@@ -30,7 +30,7 @@ struct ProfileInfoStepView: View {
             SUButton(
                 model: {
                     var vm = ButtonVM()
-                    vm.title = isSaving ? "Saving…" : "Continue"
+                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "onboarding_profile_continue")
                     vm.style = .filled
                     vm.size = .large
                     vm.isFullWidth = true

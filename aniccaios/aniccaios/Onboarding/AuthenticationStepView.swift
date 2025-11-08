@@ -9,11 +9,11 @@ struct AuthenticationStepView: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            Text("Sign in with Apple")
+            Text("onboarding_account_title")
                 .font(.title)
                 .padding(.top, 40)
             
-            Text("Sign in to sync your habits and preferences across your devices.")
+            Text("onboarding_account_description")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
@@ -21,51 +21,45 @@ struct AuthenticationStepView: View {
             
             Spacer()
             
-            ZStack {
-                SignInWithAppleButton(.signIn) { request in
-                    isProcessing = true
-                    AppState.shared.setAuthStatus(.signingIn)
-                    AuthCoordinator.shared.configure(request)
-                } onCompletion: { result in
-                    AuthCoordinator.shared.completeSignIn(result: result)
-                }
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .padding(.horizontal, 40)
-                .disabled(isProcessing)
-                
-                if isProcessing {
-                    ZStack {
-                        Color.black.opacity(0.5)
-                            .cornerRadius(8)
-                        Text("Signing in…")
-                            .foregroundStyle(.white)
-                            .font(.headline)
-                    }
-                    .frame(height: 50)
-                    .padding(.horizontal, 40)
-                }
+            SignInWithAppleButton(.signIn) { request in
+                isProcessing = true
+                AuthCoordinator.shared.configure(request)
+            } onCompletion: { result in
+                AuthCoordinator.shared.completeSignIn(result: result)
             }
-            .onChange(of: appState.authStatus) { status in
-                switch status {
-                case .signedIn:
-                    isProcessing = false
-                    next()
-                case .signingIn:
-                    isProcessing = true
-                case .signedOut:
-                    isProcessing = false
-                }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 50)
+            .padding(.horizontal, 40)
+            .onChange(of: appState.authStatus) { _, status in
+                handleAuthStatusChange(status)
             }
-            .onAppear {
-                if case .signedIn = appState.authStatus {
-                    next()
+            
+            if isProcessing {
+                HStack(spacing: 8) {
+                    ProgressView()
+                        .scaleEffect(0.8)
+                    Text("common_signing_in")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .padding()
             }
             
             Spacer()
         }
         .padding(24)
+    }
+    
+    private func handleAuthStatusChange(_ status: AuthStatus) {
+        if case .signedIn = status {
+            isProcessing = false
+            // Small delay before advancing for better UX
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                next()
+            }
+        } else if case .signedOut = status {
+            isProcessing = false
+        }
     }
 }
 

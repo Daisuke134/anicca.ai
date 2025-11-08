@@ -99,6 +99,6 @@ struct SessionView: View {
     }
 
     private var shouldShowWakeSilentNotice: Bool {
-        appState.habitSchedules[.wake] != nil
+        appState.habitSchedules[HabitType.wake] != nil
     }
 }

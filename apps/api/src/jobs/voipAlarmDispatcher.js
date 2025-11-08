@@ -26,7 +26,7 @@ export function startVoIPAlarmDispatcher() {
         `SELECT id, user_id, habit_type, next_fire_at, repeat_rule
          FROM mobile_alarm_schedules
          WHERE next_fire_at <= $1
-         AND next_fire_at > $2`,
+         AND next_fire_at >= $2`,
         [oneMinuteLater, now]
       );
 

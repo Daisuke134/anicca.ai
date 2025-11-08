@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import crypto from 'crypto';
 import { query } from '../lib/db.js';
+import { Temporal } from '@js-temporal/polyfill';
 
 const router = Router();
 
@@ -42,17 +43,19 @@ router.post('/alarms', async (req, res) => {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
-    // Calculate next fire time
-    const now = new Date();
+    // Calculate next fire time using Temporal for proper timezone handling
     const tz = timezone || 'UTC';
-    const today = new Date(now.toLocaleString('en-US', { timeZone: tz }));
-    const fireTime = new Date(today);
-    fireTime.setHours(hour, minute, 0, 0);
-
+    const nowZoned = Temporal.Now.zonedDateTimeISO(tz);
+    let fireTimeZoned = nowZoned.with({ hour, minute, second: 0, millisecond: 0, microsecond: 0, nanosecond: 0 });
+    
     // If time has passed today, schedule for tomorrow
-    if (fireTime <= now) {
-      fireTime.setDate(fireTime.getDate() + 1);
+    if (fireTimeZoned.epochSeconds <= nowZoned.epochSeconds) {
+      fireTimeZoned = fireTimeZoned.add({ days: 1 });
     }
+    
+    // Convert to UTC Instant for database storage
+    const fireTimeInstant = fireTimeZoned.toInstant();
+    const fireTimeDate = new Date(fireTimeInstant.epochMilliseconds);
 
     const alarmId = crypto.randomUUID();
 
@@ -60,10 +63,10 @@ router.post('/alarms', async (req, res) => {
       `INSERT INTO mobile_alarm_schedules 
        (id, user_id, habit_type, fire_time, timezone, repeat_rule, next_fire_at)
        VALUES ($1, $2, $3, $4, $5, $6, $7)`,
-      [alarmId, userId, habit_type, fireTime, tz, repeat_rule || 'daily', fireTime]
+      [alarmId, userId, habit_type, fireTimeDate, tz, repeat_rule || 'daily', fireTimeDate]
     );
 
-    res.json({ id: alarmId, next_fire_at: fireTime.toISOString() });
+    res.json({ id: alarmId, next_fire_at: fireTimeDate.toISOString() });
   } catch (error) {
     console.error('Error creating alarm schedule:', error);
     const errorMessage = error.message || 'Internal server error';

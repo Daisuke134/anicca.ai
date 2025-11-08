@@ -19,7 +19,7 @@ struct HabitWakeLocationStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            AccessorylessTextField("Third-floor bedroom", text: $sleepLocation)
+            AccessorylessTextField(placeholder: "Third-floor bedroom", text: $sleepLocation)
                 .textFieldStyle(.roundedBorder)
                 .textInputAutocapitalization(.words)
                 .autocorrectionDisabled()

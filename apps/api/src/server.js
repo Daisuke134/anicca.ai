@@ -9,14 +9,15 @@ if (process.env.NODE_ENV !== 'production') {
   import('dotenv').then(dotenv => dotenv.config());
 }
 
-// Start VoIP alarm dispatcher job
-import './jobs/voipAlarmDispatcher.js';
-
 // サーバー起動時の初期化処理（DB初期化のみ）
 async function initializeServer() {
   await initDatabase();
   await ensureMobileTables();
   console.log('✅ Database initialized. Using user-based token management.');
+  
+  // Start VoIP alarm dispatcher after tables are created
+  const { startVoIPAlarmDispatcher } = await import('./jobs/voipAlarmDispatcher.js');
+  startVoIPAlarmDispatcher();
 }
 
 initializeServer();

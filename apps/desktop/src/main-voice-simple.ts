@@ -374,8 +374,6 @@ async function initializeApp() {
       // UI版オンボーディングを起動
       await launchOnboardingUi({ sessionManager, authService });
     }
-    
-    // 少し待ってからBrowserWindowを作成
     } else {
       // オンボーディング済みの場合でも設定画面を表示
       await launchOnboardingUi({ sessionManager, authService, showSettings: true });

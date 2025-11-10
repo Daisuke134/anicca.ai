@@ -35,9 +35,6 @@ const ONBOARDING_TEMPLATES = {
   2)
   3)
   4)
-- やめたい習慣:
-- 尊敬する人:
-- 自分のイメージ:
 `,
   English: `# USER PROFILE
 - Name:
@@ -56,9 +53,6 @@ const ONBOARDING_TEMPLATES = {
   2)
   3)
   4)
-- habits to quit:
-- respect:
-- self-image:
 `,
 };
 
@@ -192,6 +186,37 @@ export async function ensureBaselineFiles(): Promise<void> {
   }
 
   ensureFile(tasksPath, initialTasksTemplate(formatDate(new Date())));
+
+  // Sleepブロックが存在しない場合は追加
+  try {
+    const profile = fs.readFileSync(aniccaPath, 'utf8');
+    const sleepLabel = languageLabel === 'Japanese' ? '- 就寝:' : '- Sleep:';
+    if (!profile.includes(sleepLabel)) {
+      const wakeLabel = languageLabel === 'Japanese' ? '- 起床:' : '- Wake:';
+      const routinesHeader = languageLabel === 'Japanese' ? '# ルーティン' : '# ROUTINES';
+      const sleepBlock = `${sleepLabel}\n  1)\n  2)\n  3)\n  4)`;
+      
+      if (profile.includes(wakeLabel)) {
+        // Wakeブロックの後に追加
+        const wakeRegex = new RegExp(`(${wakeLabel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}[^]*?)(?=\\n-\\s*(?:就寝|Sleep|やめたい習慣|habits to quit|尊敬する人|respect|自分のイメージ|self-image)|$)`, 'm');
+        if (wakeRegex.test(profile)) {
+          profile = profile.replace(wakeRegex, `$1\n${sleepBlock}`);
+        } else {
+          profile += `\n${sleepBlock}`;
+        }
+      } else if (profile.includes(routinesHeader)) {
+        // ROUTINESセクションの最後に追加
+        profile += `\n${sleepBlock}`;
+      } else {
+        // ROUTINESセクションを作成して追加
+        profile += `\n\n${routinesHeader}\n${sleepBlock}`;
+      }
+      
+      fs.writeFileSync(aniccaPath, profile, { encoding: 'utf8', mode: 0o600 });
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to ensure Sleep block in profile:', error);
+  }
 }
 
 function isProfileEmpty(): boolean {

@@ -98,7 +98,7 @@ export function resolveSystemTimezoneLabel(): string {
 
 export function resolveGroundedLanguageLabel(): 'Japanese' | 'English' {
   try {
-    const profile = fs.readFileSync(aniccaPath, 'utf8');
+    let profile = fs.readFileSync(aniccaPath, 'utf8');
     const languageMatch = profile.match(/-\s*(?:言語|Language):\s*([^\r\n]+)/);
     if (languageMatch) {
       const normalized = languageMatch[1].trim().toLowerCase();
@@ -189,7 +189,7 @@ export async function ensureBaselineFiles(): Promise<void> {
 
   // Sleepブロックが存在しない場合は追加
   try {
-    const profile = fs.readFileSync(aniccaPath, 'utf8');
+    let profile = fs.readFileSync(aniccaPath, 'utf8');
     const sleepLabel = languageLabel === 'Japanese' ? '- 就寝:' : '- Sleep:';
     if (!profile.includes(sleepLabel)) {
       const wakeLabel = languageLabel === 'Japanese' ? '- 起床:' : '- Wake:';
@@ -221,7 +221,7 @@ export async function ensureBaselineFiles(): Promise<void> {
 
 function isProfileEmpty(): boolean {
   try {
-    const profile = fs.readFileSync(aniccaPath, 'utf8');
+    let profile = fs.readFileSync(aniccaPath, 'utf8');
     const labelGroups = [
       ['- 呼び名:', '- やめたい習慣:', '- 自分のイメージ:'],
       ['- Name:', '- habits to quit:', '- self-image:'],

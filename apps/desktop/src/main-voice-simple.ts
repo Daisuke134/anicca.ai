@@ -376,6 +376,10 @@ async function initializeApp() {
     }
     
     // 少し待ってからBrowserWindowを作成
+    } else {
+      // オンボーディング済みの場合でも設定画面を表示
+      await launchOnboardingUi({ sessionManager, authService, showSettings: true });
+    }
     setTimeout(() => {
       createHiddenWindow();
       console.log('✅ Hidden browser window created');

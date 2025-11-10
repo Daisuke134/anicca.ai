@@ -23,6 +23,7 @@ import {
   syncTodayTasksFromMarkdown
 } from './services/onboardingBootstrap';
 import { buildRoutinePrompt, resetRoutineState } from './services/routines';
+import { launchOnboardingUi, notifyAuthCompleted } from './onboarding/window';
 
 // 環境変数を読み込み
 dotenv.config();
@@ -167,6 +168,9 @@ async function initializeApp() {
       // 通知とトレイメニュー更新
       showNotification('Login successful', `Signed in as ${user.email}`);
       updateTrayMenu();
+      
+      // オンボーディングウィンドウに認証完了を通知
+      notifyAuthCompleted();
 
       // 認証完了後に定期タスク登録を必ず一度だけ起動（冪等）
       if (!cronInitialized) {
@@ -332,7 +336,11 @@ async function initializeApp() {
 
     void ensureSdkAfterLogin();
 
-    if (shouldLaunchOnboarding && sessionManager && !onboardingQueued) {
+    // 音声オンボーディングはフラグで制御（デフォルトOFF）
+    // TRUEにすれば旧音声フローが復活します
+    const ENABLE_VOICE_ONBOARDING = false;
+    
+    if (ENABLE_VOICE_ONBOARDING && shouldLaunchOnboarding && sessionManager && !onboardingQueued) {
       onboardingQueued = true;
       const manager = sessionManager;
 
@@ -362,6 +370,9 @@ async function initializeApp() {
       };
 
       void runOnboarding();
+    } else if (shouldLaunchOnboarding) {
+      // UI版オンボーディングを起動
+      await launchOnboardingUi({ sessionManager, authService });
     }
     
     // 少し待ってからBrowserWindowを作成
@@ -1150,7 +1161,12 @@ function updateTrayMenu() {
       }
     }] : []),
     { type: 'separator' },
-    ...billingItems,
+    {
+      label: 'Open Settings',
+      click: async () => {
+        await launchOnboardingUi({ sessionManager, authService, showSettings: true });
+      }
+    },
     { type: 'separator' },
     { type: 'separator' },
     {

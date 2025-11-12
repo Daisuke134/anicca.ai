@@ -222,13 +222,9 @@ export async function ensureBaselineFiles(): Promise<void> {
 function isProfileEmpty(): boolean {
   try {
     let profile = fs.readFileSync(aniccaPath, 'utf8');
-    const labelGroups = [
-      ['- 呼び名:', '- やめたい習慣:', '- 自分のイメージ:'],
-      ['- Name:', '- habits to quit:', '- self-image:'],
-    ];
-    return labelGroups.some((group) =>
-      group.every((label) => new RegExp(`${label}\\s*$`, 'm').test(profile))
-    );
+    // 名前が設定されていればオンボーディング完了と判定
+    const nameRegex = /^-\s*(?:呼び名|Name):\s+[^\r\n]+/m;
+    return !nameRegex.test(profile);
   } catch {
     return true;
   }

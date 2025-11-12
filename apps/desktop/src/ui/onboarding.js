@@ -10,11 +10,19 @@ let onboardingData = {
 document.addEventListener('DOMContentLoaded', () => {
   setupEventListeners();
   
-  // Settings show listener
+  // URLパラメータまたは初期状態で設定画面を表示するかチェック
+  const urlParams = new URLSearchParams(window.location.search);
+  const showSettings = urlParams.get('settings') === 'true';
+  if (showSettings) {
+    showScreen('settings-screen');
+    loadSettingsData();
+  }
+  
+  // Settings show listener（リスナーを先に設定）
   if (window.onboarding && window.onboarding.onShowSettings) {
-    window.onboarding.onShowSettings(() => {
+    window.onboarding.onShowSettings(async () => {
       showScreen('settings-screen');
-      loadSettingsData();
+      await loadSettingsData();
     });
   }
   
@@ -57,20 +65,28 @@ function setupEventListeners() {
   const habitNext = document.getElementById('habit-next');
   
   if (wakeEnabled) {
-    wakeEnabled.addEventListener('change', updateHabitNextButton);
+    wakeEnabled.addEventListener('change', () => {
+      toggleHabitTimeInput('wake-enabled', 'wake-time');
+      updateHabitNextButton();
+    });
+    toggleHabitTimeInput('wake-enabled', 'wake-time');
   }
   if (bedtimeEnabled) {
-    bedtimeEnabled.addEventListener('change', updateHabitNextButton);
+    bedtimeEnabled.addEventListener('change', () => {
+      toggleHabitTimeInput('bedtime-enabled', 'bedtime-time');
+      updateHabitNextButton();
+    });
+    toggleHabitTimeInput('bedtime-enabled', 'bedtime-time');
   }
   
   if (habitNext) {
     habitNext.addEventListener('click', () => {
-      onboardingData.wake.enabled = wakeEnabled ? wakeEnabled.checked : false;
-      onboardingData.sleep.enabled = bedtimeEnabled ? bedtimeEnabled.checked : false;
+      onboardingData.wake.enabled = !!(wakeEnabled && wakeEnabled.checked);
+      onboardingData.sleep.enabled = !!(bedtimeEnabled && bedtimeEnabled.checked);
       const wakeTime = document.getElementById('wake-time');
       const bedtimeTime = document.getElementById('bedtime-time');
-      onboardingData.wake.time = wakeTime ? wakeTime.value : '06:00';
-      onboardingData.sleep.time = bedtimeTime ? bedtimeTime.value : '23:00';
+      onboardingData.wake.time = wakeTime && wakeTime.value ? wakeTime.value : '06:00';
+      onboardingData.sleep.time = bedtimeTime && bedtimeTime.value ? bedtimeTime.value : '23:00';
       
       // Navigate based on selection
       if (onboardingData.wake.enabled) {
@@ -122,14 +138,26 @@ function setupEventListeners() {
         return;
       }
       
-      // Save onboarding data
       if (window.onboarding && window.onboarding.save) {
-        const result = await window.onboarding.save(onboardingData);
-        if (result.success) {
-          showScreen('google-signin-screen');
-        } else {
-          alert('Failed to save: ' + (result.error || 'Unknown error'));
+        console.log('window.onboarding exists, calling save...');
+        try {
+          nameSave.disabled = true;
+          const result = await window.onboarding.save(onboardingData);
+          console.log('Save result:', result);
+          if (result?.success) {
+            showScreen('google-signin-screen');
+          } else {
+            alert('Failed to save: ' + (result?.error || 'Unknown error'));
+          }
+        } catch (error) {
+          console.error('Save error:', error);
+          alert('Failed to save: ' + ((error && error.message) || 'Unknown error'));
+        } finally {
+          nameSave.disabled = false;
         }
+      } else {
+        console.error('window.onboarding is not available!', window.onboarding);
+        alert('Onboarding API not available. Please restart the app.');
       }
     });
   }
@@ -199,6 +227,20 @@ function updateHabitNextButton() {
   }
 }
 
+function toggleHabitTimeInput(checkboxId, timeInputId) {
+  const checkbox = document.getElementById(checkboxId);
+  const timeInput = document.getElementById(timeInputId);
+  if (!timeInput) return;
+  const active = checkbox ? checkbox.checked : false;
+  timeInput.disabled = !active;
+  if (!timeInput.value) {
+    timeInput.value = checkboxId === 'wake-enabled' ? '06:00' : '23:00';
+  }
+}
+
+// Initialize habit selection state on load
+updateHabitNextButton();
+
 function showScreen(screenId) {
   document.querySelectorAll('.screen').forEach(screen => {
     screen.classList.remove('active');
@@ -221,49 +263,108 @@ function switchTab(tabName) {
   if (content) content.classList.add('active');
 }
 
-function loadSettingsData() {
-  // Load current settings from files (would need IPC call)
-  // For now, use onboardingData
+async function loadSettingsData() {
+  // ファイルから実際の設定データを読み込む
+  if (window.onboarding && window.onboarding.loadSettings) {
+    try {
+      const result = await window.onboarding.loadSettings();
+      if (result?.success && result?.data) {
+        const data = result.data;
+        
+        // Wake設定を反映
+        if (data.wake?.enabled) {
+          const wakeEnabled = document.getElementById('settings-wake-enabled');
+          const wakeTime = document.getElementById('settings-wake-time');
+          if (wakeEnabled) wakeEnabled.checked = true;
+          if (wakeTime) wakeTime.value = data.wake.time || '06:00';
+        }
+        
+        // Sleep設定を反映
+        if (data.sleep?.enabled) {
+          const bedtimeEnabled = document.getElementById('settings-bedtime-enabled');
+          const bedtimeTime = document.getElementById('settings-bedtime-time');
+          if (bedtimeEnabled) bedtimeEnabled.checked = true;
+          if (bedtimeTime) bedtimeTime.value = data.sleep.time || '23:00';
+        }
+        
+        // Profile設定を反映
+        const profileName = document.getElementById('settings-profile-name');
+        if (profileName) profileName.value = data.profile?.name || '';
+        
+        const sleepPlace = document.getElementById('settings-sleep-place');
+        if (sleepPlace) {
+          const sleepPlaceValue = data.wake?.location || data.sleep?.location || '';
+          sleepPlace.value = sleepPlaceValue;
+        }
+        
+        // Languageフィールドに現在の言語を設定
+        const languageInput = document.getElementById('settings-language');
+        if (languageInput) {
+          const browserLang = navigator.language || navigator.userLanguage || 'en';
+          const displayLang = browserLang.startsWith('ja') ? 'Japanese' : 'English';
+          languageInput.value = displayLang;
+        }
+        
+        // メモリ上のデータも更新
+        onboardingData = data;
+        return;
+      }
+    } catch (error) {
+      console.error('Failed to load settings:', error);
+    }
+  }
+  
+  // フォールバック: メモリ上のデータを使用
   if (onboardingData.wake.enabled) {
     const wakeEnabled = document.getElementById('settings-wake-enabled');
     const wakeTime = document.getElementById('settings-wake-time');
-    const wakeLocation = document.getElementById('settings-wake-location');
     if (wakeEnabled) wakeEnabled.checked = true;
     if (wakeTime) wakeTime.value = onboardingData.wake.time;
-    if (wakeLocation) wakeLocation.value = onboardingData.wake.location || '';
   }
   
   if (onboardingData.sleep.enabled) {
     const bedtimeEnabled = document.getElementById('settings-bedtime-enabled');
     const bedtimeTime = document.getElementById('settings-bedtime-time');
-    const bedtimeLocation = document.getElementById('settings-bedtime-location');
     if (bedtimeEnabled) bedtimeEnabled.checked = true;
     if (bedtimeTime) bedtimeTime.value = onboardingData.sleep.time;
-    if (bedtimeLocation) bedtimeLocation.value = onboardingData.sleep.location || '';
   }
   
   const profileName = document.getElementById('settings-profile-name');
   if (profileName) profileName.value = onboardingData.profile.name || '';
+  
+  // Locationフィールドをフォールバックでも設定
+  const sleepPlace = document.getElementById('settings-sleep-place');
+  if (sleepPlace) {
+    const sleepPlaceValue = onboardingData.wake?.location || onboardingData.sleep?.location || '';
+    sleepPlace.value = sleepPlaceValue;
+  }
+  
+  // Languageフィールドに現在の言語を設定
+  const languageInput = document.getElementById('settings-language');
+  if (languageInput) {
+    const browserLang = navigator.language || navigator.userLanguage || 'en';
+    const displayLang = browserLang.startsWith('ja') ? 'Japanese' : 'English';
+    languageInput.value = displayLang;
+  }
 }
 
 async function saveSettingsHabits() {
   const wakeEnabled = document.getElementById('settings-wake-enabled');
   const wakeTime = document.getElementById('settings-wake-time');
-  const wakeLocation = document.getElementById('settings-wake-location');
   const bedtimeEnabled = document.getElementById('settings-bedtime-enabled');
   const bedtimeTime = document.getElementById('settings-bedtime-time');
-  const bedtimeLocation = document.getElementById('settings-bedtime-location');
   
+  // LocationはProfileタブから取得（既存のonboardingDataを使用）
   const payload = {
     wake: {
       enabled: wakeEnabled ? wakeEnabled.checked : false,
       time: wakeTime ? wakeTime.value : '06:00',
-      location: wakeLocation ? wakeLocation.value : ''
+      location: onboardingData.wake?.location || ''
     },
     sleep: {
       enabled: bedtimeEnabled ? bedtimeEnabled.checked : false,
       time: bedtimeTime ? bedtimeTime.value : '23:00',
-      location: bedtimeLocation ? bedtimeLocation.value : ''
+      location: onboardingData.sleep?.location || ''
     },
     profile: {
       name: onboardingData.profile.name
@@ -290,10 +391,11 @@ async function saveSettingsProfile() {
   
   // Update onboardingData and save
   onboardingData.profile.name = name;
+  // Locationをwake/sleepの両方に設定（どちらかが有効な場合）
   if (onboardingData.wake.enabled) {
     onboardingData.wake.location = sleepPlaceValue;
   }
-  if (onboardingData.sleep.enabled && !onboardingData.wake.enabled) {
+  if (onboardingData.sleep.enabled) {
     onboardingData.sleep.location = sleepPlaceValue;
   }
   

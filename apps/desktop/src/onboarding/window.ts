@@ -2,7 +2,7 @@ import { BrowserWindow, ipcMain, shell } from 'electron';
 import * as path from 'path';
 import { AniccaSessionManager } from '../agents/sessionManager';
 import { DesktopAuthService } from '../services/desktopAuthService';
-import { applyOnboardingData, OnboardingPayload } from '../services/onboardingWriter';
+import { applyOnboardingData, OnboardingPayload, loadSettingsFromFiles } from '../services/onboardingWriter';
 
 let onboardingWindow: BrowserWindow | null = null;
 
@@ -53,7 +53,13 @@ export async function launchOnboardingUi(options: LaunchOptions): Promise<void> 
   
   // HTML読み込み
   const htmlPath = path.join(__dirname, '../ui/onboarding.html');
-  await onboardingWindow.loadFile(htmlPath);
+  if (showSettings) {
+    // URLパラメータで設定画面を指定
+    const fileUrl = `file://${htmlPath}?settings=true`;
+    await onboardingWindow.loadURL(fileUrl);
+  } else {
+    await onboardingWindow.loadFile(htmlPath);
+  }
   
   // ウィンドウ表示
   onboardingWindow.show();
@@ -61,8 +67,9 @@ export async function launchOnboardingUi(options: LaunchOptions): Promise<void> 
   
   // 設定画面を直接表示する場合
   if (showSettings) {
+    // URLパラメータで既に設定画面が表示されるので、ここではデータ読み込みのみ
     onboardingWindow.webContents.once('did-finish-load', () => {
-      onboardingWindow?.webContents.send('show-settings');
+      onboardingWindow?.webContents.executeJavaScript('loadSettingsData()').catch(() => {});
     });
   }
   
@@ -80,10 +87,22 @@ function setupIpcHandlers(
 ): void {
   // 既存ハンドラを削除（重複防止）
   ipcMain.removeAllListeners('onboarding:save');
+  ipcMain.removeAllListeners('onboarding:load-settings');
   ipcMain.removeAllListeners('onboarding:google-oauth');
   ipcMain.removeAllListeners('onboarding:complete');
   ipcMain.removeAllListeners('onboarding:close');
   
+  // 設定データ読み込み
+  ipcMain.handle('onboarding:load-settings', async () => {
+    try {
+      const settings = await loadSettingsFromFiles();
+      return { success: true, data: settings };
+    } catch (error: any) {
+      console.error('Failed to load settings:', error);
+      return { success: false, error: error.message };
+    }
+  });
+
   // オンボーディングデータ保存
   ipcMain.handle('onboarding:save', async (_event, payload: OnboardingPayload) => {
     try {

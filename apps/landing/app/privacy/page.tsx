@@ -13,16 +13,17 @@ export default function PrivacyPage() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">2. 適用範囲</h2>
       <p className="mt-3 text-muted-foreground">
-        本サービスのデスクトップアプリ、連携API、カスタマーサポート、Stripe Checkout / Customer Portal を利用するすべてのユーザーに適用します。
+        本サービスのデスクトップアプリ、iOSアプリ、連携API、カスタマーサポート、Stripe Checkout / Customer Portal を利用するすべてのユーザーに適用します。
       </p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">3. 取得する情報</h2>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
-        <li>アカウント情報（メールアドレス、Supabase認証ID）</li>
+        <li>アカウント情報（メールアドレス、Supabase認証ID、またはSign in with AppleによるApple User ID）</li>
         <li>音声データと文字起こし結果（リアルタイム処理後は即時破棄）</li>
         <li>Google Calendar・Slack等の連携サービスから取得するデータ（ユーザー許可範囲のみ）</li>
         <li>アプリ利用状況（プラン情報、起動ログ、エラー情報等）</li>
         <li>決済情報（Stripeで管理される顧客ID・請求履歴等。カード番号は取得しません）</li>
+        <li>（iOS版）デバイス識別子（identifierForVendor）、習慣設定データ（起床時刻、トレーニング時刻、就寝時刻等）</li>
       </ul>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">4. 主な取得方法</h2>
@@ -47,13 +48,13 @@ export default function PrivacyPage() {
         サービス提供に必要な範囲で以下の事業者へ情報を送信します。各事業者は当方との契約または利用規約に基づき、情報保護義務を負います。
       </p>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
-        <li>OpenAI（音声→テキスト変換およびリアルタイム応答）</li>
+        <li>OpenAI（音声→テキスト変換およびリアルタイム応答。iOS版では音声データをストリーミング送信しますが、処理後は即座に破棄され恒久保存されません）</li>
         <li>Anthropic（開発者支援タスクの処理）</li>
         <li>Google LLC（Google Calendar 等の連携機能）</li>
         <li>Slack Technologies, LLC（チャット送信機能）</li>
         <li>Stripe, Inc.（決済処理）</li>
-        <li>Supabase, Inc.（認証・データベース管理）</li>
-        <li>Railway（APIホスティング）</li>
+        <li>Supabase, Inc.（認証・データベース管理。デスクトップ版のみ）</li>
+        <li>Railway（APIホスティング。iOS版では認証情報、デバイスID、習慣設定をPostgreSQLデータベースに保存）</li>
         <li>GitHub（アプリ配布用ファイルのホスティング）</li>
       </ul>
 
@@ -65,7 +66,8 @@ export default function PrivacyPage() {
       <h2 className="mt-10 text-xl font-semibold text-foreground">8. 保存期間と削除</h2>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
         <li>音声データ：リアルタイム処理後に即時削除</li>
-        <li>認証トークン：ユーザー端末上（`~/.anicca`）に暗号化保存し、ログアウトまたは無効化時に削除</li>
+        <li>認証トークン：ユーザー端末上（デスクトップ版は`~/.anicca`、iOS版はUserDefaults）に暗号化保存し、ログアウトまたは無効化時に削除</li>
+        <li>（iOS版）デバイス識別子：アプリ削除時にリセットされる一時的な識別子です</li>
         <li>Stripe決済記録：法令に基づき最低7年間保持</li>
         <li>サポート履歴：対応完了後3年間保管</li>
       </ul>
@@ -91,13 +93,51 @@ export default function PrivacyPage() {
       <h2 className="mt-10 text-xl font-semibold text-foreground">13. 法令等の遵守</h2>
       <p className="mt-3 text-muted-foreground">個人情報保護法その他関連法令・ガイドラインを遵守します。</p>
 
-      <h2 className="mt-10 text-xl font-semibold text-foreground">14. 改定</h2>
+      <h2 className="mt-10 text-xl font-semibold text-foreground">14. iOSアプリ版に関する追加事項</h2>
+      <p className="mt-3 text-muted-foreground">
+        iOSアプリ版では、以下の追加事項が適用されます。
+      </p>
+      
+      <h3 className="mt-6 text-lg font-semibold text-foreground">取得する情報（iOS版）</h3>
+      <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
+        <li><strong>認証情報</strong>: Sign in with Apple により、Apple User ID、氏名（任意）、メールアドレス（提供された場合のみ）を取得します。</li>
+        <li><strong>デバイス識別子</strong>: iOSの identifierForVendor を使用してデバイスを識別します。これはアプリ削除時にリセットされる一時的な識別子です。</li>
+        <li><strong>習慣データ</strong>: 起床時刻、トレーニング時刻、就寝時刻、睡眠場所、トレーニングフォーカスなどの設定情報を保存します。</li>
+        <li><strong>音声データ</strong>: リアルタイム音声対話のためにマイクから音声を取得します。音声データはリアルタイム処理のためにOpenAI Realtime APIに送信されますが、処理後は即座に破棄され、恒久保存されません。</li>
+      </ul>
+
+      <h3 className="mt-6 text-lg font-semibold text-foreground">データの保存先（iOS版）</h3>
+      <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
+        <li><strong>端末内</strong>: UserDefaultsを使用して認証情報、習慣設定、プロフィール情報をローカルに保存します。</li>
+        <li><strong>サーバー</strong>: Railway上でホスティングされる自社APIサーバー（PostgreSQLデータベース）に、認証情報、デバイスID、習慣設定を保存します。音声データは保存しません。</li>
+      </ul>
+
+      <h3 className="mt-6 text-lg font-semibold text-foreground">データの利用目的（iOS版）</h3>
+      <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
+        <li>アカウント管理と認証</li>
+        <li>習慣スケジュールの通知配信（Time Sensitive通知を含む）</li>
+        <li>リアルタイム音声対話機能の提供</li>
+        <li>エラー解析とサービス改善</li>
+      </ul>
+
+      <h3 className="mt-6 text-lg font-semibold text-foreground">第三者共有（iOS版）</h3>
+      <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
+        <li><strong>OpenAI, Inc.</strong>: リアルタイム音声対話処理のため、音声データをストリーミング送信します。処理後は即座に破棄され、恒久保存されません。</li>
+        <li>その他の第三者への共有は行いません。</li>
+      </ul>
+
+      <h3 className="mt-6 text-lg font-semibold text-foreground">通知権限について</h3>
+      <p className="mt-3 text-muted-foreground">
+        iOS版では、習慣形成を支援するため、Time Sensitive通知を使用します。これにより、端末がサイレントモードでも確実に通知を配信できます。通知は起床、トレーニング、就寝のスケジュールに基づいて配信されます。
+      </p>
+
+      <h2 className="mt-10 text-xl font-semibold text-foreground">15. 改定</h2>
       <p className="mt-3 text-muted-foreground">改定する場合は本ページで告知し、重要な変更はアプリ内通知等でお知らせします。</p>
 
-      <h2 className="mt-10 text-xl font-semibold text-foreground">15. 問い合わせ</h2>
+      <h2 className="mt-10 text-xl font-semibold text-foreground">16. 問い合わせ</h2>
       <p className="mt-3 text-muted-foreground">keiodaisuke@gmail.com までご連絡ください。</p>
 
-      <p className="mt-12 text-right text-sm text-muted-foreground">最終更新日: 2025年2月21日</p>
+      <p className="mt-12 text-right text-sm text-muted-foreground">最終更新日: 2025年11月9日</p>
     </main>
   );
 }

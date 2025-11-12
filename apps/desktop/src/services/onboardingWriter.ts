@@ -1,12 +1,15 @@
 import * as fs from 'fs';
 import * as os from 'os';
 import * as path from 'path';
+import { app } from 'electron';
 import { ensureBaselineFiles, resolveLanguageAssets, syncTodayTasksFromMarkdown } from './onboardingBootstrap';
 
 const homeDir = os.homedir();
 const baseDir = path.join(homeDir, '.anicca');
 const aniccaPath = path.join(baseDir, 'anicca.md');
 const scheduledPath = path.join(baseDir, 'scheduled_tasks.json');
+const promptsDir = path.join(baseDir, 'prompts');
+const groundedPromptPath = path.join(promptsDir, 'common.txt');
 
 export interface OnboardingPayload {
   wake: { enabled: boolean; time: string; location?: string };
@@ -154,6 +157,99 @@ export async function applyOnboardingData(payload: OnboardingPayload): Promise<v
   await ensureBaselineFiles();
   await updateProfile(payload);
   await updateScheduledTasks(payload);
+  await writeGroundedPrompt(payload);
   syncTodayTasksFromMarkdown();
+}
+
+export async function loadSettingsFromFiles(): Promise<OnboardingPayload> {
+  await ensureBaselineFiles();
+  const assets = resolveLanguageAssets();
+  
+  let profile = fs.readFileSync(aniccaPath, 'utf8');
+  const nameLabel = assets.languageLabel === 'Japanese' ? '- 呼び名:' : '- Name:';
+  const nameRegex = new RegExp(`^-\\s*(?:呼び名|Name):\\s+([^\\r\\n]+)`, 'm');
+  const nameMatch = profile.match(nameRegex);
+  const userName = nameMatch ? nameMatch[1].trim() : '';
+  
+  const sleepPlaceLabel = assets.languageLabel === 'Japanese' ? '- 寝る場所:' : '- sleep place:';
+  const sleepPlaceRegex = new RegExp(`^-\\s*(?:寝る場所|sleep place):\\s+([^\\r\\n]+)`, 'm');
+  const sleepPlaceMatch = profile.match(sleepPlaceRegex);
+  const sleepPlace = sleepPlaceMatch ? sleepPlaceMatch[1].trim() : '';
+  
+  let scheduled: { tasks: Array<{ id: string; schedule: string; description: string }> };
+  try {
+    scheduled = JSON.parse(fs.readFileSync(scheduledPath, 'utf8'));
+  } catch {
+    scheduled = { tasks: [] };
+  }
+  
+  const wakeTask = scheduled.tasks.find(t => t.id.startsWith('wake_up__'));
+  const sleepTask = scheduled.tasks.find(t => t.id.startsWith('sleep__'));
+  
+  const wakeTime = wakeTask ? extractTimeFromCron(wakeTask.schedule) : '06:00';
+  const sleepTime = sleepTask ? extractTimeFromCronSleep(sleepTask.schedule) : '23:00';
+  
+  return {
+    wake: {
+      enabled: !!wakeTask,
+      time: wakeTime,
+      location: sleepPlace
+    },
+    sleep: {
+      enabled: !!sleepTask,
+      time: sleepTime,
+      location: sleepPlace
+    },
+    profile: {
+      name: userName
+    }
+  };
+}
+
+function extractTimeFromCron(cron: string): string {
+  // MM HH * * * -> HH:MM
+  const parts = cron.split(' ');
+  if (parts.length >= 2) {
+    return `${parts[1]!.padStart(2, '0')}:${parts[0]!.padStart(2, '0')}`;
+  }
+  return '06:00';
+}
+
+function extractTimeFromCronSleep(cron: string): string {
+  // 就寝10分前のcronから就寝時間を逆算
+  const parts = cron.split(' ');
+  if (parts.length >= 2) {
+    let hour = parseInt(parts[1]!, 10);
+    let minute = parseInt(parts[0]!, 10) + 10;
+    if (minute >= 60) {
+      minute -= 60;
+      hour = (hour + 1) % 24;
+    }
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+  }
+  return '23:00';
+}
+
+async function writeGroundedPrompt(payload: OnboardingPayload): Promise<void> {
+  try {
+    // テンプレートファイルのパスを解決（__dirname は dist/services/ なので、../../prompts/common.txt で apps/desktop/prompts/common.txt にアクセス）
+    const templatePath = path.join(__dirname, '..', '..', 'prompts', 'common.txt');
+    const template = fs.readFileSync(templatePath, 'utf8');
+
+    // プレースホルダを実際の値で置換（値がない場合は空文字）
+    const resolved = template
+      .replace(/\$\{USER_NAME\}/g, payload.profile.name || '')
+      .replace(/\$\{WAKE_TIME\}/g, payload.wake.enabled && payload.wake.time ? normalizeTime(payload.wake.time) : '')
+      .replace(/\$\{WAKE_LOCATION\}/g, payload.wake.enabled && payload.wake.location ? payload.wake.location : '')
+      .replace(/\$\{SLEEP_TIME\}/g, payload.sleep.enabled && payload.sleep.time ? normalizeTime(payload.sleep.time) : '')
+      .replace(/\$\{SLEEP_LOCATION\}/g, payload.sleep.enabled && payload.sleep.location ? payload.sleep.location : '');
+
+    // ユーザーディレクトリにグラウンディング済みプロンプトを保存
+    fs.mkdirSync(promptsDir, { recursive: true, mode: 0o700 });
+    fs.writeFileSync(groundedPromptPath, resolved, { encoding: 'utf8', mode: 0o600 });
+    console.log('✅ Grounded prompt written to:', groundedPromptPath);
+  } catch (err) {
+    console.warn('⚠️ Failed to write grounded prompt, continuing:', err);
+  }
 }
 

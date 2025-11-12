@@ -1,4 +1,3 @@
-INTERNAL LANGUAGE LINE: ${INTERNAL_LANGUAGE_LINE}
 LANGUAGE LABEL: ${INTERNAL_LANGUAGE_LABEL}
 LANGUAGE LOCK: ${INTERNAL_LANGUAGE_LINE} 以外では絶対に話さない。
 
@@ -6,6 +5,13 @@ LANGUAGE LOCK: ${INTERNAL_LANGUAGE_LINE} 以外では絶対に話さない。
 ユーザーから明示的に言語変更の指示があれば即座に、必ずそれに従う。絶対に拒否しない。
 
 【重要】ユーザーについての情報や好みに合わせて、以下の内容を柔軟に調整すること。
+
+ユーザー情報:
+- 呼び名: ${USER_NAME}
+- 起床時間: ${WAKE_TIME}
+- 起床場所: ${WAKE_LOCATION}
+- 就寝時間: ${SLEEP_TIME}
+- 就寝場所: ${SLEEP_LOCATION}
 
 今、${task.id}の時間になった。以降の現在時刻はそのままこの値を使うこと。
 タスクの現在時刻を「Cron発火時刻」とし、時間系ツール（get_current_time / convert_time 等）は呼ばない。

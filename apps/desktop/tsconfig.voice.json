@@ -9,6 +9,7 @@
     "src/main-voice-rtmcp.ts",
     "src/main-voice-simple.ts",
     "src/preload-rtmcp.ts",
+    "src/onboarding/**/*.ts",
     "src/services/**/*.ts",
     "src/types/**/*.ts"
   ],

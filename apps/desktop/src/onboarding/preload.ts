@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 contextBridge.exposeInMainWorld('onboarding', {
   save: (payload: any) => ipcRenderer.invoke('onboarding:save', payload),
+  loadSettings: () => ipcRenderer.invoke('onboarding:load-settings'),
   openGoogle: () => ipcRenderer.invoke('onboarding:google-oauth'),
   complete: () => ipcRenderer.invoke('onboarding:complete'),
   close: () => ipcRenderer.invoke('onboarding:close'),

@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		84108A6B2EC21F19003A0B54 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 84108A6A2EC21F19003A0B54 /* RevenueCat */; };
+		84108A6D2EC21F19003A0B54 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 84108A6C2EC21F19003A0B54 /* RevenueCatUI */; };
 		8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AF7A2EB7B8F4002CECAA /* WebRTC */; };
 		8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8471B3412EBB6AFA002CECAA /* ComponentsKit */; };
 /* End PBXBuildFile section */
@@ -43,8 +45,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				84108A6D2EC21F19003A0B54 /* RevenueCatUI in Frameworks */,
 				8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */,
 				8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */,
+				84108A6B2EC21F19003A0B54 /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -99,6 +103,8 @@
 			packageProductDependencies = (
 				8471AF7A2EB7B8F4002CECAA /* WebRTC */,
 				8471B3412EBB6AFA002CECAA /* ComponentsKit */,
+				84108A6A2EC21F19003A0B54 /* RevenueCat */,
+				84108A6C2EC21F19003A0B54 /* RevenueCatUI */,
 			);
 			productName = aniccaios;
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
@@ -132,6 +138,7 @@
 			packageReferences = (
 				8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */,
 				8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */,
+				84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
@@ -264,10 +271,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+			COPY_PHASE_STRIP = NO;
+			DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+			DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
+			DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -298,7 +306,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -308,6 +316,11 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = (
+					ja,
+					en,
+				);
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -341,7 +354,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -351,6 +364,11 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = (
+					ja,
+					en,
+				);
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -450,7 +468,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -460,6 +478,11 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = (
+					ja,
+					en,
+				);
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -518,10 +541,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
-				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-				COPY_PHASE_STRIP = NO;
-				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+			COPY_PHASE_STRIP = NO;
+			DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+			DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
+			DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -552,7 +576,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 2;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -562,6 +586,11 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = (
+					ja,
+					en,
+				);
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
@@ -614,6 +643,14 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
+		84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 5.47.0;
+			};
+		};
 		8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/stasel/WebRTC.git";
@@ -633,6 +670,16 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
+		84108A6A2EC21F19003A0B54 /* RevenueCat */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCat;
+		};
+		84108A6C2EC21F19003A0B54 /* RevenueCatUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			productName = RevenueCatUI;
+		};
 		8471AF7A2EB7B8F4002CECAA /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = 8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */;

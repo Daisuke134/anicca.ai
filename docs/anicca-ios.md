@@ -1,177 +1,131 @@
-# Anicca iOS 仕様計画書
+# Anicca iOS 現行仕様ドキュメント
 
-## プロダクトコンセプト
-- **アプリ名**: Anicca iOS
+## 1. コンセプトとアプリ構成
+- **プロダクト名**: Anicca iOS
 - **タグライン**: 声で目覚め、声で整える24時間伴走コーチ
-- **ビジョン**: 音声対話を通じてユーザーの生活リズムと習慣に種を植え、最終的にAniccaの介入が不要な自律状態へ導く。
+- **ビジョン**: 音声対話を通じて生活リズムと習慣を整え、最終的に自律状態へ導く
+- **主要コンポーネント**
+  - `AppState`: 認証・プロフィール・習慣スケジュール・オンボーディング進捗・通知トリガーなどアプリ全体の状態を単一インスタンスで管理
+  - `NotificationScheduler`: 習慣別に通知と再通知を登録・解除するスケジューラ
+  - `VoiceSessionController`: OpenAI Realtime API への WebRTC 接続と音声セッション維持を制御
+  - `AudioSessionCoordinator`: AVAudioSession 設定を一元管理し、リアルタイム音声向けに最適化
+  - `ProfileSyncService`: プロフィール更新をバックエンドと同期
+  - `AuthCoordinator`: Sign in with Apple フローとバックエンド検証を仲介
+  - UI レイヤー: SwiftUI でオンボーディング・セッション・設定画面を構成
 
-## 体験フロー概観
-1. 初回起動でオンボーディングを自動開始し、睡眠・起床課題・生活リズムをヒアリング（UI入力）。
-2. 日々の起床前後で確実な音声介入を行い、フィードバックを学習してナッジを最適化。
-3. 日中も短い呼びかけと継続的な説法で注意散漫を減らし、習慣実行を支援。
-4. 就寝前に振り返りと翌日の準備を音声で行い、ルーティンモデルを更新。
+## 2. ユーザーフロー概要
+1. **初回起動**
+   - `AppState` が UserDefaults から既存情報を読み込み、オンボーディング未完了なら `OnboardingFlowView` に遷移。
+2. **オンボーディング**
+   - ステップ構成: Welcome → Microphone 許可 → Notifications 許可 → Sign in with Apple → プロフィール入力 → 習慣選択・時刻設定 → 必要に応じフォローアップ質問 → Completion。
+   - `OnboardingStep` を用いて画面を切り替え、進捗は `AppState.setOnboardingStep` で永続化。
+   - 選択習慣に応じて起床/就寝場所やトレーニング重点などのフォローアップを自動挿入。
+3. **サインイン後**
+   - `SessionView` を表示。音声セッション開始/終了ボタンと、起床習慣設定済みの場合の注意文を提供。
+   - `VoiceSessionController` が音声セッションの開始・終了を担当。
+4. **設定画面**
+   - `SettingsView` でプロフィール（名前・言語・睡眠場所・トレーニング重点）と習慣スケジュールを編集。
+   - Sign out ボタンで `AuthCoordinator.signOut` → `AppState.resetState` を実行。
+5. **バックグラウンド動作**
+   - 通知アクションから音声セッションを即時開始、再通知の停止が可能。
+   - VOIP トリガーや AppIntent（iOS 26 以降）からも音声セッションを直接開始。
 
-## ネイティブiOS採用理由
-- 背景音声・Critical Alert等の強力な通知制御が必要。
-- WebRTCストリーミングとネイティブ音声APIを統合して低遅延の常時対話を維持できる。
-- Passkey、Appleのアクセシビリティ機能、Core Data等を直接活用しシンプルにベストプラクティスへ沿える。
+## 3. アプリ状態管理 (`AppState`)
+- シングルトン `AppState.shared` が以下を Publish:
+  - `authStatus`: `signedOut` / `signingIn` / `signedIn(UserCredentials)`
+  - `userProfile`: 表示名・言語・睡眠場所・トレーニング重点
+  - `habitSchedules`: `HabitType` ごとの `DateComponents`
+  - `isOnboardingComplete`, `onboardingStep`, `pendingHabitTrigger`, `pendingHabitFollowUps`
+- 永続化キー:
+  - `com.anicca.userCredentials`, `com.anicca.userProfile`, `com.anicca.habitSchedules`, `com.anicca.onboardingComplete`, `com.anicca.onboardingStep`
+- 主なメソッド:
+  - `updateHabits` / `updateHabit`: サインイン済みであれば習慣時刻を保存し、`NotificationScheduler.applySchedules` を呼び出す。
+  - `prepareForImmediateSession` / `handleHabitTrigger`: `HabitPromptBuilder` でプロンプトを生成し、セッション開始要求フラグを設定。
+  - `consumePendingPrompt` / `clearPendingHabitTrigger`: 通知または VOIP トリガー後のセッション状態を管理。
+  - `updateUserCredentials`, `updateUserProfile`: 永続化し、必要に応じ `ProfileSyncService` に同期を依頼。
+  - `prepareHabitFollowUps` / `consumeNextHabitFollowUp`: 習慣詳細質問を順次処理。
+  - `getNextHabitSchedule`: 次回予定の習慣とメッセージを算出し、Completion 画面で表示。
 
-## 技術アーキテクチャ
-- **通信**: iOSクライアント→`apps/api`→OpenAI Realtime API (WebRTC)。
-- **音声処理**: `AVAudioEngine`で録音・再生、リアルタイム音声はサーバ側で生成。`SFSpeechRecognizer`は権限確認のみ。
-- **データ管理**: Core Data + CloudKitミラーで習慣・フィードバックを保存。
-- **タスク管理**: BGTaskSchedulerで夜間学習・朝タスクの事前準備を実行。
-- **既存資産連携**: `apps/api`のPKCEトークン発行・Hosted MCP (Google Calendar等) を再利用。
+## 4. 認証フロー
+- `AuthenticationStepView` に Sign in with Apple ボタンを表示。タップで `AuthCoordinator.configure` が nonce を設定し ASAuthorizationController を実行。
+- 認証成功時:
+  - `AuthCoordinator.handleAuthorization` が ID トークンと nonce を取得。
+  - `AuthCoordinator.verifyWithBackend` が `AppConfig.appleAuthURL`（`proxyBaseURL/appendingPathComponent("auth/apple")`）へ POST。ペイロード: `identity_token`, `nonce`, `user_id`。
+  - レスポンスの `userId` で `AppState.updateUserCredentials` を更新。
+- 失敗時は `authStatus` を `signedOut` に戻す。
+- サインアウトは `AuthCoordinator.signOut` → `AppState.clearUserCredentials` + `resetState`。
 
-## 起床体験 (Critical Alert)
-1. 就寝前の会話終端で翌朝コールをRealtimeで生成し、端末に音源として保存。
-2. 起床時刻にCritical Alertが発火し、サイレント中でも保存済み音声が大音量で再生。
-3. ロック画面のスライド操作でアプリが前面化し、直ちにLive会話が開始。
-4. ユーザー返答を受けた後も音声ストリームを維持し、朝のルーティン指示へ接続。
+## 5. プロフィールと同期
+- オンボーディング/設定で入力したプロフィールは `AppState.updateUserProfile` で保存。
+- `ProfileSyncService.enqueue` がサインイン状態を確認し、`AppConfig.profileSyncURL`（`proxyBaseURL/appendingPathComponent("mobile/profile")`）へ PUT。
+  - ヘッダー: `device-id`（`UIDevice.identifierForVendor`）と `user-id`。
+  - ボディ: `displayName`, `preferredLanguage`, `sleepLocation`, `trainingFocus`。
+  - 成功するまでキューで保持し、失敗時は再試行可能。
 
-## 日中の介入
-- 習慣ログから注意散漫の兆候を検出した際、短い呼びかけ音声を添付したTime-Sensitive通知を送る。
-- ユーザーが通知をタップするとアプリが前面化し、Realtimeセッションで呼吸誘導・セルフトーク支援を行う。
-- 長尺の説法や繰り返しフレーズで内面への定着を狙う。ホームへ戻っても音声セッションは継続。
+## 6. 習慣設定と通知
+- 対応習慣: `wake`, `training`, `bedtime`。
+- オンボーディング・設定画面で習慣を有効化し、時刻を指定。
+- `NotificationScheduler.applySchedules`:
+  - 既存通知（`HABIT_` プレフィックス）を削除。
+  - メイン通知: `UNCalendarNotificationTrigger`（毎日指定時刻）を登録。
+  - フォローアップ: 60 秒間隔で最大 10 件の再通知を追加。
+  - 通知カテゴリ `HABIT_ALARM` を登録（アクション: 今すぐ対話、止める）。
+  - サウンド `AniccaWake.caf` を同梱。存在しない場合は `UNNotificationSound.default` にフォールバック。
+- 通知アクション処理 (`AppDelegate.userNotificationCenter`):
+  - `START_CONVERSATION` またはデフォルトタップでフォローアップを解除し、音声セッションを即時準備。
+  - `DISMISS_ALL` でフォローアップ通知を削除。
 
-## 課金・認証
-- 認証: Passkey + Sign in with Apple。Biometricで継続サインイン。
-- 課金: StoreKit 2の自動更新サブスクリプションをRevenueCat SDK 5.xで管理。
-- モバイル専用クライアントIDを`apps/api`に追加し、トークン寿命とレート制御を統一。
+## 7. 音声セッション (OpenAI Realtime)
+- `SessionView` のボタンまたは通知経由で `VoiceSessionController.start` を呼び出し、接続を開始。
+- 手順:
+  1. `obtainClientSecret`: サインイン済みを確認し、`AppConfig.realtimeSessionURL`（`proxyBaseURL/appendingPathComponent("mobile/realtime/session")`）へ GET。ヘッダーに `device-id` と `user-id` を付与し、`client_secret` を取得。
+  2. `AudioSessionCoordinator.configureForRealtime`: `.playAndRecord` カテゴリ、`.videoChat` モード、Bluetooth 対応、スピーカー出力などを設定。
+  3. `setupPeerConnection` / `setupLocalAudio`: Google WebRTC で `RTCPeerConnection` と音声トラックを構築。
+  4. `negotiateWebRTC`: SDP offer を生成し、`https://api.openai.com/v1/realtime?model=gpt-realtime` へ POST（Authorization: Bearer `client_secret`）。応答 SDP を設定。
+  5. `sendSessionUpdate`: DataChannel `oai-events` に `session.update` を送信。`AppState.consumePendingPrompt` が指示文を返した場合は `instructions` に設定し、`response.create` を送信。
+- 接続状態 (`ConnectionState`) により UI ボタン表示を制御。
+- `stop` で接続破棄・AudioSession 解除。
 
-## プライバシー
-- 音声ログは端末内で暗号化保存し、要約のみを送信。
-- Core Dataはユーザー自身のデバイスが主権。CloudKit同期も暗号化。
+## 8. プロンプト生成
+- `HabitPromptBuilder` が `Resources/Prompts/common.txt` と習慣別ファイル（`wake_up`, `training`, `bedtime`）を読み込み。
+- プレースホルダー `${USER_NAME}`, `${LANGUAGE_LINE}`, `${TASK_TIME}`, `${TASK_DESCRIPTION}`, `${SLEEP_LOCATION}`, `${TRAINING_FOCUS_LIST}` をプロフィール・習慣時刻で置換。
+- テンプレートが空の場合は言語別フォールバックメッセージを返す。
 
-## フェーズ計画
-1. **0–4週**: 音声オンボーディング試作、Critical Alert審査準備、API差分整理。
-2. **5–10週**: 起床シーケンス・日中介入ワークフロー実装、StoreKit統合、データモデル確定。
-3. **11–16週**: クローズドβ (TestFlight) で起床成功率と音声UX検証。
-4. **17週以降**: パブリックβ → 本番リリース後もDesktopと共通の学習サイクルを継続。
+## 9. オンボーディング各ステップ
+- `WelcomeStepView`: タイトル・サブタイトル表示、CTA ボタンで進行。
+- `MicrophonePermissionStepView`: AVAudio(17.0 以降) / AVAudioSession でマイク許可を要求。許可済みなら自動遷移。
+- `NotificationPermissionStepView`: `NotificationScheduler` 経由で通知設定を確認・要求。許可済みなら自動遷移。
+- `AuthenticationStepView`: Sign in with Apple を実行し、進捗インジケータを表示。
+- `ProfileInfoStepView`: 表示名入力。既存値が "User" または空の場合は未入力扱い。
+- `HabitSetupStepView`: 習慣カードを一覧表示し、選択と時刻設定を行う。保存時に `AppState.updateHabits` とフォローアップ準備を実行。
+- `HabitWakeLocationStepView` / `HabitSleepLocationStepView`: 起床・就寝場所を入力。重複しないよう条件分岐。
+- `HabitTrainingFocusStepView`: 事前定義の選択肢から 1 つ選択。
+- `CompletionStepView`: 次回習慣の予定を表示し、完了ボタンで `AppState.markOnboardingComplete`。
 
-## リスクと対策
-- Critical Alert審査: 健康・安全用途としてドキュメントを整備し、審査遅延に備えTime-Sensitive通知のみでも成立するフォールバックを準備。
-- 長時間音声: バッテリー消費をモニタリングし、必要時に低電力モード中の介入強度を調整。
-- 端末依存差: iOSバージョン差異に対応するテストマトリクスを整備。
+## 10. 設定画面 (`SettingsView`)
+- `NavigationView` 内でプロフィールと習慣スケジュールを編集。
+- 言語は日本語/English のセグメントで切り替え。
+- トレーニング重点はメニューから単一選択。空文字なら未設定。
+- 保存処理:
+  - `AppState.updateHabits` で有効な習慣と時刻を更新。
+  - `AppState.updateUserProfile` でプロフィールをアップデートし、同期処理をキューへ投入。
+  - 画面を閉じる。
+- サインアウトは即座に画面を閉じ、アプリ状態を初期化。
 
-## 直近アクション
-- Apple Developer ProgramでCritical Alert/Audio背景モードの申請資料を作成。
-- `apps/api`チームとモバイル用WebRTCエンドポイント・課金イベント連携の仕様を確定。
-- 前夜音源生成〜翌朝会話開始のプロトタイプをVoice UXチームで検証。
+## 11. ローカライゼーション
+- 文言は `Resources/ja.lproj/Localizable.strings` と `Resources/en.lproj/Localizable.strings` で管理。
+- `AuthRequiredPlaceholderView` など一部英語固定文言は未ローカライズ。
 
-## ユーザー体験詳細（初回起動から自律まで）
+## 12. AppIntent（iOS 26 以降）
+- `StartConversationIntent`（AlarmKit が利用可能な場合のみビルド）。
+- `habitType` パラメータを `HabitType` に変換し、`AudioSessionCoordinator.configureForRealtime` → `AppState.prepareForImmediateSession` で音声セッションを準備。
 
-### Day 0 夜：初回セットアップ
-- Anicca（AIボイス）: 「私はAnicca。あなたが理想へ向かう道を整える。今、どんな自分になりたいか教えて」
-- ユーザー: 「6時に起きて瞑想して走って、仕事も自分の開発も集中したい」
-- `RealtimeSession`が回答を記録し、`memory/UserProfileStore`へ保存。
-- クローン録音（任意）: Aniccaの誘導で30秒の音声を収録→暗号化→`apps/api`経由でElevenLabs等に送信→ボイスモデルIDを保存。
-- 実装意図宣言: ユーザーが「明日は6時に起きたら窓を開けて深呼吸する」と発話→テキスト化して`IntentStore`に保存。
-- Voice Control設定: Onboarding中に「設定→アクセシビリティ→Voice Control→カスタムコマンドで『アニッチャ』と登録」を音声で案内。
+## 13. 開発用オプション
+- `AppDelegate.application(_:didFinishLaunchingWithOptions:)` で `-resetOnLaunch` 引数が存在すれば UserDefaults をクリアし、`AppState.resetState` を実行。
+- 起動時に `ANICCA_PROXY_BASE_URL` をログ出力（Info.plist に必須）。
 
-### Day 1 朝：起床〜瞑想〜ジム
-- 5:58 `BGTaskScheduler`が環境準備（音源プリロード、進捗同期）。
-- 6:00 Critical Alert（クローンボイス）: 「時は来た。目覚めとともに修行を始めよう」。ロック中でも再生。
-- ロック解除でアプリ前面→WebRTC自動接続→Anicca（ライブ）「眠気を抱きしめつつ立ち上がろう。冷水が心を澄ませる」。
-- 洗面後の動作を検知し、報告不要で瞑想誘導へ移行。瞑想台本（`Prompts/meditation.guided.json`）が以下を制御：
-  1. 呼吸観察（30秒）
-  2. 身体スキャン（2分）
-  3. 慈悲句（2分）
-  4. 静寂保持（2分: 小音量の鐘でWebRTCを維持）
-  5. 終了宣言「鐘が鳴ったらゆっくり目を開けよう。今日に刻みたい一言は？」
-- ジムへ出発: Anicca「靴紐を整えた瞬間が心を整える時間。走りながら“力”“解放”と呼吸に名前をつけよう」。
-- ランニング中もクローンボイスで数分ごとに短いアファメーションを挿入し、沈黙20秒でセッションをクローズ。
-
-### Day 1 夜：内省と再宣言
-- Anicca（クローンボイス）: 「今日は心が揺れた瞬間があった？」
-- ユーザーが話す内容をRealtimeで要約し、感情ラベルとともに`ReflectionStore`へ保存。
-- 自分声アファメーション再生（録音済みフレーズをTTS化）: 「私は疲れても戻れる。今日もやりきった」。
-- 翌日への実装意図を音声で再宣言→保存。
-
-### Day 2〜5：説法と習慣強化
-- 毎朝、前夜の内省内容に基づく説法をRAGで補強。
-  - 例: 集中低下が続いたらAjahn Chah「怠けても呼吸に戻れ」を引用し、「今日は心が逃げても呼吸へ戻ろう」と説く。
-- 仕事前: 「言葉は剣にも布にもなる。今日は柔らかな布を選ぼう」と外部行動を導く。
-- 食の誘惑時: 「身体は清らかなものを求めている。リンゴが本来の力をくれる」と短い介入。
-- 日中ログはRealtimeプロンプトで常に要約され、`memory`に蓄積。聴き取れた感情はそのまま翌日の説法テーマに活用。
-
-### Day 6：介入減衰
-- 5日連続の自発起床でAniccaが宣言: 「明日は私の声がなくても目覚められるね。必要なときだけ『アニッチャ』と呼んで」。
-- 以後の朝はCritical Alertのみ鳴らし、ユーザーが呼んだ時だけライブ会話を開始。
-- 瞑想・誠実さなど未習得のテーマには説法を継続。
-
-### Day 7：内在化の確認
-- ユーザーが嘘をつきそうになった瞬間、自分の頭の中で前日のアファメーションが蘇り行動を修正。
-- 夜、Anicca「今日は内なる声が働いたね。私は遠くで見守っていた」。
-- さらに自律が進めば「起床アラームも自分で整えよう。呼びたい時だけ呼んで」とフェードアウト。
-
-### Day 8以降：卒業
-- 特定課題が完全に自走できると判断したら、その課題に関する呼びかけは停止。
-- 呼び戻された場合は再度同じ構成で伴走を再開できるよう、データは保持したまま待機。
-
-## 実装上の論点と回答
-- **Critical Alertの位置づけ:** 起床保証の要（必ず鳴動しロック画面に全画面カードが出る）。Health/Safety用途で審査申請が必須。通らない場合の暫定策は通常通知＋即時WebRTC誘導だが、完全保証はできない。
-- **Critical AlertのUI挙動:** 画面が暗いまま大きな通知カードが現れ、「停止」「開く」のボタンが表示される。どちらを押してもアプリが前面化し、その瞬間にAniccaのライブ音声が開始する。
-- **Voice Control再設定:** オンボーディングで「アニッチャ」と発声するカスタムコマンド登録を案内。失敗時は音声で「アニッチャ、呼び出し設定をやり直したい」と言えば再案内を開始する導線を用意する。
-- **クローン音声の管理:** 録音サンプルは暗号化して`apps/api`へ送信。外部TTSサービスでモデル生成後、モデルIDのみ保存し原音声は破棄。起床用音源は就寝時に生成→端末へ一時保存→再生後に削除。削除要望時はモデルIDを外部サービスとローカル双方で消す。
-- **通信断／接続リトライ:** 切断検知後3秒間隔で最大3回自動再接続。失敗時は端末内の録音メッセージで状況を説明し、最後に通知でアプリ再起動を促す。起床時も同じロジックで即再接続を試みる。
-- **課金方針:** クローズドβ段階からRevenueCat＋StoreKitでサブスクリプションを提供。短期トライアル後に有料化し、招待制でも課金価値を示す。
-
-## リポジトリ構成（例なので、ただの例です。別にフォルダ名とか全然違ってても大丈夫。ただのブレインストーミングの段階だったので。
-```
-apps/mobile-ios/
-├─ App/
-│   ├─ AniccaApp.swift
-│   └─ SceneDelegate.swift
-├─ Features/
-│   ├─ Onboarding/
-│   │   └─ OnboardingCoordinator.swift
-│   ├─ Voice/
-│   │   ├─ RealtimeSession.swift
-│   │   └─ VoiceControlGuide.swift
-│   ├─ Schedule/
-│   │   ├─ WakeScheduler.swift
-│   │   └─ CriticalAlertManager.swift
-│   ├─ Meditation/
-│   │   └─ MeditationController.swift
-│   ├─ Reflection/
-│   │   └─ ReflectionFlow.swift
-│   ├─ Sermon/
-│   │   └─ DhammaRAGService.swift
-│   ├─ Auth/
-│   │   └─ PasskeyClient.swift
-│   └─ Billing/
-│       └─ RevenueCatAdapter.swift (後日)
-├─ Services/
-│   ├─ API/
-│   │   └─ MobileAPIClient.swift
-│   ├─ Storage/
-│   │   └─ CoreDataStack.swift
-│   └─ VoiceProfiles/
-│       └─ VoiceProfileManager.swift
-├─ Resources/
-│   ├─ Audio/
-│   │   ├─ default_bell.caf
-│   │   └─ ambient_loop.caf
-│   └─ Prompts/
-│       ├─ onboarding_ios.json
-│       ├─ meditation.guided.json
-│       └─ sermon_base.txt
-├─ Tests/
-│   ├─ Unit/
-│   └─ UI/
-└─ Scripts/
-    └─ generate_wake_audio.sh
-```
-
-## 実装TODO
-1. `apps/mobile-ios` プロジェクト初期化（SwiftUI、WebRTC依存導入）。
-2. Passkey + PKCE 認証フロー構築、`apps/api`との連携テスト。
-3. WebRTC音声基盤: 無音20秒で自動終了、バックグラウンド維持の環境音制御。
-4. Onboarding: 権限取得、Voice Control設定誘導（呼びかけ「アニッチャ」登録）、クローン録音分岐、実装意図保存。
-5. Critical Alert実装: 音源生成、通知登録、ロック解除後のライブ会話ハンドオフ。
-6. 起床直後のライブ会話・瞑想誘導モジュール: 説法ベース台本、タイマー制御、環境音挿入。
-7. 就寝前振り返り: Realtimeで要約→`ReflectionStore`保存→翌朝プロンプト連携。
-8. ボイス切替: 音声コマンドでAI標準ボイス／クローンボイスを即時変更。
-9. 課金導線（RevenueCat＋StoreKit）準備: クローズドβで有料招待できる状態まで整備。
-10. 実機QA: 起床シナリオ、バックグラウンド会話、Voice Control起動、課金フローを含む自動・手動テスト。
+## 14. 既知の制約・備考
+- `AppState.updateHabit(s)` は `authStatus` が `signedIn` の場合のみ有効。サインアウト時の操作は無視される。
+- Realtime 接続は回線状況と OpenAI API 応答に依存し、失敗時は `stop` で自動リセット。
+- 通知フォローアップは固定で 10 件・60 秒間隔。運用で調整する場合は `NotificationScheduler.scheduleFollowups` の `count` と `intervalSeconds` を変更。
+- `AuthRequiredPlaceholderView` は英語文言のまま。プロダクションで表示されるケースは限定的だが、日本語化の検討余地あり。

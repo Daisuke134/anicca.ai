@@ -340,40 +340,41 @@ async function initializeApp() {
     // TRUEにすれば旧音声フローが復活します
     const ENABLE_VOICE_ONBOARDING = false;
     
-    if (ENABLE_VOICE_ONBOARDING && shouldLaunchOnboarding && sessionManager && !onboardingQueued) {
-      onboardingQueued = true;
-      const manager = sessionManager;
+    if (shouldLaunchOnboarding) {
+      if (ENABLE_VOICE_ONBOARDING && sessionManager && !onboardingQueued) {
+        onboardingQueued = true;
+        const manager = sessionManager;
 
-      const runOnboarding = async (attempt = 1): Promise<void> => {
-        try {
-          resetRoutineState('onboarding');
-          const assets = resolveLanguageAssets();
-          const prompt = resolveOnboardingPrompt();
-          const bridgeReady = await manager.waitForBridgeClient(5000);
-          if (!bridgeReady) {
-            throw new Error('bridge client not ready');
+        const runOnboarding = async (attempt = 1): Promise<void> => {
+          try {
+            resetRoutineState('onboarding');
+            const assets = resolveLanguageAssets();
+            const prompt = resolveOnboardingPrompt();
+            const bridgeReady = await manager.waitForBridgeClient(5000);
+            if (!bridgeReady) {
+              throw new Error('bridge client not ready');
+            }
+            await manager.waitForReady(8000);
+            manager.setOnboardingState('running');
+            await manager.forceConversationMode('onboarding');
+            await manager.sendMessage(prompt);
+            console.log(`🚀 Onboarding prompt dispatched – ${assets.speakOnlyLine}`);
+          } catch (error) {
+            console.error(`❌ Failed to dispatch onboarding prompt (attempt ${attempt}):`, error);
+            manager.setOnboardingState('idle');
+            if (attempt < 3) {
+              setTimeout(() => {
+                void runOnboarding(attempt + 1);
+              }, 1000);
+            }
           }
-          await manager.waitForReady(8000);
-          manager.setOnboardingState('running');
-          await manager.forceConversationMode('onboarding');
-          await manager.sendMessage(prompt);
-          console.log(`🚀 Onboarding prompt dispatched – ${assets.speakOnlyLine}`);
-        } catch (error) {
-          console.error(`❌ Failed to dispatch onboarding prompt (attempt ${attempt}):`, error);
-          manager.setOnboardingState('idle');
-          if (attempt < 3) {
-            setTimeout(() => {
-              void runOnboarding(attempt + 1);
-            }, 1000);
-          }
-        }
-      };
+        };
 
-      void runOnboarding();
-    } else if (shouldLaunchOnboarding) {
-      // UI版オンボーディングを起動
-      await launchOnboardingUi({ sessionManager, authService });
-    }
+        void runOnboarding();
+      } else {
+        // UI版オンボーディングを起動
+        await launchOnboardingUi({ sessionManager, authService });
+      }
     } else {
       // オンボーディング済みの場合でも設定画面を表示
       await launchOnboardingUi({ sessionManager, authService, showSettings: true });
@@ -512,11 +513,6 @@ function createHiddenWindow() {
   
   // voice-demoのクライアントページを開く
   hiddenWindow.loadURL(`http://localhost:${PORTS.OAUTH_CALLBACK}?bridge_token=${encodeURIComponent(getBridgeToken())}`);
-  
-  // デバッグ用 - 開発環境でのみ開く
-  if (!app.isPackaged) {
-    hiddenWindow.webContents.openDevTools({ mode: 'detach' });
-  }
   
   // ページロード完了後、自動的に音声認識を開始
   hiddenWindow.webContents.on('did-finish-load', () => {

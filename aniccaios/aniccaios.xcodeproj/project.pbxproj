@@ -91,6 +91,7 @@
 				8471AE772EB783E1002CECAA /* Sources */,
 				8471AE782EB783E1002CECAA /* Frameworks */,
 				8471AE792EB783E1002CECAA /* Resources */,
+				8471B3502EBB7A00002CECAA /* Copy WebRTC dSYM */,
 			);
 			buildRules = (
 			);
@@ -159,6 +160,28 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8471B3502EBB7A00002CECAA /* Copy WebRTC dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy WebRTC dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ] || [ \"${CONFIGURATION}\" = \"staging Release\" ]; then\n    # Find WebRTC.framework dSYM in Swift Package build directory\n    WEBRTC_DSYM=$(find \"${BUILD_DIR}\" -name \"WebRTC.framework.dSYM\" -type d | head -1)\n    if [ -n \"$WEBRTC_DSYM\" ]; then\n        # Copy dSYM to archive dSYMs folder\n        DSYM_DEST=\"${DWARF_DSYM_FOLDER_PATH}/WebRTC.framework.dSYM\"\n        if [ ! -d \"$DSYM_DEST\" ]; then\n            cp -R \"$WEBRTC_DSYM\" \"$DSYM_DEST\"\n            echo \"Copied WebRTC.framework.dSYM to $DSYM_DEST\"\n        fi\n    else\n        echo \"Warning: WebRTC.framework.dSYM not found in build directory\"\n    fi\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		8471AE772EB783E1002CECAA /* Sources */ = {
@@ -271,11 +294,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
-			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-			COPY_PHASE_STRIP = NO;
-			DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-			DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
-			DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -306,7 +329,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -316,10 +339,7 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = (
-					ja,
-					en,
-				);
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
@@ -354,7 +374,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -364,10 +384,7 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = (
-					ja,
-					en,
-				);
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
@@ -468,7 +485,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -478,10 +495,7 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = (
-					ja,
-					en,
-				);
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
@@ -541,11 +555,11 @@
 				CLANG_WARN_SUSPICIOUS_MOVE = YES;
 				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
 				CLANG_WARN_UNREACHABLE_CODE = YES;
-			CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
-			COPY_PHASE_STRIP = NO;
-			DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
-			DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
-			DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -576,7 +590,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 2;
+				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -586,10 +600,7 @@
 				);
 				INFOPLIST_FILE = aniccaios/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = (
-					ja,
-					en,
-				);
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";

@@ -14,7 +14,7 @@ const groundedPromptPath = path.join(promptsDir, 'common.txt');
 export interface OnboardingPayload {
   wake: { enabled: boolean; time: string; location?: string };
   sleep: { enabled: boolean; time: string; location?: string };
-  profile: { name: string };
+  profile: { name: string; language?: 'Japanese' | 'English' };
 }
 
 function normalizeTime(time: string): string {
@@ -55,19 +55,43 @@ async function updateProfile(payload: OnboardingPayload): Promise<void> {
   
   let profile = fs.readFileSync(aniccaPath, 'utf8');
   
-  // Name行を更新
+  // Name行を更新（より厳密な処理）
   const nameLabel = assets.languageLabel === 'Japanese' ? '- 呼び名:' : '- Name:';
   const nameRegex = new RegExp(`^-\\s*(?:呼び名|Name):\\s*[^\\r\\n]*`, 'm');
-  const nameLine = `${nameLabel} ${payload.profile.name}`;
-  if (nameRegex.test(profile)) {
-    profile = profile.replace(nameRegex, nameLine);
-  } else {
-    // 見つからない場合は適切な位置に挿入
-    const headerRegex = assets.languageLabel === 'Japanese' ? /(# ユーザー情報\r?\n)/ : /(# USER PROFILE\r?\n)/;
-    if (headerRegex.test(profile)) {
-      profile = profile.replace(headerRegex, `$1${nameLine}\n`);
+  // 修正: payload.profile.name が空でないことを確認
+  const nameValue = payload.profile.name && payload.profile.name.trim() ? payload.profile.name.trim() : '';
+  if (nameValue) {
+    const nameLine = `${nameLabel} ${nameValue}`;
+    if (nameRegex.test(profile)) {
+      profile = profile.replace(nameRegex, nameLine);
     } else {
-      profile = `${nameLine}\n${profile}`;
+      // 見つからない場合は適切な位置に挿入
+      const headerRegex = assets.languageLabel === 'Japanese' ? /(# ユーザー情報\r?\n)/ : /(# USER PROFILE\r?\n)/;
+      if (headerRegex.test(profile)) {
+        profile = profile.replace(headerRegex, `$1${nameLine}\n`);
+      } else {
+        profile = `${nameLine}\n${profile}`;
+      }
+    }
+  }
+  
+  // Language行を更新
+  if (payload.profile.language) {
+    const languageLabel = payload.profile.language === 'Japanese' ? '- 言語:' : '- Language:';
+    const languageValue = payload.profile.language === 'Japanese' ? '日本語' : 'English';
+    const languageLine = `${languageLabel} ${languageValue}`;
+    const languageRegex = new RegExp(`^-\\s*(?:言語|Language):\\s*[^\\r\\n]*`, 'm');
+    
+    if (languageRegex.test(profile)) {
+      profile = profile.replace(languageRegex, languageLine);
+    } else {
+      // 見つからない場合は適切な位置に挿入
+      const headerRegex = payload.profile.language === 'Japanese' ? /(# ユーザー情報\r?\n)/ : /(# USER PROFILE\r?\n)/;
+      if (headerRegex.test(profile)) {
+        profile = profile.replace(headerRegex, `$1${languageLine}\n`);
+      } else {
+        profile = `${languageLine}\n${profile}`;
+      }
     }
   }
   
@@ -77,9 +101,9 @@ async function updateProfile(payload: OnboardingPayload): Promise<void> {
   
   let sleepPlaceValue = '';
   if (payload.wake.enabled && payload.wake.location) {
-    sleepPlaceValue = payload.wake.location;
+    sleepPlaceValue = payload.wake.location.trim();
   } else if (payload.sleep.enabled && payload.sleep.location) {
-    sleepPlaceValue = payload.sleep.location;
+    sleepPlaceValue = payload.sleep.location.trim();
   }
   
   if (sleepPlaceValue) {
@@ -167,14 +191,31 @@ export async function loadSettingsFromFiles(): Promise<OnboardingPayload> {
   
   let profile = fs.readFileSync(aniccaPath, 'utf8');
   const nameLabel = assets.languageLabel === 'Japanese' ? '- 呼び名:' : '- Name:';
-  const nameRegex = new RegExp(`^-\\s*(?:呼び名|Name):\\s+([^\\r\\n]+)`, 'm');
+  // 修正: 値のみをキャプチャする正規表現（\s+ は改行文字にもマッチするため、スペースのみをマッチ）
+  const nameRegex = new RegExp(`^-\\s*(?:呼び名|Name): +([^\\r\\n]+)`, 'm');
   const nameMatch = profile.match(nameRegex);
-  const userName = nameMatch ? nameMatch[1].trim() : '';
+  // 修正: マッチした値が空文字列や空白のみでないことを確認
+  const userName = nameMatch && nameMatch[1] && nameMatch[1].trim() ? nameMatch[1].trim() : '';
   
   const sleepPlaceLabel = assets.languageLabel === 'Japanese' ? '- 寝る場所:' : '- sleep place:';
-  const sleepPlaceRegex = new RegExp(`^-\\s*(?:寝る場所|sleep place):\\s+([^\\r\\n]+)`, 'm');
+  // 修正: 値のみをキャプチャする正規表現（\s+ は改行文字にもマッチするため、スペースのみをマッチ）
+  const sleepPlaceRegex = new RegExp(`^-\\s*(?:寝る場所|sleep place): +([^\\r\\n]+)`, 'm');
   const sleepPlaceMatch = profile.match(sleepPlaceRegex);
-  const sleepPlace = sleepPlaceMatch ? sleepPlaceMatch[1].trim() : '';
+  // 修正: マッチした値が空文字列や空白のみでないことを確認
+  const sleepPlace = sleepPlaceMatch && sleepPlaceMatch[1] && sleepPlaceMatch[1].trim() ? sleepPlaceMatch[1].trim() : '';
+  
+  // Language行を読み取る
+  const languageRegex = new RegExp(`^-\\s*(?:言語|Language): +([^\\r\\n]+)`, 'm');
+  const languageMatch = profile.match(languageRegex);
+  let language: 'Japanese' | 'English' | undefined = undefined;
+  if (languageMatch && languageMatch[1]) {
+    const normalized = languageMatch[1].trim().toLowerCase();
+    if (normalized.startsWith('日') || normalized.startsWith('japanese')) {
+      language = 'Japanese';
+    } else if (normalized.startsWith('英') || normalized.startsWith('english')) {
+      language = 'English';
+    }
+  }
   
   let scheduled: { tasks: Array<{ id: string; schedule: string; description: string }> };
   try {
@@ -201,7 +242,8 @@ export async function loadSettingsFromFiles(): Promise<OnboardingPayload> {
       location: sleepPlace
     },
     profile: {
-      name: userName
+      name: userName,
+      language: language
     }
   };
 }

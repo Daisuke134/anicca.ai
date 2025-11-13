@@ -161,13 +161,26 @@ export async function ensureBaselineFiles(): Promise<void> {
     try {
       const profile = fs.readFileSync(aniccaPath, 'utf8');
       const timezoneLine = `${assets.timezoneLinePrefix} ${tz}`;
-      const insertBlock = `${timezoneLine}\n${assets.languageLine}\n`;
+      
+      // 言語行が既に存在するかチェック
+      const hasLanguageLine = /-\s*(?:言語|Language):\s+[^\r\n]+/m.test(profile);
+      
+      // 言語行が存在しない場合のみ挿入
+      const insertBlock = hasLanguageLine 
+        ? `${timezoneLine}\n`  // 言語行がある場合はタイムゾーン行のみ
+        : `${timezoneLine}\n${assets.languageLine}\n`;  // 言語行がない場合は両方
+      
       let updated = profile
         .replace(/^- タイムゾーン:[^\r\n]*\r?\n?/gm, '')
-        .replace(/^- Timezone:[^\r\n]*\r?\n?/gm, '')
-        .replace(/^- 言語:[^\r\n]*\r?\n?/gm, '')
-        .replace(/^- Language:[^\r\n]*\r?\n?/gm, '')
-        .replace(/^Language:[^\r\n]*\r?\n?/gm, '');
+        .replace(/^- Timezone:[^\r\n]*\r?\n?/gm, '');
+      
+      // 言語行が存在しない場合のみ削除
+      if (!hasLanguageLine) {
+        updated = updated
+          .replace(/^- 言語:[^\r\n]*\r?\n?/gm, '')
+          .replace(/^- Language:[^\r\n]*\r?\n?/gm, '')
+          .replace(/^Language:[^\r\n]*\r?\n?/gm, '');
+      }
 
       if (/# ユーザー情報\r?\n/.test(updated)) {
         updated = updated.replace(/(# ユーザー情報\r?\n)/, `$1${insertBlock}`);
@@ -223,8 +236,16 @@ function isProfileEmpty(): boolean {
   try {
     let profile = fs.readFileSync(aniccaPath, 'utf8');
     // 名前が設定されていればオンボーディング完了と判定
-    const nameRegex = /^-\s*(?:呼び名|Name):\s+[^\r\n]+/m;
-    return !nameRegex.test(profile);
+    // 修正: Name行の値のみをマッチ（改行まで、または行末まで）
+    // コロンの後にスペース（改行以外）+値があるかチェック（値が空の場合はマッチしない）
+    // \s+ は改行文字にもマッチするため、スペースのみをマッチするように変更
+    const nameRegex = /^-\s*(?:呼び名|Name): +([^\r\n]+)/m;
+    const match = profile.match(nameRegex);
+    // マッチした値が空文字列や空白のみでないことを確認
+    if (!match || !match[1] || !match[1].trim()) {
+      return true;  // Name が空または空白のみの場合は空と判定
+    }
+    return false;  // Name に有効な値がある場合は空でないと判定
   } catch {
     return true;
   }

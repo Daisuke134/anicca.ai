@@ -512,8 +512,7 @@ export class AniccaSessionManager {
               prefixPaddingMs: 300,
               silenceDurationMs: 500,
               interruptResponse: true,
-              createResponse: true,
-              idleTimeoutMs: 30_000
+              createResponse: true
             }
           },
           output: {

@@ -4,6 +4,16 @@
 <dict>
 	<key>SchemeUserState</key>
 	<dict>
+		<key>aniccaios copy copy.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>2</integer>
+		</dict>
+		<key>aniccaios copy.xcscheme_^#shared#^_</key>
+		<dict>
+			<key>orderHint</key>
+			<integer>1</integer>
+		</dict>
 		<key>aniccaios-staging.xcscheme_^#shared#^_</key>
 		<dict>
 			<key>orderHint</key>
@@ -19,6 +29,11 @@
 	</dict>
 	<key>SuppressBuildableAutocreation</key>
 	<dict>
+		<key>8410B7D12EC5FF6500795951</key>
+		<dict>
+			<key>primary</key>
+			<true/>
+		</dict>
 		<key>8471AE7A2EB783E1002CECAA</key>
 		<dict>
 			<key>primary</key>

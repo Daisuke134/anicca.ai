@@ -31,14 +31,27 @@ export class SimpleEncryption {
     try {
       if (fs.existsSync(this.masterKeyPath) && safeStorage.isEncryptionAvailable()) {
         // 既存のマスターキーを読み込む
-        const encryptedKey = fs.readFileSync(this.masterKeyPath);
-        const decryptedKey = safeStorage.decryptString(encryptedKey);
-        this.masterKey = Buffer.from(decryptedKey, 'hex');
-        console.log('🔑 Master key loaded successfully');
+        try {
+          const encryptedKey = fs.readFileSync(this.masterKeyPath);
+          const decryptedKey = safeStorage.decryptString(encryptedKey);
+          this.masterKey = Buffer.from(decryptedKey, 'hex');
+          console.log('🔑 Master key loaded successfully');
+        } catch (decryptError) {
+          console.warn('⚠️ Failed to decrypt master key, regenerating...', decryptError);
+          // 壊れたキーファイルを削除
+          try {
+            fs.unlinkSync(this.masterKeyPath);
+            console.log('🗑️ Corrupted master key file deleted');
+          } catch (unlinkError) {
+            console.error('Failed to delete corrupted key:', unlinkError);
+          }
+          // 新しいマスターキーを生成
+          this.generateNewMasterKey();
+        }
       } else {
         // 新しいマスターキーを生成
         this.masterKey = crypto.randomBytes(32);
-        
+
         if (safeStorage.isEncryptionAvailable()) {
           const encryptedKey = safeStorage.encryptString(this.masterKey.toString('hex'));
           fs.writeFileSync(this.masterKeyPath, encryptedKey);

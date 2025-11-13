@@ -7,25 +7,66 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		84108A6B2EC21F19003A0B54 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 84108A6A2EC21F19003A0B54 /* RevenueCat */; };
-		84108A6D2EC21F19003A0B54 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 84108A6C2EC21F19003A0B54 /* RevenueCatUI */; };
-		8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AF7A2EB7B8F4002CECAA /* WebRTC */; };
-		8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8471B3412EBB6AFA002CECAA /* ComponentsKit */; };
+		8410B7D82EC5FF6500795951 /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8410B7D22EC5FF6500795951 /* WebRTC */; };
+		8410B7D92EC5FF6500795951 /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8410B7D42EC5FF6500795951 /* ComponentsKit */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8410B7E12EC5FF6500795951 /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8410B7E32EC5FF6600795951 /* aniccaios copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "aniccaios copy-Info.plist"; path = "/Users/cbns03/Downloads/anicca-project/aniccaios/aniccaios copy-Info.plist"; sourceTree = "<absolute>"; };
+		8410B7F62EC5FF6D00795951 /* aniccaios copy copy-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; name = "aniccaios copy copy-Info.plist"; path = "/Users/cbns03/Downloads/anicca-project/aniccaios/aniccaios copy copy-Info.plist"; sourceTree = "<absolute>"; };
 		8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
 		8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */ = {
+		8410B7E22EC5FF6500795951 /* Exceptions for "aniccaios" folder in "aniccaios" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
+				"/Localized: Resources/Localizable.strings",
+				aniccaiosApp.swift,
+				AniccaWake.caf,
+				AppDelegate.swift,
+				AppState.swift,
+				Assets.xcassets,
+				AudioSessionCoordinator.swift,
+				Authentication/AuthCoordinator.swift,
+				Authentication/AuthPresentationDelegate.swift,
+				Components/AccessorylessTextField.swift,
+				Config.swift,
+				ContentView.swift,
 				Info.plist,
+				Intents/StartConversationIntent.swift,
+				Models/PendingHabitTrigger.swift,
+				Models/UserProfile.swift,
+				Notifications/NotificationScheduler.swift,
+				Onboarding/AuthenticationStepView.swift,
+				Onboarding/CompletionStepView.swift,
+				Onboarding/HabitSetupStepView.swift,
+				Onboarding/HabitSleepLocationStepView.swift,
+				Onboarding/HabitTrainingFocusStepView.swift,
+				Onboarding/HabitType.swift,
+				Onboarding/HabitWakeLocationStepView.swift,
+				Onboarding/MicrophonePermissionStepView.swift,
+				Onboarding/NotificationPermissionStepView.swift,
+				Onboarding/OnboardingFlowView.swift,
+				Onboarding/OnboardingStep.swift,
+				Onboarding/PermissionsStepView.swift,
+				Onboarding/ProfileInfoStepView.swift,
+				Onboarding/WakeSetupStepView.swift,
+				Onboarding/WelcomeStepView.swift,
+				Resources/Prompts/bedtime.txt,
+				Resources/Prompts/common.txt,
+				Resources/Prompts/training.txt,
+				Resources/Prompts/wake_up.txt,
+				Services/ProfileSyncService.swift,
+				Session/AuthRequiredPlaceholderView.swift,
+				SessionView.swift,
+				SettingsView.swift,
+				VoiceSessionController.swift,
+				WakePromptBuilder.swift,
 			);
-			target = 8471AE7A2EB783E1002CECAA /* aniccaios */;
+			target = 8410B7D12EC5FF6500795951 /* aniccaios */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -33,7 +74,7 @@
 		8471AE7D2EB783E1002CECAA /* aniccaios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
-				8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */,
+				8410B7E22EC5FF6500795951 /* Exceptions for "aniccaios" folder in "aniccaios" target */,
 			);
 			path = aniccaios;
 			sourceTree = "<group>";
@@ -41,14 +82,12 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
-		8471AE782EB783E1002CECAA /* Frameworks */ = {
+		8410B7D72EC5FF6500795951 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84108A6D2EC21F19003A0B54 /* RevenueCatUI in Frameworks */,
-				8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */,
-				8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */,
-				84108A6B2EC21F19003A0B54 /* RevenueCat in Frameworks */,
+				8410B7D82EC5FF6500795951 /* WebRTC in Frameworks */,
+				8410B7D92EC5FF6500795951 /* ComponentsKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -63,13 +102,15 @@
 				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
 				8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */,
 				8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */,
+				8410B7E32EC5FF6600795951 /* aniccaios copy-Info.plist */,
+				8410B7F62EC5FF6D00795951 /* aniccaios copy copy-Info.plist */,
 			);
 			sourceTree = "<group>";
 		};
 		8471AE7C2EB783E1002CECAA /* Products */ = {
 			isa = PBXGroup;
 			children = (
-				8471AE7B2EB783E1002CECAA /* aniccaios.app */,
+				8410B7E12EC5FF6500795951 /* aniccaios.app */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,14 +125,14 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
-		8471AE7A2EB783E1002CECAA /* aniccaios */ = {
+		8410B7D12EC5FF6500795951 /* aniccaios */ = {
 			isa = PBXNativeTarget;
-			buildConfigurationList = 8471AE862EB783E3002CECAA /* Build configuration list for PBXNativeTarget "aniccaios" */;
+			buildConfigurationList = 8410B7DC2EC5FF6500795951 /* Build configuration list for PBXNativeTarget "aniccaios" */;
 			buildPhases = (
-				8471AE772EB783E1002CECAA /* Sources */,
-				8471AE782EB783E1002CECAA /* Frameworks */,
-				8471AE792EB783E1002CECAA /* Resources */,
-				8471B3502EBB7A00002CECAA /* Copy WebRTC dSYM */,
+				8410B7D62EC5FF6500795951 /* Sources */,
+				8410B7D72EC5FF6500795951 /* Frameworks */,
+				8410B7DA2EC5FF6500795951 /* Resources */,
+				8410B7DB2EC5FF6500795951 /* Copy WebRTC dSYM */,
 			);
 			buildRules = (
 			);
@@ -102,13 +143,11 @@
 			);
 			name = aniccaios;
 			packageProductDependencies = (
-				8471AF7A2EB7B8F4002CECAA /* WebRTC */,
-				8471B3412EBB6AFA002CECAA /* ComponentsKit */,
-				84108A6A2EC21F19003A0B54 /* RevenueCat */,
-				84108A6C2EC21F19003A0B54 /* RevenueCatUI */,
+				8410B7D22EC5FF6500795951 /* WebRTC */,
+				8410B7D42EC5FF6500795951 /* ComponentsKit */,
 			);
 			productName = aniccaios;
-			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
+			productReference = 8410B7E12EC5FF6500795951 /* aniccaios.app */;
 			productType = "com.apple.product-type.application";
 		};
 /* End PBXNativeTarget section */
@@ -120,11 +159,6 @@
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
-				TargetAttributes = {
-					8471AE7A2EB783E1002CECAA = {
-						CreatedOnToolsVersion = 26.1;
-					};
-				};
 			};
 			buildConfigurationList = 8471AE762EB783E1002CECAA /* Build configuration list for PBXProject "aniccaios" */;
 			developmentRegion = en;
@@ -139,20 +173,19 @@
 			packageReferences = (
 				8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */,
 				8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */,
-				84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
-				8471AE7A2EB783E1002CECAA /* aniccaios */,
+				8410B7D12EC5FF6500795951 /* aniccaios */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
-		8471AE792EB783E1002CECAA /* Resources */ = {
+		8410B7DA2EC5FF6500795951 /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -162,7 +195,7 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		8471B3502EBB7A00002CECAA /* Copy WebRTC dSYM */ = {
+		8410B7DB2EC5FF6500795951 /* Copy WebRTC dSYM */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
@@ -184,7 +217,7 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
-		8471AE772EB783E1002CECAA /* Sources */ = {
+		8410B7D62EC5FF6500795951 /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -194,6 +227,194 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
+		8410B7DD2EC5FF6500795951 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			buildSettings = {
+				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
+				);
+				INFOPLIST_FILE = "aniccaios copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		8410B7DE2EC5FF6500795951 /* staging Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			buildSettings = {
+				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
+				);
+				INFOPLIST_FILE = "aniccaios copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Debug";
+		};
+		8410B7DF2EC5FF6500795951 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
+			buildSettings = {
+				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
+				);
+				INFOPLIST_FILE = "aniccaios copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8410B7E02EC5FF6500795951 /* staging Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			buildSettings = {
+				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = (
+					"$(inherited)",
+					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
+				);
+				INFOPLIST_FILE = "aniccaios copy-Info.plist";
+				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
+				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Release";
+		};
 		8471AE842EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
@@ -201,6 +422,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -255,6 +477,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -267,6 +490,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -315,98 +539,9 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
-			};
-			name = Release;
-		};
-		8471AE872EB783E3002CECAA /* Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
-			buildSettings = {
-				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
-				);
-				INFOPLIST_FILE = aniccaios/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = "1,2";
-			};
-			name = Debug;
-		};
-		8471AE882EB783E3002CECAA /* Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
-			buildSettings = {
-				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
-				);
-				INFOPLIST_FILE = aniccaios/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = Release;
 		};
@@ -417,6 +552,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -471,53 +607,9 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
-			};
-			name = "staging Debug";
-		};
-		8471B0742EB8CD64002CECAA /* staging Debug */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
-			buildSettings = {
-				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
-				);
-				INFOPLIST_FILE = aniccaios/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = "staging Debug";
 		};
@@ -528,6 +620,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -576,59 +669,26 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
-			};
-			name = "staging Release";
-		};
-		8471B0772EB8CD69002CECAA /* staging Release */ = {
-			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
-			buildSettings = {
-				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
-				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
-				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
-				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				ENABLE_PREVIEWS = YES;
-				GENERATE_INFOPLIST_FILE = YES;
-				HEADER_SEARCH_PATHS = (
-					"$(inherited)",
-					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
-				);
-				INFOPLIST_FILE = aniccaios/Info.plist;
-				INFOPLIST_KEY_CFBundleDisplayName = Anicca;
-				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
-				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
-				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
-				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
-				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 18.6;
-				LD_RUNPATH_SEARCH_PATHS = (
-					"$(inherited)",
-					"@executable_path/Frameworks",
-				);
-				MARKETING_VERSION = 1.0.0;
-				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
-				PRODUCT_NAME = "$(TARGET_NAME)";
-				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				SWIFT_APPROACHABLE_CONCURRENCY = YES;
-				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
-				SWIFT_EMIT_LOC_STRINGS = YES;
-				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
-				SWIFT_VERSION = 5.9;
-				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = "staging Release";
 		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		8410B7DC2EC5FF6500795951 /* Build configuration list for PBXNativeTarget "aniccaios" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8410B7DD2EC5FF6500795951 /* Debug */,
+				8410B7DE2EC5FF6500795951 /* staging Debug */,
+				8410B7DF2EC5FF6500795951 /* Release */,
+				8410B7E02EC5FF6500795951 /* staging Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8471AE762EB783E1002CECAA /* Build configuration list for PBXProject "aniccaios" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (
@@ -640,26 +700,23 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
-		8471AE862EB783E3002CECAA /* Build configuration list for PBXNativeTarget "aniccaios" */ = {
-			isa = XCConfigurationList;
-			buildConfigurations = (
-				8471AE872EB783E3002CECAA /* Debug */,
-				8471B0742EB8CD64002CECAA /* staging Debug */,
-				8471AE882EB783E3002CECAA /* Release */,
-				8471B0772EB8CD69002CECAA /* staging Release */,
-			);
-			defaultConfigurationIsVisible = 0;
-			defaultConfigurationName = Release;
-		};
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+		8410B7D32EC5FF6500795951 /* XCRemoteSwiftPackageReference "WebRTC" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.47.0;
+				minimumVersion = 141.0.0;
+			};
+		};
+		8410B7D52EC5FF6500795951 /* XCRemoteSwiftPackageReference "ComponentsKit" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/componentskit/ComponentsKit";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 1.5.4;
 			};
 		};
 		8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */ = {
@@ -681,24 +738,14 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		84108A6A2EC21F19003A0B54 /* RevenueCat */ = {
+		8410B7D22EC5FF6500795951 /* WebRTC */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */;
-			productName = RevenueCat;
-		};
-		84108A6C2EC21F19003A0B54 /* RevenueCatUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */;
-			productName = RevenueCatUI;
-		};
-		8471AF7A2EB7B8F4002CECAA /* WebRTC */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */;
+			package = 8410B7D32EC5FF6500795951 /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
 		};
-		8471B3412EBB6AFA002CECAA /* ComponentsKit */ = {
+		8410B7D42EC5FF6500795951 /* ComponentsKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */;
+			package = 8410B7D52EC5FF6500795951 /* XCRemoteSwiftPackageReference "ComponentsKit" */;
 			productName = ComponentsKit;
 		};
 /* End XCSwiftPackageProductDependency section */

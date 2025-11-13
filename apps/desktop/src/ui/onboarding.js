@@ -297,9 +297,12 @@ async function loadSettingsData() {
           sleepPlace.value = sleepPlaceValue;
         }
         
-        // Languageフィールドに現在の言語を設定
+        // Languageフィールドに実際の言語を設定
         const languageInput = document.getElementById('settings-language');
-        if (languageInput) {
+        if (languageInput && data.profile?.language) {
+          languageInput.value = data.profile.language;
+        } else if (languageInput) {
+          // フォールバック: ブラウザの言語から判定
           const browserLang = navigator.language || navigator.userLanguage || 'en';
           const displayLang = browserLang.startsWith('ja') ? 'Japanese' : 'English';
           languageInput.value = displayLang;
@@ -339,9 +342,12 @@ async function loadSettingsData() {
     sleepPlace.value = sleepPlaceValue;
   }
   
-  // Languageフィールドに現在の言語を設定
+  // Languageフィールドに実際の言語を設定
   const languageInput = document.getElementById('settings-language');
-  if (languageInput) {
+  if (languageInput && onboardingData.profile?.language) {
+    languageInput.value = onboardingData.profile.language;
+  } else if (languageInput) {
+    // フォールバック: ブラウザの言語から判定
     const browserLang = navigator.language || navigator.userLanguage || 'en';
     const displayLang = browserLang.startsWith('ja') ? 'Japanese' : 'English';
     languageInput.value = displayLang;
@@ -385,12 +391,15 @@ async function saveSettingsHabits() {
 async function saveSettingsProfile() {
   const profileName = document.getElementById('settings-profile-name');
   const sleepPlace = document.getElementById('settings-sleep-place');
+  const languageSelect = document.getElementById('settings-language');
   
   const name = profileName ? profileName.value : '';
   const sleepPlaceValue = sleepPlace ? sleepPlace.value : '';
+  const language = languageSelect ? languageSelect.value : undefined;
   
   // Update onboardingData and save
   onboardingData.profile.name = name;
+  onboardingData.profile.language = language;
   // Locationをwake/sleepの両方に設定（どちらかが有効な場合）
   if (onboardingData.wake.enabled) {
     onboardingData.wake.location = sleepPlaceValue;

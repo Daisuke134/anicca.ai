@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <Scheme
    LastUpgradeVersion = "2610"
-   version = "1.7">
+   version = "2.2">
    <BuildAction
       parallelizeBuildables = "YES"
       buildImplicitDependencies = "YES"
@@ -15,11 +15,20 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8471AE7A2EB783E1002CECAA"
+               BlueprintIdentifier = "8410B7D12EC5FF6500795951"
                BuildableName = "aniccaios.app"
                BlueprintName = "aniccaios"
                ReferencedContainer = "container:aniccaios.xcodeproj">
             </BuildableReference>
+         </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <AutocreatedTestPlanReference>
+            </AutocreatedTestPlanReference>
          </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
@@ -44,7 +53,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8471AE7A2EB783E1002CECAA"
+            BlueprintIdentifier = "8410B7D12EC5FF6500795951"
             BuildableName = "aniccaios.app"
             BlueprintName = "aniccaios"
             ReferencedContainer = "container:aniccaios.xcodeproj">
@@ -67,7 +76,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8471AE7A2EB783E1002CECAA"
+            BlueprintIdentifier = "8410B7D12EC5FF6500795951"
             BuildableName = "aniccaios.app"
             BlueprintName = "aniccaios"
             ReferencedContainer = "container:aniccaios.xcodeproj">
@@ -79,6 +88,7 @@
    </AnalyzeAction>
    <ArchiveAction
       buildConfiguration = "Release"
-      revealArchiveInOrganizer = "YES">
+      revealArchiveInOrganizer = "YES"
+      allowsArchivingForSimulator = "YES">
    </ArchiveAction>
 </Scheme>

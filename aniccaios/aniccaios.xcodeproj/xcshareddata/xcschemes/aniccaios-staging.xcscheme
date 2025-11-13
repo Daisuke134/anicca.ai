@@ -15,7 +15,7 @@
             buildForAnalyzing = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "8410B7D12EC5FF6500795951"
+               BlueprintIdentifier = "8471AE7A2EB783E1002CECAA"
                BuildableName = "aniccaios.app"
                BlueprintName = "aniccaios"
                ReferencedContainer = "container:aniccaios.xcodeproj">
@@ -44,7 +44,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8410B7D12EC5FF6500795951"
+            BlueprintIdentifier = "8471AE7A2EB783E1002CECAA"
             BuildableName = "aniccaios.app"
             BlueprintName = "aniccaios"
             ReferencedContainer = "container:aniccaios.xcodeproj">
@@ -61,7 +61,7 @@
          runnableDebuggingMode = "0">
          <BuildableReference
             BuildableIdentifier = "primary"
-            BlueprintIdentifier = "8410B7D12EC5FF6500795951"
+            BlueprintIdentifier = "8471AE7A2EB783E1002CECAA"
             BuildableName = "aniccaios.app"
             BlueprintName = "aniccaios"
             ReferencedContainer = "container:aniccaios.xcodeproj">

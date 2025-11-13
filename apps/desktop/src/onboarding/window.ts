@@ -51,8 +51,8 @@ export async function launchOnboardingUi(options: LaunchOptions): Promise<void> 
   // IPCハンドラ設定
   setupIpcHandlers(sessionManager, authService);
   
-  // HTML読み込み
-  const htmlPath = path.join(__dirname, '../ui/onboarding.html');
+  // HTML読み込み（Quasarビルド済みファイル）
+  const htmlPath = path.join(__dirname, '../ui/index.html');
   if (showSettings) {
     // URLパラメータで設定画面を指定
     const fileUrl = `file://${htmlPath}?settings=true`;

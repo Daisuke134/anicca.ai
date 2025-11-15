@@ -1,7 +1,21 @@
 import logger from '../../utils/logger.js';
 import { BILLING_CONFIG } from '../../config/environment.js';
 import { fetchCustomerEntitlements } from './api.js';
-import { requireSupabase, normalizePlanForResponse, getEntitlementState } from '../subscriptionStore.js';
+import { fetchSubscriptionRow, normalizePlanForResponse, getEntitlementState } from '../subscriptionStore.js';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabase = supabaseServiceKey
+  ? createClient(supabaseUrl, supabaseServiceKey)
+  : null;
+
+function requireSupabase() {
+  if (!supabase) {
+    throw new Error('Supabase service role client is not configured');
+  }
+  return supabase;
+}
 
 const RC_EVENTS = new Set([
   'INITIAL_PURCHASE', 'RENEWAL', 'UNCANCELLATION',

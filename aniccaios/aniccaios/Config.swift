@@ -3,6 +3,10 @@ import OSLog
 
 enum AppConfig {
     private static let proxyBaseKey = "ANICCA_PROXY_BASE_URL"
+    private static let revenueCatAPIKey = "REVENUECAT_API_KEY"
+    private static let revenueCatEntitlementKey = "REVENUECAT_ENTITLEMENT_ID"
+    private static let revenueCatPaywallKey = "REVENUECAT_PAYWALL_ID"
+    private static let revenueCatCustomerCenterKey = "REVENUECAT_CUSTOMER_CENTER_ID"
     private static let logger = Logger(subsystem: "com.anicca.ios", category: "AppConfig")
 
     private static func infoValue(for key: String) -> String {
@@ -38,5 +42,13 @@ enum AppConfig {
     
     static var profileSyncURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/profile")
+    }
+    
+    static var revenueCatAPIKey: String { infoValue(for: revenueCatAPIKey) }
+    static var revenueCatEntitlementId: String { infoValue(for: revenueCatEntitlementKey) }
+    static var revenueCatPaywallId: String { infoValue(for: revenueCatPaywallKey) }
+    static var revenueCatCustomerCenterId: String { infoValue(for: revenueCatCustomerCenterKey) }
+    static var entitlementSyncURL: URL {
+        proxyBaseURL.appendingPathComponent("billing/revenuecat/sync")
     }
 }

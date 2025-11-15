@@ -60,7 +60,13 @@ export const BILLING_CONFIG = {
   CHECKOUT_RETURN_URL: process.env.CHECKOUT_RETURN_URL || '',
   PORTAL_RETURN_URL: process.env.PORTAL_RETURN_URL || '',
   FREE_DAILY_LIMIT: Number.isFinite(freeDailyLimitParsed) ? freeDailyLimitParsed : null,
-  PRO_DAILY_LIMIT: Number.isFinite(proDailyLimitParsed) ? proDailyLimitParsed : null
+  PRO_DAILY_LIMIT: Number.isFinite(proDailyLimitParsed) ? proDailyLimitParsed : null,
+  REVENUECAT_PROJECT_ID: process.env.REVENUECAT_PROJECT_ID || '',
+  REVENUECAT_REST_API_KEY: process.env.REVENUECAT_REST_API_KEY || '',
+  REVENUECAT_WEBHOOK_SECRET: process.env.REVENUECAT_WEBHOOK_SECRET || '',
+  REVENUECAT_ENTITLEMENT_ID: process.env.REVENUECAT_ENTITLEMENT_ID || 'pro',
+  REVENUECAT_PAYWALL_ID: process.env.REVENUECAT_PAYWALL_ID || '',
+  REVENUECAT_CUSTOMER_CENTER_ID: process.env.REVENUECAT_CUSTOMER_CENTER_ID || ''
 };
 
 // ディレクトリ設定
@@ -119,6 +125,12 @@ export function validateEnvironment() {
     }
     if (!BILLING_CONFIG.STRIPE_WEBHOOK_SECRET) {
       warnings.push('STRIPE_WEBHOOK_SECRET is not set');
+    }
+    if (!BILLING_CONFIG.REVENUECAT_PROJECT_ID || !BILLING_CONFIG.REVENUECAT_REST_API_KEY) {
+      warnings.push('RevenueCat project / REST API key are not set');
+    }
+    if (!BILLING_CONFIG.REVENUECAT_WEBHOOK_SECRET) {
+      warnings.push('REVENUECAT_WEBHOOK_SECRET is not set');
     }
     if (!process.env.PROXY_GUEST_JWT_SECRET) {
       warnings.push('PROXY_GUEST_JWT_SECRET is not set');

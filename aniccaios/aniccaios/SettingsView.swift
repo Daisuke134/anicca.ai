@@ -1,4 +1,5 @@
 import ComponentsKit
+import RevenueCatUI
 import SwiftUI
 
 struct SettingsView: View {
@@ -11,6 +12,7 @@ struct SettingsView: View {
     @State private var preferredLanguage: LanguagePreference = .en
     @State private var sleepLocation: String = ""
     @State private var trainingFocus: String = ""
+    @State private var showingCustomerCenter = false
 
     private struct TrainingFocusOption: Identifiable {
         let id: String
@@ -41,6 +43,7 @@ struct SettingsView: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
+                    subscriptionCard
                     // Personalization section
                     personalizationCard
                     
@@ -268,6 +271,40 @@ struct SettingsView: View {
     private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
         formatter.timeStyle = .short
+        return formatter
+    }
+    
+    private var subscriptionCard: some View {
+        SUCard(model: CardVM(), content: {
+            VStack(alignment: .leading, spacing: 12) {
+                Text("settings_subscription_title")
+                    .font(.headline)
+                Text(subscriptionSummary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button("settings_subscription_manage") {
+                    showingCustomerCenter = true
+                }
+                .buttonStyle(.borderedProminent)
+            }
+        })
+        .sheet(isPresented: $showingCustomerCenter) {
+            RevenueCatUI.CustomerCenterView(customerCenterID: AppConfig.revenueCatCustomerCenterId)
+        }
+    }
+    
+    private var subscriptionSummary: String {
+        let info = appState.subscriptionInfo
+        if let date = info.currentPeriodEnd {
+            return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
+        }
+        return NSLocalizedString("settings_subscription_free", comment: "")
+    }
+    
+    private var dateFormatter: DateFormatter {
+        let formatter = DateFormatter()
+        formatter.dateStyle = .medium
+        formatter.timeStyle = .none
         return formatter
     }
 

@@ -16,6 +16,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationScheduler.shared.registerCategories()
         Task {
             _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
+            await SubscriptionManager.shared.configure()
+            await SubscriptionManager.shared.refreshOfferings()
         }
         return true
     }

@@ -8,6 +8,7 @@ final class AppState: ObservableObject {
 
     @Published private(set) var authStatus: AuthStatus = .signedOut
     @Published private(set) var userProfile: UserProfile = UserProfile()
+    @Published private(set) var subscriptionInfo: SubscriptionInfo = .free
     @Published private(set) var habitSchedules: [HabitType: DateComponents] = [:]
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
@@ -34,6 +35,7 @@ final class AppState: ObservableObject {
     private let onboardingStepKey = "com.anicca.onboardingStep"
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
+    private let subscriptionKey = "com.anicca.subscription"
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
@@ -50,6 +52,7 @@ final class AppState: ObservableObject {
         // Load user credentials and profile
         self.authStatus = loadUserCredentials()
         self.userProfile = loadUserProfile()
+        self.subscriptionInfo = loadSubscriptionInfo()
         
         // Load habit schedules (new format)
         if let data = defaults.data(forKey: habitSchedulesKey),
@@ -193,6 +196,7 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         onboardingStep = .welcome
         userProfile = UserProfile()
+        subscriptionInfo = .free
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
         Task {
@@ -222,12 +226,14 @@ final class AppState: ObservableObject {
             userProfile.displayName = credentials.displayName
             saveUserProfile()
         }
+        Task { await SubscriptionManager.shared.handleLogin(appUserId: credentials.userId) }
     }
     
     func clearUserCredentials() {
         authStatus = .signedOut
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.synchronize()
+        Task { await SubscriptionManager.shared.handleLogout() }
     }
     
     private func loadUserCredentials() -> AuthStatus {
@@ -395,5 +401,22 @@ final class AppState: ObservableObject {
             loadedProfile.preferredLanguage = LanguagePreference.detectDefault()
         }
         return loadedProfile
+    }
+    
+    // MARK: - Subscription Info
+    
+    func updateSubscriptionInfo(_ info: SubscriptionInfo) {
+        subscriptionInfo = info
+        if let data = try? JSONEncoder().encode(info) {
+            defaults.set(data, forKey: subscriptionKey)
+        }
+    }
+    
+    func loadSubscriptionInfo() -> SubscriptionInfo {
+        guard let data = defaults.data(forKey: subscriptionKey),
+              let info = try? JSONDecoder().decode(SubscriptionInfo.self, from: data) else {
+            return .free
+        }
+        return info
     }
 }

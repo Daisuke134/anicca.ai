@@ -7,10 +7,10 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		84108A6B2EC21F19003A0B54 /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 84108A6A2EC21F19003A0B54 /* RevenueCat */; };
-		84108A6D2EC21F19003A0B54 /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 84108A6C2EC21F19003A0B54 /* RevenueCatUI */; };
-		8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 8471AF7A2EB7B8F4002CECAA /* WebRTC */; };
-		8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 8471B3412EBB6AFA002CECAA /* ComponentsKit */; };
+		840BA3AA2EC772EA005CDB8D /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3A92EC772EA005CDB8D /* RevenueCat */; };
+		840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AB2EC772EA005CDB8D /* RevenueCatUI */; };
+		840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AE2EC77316005CDB8D /* ComponentsKit */; };
+		840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3B12EC77325005CDB8D /* WebRTC */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -45,10 +45,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				84108A6D2EC21F19003A0B54 /* RevenueCatUI in Frameworks */,
-				8471AF7B2EB7B8F4002CECAA /* WebRTC in Frameworks */,
-				8471B3422EBB6AFA002CECAA /* ComponentsKit in Frameworks */,
-				84108A6B2EC21F19003A0B54 /* RevenueCat in Frameworks */,
+				840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */,
+				840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */,
+				840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */,
+				840BA3AA2EC772EA005CDB8D /* RevenueCat in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -91,7 +91,6 @@
 				8471AE772EB783E1002CECAA /* Sources */,
 				8471AE782EB783E1002CECAA /* Frameworks */,
 				8471AE792EB783E1002CECAA /* Resources */,
-				8471B3502EBB7A00002CECAA /* Copy WebRTC dSYM */,
 			);
 			buildRules = (
 			);
@@ -102,10 +101,10 @@
 			);
 			name = aniccaios;
 			packageProductDependencies = (
-				8471AF7A2EB7B8F4002CECAA /* WebRTC */,
-				8471B3412EBB6AFA002CECAA /* ComponentsKit */,
-				84108A6A2EC21F19003A0B54 /* RevenueCat */,
-				84108A6C2EC21F19003A0B54 /* RevenueCatUI */,
+				840BA3A92EC772EA005CDB8D /* RevenueCat */,
+				840BA3AB2EC772EA005CDB8D /* RevenueCatUI */,
+				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
+				840BA3B12EC77325005CDB8D /* WebRTC */,
 			);
 			productName = aniccaios;
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
@@ -137,9 +136,9 @@
 			mainGroup = 8471AE722EB783E1002CECAA;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
-				8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */,
-				8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */,
-				84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */,
+				840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */,
+				840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
@@ -161,28 +160,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXShellScriptBuildPhase section */
-		8471B3502EBB7A00002CECAA /* Copy WebRTC dSYM */ = {
-			isa = PBXShellScriptBuildPhase;
-			alwaysOutOfDate = 1;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = "Copy WebRTC dSYM";
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "if [ \"${CONFIGURATION}\" = \"Release\" ] || [ \"${CONFIGURATION}\" = \"staging Release\" ]; then\n    # Find WebRTC.framework dSYM in Swift Package build directory\n    WEBRTC_DSYM=$(find \"${BUILD_DIR}\" -name \"WebRTC.framework.dSYM\" -type d | head -1)\n    if [ -n \"$WEBRTC_DSYM\" ]; then\n        # Copy dSYM to archive dSYMs folder\n        DSYM_DEST=\"${DWARF_DSYM_FOLDER_PATH}/WebRTC.framework.dSYM\"\n        if [ ! -d \"$DSYM_DEST\" ]; then\n            cp -R \"$WEBRTC_DSYM\" \"$DSYM_DEST\"\n            echo \"Copied WebRTC.framework.dSYM to $DSYM_DEST\"\n        fi\n    else\n        echo \"Warning: WebRTC.framework.dSYM not found in build directory\"\n    fi\nfi\n";
-		};
-/* End PBXShellScriptBuildPhase section */
-
 /* Begin PBXSourcesBuildPhase section */
 		8471AE772EB783E1002CECAA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
@@ -201,6 +178,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -255,6 +233,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -267,6 +246,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -296,9 +276,10 @@
 				CLANG_WARN_UNREACHABLE_CODE = YES;
 				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
 				COPY_PHASE_STRIP = NO;
+				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = YES;
+				DWARF_DSYM_FILE_SHOULD_ACCOMPANY_PRODUCT = NO;
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_USER_SCRIPT_SANDBOXING = YES;
@@ -315,7 +296,10 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				STRIP_INSTALLED_PRODUCT = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
 			};
 			name = Release;
@@ -328,12 +312,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaiosDebug.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 33;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = NO;
-					HEADER_SEARCH_PATHS = (
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
 				);
@@ -355,11 +341,14 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "anicca-distribution";
 				SKIP_INSTALL = NO;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
 				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
 				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = "1,2";
@@ -374,12 +363,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 33;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = NO;
-					HEADER_SEARCH_PATHS = (
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
 				);
@@ -401,6 +392,8 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "anicca-distribution";
 				SKIP_INSTALL = NO;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -419,6 +412,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -473,6 +467,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -486,12 +481,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 33;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = NO;
-					HEADER_SEARCH_PATHS = (
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
 				);
@@ -513,6 +510,8 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "anicca-distribution";
 				SKIP_INSTALL = NO;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -531,6 +530,7 @@
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_LOCALIZABILITY_NONLOCALIZED = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -579,6 +579,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -592,12 +593,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
-				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 33;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
+				CURRENT_PROJECT_VERSION = 34;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
-					GENERATE_INFOPLIST_FILE = NO;
-					HEADER_SEARCH_PATHS = (
+				GENERATE_INFOPLIST_FILE = NO;
+				HEADER_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/aniccaios/WebRTCShims",
 				);
@@ -619,6 +622,8 @@
 				MARKETING_VERSION = 1.0.0;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "anicca-distribution";
 				SKIP_INSTALL = NO;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;
@@ -658,23 +663,15 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
+		840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/RevenueCat/purchases-ios";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 5.47.0;
+				minimumVersion = 5.47.1;
 			};
 		};
-		8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/stasel/WebRTC.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 141.0.0;
-			};
-		};
-		8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */ = {
+		840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/componentskit/ComponentsKit";
 			requirement = {
@@ -682,28 +679,36 @@
 				minimumVersion = 1.5.4;
 			};
 		};
+		840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/stasel/WebRTC.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 141.0.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		84108A6A2EC21F19003A0B54 /* RevenueCat */ = {
+		840BA3A92EC772EA005CDB8D /* RevenueCat */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			package = 840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */;
 			productName = RevenueCat;
 		};
-		84108A6C2EC21F19003A0B54 /* RevenueCatUI */ = {
+		840BA3AB2EC772EA005CDB8D /* RevenueCatUI */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 84108A692EC21F19003A0B54 /* XCRemoteSwiftPackageReference "purchases-ios" */;
+			package = 840BA3A82EC772EA005CDB8D /* XCRemoteSwiftPackageReference "purchases-ios" */;
 			productName = RevenueCatUI;
 		};
-		8471AF7A2EB7B8F4002CECAA /* WebRTC */ = {
+		840BA3AE2EC77316005CDB8D /* ComponentsKit */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = 8471AF792EB7B8F4002CECAA /* XCRemoteSwiftPackageReference "WebRTC" */;
-			productName = WebRTC;
-		};
-		8471B3412EBB6AFA002CECAA /* ComponentsKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 8471B3402EBB6AFA002CECAA /* XCRemoteSwiftPackageReference "ComponentsKit" */;
+			package = 840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */;
 			productName = ComponentsKit;
+		};
+		840BA3B12EC77325005CDB8D /* WebRTC */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */;
+			productName = WebRTC;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

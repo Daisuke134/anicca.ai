@@ -20,3 +20,4 @@ COMMENT ON COLUMN mobile_profiles.profile IS 'JSONB object containing user profi
 COMMENT ON COLUMN mobile_profiles.language IS 'Preferred language code (ja, en, etc.)';
 
 
+

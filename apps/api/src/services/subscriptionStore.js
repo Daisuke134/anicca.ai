@@ -10,6 +10,10 @@ const supabase = supabaseServiceKey
   : null;
 
 const DEFAULT_PRO_DAILY_LIMIT = 1000;
+const ENTITLEMENT_SOURCE = {
+  STRIPE: 'stripe',
+  REVENUECAT: 'revenuecat'
+};
 
 function requireSupabase() {
   if (!supabase) {
@@ -117,24 +121,37 @@ export async function recordStripeEvent(event) {
   return true;
 }
 
-function normalizeStripeStatus(stripeStatus) {
-  switch (stripeStatus) {
+function normalizeStatus(provider, rawStatus) {
+  if (provider === ENTITLEMENT_SOURCE.REVENUECAT) {
+    switch (rawStatus) {
+      case 'active':
+      case 'renewal':
+      case 'unlimited':
+        return { plan: 'pro', status: rawStatus };
+      case 'grace_period':
+      case 'billing_issue':
+        return { plan: 'grace', status: rawStatus };
+      default:
+        return { plan: 'free', status: rawStatus || 'expired' };
+    }
+  }
+  switch (rawStatus) {
     case 'active':
     case 'trialing':
-      return { plan: 'pro', status: stripeStatus };
+      return { plan: 'pro', status: rawStatus };
     case 'past_due':
     case 'incomplete':
     case 'incomplete_expired':
     case 'unpaid':
-      return { plan: 'grace', status: stripeStatus };
+      return { plan: 'grace', status: rawStatus };
     default:
-      return { plan: 'free', status: stripeStatus || 'canceled' };
+      return { plan: 'free', status: rawStatus || 'canceled' };
   }
 }
 
 export async function updateSubscriptionFromStripe(userId, stripeCustomerId, subscription) {
   const client = requireSupabase();
-  const { plan, status } = normalizeStripeStatus(subscription?.status);
+  const { plan, status } = normalizeStatus(ENTITLEMENT_SOURCE.STRIPE, subscription?.status);
   const payload = {
     user_id: userId,
     stripe_customer_id: stripeCustomerId,
@@ -144,6 +161,9 @@ export async function updateSubscriptionFromStripe(userId, stripeCustomerId, sub
     current_period_end: subscription?.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
     trial_end: subscription?.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
     metadata: subscription?.metadata || {},
+    entitlement_source: ENTITLEMENT_SOURCE.STRIPE,
+    revenuecat_entitlement_id: null,
+    revenuecat_original_transaction_id: null,
     updated_at: new Date().toISOString()
   };
   const { error } = await client
@@ -162,6 +182,9 @@ export async function clearSubscription(userId) {
       plan: 'free',
       status: 'canceled',
       stripe_subscription_id: null,
+      entitlement_source: ENTITLEMENT_SOURCE.STRIPE,
+      revenuecat_entitlement_id: null,
+      revenuecat_original_transaction_id: null,
       updated_at: new Date().toISOString()
     }, { onConflict: 'user_id' });
   if (error) throw error;
@@ -217,7 +240,7 @@ export async function getEntitlementState(userId) {
     fetchSubscriptionRow(userId),
     getTodayUsage(userId)
   ]);
-  const statusInfo = normalizeStripeStatus(subscription?.status);
+  const statusInfo = normalizeStatus(ENTITLEMENT_SOURCE.STRIPE, subscription?.status);
   const limit = resolveLimit(statusInfo.plan);
   const count = usage?.count || 0;
   const remaining = limit > 0 ? Math.max(limit - count, 0) : null;

@@ -15,6 +15,12 @@
     <string>$(MARKETING_VERSION)</string>
     <key>CFBundleVersion</key>
     <string>$(CURRENT_PROJECT_VERSION)</string>
+    <key>CFBundleExecutable</key>
+    <string>$(EXECUTABLE_NAME)</string>
+
+    <!-- iOS判定キー（Archive時にiOS Appsとして認識させる） -->
+    <key>LSRequiresIPhoneOS</key>
+    <true/>
 
     <!-- 既存ビルド設定で付与していたものを明示移行 -->
     <key>CFBundleLocalizations</key>
@@ -28,6 +34,8 @@
     <string>public.app-category.healthcare-fitness</string>
     <key>NSMicrophoneUsageDescription</key>
     <string>Anicca needs the microphone to talk with you in real time.</string>
+    <key>NSCameraUsageDescription</key>
+    <string>Anicca needs the camera for video calls and visual communication.</string>
     <key>UIApplicationSupportsIndirectInputEvents</key>
     <true/>
     <key>UISupportedInterfaceOrientations</key>
@@ -47,6 +55,14 @@
     <!-- 既存キーの維持 -->
     <key>ANICCA_PROXY_BASE_URL</key>
     <string>$(INFOPLIST_KEY_ANICCA_PROXY_BASE_URL)</string>
+    <key>REVENUECAT_API_KEY</key>
+    <string>$(INFOPLIST_KEY_REVENUECAT_API_KEY)</string>
+    <key>REVENUECAT_ENTITLEMENT_ID</key>
+    <string>$(INFOPLIST_KEY_REVENUECAT_ENTITLEMENT_ID)</string>
+    <key>REVENUECAT_PAYWALL_ID</key>
+    <string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
+    <key>REVENUECAT_CUSTOMER_CENTER_ID</key>
+    <string>$(INFOPLIST_KEY_REVENUECAT_CUSTOMER_CENTER_ID)</string>
     <key>NSUserNotificationsUsageDescription</key>
     <string>起床やルーティン開始のために通知を使います。</string>
     <key>UIApplicationSceneManifest</key>

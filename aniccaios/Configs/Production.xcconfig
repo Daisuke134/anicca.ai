@@ -1,9 +1,8 @@
 ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api"
 INFOPLIST_KEY_ANICCA_PROXY_BASE_URL = $(ANICCA_PROXY_BASE_URL)
 
-# TODO: App Store Connectでアプリ接続後、Production用のPublic API Key (pk_live_...) に更新すること
-# 現時点ではTest Storeキーを使用（App Store Connect接続後に自動生成されるProduction用キーに置き換え）
-REVENUECAT_API_KEY = "test_InOtDYNvBLQqzbPoTMCOOBeXdJi"
+// Production用のPublic API Key（App Store Connect連携済み）
+REVENUECAT_API_KEY = "appl_AyTtJmtNsepVIgvJovlHkYdGfqF"
 REVENUECAT_ENTITLEMENT_ID = pro
 REVENUECAT_PAYWALL_ID = onboarding_v1
 REVENUECAT_CUSTOMER_CENTER_ID = default

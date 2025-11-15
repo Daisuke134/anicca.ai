@@ -24,3 +24,4 @@ CREATE TABLE IF NOT EXISTS mobile_alarm_schedules (
 CREATE INDEX IF NOT EXISTS idx_mobile_alarm_schedules_user_id ON mobile_alarm_schedules(user_id);
 CREATE INDEX IF NOT EXISTS idx_mobile_alarm_schedules_next_fire_at ON mobile_alarm_schedules(next_fire_at);
 
+

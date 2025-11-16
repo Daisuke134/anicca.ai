@@ -16,26 +16,43 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offering {
-                if #available(iOS 17.0, *) {
-                    RevenueCatUI.PaywallView(
-                        offering: offering,
-                        displayCloseButton: true,
-                        onDismiss: { onDismissRequested?() }
-                    )
-                    .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
-                        if newValue {
-                            onPurchaseCompleted?()
+                ZStack {
+                    if #available(iOS 17.0, *) {
+                        RevenueCatUI.PaywallView(
+                            offering: offering,
+                            displayCloseButton: false
+                        )
+                        .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
+                            if newValue {
+                                onPurchaseCompleted?()
+                            }
+                        }
+                    } else {
+                        RevenueCatUI.PaywallView(
+                            offering: offering,
+                            displayCloseButton: false
+                        )
+                        .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                            if newValue {
+                                onPurchaseCompleted?()
+                            }
                         }
                     }
-                } else {
-                    RevenueCatUI.PaywallView(
-                        offering: offering,
-                        displayCloseButton: true,
-                        onDismiss: { onDismissRequested?() }
-                    )
-                    .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
-                        if newValue {
-                            onPurchaseCompleted?()
+                    
+                    if let onDismissRequested {
+                        VStack {
+                            HStack {
+                                Button {
+                                    onDismissRequested()
+                                } label: {
+                                    Image(systemName: "xmark.circle.fill")
+                                        .font(.system(size: 28))
+                                        .foregroundStyle(.secondary)
+                                        .padding(12)
+                                }
+                                Spacer()
+                            }
+                            Spacer()
                         }
                     }
                 }

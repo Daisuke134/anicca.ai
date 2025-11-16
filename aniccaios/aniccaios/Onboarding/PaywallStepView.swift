@@ -12,8 +12,7 @@ struct PaywallStepView: View {
                 next()
             },
             onDismissRequested: {
-                // バツボタンが押されたら習慣設定画面に戻る
-                appState.setOnboardingStep(.habitSetup)
+                next()
             }
         )
     }

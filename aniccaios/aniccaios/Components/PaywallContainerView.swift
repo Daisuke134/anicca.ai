@@ -16,43 +16,42 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offering {
-                ZStack {
-                    if #available(iOS 17.0, *) {
-                        RevenueCatUI.PaywallView(
-                            offering: offering,
-                            displayCloseButton: false
-                        )
-                        .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
-                            if newValue {
-                                onPurchaseCompleted?()
-                            }
-                        }
-                    } else {
-                        RevenueCatUI.PaywallView(
-                            offering: offering,
-                            displayCloseButton: false
-                        )
-                        .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
-                            if newValue {
-                                onPurchaseCompleted?()
-                            }
+                if #available(iOS 17.0, *) {
+                    RevenueCatUI.PaywallView(
+                        offering: offering,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
                         }
                     }
-                    
-                    if let onDismissRequested {
-                        VStack {
-                            HStack {
-                                Button {
-                                    onDismissRequested()
-                                } label: {
-                                    Image(systemName: "xmark.circle.fill")
-                                        .font(.system(size: 28))
-                                        .foregroundStyle(.secondary)
-                                        .padding(12)
-                                }
-                                Spacer()
-                            }
-                            Spacer()
+                } else {
+                    RevenueCatUI.PaywallView(
+                        offering: offering,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
                         }
                     }
                 }
@@ -105,6 +104,13 @@ struct PaywallContainerView: View {
     
     private func cachedProductIDs() -> [String] {
         Purchases.shared.cachedOfferings?.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? []
+    }
+
+    private func handle(customerInfo: CustomerInfo) {
+        guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else { return }
+        let info = SubscriptionInfo(info: customerInfo)
+        appState.updateSubscriptionInfo(info)
+        onPurchaseCompleted?()
     }
 
     @ViewBuilder

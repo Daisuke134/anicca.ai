@@ -17,6 +17,8 @@ final class AuthCoordinator {
     }()
     
     func configure(_ request: ASAuthorizationAppleIDRequest) {
+        AppState.shared.setAuthStatus(.signingIn)
+        
         let nonce = randomNonceString()
         currentNonce = nonce
         guard let hashedNonce = sha256Base64(nonce) else {

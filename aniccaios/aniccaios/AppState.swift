@@ -47,7 +47,14 @@ final class AppState: ObservableObject {
         self.habitSchedules = [:]
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
         self.pendingHabitTrigger = nil
-        self.onboardingStep = OnboardingStep(rawValue: defaults.integer(forKey: onboardingStepKey)) ?? .welcome
+        // オンボーディング未完了時は強制的に.welcomeから開始
+        if defaults.bool(forKey: onboardingKey) {
+            self.onboardingStep = OnboardingStep(rawValue: defaults.integer(forKey: onboardingStepKey)) ?? .completion
+        } else {
+            // オンボーディング未完了なら、保存されたステップをクリアして.welcomeから開始
+            defaults.removeObject(forKey: onboardingStepKey)
+            self.onboardingStep = .welcome
+        }
         
         // Load user credentials and profile
         self.authStatus = loadUserCredentials()
@@ -206,7 +213,13 @@ final class AppState: ObservableObject {
     
     func setOnboardingStep(_ step: OnboardingStep) {
         onboardingStep = step
-        defaults.set(step.rawValue, forKey: onboardingStepKey)
+        // オンボーディング未完了時のみステップを保存
+        if !isOnboardingComplete {
+            defaults.set(step.rawValue, forKey: onboardingStepKey)
+        } else {
+            // オンボーディング完了後はステップ情報を削除
+            defaults.removeObject(forKey: onboardingStepKey)
+        }
         defaults.synchronize()
     }
     

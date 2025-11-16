@@ -25,12 +25,23 @@ struct OnboardingFlowView: View {
                 HabitSleepLocationStepView(next: advance)
             case .habitTrainingFocus:
                 HabitTrainingFocusStepView(next: advance)
+            case .paywall:
+                PaywallStepView(next: advance)
             case .completion:
                 CompletionStepView(next: advance)
             }
         }
         .onAppear {
-            step = appState.onboardingStep
+            // オンボーディング完了済みなら完了画面から開始
+            if appState.isOnboardingComplete {
+                step = .completion
+            } else {
+                // オンボーディング未完了時、paywallやcompletionが保存されていたら.welcomeにリセット
+                if appState.onboardingStep == .paywall || appState.onboardingStep == .completion {
+                    appState.setOnboardingStep(.welcome)
+                }
+                step = appState.onboardingStep
+            }
         }
     }
 
@@ -51,15 +62,19 @@ struct OnboardingFlowView: View {
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
-                step = .completion
+                step = .paywall
             }
         case .habitWakeLocation, .habitSleepLocation, .habitTrainingFocus:
             // Check if there are more follow-up questions
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
-                step = .completion
+                step = .paywall
             }
+        case .paywall:
+            // Paywallのステップを保存してから完了画面へ
+            appState.setOnboardingStep(.paywall)
+            step = .completion
         case .completion:
             appState.markOnboardingComplete()
             return

@@ -3,7 +3,7 @@ import OSLog
 
 enum AppConfig {
     private static let proxyBaseKey = "ANICCA_PROXY_BASE_URL"
-    private static let revenueCatAPIKey = "REVENUECAT_API_KEY"
+    private static let revenueCatAPIKeyKey = "REVENUECAT_API_KEY"
     private static let revenueCatEntitlementKey = "REVENUECAT_ENTITLEMENT_ID"
     private static let revenueCatPaywallKey = "REVENUECAT_PAYWALL_ID"
     private static let revenueCatCustomerCenterKey = "REVENUECAT_CUSTOMER_CENTER_ID"
@@ -44,7 +44,7 @@ enum AppConfig {
         proxyBaseURL.appendingPathComponent("mobile/profile")
     }
     
-    static var revenueCatAPIKey: String { infoValue(for: revenueCatAPIKey) }
+    static var revenueCatAPIKey: String { infoValue(for: revenueCatAPIKeyKey) }
     static var revenueCatEntitlementId: String { infoValue(for: revenueCatEntitlementKey) }
     static var revenueCatPaywallId: String { infoValue(for: revenueCatPaywallKey) }
     static var revenueCatCustomerCenterId: String { infoValue(for: revenueCatCustomerCenterKey) }

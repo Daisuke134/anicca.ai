@@ -30,6 +30,9 @@ struct AuthenticationStepView: View {
             .signInWithAppleButtonStyle(.black)
             .frame(height: 50)
             .padding(.horizontal, 40)
+            .onChange(of: appState.authStatus) { _, status in
+                handleAuthStatusChange(status)
+            }
             
             if isProcessing {
                 HStack(spacing: 8) {
@@ -45,13 +48,6 @@ struct AuthenticationStepView: View {
             Spacer()
         }
         .padding(24)
-        .onChange(of: appState.authStatus) { _, status in
-            handleAuthStatusChange(status)
-        }
-        .task {
-            // すでにサインイン済みの状態で戻ってきた場合にも対応
-            handleAuthStatusChange(appState.authStatus)
-        }
     }
     
     private func handleAuthStatusChange(_ status: AuthStatus) {

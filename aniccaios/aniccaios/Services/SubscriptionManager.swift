@@ -1,17 +1,21 @@
 import RevenueCat
-import RevenueCatUI
 import Foundation
-import UIKit
 
-final actor SubscriptionManager: ObservableObject {
+@MainActor
+final class SubscriptionManager: NSObject {
     static let shared = SubscriptionManager()
     private var offerings: Offerings?
-    private init() {}
+    
+    private override init() {
+        super.init()
+    }
     
     func configure() {
         Purchases.logLevel = .warn
+        let apiKey = AppConfig.revenueCatAPIKey
+        print("[RevenueCat] Using API Key: \(apiKey)")
         Purchases.configure(
-            with: Configuration.Builder(withAPIKey: AppConfig.revenueCatAPIKey)
+            with: Configuration.Builder(withAPIKey: apiKey)
                 .with(entitlementVerificationMode: .informational)
                 .with(storeKitVersion: .storeKit2)
                 .build()
@@ -43,30 +47,10 @@ final actor SubscriptionManager: ObservableObject {
     func refreshOfferings() async {
         offerings = try? await Purchases.shared.offerings()
     }
-    
-    func presentPaywall(hostingController: UIViewController) async throws {
-        try await Purchases.shared.presentPaywallIfNeeded(
-            from: hostingController,
-            offeringIdentifier: offerings?.current?.identifier,
-            requiredEntitlementIdentifier: AppConfig.revenueCatEntitlementId
-        )
-    }
-    
-    func presentPaywall(fromCurrentScene: Bool) async {
-        guard let windowScene = await UIApplication.shared.connectedScenes.first as? UIWindowScene,
-              let rootViewController = await windowScene.windows.first?.rootViewController else {
-            return
-        }
-        do {
-            try await presentPaywall(hostingController: rootViewController)
-        } catch {
-            print("Failed to present paywall: \(error)")
-        }
-    }
 }
 
 extension SubscriptionManager: PurchasesDelegate {
-    nonisolated func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
+    func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
         Task { @MainActor in
             let subscription = SubscriptionInfo(info: customerInfo)
             AppState.shared.updateSubscriptionInfo(subscription)
@@ -79,7 +63,7 @@ extension SubscriptionInfo {
         let entitlement = info.entitlements[AppConfig.revenueCatEntitlementId]
         let plan: Plan = entitlement?.isActive == true ? .pro : .free
         self.init(plan: plan,
-                  status: entitlement?.verification.description ?? "unknown",
+                  status: entitlement.map { String(describing: $0.verification) } ?? "unknown",
                   currentPeriodEnd: entitlement?.expirationDate,
                   managementURL: info.managementURL,
                   lastSyncedAt: .now)

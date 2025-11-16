@@ -289,7 +289,7 @@ struct SettingsView: View {
             }
         })
         .sheet(isPresented: $showingCustomerCenter) {
-            RevenueCatUI.CustomerCenterView(customerCenterID: AppConfig.revenueCatCustomerCenterId)
+            RevenueCatUI.CustomerCenterView()
         }
     }
     

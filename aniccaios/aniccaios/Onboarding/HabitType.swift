@@ -1,6 +1,9 @@
 import Foundation
+#if canImport(AppIntents)
+import AppIntents
+#endif
 
-enum HabitType: String, Codable, CaseIterable {
+enum HabitType: String, Codable, CaseIterable, Sendable {
     case wake
     case training
     case bedtime
@@ -65,4 +68,21 @@ enum HabitType: String, Codable, CaseIterable {
         }
     }
 }
+
+#if canImport(AppIntents)
+@available(iOS 16.0, *)
+extension HabitType: AppEnum {
+    nonisolated static var typeDisplayRepresentation: TypeDisplayRepresentation {
+        .init(name: "Habit Type")
+    }
+
+    nonisolated static var caseDisplayRepresentations: [HabitType: DisplayRepresentation] {
+        [
+            .wake: .init(title: "Wake", subtitle: "朝の起床習慣"),
+            .training: .init(title: "Training", subtitle: "トレーニング習慣"),
+            .bedtime: .init(title: "Bedtime", subtitle: "就寝習慣")
+        ]
+    }
+}
+#endif
 

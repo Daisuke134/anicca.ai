@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import UIKit
+import RevenueCat
 
 @MainActor
 final class AppState: ObservableObject {
@@ -14,6 +15,7 @@ final class AppState: ObservableObject {
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
     @Published private(set) var onboardingStep: OnboardingStep
     @Published private(set) var pendingHabitFollowUps: [OnboardingStep] = []
+    @Published private(set) var cachedOffering: Offering?
     private(set) var shouldStartSessionImmediately = false
 
     // Legacy support: computed property for backward compatibility
@@ -423,6 +425,10 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(info) {
             defaults.set(data, forKey: subscriptionKey)
         }
+    }
+    
+    func updateOffering(_ offering: Offering?) {
+        cachedOffering = offering
     }
     
     func loadSubscriptionInfo() -> SubscriptionInfo {

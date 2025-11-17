@@ -42,6 +42,10 @@ struct OnboardingFlowView: View {
                 }
                 step = appState.onboardingStep
             }
+            // Prefetch Paywall offering for faster display
+            Task {
+                await SubscriptionManager.shared.refreshOfferings()
+            }
         }
     }
 

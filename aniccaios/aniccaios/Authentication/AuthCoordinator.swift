@@ -126,7 +126,7 @@ final class AuthCoordinator {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: payload)
             
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await warmSession.data(for: request)
             
             guard let httpResponse = response as? HTTPURLResponse,
                   (200..<300).contains(httpResponse.statusCode) else {
@@ -203,6 +203,13 @@ final class AuthCoordinator {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
         return Data(hashedData).base64EncodedString()
+    }
+    
+    private var warmSession: URLSession {
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.waitsForConnectivity = false
+        configuration.timeoutIntervalForRequest = 10
+        return URLSession(configuration: configuration)
     }
     
 }

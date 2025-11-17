@@ -48,15 +48,17 @@ struct AuthenticationStepView: View {
             Spacer()
         }
         .padding(24)
+        .onAppear {
+            Task {
+                await AuthHealthCheck.shared.warmBackend()
+            }
+        }
     }
     
     private func handleAuthStatusChange(_ status: AuthStatus) {
         if case .signedIn = status {
             isProcessing = false
-            // Small delay before advancing for better UX
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                next()
-            }
+            next()
         } else if case .signedOut = status {
             isProcessing = false
         }

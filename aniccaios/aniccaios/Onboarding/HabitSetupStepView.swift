@@ -59,6 +59,17 @@ struct HabitSetupStepView: View {
     private func habitCard(for habit: HabitType) -> some View {
         let isSelected = selectedHabits.contains(habit)
         let hasTime = habitTimes[habit] != nil
+        let checkboxBinding = Binding(
+            get: { isSelected },
+            set: { isOn in
+                if isOn {
+                    selectedHabits.insert(habit)
+                } else {
+                    selectedHabits.remove(habit)
+                    habitTimes.removeValue(forKey: habit)
+                }
+            }
+        )
 
         VStack(spacing: 12) {
             SUCard(
@@ -70,6 +81,14 @@ struct HabitSetupStepView: View {
                 content: {
                     VStack(spacing: 12) {
                         HStack(spacing: 16) {
+                            SUCheckbox(
+                                isSelected: checkboxBinding,
+                                model: {
+                                    var vm = CheckboxVM()
+                                    vm.size = .large
+                                    return vm
+                                }()
+                            )
                             VStack(alignment: .leading, spacing: 8) {
                                 Text(habit.title)
                                     .font(.headline)
@@ -80,46 +99,35 @@ struct HabitSetupStepView: View {
 
                             Spacer()
 
-                            VStack(alignment: .trailing, spacing: 8) {
-                                if isSelected {
+                            if isSelected {
+                                VStack(alignment: .trailing, spacing: 8) {
                                     if let time = habitTimes[habit] {
                                         Text(timeFormatter.string(from: time))
                                             .font(.headline)
-                                            .foregroundStyle(.primary)
                                     } else {
                                         Text(LocalizedStringKey("common_set_time"))
                                             .font(.subheadline)
                                             .foregroundStyle(.secondary)
                                     }
-                                } else {
-                                    Text(LocalizedStringKey("common_not_selected"))
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-
-                                SUButton(
-                                    model: {
-                                        var vm = ButtonVM()
-                                        vm.title = isSelected
-                                            ? (hasTime ? String(localized: "common_change") : String(localized: "common_set_time"))
-                                            : String(localized: "common_enable")
-                                        vm.style = isSelected ? .bordered(.medium) : .filled
-                                        vm.size = .small
-                                        vm.color = isSelected ? .init(main: .universal(.uiColor(.systemBlue)), contrast: .white) : .init(main: .success, contrast: .white)
-                                        return vm
-                                    }(),
-                                    action: {
-                                        let initialTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
-                                        sheetTime = initialTime
-
-                                        if isSelected {
-                                            showingTimePicker = habit
-                                        } else {
-                                            selectedHabits.insert(habit)
+                                    SUButton(
+                                        model: {
+                                            var vm = ButtonVM()
+                                            vm.title = hasTime ? String(localized: "common_change") : String(localized: "common_set_time")
+                                            vm.style = hasTime ? .bordered(.medium) : .filled
+                                            vm.size = .small
+                                            vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
+                                            return vm
+                                        }(),
+                                        action: {
+                                            sheetTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
                                             showingTimePicker = habit
                                         }
-                                    }
-                                )
+                                    )
+                                }
+                            } else {
+                                Text(LocalizedStringKey("common_not_selected"))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
                             }
                         }
                     }

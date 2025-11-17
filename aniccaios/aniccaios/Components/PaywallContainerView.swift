@@ -55,6 +55,53 @@ struct PaywallContainerView: View {
                         }
                     }
                 }
+            } else if let cached = appState.cachedOffering {
+                // Use cached offering immediately while loading fresh data
+                if #available(iOS 17.0, *) {
+                    RevenueCatUI.PaywallView(
+                        offering: cached,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
+                        }
+                    }
+                    .onAppear {
+                        offering = cached
+                    }
+                } else {
+                    RevenueCatUI.PaywallView(
+                        offering: cached,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
+                        }
+                    }
+                    .onAppear {
+                        offering = cached
+                    }
+                }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))
             } else {
@@ -62,9 +109,16 @@ struct PaywallContainerView: View {
             }
         }
         .task {
-            await loadOffering()
+            if offering == nil {
+                await loadOffering()
+            }
             // 購入状態を確実に同期
             try? await Purchases.shared.syncPurchases()
+        }
+        .onReceive(appState.$cachedOffering) { cached in
+            if let cached, offering == nil {
+                offering = cached
+            }
         }
         .sheet(isPresented: $showStoreKitFallback) {
             if #available(iOS 17.0, *) {

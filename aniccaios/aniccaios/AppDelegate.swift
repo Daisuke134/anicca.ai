@@ -6,7 +6,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let proxy = Bundle.main.object(forInfoDictionaryKey: "ANICCA_PROXY_BASE_URL") as? String ?? "nil"
         print("ANICCA_PROXY_BASE_URL =", proxy)
         
-        if ProcessInfo.processInfo.arguments.contains("-resetOnLaunch") {
+        let resetFlag = (Bundle.main.object(forInfoDictionaryKey: "RESET_ON_LAUNCH") as? NSString)?.boolValue == true
+        let shouldReset = resetFlag || ProcessInfo.processInfo.arguments.contains("-resetOnLaunch")
+        if shouldReset {
             UserDefaults.standard.removePersistentDomain(forName: Bundle.main.bundleIdentifier ?? "")
             UserDefaults.standard.synchronize()
             AppState.shared.resetState()
@@ -18,6 +20,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Task {
             _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
             await SubscriptionManager.shared.refreshOfferings()
+            await AuthHealthCheck.shared.warmBackend()
         }
         return true
     }

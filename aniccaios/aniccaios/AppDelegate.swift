@@ -18,7 +18,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
         Task {
-            // Don't auto-request notification permission - let onboarding handle it
+            _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
             await SubscriptionManager.shared.refreshOfferings()
             await AuthHealthCheck.shared.warmBackend()
         }

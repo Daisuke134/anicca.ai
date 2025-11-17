@@ -45,7 +45,20 @@ final class SubscriptionManager: NSObject {
     }
     
     func refreshOfferings() async {
-        offerings = try? await Purchases.shared.offerings()
+        do {
+            let result = try await Purchases.shared.offerings()
+            offerings = result
+            await MainActor.run {
+                AppState.shared.updateOffering(result.offering(identifier: AppConfig.revenueCatPaywallId) ?? result.current)
+            }
+        } catch {
+            await MainActor.run {
+                // Keep existing cached offering on error
+                if AppState.shared.cachedOffering == nil {
+                    AppState.shared.updateOffering(nil)
+                }
+            }
+        }
     }
 }
 

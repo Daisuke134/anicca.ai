@@ -6,7 +6,9 @@ struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
     @State private var habitTimes: [HabitType: Date] = [:]
+    @State private var activeHabits: Set<HabitType> = []
     @State private var showingTimePicker: HabitType?
+    @State private var sheetTime = Date()
     @State private var isSaving = false
     @State private var displayName: String = ""
     @State private var preferredLanguage: LanguagePreference = .en
@@ -31,12 +33,15 @@ struct SettingsView: View {
         let calendar = Calendar.current
         let schedules = AppState.shared.habitSchedules
         var times: [HabitType: Date] = [:]
+        var active: Set<HabitType> = []
         for (habit, components) in schedules {
             if let date = calendar.date(from: components) {
                 times[habit] = date
+                active.insert(habit)
             }
         }
         _habitTimes = State(initialValue: times)
+        _activeHabits = State(initialValue: active)
     }
 
     var body: some View {
@@ -169,7 +174,18 @@ struct SettingsView: View {
     @ViewBuilder
     private func habitCard(for habit: HabitType) -> some View {
         let hasTime = habitTimes[habit] != nil
-        let isEnabled = hasTime
+        let isActive = activeHabits.contains(habit)
+        let checkboxBinding = Binding(
+            get: { isActive },
+            set: { isOn in
+                if isOn {
+                    activeHabits.insert(habit)
+                } else {
+                    activeHabits.remove(habit)
+                    habitTimes.removeValue(forKey: habit)
+                }
+            }
+        )
 
         SUCard(
             model: {
@@ -179,6 +195,14 @@ struct SettingsView: View {
             }(),
             content: {
                 HStack(spacing: 16) {
+                    SUCheckbox(
+                        isSelected: checkboxBinding,
+                        model: {
+                            var vm = CheckboxVM()
+                            vm.size = .large
+                            return vm
+                        }()
+                    )
                     VStack(alignment: .leading, spacing: 8) {
                         Text(habit.title)
                             .font(.headline)
@@ -189,37 +213,35 @@ struct SettingsView: View {
 
                     Spacer()
 
-                    VStack(alignment: .trailing, spacing: 8) {
-                        if isEnabled, let time = habitTimes[habit] {
-                            Text(timeFormatter.string(from: time))
-                                .font(.headline)
-                                .foregroundStyle(.primary)
-                        } else {
-                            Text("settings_time_not_set")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
-                        }
-
-                        SUButton(
-                            model: {
-                                var vm = ButtonVM()
-                                vm.title = isEnabled
-                                    ? (hasTime ? String(localized: "common_change") : String(localized: "common_set_time"))
-                                    : String(localized: "common_enable")
-                                vm.style = isEnabled ? .bordered(.medium) : .filled
-                                vm.size = .small
-                                vm.color = isEnabled ? .init(main: .universal(.uiColor(.systemBlue)), contrast: .white) : .init(main: .success, contrast: .white)
-                                return vm
-                            }(),
-                            action: {
-                                if !isEnabled {
-                                    // Enable this habit
-                                    let defaultDate = Calendar.current.date(from: habit.defaultTime) ?? Date()
-                                    habitTimes[habit] = defaultDate
-                                }
-                                showingTimePicker = habit
+                    if isActive {
+                        VStack(alignment: .trailing, spacing: 8) {
+                            if let time = habitTimes[habit] {
+                                Text(timeFormatter.string(from: time))
+                                    .font(.headline)
+                            } else {
+                                Text(LocalizedStringKey("common_set_time"))
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
                             }
-                        )
+                            SUButton(
+                                model: {
+                                    var vm = ButtonVM()
+                                    vm.title = hasTime ? String(localized: "common_change") : String(localized: "common_set_time")
+                                    vm.style = hasTime ? .bordered(.medium) : .filled
+                                    vm.size = .small
+                                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
+                                    return vm
+                                }(),
+                                action: {
+                                    showingTimePicker = habit
+                                    sheetTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
+                                }
+                            )
+                        }
+                    } else {
+                        Text(LocalizedStringKey("common_not_selected"))
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
                     }
                 }
             }
@@ -261,6 +283,9 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
+                        if let habit = showingTimePicker {
+                            habitTimes[habit] = sheetTime
+                        }
                         showingTimePicker = nil
                     }
                 }
@@ -313,10 +338,12 @@ struct SettingsView: View {
         isSaving = true
 
         Task {
-            // Update habit schedules
+            // Update habit schedules - only save active habits with times
             var schedules: [HabitType: Date] = [:]
-            for (habit, time) in habitTimes {
-                schedules[habit] = time
+            for habit in activeHabits {
+                if let time = habitTimes[habit] {
+                    schedules[habit] = time
+                }
             }
             await appState.updateHabits(schedules)
             

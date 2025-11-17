@@ -16,6 +16,16 @@ final class NotificationScheduler {
 
     private let center = UNUserNotificationCenter.current()
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NotificationScheduler")
+    
+    private enum AlarmConfig {
+        /// 1回の通知内で追加振動を入れるタイミング（秒）
+        static let vibrationOffsets = [4, 8]
+        /// 8秒サウンド + 5秒休止 = 13秒ごとに再通知
+        static let loopIntervalSeconds = 13
+        /// メイン通知のあとに繰り返すサウンド付き通知の最大回数
+        static let loopRepeatCount = 10
+    }
+    
     private init() {}
 
     // MARK: Authorization
@@ -84,7 +94,7 @@ final class NotificationScheduler {
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
             await scheduleMain(habit: habit, hour: hour, minute: minute)
-            scheduleFollowups(for: habit, baseComponents: components)
+            scheduleFollowupSequence(for: habit, baseComponents: components)
         }
     }
 
@@ -139,43 +149,61 @@ final class NotificationScheduler {
         }
     }
 
-    private func scheduleFollowups(for habit: HabitType, baseComponents: DateComponents, count: Int = 10, intervalSeconds: Int = 60) {
+    private func scheduleFollowupSequence(for habit: HabitType, baseComponents: DateComponents) {
         Task {
             await removePending(withPrefix: followPrefix(for: habit))
             await removeDelivered(withPrefix: followPrefix(for: habit))
-            guard count > 0, let first = nextFireDate(from: baseComponents) else { return }
-            for index in 1...count {
-                guard let fireDate = Calendar.current.date(byAdding: .second, value: intervalSeconds * index, to: first) else { continue }
+            guard let first = nextFireDate(from: baseComponents) else { return }
+
+            var entries: [(offset: Int, playsSound: Bool)] = []
+            // メイン通知の 0 秒を起点として 4 秒 / 8 秒で追加振動
+            entries += AlarmConfig.vibrationOffsets.map { (offset: $0, playsSound: false) }
+
+            if AlarmConfig.loopRepeatCount > 0 {
+                for loopIndex in 1...AlarmConfig.loopRepeatCount {
+                    let startOffset = AlarmConfig.loopIntervalSeconds * loopIndex
+                    // 8秒サウンドをもう一度流す通知
+                    entries.append((offset: startOffset, playsSound: true))
+                    // その通知でも 4 秒 / 8 秒後に追加振動
+                    for vibration in AlarmConfig.vibrationOffsets {
+                        entries.append((offset: startOffset + vibration, playsSound: false))
+                    }
+                }
+            }
+
+            for entry in entries {
+                guard let fireDate = Calendar.current.date(byAdding: .second, value: entry.offset, to: first) else { continue }
                 let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 let request = UNNotificationRequest(
                     identifier: keyFollow(for: habit, timestamp: Int(fireDate.timeIntervalSince1970)),
-                    content: baseContent(for: habit, isFollowup: true),
+                    content: baseContent(for: habit, isFollowup: true, playsSound: entry.playsSound),
                     trigger: trigger
                 )
 
                 do {
                     try await center.add(request)
+                    logger.info("Follow-up scheduled: \(request.identifier, privacy: .public) offset=\(entry.offset) sound=\(entry.playsSound)")
                 } catch {
-                    self.logger.error("Follow-up scheduling error: \(error.localizedDescription, privacy: .public)")
+                    logger.error("Follow-up scheduling error: \(error.localizedDescription, privacy: .public)")
                 }
             }
         }
     }
 
-    private func baseContent(for habit: HabitType, isFollowup: Bool) -> UNMutableNotificationContent {
+    private func baseContent(for habit: HabitType, isFollowup: Bool, playsSound: Bool = true) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = isFollowup ? followupTitle(for: habit) : habit.title
         content.body = isFollowup ? followupBody(for: habit) : primaryBody(for: habit)
         content.categoryIdentifier = Category.habitAlarm.rawValue
         content.interruptionLevel = .timeSensitive
-        content.sound = wakeSound()
+        content.sound = playsSound ? wakeSound() : nil
         return content
     }
 
     private func wakeSound() -> UNNotificationSound {
         if Bundle.main.url(forResource: "AniccaWake", withExtension: "caf") != nil {
-            return UNNotificationSound(named: UNNotificationSoundName(rawValue: "AniccaWake.caf"))
+            return UNNotificationSound(named: UNNotificationSoundName("AniccaWake.caf"))
         }
         logger.error("Wake sound missing in bundle; falling back to default alert")
         return .default

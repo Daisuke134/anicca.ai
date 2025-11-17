@@ -1,7 +1,9 @@
 import UIKit
 import UserNotifications
+import OSLog
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    private let habitLaunchLogger = Logger(subsystem: "com.anicca.ios", category: "HabitLaunch")
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         let proxy = Bundle.main.object(forInfoDictionaryKey: "ANICCA_PROXY_BASE_URL") as? String ?? "nil"
         print("ANICCA_PROXY_BASE_URL =", proxy)
@@ -46,9 +48,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
              UNNotificationDefaultActionIdentifier:
             NotificationScheduler.shared.cancelFollowups(for: habit)
             Task {
-                try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
+                habitLaunchLogger.info("Notification accepted for habit \(habit.rawValue, privacy: .public) id=\(notificationIdentifier, privacy: .public)")
+                do {
+                    try AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
+                    habitLaunchLogger.info("Audio session configured for realtime")
+                } catch {
+                    habitLaunchLogger.error("Audio session configure failed: \(error.localizedDescription, privacy: .public)")
+                }
                 await MainActor.run {
                     AppState.shared.prepareForImmediateSession(habit: habit)
+                    habitLaunchLogger.info("AppState prepared immediate session for habit \(habit.rawValue, privacy: .public)")
                 }
             }
         case NotificationScheduler.Action.dismissAll.rawValue:

@@ -21,34 +21,33 @@ struct AuthenticationStepView: View {
             
             Spacer()
             
-            ZStack {
-                SignInWithAppleButton(.signIn) { request in
-                    // Reuse prepared request if available for instant sheet display
-                    AuthCoordinator.shared.reusePreparedRequest(request)
-                    isProcessing = true
-                } onCompletion: { result in
-                    AuthCoordinator.shared.completeSignIn(result: result)
-                }
-                .signInWithAppleButtonStyle(.black)
-                .frame(height: 50)
-                .padding(.horizontal, 40)
-                .disabled(isProcessing)
-                .opacity(isProcessing ? 0.6 : 1.0)
-                
-                // Overlay with spinner when processing (no text)
-                if isProcessing {
+            SignInWithAppleButton(.signIn) { request in
+                isProcessing = true
+                AuthCoordinator.shared.configure(request)
+            } onCompletion: { result in
+                AuthCoordinator.shared.completeSignIn(result: result)
+            }
+            .signInWithAppleButtonStyle(.black)
+            .frame(height: 50)
+            .padding(.horizontal, 40)
+            .onChange(of: appState.authStatus) { _, status in
+                handleAuthStatusChange(status)
+            }
+            
+            if isProcessing {
+                HStack(spacing: 8) {
                     ProgressView()
                         .scaleEffect(0.8)
-                        .tint(.white)
+                    Text("common_signing_in")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
+                .padding()
             }
             
             Spacer()
         }
         .padding(24)
-        .onChange(of: appState.authStatus) { _, status in
-            handleAuthStatusChange(status)
-        }
         .onAppear {
             Task {
                 await AuthHealthCheck.shared.warmBackend()
@@ -57,14 +56,10 @@ struct AuthenticationStepView: View {
     }
     
     private func handleAuthStatusChange(_ status: AuthStatus) {
-        switch status {
-        case .signingIn:
-            isProcessing = true
-        case .signedIn:
+        if case .signedIn = status {
             isProcessing = false
-            // Immediately transition to next screen
             next()
-        case .signedOut:
+        } else if case .signedOut = status {
             isProcessing = false
         }
     }

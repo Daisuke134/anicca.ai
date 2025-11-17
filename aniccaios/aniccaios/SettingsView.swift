@@ -309,26 +309,13 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("settings_subscription_title")
                     .font(.headline)
-                
-                // Plan name and Manage button on same line
-                HStack {
-                    Text(appState.subscriptionInfo.displayPlanName)
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
-                    Spacer()
-                    Button("settings_subscription_manage") {
-                        showingCustomerCenter = true
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .controlSize(.small)
+                Text(subscriptionSummary)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Button("settings_subscription_manage") {
+                    showingCustomerCenter = true
                 }
-                
-                // Subscription summary (renewal date or status)
-                if let date = appState.subscriptionInfo.currentPeriodEnd {
-                    Text(String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date)))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                .buttonStyle(.borderedProminent)
                 
                 Link(destination: URL(string: "https://aniccaai.com/support")!) {
                     Text("Contact support")
@@ -340,8 +327,16 @@ struct SettingsView: View {
         })
         .frame(maxWidth: .infinity)
         .sheet(isPresented: $showingCustomerCenter) {
-            ManageSubscriptionSheet()
+            RevenueCatUI.CustomerCenterView()
         }
+    }
+    
+    private var subscriptionSummary: String {
+        let info = appState.subscriptionInfo
+        if let date = info.currentPeriodEnd {
+            return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
+        }
+        return NSLocalizedString("settings_subscription_free", comment: "")
     }
     
     private var dateFormatter: DateFormatter {

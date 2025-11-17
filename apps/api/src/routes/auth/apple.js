@@ -45,7 +45,8 @@ router.post('/', async (req, res) => {
     
     // Return user ID (internal) and metadata
     return res.json({
-      userId: verifiedUser.userId,
+      userId: verifiedUser.userId,             // 内部UUID
+      appleUserId: verifiedUser.appleUserId,  // デバッグ用
       displayName: verifiedUser.displayName,
       email: verifiedUser.email
     });

@@ -5,7 +5,6 @@ struct AuthenticationStepView: View {
     let next: () -> Void
     
     @EnvironmentObject private var appState: AppState
-    @State private var isProcessing = false
     
     var body: some View {
         VStack(spacing: 24) {
@@ -22,7 +21,6 @@ struct AuthenticationStepView: View {
             Spacer()
             
             SignInWithAppleButton(.signIn) { request in
-                isProcessing = true
                 AuthCoordinator.shared.configure(request)
             } onCompletion: { result in
                 AuthCoordinator.shared.completeSignIn(result: result)
@@ -32,17 +30,6 @@ struct AuthenticationStepView: View {
             .padding(.horizontal, 40)
             .onChange(of: appState.authStatus) { _, status in
                 handleAuthStatusChange(status)
-            }
-            
-            if isProcessing {
-                HStack(spacing: 8) {
-                    ProgressView()
-                        .scaleEffect(0.8)
-                    Text("common_signing_in")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding()
             }
             
             Spacer()
@@ -57,10 +44,7 @@ struct AuthenticationStepView: View {
     
     private func handleAuthStatusChange(_ status: AuthStatus) {
         if case .signedIn = status {
-            isProcessing = false
             next()
-        } else if case .signedOut = status {
-            isProcessing = false
         }
     }
 }

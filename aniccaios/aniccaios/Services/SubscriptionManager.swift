@@ -75,11 +75,22 @@ extension SubscriptionInfo {
     init(info: CustomerInfo) {
         let entitlement = info.entitlements[AppConfig.revenueCatEntitlementId]
         let plan: Plan = entitlement?.isActive == true ? .pro : .free
-        self.init(plan: plan,
-                  status: entitlement.map { String(describing: $0.verification) } ?? "unknown",
-                  currentPeriodEnd: entitlement?.expirationDate,
-                  managementURL: info.managementURL,
-                  lastSyncedAt: .now)
+        let productId = entitlement?.productIdentifier
+        let offering = AppState.shared.cachedOffering
+        let package = offering?
+            .availablePackages
+            .first(where: { $0.storeProduct.productIdentifier == productId })
+        
+        self.init(
+            plan: plan,
+            status: entitlement.map { String(describing: $0.verification) } ?? "unknown",
+            currentPeriodEnd: entitlement?.expirationDate,
+            managementURL: info.managementURL,
+            lastSyncedAt: .now,
+            productIdentifier: productId,
+            planDisplayName: package?.storeProduct.localizedTitle,
+            priceDescription: package?.localizedPriceString
+        )
     }
 }
 

@@ -201,7 +201,14 @@ struct SettingsView: View {
             content: {
                 HStack(spacing: 16) {
                     SUCheckbox(
-                        isSelected: checkboxBinding,
+                        isSelected: Binding(
+                            get: { checkboxBinding.wrappedValue },
+                            set: { newValue in
+                                withAnimation(.linear(duration: 0.08)) {
+                                    checkboxBinding.wrappedValue = newValue
+                                }
+                            }
+                        ),
                         model: {
                             var vm = CheckboxVM()
                             vm.size = .large
@@ -307,15 +314,20 @@ struct SettingsView: View {
     private var subscriptionCard: some View {
         SUCard(model: CardVM(), content: {
             VStack(alignment: .leading, spacing: 12) {
-                Text("settings_subscription_title")
-                    .font(.headline)
-                Text(subscriptionSummary)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Button("settings_subscription_manage") {
-                    showingCustomerCenter = true
+                HStack(alignment: .top) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("settings_subscription_title")
+                            .font(.headline)
+                        Text(subscriptionSummary)
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer(minLength: 12)
+                    Button("settings_subscription_manage") {
+                        showingCustomerCenter = true
+                    }
+                    .buttonStyle(.borderedProminent)
                 }
-                .buttonStyle(.borderedProminent)
                 
                 Link(destination: URL(string: "https://aniccaai.com/support")!) {
                     Text("Contact support")
@@ -333,6 +345,12 @@ struct SettingsView: View {
     
     private var subscriptionSummary: String {
         let info = appState.subscriptionInfo
+        if let planDisplayName = info.planDisplayName, !planDisplayName.isEmpty {
+            if let date = info.currentPeriodEnd {
+                return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
+            }
+            return planDisplayName
+        }
         if let date = info.currentPeriodEnd {
             return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
         }

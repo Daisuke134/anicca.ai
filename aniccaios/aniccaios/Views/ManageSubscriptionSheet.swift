@@ -90,8 +90,8 @@ struct ManageSubscriptionSheet: View {
                     VStack(alignment: .leading, spacing: 4) {
                         Text(package.storeProduct.localizedTitle)
                             .font(.headline)
-                        if let description = package.storeProduct.localizedDescription, !description.isEmpty {
-                            Text(description)
+                        if !package.storeProduct.localizedDescription.isEmpty {
+                            Text(package.storeProduct.localizedDescription)
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

@@ -62,7 +62,12 @@ struct NotificationPermissionStepView: View {
                 let granted = await NotificationScheduler.shared.isAuthorizedForAlerts()
                 await MainActor.run {
                     notificationGranted = granted
-                    // Don't auto-advance - user must explicitly grant permission
+                    if granted {
+                        // Auto-advance if already granted (same as microphone permission)
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                            next()
+                        }
+                    }
                 }
             }
         }

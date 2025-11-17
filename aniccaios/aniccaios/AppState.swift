@@ -1,6 +1,7 @@
 import Foundation
 import Combine
 import UIKit
+import SwiftUI
 import RevenueCat
 
 @MainActor
@@ -10,6 +11,7 @@ final class AppState: ObservableObject {
     @Published private(set) var authStatus: AuthStatus = .signedOut
     @Published private(set) var userProfile: UserProfile = UserProfile()
     @Published private(set) var subscriptionInfo: SubscriptionInfo = .free
+    @Published private(set) var purchaseEnvironmentStatus: PurchaseEnvironmentStatus = .ready
     @Published private(set) var habitSchedules: [HabitType: DateComponents] = [:]
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
@@ -427,6 +429,10 @@ final class AppState: ObservableObject {
         }
     }
     
+    func updatePurchaseEnvironment(_ status: PurchaseEnvironmentStatus) {
+        purchaseEnvironmentStatus = status
+    }
+    
     func updateOffering(_ offering: Offering?) {
         cachedOffering = offering
     }
@@ -437,5 +443,22 @@ final class AppState: ObservableObject {
             return .free
         }
         return info
+    }
+}
+
+enum PurchaseEnvironmentStatus: Codable, Equatable {
+    case ready
+    case accountMissing
+    case paymentsDisabled
+    
+    var message: LocalizedStringKey {
+        switch self {
+        case .ready:
+            return ""
+        case .accountMissing:
+            return "settings_subscription_account_missing"
+        case .paymentsDisabled:
+            return "settings_subscription_payments_disabled"
+        }
     }
 }

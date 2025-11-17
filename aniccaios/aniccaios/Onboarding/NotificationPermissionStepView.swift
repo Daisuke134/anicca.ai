@@ -62,12 +62,7 @@ struct NotificationPermissionStepView: View {
                 let granted = await NotificationScheduler.shared.isAuthorizedForAlerts()
                 await MainActor.run {
                     notificationGranted = granted
-                    if granted {
-                        // Auto-advance if already granted
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            next()
-                        }
-                    }
+                    // Don't auto-advance - user must explicitly grant permission
                 }
             }
         }
@@ -86,6 +81,9 @@ struct NotificationPermissionStepView: View {
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         next()
                     }
+                } else {
+                    // Permission denied - show error message and retry button
+                    // User must grant permission to proceed
                 }
             }
         }

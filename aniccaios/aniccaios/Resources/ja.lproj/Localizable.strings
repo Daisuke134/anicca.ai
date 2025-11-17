@@ -80,6 +80,22 @@
 "session_wake_silent_notice" = "起床アラームを確実に鳴らすために、寝る前に端末左側のサイレントスイッチを上げてマナーモードを解除してください。";
 
 "settings_title" = "設定";
+"settings_subscription_title" = "プラン";
+"settings_subscription_free" = "未加入";
+"settings_subscription_pro" = "プロプラン";
+"settings_subscription_grace" = "猶予期間";
+"settings_subscription_monthly" = "月額";
+"settings_subscription_yearly" = "年額";
+"settings_subscription_manage" = "プランを管理";
+"settings_subscription_manage_title" = "プラン";
+"settings_subscription_until" = "%@まで有効";
+"settings_subscription_current_plan" = "現在のプラン";
+"settings_subscription_current" = "現在";
+"settings_subscription_select" = "選択";
+"settings_subscription_no_plans" = "利用可能なプランがありません";
+"settings_subscription_restore" = "購入を復元";
+"settings_subscription_manage_app_store" = "App Storeで管理";
+"settings_subscription_cancel" = "サブスクリプションをキャンセル";
 "settings_personalization_title" = "パーソナライズ";
 "settings_name_label" = "名前";
 "settings_name_placeholder" = "太郎";

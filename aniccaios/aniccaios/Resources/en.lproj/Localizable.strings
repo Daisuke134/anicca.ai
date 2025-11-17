@@ -80,6 +80,22 @@
 "session_wake_silent_notice" = "To guarantee the wake alarm plays, flip the side silent switch back up before going to bed so that silent mode is off.";
 
 "settings_title" = "Settings";
+"settings_subscription_title" = "Subscription";
+"settings_subscription_free" = "Free plan";
+"settings_subscription_pro" = "Pro plan";
+"settings_subscription_grace" = "Grace period";
+"settings_subscription_monthly" = "Monthly";
+"settings_subscription_yearly" = "Yearly";
+"settings_subscription_manage" = "Manage plan";
+"settings_subscription_manage_title" = "Subscription";
+"settings_subscription_until" = "Active until %@";
+"settings_subscription_current_plan" = "Current Plan";
+"settings_subscription_current" = "Current";
+"settings_subscription_select" = "Select";
+"settings_subscription_no_plans" = "No subscription plans available";
+"settings_subscription_restore" = "Restore Purchases";
+"settings_subscription_manage_app_store" = "Manage on App Store";
+"settings_subscription_cancel" = "Cancel Subscription";
 "settings_personalization_title" = "Personalization";
 "settings_name_label" = "Name";
 "settings_name_placeholder" = "John";

@@ -1,6 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
-import { verifyIdentityToken } from '../../services/auth/appleService.js';
+import { verifyIdentityToken, warmAppleKeys } from '../../services/auth/appleService.js';
 import baseLogger from '../../utils/logger.js';
 
 const router = express.Router();
@@ -52,6 +52,20 @@ router.post('/', async (req, res) => {
   } catch (error) {
     logger.error('Apple auth error', error);
     return res.status(500).json({ error: 'internal_error' });
+  }
+});
+
+/**
+ * GET /auth/apple/health
+ * Health check endpoint for warming up Apple auth infrastructure
+ */
+router.get('/health', async (req, res) => {
+  try {
+    await warmAppleKeys();
+    return res.status(200).json({ status: 'ok' });
+  } catch (error) {
+    logger.error('Health check failed', error);
+    return res.status(500).json({ status: 'error', message: error.message });
   }
 });
 

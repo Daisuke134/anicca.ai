@@ -7,8 +7,36 @@ struct SubscriptionInfo: Codable, Equatable {
     var currentPeriodEnd: Date?
     var managementURL: URL?
     var lastSyncedAt: Date
+    var productIdentifier: String?
+    var planDisplayName: String?
+    var priceDescription: String?
+    
     var isEntitled: Bool { plan == .pro && status != "expired" }
-    static let free = SubscriptionInfo(plan: .free, status: "free", currentPeriodEnd: nil, managementURL: nil, lastSyncedAt: .now)
+    
+    static let free = SubscriptionInfo(
+        plan: .free,
+        status: "free",
+        currentPeriodEnd: nil,
+        managementURL: nil,
+        lastSyncedAt: .now,
+        productIdentifier: nil,
+        planDisplayName: nil,
+        priceDescription: nil
+    )
+    
+    var displayPlanName: String {
+        if let planDisplayName = planDisplayName, !planDisplayName.isEmpty {
+            return planDisplayName
+        }
+        switch plan {
+        case .free:
+            return NSLocalizedString("settings_subscription_free", comment: "")
+        case .grace:
+            return NSLocalizedString("settings_subscription_grace", comment: "")
+        case .pro:
+            return NSLocalizedString("settings_subscription_pro", comment: "")
+        }
+    }
 }
 
 

@@ -1,5 +1,6 @@
 import { createRemoteJWKSet, jwtVerify } from 'jose';
 import baseLogger from '../../utils/logger.js';
+import { getOrCreateInternalUser } from '../users/profileStore.js';
 
 const logger = baseLogger.withContext('AppleAuthService');
 const APPLE_JWKS_URL = new URL('https://appleid.apple.com/auth/keys');
@@ -35,10 +36,18 @@ export async function verifyIdentityToken(identityToken, nonce, rawUserId) {
     nonce
   });
 
-  const userId = payload.sub ?? rawUserId;
+  const appleUserId = payload.sub ?? rawUserId;
+  const displayName = payload.name ?? 'User';
+  const internalUserId = await getOrCreateInternalUser({
+    appleUserId,
+    email: payload.email,
+    displayName
+  });
+
   return {
-    userId,
-    displayName: payload.name ?? 'User',
+    userId: internalUserId,
+    appleUserId,
+    displayName,
     email: payload.email
   };
 }

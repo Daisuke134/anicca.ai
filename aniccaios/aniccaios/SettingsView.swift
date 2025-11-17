@@ -8,7 +8,6 @@ struct SettingsView: View {
     @State private var habitTimes: [HabitType: Date] = [:]
     @State private var activeHabits: Set<HabitType> = []
     @State private var showingTimePicker: HabitType?
-    @State private var sheetTime = Date()
     @State private var isSaving = false
     @State private var displayName: String = ""
     @State private var preferredLanguage: LanguagePreference = .en
@@ -246,7 +245,6 @@ struct SettingsView: View {
                                 }(),
                                 action: {
                                     showingTimePicker = habit
-                                    sheetTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
                                 }
                             )
                         }
@@ -295,9 +293,6 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
-                        if let habit = showingTimePicker {
-                            habitTimes[habit] = sheetTime
-                        }
                         showingTimePicker = nil
                     }
                 }

@@ -47,7 +47,7 @@ struct SettingsView: View {
     var body: some View {
         NavigationView {
             ScrollView {
-                VStack(spacing: 16) {
+                LazyVStack(spacing: 16) {
                     subscriptionCard
                     // Personalization section
                     personalizationCard
@@ -60,15 +60,20 @@ struct SettingsView: View {
                     // Sign Out button
                     signOutButton
                 }
+                .frame(maxWidth: .infinity)
                 .padding()
             }
             .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(String(localized: "common_save")) {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button {
                         save()
+                    } label: {
+                        Text("common_save")
+                            .fontWeight(.semibold)
                     }
+                    .controlSize(.large)
                     .disabled(isSaving)
                 }
             }
@@ -304,26 +309,39 @@ struct SettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text("settings_subscription_title")
                     .font(.headline)
-                Text(subscriptionSummary)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                Button("settings_subscription_manage") {
-                    showingCustomerCenter = true
+                
+                // Plan name and Manage button on same line
+                HStack {
+                    Text(appState.subscriptionInfo.displayPlanName)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                    Spacer()
+                    Button("settings_subscription_manage") {
+                        showingCustomerCenter = true
+                    }
+                    .buttonStyle(.borderedProminent)
+                    .controlSize(.small)
                 }
-                .buttonStyle(.borderedProminent)
+                
+                // Subscription summary (renewal date or status)
+                if let date = appState.subscriptionInfo.currentPeriodEnd {
+                    Text(String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date)))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                
+                Link(destination: URL(string: "https://aniccaai.com/support")!) {
+                    Text("Contact support")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
         })
+        .frame(maxWidth: .infinity)
         .sheet(isPresented: $showingCustomerCenter) {
-            RevenueCatUI.CustomerCenterView()
+            ManageSubscriptionSheet()
         }
-    }
-    
-    private var subscriptionSummary: String {
-        let info = appState.subscriptionInfo
-        if let date = info.currentPeriodEnd {
-            return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
-        }
-        return NSLocalizedString("settings_subscription_free", comment: "")
     }
     
     private var dateFormatter: DateFormatter {

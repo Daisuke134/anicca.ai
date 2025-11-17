@@ -9,6 +9,8 @@ final class AuthCoordinator {
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "AuthCoordinator")
     private var currentNonce: String?
+    private var preparedController: ASAuthorizationController?
+    private var preparedRequest: ASAuthorizationAppleIDRequest?
     
     private init() {}
     
@@ -16,7 +18,20 @@ final class AuthCoordinator {
         AuthPresentationDelegate(coordinator: self)
     }()
     
+    // Shared URLSession with keep-alive for better performance
+    private static let sharedSession: URLSession = {
+        let configuration = URLSessionConfiguration.default
+        configuration.waitsForConnectivity = false
+        configuration.timeoutIntervalForRequest = 10
+        configuration.timeoutIntervalForResource = 30
+        configuration.httpMaximumConnectionsPerHost = 1
+        return URLSession(configuration: configuration)
+    }()
+    
     func configure(_ request: ASAuthorizationAppleIDRequest) {
+        let startTime = Date()
+        logger.info("Auth flow started")
+        
         AppState.shared.setAuthStatus(.signingIn)
         
         let nonce = randomNonceString()
@@ -29,6 +44,22 @@ final class AuthCoordinator {
         
         request.requestedScopes = [.fullName, .email]
         request.nonce = hashedNonce
+        
+        // Store prepared request for reuse
+        preparedRequest = request
+        
+        let setupTime = Date().timeIntervalSince(startTime)
+        logger.info("Auth request configured in \(setupTime * 1000, privacy: .public)ms")
+    }
+    
+    func reusePreparedRequest(_ request: ASAuthorizationAppleIDRequest) {
+        // If we have a prepared request, reuse it
+        if let prepared = preparedRequest {
+            request.requestedScopes = prepared.requestedScopes
+            request.nonce = prepared.nonce
+        } else {
+            configure(request)
+        }
     }
     
     func startSignIn() {
@@ -111,6 +142,7 @@ final class AuthCoordinator {
         displayName: String,
         email: String?
     ) async {
+        let startTime = Date()
         let url = AppConfig.appleAuthURL
         
         var request = URLRequest(url: url)
@@ -123,47 +155,69 @@ final class AuthCoordinator {
             "user_id": userId
         ]
         
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: payload)
-            
-            let (data, response) = try await warmSession.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  (200..<300).contains(httpResponse.statusCode) else {
-                logger.error("Auth backend returned error status")
-                await MainActor.run {
-                    AppState.shared.setAuthStatus(.signedOut)
-                }
-                return
-            }
-            
-            // Parse backend response (expected: { userId, displayName, email })
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let backendUserId = json["userId"] as? String {
+        var lastError: Error?
+        let maxRetries = 2
+        
+        for attempt in 0...maxRetries {
+            do {
+                request.httpBody = try JSONSerialization.data(withJSONObject: payload)
                 
-                let credentials = UserCredentials(
-                    userId: backendUserId,
-                    displayName: displayName,
-                    email: email
-                )
+                let (data, response) = try await Self.sharedSession.data(for: request)
                 
-                await MainActor.run {
-                    AppState.shared.updateUserCredentials(credentials)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw AuthError.invalidResponse
                 }
                 
-                logger.info("Sign in successful for user: \(backendUserId, privacy: .public)")
-            } else {
-                logger.error("Invalid backend response format")
-                await MainActor.run {
-                    AppState.shared.setAuthStatus(.signedOut)
+                guard (200..<300).contains(httpResponse.statusCode) else {
+                    logger.error("Auth backend returned error status: \(httpResponse.statusCode, privacy: .public)")
+                    await MainActor.run {
+                        AppState.shared.setAuthStatus(.signedOut)
+                    }
+                    return
                 }
-            }
-        } catch {
-            logger.error("Failed to verify with backend: \(error.localizedDescription, privacy: .public)")
-            await MainActor.run {
-                AppState.shared.setAuthStatus(.signedOut)
+                
+                // Parse backend response (expected: { userId, displayName, email })
+                if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                   let backendUserId = json["userId"] as? String {
+                    
+                    let credentials = UserCredentials(
+                        userId: backendUserId,
+                        displayName: displayName,
+                        email: email
+                    )
+                    
+                    await MainActor.run {
+                        AppState.shared.updateUserCredentials(credentials)
+                    }
+                    
+                    let totalTime = Date().timeIntervalSince(startTime)
+                    logger.info("Sign in successful for user: \(backendUserId, privacy: .public), took \(totalTime * 1000, privacy: .public)ms")
+                    return
+                } else {
+                    throw AuthError.invalidResponseFormat
+                }
+            } catch {
+                lastError = error
+                logger.warning("Backend verification attempt \(attempt + 1) failed: \(error.localizedDescription, privacy: .public)")
+                
+                if attempt < maxRetries {
+                    // Exponential backoff: 0.1s, 0.2s
+                    let delay = pow(2.0, Double(attempt)) * 0.1
+                    try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+                }
             }
         }
+        
+        // All retries failed
+        logger.error("Failed to verify with backend after \(maxRetries + 1) attempts: \(lastError?.localizedDescription ?? "unknown", privacy: .public)")
+        await MainActor.run {
+            AppState.shared.setAuthStatus(.signedOut)
+        }
+    }
+    
+    enum AuthError: Error {
+        case invalidResponse
+        case invalidResponseFormat
     }
     
     // MARK: - Nonce generation
@@ -203,13 +257,6 @@ final class AuthCoordinator {
         let inputData = Data(input.utf8)
         let hashedData = SHA256.hash(data: inputData)
         return Data(hashedData).base64EncodedString()
-    }
-    
-    private var warmSession: URLSession {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.waitsForConnectivity = false
-        configuration.timeoutIntervalForRequest = 10
-        return URLSession(configuration: configuration)
     }
     
 }

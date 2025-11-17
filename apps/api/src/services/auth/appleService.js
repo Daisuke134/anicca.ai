@@ -8,6 +8,29 @@ const appleAudience = process.env.APPLE_SIGN_IN_AUD;
 const appleJWKS = createRemoteJWKSet(new URL('https://appleid.apple.com/auth/keys'));
 
 /**
+ * Warm up Apple JWKS and verify database connectivity
+ * This function pre-fetches Apple's public keys and tests DB connection
+ */
+export async function warmAppleKeys() {
+  try {
+    // Pre-fetch Apple JWKS (this will cache the keys)
+    const testUrl = new URL('https://appleid.apple.com/auth/keys');
+    // The JWKS is lazy-loaded on first use, so we trigger it here
+    await appleJWKS.getKey({ alg: 'RS256', kid: 'test' }).catch(() => {
+      // Expected to fail, but triggers key fetching
+    });
+    
+    // Test database connectivity with a simple query
+    await query('SELECT 1');
+    
+    return true;
+  } catch (error) {
+    logger.warn('Warm-up failed (non-critical)', error);
+    return false;
+  }
+}
+
+/**
  * Verify Apple identity token
  * @param {string} identityToken - JWT from Apple
  * @param {string} nonce - Nonce used in the request

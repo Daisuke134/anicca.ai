@@ -129,6 +129,3 @@ examples/composio/
 apps/api/.npmrc
 
 examples/app_assistant_voice_agents.ipynb
-
-# ComponentsKitの変更は追跡する
-!examples/ComponentsKit/Sources/ComponentsKit/Components/Checkbox/Helpers/CheckboxAnimationDurations.swift

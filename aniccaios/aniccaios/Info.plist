@@ -38,6 +38,8 @@
 	<string>$(INFOPLIST_KEY_RESET_ON_LAUNCH)</string>
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>起床やルーティン開始のために通知を使います。</string>
+	<key>NSCameraUsageDescription</key>
+	<string>WebRTCライブラリが参照していますが、このアプリではカメラを使用していません。</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
 	<key>UIBackgroundModes</key>

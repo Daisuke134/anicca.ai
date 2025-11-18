@@ -161,16 +161,6 @@
 		};
 /* End PBXResourcesBuildPhase section */
 
-/* Begin PBXSourcesBuildPhase section */
-		8471AE772EB783E1002CECAA /* Sources */ = {
-			isa = PBXSourcesBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-		};
-/* End PBXSourcesBuildPhase section */
-
 /* Begin PBXShellScriptBuildPhase section */
 		8471AE802EB783E1002CECAA /* Copy WebRTC dSYM */ = {
 			isa = PBXShellScriptBuildPhase;
@@ -187,11 +177,21 @@
 			outputPaths = (
 				"${ARCHIVE_PRODUCTS_PATH}/../dSYMs/WebRTC.framework.dSYM",
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
-			shellScript = "#!/bin/bash\n# Generate WebRTC.framework dSYM from binary in archive\n# Only run during Archive builds\nif [ -z \"${ARCHIVE_PRODUCTS_PATH}\" ]; then\n    exit 0\nfi\n\nif [ \"${CONFIGURATION}\" = \"Release\" ] || [ \"${CONFIGURATION}\" = \"staging Release\" ]; then\n    ARCHIVE_DSYM_DEST=\"${ARCHIVE_PRODUCTS_PATH}/../dSYMs\"\n    mkdir -p \"${ARCHIVE_DSYM_DEST}\"\n    \n    # Path to WebRTC.framework binary in the archive\n    WEBRTC_FRAMEWORK=\"${ARCHIVE_PRODUCTS_PATH}/Applications/${WRAPPER_NAME}/Frameworks/WebRTC.framework\"\n    WEBRTC_BINARY=\"${WEBRTC_FRAMEWORK}/WebRTC\"\n    \n    if [ ! -f \"${WEBRTC_BINARY}\" ]; then\n        echo \"⚠️ Warning: WebRTC.framework binary not found at ${WEBRTC_BINARY}\"\n        echo \"Skipping dSYM generation for WebRTC.framework\"\n        exit 0\n    fi\n    \n    echo \"🔍 Generating dSYM for WebRTC.framework...\"\n    echo \"Binary: ${WEBRTC_BINARY}\"\n    echo \"Destination: ${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\"\n    \n    # Generate dSYM using dsymutil\n    dsymutil -o \"${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\" \"${WEBRTC_BINARY}\"\n    \n    if [ $? -eq 0 ] && [ -d \"${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\" ]; then\n        echo \"✅ Successfully generated WebRTC.framework.dSYM\"\n        \n        # Verify UUID matches (optional)\n        if command -v dwarfdump &> /dev/null; then\n            echo \"🔍 Verifying dSYM UUID...\"\n            dwarfdump -u \"${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\" 2>/dev/null | head -1\n        fi\n    else\n        echo \"❌ Failed to generate WebRTC.framework.dSYM\"\n        exit 1\n    fi\nfi\n";
+			shellScript = "#!/bin/bash\n# Generate WebRTC.framework dSYM from binary in archive\n# Only run during Archive builds (runOnlyForDeploymentPostprocessing = 1)\nif [ -z \"${ARCHIVE_PRODUCTS_PATH}\" ]; then\n    exit 0\nfi\n\nif [ \"${CONFIGURATION}\" = \"Release\" ] || [ \"${CONFIGURATION}\" = \"staging Release\" ]; then\n    ARCHIVE_DSYM_DEST=\"${ARCHIVE_PRODUCTS_PATH}/../dSYMs\"\n    mkdir -p \"${ARCHIVE_DSYM_DEST}\"\n    \n    # Find .app bundle dynamically (WRAPPER_NAME may not be set)\n    APP_BUNDLE=\"\"\n    for APP in \"${ARCHIVE_PRODUCTS_PATH}/Applications\"/*.app; do\n        if [ -d \"${APP}\" ]; then\n            APP_BUNDLE=\"${APP}\"\n            break\n        fi\n    done\n    \n    if [ -z \"${APP_BUNDLE}\" ]; then\n        echo \"⚠️ Warning: No .app bundle found in ${ARCHIVE_PRODUCTS_PATH}/Applications\"\n        echo \"Skipping dSYM generation for WebRTC.framework\"\n        exit 0\n    fi\n    \n    # Path to WebRTC.framework binary in the archive\n    WEBRTC_FRAMEWORK=\"${APP_BUNDLE}/Frameworks/WebRTC.framework\"\n    WEBRTC_BINARY=\"${WEBRTC_FRAMEWORK}/WebRTC\"\n    \n    if [ ! -f \"${WEBRTC_BINARY}\" ]; then\n        echo \"⚠️ Warning: WebRTC.framework binary not found at ${WEBRTC_BINARY}\"\n        echo \"Available frameworks:\"\n        ls -la \"${APP_BUNDLE}/Frameworks\" 2>/dev/null || echo \"Frameworks directory does not exist\"\n        echo \"Skipping dSYM generation for WebRTC.framework\"\n        exit 0\n    fi\n    \n    echo \"🔍 Generating dSYM for WebRTC.framework...\"\n    echo \"Binary: ${WEBRTC_BINARY}\"\n    echo \"Destination: ${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\"\n    \n    # Generate dSYM using dsymutil\n    dsymutil -o \"${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\" \"${WEBRTC_BINARY}\"\n    \n    if [ $? -eq 0 ] && [ -d \"${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\" ]; then\n        echo \"✅ Successfully generated WebRTC.framework.dSYM\"\n        \n        # Verify UUID matches (optional)\n        if command -v dwarfdump &> /dev/null; then\n            echo \"🔍 Verifying dSYM UUID...\"\n            dwarfdump -u \"${ARCHIVE_DSYM_DEST}/WebRTC.framework.dSYM\" 2>/dev/null | head -1\n        fi\n    else\n        echo \"❌ Failed to generate WebRTC.framework.dSYM\"\n        exit 1\n    fi\nfi\n";
 		};
 /* End PBXShellScriptBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		8471AE772EB783E1002CECAA /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		8471AE842EB783E3002CECAA /* Debug */ = {
@@ -351,6 +351,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_NSCameraUsageDescription = "WebRTCライブラリが参照していますが、このアプリではカメラを使用していません。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -400,6 +401,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_NSCameraUsageDescription = "WebRTCライブラリが参照していますが、このアプリではカメラを使用していません。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -516,6 +518,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_NSCameraUsageDescription = "WebRTCライブラリが参照していますが、このアプリではカメラを使用していません。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -611,9 +614,11 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_ENTITLEMENTS = aniccaios/aniccaios.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
-				CODE_SIGN_STYLE = Automatic;
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Distribution";
+				CODE_SIGN_STYLE = Manual;
 				CURRENT_PROJECT_VERSION = 34;
-				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				DEVELOPMENT_TEAM = "";
+				"DEVELOPMENT_TEAM[sdk=iphoneos*]" = S5U8UH3JLJ;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
 				HEADER_SEARCH_PATHS = (
@@ -626,6 +631,7 @@
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "\"Anicca needs the microphone to talk\n\"Anicca needs the microphone to talk with you in real time.\"";
+				INFOPLIST_KEY_NSCameraUsageDescription = "WebRTCライブラリが参照していますが、このアプリではカメラを使用していません。";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -639,6 +645,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
+				"PROVISIONING_PROFILE_SPECIFIER[sdk=iphoneos*]" = "anicca-distribution";
 				SKIP_INSTALL = NO;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_APPROACHABLE_CONCURRENCY = YES;

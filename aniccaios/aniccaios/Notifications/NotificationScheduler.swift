@@ -18,8 +18,8 @@ final class NotificationScheduler {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NotificationScheduler")
     
     private enum AlarmLoop {
-        /// 8秒サウンド + 5秒休止 = 13秒ごとに再通知
-        static let intervalSeconds = 13
+        /// 8秒サウンド + 2秒休止 = 10秒ごとに再通知
+        static let intervalSeconds = 10
         /// メイン通知のあとに繰り返すサウンド付き通知の最大回数
         static let repeatCount = 10
     }
@@ -147,7 +147,7 @@ final class NotificationScheduler {
         }
     }
 
-    /// メイン通知の 0 秒起点から 13 秒間隔で最大 10 個のサウンド付きフォローアップを登録
+    /// メイン通知の 0 秒起点から 10 秒間隔で最大 10 個のサウンド付きフォローアップを登録
     private func scheduleFollowupLoop(for habit: HabitType, baseComponents: DateComponents) {
         Task {
             await removePending(withPrefix: followPrefix(for: habit))

@@ -273,8 +273,7 @@ private extension VoiceSessionController {
                 "interrupt_response": true,
                 "create_response": true
             ],
-            "max_response_output_tokens": "inf",
-            "language": Locale.realtimeLanguageCode
+            "max_response_output_tokens": "inf"
         ]
 
         var shouldTriggerHabitResponse = false

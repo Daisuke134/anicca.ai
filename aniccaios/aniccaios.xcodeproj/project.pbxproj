@@ -91,6 +91,7 @@
 				8471AE772EB783E1002CECAA /* Sources */,
 				8471AE782EB783E1002CECAA /* Frameworks */,
 				8471AE792EB783E1002CECAA /* Resources */,
+				8471AE802EB783E1002CECAA /* Copy WebRTC dSYM */,
 			);
 			buildRules = (
 			);
@@ -169,6 +170,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		8471AE802EB783E1002CECAA /* Copy WebRTC dSYM */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Copy WebRTC dSYM";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "#!/bin/bash\n# Copy WebRTC.framework dSYM to archive dSYMs folder\nif [ \"${CONFIGURATION}\" = \"Release\" ] || [ \"${CONFIGURATION}\" = \"staging Release\" ]; then\n    # Try multiple possible paths for WebRTC dSYM\n    WEBRTC_DSYM_PATHS=(\n        \"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/WebRTC/WebRTC.xcframework/ios-arm64/WebRTC.framework.dSYM\"\n        \"${DERIVED_DATA_PATH}/SourcePackages/checkouts/WebRTC/WebRTC.xcframework/ios-arm64/WebRTC.framework.dSYM\"\n        \"${PROJECT_DIR}/../DerivedData/$(basename ${PROJECT_DIR%.xcodeproj})/SourcePackages/checkouts/WebRTC/WebRTC.xcframework/ios-arm64/WebRTC.framework.dSYM\"\n    )\n    \n    ARCHIVE_DSYM_DEST=\"${ARCHIVE_PRODUCTS_PATH}/../dSYMs\"\n    \n    for DSYM_PATH in \"${WEBRTC_DSYM_PATHS[@]}\"; do\n        if [ -d \"${DSYM_PATH}\" ]; then\n            cp -R \"${DSYM_PATH}\" \"${ARCHIVE_DSYM_DEST}/\"\n            echo \"✅ Copied WebRTC.framework.dSYM to archive from: ${DSYM_PATH}\"\n            exit 0\n        fi\n    done\n    \n    echo \"⚠️ Warning: WebRTC.framework.dSYM not found. This may cause App Store Connect warnings.\"\nfi\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin XCBuildConfiguration section */
 		8471AE842EB783E3002CECAA /* Debug */ = {

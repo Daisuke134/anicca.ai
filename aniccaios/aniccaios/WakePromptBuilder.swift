@@ -64,6 +64,10 @@ struct HabitPromptBuilder {
             taskDescription = "トレーニング"
         case .bedtime:
             taskDescription = "就寝"
+        case .custom:
+            taskDescription = CustomHabitStore.shared.displayName(
+                fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
+            )
         }
         replacements["TASK_DESCRIPTION"] = taskDescription
         
@@ -96,6 +100,9 @@ struct HabitPromptBuilder {
             } else {
                 replacements["TRAINING_FOCUS_LIST"] = "トレーニング"
             }
+        case .custom:
+            // Custom habit doesn't need specific replacements
+            break
         }
         
         // Perform replacements
@@ -119,6 +126,13 @@ struct HabitPromptBuilder {
                 return profile.preferredLanguage == .ja ? "\(userName)さん、トレーニングの時間です。" : "\(userName), it's time for your workout."
             case .bedtime:
                 return profile.preferredLanguage == .ja ? "\(userName)さん、就寝時間です。" : "\(userName), it's bedtime."
+            case .custom:
+                let name = CustomHabitStore.shared.displayName(
+                    fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
+                )
+                return profile.preferredLanguage == .ja
+                    ? "\(userName)さん、\(name)の時間です。"
+                    : "\(userName), it's time for \(name)."
             }
         }
         

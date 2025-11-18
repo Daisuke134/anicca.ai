@@ -113,7 +113,12 @@ struct PaywallContainerView: View {
                 await loadOffering()
             }
             // 購入状態を確実に同期
-            try? await Purchases.shared.syncPurchases()
+            if let info = try? await Purchases.shared.syncPurchases() {
+                await MainActor.run {
+                    let subscription = SubscriptionInfo(info: info)
+                    appState.updateSubscriptionInfo(subscription)
+                }
+            }
         }
         .onReceive(appState.$cachedOffering) { cached in
             if let cached, offering == nil {

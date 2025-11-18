@@ -9,7 +9,8 @@ actor AuthHealthCheck {
     func warmBackend() async {
         if let lastPing, Date().timeIntervalSince(lastPing) < cooldown { return }
         lastPing = Date()
-        var request = URLRequest(url: AppConfig.appleAuthURL.appending(path: "health"))
+        let baseURL = await MainActor.run { AppConfig.appleAuthURL }
+        var request = URLRequest(url: baseURL.appending(path: "health"))
         request.timeoutInterval = 5
         request.httpMethod = "GET"
         _ = try? await URLSession.shared.data(for: request)

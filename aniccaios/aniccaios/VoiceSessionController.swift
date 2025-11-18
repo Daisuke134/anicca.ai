@@ -273,7 +273,8 @@ private extension VoiceSessionController {
                 "interrupt_response": true,
                 "create_response": true
             ],
-            "max_response_output_tokens": "inf"
+            "max_response_output_tokens": "inf",
+            "language": Locale.realtimeLanguageCode
         ]
 
         var shouldTriggerHabitResponse = false
@@ -382,5 +383,19 @@ enum ConnectionState {
         case .connected:
             "You can talk freely—Anicca is listening."
         }
+    }
+}
+
+private extension Locale {
+    static var realtimeLanguageCode: String {
+        if #available(iOS 16.0, *),
+           let code = Locale.current.language.languageCode?.identifier {
+            return code
+        }
+        if let preferred = Locale.preferredLanguages.first,
+           let first = preferred.split(separator: "-").first {
+            return String(first)
+        }
+        return "en"
     }
 }

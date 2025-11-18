@@ -73,14 +73,27 @@ extension SubscriptionManager: PurchasesDelegate {
 
 extension SubscriptionInfo {
     init(info: CustomerInfo) {
-        let entitlement = info.entitlements[AppConfig.revenueCatEntitlementId]
-        let plan: Plan = entitlement?.isActive == true ? .pro : .free
+        let configuredId = AppConfig.revenueCatEntitlementId
+        let primaryEntitlement = info.entitlements[configuredId]
+        let fallbackEntitlement = info.entitlements.active.values.first
+        let entitlement = primaryEntitlement ?? fallbackEntitlement
+
+        let plan: Plan
+        if entitlement?.isActive == true {
+            plan = .pro
+        } else if let expiration = entitlement?.expirationDate,
+                  expiration > Date() {
+            plan = .grace
+        } else {
+            plan = .free
+        }
+
         let productId = entitlement?.productIdentifier
         let offering = AppState.shared.cachedOffering
         let package = offering?
             .availablePackages
             .first(where: { $0.storeProduct.productIdentifier == productId })
-        
+
         self.init(
             plan: plan,
             status: entitlement.map { String(describing: $0.verification) } ?? "unknown",
@@ -88,7 +101,7 @@ extension SubscriptionInfo {
             managementURL: info.managementURL,
             lastSyncedAt: .now,
             productIdentifier: productId,
-            planDisplayName: package?.storeProduct.localizedTitle,
+            planDisplayName: package?.storeProduct.localizedTitle ?? entitlement?.productIdentifier,
             priceDescription: package?.localizedPriceString
         )
     }

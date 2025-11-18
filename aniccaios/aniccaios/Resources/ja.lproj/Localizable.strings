@@ -10,8 +10,8 @@
 "common_cancel" = "キャンセル";
 "common_save" = "保存";
 "common_time" = "時刻";
-"common_allow_microphone" = "マイクを許可";
-"common_allow_notifications" = "通知を許可";
+"common_maybe_later" = "あとで設定する";
+"common_open_settings" = "設定を開く";
 "common_preview_alarm" = "テスト再生";
 "common_save_wake_time" = "起床時刻を保存";
 "common_signing_in" = "サインイン中…";
@@ -26,11 +26,13 @@
 
 "onboarding_microphone_title" = "マイクアクセス";
 "onboarding_microphone_card_title" = "マイクアクセス";
-"onboarding_microphone_description" = "Aniccaが音声で会話するためにマイクへのアクセスが必要です。これにより、パーソナライズされた起床コールやリマインダーが提供されます。";
+"onboarding_microphone_description" = "Aniccaは起床コールや習慣リマインダーのためにマイクを使いますが、許可しなくても続行できます。必要になったら設定アプリからいつでもオンにできます。";
+"onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→Aniccaでマイクをオンにし直してください。";
 
 "onboarding_notifications_title" = "時限アラート";
 "onboarding_notifications_card_title" = "通知アクセス";
-"onboarding_notifications_description" = "Aniccaが起床・トレーニング・就寝の予定をリマインドできるよう通知を許可してください。おやすみモードでも届きます。";
+"onboarding_notifications_description" = "通知は習慣（起床・トレーニング・就寝）を思い出させるために便利ですが、必須ではありません。端末がサイレントでも動作します。";
+"onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→Aniccaからいつでも通知をオンにできます。";
 
 "onboarding_habit_title" = "習慣を設定";
 "onboarding_habit_description" = "続けたい習慣を選び、時刻を設定しましょう。";
@@ -65,9 +67,14 @@
 "habit_title_wake" = "起床";
 "habit_title_training" = "トレーニング";
 "habit_title_bedtime" = "就寝";
+"habit_title_custom_fallback" = "カスタム習慣";
 "habit_detail_wake" = "設定した時刻に起こします";
 "habit_detail_training" = "ワークアウト開始を促します";
 "habit_detail_bedtime" = "やすらかな就寝をサポートします";
+"habit_detail_custom" = "自由に設定した習慣を毎日リマインドします";
+"habit_custom_card_description" = "名前と時刻を設定するとリマインドされます。";
+"habit_custom_name_placeholder" = "";
+"habit_custom_name_required" = "習慣名を入力してください。";
 
 "next_schedule_message" = "%@に%@をお知らせします";
 "next_schedule_habit_wake" = "起床";
@@ -96,6 +103,8 @@
 "settings_subscription_restore" = "購入を復元";
 "settings_subscription_manage_app_store" = "App Storeで管理";
 "settings_subscription_cancel" = "サブスクリプションをキャンセル";
+"subscription_plan_monthly" = "月額プラン";
+"subscription_plan_annual" = "年額プラン";
 "settings_personalization_title" = "パーソナライズ";
 "settings_name_label" = "名前";
 "settings_name_placeholder" = "太郎";
@@ -105,4 +114,10 @@
 "settings_training_focus_none" = "なし";
 "settings_sign_out" = "サインアウト";
 "settings_time_not_set" = "未設定";
+"settings_custom_card_description" = "カスタム習慣の通知時刻を変更できます。";
+"settings_custom_time_required" = "時刻を設定してください。";
+
+"notification_custom_body_format" = "%@の時間です。進めましょう。";
+"notification_custom_followup_title_format" = "%@（再通知）";
+"notification_custom_followup_body_format" = "%@を始めましょう。";
 

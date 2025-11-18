@@ -174,7 +174,6 @@ final class NotificationScheduler {
 
                 do {
                     try await center.add(request)
-                    logger.info("Follow-up scheduled at offset \(index * AlarmLoop.intervalSeconds)s for \(habit.rawValue, privacy: .public)")
                 } catch {
                     logger.error("Follow-up scheduling error: \(error.localizedDescription, privacy: .public)")
                 }

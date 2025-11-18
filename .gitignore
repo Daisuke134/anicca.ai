@@ -42,6 +42,10 @@ coverage/
 *.swo
 *~
 
+# Xcode user state
+*.xcuserstate
+*.xcuserdatad/
+
 # OS generated files
 .DS_Store
 .DS_Store?

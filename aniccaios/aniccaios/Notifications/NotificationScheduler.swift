@@ -17,13 +17,11 @@ final class NotificationScheduler {
     private let center = UNUserNotificationCenter.current()
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NotificationScheduler")
     
-    private enum AlarmConfig {
-        /// 1回の通知内で追加振動を入れるタイミング（秒）
-        static let vibrationOffsets = [4, 8]
+    private enum AlarmLoop {
         /// 8秒サウンド + 5秒休止 = 13秒ごとに再通知
-        static let loopIntervalSeconds = 13
+        static let intervalSeconds = 13
         /// メイン通知のあとに繰り返すサウンド付き通知の最大回数
-        static let loopRepeatCount = 10
+        static let repeatCount = 10
     }
     
     private init() {}
@@ -94,7 +92,7 @@ final class NotificationScheduler {
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
             await scheduleMain(habit: habit, hour: hour, minute: minute)
-            scheduleFollowupSequence(for: habit, baseComponents: components)
+            scheduleFollowupLoop(for: habit, baseComponents: components)
         }
     }
 
@@ -149,41 +147,34 @@ final class NotificationScheduler {
         }
     }
 
-    private func scheduleFollowupSequence(for habit: HabitType, baseComponents: DateComponents) {
+    /// メイン通知の 0 秒起点から 13 秒間隔で最大 10 個のサウンド付きフォローアップを登録
+    private func scheduleFollowupLoop(for habit: HabitType, baseComponents: DateComponents) {
         Task {
             await removePending(withPrefix: followPrefix(for: habit))
             await removeDelivered(withPrefix: followPrefix(for: habit))
-            guard let first = nextFireDate(from: baseComponents) else { return }
+            guard let firstFireDate = nextFireDate(from: baseComponents) else { return }
 
-            var entries: [(offset: Int, playsSound: Bool)] = []
-            // メイン通知の 0 秒を起点として 4 秒 / 8 秒で追加振動
-            entries += AlarmConfig.vibrationOffsets.map { (offset: $0, playsSound: false) }
+            for index in 1...AlarmLoop.repeatCount {
+                guard let fireDate = Calendar.current.date(
+                    byAdding: .second,
+                    value: index * AlarmLoop.intervalSeconds,
+                    to: firstFireDate
+                ) else { continue }
 
-            if AlarmConfig.loopRepeatCount > 0 {
-                for loopIndex in 1...AlarmConfig.loopRepeatCount {
-                    let startOffset = AlarmConfig.loopIntervalSeconds * loopIndex
-                    // 8秒サウンドをもう一度流す通知
-                    entries.append((offset: startOffset, playsSound: true))
-                    // その通知でも 4 秒 / 8 秒後に追加振動
-                    for vibration in AlarmConfig.vibrationOffsets {
-                        entries.append((offset: startOffset + vibration, playsSound: false))
-                    }
-                }
-            }
-
-            for entry in entries {
-                guard let fireDate = Calendar.current.date(byAdding: .second, value: entry.offset, to: first) else { continue }
-                let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
+                let triggerComponents = Calendar.current.dateComponents(
+                    [.year, .month, .day, .hour, .minute, .second],
+                    from: fireDate
+                )
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 let request = UNNotificationRequest(
                     identifier: keyFollow(for: habit, timestamp: Int(fireDate.timeIntervalSince1970)),
-                    content: baseContent(for: habit, isFollowup: true, playsSound: entry.playsSound),
+                    content: baseContent(for: habit, isFollowup: true),
                     trigger: trigger
                 )
 
                 do {
                     try await center.add(request)
-                    logger.info("Follow-up scheduled: \(request.identifier, privacy: .public) offset=\(entry.offset) sound=\(entry.playsSound)")
+                    logger.info("Follow-up scheduled at offset \(index * AlarmLoop.intervalSeconds)s for \(habit.rawValue, privacy: .public)")
                 } catch {
                     logger.error("Follow-up scheduling error: \(error.localizedDescription, privacy: .public)")
                 }
@@ -191,13 +182,13 @@ final class NotificationScheduler {
         }
     }
 
-    private func baseContent(for habit: HabitType, isFollowup: Bool, playsSound: Bool = true) -> UNMutableNotificationContent {
+    private func baseContent(for habit: HabitType, isFollowup: Bool) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = isFollowup ? followupTitle(for: habit) : habit.title
         content.body = isFollowup ? followupBody(for: habit) : primaryBody(for: habit)
         content.categoryIdentifier = Category.habitAlarm.rawValue
         content.interruptionLevel = .timeSensitive
-        content.sound = playsSound ? wakeSound() : nil
+        content.sound = wakeSound()  // フォローアップでも必ず 8 秒サウンド
         return content
     }
 
@@ -217,6 +208,9 @@ final class NotificationScheduler {
             return "筋トレの時間です。一緒に始めましょう。"
         case .bedtime:
             return "就寝準備を始めましょう。深い眠りを作ります。"
+        case .custom:
+            let name = customHabitDisplayName()
+            return String(format: NSLocalizedString("notification_custom_body_format", comment: ""), name)
         }
     }
 
@@ -228,6 +222,9 @@ final class NotificationScheduler {
             return "筋トレ（再通知）"
         case .bedtime:
             return "就寝（再通知）"
+        case .custom:
+            let name = customHabitDisplayName()
+            return String(format: NSLocalizedString("notification_custom_followup_title_format", comment: ""), name)
         }
     }
 
@@ -239,7 +236,16 @@ final class NotificationScheduler {
             return "体を動かす準備はできています。フォームを意識していきましょう。"
         case .bedtime:
             return "今日一日の疲れを手放しましょう。リラックスして眠りに入ります。"
+        case .custom:
+            let name = customHabitDisplayName()
+            return String(format: NSLocalizedString("notification_custom_followup_body_format", comment: ""), name)
         }
+    }
+
+    private func customHabitDisplayName() -> String {
+        CustomHabitStore.shared.displayName(
+            fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
+        )
     }
 
     private func nextFireDate(from components: DateComponents) -> Date? {

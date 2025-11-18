@@ -39,7 +39,7 @@
 	<key>NSUserNotificationsUsageDescription</key>
 	<string>起床やルーティン開始のために通知を使います。</string>
 	<key>NSCameraUsageDescription</key>
-	<string>WebRTCライブラリが参照していますが、このアプリではカメラを使用していません。</string>
+	<string>The WebRTC library references camera APIs, but this app does not use the camera.</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
 	<key>UIBackgroundModes</key>

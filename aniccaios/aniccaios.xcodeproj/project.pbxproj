@@ -185,8 +185,9 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"${ARCHIVE_PRODUCTS_PATH}/../dSYMs/WebRTC.framework.dSYM",
 			);
-			runOnlyForDeploymentPostprocessing = 0;
+			runOnlyForDeploymentPostprocessing = 1;
 			shellPath = /bin/sh;
 			shellScript = "#!/bin/bash\n# Copy WebRTC.framework dSYM to archive dSYMs folder\nif [ \"${CONFIGURATION}\" = \"Release\" ] || [ \"${CONFIGURATION}\" = \"staging Release\" ]; then\n    # Try multiple possible paths for WebRTC dSYM\n    WEBRTC_DSYM_PATHS=(\n        \"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/WebRTC/WebRTC.xcframework/ios-arm64/WebRTC.framework.dSYM\"\n        \"${DERIVED_DATA_PATH}/SourcePackages/checkouts/WebRTC/WebRTC.xcframework/ios-arm64/WebRTC.framework.dSYM\"\n        \"${PROJECT_DIR}/../DerivedData/$(basename ${PROJECT_DIR%.xcodeproj})/SourcePackages/checkouts/WebRTC/WebRTC.xcframework/ios-arm64/WebRTC.framework.dSYM\"\n    )\n    \n    ARCHIVE_DSYM_DEST=\"${ARCHIVE_PRODUCTS_PATH}/../dSYMs\"\n    \n    for DSYM_PATH in \"${WEBRTC_DSYM_PATHS[@]}\"; do\n        if [ -d \"${DSYM_PATH}\" ]; then\n            cp -R \"${DSYM_PATH}\" \"${ARCHIVE_DSYM_DEST}/\"\n            echo \"✅ Copied WebRTC.framework.dSYM to archive from: ${DSYM_PATH}\"\n            exit 0\n        fi\n    done\n    \n    echo \"⚠️ Warning: WebRTC.framework.dSYM not found. This may cause App Store Connect warnings.\"\nfi\n";
 		};

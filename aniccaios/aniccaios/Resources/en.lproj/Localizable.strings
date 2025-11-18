@@ -10,8 +10,8 @@
 "common_cancel" = "Cancel";
 "common_save" = "Save";
 "common_time" = "Time";
-"common_allow_microphone" = "Allow Microphone";
-"common_allow_notifications" = "Allow Notifications";
+"common_maybe_later" = "Maybe Later";
+"common_open_settings" = "Open Settings";
 "common_preview_alarm" = "Preview Alarm";
 "common_save_wake_time" = "Save Wake Time";
 "common_signing_in" = "Signing in...";
@@ -26,11 +26,13 @@
 
 "onboarding_microphone_title" = "Microphone Access";
 "onboarding_microphone_card_title" = "Microphone Access";
-"onboarding_microphone_description" = "Anicca needs microphone access to have voice conversations with you. This allows us to provide personalized wake-up calls and habit reminders.";
+"onboarding_microphone_description" = "Anicca uses your microphone for wake-up calls and habit reminders. You can keep going without enabling it and turn it on anytime from Settings.";
+"onboarding_microphone_optional_hint" = "Need the voice experience later? Just return to Settings → Anicca and flip the microphone back on when you're ready.";
 
 "onboarding_notifications_title" = "Time-Sensitive Alerts";
 "onboarding_notifications_card_title" = "Notification Access";
-"onboarding_notifications_description" = "Anicca needs notification access to remind you about your scheduled habits (wake-up, training, bedtime). These alerts will work even when your phone is silenced.";
+"onboarding_notifications_description" = "Notifications help Anicca nudge your habits (wake-up, training, bedtime), but they're optional and work even if you silence your phone.";
+"onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
 
 "onboarding_habit_title" = "Set Your Habits";
 "onboarding_habit_description" = "Choose which habits you want to build and set their times.";
@@ -65,9 +67,14 @@
 "habit_title_wake" = "Wake Up";
 "habit_title_training" = "Training";
 "habit_title_bedtime" = "Bedtime";
+"habit_title_custom_fallback" = "Custom Habit";
 "habit_detail_wake" = "Get woken up at your preferred time";
 "habit_detail_training" = "Reminders to start your workout";
 "habit_detail_bedtime" = "Gentle reminders to wind down and sleep";
+"habit_detail_custom" = "We'll remind you once you set a name and time.";
+"habit_custom_card_description" = "Give it a name and set the reminder time.";
+"habit_custom_name_placeholder" = "";
+"habit_custom_name_required" = "Please enter a habit name.";
 
 "next_schedule_message" = "%@ I'll nudge you for %@";
 "next_schedule_habit_wake" = "wake-up";
@@ -96,6 +103,8 @@
 "settings_subscription_restore" = "Restore Purchases";
 "settings_subscription_manage_app_store" = "Manage on App Store";
 "settings_subscription_cancel" = "Cancel Subscription";
+"subscription_plan_monthly" = "Monthly Plan";
+"subscription_plan_annual" = "Annual Plan";
 "settings_personalization_title" = "Personalization";
 "settings_name_label" = "Name";
 "settings_name_placeholder" = "John";
@@ -105,6 +114,12 @@
 "settings_training_focus_none" = "None";
 "settings_sign_out" = "Sign Out";
 "settings_time_not_set" = "Not Set";
+"settings_custom_card_description" = "Change the reminder time for your custom habit.";
+"settings_custom_time_required" = "Please set the reminder time.";
+
+"notification_custom_body_format" = "It's time for %@.";
+"notification_custom_followup_title_format" = "%@ (reminder)";
+"notification_custom_followup_body_format" = "Let's get %@ started.";
 
 "common_sign_out" = "Sign Out";
 

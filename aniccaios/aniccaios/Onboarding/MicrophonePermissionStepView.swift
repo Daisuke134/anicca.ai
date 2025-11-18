@@ -4,11 +4,13 @@ import AVFAudio
 #endif
 import ComponentsKit
 import SwiftUI
+import UIKit
 
 struct MicrophonePermissionStepView: View {
     let next: () -> Void
 
     @State private var micGranted = false
+    @State private var micDenied = false
     @State private var isRequesting = false
 
     var body: some View {
@@ -43,7 +45,7 @@ struct MicrophonePermissionStepView: View {
                                     var vm = ButtonVM()
                                     vm.title = isRequesting
                                         ? String(localized: "common_requesting")
-                                        : String(localized: "common_allow_microphone")
+                                        : String(localized: "common_continue")
                                     vm.style = .filled
                                     vm.size = .medium
                                     vm.isFullWidth = true
@@ -53,7 +55,40 @@ struct MicrophonePermissionStepView: View {
                                 }(),
                                 action: requestMicrophone
                             )
+
+                            if micDenied {
+                                SUButton(
+                                    model: {
+                                        var vm = ButtonVM()
+                                        vm.title = String(localized: "common_open_settings")
+                                        vm.style = .plain
+                                        vm.size = .medium
+                                        vm.isFullWidth = true
+                                        vm.isEnabled = true
+                                        vm.color = .init(main: .universal(.uiColor(.systemGray)), contrast: .secondaryForeground)
+                                        return vm
+                                    }(),
+                                    action: openSettings
+                                )
+                            }
+
+                            SUButton(
+                                model: {
+                                    var vm = ButtonVM()
+                                    vm.title = String(localized: "common_maybe_later")
+                                    vm.style = .plain
+                                    vm.size = .small
+                                    vm.isFullWidth = false
+                                    vm.isEnabled = !isRequesting
+                                    return vm
+                                }(),
+                                action: skipForNow
+                            )
                         }
+
+                        Text(String(localized: "onboarding_microphone_optional_hint"))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
             )
@@ -62,11 +97,7 @@ struct MicrophonePermissionStepView: View {
         }
         .padding(24)
         .onAppear {
-            if #available(iOS 17.0, *) {
-                micGranted = AVAudioApplication.shared.recordPermission == .granted
-            } else {
-                micGranted = AVAudioSession.sharedInstance().recordPermission == .granted
-            }
+            updatePermissionSnapshot()
             if micGranted {
                 // Auto-advance if already granted
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
@@ -93,6 +124,7 @@ struct MicrophonePermissionStepView: View {
     private func updatePermissionState(granted: Bool) {
         DispatchQueue.main.async {
             self.micGranted = granted
+            self.micDenied = !granted
             self.isRequesting = false
             if granted {
                 // Small delay before advancing for better UX
@@ -101,6 +133,27 @@ struct MicrophonePermissionStepView: View {
                 }
             }
         }
+    }
+
+    private func updatePermissionSnapshot() {
+        if #available(iOS 17.0, *) {
+            let permission = AVAudioApplication.shared.recordPermission
+            micGranted = permission == .granted
+            micDenied = permission == .denied
+        } else {
+            let permission = AVAudioSession.sharedInstance().recordPermission
+            micGranted = permission == .granted
+            micDenied = permission == .denied
+        }
+    }
+
+    private func skipForNow() {
+        next()
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
 

@@ -1,11 +1,13 @@
 import ComponentsKit
 import SwiftUI
 import UserNotifications
+import UIKit
 
 struct NotificationPermissionStepView: View {
     let next: () -> Void
 
     @State private var notificationGranted = false
+    @State private var notificationDenied = false
     @State private var isRequesting = false
 
     var body: some View {
@@ -38,7 +40,9 @@ struct NotificationPermissionStepView: View {
                             SUButton(
                                 model: {
                                     var vm = ButtonVM()
-                                    vm.title = isRequesting ? String(localized: "common_requesting") : String(localized: "common_allow_notifications")
+                                    vm.title = isRequesting
+                                        ? String(localized: "common_requesting")
+                                        : String(localized: "common_continue")
                                     vm.style = .filled
                                     vm.size = .medium
                                     vm.isFullWidth = true
@@ -48,7 +52,40 @@ struct NotificationPermissionStepView: View {
                                 }(),
                                 action: requestNotifications
                             )
+
+                            if notificationDenied {
+                                SUButton(
+                                    model: {
+                                        var vm = ButtonVM()
+                                        vm.title = String(localized: "common_open_settings")
+                                        vm.style = .plain
+                                        vm.size = .medium
+                                        vm.isFullWidth = true
+                                        vm.isEnabled = true
+                                        vm.color = .init(main: .universal(.uiColor(.systemGray)), contrast: .secondaryForeground)
+                                        return vm
+                                    }(),
+                                    action: openSettings
+                                )
+                            }
+
+                            SUButton(
+                                model: {
+                                    var vm = ButtonVM()
+                                    vm.title = String(localized: "common_maybe_later")
+                                    vm.style = .plain
+                                    vm.size = .small
+                                    vm.isFullWidth = false
+                                    vm.isEnabled = !isRequesting
+                                    return vm
+                                }(),
+                                action: skipNotifications
+                            )
                         }
+
+                        Text(String(localized: "onboarding_notifications_optional_hint"))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
                     }
                 }
             )
@@ -57,19 +94,7 @@ struct NotificationPermissionStepView: View {
         }
         .padding(24)
         .onAppear {
-            // Check current authorization status
-            Task {
-                let granted = await NotificationScheduler.shared.isAuthorizedForAlerts()
-                await MainActor.run {
-                    notificationGranted = granted
-                    if granted {
-                        // Auto-advance if already granted (same as microphone permission)
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                            next()
-                        }
-                    }
-                }
-            }
+            Task { await refreshAuthorizationState(autoAdvance: true) }
         }
     }
 
@@ -80,17 +105,40 @@ struct NotificationPermissionStepView: View {
             let granted = await NotificationScheduler.shared.requestAuthorization()
             await MainActor.run {
                 notificationGranted = granted
+                notificationDenied = !granted
                 isRequesting = false
                 if granted {
-                    // Small delay before advancing for better UX
                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                         next()
                     }
-                } else {
-                    // Permission denied - show error message and retry button
-                    // User must grant permission to proceed
+                }
+            }
+            await refreshAuthorizationState(autoAdvance: false)
+        }
+    }
+
+    private func refreshAuthorizationState(autoAdvance: Bool) async {
+        let settings = await UNUserNotificationCenter.current().notificationSettings()
+        await MainActor.run {
+            notificationGranted = settings.authorizationStatus == .authorized
+                || settings.authorizationStatus == .provisional
+                || settings.authorizationStatus == .ephemeral
+            notificationDenied = settings.authorizationStatus == .denied
+
+            if autoAdvance, notificationGranted {
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    next()
                 }
             }
         }
+    }
+
+    private func skipNotifications() {
+        next()
+    }
+
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }

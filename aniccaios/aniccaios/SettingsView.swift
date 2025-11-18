@@ -8,12 +8,16 @@ struct SettingsView: View {
     @State private var habitTimes: [HabitType: Date] = [:]
     @State private var activeHabits: Set<HabitType> = []
     @State private var showingTimePicker: HabitType?
+    @State private var sheetTime = Date()
     @State private var isSaving = false
     @State private var displayName: String = ""
     @State private var preferredLanguage: LanguagePreference = .en
     @State private var sleepLocation: String = ""
     @State private var trainingFocus: String = ""
     @State private var showingCustomerCenter = false
+    @State private var customHabitName: String = AppState.shared.customHabit?.name ?? ""
+    @FocusState private var isCustomHabitNameFocused: Bool
+    @State private var customHabitValidationError: LocalizedStringKey?
 
     private struct TrainingFocusOption: Identifiable {
         let id: String
@@ -41,6 +45,7 @@ struct SettingsView: View {
         }
         _habitTimes = State(initialValue: times)
         _activeHabits = State(initialValue: active)
+        _customHabitName = State(initialValue: AppState.shared.customHabit?.name ?? "")
     }
 
     var body: some View {
@@ -61,6 +66,10 @@ struct SettingsView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                isCustomHabitNameFocused = false
             }
             .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -90,6 +99,12 @@ struct SettingsView: View {
         preferredLanguage = appState.userProfile.preferredLanguage
         sleepLocation = appState.userProfile.sleepLocation
         trainingFocus = appState.userProfile.trainingFocus.first ?? ""
+        customHabitName = appState.customHabit?.name ?? ""
+        if let components = appState.habitSchedules[.custom],
+           let date = Calendar.current.date(from: components) {
+            habitTimes[.custom] = date
+            activeHabits.insert(.custom)
+        }
     }
     
     private var personalizationCard: some View {
@@ -179,6 +194,7 @@ struct SettingsView: View {
     private func habitCard(for habit: HabitType) -> some View {
         let hasTime = habitTimes[habit] != nil
         let isActive = activeHabits.contains(habit)
+        let isCustomHabit = habit == .custom
         let checkboxBinding = Binding(
             get: { isActive },
             set: { isOn in
@@ -205,6 +221,9 @@ struct SettingsView: View {
                             set: { newValue in
                                 withAnimation(.linear(duration: 0.08)) {
                                     checkboxBinding.wrappedValue = newValue
+                                    if !newValue && habit == .custom {
+                                        customHabitValidationError = nil
+                                    }
                                 }
                             }
                         ),
@@ -215,11 +234,31 @@ struct SettingsView: View {
                         }()
                     )
                     VStack(alignment: .leading, spacing: 8) {
-                        Text(habit.title)
-                            .font(.headline)
-                        Text(habit.detail)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                        if isCustomHabit {
+                            HabitNameField(text: $customHabitName)
+                                .focused($isCustomHabitNameFocused)
+                                .onChange(of: customHabitName) { _, newValue in
+                                    let sanitized = newValue.replacingOccurrences(of: "\n", with: "")
+                                    if sanitized != customHabitName { customHabitName = sanitized }
+                                    customHabitValidationError = nil
+                                }
+                        } else {
+                            Text(habit.title)
+                                .font(.headline)
+                            Text(habit.detail)
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        if isCustomHabit {
+                            Text("settings_custom_card_description")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                            if let customHabitValidationError, isActive {
+                                Text(customHabitValidationError)
+                                    .font(.footnote)
+                                    .foregroundStyle(.red)
+                            }
+                        }
                     }
 
                     Spacer()
@@ -244,6 +283,9 @@ struct SettingsView: View {
                                     return vm
                                 }(),
                                 action: {
+                                    sheetTime = habitTimes[habit]
+                                        ?? Calendar.current.date(from: habit.defaultTime)
+                                        ?? Date()
                                     showingTimePicker = habit
                                 }
                             )
@@ -268,14 +310,7 @@ struct SettingsView: View {
 
                 DatePicker(
                     String(localized: "common_time"),
-                    selection: Binding(
-                        get: {
-                            habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
-                        },
-                        set: { newValue in
-                            habitTimes[habit] = newValue
-                        }
-                    ),
+                    selection: $sheetTime,
                     displayedComponents: [.hourAndMinute]
                 )
                 .datePickerStyle(.wheel)
@@ -293,6 +328,7 @@ struct SettingsView: View {
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
+                        habitTimes[habit] = sheetTime
                         showingTimePicker = nil
                     }
                 }
@@ -340,16 +376,24 @@ struct SettingsView: View {
     
     private var subscriptionSummary: String {
         let info = appState.subscriptionInfo
-        if let planDisplayName = info.planDisplayName, !planDisplayName.isEmpty {
-            if let date = info.currentPeriodEnd {
-                return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
-            }
-            return planDisplayName
+        guard info.plan != .free else {
+            return NSLocalizedString("settings_subscription_free", comment: "")
         }
-        if let date = info.currentPeriodEnd {
-            return String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date))
+        return resolvedPlanLabel(for: info)
+    }
+    
+    private func resolvedPlanLabel(for info: SubscriptionInfo) -> String {
+        if let name = info.planDisplayName, !name.isEmpty {
+            return name
         }
-        return NSLocalizedString("settings_subscription_free", comment: "")
+        switch info.productIdentifier {
+        case "ai.anicca.app.ios.annual":
+            return NSLocalizedString("subscription_plan_annual", comment: "")
+        case "ai.anicca.app.ios.monthly":
+            return NSLocalizedString("subscription_plan_monthly", comment: "")
+        default:
+            return NSLocalizedString("settings_subscription_pro", comment: "")
+        }
     }
     
     private var dateFormatter: DateFormatter {
@@ -361,17 +405,39 @@ struct SettingsView: View {
 
     private func save() {
         guard !isSaving else { return }
+
+        let trimmedCustomName = customHabitName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let isCustomActive = activeHabits.contains(.custom)
+        if isCustomActive && trimmedCustomName.isEmpty {
+            customHabitValidationError = "habit_custom_name_required"
+            isCustomHabitNameFocused = true
+            return
+        }
+        if isCustomActive && habitTimes[.custom] == nil {
+            customHabitValidationError = "settings_custom_time_required"
+            return
+        }
+
         isSaving = true
 
         Task {
+            let shouldSaveCustom = isCustomActive && habitTimes[.custom] != nil
+
             // Update habit schedules - only save active habits with times
             var schedules: [HabitType: Date] = [:]
             for habit in activeHabits {
-                if let time = habitTimes[habit] {
-                    schedules[habit] = time
-                }
+                guard let time = habitTimes[habit] else { continue }
+                if habit == .custom && !shouldSaveCustom { continue }
+                schedules[habit] = time
             }
             await appState.updateHabits(schedules)
+            
+            // Update custom habit
+            if shouldSaveCustom {
+                appState.setCustomHabitName(trimmedCustomName)
+            } else {
+                appState.clearCustomHabit()
+            }
             
             // Update user profile
             var updatedProfile = appState.userProfile
@@ -383,6 +449,7 @@ struct SettingsView: View {
             
             await MainActor.run {
                 isSaving = false
+                customHabitValidationError = nil
                 dismiss()
             }
         }

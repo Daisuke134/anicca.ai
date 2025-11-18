@@ -7,6 +7,7 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
     case wake
     case training
     case bedtime
+    case custom
 
     var title: String {
         switch self {
@@ -16,6 +17,10 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
             return String(localized: "habit_title_training")
         case .bedtime:
             return String(localized: "habit_title_bedtime")
+        case .custom:
+            return CustomHabitStore.shared.displayName(
+                fallback: String(localized: "habit_title_custom_fallback")
+            )
         }
     }
 
@@ -27,6 +32,8 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
             return String(localized: "habit_detail_training")
         case .bedtime:
             return String(localized: "habit_detail_bedtime")
+        case .custom:
+            return String(localized: "habit_detail_custom")
         }
     }
 
@@ -42,6 +49,9 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
         case .bedtime:
             components.hour = 23
             components.minute = 0
+        case .custom:
+            components.hour = 7
+            components.minute = 0
         }
         return components
     }
@@ -54,6 +64,8 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
             return "habit.training"
         case .bedtime:
             return "habit.bedtime"
+        case .custom:
+            return "habit.custom"
         }
     }
 
@@ -65,6 +77,8 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
             return "training"
         case .bedtime:
             return "bedtime"
+        case .custom:
+            return "custom"
         }
     }
 }
@@ -80,9 +94,11 @@ extension HabitType: AppEnum {
         [
             .wake: .init(title: "Wake", subtitle: "朝の起床習慣"),
             .training: .init(title: "Training", subtitle: "トレーニング習慣"),
-            .bedtime: .init(title: "Bedtime", subtitle: "就寝習慣")
+            .bedtime: .init(title: "Bedtime", subtitle: "就寝習慣"),
+            .custom: .init(title: "Custom Habit", subtitle: "自由入力の習慣")
         ]
     }
 }
 #endif
+
 

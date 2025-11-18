@@ -18,6 +18,7 @@ final class AppState: ObservableObject {
     @Published private(set) var onboardingStep: OnboardingStep
     @Published private(set) var pendingHabitFollowUps: [OnboardingStep] = []
     @Published private(set) var cachedOffering: Offering?
+    @Published private(set) var customHabit: CustomHabitConfiguration?
     private(set) var shouldStartSessionImmediately = false
 
     // Legacy support: computed property for backward compatibility
@@ -64,6 +65,7 @@ final class AppState: ObservableObject {
         self.authStatus = loadUserCredentials()
         self.userProfile = loadUserProfile()
         self.subscriptionInfo = loadSubscriptionInfo()
+        self.customHabit = CustomHabitStore.shared.load()
         
         // Load habit schedules (new format)
         if let data = defaults.data(forKey: habitSchedulesKey),
@@ -208,6 +210,7 @@ final class AppState: ObservableObject {
         onboardingStep = .welcome
         userProfile = UserProfile()
         subscriptionInfo = .free
+        clearCustomHabit()
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
         Task {
@@ -333,16 +336,19 @@ final class AppState: ObservableObject {
         formatter.timeStyle = .short
         let timeString = formatter.string(from: closest.date)
         
-        let habitNameKey: String
+        let habitName: String
         switch closest.habit {
         case .wake:
-            habitNameKey = "next_schedule_habit_wake"
+            habitName = NSLocalizedString("next_schedule_habit_wake", comment: "")
         case .training:
-            habitNameKey = "next_schedule_habit_training"
+            habitName = NSLocalizedString("next_schedule_habit_training", comment: "")
         case .bedtime:
-            habitNameKey = "next_schedule_habit_bedtime"
+            habitName = NSLocalizedString("next_schedule_habit_bedtime", comment: "")
+        case .custom:
+            habitName = CustomHabitStore.shared.displayName(
+                fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
+            )
         }
-        let habitName = NSLocalizedString(habitNameKey, comment: "")
         let messageFormat = NSLocalizedString("next_schedule_message", comment: "")
         let message = String(format: messageFormat, timeString, habitName)
         
@@ -443,6 +449,21 @@ final class AppState: ObservableObject {
             return .free
         }
         return info
+    }
+    
+    // MARK: - Custom Habit
+    
+    func setCustomHabitName(_ name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        let config = CustomHabitConfiguration(name: trimmed)
+        customHabit = config
+        CustomHabitStore.shared.save(config)
+    }
+
+    func clearCustomHabit() {
+        customHabit = nil
+        CustomHabitStore.shared.save(nil)
     }
 }
 

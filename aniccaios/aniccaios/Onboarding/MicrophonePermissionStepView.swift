@@ -39,6 +39,19 @@ struct MicrophonePermissionStepView: View {
                                 }())
                                 Spacer()
                             }
+                            SUButton(
+                                model: {
+                                    var vm = ButtonVM()
+                                    vm.title = String(localized: "common_continue")
+                                    vm.style = .filled
+                                    vm.size = .medium
+                                    vm.isFullWidth = true
+                                    vm.isEnabled = true
+                                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
+                                    return vm
+                                }(),
+                                action: { next() }
+                            )
                         } else {
                             SUButton(
                                 model: {
@@ -98,12 +111,6 @@ struct MicrophonePermissionStepView: View {
         .padding(24)
         .onAppear {
             updatePermissionSnapshot()
-            if micGranted {
-                // Auto-advance if already granted
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    next()
-                }
-            }
         }
     }
 

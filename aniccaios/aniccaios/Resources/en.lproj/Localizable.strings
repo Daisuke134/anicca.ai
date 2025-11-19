@@ -123,3 +123,6 @@
 
 "common_sign_out" = "Sign Out";
 
+"notification_action_start_conversation" = "Start Conversation Now";
+"notification_action_dismiss" = "Dismiss";
+

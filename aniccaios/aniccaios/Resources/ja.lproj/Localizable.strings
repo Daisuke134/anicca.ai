@@ -121,3 +121,6 @@
 "notification_custom_followup_title_format" = "%@（再通知）";
 "notification_custom_followup_body_format" = "%@を始めましょう。";
 
+"notification_action_start_conversation" = "今すぐ対話を開始";
+"notification_action_dismiss" = "止める";
+

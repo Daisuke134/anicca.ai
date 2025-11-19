@@ -66,13 +66,13 @@ final class NotificationScheduler {
     func registerCategories() {
         let start = UNNotificationAction(
             identifier: Action.startConversation.rawValue,
-            title: "今すぐ対話を開始",
+            title: NSLocalizedString("notification_action_start_conversation", comment: ""),
             options: [.foreground]
         )
 
         let dismiss = UNNotificationAction(
             identifier: Action.dismissAll.rawValue,
-            title: "止める",
+            title: NSLocalizedString("notification_action_dismiss", comment: ""),
             options: [.destructive]
         )
 

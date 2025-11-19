@@ -126,3 +126,21 @@
 "notification_action_start_conversation" = "Start Conversation Now";
 "notification_action_dismiss" = "Dismiss";
 
+"notification_wake_body" = "Anicca is here to wake you up.";
+"notification_training_body" = "It's time for training. Let's start together.";
+"notification_bedtime_body" = "Let's start preparing for bed. We'll create deep sleep.";
+
+"notification_wake_followup_title" = "Wake Up (reminder)";
+"notification_training_followup_title" = "Training (reminder)";
+"notification_bedtime_followup_title" = "Bedtime (reminder)";
+
+"notification_wake_followup_body" = "It's time to wake up. Let's start with deep breathing.";
+"notification_training_followup_body" = "You're ready to move your body. Let's be mindful of your form.";
+"notification_bedtime_followup_body" = "Let's release the fatigue of the day. Relax and drift into sleep.";
+
+"common_user_fallback" = "User";
+"common_sleep_location_fallback" = "Bed";
+"common_list_separator" = ", ";
+"language_preference_ja" = "Japanese";
+"language_preference_en" = "English";
+

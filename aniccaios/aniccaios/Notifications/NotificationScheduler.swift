@@ -202,11 +202,11 @@ final class NotificationScheduler {
     private func primaryBody(for habit: HabitType) -> String {
         switch habit {
         case .wake:
-            return "Aniccaが起床を促します。"
+            return NSLocalizedString("notification_wake_body", comment: "")
         case .training:
-            return "筋トレの時間です。一緒に始めましょう。"
+            return NSLocalizedString("notification_training_body", comment: "")
         case .bedtime:
-            return "就寝準備を始めましょう。深い眠りを作ります。"
+            return NSLocalizedString("notification_bedtime_body", comment: "")
         case .custom:
             let name = customHabitDisplayName()
             return String(format: NSLocalizedString("notification_custom_body_format", comment: ""), name)
@@ -216,11 +216,11 @@ final class NotificationScheduler {
     private func followupTitle(for habit: HabitType) -> String {
         switch habit {
         case .wake:
-            return "起床（再通知）"
+            return NSLocalizedString("notification_wake_followup_title", comment: "")
         case .training:
-            return "筋トレ（再通知）"
+            return NSLocalizedString("notification_training_followup_title", comment: "")
         case .bedtime:
-            return "就寝（再通知）"
+            return NSLocalizedString("notification_bedtime_followup_title", comment: "")
         case .custom:
             let name = customHabitDisplayName()
             return String(format: NSLocalizedString("notification_custom_followup_title_format", comment: ""), name)
@@ -230,11 +230,11 @@ final class NotificationScheduler {
     private func followupBody(for habit: HabitType) -> String {
         switch habit {
         case .wake:
-            return "そろそろ起きましょう。深呼吸からスタートです。"
+            return NSLocalizedString("notification_wake_followup_body", comment: "")
         case .training:
-            return "体を動かす準備はできています。フォームを意識していきましょう。"
+            return NSLocalizedString("notification_training_followup_body", comment: "")
         case .bedtime:
-            return "今日一日の疲れを手放しましょう。リラックスして眠りに入ります。"
+            return NSLocalizedString("notification_bedtime_followup_body", comment: "")
         case .custom:
             let name = customHabitDisplayName()
             return String(format: NSLocalizedString("notification_custom_followup_body_format", comment: ""), name)

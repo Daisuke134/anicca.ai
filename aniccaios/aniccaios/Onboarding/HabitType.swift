@@ -92,10 +92,22 @@ extension HabitType: AppEnum {
 
     nonisolated static var caseDisplayRepresentations: [HabitType: DisplayRepresentation] {
         [
-            .wake: .init(title: "Wake", subtitle: "朝の起床習慣"),
-            .training: .init(title: "Training", subtitle: "トレーニング習慣"),
-            .bedtime: .init(title: "Bedtime", subtitle: "就寝習慣"),
-            .custom: .init(title: "Custom Habit", subtitle: "自由入力の習慣")
+            .wake: .init(
+                title: String(localized: "habit_title_wake"), 
+                subtitle: String(localized: "habit_detail_wake")
+            ),
+            .training: .init(
+                title: String(localized: "habit_title_training"), 
+                subtitle: String(localized: "habit_detail_training")
+            ),
+            .bedtime: .init(
+                title: String(localized: "habit_title_bedtime"), 
+                subtitle: String(localized: "habit_detail_bedtime")
+            ),
+            .custom: .init(
+                title: String(localized: "habit_title_custom_fallback"), 
+                subtitle: String(localized: "habit_detail_custom")
+            )
         ]
     }
 }

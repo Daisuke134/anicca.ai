@@ -124,3 +124,21 @@
 "notification_action_start_conversation" = "今すぐ対話を開始";
 "notification_action_dismiss" = "止める";
 
+"notification_wake_body" = "Aniccaが起床を促します。";
+"notification_training_body" = "筋トレの時間です。一緒に始めましょう。";
+"notification_bedtime_body" = "就寝準備を始めましょう。深い眠りを作ります。";
+
+"notification_wake_followup_title" = "起床（再通知）";
+"notification_training_followup_title" = "筋トレ（再通知）";
+"notification_bedtime_followup_title" = "就寝（再通知）";
+
+"notification_wake_followup_body" = "そろそろ起きましょう。深呼吸からスタートです。";
+"notification_training_followup_body" = "体を動かす準備はできています。フォームを意識していきましょう。";
+"notification_bedtime_followup_body" = "今日一日の疲れを手放しましょう。リラックスして眠りに入ります。";
+
+"common_user_fallback" = "ユーザー";
+"common_sleep_location_fallback" = "ベッド";
+"common_list_separator" = "、";
+"language_preference_ja" = "日本語";
+"language_preference_en" = "English";
+

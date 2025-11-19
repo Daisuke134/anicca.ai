@@ -7,9 +7,9 @@ enum LanguagePreference: String, Codable {
     var languageLine: String {
         switch self {
         case .ja:
-            return "日本語"
+            return NSLocalizedString("language_preference_ja", comment: "")
         case .en:
-            return "English"
+            return NSLocalizedString("language_preference_en", comment: "")
         }
     }
     

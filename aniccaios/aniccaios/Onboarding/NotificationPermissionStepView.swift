@@ -36,6 +36,19 @@ struct NotificationPermissionStepView: View {
                                 }())
                                 Spacer()
                             }
+                            SUButton(
+                                model: {
+                                    var vm = ButtonVM()
+                                    vm.title = String(localized: "common_continue")
+                                    vm.style = .filled
+                                    vm.size = .medium
+                                    vm.isFullWidth = true
+                                    vm.isEnabled = true
+                                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
+                                    return vm
+                                }(),
+                                action: { next() }
+                            )
                         } else {
                             SUButton(
                                 model: {
@@ -94,7 +107,7 @@ struct NotificationPermissionStepView: View {
         }
         .padding(24)
         .onAppear {
-            Task { await refreshAuthorizationState(autoAdvance: true) }
+            Task { await refreshAuthorizationState(autoAdvance: false) }
         }
     }
 

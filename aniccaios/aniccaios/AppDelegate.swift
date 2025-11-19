@@ -20,9 +20,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
         Task {
-            // 通知の許可リクエストはオンボーディング画面でユーザーが明示的に行う
-            // ここで自動リクエストしないことで、初期ユーザー体験を再現可能にする
-            // 一度許可されれば、システムが自動的に許可状態を維持する
+            _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
             await SubscriptionManager.shared.refreshOfferings()
             await AuthHealthCheck.shared.warmBackend()
         }

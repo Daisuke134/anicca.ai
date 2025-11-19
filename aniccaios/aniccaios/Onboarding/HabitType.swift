@@ -93,20 +93,20 @@ extension HabitType: AppEnum {
     nonisolated static var caseDisplayRepresentations: [HabitType: DisplayRepresentation] {
         [
             .wake: .init(
-                title: String(localized: "habit_title_wake"), 
-                subtitle: String(localized: "habit_detail_wake")
+                title: "habit_title_wake",
+                subtitle: "habit_detail_wake"
             ),
             .training: .init(
-                title: String(localized: "habit_title_training"), 
-                subtitle: String(localized: "habit_detail_training")
+                title: "habit_title_training",
+                subtitle: "habit_detail_training"
             ),
             .bedtime: .init(
-                title: String(localized: "habit_title_bedtime"), 
-                subtitle: String(localized: "habit_detail_bedtime")
+                title: "habit_title_bedtime",
+                subtitle: "habit_detail_bedtime"
             ),
             .custom: .init(
-                title: String(localized: "habit_title_custom_fallback"), 
-                subtitle: String(localized: "habit_detail_custom")
+                title: "habit_title_custom_fallback",
+                subtitle: "habit_detail_custom"
             )
         ]
     }

@@ -25,6 +25,18 @@ final class NotificationScheduler {
     }
     
     private init() {}
+    
+    // MARK: - Localization Helper
+    
+    private func localizedString(_ key: String, comment: String = "") -> String {
+        let language = AppState.shared.userProfile.preferredLanguage
+        guard let path = Bundle.main.path(forResource: language.rawValue, ofType: "lproj"),
+              let bundle = Bundle(path: path) else {
+            // Fallback to system localization
+            return NSLocalizedString(key, comment: comment)
+        }
+        return NSLocalizedString(key, tableName: nil, bundle: bundle, value: key, comment: comment)
+    }
 
     // MARK: Authorization
     @discardableResult
@@ -66,13 +78,13 @@ final class NotificationScheduler {
     func registerCategories() {
         let start = UNNotificationAction(
             identifier: Action.startConversation.rawValue,
-            title: NSLocalizedString("notification_action_start_conversation", comment: ""),
+            title: localizedString("notification_action_start_conversation"),
             options: [.foreground]
         )
 
         let dismiss = UNNotificationAction(
             identifier: Action.dismissAll.rawValue,
-            title: NSLocalizedString("notification_action_dismiss", comment: ""),
+            title: localizedString("notification_action_dismiss"),
             options: [.destructive]
         )
 
@@ -202,48 +214,48 @@ final class NotificationScheduler {
     private func primaryBody(for habit: HabitType) -> String {
         switch habit {
         case .wake:
-            return NSLocalizedString("notification_wake_body", comment: "")
+            return localizedString("notification_wake_body")
         case .training:
-            return NSLocalizedString("notification_training_body", comment: "")
+            return localizedString("notification_training_body")
         case .bedtime:
-            return NSLocalizedString("notification_bedtime_body", comment: "")
+            return localizedString("notification_bedtime_body")
         case .custom:
             let name = customHabitDisplayName()
-            return String(format: NSLocalizedString("notification_custom_body_format", comment: ""), name)
+            return String(format: localizedString("notification_custom_body_format"), name)
         }
     }
 
     private func followupTitle(for habit: HabitType) -> String {
         switch habit {
         case .wake:
-            return NSLocalizedString("notification_wake_followup_title", comment: "")
+            return localizedString("notification_wake_followup_title")
         case .training:
-            return NSLocalizedString("notification_training_followup_title", comment: "")
+            return localizedString("notification_training_followup_title")
         case .bedtime:
-            return NSLocalizedString("notification_bedtime_followup_title", comment: "")
+            return localizedString("notification_bedtime_followup_title")
         case .custom:
             let name = customHabitDisplayName()
-            return String(format: NSLocalizedString("notification_custom_followup_title_format", comment: ""), name)
+            return String(format: localizedString("notification_custom_followup_title_format"), name)
         }
     }
 
     private func followupBody(for habit: HabitType) -> String {
         switch habit {
         case .wake:
-            return NSLocalizedString("notification_wake_followup_body", comment: "")
+            return localizedString("notification_wake_followup_body")
         case .training:
-            return NSLocalizedString("notification_training_followup_body", comment: "")
+            return localizedString("notification_training_followup_body")
         case .bedtime:
-            return NSLocalizedString("notification_bedtime_followup_body", comment: "")
+            return localizedString("notification_bedtime_followup_body")
         case .custom:
             let name = customHabitDisplayName()
-            return String(format: NSLocalizedString("notification_custom_followup_body_format", comment: ""), name)
+            return String(format: localizedString("notification_custom_followup_body_format"), name)
         }
     }
 
     private func customHabitDisplayName() -> String {
         CustomHabitStore.shared.displayName(
-            fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
+            fallback: localizedString("habit_title_custom_fallback")
         )
     }
 

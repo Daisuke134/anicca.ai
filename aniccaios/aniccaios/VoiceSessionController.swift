@@ -54,6 +54,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     @MainActor
     private func establishSession(resumeImmediately: Bool) async {
+        // マイクロフォン権限チェック（WebRTC初期化前に必須）
+        let micPermission: AVAudioSession.RecordPermission
+        if #available(iOS 17.0, *) {
+            micPermission = AVAudioApplication.shared.recordPermission
+        } else {
+            micPermission = AVAudioSession.sharedInstance().recordPermission
+        }
+        
+        guard micPermission == .granted else {
+            logger.error("Microphone permission not granted (status: \(micPermission.rawValue))")
+            setStatus(.disconnected)
+            return
+        }
+        
         do {
             let secret = try await obtainClientSecret()
             try AudioSessionCoordinator.shared.configureForRealtime(reactivating: resumeImmediately)
@@ -188,6 +202,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     private func setupLocalAudio() {
         guard let peerConnection else { return }
+        
+        // マイクロフォン権限の再確認（WebRTCがマイクにアクセスする直前）
+        let micPermission: AVAudioSession.RecordPermission
+        if #available(iOS 17.0, *) {
+            micPermission = AVAudioApplication.shared.recordPermission
+        } else {
+            micPermission = AVAudioSession.sharedInstance().recordPermission
+        }
+        
+        guard micPermission == .granted else {
+            logger.error("Microphone permission not granted in setupLocalAudio")
+            return
+        }
+        
         let constraints = RTCMediaConstraints(
             mandatoryConstraints: [
                 "googEchoCancellation": "true",

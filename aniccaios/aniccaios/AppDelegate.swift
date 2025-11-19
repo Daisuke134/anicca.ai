@@ -20,7 +20,12 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
         Task {
+            // オンボーディング完了済みの場合のみ、通知許可の状態を確認
+            // オンボーディング未完了の場合は、NotificationPermissionStepViewでユーザーがボタンを押したときにのみリクエストする
+            if AppState.shared.isOnboardingComplete {
+                // 既に許可されている場合は何もしない（requestAuthorizationIfNeededは.notDeterminedの場合のみリクエストする）
             _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
+            }
             await SubscriptionManager.shared.refreshOfferings()
             await AuthHealthCheck.shared.warmBackend()
         }

@@ -30,7 +30,9 @@ struct HabitPromptBuilder {
         replacements["LANGUAGE_LINE"] = profile.preferredLanguage.languageLine
         
         // User name
-        let userName = profile.displayName.isEmpty ? "ユーザー" : profile.displayName
+        let userName = profile.displayName.isEmpty 
+            ? NSLocalizedString("common_user_fallback", comment: "") 
+            : profile.displayName
         replacements["USER_NAME"] = userName
         
         // Task time and description
@@ -59,11 +61,11 @@ struct HabitPromptBuilder {
         let taskDescription: String
         switch habit {
         case .wake:
-            taskDescription = "起床"
+            taskDescription = NSLocalizedString("habit_title_wake", comment: "")
         case .training:
-            taskDescription = "トレーニング"
+            taskDescription = NSLocalizedString("habit_title_training", comment: "")
         case .bedtime:
-            taskDescription = "就寝"
+            taskDescription = NSLocalizedString("habit_title_bedtime", comment: "")
         case .custom:
             taskDescription = CustomHabitStore.shared.displayName(
                 fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
@@ -74,31 +76,28 @@ struct HabitPromptBuilder {
         // Habit-specific replacements
         switch habit {
         case .wake, .bedtime:
-            if !profile.sleepLocation.isEmpty {
-                replacements["SLEEP_LOCATION"] = profile.sleepLocation
-            } else {
-                replacements["SLEEP_LOCATION"] = "ベッド"
-            }
+            replacements["SLEEP_LOCATION"] = profile.sleepLocation.isEmpty 
+                ? NSLocalizedString("common_sleep_location_fallback", comment: "") 
+                : profile.sleepLocation
         case .training:
             if !profile.trainingFocus.isEmpty {
-                // 英語IDを日本語名に変換
-                let japaneseNames = profile.trainingFocus.map { id in
+                let localizedNames = profile.trainingFocus.map { id in
                     switch id {
                     case "Push-up":
-                        return "腕立て伏せ"
+                        return NSLocalizedString("training_focus_option_pushup", comment: "")
                     case "Core":
-                        return "体幹"
+                        return NSLocalizedString("training_focus_option_core", comment: "")
                     case "Cardio":
-                        return "有酸素"
+                        return NSLocalizedString("training_focus_option_cardio", comment: "")
                     case "Stretch":
-                        return "ストレッチ"
+                        return NSLocalizedString("training_focus_option_stretch", comment: "")
                     default:
                         return id
                     }
                 }
-                replacements["TRAINING_FOCUS_LIST"] = japaneseNames.joined(separator: "、")
+                replacements["TRAINING_FOCUS_LIST"] = localizedNames.joined(separator: NSLocalizedString("common_list_separator", comment: ""))
             } else {
-                replacements["TRAINING_FOCUS_LIST"] = "トレーニング"
+                replacements["TRAINING_FOCUS_LIST"] = NSLocalizedString("habit_title_training", comment: "")
             }
         case .custom:
             // Custom habit doesn't need specific replacements

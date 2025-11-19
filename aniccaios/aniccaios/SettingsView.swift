@@ -137,8 +137,8 @@ struct SettingsView: View {
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             Picker("Language", selection: $preferredLanguage) {
-                                Text("日本語").tag(LanguagePreference.ja)
-                                Text("English").tag(LanguagePreference.en)
+                                Text(NSLocalizedString("language_preference_ja", comment: "")).tag(LanguagePreference.ja)
+                                Text(NSLocalizedString("language_preference_en", comment: "")).tag(LanguagePreference.en)
                             }
                             .pickerStyle(.segmented)
                         }

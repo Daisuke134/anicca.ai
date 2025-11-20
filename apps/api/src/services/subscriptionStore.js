@@ -1,13 +1,6 @@
-import { createClient } from '@supabase/supabase-js';
 import { BILLING_CONFIG } from '../config/environment.js';
 import { getStripeClient } from './stripe/client.js';
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-const supabase = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
+import { query } from '../lib/db.js';
 
 const DEFAULT_PRO_DAILY_LIMIT = 1000; // 既存互換（未使用でも残置）
 const ENTITLEMENT_SOURCE = {
@@ -15,52 +8,28 @@ const ENTITLEMENT_SOURCE = {
   REVENUECAT: 'revenuecat'
 };
 
-function requireSupabase() {
-  if (!supabase) {
-    throw new Error('Supabase service role client is not configured');
-  }
-  return supabase;
-}
-
-export async function supabaseUserExists(userId) {
-  if (!userId) return false;
-  const client = requireSupabase();
-  try {
-    const { data, error } = await client.auth.admin.getUserById(userId);
-    if (error) {
-      return false;
-    }
-    return !!data?.user;
-  } catch {
-    return false;
-  }
-}
+// Supabase依存は撤去
 
 export async function fetchSubscriptionRow(userId) {
-  const client = requireSupabase();
-  const { data, error } = await client
-    .from('user_subscriptions')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-  if (error && error.code !== 'PGRST116') {
-    throw error;
-  }
-  return data || null;
+  const r = await query(
+    'select * from user_subscriptions where user_id = $1 limit 1',
+    [userId]
+  );
+  return r.rows[0] || null;
 }
 
 export async function ensureSubscriptionRow(userId) {
   const existing = await fetchSubscriptionRow(userId);
   if (existing) return existing;
-  const client = requireSupabase();
-  const nowIso = new Date().toISOString();
-  const { data, error } = await client
-    .from('user_subscriptions')
-    .insert({ user_id: userId, updated_at: nowIso })
-    .select('*')
-    .single();
-  if (error) throw error;
-  return data;
+  const r = await query(
+    `insert into user_subscriptions (user_id, updated_at)
+     values ($1, timezone('utc', now()))
+     on conflict (user_id)
+     do update set updated_at = excluded.updated_at
+     returning *`,
+    [userId]
+  );
+  return r.rows[0];
 }
 
 export async function ensureStripeCustomer(userId, email) {
@@ -82,25 +51,20 @@ export async function ensureStripeCustomer(userId, email) {
     email: email || undefined,
     metadata: { userId }
   });
-  const client = requireSupabase();
-  const { error } = await client
-    .from('user_subscriptions')
-    .upsert({
-      user_id: userId,
-      stripe_customer_id: customer.id,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-  if (error) throw error;
+  await query(
+    `insert into user_subscriptions (user_id, stripe_customer_id, updated_at)
+     values ($1, $2, timezone('utc', now()))
+     on conflict (user_id)
+     do update set stripe_customer_id = excluded.stripe_customer_id,
+                   updated_at = excluded.updated_at`,
+    [userId, customer.id]
+  );
   return customer.id;
 }
 
 export async function recordStripeEvent(event) {
-  const client = requireSupabase();
   const metadataUserId = event?.data?.object?.metadata?.userId || null;
-  const resolvedUserId =
-    metadataUserId && await supabaseUserExists(metadataUserId)
-      ? metadataUserId
-      : null;
+  const resolvedUserId = metadataUserId || null;
   const payload = {
     event_id: event.id,
     user_id: resolvedUserId,
@@ -108,17 +72,17 @@ export async function recordStripeEvent(event) {
     payload: event.data?.object || null,
     created_at: new Date().toISOString()
   };
-  const { error } = await client
-    .from('subscription_events')
-    .insert(payload);
-  if (error) {
-    if (error.code === '23505') {
-      // Duplicate event – already processed
-      return false;
-    }
-    throw error;
+  try {
+    await query(
+      `insert into subscription_events (event_id, user_id, type, payload, created_at)
+       values ($1,$2,$3,$4, timezone('utc', now()))`,
+      [payload.event_id, payload.user_id, payload.type, payload.payload]
+    );
+    return true;
+  } catch (e) {
+    if (String(e.code) === '23505') return false;
+    throw e;
   }
-  return true;
 }
 
 function normalizeStatus(provider, rawStatus) {
@@ -150,7 +114,6 @@ function normalizeStatus(provider, rawStatus) {
 }
 
 export async function updateSubscriptionFromStripe(userId, stripeCustomerId, subscription) {
-  const client = requireSupabase();
   const { plan, status } = normalizeStatus(ENTITLEMENT_SOURCE.STRIPE, subscription?.status);
   const payload = {
     user_id: userId,
@@ -166,74 +129,80 @@ export async function updateSubscriptionFromStripe(userId, stripeCustomerId, sub
     revenuecat_original_transaction_id: null,
     updated_at: new Date().toISOString()
   };
-  const { error } = await client
-    .from('user_subscriptions')
-    .upsert(payload, { onConflict: 'user_id' });
-  if (error) throw error;
+  await query(
+    `insert into user_subscriptions
+     (user_id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_end, trial_end, metadata, entitlement_source, revenuecat_entitlement_id, revenuecat_original_transaction_id, updated_at)
+     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, timezone('utc', now()))
+     on conflict (user_id)
+     do update set
+       stripe_customer_id=excluded.stripe_customer_id,
+       stripe_subscription_id=excluded.stripe_subscription_id,
+       plan=excluded.plan,
+       status=excluded.status,
+       current_period_end=excluded.current_period_end,
+       trial_end=excluded.trial_end,
+       metadata=excluded.metadata,
+       entitlement_source=excluded.entitlement_source,
+       revenuecat_entitlement_id=excluded.revenuecat_entitlement_id,
+       revenuecat_original_transaction_id=excluded.revenuecat_original_transaction_id,
+       updated_at=excluded.updated_at`,
+    [
+      payload.user_id, payload.stripe_customer_id, payload.stripe_subscription_id,
+      payload.plan, payload.status, payload.current_period_end, payload.trial_end,
+      payload.metadata, payload.entitlement_source, payload.revenuecat_entitlement_id,
+      payload.revenuecat_original_transaction_id
+    ]
+  );
   return payload;
 }
 
 export async function clearSubscription(userId) {
-  const client = requireSupabase();
-  const { error } = await client
-    .from('user_subscriptions')
-    .upsert({
-      user_id: userId,
-      plan: 'free',
-      status: 'canceled',
-      stripe_subscription_id: null,
-      entitlement_source: ENTITLEMENT_SOURCE.STRIPE,
-      revenuecat_entitlement_id: null,
-      revenuecat_original_transaction_id: null,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id' });
-  if (error) throw error;
+  await query(
+    `insert into user_subscriptions (user_id, plan, status, stripe_subscription_id, entitlement_source, revenuecat_entitlement_id, revenuecat_original_transaction_id, updated_at)
+     values ($1,'free','canceled', null, $2, null, null, timezone('utc', now()))
+     on conflict (user_id)
+     do update set
+       plan='free', status='canceled', stripe_subscription_id=null,
+       entitlement_source=$2, revenuecat_entitlement_id=null, revenuecat_original_transaction_id=null,
+       updated_at=timezone('utc', now())`,
+    [userId, ENTITLEMENT_SOURCE.STRIPE]
+  );
 }
 
 export async function getTodayUsage(userId) {
-  const client = requireSupabase();
+  const r = await query(
+    `select user_id, usage_date, count
+     from realtime_usage_daily
+     where user_id = $1 and usage_date = (current_date)`,
+    [userId]
+  );
   const todayIso = new Date().toISOString().slice(0, 10);
-  const { data, error } = await client
-    .from('realtime_usage_daily')
-    .select('*')
-    .eq('user_id', userId)
-    .eq('usage_date', todayIso)
-    .single();
-  if (error && error.code !== 'PGRST116') {
-    throw error;
-  }
-  return data || { user_id: userId, usage_date: todayIso, count: 0 };
+  return r.rows[0] || { user_id: userId, usage_date: todayIso, count: 0 };
 }
 
 export async function incrementTodayUsage(userId) {
-  const client = requireSupabase();
-  const todayIso = new Date().toISOString().slice(0, 10);
-  const existing = await getTodayUsage(userId);
-  const nextCount = (existing?.count || 0) + 1;
-  const { error } = await client
-    .from('realtime_usage_daily')
-    .upsert({
-      user_id: userId,
-      usage_date: todayIso,
-      count: nextCount,
-      updated_at: new Date().toISOString()
-    }, { onConflict: 'user_id,usage_date' });
-  if (error) throw error;
-  return nextCount;
+  await ensureSubscriptionRow(userId);
+  const r = await query(
+    `insert into realtime_usage_daily (user_id, usage_date, count, updated_at)
+     values ($1, current_date, 1, timezone('utc', now()))
+     on conflict (user_id, usage_date)
+     do update set count = realtime_usage_daily.count + 1,
+                   updated_at = timezone('utc', now())
+     returning count`,
+    [userId]
+  );
+  return r.rows[0]?.count ?? 0;
 }
 
 export async function getMonthlyUsage(userId) {
-  const client = requireSupabase();
-  const now = new Date();
-  const firstDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const firstDayIso = firstDay.toISOString().slice(0, 10);
-  const { data, error } = await client
-    .from('realtime_usage_daily')
-    .select('usage_date,count')
-    .eq('user_id', userId)
-    .gte('usage_date', firstDayIso);
-  if (error) throw error;
-  return (data || []).reduce((sum, row) => sum + (row.count || 0), 0);
+  const r = await query(
+    `select coalesce(sum(count),0) as total
+     from realtime_usage_daily
+     where user_id=$1
+       and usage_date >= date_trunc('month', (now() at time zone 'utc'))::date`,
+    [userId]
+  );
+  return Number(r.rows[0]?.total || 0);
 }
 
 function resolveMonthlyLimit(plan) {
@@ -250,7 +219,18 @@ export async function getEntitlementState(userId) {
     fetchSubscriptionRow(userId),
     getMonthlyUsage(userId)
   ]);
-  const statusInfo = normalizeStatus(subscription?.entitlement_source || ENTITLEMENT_SOURCE.STRIPE, subscription?.status);
+  let statusInfo = normalizeStatus(
+    subscription?.entitlement_source || ENTITLEMENT_SOURCE.STRIPE,
+    subscription?.status
+  );
+  if (
+    subscription?.entitlement_source === 'revenuecat' &&
+    subscription?.current_period_end &&
+    new Date(subscription.current_period_end) > new Date() &&
+    statusInfo.plan === 'free'
+  ) {
+    statusInfo = { ...statusInfo, plan: 'pro' };
+  }
   const limit = resolveMonthlyLimit(statusInfo.plan);
   const count = monthlyUsage || 0;
   const remaining = Math.max(limit - count, 0);

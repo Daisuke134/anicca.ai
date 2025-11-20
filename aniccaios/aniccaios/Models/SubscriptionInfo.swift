@@ -13,6 +13,7 @@ struct SubscriptionInfo: Codable, Equatable {
     var monthlyUsageLimit: Int?
     var monthlyUsageRemaining: Int?
     var monthlyUsageCount: Int?
+    var willRenew: Bool?
     
     var isEntitled: Bool { plan == .pro && status != "expired" }
     
@@ -27,7 +28,8 @@ struct SubscriptionInfo: Codable, Equatable {
         priceDescription: nil,
         monthlyUsageLimit: nil,
         monthlyUsageRemaining: nil,
-        monthlyUsageCount: nil
+        monthlyUsageCount: nil,
+        willRenew: nil
     )
     
     var displayPlanName: String {

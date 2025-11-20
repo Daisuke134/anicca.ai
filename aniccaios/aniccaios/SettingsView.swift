@@ -355,7 +355,7 @@ struct SettingsView: View {
                         if let limit = appState.subscriptionInfo.monthlyUsageLimit,
                            let remaining = appState.subscriptionInfo.monthlyUsageRemaining,
                            let count = appState.subscriptionInfo.monthlyUsageCount {
-                            Text("こんげつ: \(count) / \(limit) 回")
+                            Text(String(format: NSLocalizedString("settings_usage_this_month_format", comment: ""), count, limit))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
                             ProgressView(value: Double(count), total: Double(limit))

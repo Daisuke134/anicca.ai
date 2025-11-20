@@ -2,20 +2,7 @@ import logger from '../../utils/logger.js';
 import { BILLING_CONFIG } from '../../config/environment.js';
 import { fetchCustomerEntitlements } from './api.js';
 import { fetchSubscriptionRow, normalizePlanForResponse, getEntitlementState } from '../subscriptionStore.js';
-import { createClient } from '@supabase/supabase-js';
-
-const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-const supabase = supabaseServiceKey
-  ? createClient(supabaseUrl, supabaseServiceKey)
-  : null;
-
-function requireSupabase() {
-  if (!supabase) {
-    throw new Error('Supabase service role client is not configured');
-  }
-  return supabase;
-}
+import { query } from '../../lib/db.js';
 
 const RC_EVENTS = new Set([
   'INITIAL_PURCHASE', 'RENEWAL', 'UNCANCELLATION',
@@ -24,11 +11,12 @@ const RC_EVENTS = new Set([
 
 export async function applyRevenueCatEntitlement(userId, entitlements) {
   const entitlement = entitlements[BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID];
-  const supabase = requireSupabase();
-  const status = entitlement?.period_type === 'trial' ? 'trialing' : (entitlement?.unsubscribe_detected_at ? 'canceled' : 'active');
+  const isActive = entitlement?.is_active === true;
+  const isTrial = entitlement?.period_type === 'trial';
+  const status = isActive ? (isTrial ? 'trialing' : 'active') : 'expired';
   const payload = {
     user_id: userId,
-    plan: entitlement?.is_active ? 'pro' : 'free',
+    plan: isActive ? 'pro' : 'free',
     status,
     current_period_end: entitlement?.expires_date || null,
     entitlement_source: 'revenuecat',
@@ -37,7 +25,25 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
     entitlement_payload: entitlement || null,
     updated_at: new Date().toISOString()
   };
-  await supabase.from('user_subscriptions').upsert(payload, { onConflict: 'user_id' });
+  await query(
+    `insert into user_subscriptions
+     (user_id, plan, status, current_period_end, entitlement_source, revenuecat_entitlement_id, revenuecat_original_transaction_id, entitlement_payload, updated_at)
+     values ($1,$2,$3,$4,'revenuecat',$5,$6,$7, timezone('utc', now()))
+     on conflict (user_id)
+     do update set
+       plan=excluded.plan,
+       status=excluded.status,
+       current_period_end=excluded.current_period_end,
+       entitlement_source=excluded.entitlement_source,
+       revenuecat_entitlement_id=excluded.revenuecat_entitlement_id,
+       revenuecat_original_transaction_id=excluded.revenuecat_original_transaction_id,
+       entitlement_payload=excluded.entitlement_payload,
+       updated_at=excluded.updated_at`,
+    [
+      payload.user_id, payload.plan, payload.status, payload.current_period_end,
+      payload.revenuecat_entitlement_id, payload.revenuecat_original_transaction_id, payload.entitlement_payload
+    ]
+  );
 }
 
 export async function processRevenueCatEvent(event) {

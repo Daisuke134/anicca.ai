@@ -129,9 +129,17 @@ extension SubscriptionInfo {
             .availablePackages
             .first(where: { $0.storeProduct.productIdentifier == productId })
 
+        let willRenew = entitlement?.willRenew ?? false
+        let isTrial = entitlement?.periodType == .trial
+        let statusString: String
+        if entitlement?.isActive == true {
+            statusString = isTrial ? "trialing" : (willRenew ? "active" : "canceled")
+        } else {
+            statusString = "expired"
+        }
         self.init(
             plan: plan,
-            status: entitlement.map { String(describing: $0.verification) } ?? "unknown",
+            status: statusString,
             currentPeriodEnd: entitlement?.expirationDate,
             managementURL: info.managementURL,
             lastSyncedAt: .now,
@@ -140,7 +148,8 @@ extension SubscriptionInfo {
             priceDescription: package?.localizedPriceString,
             monthlyUsageLimit: nil,
             monthlyUsageRemaining: nil,
-            monthlyUsageCount: nil
+            monthlyUsageCount: nil,
+            willRenew: willRenew
         )
     }
 }

@@ -47,6 +47,8 @@ struct ManageSubscriptionSheet: View {
                     } label: {
                         Image(systemName: "xmark.circle.fill")
                             .foregroundStyle(.secondary)
+                            .frame(width: 24, height: 24)
+                            .contentShape(Rectangle())
                     }
                 }
             }
@@ -65,9 +67,15 @@ struct ManageSubscriptionSheet: View {
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
                 if let date = appState.subscriptionInfo.currentPeriodEnd {
-                    Text(String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date)))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    if appState.subscriptionInfo.willRenew == false {
+                        Text(String(format: NSLocalizedString("settings_subscription_canceled_until", comment: ""), dateFormatter.string(from: date)))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text(String(format: NSLocalizedString("settings_subscription_until", comment: ""), dateFormatter.string(from: date)))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

@@ -41,9 +41,7 @@ export const API_KEYS = {
   OPENAI: !!process.env.OPENAI_API_KEY,
   SLACK_CLIENT_ID: !!process.env.SLACK_CLIENT_ID,
   SLACK_CLIENT_SECRET: !!process.env.SLACK_CLIENT_SECRET,
-  SLACK_TOKEN_ENCRYPTION_KEY: !!process.env.SLACK_TOKEN_ENCRYPTION_KEY,
-  SUPABASE_URL: !!process.env.SUPABASE_URL,
-  SUPABASE_SERVICE_ROLE_KEY: !!process.env.SUPABASE_SERVICE_ROLE_KEY
+  SLACK_TOKEN_ENCRYPTION_KEY: !!process.env.SLACK_TOKEN_ENCRYPTION_KEY
 };
 
 const proDailyLimitRaw = process.env.PRO_DAILY_LIMIT || '';
@@ -119,9 +117,6 @@ export function validateEnvironment() {
     }
     if (!API_KEYS.SLACK_CLIENT_ID || !API_KEYS.SLACK_CLIENT_SECRET) {
       warnings.push('Slack OAuth credentials are not set');
-    }
-    if (!API_KEYS.SUPABASE_URL || !API_KEYS.SUPABASE_SERVICE_ROLE_KEY) {
-      warnings.push('Supabase credentials are not set');
     }
     if (!BILLING_CONFIG.STRIPE_SECRET_KEY) {
       warnings.push('STRIPE_SECRET_KEY is not set');

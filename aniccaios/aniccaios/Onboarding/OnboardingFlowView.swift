@@ -62,18 +62,18 @@ struct OnboardingFlowView: View {
         case .profile:
             step = .habitSetup
         case .habitSetup:
-            // Check if there are follow-up questions
+            // フォローアップがあれば続行、無ければ課金状態で分岐
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
-                step = .paywall
+                step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
             }
         case .habitWakeLocation, .habitSleepLocation, .habitTrainingFocus:
-            // Check if there are more follow-up questions
+            // 追加フォローアップが無ければ課金状態で分岐
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
-                step = .paywall
+                step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
             }
         case .paywall:
             // Paywallのステップを保存してから完了画面へ

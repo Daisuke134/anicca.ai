@@ -236,20 +236,6 @@ export async function getMonthlyUsage(userId) {
   return (data || []).reduce((sum, row) => sum + (row.count || 0), 0);
 }
 
-export async function getMonthlyUsage(userId) {
-  const client = requireSupabase();
-  const now = new Date();
-  const firstDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
-  const firstDayIso = firstDay.toISOString().slice(0, 10);
-  const { data, error } = await client
-    .from('realtime_usage_daily')
-    .select('usage_date,count')
-    .eq('user_id', userId)
-    .gte('usage_date', firstDayIso);
-  if (error) throw error;
-  return (data || []).reduce((sum, row) => sum + (row.count || 0), 0);
-}
-
 function resolveMonthlyLimit(plan) {
   if (plan === 'pro') {
     const proLimit = BILLING_CONFIG.PRO_MONTHLY_LIMIT;

@@ -130,3 +130,4 @@
 - 通知フォローアップは固定で 10 件・60 秒間隔。運用で調整する場合は `NotificationScheduler.scheduleFollowups` の `count` と `intervalSeconds` を変更。
 - `AuthRequiredPlaceholderView` は英語文言のまま。プロダクションで表示されるケースは限定的だが、日本語化の検討余地あり。
 
+

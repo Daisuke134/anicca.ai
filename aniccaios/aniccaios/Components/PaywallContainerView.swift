@@ -15,7 +15,21 @@ struct PaywallContainerView: View {
 
     var body: some View {
         Group {
-            if let offering {
+            // 既に購読中ならPaywallを表示しない
+            if appState.subscriptionInfo.isEntitled {
+                VStack(spacing: 12) {
+                    Text(String(localized: "settings_subscription_pro"))
+                        .font(.headline)
+                    Button(String(localized: "settings_subscription_manage")) {
+                        // Customer Center へ
+                        if #available(iOS 17.0, *) {
+                            // 埋め込みのマネージ画面表示
+                        }
+                        // フォールバック: Settings画面でCustomer Centerを開く導線を案内
+                    }.buttonStyle(.borderedProminent)
+                }
+                .padding()
+            } else if let offering {
                 if #available(iOS 17.0, *) {
                     RevenueCatUI.PaywallView(
                         offering: offering,

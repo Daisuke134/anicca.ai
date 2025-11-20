@@ -141,4 +141,6 @@
 "common_list_separator" = "、";
 "language_preference_ja" = "日本語";
 "language_preference_en" = "English";
+"settings_usage_this_month_format" = "今月: %d / %d 回";
+"settings_subscription_canceled_until" = "キャンセル済 — %@で終了";
 

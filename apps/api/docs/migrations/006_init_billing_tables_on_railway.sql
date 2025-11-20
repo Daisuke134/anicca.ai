@@ -29,7 +29,7 @@ create table if not exists public.subscription_events (
   type text not null,
   provider text not null default 'revenuecat',
   payload jsonb,
-  created_at timestamptz not null default timezone('utc', now')
+  created_at timestamptz not null default timezone('utc', now())
 );
 
 

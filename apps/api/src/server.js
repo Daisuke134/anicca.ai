@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import { initDatabase } from './services/tokens/slackTokens.supabase.js';
+import { runMigrationsOnce } from './lib/migrate.js';
 import apiRouter from './routes/index.js';
 
 // Only load dotenv in development
@@ -10,6 +11,8 @@ if (process.env.NODE_ENV !== 'production') {
 
 // サーバー起動時の初期化処理（DB初期化のみ）
 async function initializeServer() {
+  // マイグレーション（初回のみ実行）
+  await runMigrationsOnce();
   await initDatabase();
   console.log('✅ Database initialized. VoIP dispatcher disabled.');
 }

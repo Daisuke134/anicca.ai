@@ -14,8 +14,9 @@ export async function runMigrationsOnce() {
     applied_at timestamptz not null default timezone('utc', now())
   )`);
 
+  // 006(今回のRailway用DDL) のみ適用。既存の他SQLは対象外。
   const files = (await fs.readdir(MIGRATIONS_DIR))
-    .filter(f => f.endsWith('.sql'))
+    .filter(f => /^006_.*\.sql$/.test(f))
     .sort();
 
   for (const f of files) {
@@ -23,7 +24,14 @@ export async function runMigrationsOnce() {
     const done = await query('select 1 from schema_migrations where id=$1', [id]);
     if (done.rowCount) continue;
     const sql = await fs.readFile(path.join(MIGRATIONS_DIR, f), 'utf8');
-    await query(sql);
+    // 単純セミコロン分割で逐次実行（関数等は含まれない前提）
+    const statements = sql
+      .split(/;\s*\n/gm)
+      .map(s => s.trim())
+      .filter(Boolean);
+    for (const stmt of statements) {
+      await query(stmt);
+    }
     await query('insert into schema_migrations(id) values($1)', [id]);
   }
 }

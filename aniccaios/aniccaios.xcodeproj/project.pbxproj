@@ -350,9 +350,9 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -401,9 +401,9 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -519,9 +519,9 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
@@ -633,9 +633,9 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
-				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";

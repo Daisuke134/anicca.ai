@@ -100,6 +100,21 @@ final class VoiceSessionController: NSObject, ObservableObject {
                          forHTTPHeaderField: "user-id")
 
         let (data, response) = try await URLSession.shared.data(for: request)
+        if let http = response as? HTTPURLResponse, http.statusCode == 402 {
+            // 利用上限到達時の処理
+            if let env = try? JSONDecoder().decode(EntitlementEnvelope.self, from: data) {
+                let planString = env.entitlement?.plan ?? "free"
+                let plan = SubscriptionInfo.Plan(rawValue: planString) ?? .free
+                await MainActor.run {
+                    AppState.shared.markQuotaHold(plan: plan)
+                }
+            } else {
+                await MainActor.run {
+                    AppState.shared.markQuotaHold(plan: .free)
+                }
+            }
+            throw VoiceSessionError.quotaExceeded
+        }
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
             throw VoiceSessionError.networkFailure
         }
@@ -384,6 +399,15 @@ private enum VoiceSessionError: Error {
     case remoteSDPDecoding
     case missingClientSecret
     case missingAuthentication
+    case quotaExceeded
+}
+
+// 402時の簡易デコード用（サーバー側のentitlementフォーマットに合わせる）
+private struct EntitlementEnvelope: Decodable {
+    struct Ent: Decodable {
+        let plan: String?
+    }
+    let entitlement: Ent?
 }
 
 enum ConnectionState {

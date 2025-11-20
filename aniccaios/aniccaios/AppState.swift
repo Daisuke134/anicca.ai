@@ -12,6 +12,8 @@ final class AppState: ObservableObject {
     @Published private(set) var userProfile: UserProfile = UserProfile()
     @Published private(set) var subscriptionInfo: SubscriptionInfo = .free
     @Published private(set) var purchaseEnvironmentStatus: PurchaseEnvironmentStatus = .ready
+    @Published private(set) var subscriptionHold: Bool = false
+    @Published private(set) var subscriptionHoldPlan: SubscriptionInfo.Plan? = nil
     @Published private(set) var habitSchedules: [HabitType: DateComponents] = [:]
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
@@ -433,6 +435,14 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(info) {
             defaults.set(data, forKey: subscriptionKey)
         }
+        // 購読状態が更新されたらホールド解除
+        subscriptionHold = false
+        subscriptionHoldPlan = nil
+    }
+    
+    func markQuotaHold(plan: SubscriptionInfo.Plan?) {
+        subscriptionHoldPlan = plan
+        subscriptionHold = true
     }
     
     func updatePurchaseEnvironment(_ status: PurchaseEnvironmentStatus) {

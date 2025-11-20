@@ -9,7 +9,7 @@ const supabase = supabaseServiceKey
   ? createClient(supabaseUrl, supabaseServiceKey)
   : null;
 
-const DEFAULT_PRO_DAILY_LIMIT = 1000;
+const DEFAULT_PRO_DAILY_LIMIT = 1000; // 既存互換（未使用でも残置）
 const ENTITLEMENT_SOURCE = {
   STRIPE: 'stripe',
   REVENUECAT: 'revenuecat'
@@ -222,28 +222,52 @@ export async function incrementTodayUsage(userId) {
   return nextCount;
 }
 
-function resolveLimit(plan) {
-  if (plan === 'pro') {
-    const proLimit = BILLING_CONFIG.PRO_DAILY_LIMIT;
-    if (Number.isFinite(proLimit) && proLimit > 0) {
-      return proLimit;
-    }
-    return DEFAULT_PRO_DAILY_LIMIT;
-  }
+export async function getMonthlyUsage(userId) {
+  const client = requireSupabase();
+  const now = new Date();
+  const firstDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const firstDayIso = firstDay.toISOString().slice(0, 10);
+  const { data, error } = await client
+    .from('realtime_usage_daily')
+    .select('usage_date,count')
+    .eq('user_id', userId)
+    .gte('usage_date', firstDayIso);
+  if (error) throw error;
+  return (data || []).reduce((sum, row) => sum + (row.count || 0), 0);
+}
 
-  const freeLimit = BILLING_CONFIG.FREE_DAILY_LIMIT;
-  return Number.isFinite(freeLimit) && freeLimit > 0 ? freeLimit : 0;
+export async function getMonthlyUsage(userId) {
+  const client = requireSupabase();
+  const now = new Date();
+  const firstDay = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+  const firstDayIso = firstDay.toISOString().slice(0, 10);
+  const { data, error } = await client
+    .from('realtime_usage_daily')
+    .select('usage_date,count')
+    .eq('user_id', userId)
+    .gte('usage_date', firstDayIso);
+  if (error) throw error;
+  return (data || []).reduce((sum, row) => sum + (row.count || 0), 0);
+}
+
+function resolveMonthlyLimit(plan) {
+  if (plan === 'pro') {
+    const proLimit = BILLING_CONFIG.PRO_MONTHLY_LIMIT;
+    return Number.isFinite(proLimit) && proLimit > 0 ? proLimit : 0; // Railway未設定=0でブロック
+  }
+  const freeLimit = BILLING_CONFIG.FREE_MONTHLY_LIMIT;
+  return Number.isFinite(freeLimit) && freeLimit > 0 ? freeLimit : 0; // Railway未設定=0でブロック
 }
 
 export async function getEntitlementState(userId) {
-  const [subscription, usage] = await Promise.all([
+  const [subscription, monthlyUsage] = await Promise.all([
     fetchSubscriptionRow(userId),
-    getTodayUsage(userId)
+    getMonthlyUsage(userId)
   ]);
   const statusInfo = normalizeStatus(subscription?.entitlement_source || ENTITLEMENT_SOURCE.STRIPE, subscription?.status);
-  const limit = resolveLimit(statusInfo.plan);
-  const count = usage?.count || 0;
-  const remaining = limit > 0 ? Math.max(limit - count, 0) : null;
+  const limit = resolveMonthlyLimit(statusInfo.plan);
+  const count = monthlyUsage || 0;
+  const remaining = Math.max(limit - count, 0);
 
   const status = statusInfo;
   const currentPeriodEnd = subscription?.current_period_end || null;
@@ -253,7 +277,7 @@ export async function getEntitlementState(userId) {
     status: status.status,
     currentPeriodEnd,
     usageCount: count,
-    usageLimit: limit > 0 ? limit : null,
+    usageLimit: limit,
     usageRemaining: remaining,
     stripeCustomerId: subscription?.stripe_customer_id || null,
     stripeSubscriptionId: subscription?.stripe_subscription_id || null
@@ -261,9 +285,8 @@ export async function getEntitlementState(userId) {
 }
 
 export function canUseRealtime(plan, remaining) {
-  if (plan === 'pro') return true;
-  if (plan === 'grace') return remaining === null || (remaining ?? 0) > 0;
-  return remaining === null || (remaining ?? 0) > 0;
+  // 月次残枠ベースで一律判定（Proも枠超過で停止）
+  return (remaining ?? 0) > 0;
 }
 
 export function normalizePlanForResponse(state) {
@@ -271,8 +294,8 @@ export function normalizePlanForResponse(state) {
     plan: state.plan,
     status: state.status,
     current_period_end: state.currentPeriodEnd,
-    daily_usage_limit: state.usageLimit,
-    daily_usage_remaining: state.usageRemaining,
-    daily_usage_count: state.usageCount
+    monthly_usage_limit: state.usageLimit,
+    monthly_usage_remaining: state.usageRemaining,
+    monthly_usage_count: state.usageCount
   };
 }

@@ -49,6 +49,6 @@ enum AppConfig {
     static var revenueCatPaywallId: String { infoValue(for: revenueCatPaywallKey) }
     static var revenueCatCustomerCenterId: String { infoValue(for: revenueCatCustomerCenterKey) }
     static var entitlementSyncURL: URL {
-        proxyBaseURL.appendingPathComponent("billing/revenuecat/sync")
+        proxyBaseURL.appendingPathComponent("mobile/entitlement")
     }
 }

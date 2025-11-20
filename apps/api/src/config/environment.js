@@ -50,6 +50,10 @@ const proDailyLimitRaw = process.env.PRO_DAILY_LIMIT || '';
 const proDailyLimitParsed = Number.parseInt(proDailyLimitRaw, 10);
 const freeDailyLimitRaw = process.env.FREE_DAILY_LIMIT || '';
 const freeDailyLimitParsed = Number.parseInt(freeDailyLimitRaw, 10);
+const proMonthlyLimitRaw = process.env.PRO_MONTHLY_LIMIT || '';
+const proMonthlyLimitParsed = Number.parseInt(proMonthlyLimitRaw, 10);
+const freeMonthlyLimitRaw = process.env.FREE_MONTHLY_LIMIT || '';
+const freeMonthlyLimitParsed = Number.parseInt(freeMonthlyLimitRaw, 10);
 
 // 課金関連設定
 export const BILLING_CONFIG = {
@@ -61,6 +65,8 @@ export const BILLING_CONFIG = {
   PORTAL_RETURN_URL: process.env.PORTAL_RETURN_URL || '',
   FREE_DAILY_LIMIT: Number.isFinite(freeDailyLimitParsed) ? freeDailyLimitParsed : null,
   PRO_DAILY_LIMIT: Number.isFinite(proDailyLimitParsed) ? proDailyLimitParsed : null,
+  FREE_MONTHLY_LIMIT: Number.isFinite(freeMonthlyLimitParsed) ? freeMonthlyLimitParsed : null,
+  PRO_MONTHLY_LIMIT: Number.isFinite(proMonthlyLimitParsed) ? proMonthlyLimitParsed : null,
   REVENUECAT_PROJECT_ID: process.env.REVENUECAT_PROJECT_ID || '',
   REVENUECAT_REST_API_KEY: process.env.REVENUECAT_REST_API_KEY || '',
   REVENUECAT_WEBHOOK_SECRET: process.env.REVENUECAT_WEBHOOK_SECRET || '',
@@ -146,6 +152,12 @@ export function validateEnvironment() {
   if (process.env.PRO_DAILY_LIMIT && BILLING_CONFIG.PRO_DAILY_LIMIT === null) {
     warnings.push('PRO_DAILY_LIMIT is not a valid integer');
   }
+  if (process.env.FREE_MONTHLY_LIMIT && BILLING_CONFIG.FREE_MONTHLY_LIMIT === null) {
+    warnings.push('FREE_MONTHLY_LIMIT is not a valid integer');
+  }
+  if (process.env.PRO_MONTHLY_LIMIT && BILLING_CONFIG.PRO_MONTHLY_LIMIT === null) {
+    warnings.push('PRO_MONTHLY_LIMIT is not a valid integer');
+  }
   if (!API_KEYS.OPENAI) {
     warnings.push('OPENAI_API_KEY must be set');
   }
@@ -164,6 +176,8 @@ export function logEnvironment() {
   console.log(`  - Stripe price: ${BILLING_CONFIG.STRIPE_PRICE_PRO_MONTHLY || 'unset'}`);
   console.log(`  - Free daily limit: ${BILLING_CONFIG.FREE_DAILY_LIMIT ?? 'unset'}`);
   console.log(`  - Pro daily limit: ${BILLING_CONFIG.PRO_DAILY_LIMIT ?? 'default(1000)'}`);
+  console.log(`  - Free monthly limit: ${BILLING_CONFIG.FREE_MONTHLY_LIMIT ?? 'unset'}`);
+  console.log(`  - Pro monthly limit: ${BILLING_CONFIG.PRO_MONTHLY_LIMIT ?? 'unset'}`);
   
   const warnings = validateEnvironment();
   if (warnings.length > 0) {

@@ -352,6 +352,15 @@ struct SettingsView: View {
                         Text(subscriptionSummary)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+                        if let limit = appState.subscriptionInfo.monthlyUsageLimit,
+                           let remaining = appState.subscriptionInfo.monthlyUsageRemaining,
+                           let count = appState.subscriptionInfo.monthlyUsageCount {
+                            Text("こんげつ: \(count) / \(limit) 回")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                            ProgressView(value: Double(count), total: Double(limit))
+                                .progressViewStyle(.linear)
+                        }
                     }
                     Spacer(minLength: 12)
                     Button("settings_subscription_manage") {

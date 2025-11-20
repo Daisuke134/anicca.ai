@@ -27,9 +27,40 @@ final class SubscriptionManager: NSObject {
     private func listenCustomerInfo() async {
         for await info in Purchases.shared.customerInfoStream {
             await MainActor.run {
-                let subscription = SubscriptionInfo(info: info)
-                AppState.shared.updateSubscriptionInfo(subscription)
+                var subscription = SubscriptionInfo(info: info)
+                // サーバーから月次利用量情報を取得してマージ
+                Task {
+                    await syncUsageInfo(&subscription)
+                    await MainActor.run {
+                        AppState.shared.updateSubscriptionInfo(subscription)
+                    }
+                }
             }
+        }
+    }
+    
+    private func syncUsageInfo(_ subscription: inout SubscriptionInfo) async {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        
+        var request = URLRequest(url: AppConfig.entitlementSyncURL)
+        request.httpMethod = "GET"
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        
+        do {
+            let (data, response) = try await URLSession.shared.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                return
+            }
+            
+            if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let entitlement = json["entitlement"] as? [String: Any] {
+                subscription.monthlyUsageLimit = entitlement["monthly_usage_limit"] as? Int
+                subscription.monthlyUsageRemaining = entitlement["monthly_usage_remaining"] as? Int
+                subscription.monthlyUsageCount = entitlement["monthly_usage_count"] as? Int
+            }
+        } catch {
+            // エラー時は無視（RevenueCatの情報のみを使用）
         }
     }
     
@@ -65,8 +96,12 @@ final class SubscriptionManager: NSObject {
 extension SubscriptionManager: PurchasesDelegate {
     func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
         Task { @MainActor in
-            let subscription = SubscriptionInfo(info: customerInfo)
-            AppState.shared.updateSubscriptionInfo(subscription)
+            var subscription = SubscriptionInfo(info: customerInfo)
+            // サーバーから月次利用量情報を取得してマージ
+            await syncUsageInfo(&subscription)
+            await MainActor.run {
+                AppState.shared.updateSubscriptionInfo(subscription)
+            }
         }
     }
 }
@@ -102,7 +137,10 @@ extension SubscriptionInfo {
             lastSyncedAt: .now,
             productIdentifier: productId,
             planDisplayName: package?.storeProduct.localizedTitle ?? entitlement?.productIdentifier,
-            priceDescription: package?.localizedPriceString
+            priceDescription: package?.localizedPriceString,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil
         )
     }
 }

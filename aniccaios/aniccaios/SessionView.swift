@@ -4,6 +4,8 @@ struct SessionView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject private var controller = VoiceSessionController.shared
     @State private var isShowingSettings = false
+    @State private var isShowingLimitModal = false
+    @State private var isShowingPaywall = false
 
     @ViewBuilder
     var body: some View {
@@ -54,6 +56,31 @@ struct SessionView: View {
             SettingsView()
                 .environmentObject(appState)
         }
+        .sheet(isPresented: $isShowingLimitModal) {
+            UsageLimitModalView(
+                plan: appState.subscriptionHoldPlan ?? .free,
+                onClose: { isShowingLimitModal = false },
+                onUpgrade: {
+                    isShowingLimitModal = false
+                    isShowingPaywall = true
+                },
+                onManage: {
+                    isShowingLimitModal = false
+                    isShowingSettings = true
+                }
+            )
+        }
+        .sheet(isPresented: $isShowingPaywall) {
+            PaywallContainerView(
+                onPurchaseCompleted: {
+                    isShowingPaywall = false
+                },
+                onDismissRequested: {
+                    isShowingPaywall = false
+                }
+            )
+            .environmentObject(appState)
+        }
         .onChange(of: appState.pendingHabitTrigger) { _, newValue in
             guard newValue != nil else { return }
             controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
@@ -61,6 +88,15 @@ struct SessionView: View {
         .onAppear {
             if appState.pendingHabitTrigger != nil {
                 controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
+            }
+            // 上限ホールドが既に立っていればモーダル表示
+            if appState.subscriptionHold {
+                isShowingLimitModal = true
+            }
+        }
+        .onChange(of: appState.subscriptionHold) { _, hold in
+            if hold {
+                isShowingLimitModal = true
             }
         }
     }

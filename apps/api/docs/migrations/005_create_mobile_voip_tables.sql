@@ -34,3 +34,4 @@ COMMENT ON TABLE mobile_voip_tokens IS 'Stores VoIP push tokens for iOS devices'
 COMMENT ON TABLE mobile_alarm_schedules IS 'Stores scheduled VoIP alarm times for habit routines (wake, training, bedtime)';
 
 
+

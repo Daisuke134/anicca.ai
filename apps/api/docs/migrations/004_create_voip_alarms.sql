@@ -25,3 +25,4 @@ CREATE INDEX IF NOT EXISTS idx_mobile_alarm_schedules_user_id ON mobile_alarm_sc
 CREATE INDEX IF NOT EXISTS idx_mobile_alarm_schedules_next_fire_at ON mobile_alarm_schedules(next_fire_at);
 
 
+

@@ -379,9 +379,7 @@ struct SettingsView: View {
         })
         .frame(maxWidth: .infinity)
         .sheet(isPresented: $showingCustomerCenter) {
-            RevenueCatUI.CustomerCenterView(
-                customerCenterIdentifier: AppConfig.revenueCatCustomerCenterId
-            )
+            RevenueCatUI.CustomerCenterView()
         }
     }
     

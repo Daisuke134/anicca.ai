@@ -510,7 +510,7 @@ struct PaywallContainerView: View {
             switch purchaseResult {
             case .success(let verification):
                 do {
-                    let transaction = try checkVerified(verification)
+                    let transaction = try checkVerified(verification: verification)
                     print("[Paywall] StoreKit purchase completed: \(product.id)")
                     
                     // RevenueCatに購入を記録
@@ -592,8 +592,8 @@ struct PaywallContainerView: View {
     
     /// StoreKit 2のTransaction検証
     @available(iOS 15.0, *)
-    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
-        switch result {
+    private func checkVerified(verification: VerificationResult<Transaction>) throws -> Transaction {
+        switch verification {
         case .unverified(_, let error):
             throw error
         case .verified(let safe):

@@ -381,7 +381,7 @@ struct SettingsView: View {
         .sheet(isPresented: $showingCustomerCenter, onDismiss: {
             Task { await SubscriptionManager.shared.syncNow() }
         }) {
-            RevenueCatUI.CustomerCenterView(customerCenterID: AppConfig.revenueCatCustomerCenterId)
+            RevenueCatUI.CustomerCenterView()
         }
     }
     

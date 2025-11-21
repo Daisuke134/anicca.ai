@@ -72,6 +72,11 @@ final class SubscriptionManager: NSObject {
     }
     
     func handleLogout() async {
+        // 匿名ユーザーの場合はログアウト不要
+        guard !Purchases.shared.isAnonymous else {
+            print("[RevenueCat] Skipping logout for anonymous user")
+            return
+        }
         _ = try? await Purchases.shared.logOut()
     }
     

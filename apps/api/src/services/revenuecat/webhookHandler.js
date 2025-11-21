@@ -11,23 +11,45 @@ const RC_EVENTS = new Set([
 
 export async function applyRevenueCatEntitlement(userId, entitlements) {
   const entitlement = entitlements[BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID];
-  // v1 API対応: is_activeがない場合はexpires_dateから判定
-  const expiresDate = entitlement?.expires_date ? new Date(entitlement.expires_date) : null;
-  const isActive = entitlement?.is_active === true || (expiresDate && expiresDate > new Date());
+  
+  // V2 API対応: expires_at（タイムスタンプ）とexpires_date（ISO文字列）の両方に対応
+  let expiresDate = null;
+  if (entitlement?.expires_at) {
+    // タイムスタンプ（ミリ秒）の場合
+    expiresDate = typeof entitlement.expires_at === 'number' 
+      ? new Date(entitlement.expires_at) 
+      : new Date(entitlement.expires_at);
+  } else if (entitlement?.expires_date) {
+    expiresDate = new Date(entitlement.expires_date);
+  }
+  
+  // is_activeの判定（V2ではactive_entitlementsに含まれている = 有効）
+  const isActive = entitlement?.is_active === true || 
+                   (expiresDate && expiresDate > new Date());
   const isTrial = entitlement?.period_type === 'trial';
   const status = isActive ? (isTrial ? 'trialing' : 'active') : 'expired';
+  
   const payload = {
     user_id: userId,
     // 方針: 有効期間中はpro、期限切れ/未購読はfree（即時free化は行わない）
     plan: isActive ? 'pro' : 'free',
     status,
-    current_period_end: entitlement?.expires_date || null,
+    current_period_end: expiresDate ? expiresDate.toISOString() : null,
     entitlement_source: ENTITLEMENT_SOURCE.REVENUECAT,
     revenuecat_entitlement_id: BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID,
     revenuecat_original_transaction_id: entitlement?.original_transaction_id || null,
     entitlement_payload: entitlement ? JSON.stringify(entitlement) : null,
     updated_at: new Date().toISOString()
   };
+  
+  logger.info('[RevenueCat] Applying entitlement', { 
+    userId, 
+    plan: payload.plan, 
+    status: payload.status,
+    expiresDate: payload.current_period_end,
+    hasEntitlement: !!entitlement
+  });
+  
   await query(
     `insert into user_subscriptions
      (user_id, plan, status, current_period_end, entitlement_source, revenuecat_entitlement_id, revenuecat_original_transaction_id, entitlement_payload, updated_at)
@@ -47,6 +69,8 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
       payload.entitlement_source, payload.revenuecat_entitlement_id, payload.revenuecat_original_transaction_id, payload.entitlement_payload
     ]
   );
+  
+  logger.info('[RevenueCat] Entitlement applied successfully', { userId, plan: payload.plan, status: payload.status });
 }
 
 export async function processRevenueCatEvent(event) {

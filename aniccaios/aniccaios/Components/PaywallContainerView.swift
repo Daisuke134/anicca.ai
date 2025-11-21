@@ -15,125 +15,91 @@ struct PaywallContainerView: View {
 
     var body: some View {
         Group {
-            // 既に購読中ならPaywallを表示しない
-            if appState.subscriptionInfo.isEntitled {
-                VStack(spacing: 12) {
-                    Text("You're already in the pro plan.")
-                        .font(.headline)
-                    Button(String(localized: "settings_subscription_manage")) {
-                        // Customer Center へ
-                        if #available(iOS 17.0, *) {
-                            // 埋め込みのマネージ画面表示
-                        }
-                        // フォールバック: Settings画面でCustomer Centerを開く導線を案内
-                    }.buttonStyle(.borderedProminent)
-                }
-                .padding()
-            } else if let offering {
+            if let offering {
                 if #available(iOS 17.0, *) {
-                    if offering.availablePackages.isEmpty {
-                        fallbackMessage
-                    } else {
-                        RevenueCatUI.PaywallView(
-                            offering: offering,
-                            displayCloseButton: true
-                        )
-                        .onRequestedDismissal {
-                            onDismissRequested?()
-                        }
-                        .onPurchaseCompleted { _, customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onRestoreCompleted { customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
-                            if newValue {
-                                onPurchaseCompleted?()
-                                onDismissRequested?()
-                            }
+                    RevenueCatUI.PaywallView(
+                        offering: offering,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
                         }
                     }
                 } else {
-                    if offering.availablePackages.isEmpty {
-                        fallbackMessage
-                    } else {
-                        RevenueCatUI.PaywallView(
-                            offering: offering,
-                            displayCloseButton: true
-                        )
-                        .onRequestedDismissal {
-                            onDismissRequested?()
-                        }
-                        .onPurchaseCompleted { _, customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onRestoreCompleted { customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
-                            if newValue {
-                                onPurchaseCompleted?()
-                                onDismissRequested?()
-                            }
+                    RevenueCatUI.PaywallView(
+                        offering: offering,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
                         }
                     }
                 }
             } else if let cached = appState.cachedOffering {
                 // Use cached offering immediately while loading fresh data
                 if #available(iOS 17.0, *) {
-                    if cached.availablePackages.isEmpty {
-                        fallbackMessage
-                    } else {
-                        RevenueCatUI.PaywallView(
-                            offering: cached,
-                            displayCloseButton: true
-                        )
-                        .onRequestedDismissal {
-                            onDismissRequested?()
-                        }
-                        .onPurchaseCompleted { _, customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onRestoreCompleted { customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
-                            if newValue {
-                                onPurchaseCompleted?()
-                                onDismissRequested?()
-                            }
-                        }
-                        .onAppear {
-                            offering = cached
+                    RevenueCatUI.PaywallView(
+                        offering: cached,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
                         }
                     }
+                    .onAppear {
+                        offering = cached
+                    }
                 } else {
-                    if cached.availablePackages.isEmpty {
-                        fallbackMessage
-                    } else {
-                        RevenueCatUI.PaywallView(
-                            offering: cached,
-                            displayCloseButton: true
-                        )
-                        .onRequestedDismissal {
-                            onDismissRequested?()
+                    RevenueCatUI.PaywallView(
+                        offering: cached,
+                        displayCloseButton: true
+                    )
+                    .onRequestedDismissal {
+                        onDismissRequested?()
+                    }
+                    .onPurchaseCompleted { _, customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        handle(customerInfo: customerInfo)
+                    }
+                    .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                        if newValue {
+                            onPurchaseCompleted?()
                         }
-                        .onPurchaseCompleted { _, customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onRestoreCompleted { customerInfo in
-                            handle(customerInfo: customerInfo)
-                        }
-                        .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
-                            if newValue {
-                                onPurchaseCompleted?()
-                                onDismissRequested?()
-                            }
-                        }
-                        .onAppear {
-                            offering = cached
-                        }
+                    }
+                    .onAppear {
+                        offering = cached
                     }
                 }
             } else if isLoading {
@@ -143,20 +109,15 @@ struct PaywallContainerView: View {
             }
         }
         .task {
-            // 購入状態を確実に同期してから判定
+            if offering == nil {
+                await loadOffering()
+            }
+            // 購入状態を確実に同期
             if let info = try? await Purchases.shared.syncPurchases() {
                 await MainActor.run {
                     let subscription = SubscriptionInfo(info: info)
                     appState.updateSubscriptionInfo(subscription)
                 }
-            }
-            if offering == nil {
-                await loadOffering()
-            }
-            // 同期後に再度isEntitledを確認
-            if appState.subscriptionInfo.isEntitled {
-                onPurchaseCompleted?()
-                onDismissRequested?()
             }
         }
         .onReceive(appState.$cachedOffering) { cached in
@@ -208,10 +169,9 @@ struct PaywallContainerView: View {
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else { return }
         let info = SubscriptionInfo(info: customerInfo)
         appState.updateSubscriptionInfo(info)
-        // 即座にサーバ同期→UI更新→ペイウォールを閉じる
+        // 購入直後にサーバへ同期（DBを即更新 → 上限/残分を即返せるように）
         Task { await SubscriptionManager.shared.syncNow() }
         onPurchaseCompleted?()
-        onDismissRequested?()
     }
 
     @ViewBuilder

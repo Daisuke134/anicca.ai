@@ -25,18 +25,34 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        onDismissRequested?()
+                        // 同期中でも閉じられるようにする
+                        if !isSyncing {
+                            onDismissRequested?()
+                        }
                     }
-                    .onPurchaseCompleted { _, customerInfo in
-                        handle(customerInfo: customerInfo)
+                    .onPurchaseCompleted { transaction, customerInfo in
+                        handlePurchaseSuccess(transaction: transaction, customerInfo: customerInfo)
                     }
                     .onRestoreCompleted { customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handleRestoreSuccess(customerInfo: customerInfo)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
                         if newValue {
                             onPurchaseCompleted?()
                         }
+                    }
+                    .alert("購入エラー", isPresented: $showErrorAlert) {
+                        Button("OK") {
+                            purchaseError = nil
+                            isSyncing = false
+                        }
+                        Button("閉じる") {
+                            purchaseError = nil
+                            isSyncing = false
+                            onDismissRequested?()
+                        }
+                    } message: {
+                        Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
                     }
                 } else {
                     RevenueCatUI.PaywallView(

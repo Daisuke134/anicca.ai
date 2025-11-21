@@ -3,8 +3,7 @@ import { getStripeClient } from './stripe/client.js';
 import { query } from '../lib/db.js';
 import { debitMinutes, VC_CURRENCY_CODE } from './revenuecat/virtualCurrency.js';
 
-const DEFAULT_PRO_DAILY_LIMIT = 1000; // 既存互換（未使用でも残置）
-const ENTITLEMENT_SOURCE = {
+export const ENTITLEMENT_SOURCE = {
   STRIPE: 'stripe',
   REVENUECAT: 'revenuecat'
 };

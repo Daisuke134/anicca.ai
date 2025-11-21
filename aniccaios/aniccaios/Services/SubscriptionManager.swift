@@ -98,44 +98,39 @@ final class SubscriptionManager: NSObject {
     }
     
     func syncNow() async {
-        // タイムアウト付きで同期処理を実行
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                // 1) 端末側の領収書同期
-                _ = try? await Purchases.shared.syncPurchases()
-                
-                // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
-                guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
-                
-                var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("billing/revenuecat/sync"))
-                request.httpMethod = "POST"
-                request.timeoutInterval = 10.0 // 10秒でタイムアウト
-                request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-                request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
-                
-                do {
-                    _ = try await URLSession.shared.data(for: request)
-                } catch {
-                    print("[SubscriptionManager] Sync error: \(error.localizedDescription)")
-                    // エラーでも続行（オフライン時など）
-                }
-                
-                // 3) 最新Entitlementを取得
-                var subscription = AppState.shared.subscriptionInfo
-                await syncUsageInfo(&subscription)
-                await MainActor.run {
-                    AppState.shared.updateSubscriptionInfo(subscription)
-                }
+        // 1) 端末側の領収書同期
+        _ = try? await Purchases.shared.syncPurchases()
+        
+        // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        
+        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("billing/revenuecat/sync"))
+        request.httpMethod = "POST"
+        request.timeoutInterval = 10.0 // 10秒でタイムアウト
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        
+        do {
+            let (_, response) = try await URLSession.shared.data(for: request)
+            guard let httpResponse = response as? HTTPURLResponse else {
+                print("[SubscriptionManager] Invalid response type")
+                return
             }
             
-            group.addTask {
-                // 15秒でタイムアウト
-                try? await Task.sleep(nanoseconds: 15_000_000_000)
+            if !(200..<300).contains(httpResponse.statusCode) {
+                print("[SubscriptionManager] Sync failed with status: \(httpResponse.statusCode)")
+                return
             }
             
-            // どちらかが完了したら終了
-            _ = await group.next()
-            group.cancelAll()
+            // 3) 最新Entitlementを取得
+            var subscription = AppState.shared.subscriptionInfo
+            await syncUsageInfo(&subscription)
+            await MainActor.run {
+                AppState.shared.updateSubscriptionInfo(subscription)
+            }
+        } catch {
+            print("[SubscriptionManager] Sync error: \(error.localizedDescription)")
+            // エラーでも続行（オフライン時など）
         }
     }
 }
@@ -150,12 +145,6 @@ extension SubscriptionManager: PurchasesDelegate {
                 AppState.shared.updateSubscriptionInfo(subscription)
             }
         }
-    }
-    
-    // エラー発生時の処理（オプショナル）
-    func purchases(_ purchases: Purchases, failedToUpdate customerInfo: CustomerInfo, with error: Error) {
-        print("[RevenueCat] Failed to update customer info: \(error.localizedDescription)")
-        // エラーをログに記録するが、UIは固めない
     }
 }
 

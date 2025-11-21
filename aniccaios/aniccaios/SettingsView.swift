@@ -354,7 +354,7 @@ struct SettingsView: View {
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
                         if let limit = appState.subscriptionInfo.monthlyUsageLimit,
-                           let remaining = appState.subscriptionInfo.monthlyUsageRemaining,
+                           let _ = appState.subscriptionInfo.monthlyUsageRemaining,
                            let count = appState.subscriptionInfo.monthlyUsageCount {
                             Text(String(format: NSLocalizedString("settings_usage_this_month_format", comment: ""), count, limit))
                                 .font(.subheadline)

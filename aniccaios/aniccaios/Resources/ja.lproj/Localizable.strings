@@ -143,4 +143,13 @@
 "language_preference_en" = "English";
 "settings_usage_this_month_format" = "今月: %d / %d 回";
 "settings_subscription_canceled_until" = "キャンセル済 — %@で終了";
+"quota_exceeded_title_free" = "月の使用上限に達しました（Free 30/30）";
+"quota_exceeded_title_pro" = "月の使用上限に達しました（Pro 300/300）";
+"quota_exceeded_title_grace" = "月の使用上限に達しました";
+"quota_exceeded_message_free" = "Proにアップグレードすると今すぐ続けられます。";
+"quota_exceeded_message_pro" = "Maxプランは近日公開です。必要な方はサポートへご連絡ください。";
+"quota_exceeded_message_grace" = "お支払いの更新をご確認ください。";
+"quota_exceeded_close" = "戻る";
+"quota_exceeded_upgrade" = "アップグレード";
+"quota_exceeded_manage" = "プランを管理";
 

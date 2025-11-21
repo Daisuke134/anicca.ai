@@ -16,13 +16,13 @@ struct UsageLimitModalView: View {
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
             HStack(spacing: 12) {
-                Button("戻る") { onClose() }
+                Button(closeButtonText) { onClose() }
                     .buttonStyle(.bordered)
                 if plan == .free {
-                    Button("アップグレード") { onUpgrade() }
+                    Button(upgradeButtonText) { onUpgrade() }
                         .buttonStyle(.borderedProminent)
                 } else {
-                    Button("プランを管理") { onManage() }
+                    Button(manageButtonText) { onManage() }
                         .buttonStyle(.borderedProminent)
                 }
             }
@@ -33,21 +33,36 @@ struct UsageLimitModalView: View {
 
     private var title: String {
         switch plan {
-        case .free: return "月の使用上限に達しました（Free 30/30）"
-        case .pro:  return "月の使用上限に達しました（Pro 300/300）"
-        case .grace: return "月の使用上限に達しました"
+        case .free:
+            return NSLocalizedString("quota_exceeded_title_free", comment: "")
+        case .pro:
+            return NSLocalizedString("quota_exceeded_title_pro", comment: "")
+        case .grace:
+            return NSLocalizedString("quota_exceeded_title_grace", comment: "")
         }
     }
 
     private var message: String {
         switch plan {
         case .free:
-            return "Proにアップグレードすると今すぐ続けられます。"
+            return NSLocalizedString("quota_exceeded_message_free", comment: "")
         case .pro:
-            return "Maxプランは近日公開です。必要な方はサポートへご連絡ください。"
+            return NSLocalizedString("quota_exceeded_message_pro", comment: "")
         case .grace:
-            return "お支払いの更新をご確認ください。"
+            return NSLocalizedString("quota_exceeded_message_grace", comment: "")
         }
+    }
+    
+    private var closeButtonText: String {
+        NSLocalizedString("quota_exceeded_close", comment: "")
+    }
+    
+    private var upgradeButtonText: String {
+        NSLocalizedString("quota_exceeded_upgrade", comment: "")
+    }
+    
+    private var manageButtonText: String {
+        NSLocalizedString("quota_exceeded_manage", comment: "")
     }
 }
 

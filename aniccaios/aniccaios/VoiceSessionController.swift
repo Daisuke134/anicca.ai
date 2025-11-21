@@ -127,16 +127,17 @@ final class VoiceSessionController: NSObject, ObservableObject {
         let (data, response) = try await URLSession.shared.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode == 402 {
             // 利用上限到達時の処理
+            let plan: SubscriptionInfo.Plan
             if let env = try? JSONDecoder().decode(EntitlementEnvelope.self, from: data) {
                 let planString = env.entitlement?.plan ?? "free"
-                let plan = SubscriptionInfo.Plan(rawValue: planString) ?? .free
-                await MainActor.run {
-                    AppState.shared.markQuotaHold(plan: plan)
-                }
+                plan = SubscriptionInfo.Plan(rawValue: planString) ?? .free
             } else {
-                await MainActor.run {
-                    AppState.shared.markQuotaHold(plan: .free)
-                }
+                plan = .free
+            }
+            await MainActor.run {
+                // 毎回表示するために一度リセットしてから設定
+                AppState.shared.markQuotaHold(plan: nil) // リセット
+                AppState.shared.markQuotaHold(plan: plan) // 再設定
             }
             throw VoiceSessionError.quotaExceeded
         }

@@ -9,6 +9,7 @@ struct PaywallContainerView: View {
     @EnvironmentObject private var appState: AppState
     @State private var offering: Offering?
     @State private var isLoading = true
+    @State private var customerInfo: CustomerInfo?
     @State private var loadError: Error?
     @State private var showStoreKitFallback = false
     @State private var fallbackProductIDs: [String] = []
@@ -20,6 +21,7 @@ struct PaywallContainerView: View {
         Group {
             // 【修正】商品パッケージが空の場合は表示しない（0除算クラッシュ回避）
             if let offering, !offering.availablePackages.isEmpty {
+                // RevenueCatUIのPaywallViewはofferingとcustomerInfoの両方が必要
                 if #available(iOS 17.0, *) {
                     RevenueCatUI.PaywallView(
                         offering: offering,
@@ -181,6 +183,11 @@ struct PaywallContainerView: View {
                 return
             }
             
+            // customerInfoを取得（RevenueCatUIのPaywallViewが期待している）
+            if customerInfo == nil {
+                customerInfo = try? await Purchases.shared.customerInfo()
+            }
+            
             if offering == nil {
                 await loadOffering()
             }
@@ -188,6 +195,7 @@ struct PaywallContainerView: View {
             if let info = try? await Purchases.shared.syncPurchases() {
                 await MainActor.run {
                     let subscription = SubscriptionInfo(info: info)
+                    customerInfo = info
                     appState.updateSubscriptionInfo(subscription)
                 }
             }
@@ -217,6 +225,7 @@ struct PaywallContainerView: View {
             let offerings = try await Purchases.shared.offerings()
             guard let resolvedOffering = offerings
                 .offering(identifier: AppConfig.revenueCatPaywallId) ?? offerings.current else {
+                print("[Paywall] Offering not found: identifier=\(AppConfig.revenueCatPaywallId), current=\(offerings.current?.identifier ?? "nil")")
                 offering = nil
                 fallbackProductIDs = []
                 showStoreKitFallback = true
@@ -228,6 +237,7 @@ struct PaywallContainerView: View {
             guard !resolvedOffering.availablePackages.isEmpty,
                   resolvedOffering.hasPurchasablePackages,
                   !resolvedOffering.containsEmptyCarousel else {
+                print("[Paywall] Offering has empty packages: identifier=\(resolvedOffering.identifier), packages=\(resolvedOffering.availablePackages.count)")
                 offering = nil
                 fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
                 showStoreKitFallback = true
@@ -341,6 +351,11 @@ struct PaywallContainerView: View {
                 .font(.subheadline)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(.secondary)
+            if let error = loadError {
+                Text("Error: \(error.localizedDescription)")
+                    .font(.caption)
+                    .foregroundStyle(.red)
+            }
             Button(String(localized: "paywall_retry_button")) {
                 Task { await loadOffering() }
             }

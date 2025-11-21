@@ -1,10 +1,13 @@
 import { query } from '../lib/db.js';
 import baseLogger from '../utils/logger.js';
 import { grantMinutes, VC_CURRENCY_CODE } from '../services/revenuecat/virtualCurrency.js';
+import { BILLING_CONFIG } from '../config/environment.js';
 
 const logger = baseLogger.withContext('MonthlyCredits');
-const FREE_MIN = 30;   // 無料枠
-const PRO_MIN = 300;   // 年額の月次配布量
+// 環境変数から読み込み、フォールバックは30分
+const FREE_MIN = BILLING_CONFIG.FREE_MONTHLY_LIMIT ?? 30;
+// 環境変数から読み込み、フォールバックは300分
+const PRO_MIN = BILLING_CONFIG.PRO_MONTHLY_LIMIT ?? 300;
 
 function monthStartUTC(d = new Date()) {
   const y = d.getUTCFullYear();

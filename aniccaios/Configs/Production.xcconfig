@@ -11,5 +11,12 @@ INFOPLIST_KEY_REVENUECAT_CUSTOMER_CENTER_ID = $(REVENUECAT_CUSTOMER_CENTER_ID)
 RESET_ON_LAUNCH = NO
 INFOPLIST_KEY_RESET_ON_LAUNCH = $(RESET_ON_LAUNCH)
 
+// WebRTC.xcframework をローカル同梱で解決（device/simulator 両対応）
+FRAMEWORK_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/../Frameworks $(PROJECT_DIR)/Frameworks
+HEADER_SEARCH_PATHS = $(inherited) $(PROJECT_DIR)/Frameworks/WebRTC.xcframework/**
+CLANG_ENABLE_MODULES = YES
+LD_RUNPATH_SEARCH_PATHS = $(inherited) @executable_path/Frameworks
+OTHER_LDFLAGS = $(inherited) -ObjC
+
 
 

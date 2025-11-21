@@ -5,16 +5,27 @@ extension Offering {
         !availablePackages.isEmpty
     }
 
-    var containsEmptyCarousel: Bool {
-        // RevenueCatのPaywall構造に基づく実装
-        // Carouselが空かどうかを判定（商品が0件の場合はtrue）
-        // RevenueCatUIのCarouselComponentViewは、originalCountが0の場合に0除算エラーを起こす
-        // パッケージが空の場合はtrueを返す
-        let isEmpty = availablePackages.isEmpty
-        if isEmpty {
-            print("[Offering] Empty carousel detected: identifier=\(identifier), packages=\(availablePackages.count)")
+    /// 表示しても安全かどうかの厳密な判定
+    /// RevenueCatUIのCarouselViewが0除算エラーを起こさないように、商品IDまで確認
+    var isSafeToDisplay: Bool {
+        // 1. パッケージ自体が空ならNG
+        guard !availablePackages.isEmpty else {
+            print("[Offering] Empty packages: identifier=\(identifier)")
+            return false
         }
-        return isEmpty
+        
+        // 2. 全てのパッケージが有効な商品IDを持っているか確認
+        // (空文字だとRevenueCatUI内部で予期せぬ挙動になる可能性があります)
+        let allValid = availablePackages.allSatisfy { !$0.storeProduct.productIdentifier.isEmpty }
+        if !allValid {
+            print("[Offering] Invalid product IDs found: identifier=\(identifier)")
+        }
+        return allValid
+    }
+
+    var containsEmptyCarousel: Bool {
+        // isSafeToDisplayがfalseなら、Carouselは空または不正とみなす
+        return !isSafeToDisplay
     }
 }
 

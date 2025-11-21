@@ -62,11 +62,25 @@ router.post('/', async (req, res) => {
  */
 router.get('/health', async (req, res) => {
   try {
-    await warmAppleKeys();
+    // タイムアウトを30秒に設定（デフォルトは短い可能性がある）
+    const timeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Health check timeout')), 30000)
+    );
+    
+    await Promise.race([
+      warmAppleKeys(),
+      timeoutPromise
+    ]);
+    
     return res.status(200).json({ status: 'ok' });
   } catch (error) {
     logger.error('Health check failed', error);
-    return res.status(500).json({ status: 'error', message: error.message });
+    // タイムアウトでも500ではなく503（Service Unavailable）を返す
+    const statusCode = error.message.includes('timeout') ? 503 : 500;
+    return res.status(statusCode).json({ 
+      status: 'error', 
+      message: error.message 
+    });
   }
 });
 

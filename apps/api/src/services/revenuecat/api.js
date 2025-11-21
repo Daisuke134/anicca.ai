@@ -9,8 +9,40 @@ const PROJECT_ID = BILLING_CONFIG.REVENUECAT_PROJECT_ID;
 function parseEntitlements(json) {
   // v1 shape: { subscriber: { entitlements: {...} } }
   if (json?.subscriber?.entitlements) return json.subscriber.entitlements;
-  // v2 shape: { data: { entitlements: {...} } }
+  
+  // v2 shape: { active_entitlements: { items: [...] } }
+  if (json?.active_entitlements?.items) {
+    const result = {};
+    for (const item of json.active_entitlements.items) {
+      const entitlementId = item.entitlement_id;
+      if (entitlementId) {
+        // V2形式をV1互換形式に変換
+        const expiresAt = item.expires_at;
+        const expiresDate = expiresAt ? new Date(expiresAt).toISOString() : null;
+        
+        result[entitlementId] = {
+          entitlement_id: entitlementId,
+          is_active: true, // active_entitlementsに含まれている = 有効
+          expires_date: expiresDate,
+          expires_at: expiresAt, // タイムスタンプも保持（ミリ秒）
+          period_type: item.period_type || null,
+          product_identifier: item.product_identifier || null,
+          original_transaction_id: item.original_transaction_id || null,
+          // その他のフィールドも可能な限りマッピング
+          ...item
+        };
+      }
+    }
+    logger.info('[RevenueCat] Parsed V2 entitlements', { 
+      count: Object.keys(result).length,
+      entitlementIds: Object.keys(result)
+    });
+    return result;
+  }
+  
+  // v2 fallback: { data: { entitlements: {...} } }
   if (json?.data?.entitlements) return json.data.entitlements;
+  
   // fallback
   if (json?.entitlements) return json.entitlements;
   return {};

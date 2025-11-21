@@ -21,7 +21,7 @@ struct ProfileInfoStepView: View {
 
             TextField(String(localized: "onboarding_profile_placeholder"), text: $displayName)
                 .textFieldStyle(.roundedBorder)
-                .textInputAutocapitalization(.words)
+                .textInputAutocapitalization(.never) // 【修正】勝手な大文字化を防ぐ
                 .autocorrectionDisabled()
                 .padding(.horizontal, 32)
 

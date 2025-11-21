@@ -103,6 +103,7 @@
 "settings_subscription_restore" = "Restore Purchases";
 "settings_subscription_manage_app_store" = "Manage on App Store";
 "settings_subscription_cancel" = "Cancel Subscription";
+"settings_subscription_account_missing" = "Account configuration is missing. Please sign in to App Store.";
 "subscription_plan_monthly" = "Monthly Plan";
 "subscription_plan_annual" = "Annual Plan";
 "settings_personalization_title" = "Personalization";

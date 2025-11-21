@@ -103,6 +103,7 @@
 "settings_subscription_restore" = "購入を復元";
 "settings_subscription_manage_app_store" = "App Storeで管理";
 "settings_subscription_cancel" = "サブスクリプションをキャンセル";
+"settings_subscription_account_missing" = "アカウント設定が不足しています。App Storeでサインインしてください。";
 "subscription_plan_monthly" = "月額プラン";
 "subscription_plan_annual" = "年額プラン";
 "settings_personalization_title" = "パーソナライズ";

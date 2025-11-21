@@ -15,6 +15,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var dataChannel: RTCDataChannel?
     private var audioTrack: RTCAudioTrack?
     private var cachedSecret: ClientSecret?
+    private var activeSessionId: String?
     private var sessionModel: String = "gpt-realtime"   // Desktop と examples の最新版に合わせる
     
     private override init() {
@@ -43,6 +44,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     func stop() {
         logger.debug("Stopping realtime session")
+        Task { await self.notifyStopIfNeeded() }
         peerConnection?.close()
         peerConnection = nil
         dataChannel = nil
@@ -50,6 +52,29 @@ final class VoiceSessionController: NSObject, ObservableObject {
         cachedSecret = nil
         setStatus(.disconnected)
         deactivateAudioSession()
+    }
+    
+    private func notifyStopIfNeeded() async {
+        guard let sessionId = activeSessionId,
+              case .signedIn(let credentials) = AppState.shared.authStatus else {
+            return
+        }
+        
+        var request = URLRequest(url: AppConfig.realtimeSessionStopURL)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        
+        do {
+            let body = ["session_id": sessionId]
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            _ = try await URLSession.shared.data(for: request)
+        } catch {
+            logger.error("Failed to notify session stop: \(error.localizedDescription, privacy: .public)")
+        }
+        
+        activeSessionId = nil
     }
 
     @MainActor
@@ -123,6 +148,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         sessionModel = "gpt-realtime"
         let secret = payload.clientSecretModel
         cachedSecret = secret
+        activeSessionId = payload.sessionId
         return secret
     }
 
@@ -367,10 +393,12 @@ private struct RealtimeSessionResponse: Decodable {
 
     let clientSecret: ClientSecretPayload
     let model: String?
+    let sessionId: String?
 
     enum CodingKeys: String, CodingKey {
         case clientSecret = "client_secret"
         case model
+        case sessionId = "session_id"
     }
 
     var clientSecretModel: ClientSecret {

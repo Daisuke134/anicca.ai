@@ -14,9 +14,9 @@ export async function runMigrationsOnce() {
     applied_at timestamptz not null default timezone('utc', now())
   )`);
 
-  // 006(今回のRailway用DDL) のみ適用。既存の他SQLは対象外。
+  // 006以降のRailway用DDLを適用。既存の他SQLは対象外。
   const files = (await fs.readdir(MIGRATIONS_DIR))
-    .filter(f => /^006_.*\.sql$/.test(f))
+    .filter(f => /^(006|007|008)_.*\.sql$/.test(f))
     .sort();
 
   for (const f of files) {

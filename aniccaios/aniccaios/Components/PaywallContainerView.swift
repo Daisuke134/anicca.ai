@@ -12,6 +12,9 @@ struct PaywallContainerView: View {
     @State private var loadError: Error?
     @State private var showStoreKitFallback = false
     @State private var fallbackProductIDs: [String] = []
+    @State private var purchaseError: Error?
+    @State private var isPurchaseInProgress = false
+    @State private var showErrorAlert = false
 
     var body: some View {
         Group {
@@ -22,18 +25,43 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        onDismissRequested?()
+                        // 購入中でも閉じられるようにする
+                        if !isPurchaseInProgress {
+                            onDismissRequested?()
+                        }
                     }
                     .onPurchaseCompleted { _, customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    }
+                    .onPurchaseError { error in
+                        handlePurchaseError(error: error)
+                    }
+                    .onPurchaseInProgress { inProgress in
+                        isPurchaseInProgress = inProgress
                     }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreError { error in
+                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
                         if newValue {
                             onPurchaseCompleted?()
                         }
+                    }
+                    .alert("購入エラー", isPresented: $showErrorAlert) {
+                        Button("OK") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                        }
+                        Button("閉じる") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                            onDismissRequested?()
+                        }
+                    } message: {
+                        Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
                     }
                 } else {
                     RevenueCatUI.PaywallView(
@@ -41,18 +69,42 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        onDismissRequested?()
+                        if !isPurchaseInProgress {
+                            onDismissRequested?()
+                        }
                     }
                     .onPurchaseCompleted { _, customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    }
+                    .onPurchaseError { error in
+                        handlePurchaseError(error: error)
+                    }
+                    .onPurchaseInProgress { inProgress in
+                        isPurchaseInProgress = inProgress
                     }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreError { error in
+                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
                         if newValue {
                             onPurchaseCompleted?()
                         }
+                    }
+                    .alert("購入エラー", isPresented: $showErrorAlert) {
+                        Button("OK") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                        }
+                        Button("閉じる") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                            onDismissRequested?()
+                        }
+                    } message: {
+                        Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
                     }
                 }
             } else if let cached = appState.cachedOffering {
@@ -63,13 +115,24 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        onDismissRequested?()
+                        if !isPurchaseInProgress {
+                            onDismissRequested?()
+                        }
                     }
                     .onPurchaseCompleted { _, customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    }
+                    .onPurchaseError { error in
+                        handlePurchaseError(error: error)
+                    }
+                    .onPurchaseInProgress { inProgress in
+                        isPurchaseInProgress = inProgress
                     }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreError { error in
+                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
                         if newValue {
@@ -79,19 +142,43 @@ struct PaywallContainerView: View {
                     .onAppear {
                         offering = cached
                     }
+                    .alert("購入エラー", isPresented: $showErrorAlert) {
+                        Button("OK") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                        }
+                        Button("閉じる") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                            onDismissRequested?()
+                        }
+                    } message: {
+                        Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
+                    }
                 } else {
                     RevenueCatUI.PaywallView(
                         offering: cached,
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        onDismissRequested?()
+                        if !isPurchaseInProgress {
+                            onDismissRequested?()
+                        }
                     }
                     .onPurchaseCompleted { _, customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    }
+                    .onPurchaseError { error in
+                        handlePurchaseError(error: error)
+                    }
+                    .onPurchaseInProgress { inProgress in
+                        isPurchaseInProgress = inProgress
                     }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
+                    }
+                    .onRestoreError { error in
+                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
                         if newValue {
@@ -100,6 +187,19 @@ struct PaywallContainerView: View {
                     }
                     .onAppear {
                         offering = cached
+                    }
+                    .alert("購入エラー", isPresented: $showErrorAlert) {
+                        Button("OK") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                        }
+                        Button("閉じる") {
+                            purchaseError = nil
+                            isPurchaseInProgress = false
+                            onDismissRequested?()
+                        }
+                    } message: {
+                        Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
                     }
                 }
             } else if isLoading {
@@ -165,13 +265,73 @@ struct PaywallContainerView: View {
         Purchases.shared.cachedOfferings?.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? []
     }
 
+    private func handlePurchaseSuccess(customerInfo: CustomerInfo) {
+        // 購入成功時の処理
+        isPurchaseInProgress = false
+        purchaseError = nil
+        
+        guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else {
+            // エンタイトルが有効でない場合
+            purchaseError = NSError(domain: "PurchaseError", code: -1, userInfo: [NSLocalizedDescriptionKey: "購入は完了しましたが、サブスクリプションが有効化されていません。"])
+            showErrorAlert = true
+            return
+        }
+        
+        let info = SubscriptionInfo(info: customerInfo)
+        appState.updateSubscriptionInfo(info)
+        
+        // 購入直後にサーバへ同期（タイムアウト付き）
+        Task {
+            await syncWithTimeout()
+            await MainActor.run {
+                onPurchaseCompleted?()
+            }
+        }
+    }
+    
+    private func handlePurchaseError(error: Error) {
+        // 購入エラー時の処理
+        isPurchaseInProgress = false
+        purchaseError = error
+        showErrorAlert = true
+        
+        print("[Paywall] Purchase error: \(error.localizedDescription)")
+    }
+    
+    private func handleRestoreError(error: Error) {
+        // リストアエラー時の処理
+        purchaseError = error
+        showErrorAlert = true
+        
+        print("[Paywall] Restore error: \(error.localizedDescription)")
+    }
+    
+    private func syncWithTimeout() async {
+        // タイムアウト付きで同期処理を実行
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                await SubscriptionManager.shared.syncNow()
+            }
+            
+            group.addTask {
+                // 10秒でタイムアウト
+                try? await Task.sleep(nanoseconds: 10_000_000_000)
+            }
+            
+            // どちらかが完了したら終了
+            _ = await group.next()
+            group.cancelAll()
+        }
+    }
+    
     private func handle(customerInfo: CustomerInfo) {
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else { return }
         let info = SubscriptionInfo(info: customerInfo)
         appState.updateSubscriptionInfo(info)
-        // 購入直後にサーバへ同期（DBを即更新 → 上限/残分を即返せるように）
-        Task { await SubscriptionManager.shared.syncNow() }
-        onPurchaseCompleted?()
+        // リストア時もタイムアウト付きで同期
+        Task {
+            await syncWithTimeout()
+        }
     }
 
     @ViewBuilder

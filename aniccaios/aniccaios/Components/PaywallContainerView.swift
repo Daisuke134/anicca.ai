@@ -203,10 +203,10 @@ struct PaywallContainerView: View {
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else { return }
         let info = SubscriptionInfo(info: customerInfo)
         appState.updateSubscriptionInfo(info)
-        // 購入後は即同期・即閉じで待ち時間を解消
+        // 即座にサーバ同期→UI更新→ペイウォールを閉じる
         Task { await SubscriptionManager.shared.syncNow() }
-        onDismissRequested?()
         onPurchaseCompleted?()
+        onDismissRequested?()
     }
 
     @ViewBuilder

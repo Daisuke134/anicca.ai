@@ -16,6 +16,7 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
   const status = isActive ? (isTrial ? 'trialing' : 'active') : 'expired';
   const payload = {
     user_id: userId,
+    // 方針: 有効期間中はpro、期限切れ/未購読はfree（即時free化は行わない）
     plan: isActive ? 'pro' : 'free',
     status,
     current_period_end: entitlement?.expires_date || null,

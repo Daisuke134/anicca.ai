@@ -2,22 +2,26 @@ import fetch from 'node-fetch';
 import { BILLING_CONFIG } from '../../config/environment.js';
 import logger from '../../utils/logger.js';
 
-const BASE_URL = 'https://api.revenuecat.com/v2';
+const BASE_URL = 'https://api.revenuecat.com/v1';
 
 function parseEntitlements(json) {
-  if (json?.data?.entitlements) return json.data.entitlements; // v2 shape
-  if (json?.entitlements) return json.entitlements;            // fallback
+  // v1 shape: { subscriber: { entitlements: {...} } }
+  if (json?.subscriber?.entitlements) return json.subscriber.entitlements;
+  // v2 shape: { data: { entitlements: {...} } }
+  if (json?.data?.entitlements) return json.data.entitlements;
+  // fallback
+  if (json?.entitlements) return json.entitlements;
   return {};
 }
 
 export async function fetchCustomerEntitlements(appUserId) {
-  const project = BILLING_CONFIG.REVENUECAT_PROJECT_ID;
   const key = BILLING_CONFIG.REVENUECAT_REST_API_KEY;
-  if (!project || !key) {
-    logger.warn('[RevenueCat] Missing project ID or API key');
+  if (!key) {
+    logger.warn('[RevenueCat] Missing API key');
     return {};
   }
-  const url = `${BASE_URL}/projects/${project}/customers/${encodeURIComponent(appUserId)}`;
+  // v1エンドポイント（legacy API key対応）
+  const url = `${BASE_URL}/subscribers/${encodeURIComponent(appUserId)}`;
   logger.info('[RevenueCat] Fetching entitlements', { appUserId, url });
   
   const resp = await fetch(url, {

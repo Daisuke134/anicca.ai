@@ -13,7 +13,7 @@ actor AuthHealthCheck {
         var request = URLRequest(url: baseURL.appending(path: "health"))
         request.timeoutInterval = 5
         request.httpMethod = "GET"
-        _ = try? await URLSession.shared.data(for: request)
+        _ = try? await NetworkSessionManager.shared.session.data(for: request)
     }
 }
 

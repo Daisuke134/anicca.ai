@@ -69,7 +69,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         do {
             let body = ["session_id": sessionId]
             request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            _ = try await URLSession.shared.data(for: request)
+            _ = try await NetworkSessionManager.shared.session.data(for: request)
         } catch {
             logger.error("Failed to notify session stop: \(error.localizedDescription, privacy: .public)")
         }
@@ -124,7 +124,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         request.setValue(credentials.userId,
                          forHTTPHeaderField: "user-id")
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode == 402 {
             // 利用上限到達時の処理
             let plan: SubscriptionInfo.Plan
@@ -220,7 +220,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         request.setValue("Bearer \(secret.value)", forHTTPHeaderField: "Authorization")
         request.httpBody = localSdp.data(using: .utf8)
 
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
             if let http = response as? HTTPURLResponse {
                 logger.error("Realtime SDP exchange failed with status \(http.statusCode)")

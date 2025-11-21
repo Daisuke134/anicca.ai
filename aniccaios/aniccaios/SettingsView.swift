@@ -383,6 +383,25 @@ struct SettingsView: View {
             Task { await SubscriptionManager.shared.syncNow() }
         }) {
             RevenueCatUI.CustomerCenterView()
+                .onCustomerCenterRestoreFailed { error in
+                    // XPCエラー（コード4099）は無視（機能には影響なし）
+                    if let nsError = error as NSError?,
+                       nsError.domain == "NSCocoaErrorDomain",
+                       nsError.code == 4099 {
+                        // iOS内部サービスへのアクセス試行エラー（無視してOK）
+                        return
+                    }
+                    // その他のエラーは通常通り処理
+                    print("[CustomerCenter] Restore failed: \(error.localizedDescription)")
+                }
+                .onCustomerCenterRestoreCompleted { customerInfo in
+                    // 復元完了時の処理（必要に応じて）
+                    print("[CustomerCenter] Restore completed")
+                }
+                .onCustomerCenterShowingManageSubscriptions {
+                    // App Store管理画面表示時の処理（必要に応じて）
+                    print("[CustomerCenter] Showing manage subscriptions")
+                }
         }
     }
     

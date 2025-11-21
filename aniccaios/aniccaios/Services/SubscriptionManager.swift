@@ -48,7 +48,7 @@ final class SubscriptionManager: NSObject {
         request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
         
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
+            let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
                 return
             }
@@ -116,7 +116,7 @@ final class SubscriptionManager: NSObject {
         request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
         
         do {
-            let (_, response) = try await URLSession.shared.data(for: request)
+            let (_, response) = try await NetworkSessionManager.shared.session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
                 print("[SubscriptionManager] Invalid response type")
                 return

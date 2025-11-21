@@ -25,13 +25,10 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        // 同期中でも閉じられるようにする
-                        if !isSyncing {
-                            onDismissRequested?()
-                        }
+                        onDismissRequested?()
                     }
                     .onPurchaseCompleted { _, customerInfo in
-                        handlePurchaseSuccess(customerInfo: customerInfo)
+                        handle(customerInfo: customerInfo)
                     }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
@@ -40,19 +37,6 @@ struct PaywallContainerView: View {
                         if newValue {
                             onPurchaseCompleted?()
                         }
-                    }
-                    .alert("購入エラー", isPresented: $showErrorAlert) {
-                        Button("OK") {
-                            purchaseError = nil
-                            isSyncing = false
-                        }
-                        Button("閉じる") {
-                            purchaseError = nil
-                            isSyncing = false
-                            onDismissRequested?()
-                        }
-                    } message: {
-                        Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
                     }
                 } else {
                     RevenueCatUI.PaywallView(
@@ -64,11 +48,11 @@ struct PaywallContainerView: View {
                             onDismissRequested?()
                         }
                     }
-                    .onPurchaseCompleted { _, customerInfo in
-                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    .onPurchaseCompleted { transaction, customerInfo in
+                        handlePurchaseSuccess(transaction: transaction, customerInfo: customerInfo)
                     }
                     .onRestoreCompleted { customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handleRestoreSuccess(customerInfo: customerInfo)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
                         if newValue {
@@ -101,11 +85,11 @@ struct PaywallContainerView: View {
                             onDismissRequested?()
                         }
                     }
-                    .onPurchaseCompleted { _, customerInfo in
-                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    .onPurchaseCompleted { transaction, customerInfo in
+                        handlePurchaseSuccess(transaction: transaction, customerInfo: customerInfo)
                     }
                     .onRestoreCompleted { customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handleRestoreSuccess(customerInfo: customerInfo)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
                         if newValue {
@@ -138,11 +122,11 @@ struct PaywallContainerView: View {
                             onDismissRequested?()
                         }
                     }
-                    .onPurchaseCompleted { _, customerInfo in
-                        handlePurchaseSuccess(customerInfo: customerInfo)
+                    .onPurchaseCompleted { transaction, customerInfo in
+                        handlePurchaseSuccess(transaction: transaction, customerInfo: customerInfo)
                     }
                     .onRestoreCompleted { customerInfo in
-                        handle(customerInfo: customerInfo)
+                        handleRestoreSuccess(customerInfo: customerInfo)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
                         if newValue {
@@ -229,14 +213,10 @@ struct PaywallContainerView: View {
         Purchases.shared.cachedOfferings?.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? []
     }
 
-    private func handlePurchaseSuccess(customerInfo: CustomerInfo) {
+    private func handlePurchaseSuccess(transaction: StoreTransaction?, customerInfo: CustomerInfo) {
         // 購入成功時の処理
-        isSyncing = true
-        purchaseError = nil
-        
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else {
             // エンタイトルが有効でない場合
-            isSyncing = false
             purchaseError = NSError(domain: "PurchaseError", code: -1, userInfo: [NSLocalizedDescriptionKey: "購入は完了しましたが、サブスクリプションが有効化されていません。"])
             showErrorAlert = true
             return
@@ -245,45 +225,61 @@ struct PaywallContainerView: View {
         let info = SubscriptionInfo(info: customerInfo)
         appState.updateSubscriptionInfo(info)
         
-        // 購入直後にサーバへ同期（タイムアウト付き）
+        // 購入直後にサーバへ同期（タイムアウト付き、非ブロッキング）
         Task {
-            await syncWithTimeout()
-            await MainActor.run {
-                isSyncing = false
-                onPurchaseCompleted?()
+            isSyncing = true
+            defer { isSyncing = false }
+            
+            do {
+                // タイムアウト付きで同期
+                try await withTimeout(seconds: 10) {
+                    await SubscriptionManager.shared.syncNow()
+                }
+                await MainActor.run {
+                    onPurchaseCompleted?()
+                }
+            } catch {
+                // タイムアウトやエラーでも購入完了は通知（バックグラウンドで再試行）
+                print("[Paywall] Sync error (non-blocking): \(error.localizedDescription)")
+                await MainActor.run {
+                    onPurchaseCompleted?()
+                }
             }
         }
     }
     
-    private func syncWithTimeout() async {
-        // タイムアウト付きで同期処理を実行
-        await withTaskGroup(of: Void.self) { group in
-            group.addTask {
-                await SubscriptionManager.shared.syncNow()
-            }
-            
-            group.addTask {
-                // 10秒でタイムアウト
-                try? await Task.sleep(nanoseconds: 10_000_000_000)
-            }
-            
-            // どちらかが完了したら終了
-            _ = await group.next()
-            group.cancelAll()
-        }
-    }
-    
-    private func handle(customerInfo: CustomerInfo) {
+    private func handleRestoreSuccess(customerInfo: CustomerInfo) {
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else { return }
         let info = SubscriptionInfo(info: customerInfo)
         appState.updateSubscriptionInfo(info)
-        // リストア時もタイムアウト付きで同期
+        // リストア時もタイムアウト付きで同期（非ブロッキング）
         Task {
             isSyncing = true
-            await syncWithTimeout()
-            await MainActor.run {
-                isSyncing = false
+            defer { isSyncing = false }
+            do {
+                try await withTimeout(seconds: 10) {
+                    await SubscriptionManager.shared.syncNow()
+                }
+            } catch {
+                print("[Paywall] Restore sync error (non-blocking): \(error.localizedDescription)")
             }
+        }
+    }
+    
+    private func withTimeout<T>(seconds: TimeInterval, operation: @escaping () async throws -> T) async throws -> T {
+        try await withThrowingTaskGroup(of: T.self) { group in
+            group.addTask {
+                try await operation()
+            }
+            
+            group.addTask {
+                try await Task.sleep(nanoseconds: UInt64(seconds * 1_000_000_000))
+                throw NSError(domain: "TimeoutError", code: -1, userInfo: [NSLocalizedDescriptionKey: "タイムアウトしました"])
+            }
+            
+            let result = try await group.next()!
+            group.cancelAll()
+            return result
         }
     }
 

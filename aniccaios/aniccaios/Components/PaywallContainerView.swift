@@ -210,18 +210,29 @@ struct PaywallContainerView: View {
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let resolvedOffering = offerings
-                .offering(identifier: AppConfig.revenueCatPaywallId) ?? offerings.current,
-                  resolvedOffering.hasPurchasablePackages,
-                  !resolvedOffering.containsEmptyCarousel else {
+                .offering(identifier: AppConfig.revenueCatPaywallId) ?? offerings.current else {
                 offering = nil
-                fallbackProductIDs = offerings.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? []
+                fallbackProductIDs = []
                 showStoreKitFallback = true
                 appState.updatePurchaseEnvironment(.accountMissing)
                 return
             }
+            
+            // より厳密なチェック: パッケージが有効か確認
+            let validPackages = resolvedOffering.availablePackages.filter { $0.storeProduct != nil }
+            guard !validPackages.isEmpty,
+                  resolvedOffering.hasPurchasablePackages,
+                  !resolvedOffering.containsEmptyCarousel else {
+                offering = nil
+                fallbackProductIDs = resolvedOffering.availablePackages.compactMap { $0.storeProduct?.productIdentifier }
+                showStoreKitFallback = true
+                appState.updatePurchaseEnvironment(.accountMissing)
+                return
+            }
+            
             appState.updatePurchaseEnvironment(.ready)
             offering = resolvedOffering
-            fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
+            fallbackProductIDs = validPackages.map { $0.storeProduct.productIdentifier }
             showStoreKitFallback = false
             loadError = nil
         } catch {

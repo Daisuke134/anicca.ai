@@ -70,7 +70,8 @@ export const BILLING_CONFIG = {
   REVENUECAT_WEBHOOK_SECRET: process.env.REVENUECAT_WEBHOOK_SECRET || '',
   REVENUECAT_ENTITLEMENT_ID: process.env.REVENUECAT_ENTITLEMENT_ID || 'pro',
   REVENUECAT_PAYWALL_ID: process.env.REVENUECAT_PAYWALL_ID || '',
-  REVENUECAT_CUSTOMER_CENTER_ID: process.env.REVENUECAT_CUSTOMER_CENTER_ID || ''
+  REVENUECAT_CUSTOMER_CENTER_ID: process.env.REVENUECAT_CUSTOMER_CENTER_ID || '',
+  REVENUECAT_VC_CODE: process.env.REVENUECAT_VC_CODE || ''
 };
 
 // ディレクトリ設定
@@ -173,6 +174,7 @@ export function logEnvironment() {
   console.log(`  - Pro daily limit: ${BILLING_CONFIG.PRO_DAILY_LIMIT ?? 'default(1000)'}`);
   console.log(`  - Free monthly limit: ${BILLING_CONFIG.FREE_MONTHLY_LIMIT ?? 'unset'}`);
   console.log(`  - Pro monthly limit: ${BILLING_CONFIG.PRO_MONTHLY_LIMIT ?? 'unset'}`);
+  console.log(`  - RC VC code: ${BILLING_CONFIG.REVENUECAT_VC_CODE || 'unset'}`);
   
   const warnings = validateEnvironment();
   if (warnings.length > 0) {

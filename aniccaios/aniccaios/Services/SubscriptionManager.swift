@@ -91,6 +91,28 @@ final class SubscriptionManager: NSObject {
             }
         }
     }
+    
+    func syncNow() async {
+        // 1) 端末側の領収書同期
+        _ = try? await Purchases.shared.syncPurchases()
+        
+        // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        
+        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("billing/revenuecat/sync"))
+        request.httpMethod = "POST"
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        
+        _ = try? await URLSession.shared.data(for: request)
+        
+        // 3) 最新Entitlementを取得
+        var subscription = AppState.shared.subscriptionInfo
+        await syncUsageInfo(&subscription)
+        await MainActor.run {
+            AppState.shared.updateSubscriptionInfo(subscription)
+        }
+    }
 }
 
 extension SubscriptionManager: PurchasesDelegate {

@@ -378,8 +378,10 @@ struct SettingsView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         })
         .frame(maxWidth: .infinity)
-        .sheet(isPresented: $showingCustomerCenter) {
-            RevenueCatUI.CustomerCenterView()
+        .sheet(isPresented: $showingCustomerCenter, onDismiss: {
+            Task { await SubscriptionManager.shared.syncNow() }
+        }) {
+            RevenueCatUI.CustomerCenterView(customerCenterIdentifier: AppConfig.revenueCatCustomerCenterId)
         }
     }
     
@@ -392,17 +394,17 @@ struct SettingsView: View {
     }
     
     private func resolvedPlanLabel(for info: SubscriptionInfo) -> String {
+        // 常に人間可読。IDは絶対に表示しない
         if let name = info.planDisplayName, !name.isEmpty {
             return name
         }
-        switch info.productIdentifier {
-        case "ai.anicca.app.ios.annual":
+        if info.productIdentifier == "ai.anicca.app.ios.annual" {
             return NSLocalizedString("subscription_plan_annual", comment: "")
-        case "ai.anicca.app.ios.monthly":
-            return NSLocalizedString("subscription_plan_monthly", comment: "")
-        default:
-            return NSLocalizedString("settings_subscription_pro", comment: "")
         }
+        if info.productIdentifier == "ai.anicca.app.ios.monthly" {
+            return NSLocalizedString("subscription_plan_monthly", comment: "")
+        }
+        return NSLocalizedString("settings_subscription_pro", comment: "")
     }
     
     private var dateFormatter: DateFormatter {

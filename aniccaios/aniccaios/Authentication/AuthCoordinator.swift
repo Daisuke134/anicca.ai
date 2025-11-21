@@ -57,6 +57,10 @@ final class AuthCoordinator {
         case .success(let authorization):
             handleAuthorization(authorization)
         case .failure(let error):
+            // 既にサインイン済みなら無視（AuthorizationError 1000 などの後着エラー対策）
+            if case .signedIn = AppState.shared.authStatus {
+                return
+            }
             logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
             AppState.shared.setAuthStatus(.signedOut)
         }

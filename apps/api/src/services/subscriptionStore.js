@@ -1,6 +1,7 @@
 import { BILLING_CONFIG } from '../config/environment.js';
 import { getStripeClient } from './stripe/client.js';
 import { query } from '../lib/db.js';
+import { debitMinutes, VC_CURRENCY_CODE } from './revenuecat/virtualCurrency.js';
 
 const DEFAULT_PRO_DAILY_LIMIT = 1000; // 既存互換（未使用でも残置）
 const ENTITLEMENT_SOURCE = {
@@ -180,26 +181,46 @@ export async function getTodayUsage(userId) {
   return r.rows[0] || { user_id: userId, usage_date: todayIso, count: 0 };
 }
 
-export async function incrementTodayUsage(userId) {
+export async function startUsageSession(userId, sessionId) {
   await ensureSubscriptionRow(userId);
-  const r = await query(
-    `insert into realtime_usage_daily (user_id, usage_date, count, updated_at)
-     values ($1, current_date, 1, timezone('utc', now()))
-     on conflict (user_id, usage_date)
-     do update set count = realtime_usage_daily.count + 1,
-                   updated_at = timezone('utc', now())
-     returning count`,
-    [userId]
+  await query(
+    `insert into usage_sessions (session_id, user_id, started_at)
+     values ($1, $2, timezone('utc', now()))
+     on conflict (session_id) do nothing`,
+    [sessionId, userId]
   );
-  return r.rows[0]?.count ?? 0;
+}
+
+export async function finishUsageSessionAndBill(userId, sessionId) {
+  const r = await query(
+    `update usage_sessions
+     set ended_at = timezone('utc', now()),
+         billed_seconds = extract(epoch from timezone('utc', now()) - started_at),
+         billed_minutes = ceil(extract(epoch from timezone('utc', now()) - started_at) / 60.0)::int,
+         updated_at = timezone('utc', now())
+     where session_id=$1 and user_id=$2
+     returning billed_minutes`,
+    [sessionId, userId]
+  );
+  const minutes = Number(r.rows[0]?.billed_minutes || 0);
+  if (minutes > 0) {
+    // RevenueCatの残高をデビット（サーバ権威）
+    await debitMinutes({
+      appUserId: userId,
+      minutes,
+      currency: VC_CURRENCY_CODE,
+      context: { type: 'realtime', sessionId }
+    });
+  }
+  return minutes;
 }
 
 export async function getMonthlyUsage(userId) {
   const r = await query(
-    `select coalesce(sum(count),0) as total
-     from realtime_usage_daily
+    `select coalesce(sum(billed_minutes),0) as total
+     from usage_sessions
      where user_id=$1
-       and usage_date >= date_trunc('month', (now() at time zone 'utc'))::date`,
+       and started_at >= date_trunc('month', (now() at time zone 'utc'))`,
     [userId]
   );
   return Number(r.rows[0]?.total || 0);

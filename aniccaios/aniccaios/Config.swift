@@ -36,6 +36,10 @@ enum AppConfig {
         proxyBaseURL.appendingPathComponent("mobile/realtime/session")
     }
     
+    static var realtimeSessionStopURL: URL {
+        proxyBaseURL.appendingPathComponent("mobile/realtime/session/stop")
+    }
+    
     static var appleAuthURL: URL {
         proxyBaseURL.appendingPathComponent("auth/apple")
     }

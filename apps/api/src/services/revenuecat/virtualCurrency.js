@@ -43,17 +43,15 @@ export async function getBalance(appUserId, currency = VC_CURRENCY_CODE) {
  * @param {string} params.appUserId
  * @param {number} params.minutes - Positive for grant, negative for debit
  * @param {string} params.currency
- * @param {Object} params.context
  */
-async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE, context }) {
+async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE }) {
   const uid = encodeURIComponent(appUserId);
   const url = `https://api.revenuecat.com/v2/projects/${PROJECT_ID}/customers/${uid}/virtual_currencies/transactions`;
   
   const body = JSON.stringify({
     adjustments: {
       [currency]: minutes
-    },
-    context: context || {}
+    }
   });
   
   const res = await fetch(url, {
@@ -76,23 +74,20 @@ async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE, 
  * @param {string} params.appUserId
  * @param {number} params.minutes
  * @param {string} params.currency
- * @param {Object} params.context
  */
-export async function grantMinutes({ appUserId, minutes, currency, context }) {
+export async function grantMinutes({ appUserId, minutes, currency }) {
   if (minutes <= 0) return true;
   
   logger.info('RC grant', {
     appUserId,
     minutes,
-    currency: currency || VC_CURRENCY_CODE,
-    context
+    currency: currency || VC_CURRENCY_CODE
   });
   
   return adjustMinutes({
     appUserId,
     minutes,
-    currency: currency || VC_CURRENCY_CODE,
-    context
+    currency: currency || VC_CURRENCY_CODE
   });
 }
 
@@ -102,23 +97,20 @@ export async function grantMinutes({ appUserId, minutes, currency, context }) {
  * @param {string} params.appUserId
  * @param {number} params.minutes
  * @param {string} params.currency
- * @param {Object} params.context
  */
-export async function debitMinutes({ appUserId, minutes, currency, context }) {
+export async function debitMinutes({ appUserId, minutes, currency }) {
   if (minutes <= 0) return true;
   
   logger.info('RC debit', {
     appUserId,
     minutes,
-    currency: currency || VC_CURRENCY_CODE,
-    context
+    currency: currency || VC_CURRENCY_CODE
   });
   
   return adjustMinutes({
     appUserId,
     minutes: -Math.abs(minutes),
-    currency: currency || VC_CURRENCY_CODE,
-    context
+    currency: currency || VC_CURRENCY_CODE
   });
 }
 

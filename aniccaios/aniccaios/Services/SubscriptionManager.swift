@@ -151,6 +151,17 @@ extension SubscriptionInfo {
             .availablePackages
             .first(where: { $0.storeProduct.productIdentifier == productId })
 
+        let mappedName: String? = {
+            switch productId {
+            case "ai.anicca.app.ios.annual":
+                return NSLocalizedString("subscription_plan_annual", comment: "")
+            case "ai.anicca.app.ios.monthly":
+                return NSLocalizedString("subscription_plan_monthly", comment: "")
+            default:
+                return nil
+            }
+        }()
+
         let willRenew = entitlement?.willRenew ?? false
         let isTrial = entitlement?.periodType == .trial
         let statusString: String
@@ -166,7 +177,7 @@ extension SubscriptionInfo {
             managementURL: info.managementURL,
             lastSyncedAt: .now,
             productIdentifier: productId,
-            planDisplayName: package?.storeProduct.localizedTitle ?? entitlement?.productIdentifier,
+            planDisplayName: package?.storeProduct.localizedTitle ?? mappedName,
             priceDescription: package?.localizedPriceString,
             monthlyUsageLimit: nil,
             monthlyUsageRemaining: nil,

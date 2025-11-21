@@ -18,7 +18,7 @@ struct PaywallContainerView: View {
             // 既に購読中ならPaywallを表示しない
             if appState.subscriptionInfo.isEntitled {
                 VStack(spacing: 12) {
-                    Text(String(localized: "settings_subscription_pro"))
+                    Text("You're already in the pro plan.")
                         .font(.headline)
                     Button(String(localized: "settings_subscription_manage")) {
                         // Customer Center へ
@@ -183,6 +183,8 @@ struct PaywallContainerView: View {
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else { return }
         let info = SubscriptionInfo(info: customerInfo)
         appState.updateSubscriptionInfo(info)
+        // 購入直後にサーバへ同期（DBを即更新 → 上限/残分を即返せるように）
+        Task { await SubscriptionManager.shared.syncNow() }
         onPurchaseCompleted?()
     }
 

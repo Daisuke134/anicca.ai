@@ -90,6 +90,7 @@ struct SettingsView: View {
             }
             .onAppear {
                 loadPersonalizationData()
+                Task { await SubscriptionManager.shared.syncNow() }
             }
         }
     }

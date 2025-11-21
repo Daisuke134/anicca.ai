@@ -1,8 +1,9 @@
+import crypto from 'crypto';
 import logger from '../../../utils/logger.js';
 import requireAuth from '../../../middleware/requireAuth.js';
 import {
   getEntitlementState,
-  incrementTodayUsage,
+  startUsageSession,
   normalizePlanForResponse,
   canUseRealtime
 } from '../../../services/subscriptionStore.js';
@@ -32,6 +33,7 @@ export default async function handler(req, res) {
     let authHeader = null;
     let server_url = null;
     let connected = false;
+    let sessionId = null;
 
     if (auth.tokenType === 'guest') {
       const result = consumeGuestTurn(auth.guestSessionId);
@@ -54,7 +56,9 @@ export default async function handler(req, res) {
         });
       }
 
-      await incrementTodayUsage(auth.sub);
+      // 分制: セッション開始を記録（終了は /api/realtime/desktop/stop で計上）
+      sessionId = crypto.randomUUID();
+      await startUsageSession(auth.sub, sessionId);
       entitlementState = await getEntitlementState(auth.sub);
       normalizedEntitlement = normalizePlanForResponse(entitlementState);
 
@@ -110,7 +114,8 @@ export default async function handler(req, res) {
       client_secret: { value: clientSecret.value, expires_at: clientSecret.expires_at || 0 },
       model: 'gpt-realtime',
       voice: 'alloy',
-      entitlement: normalizedEntitlement
+      entitlement: normalizedEntitlement,
+      session_id: sessionId
     });
   } catch (err) {
     logger.error(`desktop-session error: ${err?.message || String(err)}`);

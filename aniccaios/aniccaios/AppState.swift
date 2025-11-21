@@ -442,7 +442,7 @@ final class AppState: ObservableObject {
     
     func markQuotaHold(plan: SubscriptionInfo.Plan?) {
         subscriptionHoldPlan = plan
-        subscriptionHold = true
+        subscriptionHold = plan != nil
     }
     
     func updatePurchaseEnvironment(_ status: PurchaseEnvironmentStatus) {

@@ -97,6 +97,14 @@ struct SessionView: View {
         .onChange(of: appState.subscriptionHold) { _, hold in
             if hold {
                 isShowingLimitModal = true
+            } else {
+                isShowingLimitModal = false
+            }
+        }
+        .onChange(of: appState.subscriptionHoldPlan) { _, _ in
+            // planが変更された時も表示
+            if appState.subscriptionHold {
+                isShowingLimitModal = true
             }
         }
     }

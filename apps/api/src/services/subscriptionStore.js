@@ -240,18 +240,39 @@ export async function getEntitlementState(userId) {
     fetchSubscriptionRow(userId),
     getMonthlyUsage(userId)
   ]);
+  
+  // RevenueCatの場合、entitlement_payloadを直接確認
   let statusInfo = normalizeStatus(
     subscription?.entitlement_source || ENTITLEMENT_SOURCE.STRIPE,
     subscription?.status
   );
-  if (
-    subscription?.entitlement_source === 'revenuecat' &&
-    subscription?.current_period_end &&
-    new Date(subscription.current_period_end) > new Date() &&
-    statusInfo.plan === 'free'
-  ) {
-    statusInfo = { ...statusInfo, plan: 'pro' };
+  
+  // RevenueCatのentitlement_payloadから直接isActiveを確認
+  if (subscription?.entitlement_source === 'revenuecat') {
+    const payload = subscription?.entitlement_payload;
+    if (payload && typeof payload === 'object') {
+      const isActive = payload.is_active === true;
+      const expiresDate = payload.expires_date ? new Date(payload.expires_date) : null;
+      const isExpired = expiresDate ? expiresDate <= new Date() : true;
+      
+      if (isActive && !isExpired) {
+        statusInfo = { plan: 'pro', status: payload.period_type === 'trial' ? 'trialing' : 'active' };
+      } else if (expiresDate && expiresDate > new Date()) {
+        // 有効期限内でもisActiveがfalseの場合はgrace期間として扱う
+        statusInfo = { plan: 'pro', status: 'grace_period' };
+      } else {
+        statusInfo = { plan: 'free', status: 'expired' };
+      }
+    } else if (
+      subscription?.current_period_end &&
+      new Date(subscription.current_period_end) > new Date() &&
+      statusInfo.plan === 'free'
+    ) {
+      // フォールバック: current_period_endが未来ならproとして扱う
+      statusInfo = { ...statusInfo, plan: 'pro' };
+    }
   }
+  
   const limit = resolveMonthlyLimit(statusInfo.plan);
   const count = monthlyUsage || 0;
   const remaining = Math.max(limit - count, 0);

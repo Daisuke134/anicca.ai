@@ -86,7 +86,7 @@ actor ProfileSyncService {
         
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         
-        let (data, response) = try await URLSession.shared.data(for: request)
+        let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
             throw ProfileSyncError.invalidResponse

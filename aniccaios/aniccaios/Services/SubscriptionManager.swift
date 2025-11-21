@@ -83,6 +83,7 @@ final class SubscriptionManager: NSObject {
     func refreshOfferings() async {
         do {
             let result = try await Purchases.shared.offerings()
+            print("[SubscriptionManager] Offerings loaded: current=\(result.current?.identifier ?? "nil"), all=\(result.all.keys.joined(separator: ", "))")
             offerings = result
             await MainActor.run {
                 AppState.shared.updateOffering(result.offering(identifier: AppConfig.revenueCatPaywallId) ?? result.current)

@@ -17,8 +17,8 @@ struct PaywallContainerView: View {
     @State private var showErrorAlert = false
     @State private var isSyncing = false
     
-    // RevenueCatUIのCarouselViewの0除算エラーを完全回避するため、一時的にStoreKitを強制使用
-    // Offering/Paywallの整合が完全に取れたら、このフラグをfalseに戻してRevenueCatUIを再有効化可能
+    // RevenueCatUIのCarouselViewの0除算エラーを完全回避するため、StoreKitを強制使用
+    // StoreKitはApple純正UIで0除算のリスクがなく、より安全
     private let forceStoreKit = true
 
     var body: some View {
@@ -28,12 +28,56 @@ struct PaywallContainerView: View {
                 // RevenueCatUIのCarouselViewの0除算エラーを回避するため、StoreKitを強制使用
                 if forceStoreKit {
                     if #available(iOS 17.0, *) {
-                        SubscriptionStoreView.forOffering(offering)
-                            .onDismiss {
-                                onDismissRequested?()
+                        storeKitPaywallView(offering: offering)
+                            .onInAppPurchaseStart { product in
+                                print("[Paywall] StoreKit purchase started: \(product.id)")
+                            }
+                            .onInAppPurchaseCompletion { product, result in
+                                Task {
+                                    await handleStoreKitPurchaseCompletion(product: product, result: result)
+                                }
+                            }
+                            .onDisappear {
+                                // ビューが消えた時に購入状態を確認
+                                Task {
+                                    await syncPurchaseState()
+                                }
                             }
                     } else {
-                        storeKitUnavailableMessage
+                        // iOS 17.0未満の場合はRevenueCatUIにフォールバック
+                        RevenueCatUI.PaywallView(
+                            offering: offering,
+                            displayCloseButton: true
+                        )
+                        .onRequestedDismissal {
+                            if !isSyncing {
+                                onDismissRequested?()
+                            }
+                        }
+                        .onPurchaseCompleted { transaction, customerInfo in
+                            handlePurchaseSuccess(transaction: transaction, customerInfo: customerInfo)
+                        }
+                        .onRestoreCompleted { customerInfo in
+                            handleRestoreSuccess(customerInfo: customerInfo)
+                        }
+                        .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                            if newValue {
+                                onPurchaseCompleted?()
+                            }
+                        }
+                        .alert("購入エラー", isPresented: $showErrorAlert) {
+                            Button("OK") {
+                                purchaseError = nil
+                                isSyncing = false
+                            }
+                            Button("閉じる") {
+                                purchaseError = nil
+                                isSyncing = false
+                                onDismissRequested?()
+                            }
+                        } message: {
+                            Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
+                        }
                     }
                 } else {
                     // RevenueCatUIのPaywallViewはofferingとcustomerInfoの両方が必要
@@ -113,15 +157,62 @@ struct PaywallContainerView: View {
                 // Use cached offering immediately while loading fresh data
                 if forceStoreKit {
                     if #available(iOS 17.0, *) {
-                        SubscriptionStoreView.forOffering(cached)
-                            .onDismiss {
-                                onDismissRequested?()
-                            }
+                        storeKitPaywallView(offering: cached)
                             .onAppear {
                                 offering = cached
                             }
+                            .onInAppPurchaseStart { product in
+                                print("[Paywall] StoreKit purchase started: \(product.id)")
+                            }
+                            .onInAppPurchaseCompletion { product, result in
+                                Task {
+                                    await handleStoreKitPurchaseCompletion(product: product, result: result)
+                                }
+                            }
+                            .onDisappear {
+                                // ビューが消えた時に購入状態を確認
+                                Task {
+                                    await syncPurchaseState()
+                                }
+                            }
                     } else {
-                        storeKitUnavailableMessage
+                        // iOS 17.0未満の場合はRevenueCatUIにフォールバック
+                        RevenueCatUI.PaywallView(
+                            offering: cached,
+                            displayCloseButton: true
+                        )
+                        .onRequestedDismissal {
+                            if !isSyncing {
+                                onDismissRequested?()
+                            }
+                        }
+                        .onPurchaseCompleted { transaction, customerInfo in
+                            handlePurchaseSuccess(transaction: transaction, customerInfo: customerInfo)
+                        }
+                        .onRestoreCompleted { customerInfo in
+                            handleRestoreSuccess(customerInfo: customerInfo)
+                        }
+                        .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
+                            if newValue {
+                                onPurchaseCompleted?()
+                            }
+                        }
+                        .onAppear {
+                            offering = cached
+                        }
+                        .alert("購入エラー", isPresented: $showErrorAlert) {
+                            Button("OK") {
+                                purchaseError = nil
+                                isSyncing = false
+                            }
+                            Button("閉じる") {
+                                purchaseError = nil
+                                isSyncing = false
+                                onDismissRequested?()
+                            }
+                        } message: {
+                            Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
+                        }
                     }
                 } else {
                     if #available(iOS 17.0, *) {
@@ -403,6 +494,111 @@ struct PaywallContainerView: View {
                 .foregroundStyle(.secondary)
         }
         .padding()
+    }
+    
+    @ViewBuilder
+    @available(iOS 17.0, *)
+    private func storeKitPaywallView(offering: Offering) -> some View {
+        SubscriptionStoreView.forOffering(offering)
+    }
+    
+    /// StoreKit購入完了時の処理
+    @available(iOS 17.0, *)
+    private func handleStoreKitPurchaseCompletion(product: Product, result: Result<Product.PurchaseResult, Error>) async {
+        switch result {
+        case .success(let purchaseResult):
+            switch purchaseResult {
+            case .success(let verification):
+                do {
+                    let transaction = try checkVerified(verification)
+                    print("[Paywall] StoreKit purchase completed: \(product.id)")
+                    
+                    // RevenueCatに購入を記録
+                    isSyncing = true
+                    defer { isSyncing = false }
+                    
+                    _ = try await Purchases.shared.recordPurchase(transaction)
+                    
+                    // RevenueCatの購入状態を同期
+                    _ = try await Purchases.shared.syncPurchases()
+                    
+                    // 最新のCustomerInfoを取得して状態を更新
+                    if let info = try? await Purchases.shared.customerInfo() {
+                        await MainActor.run {
+                            let subscription = SubscriptionInfo(info: info)
+                            appState.updateSubscriptionInfo(subscription)
+                            
+                            // 購入が完了している場合はコールバックを呼ぶ
+                            if subscription.isEntitled {
+                                onPurchaseCompleted?()
+                            }
+                        }
+                    }
+                    
+                    // Transactionを完了としてマーク
+                    await transaction.finish()
+                } catch {
+                    print("[Paywall] Transaction verification or sync failed: \(error.localizedDescription)")
+                    await MainActor.run {
+                        purchaseError = error
+                        showErrorAlert = true
+                    }
+                }
+            case .userCancelled:
+                print("[Paywall] StoreKit purchase cancelled by user")
+            case .pending:
+                print("[Paywall] StoreKit purchase pending (requires approval)")
+            @unknown default:
+                print("[Paywall] StoreKit purchase unknown result")
+            }
+        case .failure(let error):
+            print("[Paywall] StoreKit purchase failed: \(error.localizedDescription)")
+            await MainActor.run {
+                purchaseError = error
+                showErrorAlert = true
+            }
+        }
+    }
+    
+    /// StoreKit購入後の状態をRevenueCatに同期（onDisappear用）
+    @available(iOS 17.0, *)
+    private func syncPurchaseState() async {
+        // 既に同期中ならスキップ
+        guard !isSyncing else { return }
+        
+        isSyncing = true
+        defer { isSyncing = false }
+        
+        do {
+            // RevenueCatの購入状態を同期
+            _ = try await Purchases.shared.syncPurchases()
+            
+            // 最新のCustomerInfoを取得して状態を更新
+            if let info = try? await Purchases.shared.customerInfo() {
+                await MainActor.run {
+                    let subscription = SubscriptionInfo(info: info)
+                    appState.updateSubscriptionInfo(subscription)
+                    
+                    // 購入が完了している場合はコールバックを呼ぶ
+                    if subscription.isEntitled {
+                        onPurchaseCompleted?()
+                    }
+                }
+            }
+        } catch {
+            print("[Paywall] Sync error after StoreKit purchase: \(error.localizedDescription)")
+        }
+    }
+    
+    /// StoreKit 2のTransaction検証
+    @available(iOS 15.0, *)
+    private func checkVerified<T>(_ result: VerificationResult<T>) throws -> T {
+        switch result {
+        case .unverified(_, let error):
+            throw error
+        case .verified(let safe):
+            return safe
+        }
     }
 }
 

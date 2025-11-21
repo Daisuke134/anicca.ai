@@ -11,7 +11,9 @@ const RC_EVENTS = new Set([
 
 export async function applyRevenueCatEntitlement(userId, entitlements) {
   const entitlement = entitlements[BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID];
-  const isActive = entitlement?.is_active === true;
+  // v1 API対応: is_activeがない場合はexpires_dateから判定
+  const expiresDate = entitlement?.expires_date ? new Date(entitlement.expires_date) : null;
+  const isActive = entitlement?.is_active === true || (expiresDate && expiresDate > new Date());
   const isTrial = entitlement?.period_type === 'trial';
   const status = isActive ? (isTrial ? 'trialing' : 'active') : 'expired';
   const payload = {

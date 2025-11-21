@@ -1,7 +1,7 @@
 import logger from '../../utils/logger.js';
 import { BILLING_CONFIG } from '../../config/environment.js';
 import { fetchCustomerEntitlements } from './api.js';
-import { fetchSubscriptionRow, normalizePlanForResponse, getEntitlementState } from '../subscriptionStore.js';
+import { fetchSubscriptionRow, normalizePlanForResponse, getEntitlementState, ENTITLEMENT_SOURCE } from '../subscriptionStore.js';
 import { query } from '../../lib/db.js';
 
 const RC_EVENTS = new Set([
@@ -22,7 +22,7 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
     plan: isActive ? 'pro' : 'free',
     status,
     current_period_end: entitlement?.expires_date || null,
-    entitlement_source: 'revenuecat',
+    entitlement_source: ENTITLEMENT_SOURCE.REVENUECAT,
     revenuecat_entitlement_id: BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID,
     revenuecat_original_transaction_id: entitlement?.original_transaction_id || null,
     entitlement_payload: entitlement ? JSON.stringify(entitlement) : null,
@@ -31,7 +31,7 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
   await query(
     `insert into user_subscriptions
      (user_id, plan, status, current_period_end, entitlement_source, revenuecat_entitlement_id, revenuecat_original_transaction_id, entitlement_payload, updated_at)
-     values ($1,$2,$3,$4,'revenuecat',$5,$6,$7, timezone('utc', now()))
+     values ($1,$2,$3,$4,$5,$6,$7,$8, timezone('utc', now()))
      on conflict (user_id)
      do update set
        plan=excluded.plan,
@@ -44,7 +44,7 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
        updated_at=excluded.updated_at`,
     [
       payload.user_id, payload.plan, payload.status, payload.current_period_end,
-      payload.revenuecat_entitlement_id, payload.revenuecat_original_transaction_id, payload.entitlement_payload
+      payload.entitlement_source, payload.revenuecat_entitlement_id, payload.revenuecat_original_transaction_id, payload.entitlement_payload
     ]
   );
 }

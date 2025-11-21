@@ -99,7 +99,11 @@ final class SubscriptionManager: NSObject {
     
     func syncNow() async {
         // 1) 端末側の領収書同期
-        _ = try? await Purchases.shared.syncPurchases()
+        do {
+            _ = try await Purchases.shared.syncPurchases()
+        } catch {
+            print("[SubscriptionManager] syncPurchases failed: \(error)")
+        }
         
         // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
         guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }

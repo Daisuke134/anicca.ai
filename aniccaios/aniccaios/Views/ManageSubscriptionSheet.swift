@@ -15,6 +15,14 @@ struct ManageSubscriptionSheet: View {
         NavigationView {
             ScrollView {
                 VStack(spacing: 16) {
+                    // Environment status warning
+                    if appState.purchaseEnvironmentStatus == .accountMissing {
+                        Label(String(localized: "settings_subscription_account_missing"),
+                              systemImage: "exclamationmark.triangle.fill")
+                            .foregroundStyle(.orange)
+                            .padding()
+                    }
+                    
                     // Current plan section
                     if appState.subscriptionInfo.plan != .free {
                         currentPlanSection

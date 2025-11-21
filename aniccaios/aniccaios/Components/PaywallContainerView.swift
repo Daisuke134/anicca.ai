@@ -18,7 +18,8 @@ struct PaywallContainerView: View {
 
     var body: some View {
         Group {
-            if let offering {
+            // 【修正】商品パッケージが空の場合は表示しない（0除算クラッシュ回避）
+            if let offering, !offering.availablePackages.isEmpty {
                 if #available(iOS 17.0, *) {
                     RevenueCatUI.PaywallView(
                         offering: offering,
@@ -89,7 +90,8 @@ struct PaywallContainerView: View {
                         Text(purchaseError?.localizedDescription ?? "購入処理中にエラーが発生しました。")
                     }
                 }
-            } else if let cached = appState.cachedOffering {
+            // 【修正】キャッシュ利用時も同様にパッケージ空チェックを追加
+            } else if let cached = appState.cachedOffering, !cached.availablePackages.isEmpty {
                 // Use cached offering immediately while loading fresh data
                 if #available(iOS 17.0, *) {
                     RevenueCatUI.PaywallView(
@@ -207,21 +209,36 @@ struct PaywallContainerView: View {
         defer { isLoading = false }
         do {
             let offerings = try await Purchases.shared.offerings()
-            if let resolvedOffering = offerings.offering(identifier: AppConfig.revenueCatPaywallId) ?? offerings.current {
-                offering = resolvedOffering
-                fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
-                showStoreKitFallback = false
-            } else {
+            guard let resolvedOffering = offerings
+                .offering(identifier: AppConfig.revenueCatPaywallId) ?? offerings.current,
+                  resolvedOffering.hasPurchasablePackages,
+                  !resolvedOffering.containsEmptyCarousel else {
                 offering = nil
                 fallbackProductIDs = offerings.current?.availablePackages.map { $0.storeProduct.productIdentifier } ?? []
                 showStoreKitFallback = true
+                appState.updatePurchaseEnvironment(.accountMissing)
+                return
             }
+            appState.updatePurchaseEnvironment(.ready)
+            offering = resolvedOffering
+            fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
+            showStoreKitFallback = false
             loadError = nil
         } catch {
+            handleOfferingError(error)
             offering = nil
             fallbackProductIDs = cachedProductIDs()
             loadError = error
             showStoreKitFallback = true
+        }
+    }
+    
+    private func handleOfferingError(_ error: Error) {
+        guard let nsError = error as NSError? else { return }
+        if nsError.domain == "ASDErrorDomain", nsError.code == 509 {
+            appState.updatePurchaseEnvironment(.accountMissing)
+        } else if nsError.domain == "RevenueCat.BackendError" {
+            appState.updatePurchaseEnvironment(.accountMissing)
         }
     }
     

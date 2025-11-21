@@ -23,7 +23,7 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
     entitlement_source: 'revenuecat',
     revenuecat_entitlement_id: BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID,
     revenuecat_original_transaction_id: entitlement?.original_transaction_id || null,
-    entitlement_payload: entitlement || null,
+    entitlement_payload: entitlement ? JSON.stringify(entitlement) : null,
     updated_at: new Date().toISOString()
   };
   await query(

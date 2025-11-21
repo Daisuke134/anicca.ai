@@ -24,6 +24,7 @@ struct PaywallStepView: View {
         .task {
             // 画面表示時に購入状態を確認
             await SubscriptionManager.shared.syncNow()
+            // 現在サブスクライブしているユーザー（isEntitled == true）は自動で次へ進む
             if appState.subscriptionInfo.isEntitled && !hasCompletedPurchase {
                 hasCompletedPurchase = true
                 appState.markOnboardingComplete()

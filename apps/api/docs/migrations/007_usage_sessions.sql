@@ -10,6 +10,7 @@ create table if not exists public.usage_sessions (
   updated_at timestamptz not null default timezone('utc', now())
 );
 
-create index if not exists idx_usage_sessions_user_month
-  on public.usage_sessions (user_id, date_trunc('month', started_at));
+drop index if exists idx_usage_sessions_user_month;
+create index if not exists idx_usage_sessions_user_started_at
+  on public.usage_sessions (user_id, started_at);
 

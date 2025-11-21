@@ -1,0 +1,9 @@
+/* Microphone permission description */
+"NSMicrophoneUsageDescription" = "Anicca needs the microphone to talk with you in real time.";
+
+/* Camera permission description */
+"NSCameraUsageDescription" = "The WebRTC library references camera APIs, but this app does not use the camera.";
+
+/* Notification permission description */
+"NSUserNotificationsUsageDescription" = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
+

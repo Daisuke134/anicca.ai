@@ -41,7 +41,7 @@
 	<key>NSMicrophoneUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSMicrophoneUsageDescription)</string>
 	<key>NSCameraUsageDescription</key>
-	<string>The WebRTC library references camera APIs, but this app does not use the camera.</string>
+	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
 	<key>UIBackgroundModes</key>

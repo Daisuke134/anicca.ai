@@ -107,10 +107,10 @@ struct NotificationPermissionStepView: View {
                 notificationGranted = granted
                 notificationDenied = !granted
                 isRequesting = false
-                if granted {
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                        next()
-                    }
+                // 「続ける」ボタンを押した意図を尊重し、許可・拒否に関わらず次に進む
+                // ユーザーは「あとで設定する」ボタンでスキップも可能
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    next()
                 }
             }
             await refreshAuthorizationState(autoAdvance: false)

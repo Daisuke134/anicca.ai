@@ -508,16 +508,16 @@ struct PaywallContainerView: View {
         switch result {
         case .success(let purchaseResult):
             switch purchaseResult {
-            case .success(let verification):
+            case .success(let transaction):
                 do {
-                    let transaction = try checkVerified(verification: verification)
+                    // transactionは既にStoreKit.Transaction型
                     print("[Paywall] StoreKit purchase completed: \(product.id)")
                     
-                    // RevenueCatに購入を記録
+                    // RevenueCatに購入を記録（Product.PurchaseResultを渡す）
                     isSyncing = true
                     defer { isSyncing = false }
                     
-                    _ = try await Purchases.shared.recordPurchase(transaction)
+                    _ = try await Purchases.shared.recordPurchase(purchaseResult)
                     
                     // RevenueCatの購入状態を同期
                     _ = try await Purchases.shared.syncPurchases()
@@ -590,16 +590,6 @@ struct PaywallContainerView: View {
         }
     }
     
-    /// StoreKit 2のTransaction検証
-    @available(iOS 15.0, *)
-    private func checkVerified(verification: VerificationResult<Transaction>) throws -> Transaction {
-        switch verification {
-        case .unverified(_, let error):
-            throw error
-        case .verified(let safe):
-            return safe
-        }
-    }
 }
 
 

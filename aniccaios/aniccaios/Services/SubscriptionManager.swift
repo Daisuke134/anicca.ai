@@ -98,24 +98,44 @@ final class SubscriptionManager: NSObject {
     }
     
     func syncNow() async {
-        // 1) 端末側の領収書同期
-        _ = try? await Purchases.shared.syncPurchases()
-        
-        // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
-        
-        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("billing/revenuecat/sync"))
-        request.httpMethod = "POST"
-        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
-        
-        _ = try? await URLSession.shared.data(for: request)
-        
-        // 3) 最新Entitlementを取得
-        var subscription = AppState.shared.subscriptionInfo
-        await syncUsageInfo(&subscription)
-        await MainActor.run {
-            AppState.shared.updateSubscriptionInfo(subscription)
+        // タイムアウト付きで同期処理を実行
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask {
+                // 1) 端末側の領収書同期
+                _ = try? await Purchases.shared.syncPurchases()
+                
+                // 2) サーバにRC再取得を要求（DB→/mobile/entitlement反映）
+                guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+                
+                var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("billing/revenuecat/sync"))
+                request.httpMethod = "POST"
+                request.timeoutInterval = 10.0 // 10秒でタイムアウト
+                request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+                request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+                
+                do {
+                    _ = try await URLSession.shared.data(for: request)
+                } catch {
+                    print("[SubscriptionManager] Sync error: \(error.localizedDescription)")
+                    // エラーでも続行（オフライン時など）
+                }
+                
+                // 3) 最新Entitlementを取得
+                var subscription = AppState.shared.subscriptionInfo
+                await syncUsageInfo(&subscription)
+                await MainActor.run {
+                    AppState.shared.updateSubscriptionInfo(subscription)
+                }
+            }
+            
+            group.addTask {
+                // 15秒でタイムアウト
+                try? await Task.sleep(nanoseconds: 15_000_000_000)
+            }
+            
+            // どちらかが完了したら終了
+            _ = await group.next()
+            group.cancelAll()
         }
     }
 }

@@ -175,6 +175,12 @@ struct PaywallContainerView: View {
             }
         }
         .task {
+            // 現在サブスクライブしているユーザーにはPaywallを表示しない
+            if appState.subscriptionInfo.isEntitled {
+                onDismissRequested?()
+                return
+            }
+            
             if offering == nil {
                 await loadOffering()
             }

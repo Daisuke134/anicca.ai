@@ -70,6 +70,7 @@ struct OnboardingFlowView: View {
                 Task {
                     await SubscriptionManager.shared.syncNow()
                     await MainActor.run {
+                        // 現在サブスクライブしているユーザー（isEntitled == true）は完了画面へ、それ以外はPaywallへ
                         step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
                         appState.setOnboardingStep(step)
                     }
@@ -81,6 +82,7 @@ struct OnboardingFlowView: View {
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
+                // 現在サブスクライブしているユーザー（isEntitled == true）は完了画面へ、それ以外はPaywallへ
                 step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
             }
         case .paywall:

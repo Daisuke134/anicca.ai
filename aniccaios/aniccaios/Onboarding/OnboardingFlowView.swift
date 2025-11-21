@@ -66,7 +66,15 @@ struct OnboardingFlowView: View {
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
-                step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
+                // 購入状態を再確認してから分岐
+                Task {
+                    await SubscriptionManager.shared.syncNow()
+                    await MainActor.run {
+                        step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
+                        appState.setOnboardingStep(step)
+                    }
+                }
+                return
             }
         case .habitWakeLocation, .habitSleepLocation, .habitTrainingFocus:
             // 追加フォローアップが無ければ課金状態で分岐

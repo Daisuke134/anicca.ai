@@ -143,15 +143,20 @@ struct PaywallContainerView: View {
             }
         }
         .task {
-            if offering == nil {
-                await loadOffering()
-            }
-            // 購入状態を確実に同期
+            // 購入状態を確実に同期してから判定
             if let info = try? await Purchases.shared.syncPurchases() {
                 await MainActor.run {
                     let subscription = SubscriptionInfo(info: info)
                     appState.updateSubscriptionInfo(subscription)
                 }
+            }
+            if offering == nil {
+                await loadOffering()
+            }
+            // 同期後に再度isEntitledを確認
+            if appState.subscriptionInfo.isEntitled {
+                onPurchaseCompleted?()
+                onDismissRequested?()
             }
         }
         .onReceive(appState.$cachedOffering) { cached in

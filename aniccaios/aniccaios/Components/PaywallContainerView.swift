@@ -218,13 +218,12 @@ struct PaywallContainerView: View {
                 return
             }
             
-            // より厳密なチェック: パッケージが有効か確認
-            let validPackages = resolvedOffering.availablePackages.filter { $0.storeProduct != nil }
-            guard !validPackages.isEmpty,
+            // パッケージが空でないか確認
+            guard !resolvedOffering.availablePackages.isEmpty,
                   resolvedOffering.hasPurchasablePackages,
                   !resolvedOffering.containsEmptyCarousel else {
                 offering = nil
-                fallbackProductIDs = resolvedOffering.availablePackages.compactMap { $0.storeProduct?.productIdentifier }
+                fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
                 showStoreKitFallback = true
                 appState.updatePurchaseEnvironment(.accountMissing)
                 return
@@ -232,7 +231,7 @@ struct PaywallContainerView: View {
             
             appState.updatePurchaseEnvironment(.ready)
             offering = resolvedOffering
-            fallbackProductIDs = validPackages.map { $0.storeProduct.productIdentifier }
+            fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
             showStoreKitFallback = false
             loadError = nil
         } catch {

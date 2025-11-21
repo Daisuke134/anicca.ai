@@ -249,16 +249,28 @@ export async function getEntitlementState(userId) {
   
   // RevenueCatのentitlement_payloadから直接isActiveを確認
   if (subscription?.entitlement_source === 'revenuecat') {
-    const payload = subscription?.entitlement_payload;
+    // entitlement_payloadが文字列の場合はパース、オブジェクトの場合はそのまま使用
+    let payload = subscription?.entitlement_payload;
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload);
+      } catch (e) {
+        payload = null;
+      }
+    }
+    
     if (payload && typeof payload === 'object') {
       const isActive = payload.is_active === true;
       const expiresDate = payload.expires_date ? new Date(payload.expires_date) : null;
-      const isExpired = expiresDate ? expiresDate <= new Date() : true;
+      const isExpired = expiresDate ? expiresDate <= new Date() : false;
       
       if (isActive && !isExpired) {
-        statusInfo = { plan: 'pro', status: payload.period_type === 'trial' ? 'trialing' : 'active' };
+        statusInfo = { 
+          plan: 'pro', 
+          status: payload.period_type === 'trial' ? 'trialing' : 'active' 
+        };
       } else if (expiresDate && expiresDate > new Date()) {
-        // 有効期限内でもisActiveがfalseの場合はgrace期間として扱う
+        // 有効期限内だがisActiveがfalse（grace期間）
         statusInfo = { plan: 'pro', status: 'grace_period' };
       } else {
         statusInfo = { plan: 'free', status: 'expired' };

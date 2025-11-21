@@ -151,6 +151,12 @@ extension SubscriptionManager: PurchasesDelegate {
             }
         }
     }
+    
+    // エラー発生時の処理（オプショナル）
+    func purchases(_ purchases: Purchases, failedToUpdate customerInfo: CustomerInfo, with error: Error) {
+        print("[RevenueCat] Failed to update customer info: \(error.localizedDescription)")
+        // エラーをログに記録するが、UIは固めない
+    }
 }
 
 extension SubscriptionInfo {

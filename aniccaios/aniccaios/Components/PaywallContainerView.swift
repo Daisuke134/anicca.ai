@@ -13,8 +13,8 @@ struct PaywallContainerView: View {
     @State private var showStoreKitFallback = false
     @State private var fallbackProductIDs: [String] = []
     @State private var purchaseError: Error?
-    @State private var isPurchaseInProgress = false
     @State private var showErrorAlert = false
+    @State private var isSyncing = false
 
     var body: some View {
         Group {
@@ -25,25 +25,16 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        // 購入中でも閉じられるようにする
-                        if !isPurchaseInProgress {
+                        // 同期中でも閉じられるようにする
+                        if !isSyncing {
                             onDismissRequested?()
                         }
                     }
                     .onPurchaseCompleted { _, customerInfo in
                         handlePurchaseSuccess(customerInfo: customerInfo)
                     }
-                    .onPurchaseError { error in
-                        handlePurchaseError(error: error)
-                    }
-                    .onPurchaseInProgress { inProgress in
-                        isPurchaseInProgress = inProgress
-                    }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
-                    }
-                    .onRestoreError { error in
-                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
                         if newValue {
@@ -53,11 +44,11 @@ struct PaywallContainerView: View {
                     .alert("購入エラー", isPresented: $showErrorAlert) {
                         Button("OK") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                         }
                         Button("閉じる") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                             onDismissRequested?()
                         }
                     } message: {
@@ -69,24 +60,15 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        if !isPurchaseInProgress {
+                        if !isSyncing {
                             onDismissRequested?()
                         }
                     }
                     .onPurchaseCompleted { _, customerInfo in
                         handlePurchaseSuccess(customerInfo: customerInfo)
                     }
-                    .onPurchaseError { error in
-                        handlePurchaseError(error: error)
-                    }
-                    .onPurchaseInProgress { inProgress in
-                        isPurchaseInProgress = inProgress
-                    }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
-                    }
-                    .onRestoreError { error in
-                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
                         if newValue {
@@ -96,11 +78,11 @@ struct PaywallContainerView: View {
                     .alert("購入エラー", isPresented: $showErrorAlert) {
                         Button("OK") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                         }
                         Button("閉じる") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                             onDismissRequested?()
                         }
                     } message: {
@@ -115,24 +97,15 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        if !isPurchaseInProgress {
+                        if !isSyncing {
                             onDismissRequested?()
                         }
                     }
                     .onPurchaseCompleted { _, customerInfo in
                         handlePurchaseSuccess(customerInfo: customerInfo)
                     }
-                    .onPurchaseError { error in
-                        handlePurchaseError(error: error)
-                    }
-                    .onPurchaseInProgress { inProgress in
-                        isPurchaseInProgress = inProgress
-                    }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
-                    }
-                    .onRestoreError { error in
-                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { _, newValue in
                         if newValue {
@@ -145,11 +118,11 @@ struct PaywallContainerView: View {
                     .alert("購入エラー", isPresented: $showErrorAlert) {
                         Button("OK") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                         }
                         Button("閉じる") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                             onDismissRequested?()
                         }
                     } message: {
@@ -161,24 +134,15 @@ struct PaywallContainerView: View {
                         displayCloseButton: true
                     )
                     .onRequestedDismissal {
-                        if !isPurchaseInProgress {
+                        if !isSyncing {
                             onDismissRequested?()
                         }
                     }
                     .onPurchaseCompleted { _, customerInfo in
                         handlePurchaseSuccess(customerInfo: customerInfo)
                     }
-                    .onPurchaseError { error in
-                        handlePurchaseError(error: error)
-                    }
-                    .onPurchaseInProgress { inProgress in
-                        isPurchaseInProgress = inProgress
-                    }
                     .onRestoreCompleted { customerInfo in
                         handle(customerInfo: customerInfo)
-                    }
-                    .onRestoreError { error in
-                        handleRestoreError(error: error)
                     }
                     .onChange(of: appState.subscriptionInfo.isEntitled) { newValue in
                         if newValue {
@@ -191,11 +155,11 @@ struct PaywallContainerView: View {
                     .alert("購入エラー", isPresented: $showErrorAlert) {
                         Button("OK") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                         }
                         Button("閉じる") {
                             purchaseError = nil
-                            isPurchaseInProgress = false
+                            isSyncing = false
                             onDismissRequested?()
                         }
                     } message: {
@@ -267,11 +231,12 @@ struct PaywallContainerView: View {
 
     private func handlePurchaseSuccess(customerInfo: CustomerInfo) {
         // 購入成功時の処理
-        isPurchaseInProgress = false
+        isSyncing = true
         purchaseError = nil
         
         guard customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true else {
             // エンタイトルが有効でない場合
+            isSyncing = false
             purchaseError = NSError(domain: "PurchaseError", code: -1, userInfo: [NSLocalizedDescriptionKey: "購入は完了しましたが、サブスクリプションが有効化されていません。"])
             showErrorAlert = true
             return
@@ -284,26 +249,10 @@ struct PaywallContainerView: View {
         Task {
             await syncWithTimeout()
             await MainActor.run {
+                isSyncing = false
                 onPurchaseCompleted?()
             }
         }
-    }
-    
-    private func handlePurchaseError(error: Error) {
-        // 購入エラー時の処理
-        isPurchaseInProgress = false
-        purchaseError = error
-        showErrorAlert = true
-        
-        print("[Paywall] Purchase error: \(error.localizedDescription)")
-    }
-    
-    private func handleRestoreError(error: Error) {
-        // リストアエラー時の処理
-        purchaseError = error
-        showErrorAlert = true
-        
-        print("[Paywall] Restore error: \(error.localizedDescription)")
     }
     
     private func syncWithTimeout() async {
@@ -330,7 +279,11 @@ struct PaywallContainerView: View {
         appState.updateSubscriptionInfo(info)
         // リストア時もタイムアウト付きで同期
         Task {
+            isSyncing = true
             await syncWithTimeout()
+            await MainActor.run {
+                isSyncing = false
+            }
         }
     }
 

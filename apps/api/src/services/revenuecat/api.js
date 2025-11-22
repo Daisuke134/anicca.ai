@@ -6,47 +6,61 @@ import logger from '../../utils/logger.js';
 const BASE_URL = 'https://api.revenuecat.com/v2';
 const PROJECT_ID = BILLING_CONFIG.REVENUECAT_PROJECT_ID;
 
-function parseEntitlements(json) {
-  // V2 API Response: { active_entitlements: { object: "list", items: [...] }, ... }
+function parseActiveEntitlements(json) {
+  // 専用エンドポイントのレスポンス形式: { object: "list", items: [...] }
   // CustomerEntitlementスキーマ: { object: "customer.active_entitlement", entitlement_id: string, expires_at: integer (ms) }
-  if (json?.active_entitlements?.items && Array.isArray(json.active_entitlements.items)) {
+  if (json?.object === 'list' && Array.isArray(json.items)) {
     const result = {};
     const now = Date.now(); // ミリ秒単位の現在時刻
     
-    for (const item of json.active_entitlements.items) {
-      // 必須フィールドの検証
-      if (!item.entitlement_id || item.object !== 'customer.active_entitlement') {
-        logger.warn('[RevenueCat] Invalid entitlement item format', { item });
+    logger.debug('[RevenueCat] Parsing active entitlements', { 
+      itemsCount: json.items.length,
+      firstItem: json.items[0] // デバッグ用
+    });
+    
+    for (const item of json.items) {
+      // entitlement_id が必須
+      if (!item.entitlement_id) {
+        logger.warn('[RevenueCat] Invalid entitlement item: missing entitlement_id', { item });
         continue;
+      }
+      
+      // object フィールドのチェック（存在する場合のみ）
+      if (item.object && item.object !== 'customer.active_entitlement') {
+        logger.warn('[RevenueCat] Unexpected object type', { 
+          expected: 'customer.active_entitlement',
+          actual: item.object,
+          entitlement_id: item.entitlement_id
+        });
+        // 警告のみで続行
       }
       
       const entitlementId = item.entitlement_id;
       const expiresAt = item.expires_at; // ミリ秒単位のタイムスタンプ（nullable）
       
-      // expires_atがnullの場合は有効期限なし（ライフタイム）
-      // expires_atが現在時刻より後なら有効
+      // 専用エンドポイントは「アクティブな」エンタイトルメントのみを返すため、
+      // expires_at が現在時刻より後であることを確認（念のため）
       const isActive = expiresAt == null || expiresAt > now;
       
       result[entitlementId] = {
         entitlement_id: entitlementId,
-        is_active: isActive, // expires_atから計算
-        expires_at: expiresAt, // ミリ秒単位のタイムスタンプ
-        expires_date: expiresAt ? new Date(expiresAt).toISOString() : null, // ISO文字列に変換
-        // 注意: V2 APIのCustomerEntitlementには以下のフィールドは存在しない
-        // product_identifier, original_transaction_id, period_type は別エンドポイントから取得が必要
+        is_active: isActive,
+        expires_at: expiresAt,
+        expires_date: expiresAt ? new Date(expiresAt).toISOString() : null,
       };
     }
     
-    logger.info('[RevenueCat] Parsed V2 entitlements', { 
+    logger.info('[RevenueCat] Parsed active entitlements', { 
       count: Object.keys(result).length,
       entitlementIds: Object.keys(result)
     });
     return result;
   }
   
-  logger.warn('[RevenueCat] Unexpected V2 response format or missing active_entitlements', { 
-    hasActiveEntitlements: !!json?.active_entitlements,
-    hasItems: !!json?.active_entitlements?.items 
+  logger.warn('[RevenueCat] Unexpected response format', { 
+    object: json?.object,
+    hasItems: !!json?.items,
+    itemsCount: json?.items?.length ?? 0
   });
   return {};
 }
@@ -63,15 +77,16 @@ export async function fetchCustomerEntitlements(appUserId) {
     return {};
   }
   
-  // V2 Endpoint: GET /v2/projects/{project_id}/customers/{customer_id}
-  const url = `${BASE_URL}/projects/${projectId}/customers/${encodeURIComponent(appUserId)}`;
+  // 修正: 専用の active_entitlements エンドポイントを使用
+  // GET /v2/projects/{project_id}/customers/{customer_id}/active_entitlements
+  const url = `${BASE_URL}/projects/${projectId}/customers/${encodeURIComponent(appUserId)}/active_entitlements`;
   
-  logger.info('[RevenueCat] Fetching entitlements (V2)', { appUserId, url });
+  logger.info('[RevenueCat] Fetching active entitlements (V2)', { appUserId, url });
   
   try {
     const resp = await fetch(url, {
       headers: {
-        Authorization: `Bearer ${key}`, // V2 APIはBearer必須
+        Authorization: `Bearer ${key}`,
         Accept: 'application/json'
       }
     });
@@ -91,12 +106,14 @@ export async function fetchCustomerEntitlements(appUserId) {
     }
     
     const json = await resp.json();
-    logger.debug('[RevenueCat] API response (V2)', { 
+    logger.debug('[RevenueCat] API response (V2 active_entitlements)', { 
       appUserId, 
-      hasActiveEntitlements: !!json?.active_entitlements 
+      object: json.object,
+      itemsCount: json.items?.length ?? 0
     });
     
-    return parseEntitlements(json);
+    // 専用エンドポイントのレスポンス形式: { object: "list", items: [...] }
+    return parseActiveEntitlements(json);
     
   } catch (err) {
     logger.error('[RevenueCat] Network/Parse error', { 

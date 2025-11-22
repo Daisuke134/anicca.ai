@@ -79,6 +79,17 @@ struct PaywallContainerView: View {
     private func loadOffering() async {
         isLoading = true
         defer { isLoading = false }
+        
+        // キャッシュを先にチェック（ローディング速度改善）
+        if let cached = appState.cachedOffering, cached.isSafeToDisplay {
+            offering = cached
+            fallbackProductIDs = cached.availablePackages.map { $0.storeProduct.productIdentifier }
+            appState.updatePurchaseEnvironment(.ready)
+            loadError = nil
+            return
+        }
+        
+        // キャッシュがない場合のみAPIを呼び出す
         do {
             let offerings = try await Purchases.shared.offerings()
             guard let resolvedOffering = offerings
@@ -101,6 +112,8 @@ struct PaywallContainerView: View {
             
             appState.updatePurchaseEnvironment(.ready)
             offering = resolvedOffering
+            // キャッシュを更新
+            appState.updateOffering(resolvedOffering)
             fallbackProductIDs = resolvedOffering.availablePackages.map { $0.storeProduct.productIdentifier }
             loadError = nil
         } catch {
@@ -188,26 +201,52 @@ struct PaywallContainerView: View {
                         await transaction.finish()
                         print("[Paywall] Transaction finished")
                         
-                        // 購入状態を同期して完了を確認（リトライ付き）
+                        // 重要: RevenueCat側でentitlementが反映されるまで待機（3秒）
+                        // recordPurchase()の後、RevenueCat側の処理が完了するまで時間がかかる
+                        try? await Task.sleep(nanoseconds: 3_000_000_000)
+                        print("[Paywall] Waited 3 seconds for RevenueCat processing")
+                        
+                        // 購入状態を同期して完了を確認（リトライ付き、待機時間を増やす）
                         var retryCount = 0
-                        let maxRetries = 3
+                        let maxRetries = 5  // 3回から5回に増やす
                         var purchaseCompleted = false
                         
                         while retryCount < maxRetries && !purchaseCompleted {
-                            await checkAndNotifyPurchaseCompletion()
+                            // RevenueCat側の購入を同期
+                            do {
+                                _ = try await Purchases.shared.syncPurchases()
+                                print("[Paywall] SyncPurchases completed (attempt \(retryCount + 1))")
+                            } catch {
+                                print("[Paywall] SyncPurchases error: \(error.localizedDescription)")
+                            }
+                            
+                            // サーバー側も同期（重要: これがないとDBに反映されない）
+                            await SubscriptionManager.shared.syncNow()
                             
                             // 購入完了を確認
                             if let info = try? await Purchases.shared.customerInfo() {
                                 let subscription = SubscriptionInfo(info: info)
+                                await MainActor.run {
+                                    appState.updateSubscriptionInfo(subscription)
+                                }
+                                
+                                print("[Paywall] Purchase completion check: isEntitled=\(subscription.isEntitled), plan=\(subscription.plan), status=\(subscription.status)")
+                                
                                 if subscription.isEntitled {
                                     purchaseCompleted = true
                                     print("[Paywall] Purchase verified: isEntitled=true")
+                                    await MainActor.run {
+                                        if !hasCompletedPurchase {
+                                            hasCompletedPurchase = true
+                                            onPurchaseCompleted?()
+                                        }
+                                    }
                                 } else {
                                     retryCount += 1
                                     if retryCount < maxRetries {
                                         print("[Paywall] Purchase not yet entitled, retrying... (\(retryCount)/\(maxRetries))")
-                                        // 1秒待ってからリトライ
-                                        try? await Task.sleep(nanoseconds: 1_000_000_000)
+                                        // 2秒待ってからリトライ（1秒から2秒に増やす）
+                                        try? await Task.sleep(nanoseconds: 2_000_000_000)
                                     }
                                 }
                             }

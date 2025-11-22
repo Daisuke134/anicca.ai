@@ -13,6 +13,8 @@ function parseEntitlements(json) {
   // v2 shape: { active_entitlements: { items: [...] } }
   if (json?.active_entitlements?.items) {
     const result = {};
+    const now = Date.now(); // 現在時刻を取得（ミリ秒）
+    
     for (const item of json.active_entitlements.items) {
       const entitlementId = item.entitlement_id;
       if (entitlementId) {
@@ -20,9 +22,13 @@ function parseEntitlements(json) {
         const expiresAt = item.expires_at;
         const expiresDate = expiresAt ? new Date(expiresAt).toISOString() : null;
         
+        // 重要: active_entitlementsに含まれていても、期限切れの場合は無効として扱う
+        // RevenueCat API v2は「最後に確認した時点で有効だったエンタイトルメント」を返すことがある
+        const isExpired = expiresAt != null && expiresAt < now;
+        
         result[entitlementId] = {
           entitlement_id: entitlementId,
-          is_active: true, // active_entitlementsに含まれている = 有効
+          is_active: !isExpired, // 期限切れの場合はfalse
           expires_date: expiresDate,
           expires_at: expiresAt, // タイムスタンプも保持（ミリ秒）
           period_type: item.period_type || null,

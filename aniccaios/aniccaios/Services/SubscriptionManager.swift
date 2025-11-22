@@ -17,7 +17,7 @@ final class SubscriptionManager: NSObject {
         Purchases.configure(
             with: Configuration.Builder(withAPIKey: apiKey)
                 .with(entitlementVerificationMode: .informational)
-                .with(storeKitVersion: .storeKit2)
+                .with(purchasesAreCompletedBy: .myApp, storeKitVersion: .storeKit2)
                 .build()
         )
         Purchases.shared.delegate = self

@@ -348,17 +348,3 @@
 
 - 年額は VC に 0 を設定できないため **Associated products へは紐付けない**。毎月付与はサーバジョブが実施。
 - VC の Code（`REVENUECAT_VC_CODE`）は RC ダッシュボードの Code（`anicca`）と厳密一致。
-
-### WebRTC を `WebRTC.xcframework` に置換（必須）
-
-1) 既存の `WebRTC.framework` を Target から完全削除（Link/Embed から両方除去）
-
-2) `aniccaios/scripts/setup-webrtc.sh` で取得した `WebRTC.xcframework` を
-
-   Target > Frameworks, Libraries, and Embedded Content に追加し、Embed を「Embed & Sign」
-
-3) Production 構成は本リポの `Configs/Production.xcconfig` により検索パスが自動解決
-
-4) 派生データを全削除してクリーンビルド（下記コマンド参照）
-
-これで `RTCMacros.h not found` / `could not build Objective‑C module 'WebRTC'` は解消します

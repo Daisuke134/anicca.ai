@@ -10,6 +10,7 @@ struct ManageSubscriptionSheet: View {
     @State private var isLoading = true
     @State private var isPurchasing = false
     @State private var purchaseError: Error?
+    @State private var showingCustomerCenter = false
     
     var body: some View {
         NavigationView {
@@ -63,6 +64,35 @@ struct ManageSubscriptionSheet: View {
         }
         .task {
             await loadOffering()
+        }
+        .sheet(isPresented: $showingCustomerCenter) {
+            RevenueCatUI.CustomerCenterView()
+                .onCustomerCenterRestoreCompleted { customerInfo in
+                    Task {
+                        let subscription = SubscriptionInfo(info: customerInfo)
+                        await MainActor.run {
+                            appState.updateSubscriptionInfo(subscription)
+                        }
+                    }
+                }
+                .onCustomerCenterShowingManageSubscriptions {
+                    // iOS 15.0以上では、AppStore.showManageSubscriptions(in:)が呼ばれ、
+                    // アプリ内シートとして表示される（App Storeへのリダイレクトではない）
+                    // サンドボックス環境でも動作する（サンドボックステストアカウントでログインが必要）
+                    Task {
+                        do {
+                            try await Purchases.shared.showManageSubscriptions()
+                        } catch {
+                            print("[ManageSubscriptionSheet] Failed to show manage subscriptions: \(error)")
+                            // フォールバック: managementURLを開く
+                            if let managementURL = appState.subscriptionInfo.managementURL {
+                                await MainActor.run {
+                                    UIApplication.shared.open(managementURL)
+                                }
+                            }
+                        }
+                    }
+                }
         }
     }
     
@@ -165,17 +195,15 @@ struct ManageSubscriptionSheet: View {
             .buttonStyle(.bordered)
             .disabled(isPurchasing)
             
-            // Manage on App Store
-            if let managementURL = appState.subscriptionInfo.managementURL {
-                Button {
-                    UIApplication.shared.open(managementURL)
-                } label: {
-                    Text("settings_subscription_manage_app_store")
-                        .font(.subheadline)
-                        .frame(maxWidth: .infinity)
-                }
-                .buttonStyle(.bordered)
+            // Customer Center（アプリ内でキャンセル処理が完結）
+            Button {
+                showingCustomerCenter = true
+            } label: {
+                Text("settings_subscription_manage")
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity)
             }
+            .buttonStyle(.bordered)
             
             // Contact support
             Link(destination: URL(string: "https://aniccaai.com/support")!) {
@@ -183,18 +211,6 @@ struct ManageSubscriptionSheet: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
-            }
-            
-            // Cancel subscription (only if subscribed)
-            if appState.subscriptionInfo.plan != .free,
-               let managementURL = appState.subscriptionInfo.managementURL {
-                Button {
-                    UIApplication.shared.open(managementURL)
-                } label: {
-                    Text("settings_subscription_cancel")
-                        .font(.footnote)
-                        .foregroundStyle(.red)
-                }
             }
         }
     }

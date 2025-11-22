@@ -430,6 +430,15 @@ final class AppState: ObservableObject {
     
     // MARK: - Subscription Info
     
+    var shouldShowPaywall: Bool {
+        !subscriptionInfo.isEntitled && !subscriptionHold
+    }
+    
+    func clearSubscriptionCache() {
+        subscriptionInfo = .free
+        updateOffering(nil)
+    }
+    
     func updateSubscriptionInfo(_ info: SubscriptionInfo) {
         subscriptionInfo = info
         if let data = try? JSONEncoder().encode(info) {

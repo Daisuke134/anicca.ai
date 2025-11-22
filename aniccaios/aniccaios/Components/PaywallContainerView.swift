@@ -46,12 +46,15 @@ struct PaywallContainerView: View {
             }
         }
         .task {
+            guard appState.shouldShowPaywall else {
+                onDismissRequested?()
+                return
+            }
             // 重要: 表示前に最新のエンタイトルメント状態を確認
             await checkEntitlementAndLoadOffering()
         }
-        .onChange(of: appState.subscriptionInfo.isEntitled) { _, isEntitled in
-            // エンタイトルメント状態が変更されたら即座に閉じる
-            if isEntitled {
+        .onChange(of: appState.shouldShowPaywall) { _, shouldShow in
+            if !shouldShow {
                 onDismissRequested?()
             }
         }

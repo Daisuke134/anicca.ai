@@ -15,7 +15,8 @@ struct SubscriptionInfo: Codable, Equatable {
     var monthlyUsageCount: Int?
     var willRenew: Bool?
     
-    var isEntitled: Bool { plan == .pro && status != "expired" }
+    var isEntitled: Bool { plan != .free && status != "expired" }
+    var shouldShowPaywall: Bool { !isEntitled }
     
     static let free = SubscriptionInfo(
         plan: .free,

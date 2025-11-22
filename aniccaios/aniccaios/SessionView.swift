@@ -70,7 +70,10 @@ struct SessionView: View {
                 }
             )
         }
-        .sheet(isPresented: $isShowingPaywall) {
+        .sheet(isPresented: Binding(
+            get: { isShowingPaywall && appState.shouldShowPaywall },
+            set: { isShowingPaywall = $0 }
+        )) {
             PaywallContainerView(
                 onPurchaseCompleted: {
                     isShowingPaywall = false
@@ -99,6 +102,7 @@ struct SessionView: View {
                 isShowingLimitModal = true
             } else {
                 isShowingLimitModal = false
+                isShowingPaywall = false
             }
         }
         .onChange(of: appState.subscriptionHoldPlan) { _, _ in

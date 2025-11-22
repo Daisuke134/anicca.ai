@@ -14,10 +14,12 @@ final class SubscriptionManager: NSObject {
         Purchases.logLevel = .warn
         let apiKey = AppConfig.revenueCatAPIKey
         print("[RevenueCat] Using API Key: \(apiKey)")
+        // 修正: purchasesAreCompletedBy: .myApp を削除し、デフォルト(.revenueCat)に戻す
+        // PaywallViewを使用する場合は、RevenueCat SDKが購入処理を担当する必要がある
         Purchases.configure(
             with: Configuration.Builder(withAPIKey: apiKey)
                 .with(entitlementVerificationMode: .informational)
-                .with(purchasesAreCompletedBy: .myApp, storeKitVersion: .storeKit2)
+                // .with(purchasesAreCompletedBy: .myApp, storeKitVersion: .storeKit2) // 削除
                 .build()
         )
         Purchases.shared.delegate = self

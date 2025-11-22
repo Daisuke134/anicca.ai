@@ -14,6 +14,7 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offeringToDisplay = offering ?? appState.cachedOffering {
+                // RevenueCatUIのPaywallViewを使用
                 // 修正: onDismissを使わず、閉じるボタンを自前で配置して制御
                 ZStack(alignment: .topTrailing) {
                     PaywallView(offering: offeringToDisplay)
@@ -70,6 +71,7 @@ struct PaywallContainerView: View {
                 onDismissRequested?()
             }
         }
+        // サーバー同期
         await SubscriptionManager.shared.syncNow()
     }
     

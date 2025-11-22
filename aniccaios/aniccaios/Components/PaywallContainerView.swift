@@ -13,10 +13,13 @@ struct PaywallContainerView: View {
         
     var body: some View {
         Group {
-            // 修正: isSafeToDisplayを使用してより厳密にチェック（ゼロ除算を防ぐ）
+            // 修正: 3段階のチェック
+            // 1. offering が存在する
+            // 2. isSafeToDisplay が true
+            // 3. availablePackages が空でない（重要：Division by zero を防ぐ）
             if let offeringToDisplay = offering ?? appState.cachedOffering,
-               offeringToDisplay.isSafeToDisplay {
-                // RevenueCatUIのPaywallViewを使用（標準で閉じるボタンが含まれている）
+               offeringToDisplay.isSafeToDisplay,
+               !offeringToDisplay.availablePackages.isEmpty {
                 PaywallView(offering: offeringToDisplay)
                     .onPurchaseCompleted { customerInfo in
                         print("[Paywall] Purchase completed: \(customerInfo)")
@@ -37,6 +40,7 @@ struct PaywallContainerView: View {
             }
         }
         .task {
+            // 課金済みユーザーのチェックを最初に実行
             if appState.subscriptionInfo.isEntitled {
                 onDismissRequested?()
                 return
@@ -44,6 +48,11 @@ struct PaywallContainerView: View {
                         
             if offering == nil {
                 await loadOffering()
+            }
+        }
+        .onChange(of: appState.subscriptionInfo.isEntitled) { _, isEntitled in
+            if isEntitled {
+                onDismissRequested?()
             }
         }
     }
@@ -71,7 +80,6 @@ struct PaywallContainerView: View {
         do {
             let offerings = try await Purchases.shared.offerings()
             if let resolved = offerings.offering(identifier: AppConfig.revenueCatPaywallId) ?? offerings.current {
-                // 追加: Packagesが正しく読み込まれているか確認
                 print("[PaywallContainerView] Loaded offering: identifier=\(resolved.identifier), packages=\(resolved.availablePackages.count)")
                 
                 // 追加: 各Packageの商品IDを確認
@@ -79,11 +87,22 @@ struct PaywallContainerView: View {
                     print("[PaywallContainerView] Package: identifier=\(package.identifier), productId=\(package.storeProduct.productIdentifier)")
                 }
                 
-                // 追加: isSafeToDisplayで最終確認
+                // 追加: 3段階のチェック
+                // 1. isSafeToDisplay
+                // 2. availablePackages が空でない
                 if !resolved.isSafeToDisplay {
-                    print("[PaywallContainerView] WARNING: Offering is not safe to display: identifier=\(resolved.identifier)")
+                    print("[PaywallContainerView] WARNING: Offering is not safe to display")
                     await MainActor.run {
                         self.loadError = NSError(domain: "PaywallError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Offering has invalid packages"])
+                        appState.updatePurchaseEnvironment(.accountMissing)
+                    }
+                    return
+                }
+                
+                if resolved.availablePackages.isEmpty {
+                    print("[PaywallContainerView] WARNING: Offering has no packages")
+                    await MainActor.run {
+                        self.loadError = NSError(domain: "PaywallError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Offering has no available packages"])
                         appState.updatePurchaseEnvironment(.accountMissing)
                     }
                     return
@@ -102,23 +121,9 @@ struct PaywallContainerView: View {
             }
         } catch {
             print("[PaywallContainerView] Error loading offering: \(error.localizedDescription)")
-            if let cached = appState.cachedOffering {
-                // キャッシュがあっても、isSafeToDisplayをチェック
-                if cached.isSafeToDisplay {
-                    await MainActor.run {
-                        self.offering = cached
-                    }
-                } else {
-                    await MainActor.run {
-                        self.loadError = error
-                        appState.updatePurchaseEnvironment(.accountMissing)
-                    }
-                }
-            } else {
-                await MainActor.run {
-                    self.loadError = error
-                    appState.updatePurchaseEnvironment(.accountMissing)
-                }
+            await MainActor.run {
+                self.loadError = error
+                appState.updatePurchaseEnvironment(.accountMissing)
             }
         }
     }

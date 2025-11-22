@@ -1,0 +1,34 @@
+# iOSアプリ（不要）
+aniccaios/
+
+# 他のアプリ（不要）
+apps/desktop/
+apps/landing/
+apps/web/
+apps/workspace-mcp/
+
+# 参考実装（不要）
+examples/
+
+# ドキュメント（不要、ただしdocs/migrationsは必要）
+docs/
+!docs/migrations/
+
+# リリースファイル（不要）
+release/
+
+# 一時ファイル（不要）
+tmp/
+
+# ルートのnode_modules（不要）
+node_modules/
+
+# その他不要なファイル
+*.mp3
+*.pdf
+*.png
+!apps/api/**/*.png
+!apps/desktop/**/*.png
+!apps/landing/**/*.png
+!apps/web/**/*.png
+

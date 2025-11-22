@@ -14,7 +14,7 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offeringToDisplay = offering ?? appState.cachedOffering {
-                // 修正: ZStackと自前の閉じるボタンを削除し、PaywallViewのみにする
+                // RevenueCatUIのPaywallViewを使用（標準で閉じるボタンが含まれている）
                 PaywallView(offering: offeringToDisplay)
                     .onPurchaseCompleted { customerInfo in
                         print("[Paywall] Purchase completed: \(customerInfo)")
@@ -27,10 +27,6 @@ struct PaywallContainerView: View {
                         Task {
                             await handlePurchaseResult(customerInfo)
                         }
-                    }
-                    // RevenueCatUI標準の閉じるボタンが押された時の処理
-                    .onDismiss {
-                        onDismissRequested?()
                     }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))

@@ -11,21 +11,18 @@ final class SubscriptionManager: NSObject {
     }
     
     func configure() {
-        Purchases.logLevel = .warn
+        Purchases.logLevel = .debug // デバッグのため詳細ログ出力
         let apiKey = AppConfig.revenueCatAPIKey
         print("[RevenueCat] Using API Key: \(apiKey)")
-        // 修正: purchasesAreCompletedBy: .myApp を削除し、デフォルト(.revenueCat)に戻す
-        // PaywallViewを使用する場合は、RevenueCat SDKが購入処理を担当する必要がある
+        
+        // V2/StoreKit 2対応のシンプル構成
+        // entitlementVerificationMode: .informational は推奨設定（検証結果を情報として提供）
+        // 言語設定は自動検出されるため明示的な設定は不要
         Purchases.configure(
             with: Configuration.Builder(withAPIKey: apiKey)
                 .with(entitlementVerificationMode: .informational)
-                // .with(purchasesAreCompletedBy: .myApp, storeKitVersion: .storeKit2) // 削除
                 .build()
         )
-        
-        // 追加: 広告IDなどの収集をSDKに任せる（自動収集が有効ならここで呼ぶ必要はないが、念のため設定確認）
-        // Purchases.shared.collectDeviceIdentifiers() // 不要なら削除
-        // ATT ($attConsentStatus) はRevenueCat SDKが自動で収集するため、明示的な呼び出しは不要
         
         Purchases.shared.delegate = self
         Task { await listenCustomerInfo() }

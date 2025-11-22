@@ -53,16 +53,16 @@ struct PaywallContainerView: View {
         await MainActor.run {
             let subscription = SubscriptionInfo(info: info)
             appState.updateSubscriptionInfo(subscription)
-                        
-            // 購入成功または復元成功なら閉じる
-            // isEntitled のチェックは厳密にしすぎると、サーバー反映待ちで閉じなくなるため、
-            // RevenueCatが「成功」と返してきた時点で閉じるのがUXとして良い
+            
+            // RevenueCatのローカル結果を信じて即座に完了
             onPurchaseCompleted?()
             onDismissRequested?()
         }
-                
-        // 裏で同期
-        await SubscriptionManager.shared.syncNow()
+        
+        // サーバー同期は裏で実行（UIをブロックしない）
+        Task.detached(priority: .utility) {
+            await SubscriptionManager.shared.syncNow()
+        }
     }
     
     private func loadOffering() async {

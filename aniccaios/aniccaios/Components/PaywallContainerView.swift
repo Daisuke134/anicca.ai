@@ -14,23 +14,34 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offeringToDisplay = offering ?? appState.cachedOffering {
-                // RevenueCatUIのPaywallViewを使用
-                PaywallView(offering: offeringToDisplay)
-                    .onPurchaseCompleted { customerInfo in
-                        print("[Paywall] Purchase completed: \(customerInfo)")
-                        Task {
-                            await handlePurchaseResult(customerInfo)
+                // 修正: onDismissを使わず、閉じるボタンを自前で配置して制御
+                ZStack(alignment: .topTrailing) {
+                    PaywallView(offering: offeringToDisplay)
+                        .onPurchaseCompleted { customerInfo in
+                            print("[Paywall] Purchase completed: \(customerInfo)")
+                            Task {
+                                await handlePurchaseResult(customerInfo)
+                            }
                         }
-                    }
-                    .onRestoreCompleted { customerInfo in
-                        print("[Paywall] Restore completed: \(customerInfo)")
-                        Task {
-                            await handlePurchaseResult(customerInfo)
+                        .onRestoreCompleted { customerInfo in
+                            print("[Paywall] Restore completed: \(customerInfo)")
+                            Task {
+                                await handlePurchaseResult(customerInfo)
+                            }
                         }
-                    }
-                    .onDismiss {
+                    
+                    // 閉じるボタンを右上にオーバーレイ配置
+                    Button {
                         onDismissRequested?()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.system(size: 30))
+                            .foregroundStyle(.white.opacity(0.8))
+                            .shadow(radius: 2)
+                            .padding()
                     }
+                    .padding(.top, 10) // ステータスバーとの被りを防ぐ調整
+                }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))
             } else {
@@ -38,7 +49,6 @@ struct PaywallContainerView: View {
             }
         }
         .task {
-            // 既に権限がある場合は閉じる
             if appState.subscriptionInfo.isEntitled {
                 onDismissRequested?()
                 return
@@ -51,18 +61,15 @@ struct PaywallContainerView: View {
     }
     
     private func handlePurchaseResult(_ info: CustomerInfo) async {
-        // 1. まずアプリ内の状態を即座に更新（ユーザーを待たせない）
         await MainActor.run {
             let subscription = SubscriptionInfo(info: info)
             appState.updateSubscriptionInfo(subscription)
                         
             if subscription.isEntitled {
                 onPurchaseCompleted?()
-                onDismissRequested?() // 成功したら閉じる
+                onDismissRequested?()
             }
         }
-                
-        // 2. バックグラウンドでサーバーと同期（エラーが出てもアプリ動作は止めない）
         await SubscriptionManager.shared.syncNow()
     }
     
@@ -79,11 +86,9 @@ struct PaywallContainerView: View {
                     appState.updatePurchaseEnvironment(.ready)
                 }
             } else {
-                print("[Paywall] No offerings found")
                 appState.updatePurchaseEnvironment(.accountMissing)
             }
         } catch {
-            print("[Paywall] Failed to load offerings: \(error)")
             if let cached = appState.cachedOffering {
                 self.offering = cached
             } else {

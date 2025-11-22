@@ -14,8 +14,7 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offeringToDisplay = offering ?? appState.cachedOffering {
-                // RevenueCatUIのPaywallViewを使用
-                // 修正: onDismissを使わず、閉じるボタンを自前で配置して制御
+                // 修正: ZStackで閉じるボタンを配置
                 ZStack(alignment: .topTrailing) {
                     PaywallView(offering: offeringToDisplay)
                         .onPurchaseCompleted { customerInfo in
@@ -31,7 +30,7 @@ struct PaywallContainerView: View {
                             }
                         }
                     
-                    // 閉じるボタンを右上にオーバーレイ配置
+                    // 閉じるボタン
                     Button {
                         onDismissRequested?()
                     } label: {
@@ -41,7 +40,7 @@ struct PaywallContainerView: View {
                             .shadow(radius: 2)
                             .padding()
                     }
-                    .padding(.top, 10) // ステータスバーとの被りを防ぐ調整
+                    .padding(.top, 10)
                 }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))

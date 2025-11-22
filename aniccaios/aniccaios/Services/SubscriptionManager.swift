@@ -22,6 +22,11 @@ final class SubscriptionManager: NSObject {
                 // .with(purchasesAreCompletedBy: .myApp, storeKitVersion: .storeKit2) // 削除
                 .build()
         )
+        
+        // 追加: 広告IDなどの収集をSDKに任せる（自動収集が有効ならここで呼ぶ必要はないが、念のため設定確認）
+        // Purchases.shared.collectDeviceIdentifiers() // 不要なら削除
+        // ATT ($attConsentStatus) はRevenueCat SDKが自動で収集するため、明示的な呼び出しは不要
+        
         Purchases.shared.delegate = self
         Task { await listenCustomerInfo() }
     }

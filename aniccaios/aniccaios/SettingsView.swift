@@ -403,13 +403,49 @@ struct SettingsView: View {
                     print("[CustomerCenter] Restore completed")
                 }
                 .onCustomerCenterShowingManageSubscriptions {
-                    // 修正: 管理ボタンが押されたら、CustomerCenterを閉じてPaywallを表示
-                    print("[CustomerCenter] Redirecting to Paywall")
-                    showingCustomerCenter = false // 先にCustomerCenterを閉じる
-                    // SwiftUIのモダンな方法で遅延処理
-                    Task { @MainActor in
-                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
-                        showingPaywall = true
+                    // 修正: 課金済みユーザーは管理URLを開く、未課金ユーザーはPaywallを表示
+                    print("[CustomerCenter] Showing manage subscriptions")
+                    
+                    // 最新のエンタイトルメント状態を確認
+                    Task {
+                        do {
+                            let customerInfo = try await Purchases.shared.customerInfo()
+                            let subscription = SubscriptionInfo(info: customerInfo)
+                            
+                            await MainActor.run {
+                                appState.updateSubscriptionInfo(subscription)
+                                
+                                if subscription.isEntitled {
+                                    // 課金済みユーザー: 管理URLを開く
+                                    if let managementURL = subscription.managementURL {
+                                        UIApplication.shared.open(managementURL)
+                                    }
+                                    showingCustomerCenter = false
+                                } else {
+                                    // 未課金ユーザー: Paywallを表示
+                                    showingCustomerCenter = false
+                                    // 少し遅延させてからPaywallを表示（CustomerCenterが完全に閉じるのを待つ）
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        showingPaywall = true
+                                    }
+                                }
+                            }
+                        } catch {
+                            print("[CustomerCenter] Failed to get customerInfo: \(error)")
+                            // エラー時は既存の状態を確認
+                            await MainActor.run {
+                                if appState.subscriptionInfo.isEntitled,
+                                   let managementURL = appState.subscriptionInfo.managementURL {
+                                    UIApplication.shared.open(managementURL)
+                                    showingCustomerCenter = false
+                                } else {
+                                    showingCustomerCenter = false
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                        showingPaywall = true
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
         }

@@ -10,23 +10,32 @@ const RC_EVENTS = new Set([
 ]);
 
 export async function applyRevenueCatEntitlement(userId, entitlements) {
-  const entitlement = entitlements[BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID];
+  // 設定されたEntitlement IDを確実に指定 (entlb820c43ab7)
+  const targetId = BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID;
+  const entitlement = entitlements[targetId];
   
-  // エンタイトルメントが存在しない場合はfreeプランに設定
-  if (!entitlement) {
+  // 指定IDのEntitlementがあり、かつ有効か？
+  if (!entitlement || !entitlement.is_active) {
+    logger.info('[RevenueCat] No active entitlement found for target ID', { 
+      userId, 
+      targetId,
+      availableIds: Object.keys(entitlements),
+      hasEntitlement: !!entitlement,
+      isActive: entitlement?.is_active
+    });
+    
+    // Freeプラン適用
     const payload = {
       user_id: userId,
       plan: 'free',
       status: 'free',
       current_period_end: null,
       entitlement_source: ENTITLEMENT_SOURCE.REVENUECAT,
-      revenuecat_entitlement_id: BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID,
-      revenuecat_original_transaction_id: null,
-      entitlement_payload: null,
+      revenuecat_entitlement_id: targetId,
+      revenuecat_original_transaction_id: null, // V2 APIでは取得不可
+      entitlement_payload: entitlement ? JSON.stringify(entitlement) : null,
       updated_at: new Date().toISOString()
     };
-    
-    logger.info('[RevenueCat] No entitlement found, setting to free', { userId });
     
     await query(
       `insert into user_subscriptions
@@ -48,39 +57,32 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
       ]
     );
     
-    logger.info('[RevenueCat] Entitlement applied successfully', { userId, plan: payload.plan, status: payload.status });
+    logger.info('[RevenueCat] Entitlement applied successfully (free)', { userId, plan: payload.plan });
     return;
   }
   
-  // V2 API対応: expires_at（タイムスタンプ）とexpires_date（ISO文字列）の両方に対応
-  let expiresDate = null;
-  if (entitlement?.expires_at) {
-    // タイムスタンプ（ミリ秒）の場合
-    expiresDate = typeof entitlement.expires_at === 'number' 
-      ? new Date(entitlement.expires_at) 
-      : new Date(entitlement.expires_at);
-  } else if (entitlement?.expires_date) {
-    expiresDate = new Date(entitlement.expires_date);
-  }
+  // 有効なEntitlementが見つかった場合
+  const expiresDate = entitlement.expires_at 
+    ? new Date(entitlement.expires_at) // ミリ秒単位のタイムスタンプをDateに変換
+    : null;
   
   const now = new Date();
-  // 重要: APIから返されたis_activeと期限切れチェックの両方を考慮
-  // active_entitlementsに含まれていても、期限切れの場合は無効として扱う
   const isExpired = expiresDate != null && expiresDate <= now;
-  const isActive = entitlement?.is_active === true && !isExpired;
-  const isTrial = entitlement?.period_type === 'trial';
-  const status = isActive ? (isTrial ? 'trialing' : 'active') : 'expired';
+  const isActive = entitlement.is_active && !isExpired;
+  
+  // 注意: V2 APIのCustomerEntitlementにはperiod_typeが存在しないため、trial判定は不可
+  // 必要に応じて別エンドポイント（subscriptions）から取得
+  const status = isActive ? 'active' : 'expired';
   
   const payload = {
     user_id: userId,
-    // 方針: 有効期間中はpro、期限切れ/未購読はfree
     plan: isActive ? 'pro' : 'free',
     status,
     current_period_end: expiresDate ? expiresDate.toISOString() : null,
     entitlement_source: ENTITLEMENT_SOURCE.REVENUECAT,
-    revenuecat_entitlement_id: BILLING_CONFIG.REVENUECAT_ENTITLEMENT_ID,
-    revenuecat_original_transaction_id: entitlement?.original_transaction_id || null,
-    entitlement_payload: entitlement ? JSON.stringify(entitlement) : null,
+    revenuecat_entitlement_id: targetId,
+    revenuecat_original_transaction_id: null, // V2 APIでは取得不可（別エンドポイント必要）
+    entitlement_payload: JSON.stringify(entitlement),
     updated_at: new Date().toISOString()
   };
   
@@ -89,11 +91,9 @@ export async function applyRevenueCatEntitlement(userId, entitlements) {
     plan: payload.plan, 
     status: payload.status,
     expiresDate: payload.current_period_end,
-    hasEntitlement: !!entitlement,
-    isExpired,
     isActive,
-    expiresAt: entitlement?.expires_at,
-    now: now.toISOString()
+    isExpired,
+    expiresAt: entitlement.expires_at
   });
   
   await query(

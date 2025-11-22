@@ -54,9 +54,8 @@ struct PaywallContainerView: View {
             let subscription = SubscriptionInfo(info: info)
             appState.updateSubscriptionInfo(subscription)
             
-            // RevenueCatのローカル結果を信じて即座に完了
+            // 購入完了時はonPurchaseCompletedのみ呼ぶ（onDismissRequestedは呼ばない）
             onPurchaseCompleted?()
-            onDismissRequested?()
         }
         
         // サーバー同期は裏で実行（UIをブロックしない）

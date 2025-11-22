@@ -14,34 +14,24 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offeringToDisplay = offering ?? appState.cachedOffering {
-                // 修正: ZStackで閉じるボタンを配置
-                ZStack(alignment: .topTrailing) {
-                    PaywallView(offering: offeringToDisplay)
-                        .onPurchaseCompleted { customerInfo in
-                            print("[Paywall] Purchase completed: \(customerInfo)")
-                            Task {
-                                await handlePurchaseResult(customerInfo)
-                            }
+                // 修正: ZStackと自前の閉じるボタンを削除し、PaywallViewのみにする
+                PaywallView(offering: offeringToDisplay)
+                    .onPurchaseCompleted { customerInfo in
+                        print("[Paywall] Purchase completed: \(customerInfo)")
+                        Task {
+                            await handlePurchaseResult(customerInfo)
                         }
-                        .onRestoreCompleted { customerInfo in
-                            print("[Paywall] Restore completed: \(customerInfo)")
-                            Task {
-                                await handlePurchaseResult(customerInfo)
-                            }
-                        }
-                    
-                    // 閉じるボタン
-                    Button {
-                        onDismissRequested?()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.system(size: 30))
-                            .foregroundStyle(.white.opacity(0.8))
-                            .shadow(radius: 2)
-                            .padding()
                     }
-                    .padding(.top, 10)
-                }
+                    .onRestoreCompleted { customerInfo in
+                        print("[Paywall] Restore completed: \(customerInfo)")
+                        Task {
+                            await handlePurchaseResult(customerInfo)
+                        }
+                    }
+                    // RevenueCatUI標準の閉じるボタンが押された時の処理
+                    .onDismiss {
+                        onDismissRequested?()
+                    }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))
             } else {
@@ -61,16 +51,19 @@ struct PaywallContainerView: View {
     }
     
     private func handlePurchaseResult(_ info: CustomerInfo) async {
+        // メインスレッドで即座に閉じる（ユーザーを待たせない）
         await MainActor.run {
             let subscription = SubscriptionInfo(info: info)
             appState.updateSubscriptionInfo(subscription)
                         
-            if subscription.isEntitled {
-                onPurchaseCompleted?()
-                onDismissRequested?()
-            }
+            // 購入成功または復元成功なら閉じる
+            // isEntitled のチェックは厳密にしすぎると、サーバー反映待ちで閉じなくなるため、
+            // RevenueCatが「成功」と返してきた時点で閉じるのがUXとして良い
+            onPurchaseCompleted?()
+            onDismissRequested?()
         }
-        // サーバー同期
+                
+        // 裏で同期
         await SubscriptionManager.shared.syncNow()
     }
     

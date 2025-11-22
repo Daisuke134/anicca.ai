@@ -1,4 +1,5 @@
 import ComponentsKit
+import RevenueCat
 import RevenueCatUI
 import SwiftUI
 
@@ -15,7 +16,7 @@ struct SettingsView: View {
     @State private var sleepLocation: String = ""
     @State private var trainingFocus: String = ""
     @State private var showingCustomerCenter = false
-    @State private var showingPaywall = false // 追加
+    @State private var showingPaywall = false // 追加: Paywall表示用ステート
     @State private var customHabitName: String = AppState.shared.customHabit?.name ?? ""
     @FocusState private var isCustomHabitNameFocused: Bool
     @State private var customHabitValidationError: LocalizedStringKey?
@@ -88,18 +89,6 @@ struct SettingsView: View {
             }
             .sheet(item: $showingTimePicker) { habit in
                 timePickerSheet(for: habit)
-            }
-            .sheet(isPresented: $showingPaywall) {
-                PaywallContainerView(
-                    onPurchaseCompleted: {
-                        showingPaywall = false
-                        Task { await SubscriptionManager.shared.syncNow() }
-                    },
-                    onDismissRequested: {
-                        showingPaywall = false
-                    }
-                )
-                .environmentObject(appState)
             }
             .onAppear {
                 loadPersonalizationData()
@@ -380,9 +369,7 @@ struct SettingsView: View {
                     }
                     Spacer(minLength: 12)
                     Button("settings_subscription_manage") {
-                        // 修正: showingCustomerCenter ではなく Paywallを表示
-                        // showingCustomerCenter = true
-                        showingPaywall = true
+                        showingCustomerCenter = true
                     }
                     .buttonStyle(.borderedProminent)
                 }
@@ -416,9 +403,28 @@ struct SettingsView: View {
                     print("[CustomerCenter] Restore completed")
                 }
                 .onCustomerCenterShowingManageSubscriptions {
-                    // App Store管理画面表示時の処理（必要に応じて）
-                    print("[CustomerCenter] Showing manage subscriptions")
+                    // 修正: 管理ボタンが押されたら、CustomerCenterを閉じてPaywallを表示
+                    print("[CustomerCenter] Redirecting to Paywall")
+                    showingCustomerCenter = false // 先にCustomerCenterを閉じる
+                    // SwiftUIのモダンな方法で遅延処理
+                    Task { @MainActor in
+                        try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
+                        showingPaywall = true
+                    }
                 }
+        }
+        // 追加: Paywall表示用シート
+        .sheet(isPresented: $showingPaywall) {
+            PaywallContainerView(
+                onPurchaseCompleted: {
+                    showingPaywall = false
+                    Task { await SubscriptionManager.shared.syncNow() }
+                },
+                onDismissRequested: {
+                    showingPaywall = false
+                }
+            )
+            .environmentObject(appState)
         }
     }
     

@@ -12,3 +12,10 @@ fly.toml
 /tmp
 /docs/*
 !/docs/migrations
+# Exclude other apps in monorepo
+/aniccaios
+/apps/desktop
+/apps/landing
+/apps/web
+/apps/workspace-mcp
+/examples

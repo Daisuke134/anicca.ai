@@ -3,6 +3,7 @@ import cors from 'cors';
 import { initDatabase } from './services/tokens/slackTokens.supabase.js';
 import { runMigrationsOnce } from './lib/migrate.js';
 import apiRouter from './routes/index.js';
+import { pool } from './lib/db.js';
 
 // Only load dotenv in development
 if (process.env.NODE_ENV !== 'production') {
@@ -30,10 +31,14 @@ async function initializeServer() {
   }, 60_000); // 1分ごとにチェック
 }
 
-initializeServer();
-
 const app = express();
 const PORT = process.env.PORT || 3000;
+const controller = new AbortController();
+
+await initializeServer().catch(err => {
+  console.error('❌ Failed to initialize server', err);
+  process.exit(1);
+});
 
 // Middleware
 const corsOptions = {
@@ -85,8 +90,18 @@ if (missingVars.length > 0) {
 }
 
 // Start server
-app.listen(PORT, () => {
+const server = app.listen(PORT, () => {
   console.log(`🚀 Anicca Proxy Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
+});
+
+['SIGTERM', 'SIGINT'].forEach(signal => {
+  process.on(signal, async () => {
+    console.log(`⚠️ Received ${signal}, shutting down gracefully...`);
+    controller.abort();
+    server.close(() => {
+      pool.end().then(() => process.exit(0));
+    });
+  });
 });

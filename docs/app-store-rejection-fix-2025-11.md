@@ -231,6 +231,14 @@ Best regards,
 - `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings`
 - `aniccaios/aniccaios/Notifications/NotificationScheduler.swift`
 
+## Sandbox検証チェックリスト
+
+- サンドボックスApple IDに切り替え → App Storeアプリでサインアウト
+- TestFlight/実機で `aniccaios` を起動し、RevenueCat Offering `anicca` を取得
+- 月額/年額の購入 → 1分以内に Paywall が閉じることを確認
+- `VoiceSessionController` で WebRTC 接続 → `RTCMacros.h` エラーが出ない
+- `https://anicca-proxy-production.up.railway.app/health` が200を返すこと
+
 ---
 
 **最終更新**: 2025年11月19日

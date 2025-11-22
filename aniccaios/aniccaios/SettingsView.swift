@@ -15,6 +15,7 @@ struct SettingsView: View {
     @State private var sleepLocation: String = ""
     @State private var trainingFocus: String = ""
     @State private var showingCustomerCenter = false
+    @State private var showingPaywall = false // 追加
     @State private var customHabitName: String = AppState.shared.customHabit?.name ?? ""
     @FocusState private var isCustomHabitNameFocused: Bool
     @State private var customHabitValidationError: LocalizedStringKey?
@@ -87,6 +88,18 @@ struct SettingsView: View {
             }
             .sheet(item: $showingTimePicker) { habit in
                 timePickerSheet(for: habit)
+            }
+            .sheet(isPresented: $showingPaywall) {
+                PaywallContainerView(
+                    onPurchaseCompleted: {
+                        showingPaywall = false
+                        Task { await SubscriptionManager.shared.syncNow() }
+                    },
+                    onDismissRequested: {
+                        showingPaywall = false
+                    }
+                )
+                .environmentObject(appState)
             }
             .onAppear {
                 loadPersonalizationData()
@@ -367,7 +380,9 @@ struct SettingsView: View {
                     }
                     Spacer(minLength: 12)
                     Button("settings_subscription_manage") {
-                        showingCustomerCenter = true
+                        // 修正: showingCustomerCenter ではなく Paywallを表示
+                        // showingCustomerCenter = true
+                        showingPaywall = true
                     }
                     .buttonStyle(.borderedProminent)
                 }

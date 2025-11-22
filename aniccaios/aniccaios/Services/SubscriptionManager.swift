@@ -11,7 +11,7 @@ final class SubscriptionManager: NSObject {
     }
     
     func configure() {
-        Purchases.logLevel = .debug // デバッグのため詳細ログ出力
+        Purchases.logLevel = .info // .debugから変更（JWS tokenの長いログを抑制）
         let apiKey = AppConfig.revenueCatAPIKey
         print("[RevenueCat] Using API Key: \(apiKey)")
         

@@ -32,11 +32,21 @@ final class SubscriptionManager: NSObject {
         for await info in Purchases.shared.customerInfoStream {
             await MainActor.run {
                 var subscription = SubscriptionInfo(info: info)
-                // サーバーから月次利用量情報を取得してマージ
-                Task {
+                
+                // 重要: RevenueCatの情報を優先して即座に更新
+                AppState.shared.updateSubscriptionInfo(subscription)
+                
+                // サーバーから月次利用量情報を取得してマージ（バックグラウンド）
+                Task.detached(priority: .utility) {
                     await syncUsageInfo(&subscription)
+                    // 利用量情報のみを更新（エンタイトルメント状態は変更しない）
                     await MainActor.run {
-                        AppState.shared.updateSubscriptionInfo(subscription)
+                        var currentSubscription = AppState.shared.subscriptionInfo
+                        // エンタイトルメント状態を保持したまま、利用量情報のみ更新
+                        currentSubscription.monthlyUsageLimit = subscription.monthlyUsageLimit
+                        currentSubscription.monthlyUsageRemaining = subscription.monthlyUsageRemaining
+                        currentSubscription.monthlyUsageCount = subscription.monthlyUsageCount
+                        AppState.shared.updateSubscriptionInfo(currentSubscription)
                     }
                 }
             }
@@ -46,7 +56,6 @@ final class SubscriptionManager: NSObject {
     private func syncUsageInfo(_ subscription: inout SubscriptionInfo) async {
         guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
         
-        // AppConfig.entitlementSyncURL を使用
         var request = URLRequest(url: AppConfig.entitlementSyncURL)
         request.httpMethod = "GET"
         request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
@@ -55,7 +64,6 @@ final class SubscriptionManager: NSObject {
         do {
             let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
             
-            // ステータスコードチェック
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
                 print("[SubscriptionManager] Server sync failed (status \( (response as? HTTPURLResponse)?.statusCode ?? 0 )), proceeding with RC data.")
                 return
@@ -63,13 +71,14 @@ final class SubscriptionManager: NSObject {
             
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let entitlement = json["entitlement"] as? [String: Any] {
-                // 成功時のみ利用量情報を上書き
+                // 重要: 利用量情報のみを更新し、エンタイトルメント状態（plan, status）は上書きしない
                 subscription.monthlyUsageLimit = entitlement["monthly_usage_limit"] as? Int
                 subscription.monthlyUsageRemaining = entitlement["monthly_usage_remaining"] as? Int
                 subscription.monthlyUsageCount = entitlement["monthly_usage_count"] as? Int
+                
+                print("[SubscriptionManager] Synced usage info only (plan/status unchanged): limit=\(subscription.monthlyUsageLimit ?? -1)")
             }
         } catch {
-            // エラー時はログのみ出力し、RevenueCatのEntitlement情報は維持する
             print("[SubscriptionManager] Sync error: \(error). Using RC entitlement only.")
         }
     }

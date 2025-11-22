@@ -10,16 +10,22 @@ struct PaywallContainerView: View {
     @State private var offering: Offering?
     @State private var isLoading = true
     @State private var loadError: Error?
-        
+    @State private var hasCheckedEntitlement = false // 追加: チェック完了フラグ
+    
     var body: some View {
         Group {
-            // 修正: 3段階のチェック
-            // 1. offering が存在する
-            // 2. isSafeToDisplay が true
-            // 3. availablePackages が空でない（重要：Division by zero を防ぐ）
-            if let offeringToDisplay = offering ?? appState.cachedOffering,
-               offeringToDisplay.isSafeToDisplay,
-               !offeringToDisplay.availablePackages.isEmpty {
+            // エンタイトルメントチェック: プロプランユーザーにはペイウォールを表示しない
+            if hasCheckedEntitlement && appState.subscriptionInfo.isEntitled {
+                // エンタイトル済みの場合は何も表示せず、即座に閉じる
+                EmptyView()
+                    .onAppear {
+                        onDismissRequested?()
+                    }
+            } else if hasCheckedEntitlement,
+                      let offeringToDisplay = offering ?? appState.cachedOffering,
+                      offeringToDisplay.isSafeToDisplay,
+                      !offeringToDisplay.availablePackages.isEmpty {
+                // RevenueCatUIのPaywallViewを使用
                 PaywallView(offering: offeringToDisplay)
                     .onPurchaseCompleted { customerInfo in
                         print("[Paywall] Purchase completed: \(customerInfo)")
@@ -40,20 +46,51 @@ struct PaywallContainerView: View {
             }
         }
         .task {
-            // 課金済みユーザーのチェックを最初に実行
-            if appState.subscriptionInfo.isEntitled {
+            // 重要: 表示前に最新のエンタイトルメント状態を確認
+            await checkEntitlementAndLoadOffering()
+        }
+        .onChange(of: appState.subscriptionInfo.isEntitled) { _, isEntitled in
+            // エンタイトルメント状態が変更されたら即座に閉じる
+            if isEntitled {
                 onDismissRequested?()
-                return
             }
-                        
+        }
+    }
+    
+    private func checkEntitlementAndLoadOffering() async {
+        // 1. まず最新のエンタイトルメント状態を同期（RevenueCatから直接取得）
+        do {
+            let customerInfo = try await Purchases.shared.customerInfo()
+            await MainActor.run {
+                let subscription = SubscriptionInfo(info: customerInfo)
+                appState.updateSubscriptionInfo(subscription)
+                
+                // エンタイトル済みの場合はオファリングを読み込まない
+                if subscription.isEntitled {
+                    hasCheckedEntitlement = true
+                    return
+                }
+            }
+        } catch {
+            print("[PaywallContainerView] Failed to get customerInfo: \(error.localizedDescription)")
+            // エラー時は既存の状態を使用
+        }
+        
+        // 2. エンタイトル済みでない場合のみオファリングを読み込む
+        if !appState.subscriptionInfo.isEntitled {
+            // サーバー同期を実行（バックグラウンド）
+            Task.detached(priority: .utility) {
+                await SubscriptionManager.shared.syncNow()
+            }
+            
+            // オファリングを読み込む
             if offering == nil {
                 await loadOffering()
             }
         }
-        .onChange(of: appState.subscriptionInfo.isEntitled) { _, isEntitled in
-            if isEntitled {
-                onDismissRequested?()
-            }
+        
+        await MainActor.run {
+            hasCheckedEntitlement = true
         }
     }
     

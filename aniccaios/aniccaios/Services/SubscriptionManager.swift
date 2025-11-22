@@ -42,6 +42,7 @@ final class SubscriptionManager: NSObject {
     private func syncUsageInfo(_ subscription: inout SubscriptionInfo) async {
         guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
         
+        // AppConfig.entitlementSyncURL を使用
         var request = URLRequest(url: AppConfig.entitlementSyncURL)
         request.httpMethod = "GET"
         request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
@@ -49,18 +50,23 @@ final class SubscriptionManager: NSObject {
         
         do {
             let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
+            
+            // ステータスコードチェック
             guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                print("[SubscriptionManager] Server sync failed (status \( (response as? HTTPURLResponse)?.statusCode ?? 0 )), proceeding with RC data.")
                 return
             }
             
             if let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any],
                let entitlement = json["entitlement"] as? [String: Any] {
+                // 成功時のみ利用量情報を上書き
                 subscription.monthlyUsageLimit = entitlement["monthly_usage_limit"] as? Int
                 subscription.monthlyUsageRemaining = entitlement["monthly_usage_remaining"] as? Int
                 subscription.monthlyUsageCount = entitlement["monthly_usage_count"] as? Int
             }
         } catch {
-            // エラー時は無視（RevenueCatの情報のみを使用）
+            // エラー時はログのみ出力し、RevenueCatのEntitlement情報は維持する
+            print("[SubscriptionManager] Sync error: \(error). Using RC entitlement only.")
         }
     }
     
@@ -142,12 +148,28 @@ final class SubscriptionManager: NSObject {
 
 extension SubscriptionManager: PurchasesDelegate {
     func purchases(_ purchases: Purchases, receivedUpdated customerInfo: CustomerInfo) {
+        print("[RevenueCat] Delegate received update. Active entitlements: \(customerInfo.entitlements.active.keys)")
+        
         Task { @MainActor in
             var subscription = SubscriptionInfo(info: customerInfo)
-            // サーバーから月次利用量情報を取得してマージ
+            
+            // 1. まずRevenueCatの情報だけで即座に更新（待機なし）
+            AppState.shared.updateSubscriptionInfo(subscription)
+            
+            // 2. その後、サーバー同期を試みて詳細情報を追加
             await syncUsageInfo(&subscription)
-            await MainActor.run {
-                AppState.shared.updateSubscriptionInfo(subscription)
+            AppState.shared.updateSubscriptionInfo(subscription)
+        }
+    }
+    
+    // 追加: アプリ内課金のプロモーション対応（ベストプラクティス）
+    func purchases(_ purchases: Purchases, readyForPromotedProduct product: StoreProduct, purchase: @escaping StartPurchaseBlock) {
+        purchase { (transaction, info, error, cancelled) in
+            if let info = info {
+                Task { @MainActor in
+                    let sub = SubscriptionInfo(info: info)
+                    AppState.shared.updateSubscriptionInfo(sub)
+                }
             }
         }
     }

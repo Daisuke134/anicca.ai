@@ -359,7 +359,9 @@ struct SettingsView: View {
                             Text(String(format: NSLocalizedString("settings_usage_this_month_format", comment: ""), count, limit))
                                 .font(.subheadline)
                                 .foregroundStyle(.secondary)
-                            ProgressView(value: Double(count), total: Double(limit))
+                            
+                            // 修正: 値がtotalを超えないように min() で制限する
+                            ProgressView(value: min(Double(count), Double(limit)), total: Double(limit))
                                 .progressViewStyle(.linear)
                         }
                     }

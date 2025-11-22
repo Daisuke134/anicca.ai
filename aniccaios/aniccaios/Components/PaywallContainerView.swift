@@ -14,7 +14,7 @@ struct PaywallContainerView: View {
     var body: some View {
         Group {
             if let offeringToDisplay = offering ?? appState.cachedOffering {
-                // RevenueCatUIのPaywallViewを使用（標準で閉じるボタンが含まれている）
+                // 修正: 自前のZStackとボタンを削除。RevenueCatUI標準の閉じるボタンを使用
                 PaywallView(offering: offeringToDisplay)
                     .onPurchaseCompleted { customerInfo in
                         print("[Paywall] Purchase completed: \(customerInfo)")
@@ -27,6 +27,9 @@ struct PaywallContainerView: View {
                         Task {
                             await handlePurchaseResult(customerInfo)
                         }
+                    }
+                    .onDismiss {
+                        onDismissRequested?()
                     }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))
@@ -47,14 +50,12 @@ struct PaywallContainerView: View {
     }
     
     private func handlePurchaseResult(_ info: CustomerInfo) async {
-        // メインスレッドで即座に閉じる（ユーザーを待たせない）
+        // 修正: メインスレッドで即座に閉じる
         await MainActor.run {
             let subscription = SubscriptionInfo(info: info)
             appState.updateSubscriptionInfo(subscription)
                         
-            // 購入成功または復元成功なら閉じる
-            // isEntitled のチェックは厳密にしすぎると、サーバー反映待ちで閉じなくなるため、
-            // RevenueCatが「成功」と返してきた時点で閉じるのがUXとして良い
+            // 成功したら即閉じる（Entitlementの厳密なチェックはバックグラウンド同期に任せる）
             onPurchaseCompleted?()
             onDismissRequested?()
         }

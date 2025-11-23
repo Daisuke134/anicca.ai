@@ -16,6 +16,7 @@ struct WakeSetupStepView: View {
             DatePicker(String(localized: "common_time"), selection: $selectedDate, displayedComponents: [.hourAndMinute])
                 .datePickerStyle(.wheel)
                 .labelsHidden()
+                .environment(\.locale, Locale(identifier: "en_GB"))
 
             Text("wake_setup_description")
                 .font(.subheadline)

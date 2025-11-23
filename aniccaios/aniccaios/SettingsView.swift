@@ -320,6 +320,7 @@ struct SettingsView: View {
                 )
                 .datePickerStyle(.wheel)
                 .labelsHidden()
+                .environment(\.locale, Locale(identifier: "en_GB"))
 
                 Spacer()
             }

@@ -25,7 +25,12 @@ final class SubscriptionManager: NSObject {
         )
         
         Purchases.shared.delegate = self
-        Task { await listenCustomerInfo() }
+        // 起動直後にオファリング取得を開始（並列実行で高速化）
+        Task {
+            async let offeringsLoad = refreshOfferings()
+            async let customerInfoListen = listenCustomerInfo()
+            _ = await (offeringsLoad, customerInfoListen)
+        }
     }
     
     private func listenCustomerInfo() async {

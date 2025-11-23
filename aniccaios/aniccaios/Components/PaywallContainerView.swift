@@ -96,11 +96,10 @@ struct PaywallContainerView: View {
         }
         
         // 2. キャッシュがない場合、並列実行で高速化
-        async let entitlementCheck = checkEntitlementStatus()
-        async let offeringLoad = loadOffering()
-        
-        // 両方の完了を待つ
-        _ = await (entitlementCheck, offeringLoad)
+        await withTaskGroup(of: Void.self) { group in
+            group.addTask { await checkEntitlementStatus() }
+            group.addTask { await loadOffering() }
+        }
         
         await MainActor.run {
             hasCheckedEntitlement = true

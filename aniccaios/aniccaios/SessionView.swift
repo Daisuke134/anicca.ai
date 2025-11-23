@@ -59,6 +59,7 @@ struct SessionView: View {
         .sheet(isPresented: $isShowingLimitModal) {
             UsageLimitModalView(
                 plan: appState.subscriptionHoldPlan ?? .free,
+                reason: appState.quotaHoldReason ?? .quotaExceeded,
                 onClose: { isShowingLimitModal = false },
                 onUpgrade: {
                     isShowingLimitModal = false
@@ -70,11 +71,9 @@ struct SessionView: View {
                 }
             )
         }
-        .sheet(isPresented: Binding(
-            get: { isShowingPaywall && appState.shouldShowPaywall },
-            set: { isShowingPaywall = $0 }
-        )) {
+        .sheet(isPresented: $isShowingPaywall) {
             PaywallContainerView(
+                forcePresent: true,
                 onPurchaseCompleted: {
                     isShowingPaywall = false
                 },
@@ -141,7 +140,16 @@ struct SessionView: View {
             return (
                 title: String(localized: "session_button_talk"),
                 disabled: false,
-                action: { controller.start() }
+                action: {
+                    let remaining = appState.subscriptionInfo.monthlyUsageRemaining ?? 1
+                    if appState.subscriptionHold || (!appState.subscriptionInfo.isEntitled && remaining <= 0) {
+                        // 上限に達している時だけ毎回シートを表示
+                        appState.markQuotaHold(plan: appState.subscriptionInfo.plan, reason: .quotaExceeded)
+                        isShowingLimitModal = true
+                        return
+                    }
+                    controller.start()
+                }
             )
         }
     }

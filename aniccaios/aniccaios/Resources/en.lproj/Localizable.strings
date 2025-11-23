@@ -155,4 +155,6 @@
 "quota_exceeded_close" = "Close";
 "quota_exceeded_upgrade" = "Upgrade";
 "quota_exceeded_manage" = "Manage Plan";
+"session_time_cap_title" = "Free session limit reached (5 min)";
+"session_time_cap_message" = "Your free session ended after 5 minutes. Upgrade to continue longer conversations.";
 

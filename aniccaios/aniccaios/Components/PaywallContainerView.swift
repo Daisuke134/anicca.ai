@@ -4,6 +4,7 @@ import StoreKit
 import SwiftUI
 
 struct PaywallContainerView: View {
+    var forcePresent: Bool = false
     var onPurchaseCompleted: (() -> Void)?
     var onDismissRequested: (() -> Void)?
     @EnvironmentObject private var appState: AppState
@@ -14,19 +15,25 @@ struct PaywallContainerView: View {
     
     var body: some View {
         Group {
-            // エンタイトルメントチェック: プロプランユーザーにはペイウォールを表示しない
-            if hasCheckedEntitlement && appState.subscriptionInfo.isEntitled {
+            // プロプランユーザーにはペイウォールを表示しない（表示は即時・判定は裏で最新化）
+            if appState.subscriptionInfo.isEntitled {
                 // エンタイトル済みの場合は何も表示せず、即座に閉じる
                 EmptyView()
                     .onAppear {
                         onDismissRequested?()
                     }
-            } else if hasCheckedEntitlement,
-                      let offeringToDisplay = offering ?? appState.cachedOffering,
+            } else if let offeringToDisplay = offering
+                        ?? appState.cachedOffering
+                        ?? Purchases.shared.cachedOfferings?.offering(identifier: AppConfig.revenueCatPaywallId)
+                        ?? Purchases.shared.cachedOfferings?.current,
                       offeringToDisplay.isSafeToDisplay,
                       !offeringToDisplay.availablePackages.isEmpty {
                 // RevenueCatUIのPaywallViewを使用
                 PaywallView(offering: offeringToDisplay)
+                    .onRequestedDismissal {
+                        // RevenueCat Paywall の「×」押下時に呼ばれる
+                        onDismissRequested?()
+                    }
                     .onPurchaseCompleted { customerInfo in
                         print("[Paywall] Purchase completed: \(customerInfo)")
                         Task {
@@ -50,7 +57,7 @@ struct PaywallContainerView: View {
             }
         }
         .task {
-            guard appState.shouldShowPaywall else {
+            if !forcePresent && !appState.shouldShowPaywall {
                 onDismissRequested?()
                 return
             }
@@ -58,9 +65,7 @@ struct PaywallContainerView: View {
             await checkEntitlementAndLoadOffering()
         }
         .onChange(of: appState.shouldShowPaywall) { _, shouldShow in
-            if !shouldShow {
-                onDismissRequested?()
-            }
+            if !forcePresent && !shouldShow { onDismissRequested?() }
         }
     }
     
@@ -71,7 +76,7 @@ struct PaywallContainerView: View {
             await MainActor.run {
                 self.offering = sdkCached
                 self.isLoading = false // 即座にローディング解除
-                self.hasCheckedEntitlement = true
+                self.hasCheckedEntitlement = true // UIの分岐条件からは除外済み（後方互換のため維持）
             }
             // キャッシュ利用中も念のため裏で最新確認を行うが、awaitでUIを止めない
             Task { await checkEntitlementStatus() }
@@ -84,6 +89,7 @@ struct PaywallContainerView: View {
            !cached.availablePackages.isEmpty {
             await MainActor.run {
                 self.offering = cached
+                self.isLoading = false
                 // キャッシュがあるので表示フラグを立てる（楽観的UI）
                 self.hasCheckedEntitlement = true
                 

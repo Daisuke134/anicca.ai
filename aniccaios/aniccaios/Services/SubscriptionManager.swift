@@ -28,8 +28,8 @@ final class SubscriptionManager: NSObject {
         // 起動直後にオファリング取得を開始（並列実行で高速化）
         Task {
             await withTaskGroup(of: Void.self) { group in
-                group.addTask { await refreshOfferings() }
-                group.addTask { await listenCustomerInfo() }
+                group.addTask { await self.refreshOfferings() }
+                group.addTask { await self.listenCustomerInfo() }
             }
         }
     }

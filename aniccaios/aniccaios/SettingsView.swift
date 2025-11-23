@@ -16,7 +16,9 @@ struct SettingsView: View {
     @State private var sleepLocation: String = ""
     @State private var trainingFocus: String = ""
     @State private var showingCustomerCenter = false
-    @State private var showingPaywall = false // 追加: Paywall表示用ステート
+    // ▼▼▼ 忘れずに追加してください ▼▼▼
+    @State private var showingPaywall = false
+    // ▲▲▲ 追加 ▲▲▲
     @State private var customHabitName: String = AppState.shared.customHabit?.name ?? ""
     @FocusState private var isCustomHabitNameFocused: Bool
     @State private var customHabitValidationError: LocalizedStringKey?
@@ -402,11 +404,11 @@ struct SettingsView: View {
                     // 復元完了時の処理（必要に応じて）
                     print("[CustomerCenter] Restore completed")
                 }
+                // ▼▼▼ 修正: Paywallへの遷移ロジック ▼▼▼
                 .onCustomerCenterShowingManageSubscriptions {
-                    // 修正: 課金済みユーザーは管理URLを開く、未課金ユーザーはPaywallを表示
-                    print("[CustomerCenter] Showing manage subscriptions")
+                    print("[CustomerCenter] Showing manage subscriptions requested")
                     
-                    // 最新のエンタイトルメント状態を確認
+                    // 最新状態を確認
                     Task {
                         do {
                             let customerInfo = try await Purchases.shared.customerInfo()
@@ -414,42 +416,44 @@ struct SettingsView: View {
                             
                             await MainActor.run {
                                 appState.updateSubscriptionInfo(subscription)
-                                
-                                if subscription.isEntitled {
-                                    // 課金済みユーザー: 管理URLを開く
+                            }
+                            
+                            if subscription.isEntitled {
+                                // 課金済みならまずアプリ内シート（StoreKit 2）を試す
+                                do {
+                                    try await Purchases.shared.showManageSubscriptions()
+                                    await MainActor.run { showingCustomerCenter = false }
+                                } catch {
+                                    // 失敗時のみ外部URLにフォールバック
                                     if let managementURL = subscription.managementURL {
-                                        UIApplication.shared.open(managementURL)
+                                        await MainActor.run {
+                                            UIApplication.shared.open(managementURL)
+                                            showingCustomerCenter = false
+                                        }
+                                    } else {
+                                        await MainActor.run { showingCustomerCenter = false }
                                     }
+                                }
+                            } else {
+                                // 未課金なら自前のPaywallへ
+                                await MainActor.run {
                                     showingCustomerCenter = false
-                                } else {
-                                    // 未課金ユーザー: Paywallを表示
-                                    showingCustomerCenter = false
-                                    // 少し遅延させてからPaywallを表示（CustomerCenterが完全に閉じるのを待つ）
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    // 0.5秒待ってから表示（アニメーション競合回避）
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
                                         showingPaywall = true
                                     }
                                 }
                             }
                         } catch {
-                            print("[CustomerCenter] Failed to get customerInfo: \(error)")
-                            // エラー時は既存の状態を確認
-                            await MainActor.run {
-                                if appState.subscriptionInfo.isEntitled,
-                                   let managementURL = appState.subscriptionInfo.managementURL {
-                                    UIApplication.shared.open(managementURL)
-                                    showingCustomerCenter = false
-                                } else {
-                                    showingCustomerCenter = false
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                        showingPaywall = true
-                                    }
-                                }
-                            }
+                            // エラー時は安全策として閉じる
+                            print("[CustomerCenter] Check failed: \(error)")
+                            await MainActor.run { showingCustomerCenter = false }
                         }
                     }
                 }
+                // ▲▲▲ 修正終わり ▲▲▲
         }
-        // 追加: Paywall表示用シート
+        // ▼▼▼ 追加: Paywall用のシート定義 ▼▼▼
         .sheet(isPresented: $showingPaywall) {
             PaywallContainerView(
                 onPurchaseCompleted: {
@@ -460,8 +464,9 @@ struct SettingsView: View {
                     showingPaywall = false
                 }
             )
-            .environmentObject(appState)
+            .environmentObject(appState) // これがないとクラッシュします！
         }
+        // ▲▲▲ 追加終わり ▲▲▲
     }
     
     private var subscriptionSummary: String {

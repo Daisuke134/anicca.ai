@@ -391,6 +391,7 @@ struct SettingsView: View {
             Task { await SubscriptionManager.shared.syncNow() }
         }) {
             RevenueCatUI.CustomerCenterView()
+                .environment(\.locale, .autoupdatingCurrent)
                 .onCustomerCenterRestoreFailed { error in
                     // XPCエラー（コード4099）は無視（機能には影響なし）
                     if let nsError = error as NSError?,
@@ -420,6 +421,7 @@ struct SettingsView: View {
                 }
             )
             .environmentObject(appState) // これがないとクラッシュします！
+            .environment(\.locale, .autoupdatingCurrent)
         }
         // ▲▲▲ 追加終わり ▲▲▲
     }

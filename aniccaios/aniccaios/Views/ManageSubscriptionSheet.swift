@@ -67,6 +67,7 @@ struct ManageSubscriptionSheet: View {
         }
         .sheet(isPresented: $showingCustomerCenter) {
             RevenueCatUI.CustomerCenterView()
+                .environment(\.locale, .autoupdatingCurrent)
                 .onCustomerCenterRestoreCompleted { customerInfo in
                     Task {
                         let subscription = SubscriptionInfo(info: customerInfo)

@@ -33,6 +33,10 @@ struct PaywallContainerView: View {
                             await handlePurchaseResult(customerInfo)
                         }
                     }
+                    // 追加: キャンセル時のフリーズ対策
+                    .onPurchaseCancelled {
+                        print("[Paywall] Purchase cancelled by user")
+                    }
                     .onRestoreCompleted { customerInfo in
                         print("[Paywall] Restore completed: \(customerInfo)")
                         Task {
@@ -61,39 +65,45 @@ struct PaywallContainerView: View {
     }
     
     private func checkEntitlementAndLoadOffering() async {
-        // 1. まず最新のエンタイトルメント状態を同期（RevenueCatから直接取得）
+        // 1. キャッシュされたオファリングを優先的に使用（高速化）
+        if let cached = appState.cachedOffering,
+           cached.isSafeToDisplay,
+           !cached.availablePackages.isEmpty {
+            await MainActor.run {
+                self.offering = cached
+                // キャッシュがあるので表示フラグを立てる（楽観的UI）
+                self.hasCheckedEntitlement = true
+                
+                // 裏で最新状態を確認
+                Task {
+                    await self.checkEntitlementStatus()
+                }
+            }
+            return
+        }
+        
+        // 2. キャッシュがない場合、並列実行で高速化
+        async let entitlementCheck = checkEntitlementStatus()
+        async let offeringLoad = loadOffering()
+        
+        // 両方の完了を待つ
+        _ = await (entitlementCheck, offeringLoad)
+        
+        await MainActor.run {
+            hasCheckedEntitlement = true
+        }
+    }
+    
+    // 新規追加: エンタイトルメント状態確認メソッド
+    private func checkEntitlementStatus() async {
         do {
             let customerInfo = try await Purchases.shared.customerInfo()
             await MainActor.run {
                 let subscription = SubscriptionInfo(info: customerInfo)
                 appState.updateSubscriptionInfo(subscription)
-                
-                // エンタイトル済みの場合はオファリングを読み込まない
-                if subscription.isEntitled {
-                    hasCheckedEntitlement = true
-                    return
-                }
             }
         } catch {
             print("[PaywallContainerView] Failed to get customerInfo: \(error.localizedDescription)")
-            // エラー時は既存の状態を使用
-        }
-        
-        // 2. エンタイトル済みでない場合のみオファリングを読み込む
-        if !appState.subscriptionInfo.isEntitled {
-            // サーバー同期を実行（バックグラウンド）
-            Task.detached(priority: .utility) {
-                await SubscriptionManager.shared.syncNow()
-            }
-            
-            // オファリングを読み込む
-            if offering == nil {
-                await loadOffering()
-            }
-        }
-        
-        await MainActor.run {
-            hasCheckedEntitlement = true
         }
     }
     
@@ -116,6 +126,20 @@ struct PaywallContainerView: View {
     private func loadOffering() async {
         isLoading = true
         defer { isLoading = false }
+        
+        // RevenueCat SDKのキャッシュも優先確認
+        if let cachedOfferings = Purchases.shared.cachedOfferings,
+           let resolved = cachedOfferings.offering(identifier: AppConfig.revenueCatPaywallId) ?? cachedOfferings.current,
+           resolved.isSafeToDisplay,
+           !resolved.availablePackages.isEmpty {
+            print("[PaywallContainerView] Using SDK cached offering")
+            await MainActor.run {
+                self.offering = resolved
+                appState.updateOffering(resolved)
+                appState.updatePurchaseEnvironment(.ready)
+            }
+            return
+        }
                 
         do {
             let offerings = try await Purchases.shared.offerings()

@@ -18,7 +18,9 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var activeSessionId: String?
     private var sessionModel: String = "gpt-realtime"   // Desktop と examples の最新版に合わせる
     private var sessionTimeoutTask: Task<Void, Never>?
-    private let freeSessionMaxSeconds: TimeInterval = 300
+    private var usageTrackingTask: Task<Void, Never>?
+    private var sessionStartTime: Date?
+    private var lastServerSyncTime: Date?
     
     private override init() {
         super.init()
@@ -48,6 +50,10 @@ final class VoiceSessionController: NSObject, ObservableObject {
         logger.debug("Stopping realtime session")
         sessionTimeoutTask?.cancel()
         sessionTimeoutTask = nil
+        usageTrackingTask?.cancel()
+        usageTrackingTask = nil
+        sessionStartTime = nil
+        lastServerSyncTime = nil
         Task { await self.notifyStopIfNeeded() }
         peerConnection?.close()
         peerConnection = nil
@@ -56,6 +62,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         cachedSecret = nil
         setStatus(.disconnected)
         deactivateAudioSession()
+        // stop()時にはmarkQuotaHoldを呼ばない（エンドセッション押下時の誤表示を防ぐ）
     }
     
     private func notifyStopIfNeeded() async {
@@ -205,7 +212,9 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         setStatus(.connected)
-        scheduleFreeCapIfNeeded()
+        sessionStartTime = Date()
+        lastServerSyncTime = Date()
+        startUsageTracking()
     }
 
     private func fetchRemoteSDP(secret: ClientSecret, localSdp: String) async throws -> String {
@@ -292,16 +301,50 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
     }
     
-    private func scheduleFreeCapIfNeeded() {
-        sessionTimeoutTask?.cancel()
-        sessionTimeoutTask = nil
-        if AppState.shared.subscriptionInfo.plan == .free {
-            sessionTimeoutTask = Task { [weak self] in
-                guard let self else { return }
-                try? await Task.sleep(nanoseconds: UInt64(freeSessionMaxSeconds * 1_000_000_000))
+    // 新規追加: セッション中の利用量を定期的にチェック
+    // エビデンス: apps/api/src/routes/mobile/realtime.js で利用量はサーバー側で管理されているが、
+    // クライアント側でリアルタイムチェックする仕組みがない
+    private func startUsageTracking() {
+        usageTrackingTask?.cancel()
+        usageTrackingTask = Task { [weak self] in
+            guard let self else { return }
+            
+            // 30秒ごとに利用量をチェック
+            // エビデンス: SubscriptionManager.swift:70-98 でsyncUsageInfo()がサーバーから利用量を取得
+            while !Task.isCancelled {
+                try? await Task.sleep(nanoseconds: 30_000_000_000) // 30秒
+                
                 await MainActor.run {
-                    self.stop()
-                    AppState.shared.markQuotaHold(plan: .free, reason: .sessionTimeCap)
+                    guard let startTime = self.sessionStartTime else { return }
+                    let elapsedSeconds = Date().timeIntervalSince(startTime)
+                    // エビデンス: apps/api/src/services/subscriptionStore.js:198 で
+                    // billed_minutes = ceil(seconds / 60.0) として計算される
+                    // サーバーと同じく切り上げ（ceil）で計算
+                    let elapsedMinutes = Int(ceil(elapsedSeconds / 60.0))
+                    
+                    let subscription = AppState.shared.subscriptionInfo
+                    guard subscription.monthlyUsageLimit != nil,
+                          let remaining = subscription.monthlyUsageRemaining else {
+                        // 利用量情報が取得できない場合は続行
+                        return
+                    }
+                    
+                    // 残り利用量が経過時間（分）を下回ったら強制終了
+                    if remaining <= 0 || remaining < elapsedMinutes {
+                        self.logger.warning("Monthly usage limit reached during session")
+                        self.stop()
+                        AppState.shared.markQuotaHold(plan: subscription.plan, reason: .quotaExceeded)
+                        return
+                    }
+                    
+                    // 5分ごとにサーバー同期で補正（エラー時はセッション継続）
+                    if let lastSync = self.lastServerSyncTime,
+                       Date().timeIntervalSince(lastSync) >= 300 {
+                        self.lastServerSyncTime = Date()
+                        Task.detached(priority: .utility) {
+                            await SubscriptionManager.shared.syncNow()
+                        }
+                    }
                 }
             }
         }

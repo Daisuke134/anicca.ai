@@ -19,7 +19,6 @@ struct SettingsView: View {
     // ▼▼▼ 忘れずに追加してください ▼▼▼
     @State private var showingPaywall = false
     // ▲▲▲ 追加 ▲▲▲
-    @State private var isPresentingManageSubscriptions = false
     @State private var customHabitName: String = AppState.shared.customHabit?.name ?? ""
     @FocusState private var isCustomHabitNameFocused: Bool
     @State private var customHabitValidationError: LocalizedStringKey?
@@ -405,44 +404,7 @@ struct SettingsView: View {
                     // 復元完了時の処理（必要に応じて）
                     print("[CustomerCenter] Restore completed")
                 }
-                // ▼▼▼ 修正: Paywallへの遷移ロジック ▼▼▼
-                .onCustomerCenterShowingManageSubscriptions {
-                    print("[CustomerCenter] Showing manage subscriptions requested")
-                    if isPresentingManageSubscriptions { return }
-                    isPresentingManageSubscriptions = true
-                    
-                    Task {
-                        do {
-                            let customerInfo = try await Purchases.shared.customerInfo()
-                            let subscription = SubscriptionInfo(info: customerInfo)
-                            await MainActor.run { appState.updateSubscriptionInfo(subscription) }
-                            
-                            // 下位シートを先に閉じる
-                            await MainActor.run { showingCustomerCenter = false }
-                            
-                            if subscription.isEntitled {
-                                // 少し待ってからSK2の管理シートを1回だけ開く
-                                try? await Task.sleep(nanoseconds: 350_000_000)
-                                do {
-                                    try await Purchases.shared.showManageSubscriptions()
-                                } catch {
-                                    if let managementURL = subscription.managementURL {
-                                        await MainActor.run { UIApplication.shared.open(managementURL) }
-                                    }
-                                }
-                            } else {
-                                // 未課金は自前Paywallへ（競合回避のため少し待つ）
-                                try? await Task.sleep(nanoseconds: 350_000_000)
-                                await MainActor.run { showingPaywall = true }
-                            }
-                        } catch {
-                            print("[CustomerCenter] Check failed: \(error)")
-                            await MainActor.run { showingCustomerCenter = false }
-                        }
-                        await MainActor.run { isPresentingManageSubscriptions = false }
-                    }
-                }
-                // ▲▲▲ 修正終わり ▲▲▲
+                // 管理/変更シート提示はCustomer Center内部に委譲（ここでは何もしない）
         }
         // ▼▼▼ 追加: Paywall用のシート定義 ▼▼▼
         .sheet(isPresented: $showingPaywall) {

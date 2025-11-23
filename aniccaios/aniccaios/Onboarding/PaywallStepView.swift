@@ -20,6 +20,7 @@ struct PaywallStepView: View {
                 next()
             }
         )
+        .environment(\.locale, .autoupdatingCurrent)
         .task {
             // 遷移アニメーション完了まで待機（ヒッチ防止）
             try? await Task.sleep(nanoseconds: 500_000_000)

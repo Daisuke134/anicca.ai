@@ -82,6 +82,7 @@ struct SessionView: View {
                 }
             )
             .environmentObject(appState)
+            .environment(\.locale, .autoupdatingCurrent)
         }
         .onChange(of: appState.pendingHabitTrigger) { _, newValue in
             guard newValue != nil else { return }

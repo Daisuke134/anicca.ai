@@ -70,15 +70,15 @@ struct OnboardingFlowView: View {
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {
                 step = nextFollowUp
             } else {
-                // 購入状態を再確認してから分岐
+                // 購入状態を再確認してから分岐（待機せずに遷移）
                 Task {
                     await SubscriptionManager.shared.syncNow()
-                    await MainActor.run {
-                        // 現在サブスクライブしているユーザー（isEntitled == true）は完了画面へ、それ以外はPaywallへ
-                        step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
-                        appState.setOnboardingStep(step)
-                    }
                 }
+                
+                // 現在サブスクライブしているユーザー（isEntitled == true）は完了画面へ、それ以外はPaywallへ
+                // 待機せずに即座に遷移する
+                step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
+                appState.setOnboardingStep(step)
                 return
             }
         case .habitWakeLocation, .habitSleepLocation, .habitTrainingFocus:

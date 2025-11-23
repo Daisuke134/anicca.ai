@@ -28,23 +28,17 @@ struct PaywallStepView: View {
             }
         )
         .task {
-            // 1. まず手元の情報で即座に判定（待ち時間ゼロ）
-            checkEntitlement()
-            
-            // 2. 裏で最新情報を取得し、変更があれば自動的にViewが更新される（AppState経由）
-            Task {
+            // 画面表示時に購入状態を確認（UIブロック回避のためデタッチ）
+            Task.detached(priority: .background) {
                 await SubscriptionManager.shared.syncNow()
-                // 完了後にもう一度チェック（念のため）
-                checkEntitlement()
             }
-        }
-    }
-    
-    private func checkEntitlement() {
-        if appState.subscriptionInfo.isEntitled && !hasCompletedPurchase {
-            hasCompletedPurchase = true
-            appState.markOnboardingComplete()
-            next()
+            
+            // 現在サブスクライブしているユーザー（isEntitled == true）は自動で次へ進む
+            if appState.subscriptionInfo.isEntitled && !hasCompletedPurchase {
+                hasCompletedPurchase = true
+                appState.markOnboardingComplete()
+                next()
+            }
         }
     }
 }

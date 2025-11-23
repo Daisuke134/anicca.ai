@@ -200,7 +200,8 @@ struct HabitSetupStepView: View {
 
     private var timeFormatter: DateFormatter {
         let formatter = DateFormatter()
-        formatter.timeStyle = .short
+        formatter.dateFormat = "HH:mm"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
         return formatter
     }
 

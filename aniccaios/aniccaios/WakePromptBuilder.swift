@@ -41,7 +41,8 @@ struct HabitPromptBuilder {
            let hour = scheduled.hour,
            let minute = scheduled.minute {
             let formatter = DateFormatter()
-            formatter.timeStyle = .short
+            formatter.dateFormat = "HH:mm"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
             let calendar = Calendar.current
             var components = DateComponents()
             components.hour = hour
@@ -53,7 +54,8 @@ struct HabitPromptBuilder {
             }
         } else {
             let formatter = DateFormatter()
-            formatter.timeStyle = .short
+            formatter.dateFormat = "HH:mm"
+            formatter.locale = Locale(identifier: "en_US_POSIX")
             timeString = formatter.string(from: now)
         }
         replacements["TASK_TIME"] = timeString

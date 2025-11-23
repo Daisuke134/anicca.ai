@@ -419,23 +419,25 @@ struct SettingsView: View {
                             }
                             
                             if subscription.isEntitled {
-                                // 課金済みならまずアプリ内シート（StoreKit 2）を試す
-                                do {
-                                    try await Purchases.shared.showManageSubscriptions()
-                                    await MainActor.run { showingCustomerCenter = false }
-                                } catch {
-                                    // 失敗時のみ外部URLにフォールバック
-                                    if let managementURL = subscription.managementURL {
-                                        await MainActor.run {
-                                            UIApplication.shared.open(managementURL)
-                                            showingCustomerCenter = false
-                                        }
-                                    } else {
+                                // 課金済み: まずはアプリ内シート（iOS 15+）を試みる
+                                Task {
+                                    do {
+                                        try await Purchases.shared.showManageSubscriptions()
                                         await MainActor.run { showingCustomerCenter = false }
+                                    } catch {
+                                        // フォールバック: Appleの管理URLを外部で開く
+                                        if let managementURL = subscription.managementURL {
+                                            await MainActor.run {
+                                                UIApplication.shared.open(managementURL)
+                                                showingCustomerCenter = false
+                                            }
+                                        } else {
+                                            await MainActor.run { showingCustomerCenter = false }
+                                        }
                                     }
                                 }
                             } else {
-                                // 未課金なら自前のPaywallへ
+                                // 未課金: Paywallへ誘導
                                 await MainActor.run {
                                     showingCustomerCenter = false
                                     // 0.5秒待ってから表示（アニメーション競合回避）

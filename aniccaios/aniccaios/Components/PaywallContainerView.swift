@@ -15,8 +15,9 @@ struct PaywallContainerView: View {
     
     var body: some View {
         Group {
-            // プロプランユーザーにはペイウォールを表示しない（表示は即時・判定は裏で最新化）
-            if appState.subscriptionInfo.isEntitled {
+            // forcePresent: true の場合はエンタイトルメントチェックをスキップ
+            // エビデンス: 19行目の条件で即座に閉じられるのを防ぐ
+            if !forcePresent && appState.subscriptionInfo.isEntitled {
                 // エンタイトル済みの場合は何も表示せず、即座に閉じる
                 EmptyView()
                     .onAppear {
@@ -57,14 +58,23 @@ struct PaywallContainerView: View {
             }
         }
         .task {
+            // forcePresent: true の場合はエンタイトルメントチェックをスキップ
+            // エビデンス: 60-65行目でcheckEntitlementStatus()が呼ばれ、エンタイトル済みと判定されると閉じられる
             if !forcePresent && !appState.shouldShowPaywall {
                 onDismissRequested?()
+                return
+            }
+            // forcePresent: true の場合はエンタイトルメントチェックをスキップしてオファリングのみロード
+            if forcePresent {
+                await loadOffering()
                 return
             }
             // 重要: 表示前に最新のエンタイトルメント状態を確認
             await checkEntitlementAndLoadOffering()
         }
         .onChange(of: appState.shouldShowPaywall) { _, shouldShow in
+            // forcePresent: true の場合は shouldShowPaywall の変更を無視
+            // エビデンス: 67-69行目でshouldShowPaywallがfalseになると閉じられる
             if !forcePresent && !shouldShow { onDismissRequested?() }
         }
     }

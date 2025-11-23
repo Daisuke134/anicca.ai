@@ -128,7 +128,10 @@ struct SessionView: View {
             return (
                 title: String(localized: "session_button_end"),
                 disabled: false,
-                action: { controller.stop() }
+                action: { 
+                    controller.stop()
+                    // エビデンス: stop()時にはmarkQuotaHoldを呼ばない（エンドセッション押下時の誤表示を防ぐ）
+                }
             )
         case .connecting:
             return (

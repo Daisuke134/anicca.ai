@@ -446,14 +446,18 @@ final class AppState: ObservableObject {
     }
     
     func updateSubscriptionInfo(_ info: SubscriptionInfo) {
+        let wasEntitled = subscriptionInfo.isEntitled
         subscriptionInfo = info
         if let data = try? JSONEncoder().encode(info) {
             defaults.set(data, forKey: subscriptionKey)
         }
-        // 購読状態が更新されたらホールド解除
-        subscriptionHold = false
-        subscriptionHoldPlan = nil
-        quotaHoldReason = nil
+        // 購読状態が「非→有」になった時だけホールド解除（購入完了など）
+        // エビデンス: 利用量のバックグラウンド同期でホールドが勝手に落ちるのを防ぐ
+        if !wasEntitled && info.isEntitled {
+            subscriptionHold = false
+            subscriptionHoldPlan = nil
+            quotaHoldReason = nil
+        }
     }
     
     func markQuotaHold(plan: SubscriptionInfo.Plan?, reason: QuotaHoldReason = .quotaExceeded) {

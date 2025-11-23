@@ -17,6 +17,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var cachedSecret: ClientSecret?
     private var activeSessionId: String?
     private var sessionModel: String = "gpt-realtime"   // Desktop と examples の最新版に合わせる
+    private var sessionTimeoutTask: Task<Void, Never>?
+    private let freeSessionMaxSeconds: TimeInterval = 300
     
     private override init() {
         super.init()
@@ -44,6 +46,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     func stop() {
         logger.debug("Stopping realtime session")
+        sessionTimeoutTask?.cancel()
+        sessionTimeoutTask = nil
         Task { await self.notifyStopIfNeeded() }
         peerConnection?.close()
         peerConnection = nil
@@ -201,6 +205,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         setStatus(.connected)
+        scheduleFreeCapIfNeeded()
     }
 
     private func fetchRemoteSDP(secret: ClientSecret, localSdp: String) async throws -> String {
@@ -284,6 +289,21 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private func setStatus(_ state: ConnectionState) {
         DispatchQueue.main.async { [weak self] in
             self?.connectionStatus = state
+        }
+    }
+    
+    private func scheduleFreeCapIfNeeded() {
+        sessionTimeoutTask?.cancel()
+        sessionTimeoutTask = nil
+        if AppState.shared.subscriptionInfo.plan == .free {
+            sessionTimeoutTask = Task { [weak self] in
+                guard let self else { return }
+                try? await Task.sleep(nanoseconds: UInt64(freeSessionMaxSeconds * 1_000_000_000))
+                await MainActor.run {
+                    self.stop()
+                    AppState.shared.markQuotaHold(plan: .free, reason: .sessionTimeCap)
+                }
+            }
         }
     }
 }

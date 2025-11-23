@@ -2,6 +2,7 @@ import SwiftUI
 
 struct UsageLimitModalView: View {
     let plan: SubscriptionInfo.Plan
+    let reason: AppState.QuotaHoldReason
     let onClose: () -> Void
     let onUpgrade: () -> Void
     let onManage: () -> Void
@@ -32,24 +33,24 @@ struct UsageLimitModalView: View {
     }
 
     private var title: String {
+        if reason == .sessionTimeCap {
+            return NSLocalizedString("session_time_cap_title", comment: "")
+        }
         switch plan {
-        case .free:
-            return NSLocalizedString("quota_exceeded_title_free", comment: "")
-        case .pro:
-            return NSLocalizedString("quota_exceeded_title_pro", comment: "")
-        case .grace:
-            return NSLocalizedString("quota_exceeded_title_grace", comment: "")
+        case .free:  return NSLocalizedString("quota_exceeded_title_free",  comment: "")
+        case .pro:   return NSLocalizedString("quota_exceeded_title_pro",   comment: "")
+        case .grace: return NSLocalizedString("quota_exceeded_title_grace", comment: "")
         }
     }
 
     private var message: String {
+        if reason == .sessionTimeCap {
+            return NSLocalizedString("session_time_cap_message", comment: "")
+        }
         switch plan {
-        case .free:
-            return NSLocalizedString("quota_exceeded_message_free", comment: "")
-        case .pro:
-            return NSLocalizedString("quota_exceeded_message_pro", comment: "")
-        case .grace:
-            return NSLocalizedString("quota_exceeded_message_grace", comment: "")
+        case .free:  return NSLocalizedString("quota_exceeded_message_free",  comment: "")
+        case .pro:   return NSLocalizedString("quota_exceeded_message_pro",   comment: "")
+        case .grace: return NSLocalizedString("quota_exceeded_message_grace", comment: "")
         }
     }
     

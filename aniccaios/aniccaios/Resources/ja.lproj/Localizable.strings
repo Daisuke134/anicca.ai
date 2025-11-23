@@ -153,4 +153,6 @@
 "quota_exceeded_close" = "戻る";
 "quota_exceeded_upgrade" = "アップグレード";
 "quota_exceeded_manage" = "プランを管理";
+"session_time_cap_title" = "無料セッション上限に達しました（5分）";
+"session_time_cap_message" = "無料セッションは5分で終了しました。より長い会話を続けるにはアップグレードしてください。";
 

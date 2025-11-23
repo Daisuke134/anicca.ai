@@ -14,6 +14,12 @@ final class AppState: ObservableObject {
     @Published private(set) var purchaseEnvironmentStatus: PurchaseEnvironmentStatus = .ready
     @Published private(set) var subscriptionHold: Bool = false
     @Published private(set) var subscriptionHoldPlan: SubscriptionInfo.Plan? = nil
+    
+    enum QuotaHoldReason: String, Codable {
+        case quotaExceeded       // 月間上限到達
+        case sessionTimeCap      // 無料セッション5分上限
+    }
+    @Published private(set) var quotaHoldReason: QuotaHoldReason?
     @Published private(set) var habitSchedules: [HabitType: DateComponents] = [:]
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
@@ -447,11 +453,13 @@ final class AppState: ObservableObject {
         // 購読状態が更新されたらホールド解除
         subscriptionHold = false
         subscriptionHoldPlan = nil
+        quotaHoldReason = nil
     }
     
-    func markQuotaHold(plan: SubscriptionInfo.Plan?) {
+    func markQuotaHold(plan: SubscriptionInfo.Plan?, reason: QuotaHoldReason = .quotaExceeded) {
         subscriptionHoldPlan = plan
         subscriptionHold = plan != nil
+        quotaHoldReason = reason
     }
     
     func updatePurchaseEnvironment(_ status: PurchaseEnvironmentStatus) {

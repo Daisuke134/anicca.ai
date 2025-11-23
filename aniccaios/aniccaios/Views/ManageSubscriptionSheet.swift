@@ -11,6 +11,7 @@ struct ManageSubscriptionSheet: View {
     @State private var isPurchasing = false
     @State private var purchaseError: Error?
     @State private var showingCustomerCenter = false
+    @State private var isPresentingManageSubscriptions = false
     
     var body: some View {
         NavigationView {
@@ -76,21 +77,25 @@ struct ManageSubscriptionSheet: View {
                     }
                 }
                 .onCustomerCenterShowingManageSubscriptions {
-                    // iOS 15.0以上では、AppStore.showManageSubscriptions(in:)が呼ばれ、
-                    // アプリ内シートとして表示される（App Storeへのリダイレクトではない）
-                    // サンドボックス環境でも動作する（サンドボックステストアカウントでログインが必要）
+                    if isPresentingManageSubscriptions { return }
+                    isPresentingManageSubscriptions = true
+                    
+                    // 下位のシートを先に全て閉じる（重ね表示防止）
+                    showingCustomerCenter = false
+                    dismiss() // ManageSubscriptionSheet 自身も閉じる
+                    
                     Task {
+                        // プレゼンテーション競合を避けるため少し待つ
+                        try? await Task.sleep(nanoseconds: 350_000_000)
                         do {
                             try await Purchases.shared.showManageSubscriptions()
                         } catch {
                             print("[ManageSubscriptionSheet] Failed to show manage subscriptions: \(error)")
-                            // フォールバック: managementURLを開く
                             if let managementURL = appState.subscriptionInfo.managementURL {
-                                await MainActor.run {
-                                    UIApplication.shared.open(managementURL)
-                                }
+                                await MainActor.run { UIApplication.shared.open(managementURL) }
                             }
                         }
+                        await MainActor.run { isPresentingManageSubscriptions = false }
                     }
                 }
         }

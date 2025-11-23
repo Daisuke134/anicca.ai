@@ -61,6 +61,10 @@ struct OnboardingFlowView: View {
             step = .profile
         case .profile:
             step = .habitSetup
+            // プロフィール完了時にオファリングをプリフェッチ（Paywall表示の準備）
+            Task {
+                await SubscriptionManager.shared.refreshOfferings()
+            }
         case .habitSetup:
             // フォローアップがあれば続行、無ければ課金状態で分岐
             if let nextFollowUp = appState.consumeNextHabitFollowUp() {

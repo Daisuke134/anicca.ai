@@ -38,7 +38,7 @@ final class SubscriptionManager: NSObject {
                 
                 // サーバーから月次利用量情報を取得してマージ（バックグラウンド）
                 Task.detached(priority: .utility) {
-                    await syncUsageInfo(&subscription)
+                    await self.syncUsageInfo(&subscription)
                     // 利用量情報のみを更新（エンタイトルメント状態は変更しない）
                     await MainActor.run {
                         var currentSubscription = AppState.shared.subscriptionInfo
@@ -105,7 +105,12 @@ final class SubscriptionManager: NSObject {
             print("[SubscriptionManager] Offerings loaded: current=\(result.current?.identifier ?? "nil"), all=\(result.all.keys.joined(separator: ", "))")
             offerings = result
             await MainActor.run {
-                AppState.shared.updateOffering(result.offering(identifier: AppConfig.revenueCatPaywallId) ?? result.current)
+                // キャッシュを確実に更新
+                if let offering = result.offering(identifier: AppConfig.revenueCatPaywallId) ?? result.current {
+                    AppState.shared.updateOffering(offering)
+                } else {
+                    AppState.shared.updateOffering(nil)
+                }
             }
         } catch {
             await MainActor.run {

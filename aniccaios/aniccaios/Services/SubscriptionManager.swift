@@ -25,6 +25,14 @@ final class SubscriptionManager: NSObject {
         )
         
         Purchases.shared.delegate = self
+        
+        // 起動直後にSDKキャッシュのOfferingをAppStateへプリロード
+        if let cached = Purchases.shared.cachedOfferings,
+           let preloaded = cached.offering(identifier: AppConfig.revenueCatPaywallId) ?? cached.current {
+            print("[SubscriptionManager] Pre-loading cached offering: \(preloaded.identifier)")
+            AppState.shared.updateOffering(preloaded)
+        }
+        
         // 起動直後にオファリング取得を開始（並列実行で高速化）
         Task {
             await withTaskGroup(of: Void.self) { group in

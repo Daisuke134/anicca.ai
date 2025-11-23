@@ -65,7 +65,20 @@ struct PaywallContainerView: View {
     }
     
     private func checkEntitlementAndLoadOffering() async {
-        // 1. キャッシュされたオファリングを優先的に使用（高速化）
+        // 1. SDKキャッシュを最優先で確認（これが最も高速）
+        if let sdkCached = Purchases.shared.cachedOfferings?.current,
+           sdkCached.availablePackages.isEmpty == false {
+            await MainActor.run {
+                self.offering = sdkCached
+                self.isLoading = false // 即座にローディング解除
+                self.hasCheckedEntitlement = true
+            }
+            // キャッシュ利用中も念のため裏で最新確認を行うが、awaitでUIを止めない
+            Task { await checkEntitlementStatus() }
+            return
+        }
+
+        // 2. キャッシュされたオファリングを優先的に使用（高速化）
         if let cached = appState.cachedOffering,
            cached.isSafeToDisplay,
            !cached.availablePackages.isEmpty {

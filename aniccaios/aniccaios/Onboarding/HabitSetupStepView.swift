@@ -31,17 +31,16 @@ struct HabitSetupStepView: View {
             ))
         }
         
-        // カスタム習慣を追加
+        // カスタム習慣を追加（時刻が設定されていなくても表示）
         for customHabit in appState.customHabits {
-            if let time = customHabitTimes[customHabit.id] {
-                allHabits.append((
-                    id: customHabit.id.uuidString,
-                    name: customHabit.name,
-                    time: time,
-                    isCustom: true,
-                    customId: customHabit.id
-                ))
-            }
+            let time = customHabitTimes[customHabit.id]  // nilでも追加
+            allHabits.append((
+                id: customHabit.id.uuidString,
+                name: customHabit.name,
+                time: time,
+                isCustom: true,
+                customId: customHabit.id
+            ))
         }
         
         // 時系列順にソート（時刻が早い順）
@@ -308,12 +307,15 @@ struct HabitSetupStepView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
+                        // Cancel時にselectedHabitsから削除
+                        selectedHabits.remove(habit)
                         showingTimePicker = nil
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
                         habitTimes[habit] = sheetTime
+                        // 注意: selectedHabitsには既に含まれている（Toggle ON時に追加済み）
                         showingTimePicker = nil
                     }
                 }
@@ -323,10 +325,19 @@ struct HabitSetupStepView: View {
 
     private var canSave: Bool {
         guard !isSaving else { return false }
-        // 選択された習慣が全て時間設定済みかチェック
+        
+        // 選択されたデフォルト習慣が全て時間設定済みかチェック
         let defaultHabitsHaveTime = selectedHabits.allSatisfy { habitTimes[$0] != nil }
-        let customHabitsHaveTime = appState.customHabits.allSatisfy { customHabitTimes[$0.id] != nil }
-        return defaultHabitsHaveTime && customHabitsHaveTime
+        
+        // 時刻が設定されているカスタム習慣のみをチェック
+        // （時刻未設定のカスタム習慣は無視）
+        let customHabitsWithTime = appState.customHabits.filter { customHabitTimes[$0.id] != nil }
+        let customHabitsHaveTime = customHabitsWithTime.isEmpty || customHabitsWithTime.allSatisfy { customHabitTimes[$0.id] != nil }
+        
+        // 最低1つでも習慣が設定されていればOK
+        let hasAtLeastOneHabit = !selectedHabits.isEmpty || !customHabitsWithTime.isEmpty
+        
+        return hasAtLeastOneHabit && defaultHabitsHaveTime && customHabitsHaveTime
     }
     
     private func save() {

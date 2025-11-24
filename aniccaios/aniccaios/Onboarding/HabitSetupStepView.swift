@@ -116,7 +116,7 @@ struct HabitSetupStepView: View {
     @ViewBuilder
     private func habitCard(for habit: HabitType, isCustom: Bool) -> some View {
         let isSelected = selectedHabits.contains(habit)
-        let hasTime = habitTimes[habit] != nil
+        _ = habitTimes[habit] != nil
         
         HStack {
             VStack(alignment: .leading, spacing: 8) {

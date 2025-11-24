@@ -19,6 +19,12 @@ struct OnboardingFlowView: View {
                 ProfileInfoStepView(next: advance)
             case .habitSetup:
                 HabitSetupStepView(next: advance)
+            case .habitWakeLocation:
+                HabitWakeLocationStepView(next: advance)
+            case .habitSleepLocation:
+                HabitSleepLocationStepView(next: advance)
+            case .habitTrainingFocus:
+                HabitTrainingFocusStepView(next: advance)
             case .paywall:
                 PaywallStepView(next: advance)
             case .completion:
@@ -71,6 +77,12 @@ struct OnboardingFlowView: View {
             step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
             appState.setOnboardingStep(step)
             return
+        case .habitWakeLocation:
+            step = .habitSleepLocation
+        case .habitSleepLocation:
+            step = .habitTrainingFocus
+        case .habitTrainingFocus:
+            step = .paywall
         case .paywall:
             // Paywallのステップを保存してから完了画面へ
             appState.setOnboardingStep(.paywall)

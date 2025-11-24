@@ -7,7 +7,7 @@ extension Array {
         guard !source.isEmpty else { return }
         
         // destinationを有効な範囲に制限
-        let validDestination = max(0, min(destination, self.count))
+        let validDestination = Swift.max(0, Swift.min(destination, self.count))
         
         var itemsToMove = source.map { self[$0] }
         var adjustedDestination = validDestination

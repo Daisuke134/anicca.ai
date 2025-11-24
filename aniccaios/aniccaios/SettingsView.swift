@@ -103,4 +103,13 @@ struct SettingsView: View {
         preferredLanguage = appState.userProfile.preferredLanguage
     }
     
+    private func save() {
+        isSaving = true
+        var profile = appState.userProfile
+        profile.displayName = displayName
+        profile.preferredLanguage = preferredLanguage
+        appState.updateUserProfile(profile, sync: true)
+        isSaving = false
+        dismiss()
+    }
 }

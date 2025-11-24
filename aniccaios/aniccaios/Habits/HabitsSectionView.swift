@@ -35,7 +35,20 @@ struct HabitsSectionView: View {
         
         // デフォルト習慣を追加（時刻設定済み）
         for habit in [HabitType.wake, .training, .bedtime] {
-            if let date = habitTimes[habit] {
+            // AppStateから時刻を取得（habitTimesにない場合も含む）
+            if let components = appState.habitSchedules[habit],
+               let date = Calendar.current.date(from: components) {
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                allHabits.append((
+                    id: habit.rawValue,
+                    habit: habit,
+                    customId: nil,
+                    name: habit.title,
+                    time: components,
+                    isActive: activeHabits.contains(habit)
+                ))
+            } else if let date = habitTimes[habit] {
+                // habitTimesから取得（フォールバック）
                 let components = Calendar.current.dateComponents([.hour, .minute], from: date)
                 allHabits.append((
                     id: habit.rawValue,
@@ -50,7 +63,20 @@ struct HabitsSectionView: View {
         
         // カスタム習慣を追加（時刻設定済み）
         for customHabit in appState.customHabits {
-            if let date = customHabitTimes[customHabit.id] {
+            // AppStateから時刻を取得（customHabitTimesにない場合も含む）
+            if let components = appState.customHabitSchedules[customHabit.id],
+               let date = Calendar.current.date(from: components) {
+                let components = Calendar.current.dateComponents([.hour, .minute], from: date)
+                allHabits.append((
+                    id: customHabit.id.uuidString,
+                    habit: nil,
+                    customId: customHabit.id,
+                    name: customHabit.name,
+                    time: components,
+                    isActive: activeCustomHabits.contains(customHabit.id)
+                ))
+            } else if let date = customHabitTimes[customHabit.id] {
+                // customHabitTimesから取得（フォールバック）
                 let components = Calendar.current.dateComponents([.hour, .minute], from: date)
                 allHabits.append((
                     id: customHabit.id.uuidString,
@@ -160,12 +186,23 @@ struct HabitsSectionView: View {
                     .navigationBarTitleDisplayMode(.inline)
                 }
             case .editor(let habit):
-                HabitEditSheet(habit: habit)
+                HabitEditSheet(habit: habit, onSave: {
+                    // 保存後に習慣時刻を再読み込み
+                    loadHabitTimes()
+                })
                     .environmentObject(appState)
             }
         }
         // 削除確認UIは廃止
         .onAppear {
+            loadHabitTimes()
+        }
+        .onChange(of: appState.habitSchedules) { _ in
+            // AppStateのhabitSchedulesが変更されたときに再読み込み
+            loadHabitTimes()
+        }
+        .onChange(of: appState.customHabitSchedules) { _ in
+            // AppStateのcustomHabitSchedulesが変更されたときに再読み込み
             loadHabitTimes()
         }
     }
@@ -229,8 +266,10 @@ struct HabitsSectionView: View {
                             habitTimes[habit] = date
                         }
                     } else {
+                        // トグルをOFFにしても習慣は削除しない（非アクティブ状態として保持）
                         activeHabits.remove(habit)
-                        habitTimes.removeValue(forKey: habit)
+                        // habitTimesからは削除しない（時刻情報は保持）
+                        // AppStateからも削除しない（スワイプ削除のみで削除可能）
                     }
                 }
             ))
@@ -277,8 +316,10 @@ struct HabitsSectionView: View {
                             customHabitTimes[id] = date
                         }
                     } else {
+                        // トグルをOFFにしても習慣は削除しない（非アクティブ状態として保持）
                         activeCustomHabits.remove(id)
-                        customHabitTimes.removeValue(forKey: id)
+                        // customHabitTimesからは削除しない（時刻情報は保持）
+                        // AppStateからも削除しない（スワイプ削除のみで削除可能）
                     }
                 }
             ))
@@ -388,12 +429,18 @@ struct HabitsSectionView: View {
 struct HabitEditSheet: View {
     @EnvironmentObject private var appState: AppState
     let habit: HabitType
+    let onSave: (() -> Void)?
     @State private var time = Date()
     @State private var wakeLocation: String = ""
     @State private var sleepLocation: String = ""
     @State private var wakeRoutines: [RoutineItem] = []
     @State private var sleepRoutines: [RoutineItem] = []
     @Environment(\.dismiss) private var dismiss
+    
+    init(habit: HabitType, onSave: (() -> Void)? = nil) {
+        self.habit = habit
+        self.onSave = onSave
+    }
     
     var body: some View {
         NavigationView {
@@ -607,6 +654,10 @@ struct HabitEditSheet: View {
         // 時刻を保存
         Task {
             await appState.updateHabit(habit, time: time)
+            // 保存後にコールバックを呼び出し
+            await MainActor.run {
+                onSave?()
+            }
         }
         
         // Wake/Sleepの場所とルーティンを保存

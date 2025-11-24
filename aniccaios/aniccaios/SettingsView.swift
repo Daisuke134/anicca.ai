@@ -63,6 +63,10 @@ struct SettingsView: View {
                 loadPersonalizationData()
                 Task { await SubscriptionManager.shared.syncNow() }
             }
+            .safeAreaInset(edge: .bottom) {
+                // Guideline 3.1.2対応: 法的リンクを常設（購入フロー外からも1タップ到達）
+                LegalLinksView()
+            }
             .alert("Delete Account", isPresented: $isShowingDeleteAlert) {
                 Button("Cancel", role: .cancel) {}
                 Button("Delete", role: .destructive) {

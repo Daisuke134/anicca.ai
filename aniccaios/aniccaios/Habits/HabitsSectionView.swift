@@ -104,11 +104,17 @@ struct HabitsSectionView: View {
     }
     
     private var inactiveDefaultHabits: [HabitType] {
-        [HabitType.wake, .training, .bedtime].filter { !activeHabits.contains($0) }
+        // "未設定（時刻が無い）"を非アクティブとして扱う
+        [HabitType.wake, .training, .bedtime].filter { habit in
+            appState.habitSchedules[habit] == nil && habitTimes[habit] == nil
+        }
     }
     
     private var inactiveCustomHabits: [CustomHabitConfiguration] {
-        appState.customHabits.filter { !activeCustomHabits.contains($0.id) }
+        // カスタムも"未設定（時刻が無い）"を非アクティブとして扱う
+        appState.customHabits.filter { cfg in
+            appState.customHabitSchedules[cfg.id] == nil && customHabitTimes[cfg.id] == nil
+        }
     }
     
     var body: some View {
@@ -241,12 +247,22 @@ struct HabitsSectionView: View {
         let date = time.flatMap { Calendar.current.date(from: $0) }
         
         HStack {
+            // 左側ラベル領域のみタップ可能にして、トグル操作時にシートが開かないようにする
             VStack(alignment: .leading, spacing: 8) {
                 Text(habit.title)
                     .font(.headline)
                 Text(habit.detail)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if isActive {
+                    activeSheet = .editor(habit)
+                } else {
+                    sheetTime = date ?? Date()
+                    activeSheet = .habit(habit)
+                }
             }
             
             Spacer()
@@ -266,25 +282,12 @@ struct HabitsSectionView: View {
                             habitTimes[habit] = date
                         }
                     } else {
-                        // トグルをOFFにしても習慣は削除しない（非アクティブ状態として保持）
+                        // トグルOFFでも削除しない
                         activeHabits.remove(habit)
-                        // habitTimesからは削除しない（時刻情報は保持）
-                        // AppStateからも削除しない（スワイプ削除のみで削除可能）
                     }
                 }
             ))
             .labelsHidden()
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if isActive {
-                // タップで統合エディタ（時刻＋フォローアップ）を開く
-                activeSheet = .editor(habit)
-            } else {
-                // 未設定の場合は時刻設定シートを開く
-                sheetTime = date ?? Date()
-                activeSheet = .habit(habit)
-            }
         }
     }
     
@@ -297,6 +300,13 @@ struct HabitsSectionView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(name)
                     .font(.headline)
+            }
+            .contentShape(Rectangle())
+            .onTapGesture {
+                if isActive {
+                    sheetTime = date ?? Date()
+                    activeSheet = .custom(id)
+                }
             }
             
             Spacer()
@@ -316,21 +326,11 @@ struct HabitsSectionView: View {
                             customHabitTimes[id] = date
                         }
                     } else {
-                        // トグルをOFFにしても習慣は削除しない（非アクティブ状態として保持）
                         activeCustomHabits.remove(id)
-                        // customHabitTimesからは削除しない（時刻情報は保持）
-                        // AppStateからも削除しない（スワイプ削除のみで削除可能）
                     }
                 }
             ))
             .labelsHidden()
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            if isActive {
-                sheetTime = date ?? Date()
-                activeSheet = .custom(id)
-            }
         }
     }
     

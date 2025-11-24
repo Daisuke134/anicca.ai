@@ -1,12 +1,12 @@
 import SwiftUI
 
 struct HabitTrainingFollowUpView: View {
-    let onRegisterSave: (((() -> Void)) -> Void)?
+    let onRegisterSave: ((@escaping () -> Void) -> Void)?
     @EnvironmentObject private var appState: AppState
     @State private var trainingGoal: String = ""
     @State private var selectedOption: String? = nil
     
-    init(onRegisterSave: (((() -> Void)) -> Void)? = nil) {
+    init(onRegisterSave: ((@escaping () -> Void) -> Void)? = nil) {
         self.onRegisterSave = onRegisterSave
     }
     

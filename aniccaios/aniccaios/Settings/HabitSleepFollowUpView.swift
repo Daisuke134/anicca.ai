@@ -1,7 +1,7 @@
 import SwiftUI
 
 struct HabitSleepFollowUpView: View {
-    let onRegisterSave: (((() -> Void)) -> Void)?
+    let onRegisterSave: ((@escaping () -> Void) -> Void)?
     @EnvironmentObject private var appState: AppState
     @State private var sleepLocation: String = ""
     @State private var routines: [RoutineItem] = [
@@ -10,7 +10,7 @@ struct HabitSleepFollowUpView: View {
         RoutineItem(text: "")
     ]
     
-    init(onRegisterSave: (((() -> Void)) -> Void)? = nil) {
+    init(onRegisterSave: ((@escaping () -> Void) -> Void)? = nil) {
         self.onRegisterSave = onRegisterSave
     }
     

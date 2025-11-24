@@ -1,7 +1,7 @@
 import express from 'express';
 import { requireAuth } from '../../middleware/requireAuth.js';
 import { deleteSubscriber } from '../../services/revenuecat/api.js';
-import db from '../../db/index.js';
+import { pool } from '../../lib/db.js';
 
 const router = express.Router();
 
@@ -18,14 +18,22 @@ router.delete('/', requireAuth, async (req, res, next) => {
       console.error(`[Account Deletion] Failed to delete RevenueCat subscriber for user ${userId}:`, error);
     }
     
-    // アプリDBの削除（トランザクション内で実行）
-    await db.tx(async (t) => {
+    // アプリDBの削除（pg Poolでトランザクション）
+    const client = await pool.connect();
+    try {
+      await client.query('BEGIN');
       // 関連データを削除（外部キー制約の順序に注意）
-      await t.none('DELETE FROM usage_sessions WHERE user_id = $1', [userId]);
-      await t.none('DELETE FROM profiles WHERE user_id = $1', [userId]);
-      await t.none('DELETE FROM devices WHERE user_id = $1', [userId]);
-      await t.none('DELETE FROM users WHERE id = $1', [userId]);
-    });
+      await client.query('DELETE FROM usage_sessions WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM profiles WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM devices WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM users WHERE id = $1', [userId]);
+      await client.query('COMMIT');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      throw e;
+    } finally {
+      client.release();
+    }
     
     return res.status(204).send();
   } catch (error) {

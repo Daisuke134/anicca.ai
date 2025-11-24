@@ -100,6 +100,7 @@
 "settings_subscription_current_plan" = "Current Plan";
 "settings_subscription_current" = "Current";
 "settings_subscription_select" = "Select";
+"settings_subscription_usage" = "Usage";
 "settings_subscription_no_plans" = "No subscription plans available";
 "settings_subscription_restore" = "Restore Purchases";
 "settings_subscription_manage_app_store" = "Manage on App Store";

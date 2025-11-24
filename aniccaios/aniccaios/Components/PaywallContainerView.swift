@@ -31,14 +31,7 @@ struct PaywallContainerView: View {
                       !offeringToDisplay.availablePackages.isEmpty {
                 // Guideline 3.1.2対応: 請求額を最強調、法的リンクを常設
                 VStack(spacing: 0) {
-                    // 上部: 請求額を最も目立つ形で表示
-                    if let primaryPackage = offeringToDisplay.availablePackages.first {
-                        PricingDisclosureBanner(
-                            billedAmountText: PricingDisclosureBanner.billedText(for: primaryPackage),
-                            perMonthText: PricingDisclosureBanner.perMonthText(for: primaryPackage),
-                            noteText: "Cancel anytime. Price may vary by region and currency."
-                        )
-                    }
+                    // PricingDisclosureBannerを削除（価格表示を非表示化）
                     
                     // RevenueCatUIのPaywallViewを使用
                     PaywallView(offering: offeringToDisplay)

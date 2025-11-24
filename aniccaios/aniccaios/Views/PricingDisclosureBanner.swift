@@ -4,8 +4,6 @@ import RevenueCat
 
 struct PricingDisclosureBanner: View {
     let billedAmountText: String
-    let perMonthText: String?
-    let noteText: String
     
     var body: some View {
         VStack(spacing: 6) {
@@ -13,14 +11,6 @@ struct PricingDisclosureBanner: View {
                 .font(.largeTitle)
                 .bold()
                 .multilineTextAlignment(.center)
-            if let perMonthText {
-                Text(perMonthText)
-                    .font(.subheadline)
-                    .foregroundColor(.secondary)
-            }
-            Text(noteText)
-                .font(.footnote)
-                .foregroundColor(.secondary)
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
@@ -34,36 +24,16 @@ extension PricingDisclosureBanner {
         if let period = package.storeProduct.subscriptionPeriod {
             switch period.unit {
             case .year:
-                return "\(price)/yr (auto-renewing)"
+                return "\(price)/yr"
             case .month:
-                return "\(price)/mo (auto-renewing)"
+                return "\(price)/mo"
             case .week:
-                return "\(price)/wk (auto-renewing)"
+                return "\(price)/wk"
             default:
-                return "\(price) (auto-renewing)"
+                return price
             }
         }
         return price
-    }
-    
-    static func perMonthText(for package: Package) -> String? {
-        guard let period = package.storeProduct.subscriptionPeriod,
-              period.unit == .year else {
-            return nil
-        }
-        let price = package.storeProduct.price
-        let perMonth = price / 12
-        let formatter = package.storeProduct.priceFormatter ?? {
-            let f = NumberFormatter()
-            f.numberStyle = .currency
-            f.locale = Locale.current
-            return f
-        }()
-        formatter.maximumFractionDigits = 2
-        if let formatted = formatter.string(from: NSDecimalNumber(decimal: perMonth)) {
-            return "≈ \(formatted)/mo (for comparison)"
-        }
-        return nil
     }
 }
 

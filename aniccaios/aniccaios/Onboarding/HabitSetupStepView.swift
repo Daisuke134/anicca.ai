@@ -15,13 +15,41 @@ struct HabitSetupStepView: View {
     @State private var showingAddCustomHabit = false
     @State private var newCustomHabitName = ""
     
-    // 追加: デフォルト習慣を時刻昇順にソート
-    private var sortedDefaultHabits: [HabitType] {
-        let base: [HabitType] = [.wake, .training, .bedtime]
-        return base.sorted { a, b in
-            let ca = habitTimes[a] ?? Calendar.current.date(from: a.defaultTime) ?? Date.distantFuture
-            let cb = habitTimes[b] ?? Calendar.current.date(from: b.defaultTime) ?? Date.distantFuture
-            return ca < cb
+    // 時系列順にソートされた全習慣（デフォルト習慣とカスタム習慣を統合）
+    private var sortedAllHabits: [(id: String, name: String, time: Date?, isCustom: Bool, customId: UUID?)] {
+        var allHabits: [(id: String, name: String, time: Date?, isCustom: Bool, customId: UUID?)] = []
+        
+        // デフォルト習慣を追加
+        for habit in [HabitType.wake, .training, .bedtime] {
+            let time = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime)
+            allHabits.append((
+                id: habit.rawValue,
+                name: habit.title,
+                time: time,
+                isCustom: false,
+                customId: nil
+            ))
+        }
+        
+        // カスタム習慣を追加
+        for customHabit in appState.customHabits {
+            let time = customHabitTimes[customHabit.id]
+            allHabits.append((
+                id: customHabit.id.uuidString,
+                name: customHabit.name,
+                time: time,
+                isCustom: true,
+                customId: customHabit.id
+            ))
+        }
+        
+        // 時系列順にソート（時刻が早い順）
+        return allHabits.sorted { item1, item2 in
+            guard let time1 = item1.time, let time2 = item2.time else {
+                // 時刻未設定のものは最後に
+                return item1.time != nil
+            }
+            return time1 < time2
         }
     }
 
@@ -39,21 +67,20 @@ struct HabitSetupStepView: View {
 
             List {
                 Section {
-                    // デフォルト習慣（時刻の早い順）
-                    ForEach(sortedDefaultHabits, id: \.self) { habit in
-                        habitCard(for: habit, isCustom: false)
-                    }
-                    
-                    // カスタム習慣
-                    ForEach(appState.customHabits) { customHabit in
-                        customHabitCard(for: customHabit)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                Button(role: .destructive) {
-                                    appState.removeCustomHabit(id: customHabit.id)
-                                } label: {
-                                    Label(String(localized: "common_delete"), systemImage: "trash")
+                    // 全習慣を時系列順に表示
+                    ForEach(sortedAllHabits, id: \.id) { item in
+                        if item.isCustom, let customId = item.customId {
+                            customHabitCard(for: appState.customHabits.first(where: { $0.id == customId })!)
+                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                    Button(role: .destructive) {
+                                        appState.removeCustomHabit(id: customId)
+                                    } label: {
+                                        Label(String(localized: "common_delete"), systemImage: "trash")
+                                    }
                                 }
-                            }
+                        } else if let habit = HabitType(rawValue: item.id) {
+                            habitCard(for: habit, isCustom: false)
+                        }
                     }
                     
                     // 「習慣を追加」ボタン

@@ -20,7 +20,7 @@ struct SettingsView: View {
                 // Subscription (復活)
                 Section(String(localized: "settings_subscription_title")) {
                     HStack {
-                        Text(String(localized: "settings_subscription_plan"))
+                        Text(String(localized: "settings_subscription_current_plan"))
                         Spacer()
                         Text(appState.subscriptionInfo.displayPlanName)
                     }

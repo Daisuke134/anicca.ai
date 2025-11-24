@@ -12,16 +12,20 @@ struct SettingsView: View {
     @State private var isShowingDeleteAlert = false
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: Error?
-
-
+    @State private var showingManageSubscription = false
 
     var body: some View {
         navigationContainer {
             List {
-                // Personalization section (簡略化)
+                // Subscription (復活)
+                Section(String(localized: "settings_subscription_title")) {
+                    Button(String(localized: "settings_subscription_manage")) { showingManageSubscription = true }
+                }
+                
+                // Personalization
                 Section(String(localized: "settings_personalization")) {
-                    TextField(String(localized: "settings_name"), text: $displayName)
-                    Picker(String(localized: "settings_language"), selection: $preferredLanguage) {
+                    TextField(String(localized: "settings_name_label"), text: $displayName)
+                    Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
                         Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
                         Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
                     }
@@ -36,7 +40,15 @@ struct SettingsView: View {
                     }
                 }
                 
-                // Guideline 5.1.1(v)対応: アカウント削除
+                // Sign out
+                Section {
+                    Button(String(localized: "common_sign_out")) {
+                        appState.clearUserCredentials()
+                        dismiss()
+                    }
+                }
+                
+                // Delete account
                 Section {
                     Button(role: .destructive) {
                         isShowingDeleteAlert = true
@@ -89,6 +101,9 @@ struct SettingsView: View {
                     Text(error.localizedDescription)
                 }
             }
+        }
+        .sheet(isPresented: $showingManageSubscription) {
+            ManageSubscriptionSheet().environmentObject(appState)
         }
     }
     

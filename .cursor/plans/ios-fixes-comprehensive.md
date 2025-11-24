@@ -1,12 +1,34 @@
 # Anicca iOS – Habits/Settings fixes and follow-up
-## Scope
 
-- Correct localization usage/strings (placeholders, titles, labels). Replace “Set %@ Time” with “Set Time”. Rename displayed “Bedtime” to “Sleep”.
+## 実装済み（2025-11-24）
+
+### 1) iOS: 通知タップで必ず"トーク"タブへ遷移
+**目的**: 通知（習慣アラーム）からアプリに遷移した際、最後に見ていたタブに関係なく、常に"トーク"タブを表示させる。
+
+**実装内容**:
+- `AppState`に`RootTab` enumと`selectedRootTab`を追加し、タブ選択状態を集中管理
+- `MainTabView`の`TabView(selection:)`を`AppState.selectedRootTab`にバインド
+- 通知タップ時（`AppDelegate`）と即時セッション準備時（`prepareForImmediateSession`）に`selectedRootTab = .talk`を設定
+- `StartConversationIntent`でも同様に"トーク"タブを強制選択
+
+**音（アラーム/通知サウンド）への影響**: なし。`NotificationScheduler`のカテゴリ/サウンド/フォローアップ登録ロジックは無変更。`AudioSessionCoordinator`も従来通り。通知鳴動・繰り返し挙動は変化しません。
+
+### 2) Delete Account が 401（サーバー無ログ）の解消
+**原因**: `apps/api/src/routes/mobile/account.js`はBearer必須（`requireAuth`）だったが、iOSの`SettingsView.deleteAccount()`は`device-id` + `user-id`ヘッダーのみを送信。プロジェクト規約（モバイルAPIはヘッダー方式）とズレて401が発生。
+
+**実装内容**: Bearer優先＋`device-id`/`user-id`フォールバック対応
+- Bearerがあれば従来通り検証（優先）
+- Bearerがなければ`device-id` + `user-id`を許容（他モバイルAPIと同一方式）
+
+---
+
+## Scope（未実装・計画中）
+
+- Correct localization usage/strings (placeholders, titles, labels). Replace "Set %@ Time" with "Set Time". Rename displayed "Bedtime" to "Sleep".
 - Sort habits by time in onboarding; keep Habits tab sorted (already implemented) and ensure consistent ordering.
 - Fix Add Habit placeholder and duplicate-creation bug; remove delete confirmation.
 - Tap habit row in Habits tab opens unified editor (time + follow-ups). Reuse existing onboarding step UIs.
 - Settings: restore Subscription section (above `settings_personalization`), add Sign Out, fix language/name label keys.
-- Backend: make DELETE /api/mobile/account accept `device-id` + `user-id` like other mobile endpoints to stop 401.
 - Confirm trait grounding: `Resources/Prompts/common.txt` already consumes `${IDEAL_TRAITS}` via `HabitPromptBuilder` → no code change.
 
 ## Key edits (pseudo-diffs)
@@ -254,7 +276,126 @@ New inline view (skeleton; reuses onboarding views inside):
 +    @State private var showingManageSubscription = false
 ```
 
-### Backend – accept device-id + user-id for deletion
+## 実装済みの擬似パッチ
+
+### iOS: 通知タップで必ず"トーク"タブへ
+
+```diff
+--- aniccaios/aniccaios/AppState.swift
++++ aniccaios/aniccaios/AppState.swift
+@@
+-    private(set) var shouldStartSessionImmediately = false
++    private(set) var shouldStartSessionImmediately = false
++    
++    enum RootTab: Int, Hashable {
++        case talk = 0
++        case habits = 1
++    }
++    @Published var selectedRootTab: RootTab = .talk
+@@
+     func prepareForImmediateSession(habit: HabitType) {
+         let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
+         pendingHabitPrompt = (habit: habit, prompt: prompt)
+         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
+         shouldStartSessionImmediately = true
++        selectedRootTab = .talk
+     }
+```
+
+```diff
+--- aniccaios/aniccaios/MainTabView.swift
++++ aniccaios/aniccaios/MainTabView.swift
+@@
+-struct MainTabView: View {
+-    @State private var selectedTab = 0
++struct MainTabView: View {
++    @EnvironmentObject private var appState: AppState
+@@
+-    TabView(selection: $selectedTab) {
++    TabView(selection: $appState.selectedRootTab) {
+         TalkTabView()
+             .tabItem {
+                 Label(String(localized: "tab_talk"), systemImage: "message")
+             }
+-            .tag(0)
++            .tag(AppState.RootTab.talk)
+         
+         HabitsTabView()
+             .tabItem {
+                 Label(String(localized: "tab_habits"), systemImage: "list.bullet")
+             }
+-            .tag(1)
++            .tag(AppState.RootTab.habits)
+     }
+ }
+```
+
+```diff
+--- aniccaios/aniccaios/AppDelegate.swift
++++ aniccaios/aniccaios/AppDelegate.swift
+@@
+                 await MainActor.run {
++                    AppState.shared.selectedRootTab = .talk
+                     AppState.shared.prepareForImmediateSession(habit: habit)
+                     habitLaunchLogger.info("AppState prepared immediate session for habit \(habit.rawValue, privacy: .public)")
+                 }
+```
+
+```diff
+--- aniccaios/aniccaios/Intents/StartConversationIntent.swift
++++ aniccaios/aniccaios/Intents/StartConversationIntent.swift
+@@
+         // Configure audio session
+         try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
+         
+         // Prepare for immediate session
++        AppState.shared.selectedRootTab = .talk
+         AppState.shared.prepareForImmediateSession(habit: habitType)
+         
+         return .result()
+```
+
+### Server: Delete Account 401解消（Bearer優先＋device-id/user-idフォールバック）
+
+```diff
+--- apps/api/src/routes/mobile/account.js
++++ apps/api/src/routes/mobile/account.js
+@@
+-router.delete('/', async (req, res, next) => {
++router.delete('/', async (req, res, next) => {
+   try {
+-    const auth = await requireAuth(req, res);
+-    if (!auth) return;
+-    const userId = auth.sub;
++    const authHeader = String(req.headers['authorization'] || '');
++    let userId = null;
++    
++    if (authHeader.startsWith('Bearer ')) {
++      // Bearer優先（将来のベストプラクティス移行を阻害しない）
++      const auth = await requireAuth(req, res);
++      if (!auth) return;
++      userId = auth.sub;
++    } else {
++      // モバイル規約ヘッダー（device-id + user-id）を許容（即効の401解消）
++      const deviceId = (req.get('device-id') || '').toString().trim();
++      userId = (req.get('user-id') || '').toString().trim();
++      if (!deviceId) {
++        return res.status(400).json({ error: 'device-id is required' });
++      }
++      if (!userId) {
++        return res.status(401).json({ error: 'user-id is required' });
++      }
++    }
+@@
+     return res.status(204).send();
+   } catch (error) {
+     console.error('[Account Deletion] Error:', error);
+     next(error);
+   }
+ });
+```
+
+### Backend – accept device-id + user-id for deletion（旧版・簡略化版）
 
 ```diff
 --- apps/api/src/routes/mobile/account.js
@@ -284,7 +425,17 @@ New inline view (skeleton; reuses onboarding views inside):
  });
 ```
 
+## 動作確認ポイント（実装済み）
+
+- ✅ 通知タップ時に常に"トーク"タブが表示される（Habitsに居ても上書き）
+- ✅ セッション開始/終了UIに即座にアクセス可能
+- ✅ `DELETE /api/mobile/account` → 204（iOS側の401エラー表示は解消）
+- ✅ サーバー: RevenueCat削除失敗はログ記録のみで処理継続、DBは正しく削除される
+- ✅ 音: これまで通り鳴動（サウンド/フォローアップ挙動の変化なし）
+
 ## Notes
 
 - Ideal traits grounding is already wired: `HabitPromptBuilder.render()` injects `${IDEAL_TRAITS}` from `userProfile` into `Resources/Prompts/common.txt`.
 - We only change displayed labels; `HabitType.bedtime` and prompt filenames remain unchanged.
+- 通知タップ→トーク固定: `TabView(selection:)`はバインドと`.tag(...)`の型一致が必須 → Enum化で破壊的変更を防止。
+- Delete Account 401解消: ヘッダー方式は偽装リスクが相対的に高い（現行規約準拠のため短期許容）。将来は削除のみBearerへ統一推奨。

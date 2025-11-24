@@ -1,9 +1,14 @@
 import SwiftUI
 
 struct HabitTrainingFollowUpView: View {
+    let onRegisterSave: (((() -> Void)) -> Void)?
     @EnvironmentObject private var appState: AppState
     @State private var trainingGoal: String = ""
     @State private var selectedOption: String? = nil
+    
+    init(onRegisterSave: (((() -> Void)) -> Void)? = nil) {
+        self.onRegisterSave = onRegisterSave
+    }
     
     var body: some View {
         Form {
@@ -25,6 +30,8 @@ struct HabitTrainingFollowUpView: View {
         .onAppear {
             trainingGoal = appState.userProfile.trainingGoal
             selectedOption = appState.userProfile.trainingFocus.first
+            // ルーターにsaveアクションを登録
+            onRegisterSave?({ save() })
         }
     }
     

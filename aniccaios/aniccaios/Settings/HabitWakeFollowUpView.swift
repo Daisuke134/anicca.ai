@@ -7,6 +7,7 @@ struct RoutineItem: Identifiable {
 }
 
 struct HabitWakeFollowUpView: View {
+    let onRegisterSave: (((() -> Void)) -> Void)?
     @EnvironmentObject private var appState: AppState
     @State private var wakeLocation: String = ""
     @State private var routines: [RoutineItem] = [
@@ -14,6 +15,10 @@ struct HabitWakeFollowUpView: View {
         RoutineItem(text: ""),
         RoutineItem(text: "")
     ]
+    
+    init(onRegisterSave: (((() -> Void)) -> Void)? = nil) {
+        self.onRegisterSave = onRegisterSave
+    }
     
     var body: some View {
         List {
@@ -78,6 +83,8 @@ struct HabitWakeFollowUpView: View {
                     routines.append(contentsOf: Array(repeating: RoutineItem(text: ""), count: 3 - routines.count))
                 }
             }
+            // ルーターにsaveアクションを登録
+            onRegisterSave?({ save() })
         }
     }
     

@@ -7,13 +7,13 @@ struct MainTabView: View {
         TabView(selection: $selectedTab) {
             TalkTabView()
                 .tabItem {
-                    Label("Talk", systemImage: "message")
+                    Label(String(localized: "tab_talk"), systemImage: "message")
                 }
                 .tag(0)
             
             HabitsTabView()
                 .tabItem {
-                    Label("Habits", systemImage: "list.bullet")
+                    Label(String(localized: "tab_habits"), systemImage: "list.bullet")
                 }
                 .tag(1)
         }

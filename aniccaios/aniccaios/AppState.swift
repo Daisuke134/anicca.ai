@@ -288,6 +288,11 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         cachedOffering = nil
         
+        // オンボーディング状態をリセット
+        isOnboardingComplete = false
+        defaults.removeObject(forKey: onboardingKey)
+        setOnboardingStep(.welcome) // これでonboardingStepKeyもクリアされる
+        
         // UserDefaultsからすべてのユーザーデータを削除
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.removeObject(forKey: userProfileKey)

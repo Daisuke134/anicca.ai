@@ -19,7 +19,23 @@ struct SettingsView: View {
             List {
                 // Subscription (復活)
                 Section(String(localized: "settings_subscription_title")) {
-                    Button(String(localized: "settings_subscription_manage")) { showingManageSubscription = true }
+                    HStack {
+                        Text(String(localized: "settings_subscription_plan"))
+                        Spacer()
+                        Text(appState.subscriptionInfo.displayPlanName)
+                    }
+                    // SubscriptionInfoにmonthlyUsageCountとmonthlyUsageLimitが存在する場合のみ表示
+                    if let used = appState.subscriptionInfo.monthlyUsageCount,
+                       let limit = appState.subscriptionInfo.monthlyUsageLimit {
+                        HStack {
+                            Text(String(localized: "settings_subscription_usage"))
+                            Spacer()
+                            Text("\(used)/\(limit)")
+                        }
+                    }
+                    Button(String(localized: "settings_subscription_manage")) {
+                        showingManageSubscription = true
+                    }
                 }
                 
                 // Personalization
@@ -43,7 +59,7 @@ struct SettingsView: View {
                 // Sign out
                 Section {
                     Button(String(localized: "common_sign_out")) {
-                        appState.clearUserCredentials()
+                        appState.signOutAndWipe()
                         dismiss()
                     }
                 }
@@ -103,7 +119,17 @@ struct SettingsView: View {
             }
         }
         .sheet(isPresented: $showingManageSubscription) {
-            ManageSubscriptionSheet().environmentObject(appState)
+            RevenueCatUI.CustomerCenterView()
+                .onCustomerCenterRestoreCompleted { customerInfo in
+                    Task {
+                        let subscription = SubscriptionInfo(info: customerInfo)
+                        await MainActor.run {
+                            appState.updateSubscriptionInfo(subscription)
+                        }
+                        // Customer Centerを閉じた後に同期
+                        await SubscriptionManager.shared.syncNow()
+                    }
+                }
         }
     }
     

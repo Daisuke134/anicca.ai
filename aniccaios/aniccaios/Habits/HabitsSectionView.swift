@@ -26,6 +26,7 @@ struct HabitsSectionView: View {
     @State private var sheetTime = Date()
     @State private var activeSheet: SheetRoute?
     @State private var newCustomHabitName = ""
+    @State private var isAdding = false
     // 削除確認を廃止（即時削除）
     
     // 時系列順にソートされた習慣リスト（SettingsViewと同じロジック）
@@ -139,8 +140,12 @@ struct HabitsSectionView: View {
                         }
                         Section {
                             Button(String(localized: "common_add")) {
+                                guard !isAdding else { return }
+                                isAdding = true
                                 addCustomHabit()
+                                isAdding = false
                             }
+                            .disabled(isAdding)
                             Button(String(localized: "common_cancel"), role: .cancel) {
                                 activeSheet = nil
                                 newCustomHabitName = ""
@@ -380,28 +385,48 @@ struct HabitEditSheet: View {
     @EnvironmentObject private var appState: AppState
     let habit: HabitType
     @State private var time = Date()
+    @State private var wakeLocation: String = ""
+    @State private var sleepLocation: String = ""
+    @State private var wakeRoutines: [RoutineItem] = []
+    @State private var sleepRoutines: [RoutineItem] = []
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
         NavigationView {
             Form {
-                // Time
-                DatePicker(String(localized: "common_time"), selection: $time, displayedComponents: [.hourAndMinute])
+                // Time（全習慣共通）
+                Section {
+                    DatePicker(String(localized: "common_time"), selection: $time, displayedComponents: [.hourAndMinute])
+                }
                 
-                // Follow-ups
+                // Follow-ups（習慣タイプ別）
                 switch habit {
                 case .wake:
-                    TextField(String(localized: "habit_wake_location"), text: Binding(
-                        get: { appState.userProfile.wakeLocation },
-                        set: { appState.updateWakeLocation($0) }
-                    ))
+                    // 起床場所
+                    Section(String(localized: "habit_wake_location")) {
+                        TextField(String(localized: "habit_wake_location_placeholder"), text: $wakeLocation)
+                    }
+                    // 起床後のルーティン
+                    routinesSection(
+                        titleKey: "habit_wake_routines",
+                        routines: $wakeRoutines
+                    )
+                    
                 case .bedtime:
-                    TextField(String(localized: "habit_sleep_location"), text: Binding(
-                        get: { appState.userProfile.sleepLocation },
-                        set: { appState.updateSleepLocation($0) }
-                    ))
+                    // 就寝場所
+                    Section(String(localized: "habit_sleep_location")) {
+                        TextField(String(localized: "habit_sleep_location_placeholder"), text: $sleepLocation)
+                    }
+                    // 就寝前のルーティン
+                    routinesSection(
+                        titleKey: "habit_sleep_routines",
+                        routines: $sleepRoutines
+                    )
+                    
                 case .training:
-                    HabitTrainingFocusStepView(next: { }) // embed; saves via AppState
+                    // トレーニング目標と種類（直接実装）
+                    trainingSection
+                    
                 case .custom:
                     EmptyView()
                 }
@@ -413,19 +438,189 @@ struct HabitEditSheet: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "common_save")) {
-                        Task { await appState.updateHabit(habit, time: time) }
-                        dismiss()
+                        save()
+                    }
+                }
+                // ルーティン編集モード用のEditButton（Wake/Sleepのみ）
+                if habit == .wake || habit == .bedtime {
+                    ToolbarItem(placement: .navigationBarTrailing) {
+                        EditButton()
                     }
                 }
             }
         }
         .onAppear {
-            // 現在の時刻を読み込む
-            if let components = appState.habitSchedules[habit],
-               let date = Calendar.current.date(from: components) {
-                time = date
+            load()
+        }
+    }
+    
+    // トレーニングセクション（目標＋種類選択を直接実装）
+    @ViewBuilder
+    private var trainingSection: some View {
+        // 目標入力フィールド
+        Section(String(localized: "habit_training_goal")) {
+            TextField(String(localized: "habit_training_goal_placeholder"), text: Binding(
+                get: { appState.userProfile.trainingGoal },
+                set: { appState.updateTrainingGoal($0) }
+            ))
+        }
+        
+        // トレーニング種類選択（トグルスイッチ形式）
+        Section(String(localized: "habit_training_types")) {
+            let options: [(id: String, labelKey: LocalizedStringKey)] = [
+                ("Push-up", "training_focus_option_pushup"),
+                ("Core", "training_focus_option_core"),
+                ("Cardio", "training_focus_option_cardio"),
+                ("Stretch", "training_focus_option_stretch")
+            ]
+            
+            ForEach(options, id: \.id) { option in
+                Toggle(isOn: Binding(
+                    get: { appState.userProfile.trainingFocus.first == option.id },
+                    set: { isOn in
+                        if isOn {
+                            // 一つのトグルをONにすると、他のトグルは自動的にOFFになる
+                            appState.updateTrainingFocus([option.id])
+                        } else {
+                            // トグルをOFFにする場合は選択をクリア
+                            appState.updateTrainingFocus([])
+                        }
+                    }
+                )) {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(option.labelKey)
+                            .font(.body)
+                            .foregroundStyle(.primary)
+                        // 説明テキスト
+                        if option.id == "Push-up" || option.id == "Core" {
+                            Text("回数で計測")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else if option.id == "Cardio" || option.id == "Stretch" {
+                            Text("時間で計測")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
             }
         }
+    }
+    
+    @ViewBuilder
+    private func routinesSection(titleKey: LocalizedStringKey, routines: Binding<[RoutineItem]>) -> some View {
+        Section(titleKey) {
+            ForEach(routines.wrappedValue) { routine in
+                HStack {
+                    // ドラッグハンドル（三本線アイコン）
+                    Image(systemName: "line.3.horizontal")
+                        .foregroundColor(.secondary)
+                        .padding(.trailing, 8)
+                    
+                    if let index = routines.wrappedValue.firstIndex(where: { $0.id == routine.id }) {
+                        // ナンバリング
+                        Text("\(index + 1).")
+                            .frame(width: 30)
+                        
+                        // テキストフィールド
+                        TextField(String(localized: "habit_routine_placeholder"), text: Binding(
+                            get: { routines.wrappedValue[index].text },
+                            set: { routines.wrappedValue[index].text = $0 }
+                        ))
+                    }
+                }
+                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                    Button(role: .destructive) {
+                        if let index = routines.wrappedValue.firstIndex(where: { $0.id == routine.id }) {
+                            routines.wrappedValue.remove(at: index)
+                        }
+                    } label: {
+                        Label(String(localized: "common_delete"), systemImage: "trash")
+                    }
+                }
+            }
+            .onMove { indices, newOffset in
+                routines.wrappedValue.move(fromOffsets: indices, toOffset: newOffset)
+            }
+            
+            // 「+」ボタンで新しいルーティン項目を追加
+            Button(action: {
+                routines.wrappedValue.append(RoutineItem(text: ""))
+            }) {
+                HStack {
+                    Image(systemName: "plus.circle.fill")
+                    Text(String(localized: "habit_add_routine"))
+                }
+            }
+        }
+    }
+    
+    private func load() {
+        // 現在の時刻を読み込む
+        if let components = appState.habitSchedules[habit],
+           let date = Calendar.current.date(from: components) {
+            time = date
+        }
+        
+        // Wake/Sleepの場所とルーティンを読み込む
+        switch habit {
+        case .wake:
+            wakeLocation = appState.userProfile.wakeLocation
+            let savedRoutines = appState.userProfile.wakeRoutines
+            if savedRoutines.isEmpty {
+                wakeRoutines = [
+                    RoutineItem(text: ""),
+                    RoutineItem(text: ""),
+                    RoutineItem(text: "")
+                ]
+            } else {
+                wakeRoutines = savedRoutines.map { RoutineItem(text: $0) }
+                if wakeRoutines.count < 3 {
+                    wakeRoutines.append(contentsOf: Array(repeating: RoutineItem(text: ""), count: 3 - wakeRoutines.count))
+                }
+            }
+        case .bedtime:
+            sleepLocation = appState.userProfile.sleepLocation
+            let savedRoutines = appState.userProfile.sleepRoutines
+            if savedRoutines.isEmpty {
+                sleepRoutines = [
+                    RoutineItem(text: ""),
+                    RoutineItem(text: ""),
+                    RoutineItem(text: "")
+                ]
+            } else {
+                sleepRoutines = savedRoutines.map { RoutineItem(text: $0) }
+                if sleepRoutines.count < 3 {
+                    sleepRoutines.append(contentsOf: Array(repeating: RoutineItem(text: ""), count: 3 - sleepRoutines.count))
+                }
+            }
+        default:
+            break
+        }
+    }
+    
+    private func save() {
+        // 時刻を保存
+        Task {
+            await appState.updateHabit(habit, time: time)
+        }
+        
+        // Wake/Sleepの場所とルーティンを保存
+        switch habit {
+        case .wake:
+            appState.updateWakeLocation(wakeLocation)
+            appState.updateWakeRoutines(wakeRoutines.map { $0.text }.filter { !$0.isEmpty })
+        case .bedtime:
+            appState.updateSleepLocation(sleepLocation)
+            appState.updateSleepRoutines(sleepRoutines.map { $0.text }.filter { !$0.isEmpty })
+        case .training:
+            // トレーニングの目標と種類は既にAppStateで更新済み（リアルタイム更新）
+            break
+        default:
+            break
+        }
+        
+        dismiss()
     }
 }
 

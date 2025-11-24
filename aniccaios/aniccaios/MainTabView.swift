@@ -1,21 +1,21 @@
 import SwiftUI
 
 struct MainTabView: View {
-    @State private var selectedTab = 0
+    @EnvironmentObject private var appState: AppState
     
     var body: some View {
-        TabView(selection: $selectedTab) {
+        TabView(selection: $appState.selectedRootTab) {
             TalkTabView()
                 .tabItem {
                     Label(String(localized: "tab_talk"), systemImage: "message")
                 }
-                .tag(0)
+                .tag(AppState.RootTab.talk)
             
             HabitsTabView()
                 .tabItem {
                     Label(String(localized: "tab_habits"), systemImage: "list.bullet")
                 }
-                .tag(1)
+                .tag(AppState.RootTab.habits)
         }
     }
 }

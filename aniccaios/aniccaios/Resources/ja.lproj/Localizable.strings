@@ -175,4 +175,6 @@
 "common_add" = "追加";
 "common_wake_location_fallback" = "ベッド";
 "settings_contact_support" = "サポートに連絡";
+"tab_talk" = "会話";
+"tab_habits" = "習慣";
 

@@ -4,17 +4,24 @@ struct HabitFollowUpView: View {
     let habit: HabitType
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var appState: AppState
+    @State private var childSaveAction: (() -> Void)? = nil
     
     var body: some View {
         navigationContainer {
             Group {
                 switch habit {
                 case .wake:
-                    HabitWakeFollowUpView()
+                    HabitWakeFollowUpView(onRegisterSave: { action in
+                        self.childSaveAction = action
+                    })
                 case .bedtime:
-                    HabitSleepFollowUpView()
+                    HabitSleepFollowUpView(onRegisterSave: { action in
+                        self.childSaveAction = action
+                    })
                 case .training:
-                    HabitTrainingFollowUpView()
+                    HabitTrainingFollowUpView(onRegisterSave: { action in
+                        self.childSaveAction = action
+                    })
                 case .custom:
                     EmptyView()
                 }
@@ -51,7 +58,7 @@ struct HabitFollowUpView: View {
     }
     
     private func save() {
-        // 各フォローアップ画面で実装
+        childSaveAction?()
         dismiss()
     }
 }

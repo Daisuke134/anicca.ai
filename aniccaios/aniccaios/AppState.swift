@@ -27,6 +27,9 @@ final class AppState: ObservableObject {
     @Published private(set) var pendingHabitFollowUps: [OnboardingStep] = []
     @Published private(set) var cachedOffering: Offering?
     @Published private(set) var customHabit: CustomHabitConfiguration?
+    // 変更: カスタム習慣を配列で管理
+    @Published private(set) var customHabits: [CustomHabitConfiguration] = []
+    @Published private(set) var customHabitSchedules: [UUID: DateComponents] = [:]
     private(set) var shouldStartSessionImmediately = false
 
     // Legacy support: computed property for backward compatibility
@@ -49,6 +52,8 @@ final class AppState: ObservableObject {
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
     private let subscriptionKey = "com.anicca.subscription"
+    private let customHabitsKey = "com.anicca.customHabits"
+    private let customHabitSchedulesKey = "com.anicca.customHabitSchedules"
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
@@ -74,6 +79,10 @@ final class AppState: ObservableObject {
         self.userProfile = loadUserProfile()
         self.subscriptionInfo = loadSubscriptionInfo()
         self.customHabit = CustomHabitStore.shared.load()
+        
+        // カスタム習慣の読み込み
+        self.customHabits = CustomHabitStore.shared.loadAll()
+        self.customHabitSchedules = loadCustomHabitSchedules()
         
         // Load habit schedules (new format)
         if let data = defaults.data(forKey: habitSchedulesKey),
@@ -155,7 +164,6 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(encoded) {
             defaults.set(data, forKey: habitSchedulesKey)
         }
-        defaults.synchronize()
     }
 
     func markOnboardingComplete() {
@@ -163,7 +171,6 @@ final class AppState: ObservableObject {
         isOnboardingComplete = true
         defaults.set(true, forKey: onboardingKey)
         setOnboardingStep(.completion)
-        defaults.synchronize()
     }
 
     // Legacy methods for backward compatibility
@@ -185,14 +192,14 @@ final class AppState: ObservableObject {
 
     // New habit-aware methods
     func prepareForImmediateSession(habit: HabitType) {
-        let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date())
+        let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
         shouldStartSessionImmediately = true
     }
 
     func handleHabitTrigger(_ habit: HabitType) {
-        let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date())
+        let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
     }
@@ -235,7 +242,6 @@ final class AppState: ObservableObject {
             // オンボーディング完了後はステップ情報を削除
             defaults.removeObject(forKey: onboardingStepKey)
         }
-        defaults.synchronize()
     }
     
     // MARK: - Authentication
@@ -260,7 +266,6 @@ final class AppState: ObservableObject {
     func clearUserCredentials() {
         authStatus = .signedOut
         defaults.removeObject(forKey: userCredentialsKey)
-        defaults.synchronize()
         Task { await SubscriptionManager.shared.handleLogout() }
     }
     
@@ -275,7 +280,6 @@ final class AppState: ObservableObject {
     private func saveUserCredentials(_ credentials: UserCredentials) {
         if let data = try? JSONEncoder().encode(credentials) {
             defaults.set(data, forKey: userCredentialsKey)
-            defaults.synchronize()
         }
     }
     
@@ -295,7 +299,6 @@ final class AppState: ObservableObject {
     private func saveUserProfile() {
         if let data = try? JSONEncoder().encode(userProfile) {
             defaults.set(data, forKey: userProfileKey)
-            defaults.synchronize()
         }
     }
     
@@ -482,8 +485,134 @@ final class AppState: ObservableObject {
         return info
     }
     
-    // MARK: - Custom Habit
+    // MARK: - Custom Habit Management
     
+    func addCustomHabit(_ configuration: CustomHabitConfiguration) {
+        customHabits.append(configuration)
+        CustomHabitStore.shared.add(configuration)
+    }
+    
+    func removeCustomHabit(at index: Int) {
+        guard index >= 0 && index < customHabits.count else { return }
+        let habit = customHabits[index]
+        customHabits.remove(at: index)
+        customHabitSchedules.removeValue(forKey: habit.id)
+        CustomHabitStore.shared.remove(id: habit.id)
+        
+        // 通知も削除
+        // 注意: NotificationSchedulerは現在HabitType単位で管理しているため、
+        // カスタム習慣が複数ある場合は、Scheduler側をID対応に拡張する必要がある
+        // 現時点では、カスタム習慣の通知は個別に管理されていないため、この処理は将来の拡張時に実装
+        // Task {
+        //     await NotificationScheduler.shared.cancelCustomHabit(id: habit.id)
+        // }
+        
+        saveCustomHabitSchedules()
+    }
+    
+    func removeCustomHabit(id: UUID) {
+        guard let index = customHabits.firstIndex(where: { $0.id == id }) else { return }
+        removeCustomHabit(at: index)
+    }
+    
+    func updateCustomHabitSchedule(id: UUID, time: DateComponents?) {
+        if let time = time {
+            customHabitSchedules[id] = time
+        } else {
+            customHabitSchedules.removeValue(forKey: id)
+        }
+        saveCustomHabitSchedules()
+        
+        // 通知を更新
+        Task {
+            await updateHabitNotifications()
+        }
+    }
+    
+    // MARK: - UserProfile Update Methods
+    
+    func updateWakeLocation(_ location: String) {
+        var profile = userProfile
+        profile.wakeLocation = location
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateWakeRoutines(_ routines: [String]) {
+        var profile = userProfile
+        profile.wakeRoutines = routines.filter { !$0.isEmpty }
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateSleepRoutines(_ routines: [String]) {
+        var profile = userProfile
+        profile.sleepRoutines = routines.filter { !$0.isEmpty }
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateTrainingGoal(_ goal: String) {
+        var profile = userProfile
+        profile.trainingGoal = goal
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateIdealTraits(_ traits: [String]) {
+        var profile = userProfile
+        profile.idealTraits = traits
+        updateUserProfile(profile, sync: true)
+    }
+    
+    // MARK: - Private Helpers
+    
+    private func loadCustomHabitSchedules() -> [UUID: DateComponents] {
+        guard let data = defaults.data(forKey: customHabitSchedulesKey) else {
+            return [:]
+        }
+        
+        do {
+            let decoded = try JSONDecoder().decode([String: [String: Int]].self, from: data)
+            // String (UUID文字列) と [String: Int] を UUID と DateComponents に変換
+            return decoded.compactMap { uuidString, componentsDict in
+                guard let uuid = UUID(uuidString: uuidString),
+                      let hour = componentsDict["hour"],
+                      let minute = componentsDict["minute"] else {
+                    return nil
+                }
+                var components = DateComponents()
+                components.hour = hour
+                components.minute = minute
+                return (uuid, components)
+            }.reduce(into: [UUID: DateComponents]()) { result, pair in
+                result[pair.0] = pair.1
+            }
+        } catch {
+            print("[AppState] Failed to decode custom habit schedules: \(error)")
+            return [:]
+        }
+    }
+    
+    private func saveCustomHabitSchedules() {
+        // UUID と DateComponents を String と [String: Int] に変換して保存
+        let stringKeyed: [String: [String: Int]] = customHabitSchedules.mapKeys { $0.uuidString }
+            .mapValues { components in
+                [
+                    "hour": components.hour ?? 0,
+                    "minute": components.minute ?? 0
+                ]
+            }
+        do {
+            let data = try JSONEncoder().encode(stringKeyed)
+            defaults.set(data, forKey: customHabitSchedulesKey)
+            // UserDefaults.synchronize() は削除（iOSでは自動同期されるため非推奨）
+        } catch {
+            print("[AppState] Failed to encode custom habit schedules: \(error)")
+        }
+    }
+    
+    private func updateHabitNotifications() async {
+        await scheduler.applySchedules(habitSchedules)
+    }
+    
+    // 後方互換性のため残す
     func setCustomHabitName(_ name: String) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }

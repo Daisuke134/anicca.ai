@@ -379,7 +379,7 @@ struct SettingsView: View {
                 }
                 
                 Link(destination: URL(string: "https://aniccaai.com/support")!) {
-                    Text("Contact support")
+                    Text(String(localized: "settings_contact_support"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }

@@ -9,6 +9,12 @@ struct HabitPromptBuilder {
     }
 
     func buildPrompt(for habit: HabitType, scheduledTime: DateComponents?, now: Date) -> String {
+        let profile = AppState.shared.userProfile
+        return buildPrompt(for: habit, scheduledTime: scheduledTime, now: now, profile: profile)
+    }
+    
+    // DI化: AppState.sharedの直接参照を避け、UserProfileを引数として依存注入
+    func buildPrompt(for habit: HabitType, scheduledTime: DateComponents?, now: Date, profile: UserProfile) -> String {
         // Load common and habit-specific templates
         let commonTemplate = loadPrompt(named: "common")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let habitTemplate = loadPrompt(named: habit.promptFileName)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -17,11 +23,15 @@ struct HabitPromptBuilder {
         let mergedTemplate = "\(commonTemplate)\n\n\(habitTemplate)"
         
         // Render with user profile data
-        return render(template: mergedTemplate, habit: habit, scheduledTime: scheduledTime, now: now)
+        return render(template: mergedTemplate, habit: habit, scheduledTime: scheduledTime, now: now, profile: profile)
     }
     
     private func render(template: String, habit: HabitType, scheduledTime: DateComponents?, now: Date) -> String {
         let profile = AppState.shared.userProfile
+        return render(template: template, habit: habit, scheduledTime: scheduledTime, now: now, profile: profile)
+    }
+    
+    private func render(template: String, habit: HabitType, scheduledTime: DateComponents?, now: Date, profile: UserProfile) -> String {
         
         // Build replacement dictionary
         var replacements: [String: String] = [:]
@@ -40,23 +50,17 @@ struct HabitPromptBuilder {
         if let scheduled = scheduledTime,
            let hour = scheduled.hour,
            let minute = scheduled.minute {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            formatter.locale = Locale(identifier: "en_US_POSIX")
             let calendar = Calendar.current
             var components = DateComponents()
             components.hour = hour
             components.minute = minute
             if let date = calendar.date(from: components) {
-                timeString = formatter.string(from: date)
+                timeString = date.formatted(.dateTime.hour().minute())
             } else {
                 timeString = String(format: "%02d:%02d", hour, minute)
             }
         } else {
-            let formatter = DateFormatter()
-            formatter.dateFormat = "HH:mm"
-            formatter.locale = Locale(identifier: "en_US_POSIX")
-            timeString = formatter.string(from: now)
+            timeString = now.formatted(.dateTime.hour().minute())
         }
         replacements["TASK_TIME"] = timeString
         
@@ -75,35 +79,67 @@ struct HabitPromptBuilder {
         }
         replacements["TASK_DESCRIPTION"] = taskDescription
         
-        // Habit-specific replacements
-        switch habit {
-        case .wake, .bedtime:
-            replacements["SLEEP_LOCATION"] = profile.sleepLocation.isEmpty 
-                ? NSLocalizedString("common_sleep_location_fallback", comment: "") 
-                : profile.sleepLocation
-        case .training:
-            if !profile.trainingFocus.isEmpty {
-                let localizedNames = profile.trainingFocus.map { id in
-                    switch id {
-                    case "Push-up":
-                        return NSLocalizedString("training_focus_option_pushup", comment: "")
-                    case "Core":
-                        return NSLocalizedString("training_focus_option_core", comment: "")
-                    case "Cardio":
-                        return NSLocalizedString("training_focus_option_cardio", comment: "")
-                    case "Stretch":
-                        return NSLocalizedString("training_focus_option_stretch", comment: "")
-                    default:
-                        return id
-                    }
+        // Training focus (既存の処理)
+        if habit == .training && !profile.trainingFocus.isEmpty {
+            let localizedNames = profile.trainingFocus.map { id in
+                switch id {
+                case "Push-up":
+                    return NSLocalizedString("training_focus_option_pushup", comment: "")
+                case "Core":
+                    return NSLocalizedString("training_focus_option_core", comment: "")
+                case "Cardio":
+                    return NSLocalizedString("training_focus_option_cardio", comment: "")
+                case "Stretch":
+                    return NSLocalizedString("training_focus_option_stretch", comment: "")
+                default:
+                    return id
                 }
-                replacements["TRAINING_FOCUS_LIST"] = localizedNames.joined(separator: NSLocalizedString("common_list_separator", comment: ""))
-            } else {
-                replacements["TRAINING_FOCUS_LIST"] = NSLocalizedString("habit_title_training", comment: "")
             }
+            replacements["TRAINING_FOCUS_LIST"] = localizedNames.joined(separator: NSLocalizedString("common_list_separator", comment: ""))
+        } else if habit == .training {
+            replacements["TRAINING_FOCUS_LIST"] = NSLocalizedString("habit_title_training", comment: "")
+        }
+        
+        // 新しいプレースホルダーの処理
+        switch habit {
+        case .wake:
+            replacements["WAKE_LOCATION"] = profile.wakeLocation.isEmpty
+                ? NSLocalizedString("common_wake_location_fallback", comment: "")
+                : profile.wakeLocation
+            
+            if !profile.wakeRoutines.isEmpty {
+                replacements["WAKE_ROUTINES"] = "理想的な起床後のルーティン: " + profile.wakeRoutines.joined(separator: "、")
+            } else {
+                replacements["WAKE_ROUTINES"] = ""
+            }
+            
+        case .bedtime:
+            replacements["SLEEP_LOCATION"] = profile.sleepLocation.isEmpty
+                ? NSLocalizedString("common_sleep_location_fallback", comment: "")
+                : profile.sleepLocation
+            
+            if !profile.sleepRoutines.isEmpty {
+                replacements["SLEEP_ROUTINES"] = "理想的な就寝前のルーティン: " + profile.sleepRoutines.joined(separator: "、")
+            } else {
+                replacements["SLEEP_ROUTINES"] = ""
+            }
+            
+        case .training:
+            if !profile.trainingGoal.isEmpty {
+                replacements["TRAINING_GOAL"] = profile.trainingGoal
+            } else {
+                replacements["TRAINING_GOAL"] = "15回"
+            }
+            
         case .custom:
-            // Custom habit doesn't need specific replacements
             break
+        }
+        
+        // 理想の姿（全習慣で使用）
+        if !profile.idealTraits.isEmpty {
+            replacements["IDEAL_TRAITS"] = "理想の姿として設定されている特性: " + profile.idealTraits.joined(separator: "、")
+        } else {
+            replacements["IDEAL_TRAITS"] = ""
         }
         
         // Perform replacements

@@ -61,7 +61,7 @@ struct PaywallContainerView: View {
             // forcePresent: true の場合はエンタイトルメントチェックをスキップ
             // エビデンス: 60-65行目でcheckEntitlementStatus()が呼ばれ、エンタイトル済みと判定されると閉じられる
             if !forcePresent && !appState.shouldShowPaywall {
-                onDismissRequested?()
+                await MainActor.run { onDismissRequested?() }
                 return
             }
             // forcePresent: true の場合はエンタイトルメントチェックをスキップしてオファリングのみロード
@@ -152,8 +152,8 @@ struct PaywallContainerView: View {
     }
     
     private func loadOffering() async {
-        isLoading = true
-        defer { isLoading = false }
+        await MainActor.run { self.isLoading = true }
+        defer { Task { await MainActor.run { self.isLoading = false } } }
         
         // RevenueCat SDKのキャッシュも優先確認
         if let cachedOfferings = Purchases.shared.cachedOfferings,

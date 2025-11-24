@@ -9,4 +9,6 @@ LANGUAGE LOCK: ${LANGUAGE_LINE} で絶対に話すこと。他の言葉は一切
 タスク開始時刻: ${TASK_TIME}
 タスク説明: ${TASK_DESCRIPTION}
 
-以下の声掛けを、 絶対に${LANGUAGE_LINE} の言葉で行うこと。絶対に他の言葉は喋らないこと。 指示通りに。 
+${IDEAL_TRAITS}が理想の姿として設定されている場合、これらの特性を意識して話すこと。
+
+以下の声掛けを、絶対に${LANGUAGE_LINE}の言葉で行うこと。絶対に他の言葉は喋らないこと。指示通りに。 

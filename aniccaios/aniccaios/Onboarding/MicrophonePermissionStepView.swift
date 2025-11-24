@@ -71,19 +71,8 @@ struct MicrophonePermissionStepView: View {
                                     action: openSettings
                                 )
                             }
-
-                            SUButton(
-                                model: {
-                                    var vm = ButtonVM()
-                                    vm.title = String(localized: "common_maybe_later")
-                                    vm.style = .plain
-                                    vm.size = .small
-                                    vm.isFullWidth = false
-                                    vm.isEnabled = !isRequesting
-                                    return vm
-                                }(),
-                                action: skipForNow
-                            )
+                            
+                            // 『あとで設定』は削除（5.1.1対策: プリプロンプトに退出ボタンを置かない）
                         }
 
                         Text(String(localized: "onboarding_microphone_optional_hint"))
@@ -126,11 +115,9 @@ struct MicrophonePermissionStepView: View {
             self.micGranted = granted
             self.micDenied = !granted
             self.isRequesting = false
-            if granted {
-                // Small delay before advancing for better UX
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    next()
-                }
+            // 許可/拒否に関わらず必ず次へ（5.1.1対策: プリプロンプト後はOSダイアログに必ず進ませる）
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                next()
             }
         }
     }
@@ -147,9 +134,7 @@ struct MicrophonePermissionStepView: View {
         }
     }
 
-    private func skipForNow() {
-        next()
-    }
+    // 『あとで設定』ハンドラは削除（5.1.1対策）
 
     private func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }

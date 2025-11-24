@@ -21,7 +21,8 @@ struct HabitSetupStepView: View {
         
         // デフォルト習慣を追加
         for habit in [HabitType.wake, .training, .bedtime] {
-            let time = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime)
+            // 未選択（Toggle OFF）は時刻nilで末尾に送る
+            let time = habitTimes[habit]
             allHabits.append((
                 id: habit.rawValue,
                 name: habit.title,

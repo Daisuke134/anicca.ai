@@ -157,4 +157,24 @@
 "quota_exceeded_manage" = "Manage Plan";
 "session_time_cap_title" = "Free session limit reached (5 min)";
 "session_time_cap_message" = "Your free session ended after 5 minutes. Upgrade to continue longer conversations.";
+"settings_habits" = "Habits";
+"settings_ideal_traits" = "Ideal Traits";
+"settings_personalization" = "Personalization";
+"habit_add_custom" = "Add Habit";
+"habit_add_routine" = "Add Routine";
+"habit_routine_placeholder" = "Routine";
+"habit_wake_location" = "Wake Location";
+"habit_wake_location_placeholder" = "e.g., Third-floor bedroom";
+"habit_wake_routines" = "Wake Routines";
+"habit_sleep_location" = "Sleep Location";
+"habit_sleep_location_placeholder" = "e.g., Third-floor bedroom";
+"habit_sleep_routines" = "Sleep Routines";
+"habit_training_goal" = "Training Goal";
+"habit_training_goal_placeholder" = "e.g., 15 reps";
+"habit_training_types" = "Training Type";
+"habit_delete_confirm" = "Are you sure you want to delete this habit?";
+"common_delete" = "Delete";
+"common_add" = "Add";
+"common_wake_location_fallback" = "Bed";
+"settings_contact_support" = "Contact Support";
 

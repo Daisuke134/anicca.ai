@@ -256,7 +256,9 @@ extension SubscriptionInfo {
             managementURL: info.managementURL,
             lastSyncedAt: .now,
             productIdentifier: productId,
-            planDisplayName: package?.storeProduct.localizedTitle ?? mappedName,
+            // OS言語に合わせたローカライズを優先（4.0対策: アプリの現在のローカライズに合わせる）
+            // mappedNameはNSLocalizedStringでOS言語に応じて適切に翻訳される
+            planDisplayName: mappedName ?? package?.storeProduct.localizedTitle,
             priceDescription: package?.localizedPriceString,
             monthlyUsageLimit: nil,
             monthlyUsageRemaining: nil,

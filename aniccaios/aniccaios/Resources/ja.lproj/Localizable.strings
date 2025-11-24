@@ -155,4 +155,24 @@
 "quota_exceeded_manage" = "プランを管理";
 "session_time_cap_title" = "無料セッション上限に達しました（5分）";
 "session_time_cap_message" = "無料セッションは5分で終了しました。より長い会話を続けるにはアップグレードしてください。";
+"settings_habits" = "習慣";
+"settings_ideal_traits" = "理想の姿";
+"settings_personalization" = "パーソナライズ";
+"habit_add_custom" = "習慣を追加";
+"habit_add_routine" = "ルーティンを追加";
+"habit_routine_placeholder" = "ルーティン";
+"habit_wake_location" = "起床場所";
+"habit_wake_location_placeholder" = "例：3階ベッドルーム";
+"habit_wake_routines" = "起床後ルーティン";
+"habit_sleep_location" = "就寝場所";
+"habit_sleep_location_placeholder" = "例：3階ベッドルーム";
+"habit_sleep_routines" = "就寝前ルーティン";
+"habit_training_goal" = "トレーニング目標";
+"habit_training_goal_placeholder" = "例：15回";
+"habit_training_types" = "トレーニングの種類";
+"habit_delete_confirm" = "この習慣を削除してもよろしいですか？";
+"common_delete" = "削除";
+"common_add" = "追加";
+"common_wake_location_fallback" = "ベッド";
+"settings_contact_support" = "サポートに連絡";
 

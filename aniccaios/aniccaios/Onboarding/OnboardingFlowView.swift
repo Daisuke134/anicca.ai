@@ -19,12 +19,6 @@ struct OnboardingFlowView: View {
                 ProfileInfoStepView(next: advance)
             case .habitSetup:
                 HabitSetupStepView(next: advance)
-            case .habitWakeLocation:
-                HabitWakeLocationStepView(next: advance)
-            case .habitSleepLocation:
-                HabitSleepLocationStepView(next: advance)
-            case .habitTrainingFocus:
-                HabitTrainingFocusStepView(next: advance)
             case .paywall:
                 PaywallStepView(next: advance)
             case .completion:
@@ -66,29 +60,17 @@ struct OnboardingFlowView: View {
                 await SubscriptionManager.shared.refreshOfferings()
             }
         case .habitSetup:
-            // フォローアップがあれば続行、無ければ課金状態で分岐
-            if let nextFollowUp = appState.consumeNextHabitFollowUp() {
-                step = nextFollowUp
-            } else {
-                // 購入状態を再確認してから分岐（待機せずに遷移）
-                Task {
-                    await SubscriptionManager.shared.syncNow()
-                }
-                
-                // 現在サブスクライブしているユーザー（isEntitled == true）は完了画面へ、それ以外はPaywallへ
-                // 待機せずに即座に遷移する
-                step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
-                appState.setOnboardingStep(step)
-                return
+            // フォローアップを削除（直接Paywall/Completionへ）
+            appState.clearHabitFollowUps()
+            
+            // 購入状態を再確認してから分岐
+            Task {
+                await SubscriptionManager.shared.syncNow()
             }
-        case .habitWakeLocation, .habitSleepLocation, .habitTrainingFocus:
-            // 追加フォローアップが無ければ課金状態で分岐
-            if let nextFollowUp = appState.consumeNextHabitFollowUp() {
-                step = nextFollowUp
-            } else {
-                // 現在サブスクライブしているユーザー（isEntitled == true）は完了画面へ、それ以外はPaywallへ
-                step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
-            }
+            
+            step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
+            appState.setOnboardingStep(step)
+            return
         case .paywall:
             // Paywallのステップを保存してから完了画面へ
             appState.setOnboardingStep(.paywall)

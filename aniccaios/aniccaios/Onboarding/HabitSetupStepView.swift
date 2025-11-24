@@ -7,12 +7,13 @@ struct HabitSetupStepView: View {
     @EnvironmentObject private var appState: AppState
     @State private var selectedHabits: Set<HabitType> = []
     @State private var habitTimes: [HabitType: Date] = [:]
+    @State private var customHabitTimes: [UUID: Date] = [:]
     @State private var sheetTime = Date()
     @State private var showingTimePicker: HabitType?
+    @State private var showingCustomTimePicker: UUID?
     @State private var isSaving = false
-    @State private var customHabitName: String = AppState.shared.customHabit?.name ?? ""
-    @State private var customHabitError: LocalizedStringKey?
-    @FocusState private var isCustomHabitNameFocused: Bool
+    @State private var showingAddCustomHabit = false
+    @State private var newCustomHabitName = ""
 
     var body: some View {
         VStack(spacing: 24) {
@@ -26,14 +27,35 @@ struct HabitSetupStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            ScrollView {
-                VStack(spacing: 16) {
-                    ForEach(HabitType.allCases, id: \.self) { habit in
-                        habitCard(for: habit)
+            List {
+                Section {
+                    // デフォルト習慣（wake, training, bedtime）
+                    ForEach([HabitType.wake, .training, .bedtime], id: \.self) { habit in
+                        habitCard(for: habit, isCustom: false)
+                    }
+                    
+                    // カスタム習慣
+                    ForEach(appState.customHabits) { customHabit in
+                        customHabitCard(for: customHabit)
+                            .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                                Button(role: .destructive) {
+                                    appState.removeCustomHabit(id: customHabit.id)
+                                } label: {
+                                    Label(String(localized: "common_delete"), systemImage: "trash")
+                                }
+                            }
+                    }
+                    
+                    // 「習慣を追加」ボタン
+                    Button(action: { showingAddCustomHabit = true }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text("habit_add_custom")
+                        }
                     }
                 }
-                .padding(.horizontal)
             }
+            .listStyle(.insetGrouped)
 
             Spacer()
 
@@ -53,116 +75,170 @@ struct HabitSetupStepView: View {
             .padding(.horizontal)
             .padding(.bottom)
         }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            isCustomHabitNameFocused = false
+        .sheet(isPresented: Binding(
+            get: { showingTimePicker != nil },
+            set: { if !$0 { showingTimePicker = nil } }
+        )) {
+            if let habit = showingTimePicker {
+                timePickerSheet(for: habit)
+            }
         }
-        .sheet(item: $showingTimePicker) { habit in
-            timePickerSheet(for: habit)
+        .sheet(isPresented: Binding(
+            get: { showingCustomTimePicker != nil },
+            set: { if !$0 { showingCustomTimePicker = nil } }
+        )) {
+            if let id = showingCustomTimePicker {
+                customTimePickerSheet(for: id)
+            }
+        }
+        .sheet(isPresented: $showingAddCustomHabit) {
+            NavigationView {
+                Form {
+                    Section {
+                        TextField("habit_custom_name_placeholder", text: $newCustomHabitName)
+                    }
+                    Section {
+                        Button("common_add") {
+                            addCustomHabit()
+                        }
+                        Button("common_cancel", role: .cancel) {
+                            showingAddCustomHabit = false
+                            newCustomHabitName = ""
+                        }
+                    }
+                }
+                .navigationTitle("habit_add_custom")
+                .navigationBarTitleDisplayMode(.inline)
+            }
         }
     }
 
     @ViewBuilder
-    private func habitCard(for habit: HabitType) -> some View {
+    private func habitCard(for habit: HabitType, isCustom: Bool) -> some View {
         let isSelected = selectedHabits.contains(habit)
         let hasTime = habitTimes[habit] != nil
-        let checkboxBinding = Binding(
-            get: { isSelected },
-            set: { isOn in
-                if isOn {
-                    selectedHabits.insert(habit)
-                } else {
-                    selectedHabits.remove(habit)
-                    habitTimes.removeValue(forKey: habit)
-                    if habit == .custom {
-                        customHabitError = nil
+        
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(habit.title)
+                    .font(.headline)
+                Text(habit.detail)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+            
+            Spacer()
+            
+            if isSelected {
+                if let time = habitTimes[habit] {
+                    Text(time.formatted(.dateTime.hour().minute()))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Toggle("", isOn: Binding(
+                get: { isSelected },
+                set: { isOn in
+                    if isOn {
+                        selectedHabits.insert(habit)
+                        // 時間設定シートを表示
+                        sheetTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
+                        showingTimePicker = habit
+                    } else {
+                        selectedHabits.remove(habit)
+                        habitTimes.removeValue(forKey: habit)
+                    }
+                }
+            ))
+            .labelsHidden()
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+    
+    @ViewBuilder
+    private func customHabitCard(for customHabit: CustomHabitConfiguration) -> some View {
+        let hasTime = customHabitTimes[customHabit.id] != nil
+        
+        HStack {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(customHabit.name)
+                    .font(.headline)
+            }
+            
+            Spacer()
+            
+            if hasTime {
+                if let time = customHabitTimes[customHabit.id] {
+                    Text(time.formatted(.dateTime.hour().minute()))
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            
+            Toggle("", isOn: Binding(
+                get: { hasTime },
+                set: { isOn in
+                    if isOn {
+                        sheetTime = customHabitTimes[customHabit.id] ?? Date()
+                        showingCustomTimePicker = customHabit.id
+                    } else {
+                        customHabitTimes.removeValue(forKey: customHabit.id)
+                    }
+                }
+            ))
+            .labelsHidden()
+        }
+        .padding()
+        .background(Color(.systemGray6))
+        .cornerRadius(12)
+    }
+    
+    private func addCustomHabit() {
+        let trimmed = newCustomHabitName.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        
+        let config = CustomHabitConfiguration(name: trimmed)
+        appState.addCustomHabit(config)
+        newCustomHabitName = ""
+        showingAddCustomHabit = false
+    }
+    
+    @ViewBuilder
+    private func customTimePickerSheet(for id: UUID) -> some View {
+        NavigationView {
+            VStack(spacing: 24) {
+                Text(String(localized: "onboarding_habit_time_title_format"))
+                    .font(.title2)
+                    .padding(.top)
+                
+                DatePicker(
+                    String(localized: "common_time"),
+                    selection: $sheetTime,
+                    displayedComponents: [.hourAndMinute]
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+                
+                Spacer()
+            }
+            .padding()
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(String(localized: "common_cancel")) {
+                        showingCustomTimePicker = nil
+                    }
+                }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(String(localized: "common_save")) {
+                        customHabitTimes[id] = sheetTime
+                        showingCustomTimePicker = nil
                     }
                 }
             }
-        )
-
-        VStack(spacing: 12) {
-            SUCard(
-                model: {
-                    var vm = CardVM()
-                    vm.isTappable = false
-                    return vm
-                }(),
-                content: {
-                    VStack(spacing: 12) {
-                        HStack(spacing: 16) {
-                            SUCheckbox(
-                                isSelected: checkboxBinding,
-                                model: {
-                                    var vm = CheckboxVM()
-                                    vm.size = .large
-                                    return vm
-                                }()
-                            )
-                            VStack(alignment: .leading, spacing: 8) {
-                                if habit == .custom {
-                                    HabitNameField(text: $customHabitName)
-                                        .focused($isCustomHabitNameFocused)
-                                        .onChange(of: customHabitName) { _, newValue in
-                                            let sanitized = newValue.replacingOccurrences(of: "\n", with: "")
-                                            if sanitized != customHabitName { customHabitName = sanitized }
-                                            customHabitError = nil
-                                        }
-                                } else {
-                                    Text(habit.title)
-                                        .font(.headline)
-                                    Text(habit.detail)
-                                        .font(.subheadline)
-                                        .foregroundStyle(.secondary)
-                                }
-                            }
-
-                            Spacer()
-
-                            if isSelected {
-                                VStack(alignment: .trailing, spacing: 8) {
-                                    if let time = habitTimes[habit] {
-                                        Text(timeFormatter.string(from: time))
-                                            .font(.headline)
-                                    } else {
-                                        Text(LocalizedStringKey("common_set_time"))
-                                            .font(.subheadline)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    SUButton(
-                                        model: {
-                                            var vm = ButtonVM()
-                                            vm.title = hasTime ? String(localized: "common_change") : String(localized: "common_set_time")
-                                            vm.style = hasTime ? .bordered(.medium) : .filled
-                                            vm.size = .small
-                                            vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                                            return vm
-                                        }(),
-                                        action: {
-                                            sheetTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
-                                            showingTimePicker = habit
-                                        }
-                                    )
-                                }
-                            } else {
-                                Text(LocalizedStringKey("common_not_selected"))
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        if habit == .custom && isSelected {
-                            Text("habit_custom_card_description")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                            if let customHabitError {
-                                Text(customHabitError)
-                                    .font(.footnote)
-                                    .foregroundStyle(.red)
-                            }
-                        }
-                    }
-                }
-            )
         }
     }
 
@@ -181,7 +257,7 @@ struct HabitSetupStepView: View {
                 )
                 .datePickerStyle(.wheel)
                 .labelsHidden()
-                .environment(\.locale, Locale(identifier: "en_GB"))
+                // システムロケールに委ねる（固定ロケールは削除）
 
                 Spacer()
             }
@@ -199,34 +275,18 @@ struct HabitSetupStepView: View {
         }
     }
 
-    private var timeFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "HH:mm"
-        formatter.locale = Locale(identifier: "en_US_POSIX")
-        return formatter
-    }
-
     private var canSave: Bool {
-        guard !isSaving, !selectedHabits.isEmpty else { return false }
-        let allHaveTime = selectedHabits.allSatisfy { habitTimes[$0] != nil }
-        guard allHaveTime else { return false }
-        if selectedHabits.contains(.custom) {
-            return !customHabitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-        }
-        return true
+        guard !isSaving else { return false }
+        // 選択された習慣が全て時間設定済みかチェック
+        let defaultHabitsHaveTime = selectedHabits.allSatisfy { habitTimes[$0] != nil }
+        let customHabitsHaveTime = appState.customHabits.allSatisfy { customHabitTimes[$0.id] != nil }
+        return defaultHabitsHaveTime && customHabitsHaveTime
     }
-
+    
     private func save() {
-        guard canSave else {
-            if selectedHabits.contains(.custom) &&
-                customHabitName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                customHabitError = "habit_custom_name_required"
-                isCustomHabitNameFocused = true
-            }
-            return
-        }
+        guard canSave else { return }
         isSaving = true
-
+        
         Task {
             var schedules: [HabitType: Date] = [:]
             for habit in selectedHabits {
@@ -234,21 +294,20 @@ struct HabitSetupStepView: View {
                     schedules[habit] = time
                 }
             }
-
+            
             await appState.updateHabits(schedules)
-
-            if selectedHabits.contains(.custom) {
-                appState.setCustomHabitName(customHabitName)
-            } else {
-                appState.clearCustomHabit()
+            
+            // カスタム習慣のスケジュールを保存
+            for (id, time) in customHabitTimes {
+                let components = Calendar.current.dateComponents([.hour, .minute], from: time)
+                appState.updateCustomHabitSchedule(id: id, time: components)
             }
             
-            // Prepare follow-up questions based on selected habits
-            appState.prepareHabitFollowUps(selectedHabits: selectedHabits)
+            // フォローアップを削除（直接Paywall/Completionへ）
+            appState.clearHabitFollowUps()
             
             await MainActor.run {
                 isSaving = false
-                customHabitError = nil
                 next()
             }
         }

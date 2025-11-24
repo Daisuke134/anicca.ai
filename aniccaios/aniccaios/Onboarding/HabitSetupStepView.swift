@@ -14,6 +14,16 @@ struct HabitSetupStepView: View {
     @State private var isSaving = false
     @State private var showingAddCustomHabit = false
     @State private var newCustomHabitName = ""
+    
+    // 追加: デフォルト習慣を時刻昇順にソート
+    private var sortedDefaultHabits: [HabitType] {
+        let base: [HabitType] = [.wake, .training, .bedtime]
+        return base.sorted { a, b in
+            let ca = habitTimes[a] ?? Calendar.current.date(from: a.defaultTime) ?? Date.distantFuture
+            let cb = habitTimes[b] ?? Calendar.current.date(from: b.defaultTime) ?? Date.distantFuture
+            return ca < cb
+        }
+    }
 
     var body: some View {
         VStack(spacing: 24) {
@@ -29,8 +39,8 @@ struct HabitSetupStepView: View {
 
             List {
                 Section {
-                    // デフォルト習慣（wake, training, bedtime）
-                    ForEach([HabitType.wake, .training, .bedtime], id: \.self) { habit in
+                    // デフォルト習慣（時刻の早い順）
+                    ForEach(sortedDefaultHabits, id: \.self) { habit in
                         habitCard(for: habit, isCustom: false)
                     }
                     
@@ -95,7 +105,7 @@ struct HabitSetupStepView: View {
             NavigationView {
                 Form {
                     Section {
-                        TextField("habit_custom_name_placeholder", text: $newCustomHabitName)
+                        TextField(String(localized: "habit_custom_name_placeholder"), text: $newCustomHabitName)
                     }
                     Section {
                         Button("common_add") {
@@ -209,7 +219,7 @@ struct HabitSetupStepView: View {
     private func customTimePickerSheet(for id: UUID) -> some View {
         NavigationView {
             VStack(spacing: 24) {
-                Text(String(localized: "onboarding_habit_time_title_format"))
+                Text(String(localized: "common_set_time"))
                     .font(.title2)
                     .padding(.top)
                 
@@ -245,7 +255,7 @@ struct HabitSetupStepView: View {
     private func timePickerSheet(for habit: HabitType) -> some View {
         NavigationView {
             VStack(spacing: 24) {
-                Text(String(format: NSLocalizedString("onboarding_habit_time_title_format", comment: ""), habit.title))
+                Text(String(localized: "common_set_time"))
                     .font(.title2)
                     .padding(.top)
 

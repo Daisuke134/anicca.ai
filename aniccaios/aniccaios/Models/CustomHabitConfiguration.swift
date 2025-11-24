@@ -43,6 +43,8 @@ final class CustomHabitStore {
     
     func add(_ configuration: CustomHabitConfiguration) {
         var habits = loadAll()
+        let name = configuration.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        if habits.contains(where: { $0.name.compare(name, options: .caseInsensitive) == .orderedSame }) { return }
         habits.append(configuration)
         saveAll(habits)
     }

@@ -36,7 +36,8 @@
 
 "onboarding_habit_title" = "習慣を設定";
 "onboarding_habit_description" = "続けたい習慣を選び、時刻を設定しましょう。";
-"onboarding_habit_time_title_format" = "%@の時刻を設定";
+/* 表示は統一で"時刻を設定" */
+"onboarding_habit_time_title_format" = "時刻を設定";
 
 "onboarding_profile_title" = "お名前を教えてください";
 "onboarding_profile_description" = "Aniccaが呼びかける際に使用します。";
@@ -73,7 +74,7 @@
 "habit_detail_bedtime" = "やすらかな就寝をサポートします";
 "habit_detail_custom" = "自由に設定した習慣を毎日リマインドします";
 "habit_custom_card_description" = "名前と時刻を設定するとリマインドされます。";
-"habit_custom_name_placeholder" = "";
+"habit_custom_name_placeholder" = "習慣名を入力";
 "habit_custom_name_required" = "習慣名を入力してください。";
 
 "next_schedule_message" = "%@に%@をお知らせします";

@@ -5,12 +5,14 @@ enum SheetRoute: Identifiable {
     case habit(HabitType)
     case custom(UUID)
     case addCustom
+    case editor(HabitType) // 統合エディタ
     
     var id: String {
         switch self {
         case .habit(let h): return "habit:\(h.id)"
         case .custom(let id): return "custom:\(id.uuidString)"
         case .addCustom: return "addCustom"
+        case .editor(let h): return "editor:\(h.id)"
         }
     }
 }
@@ -24,8 +26,7 @@ struct HabitsSectionView: View {
     @State private var sheetTime = Date()
     @State private var activeSheet: SheetRoute?
     @State private var newCustomHabitName = ""
-    @State private var habitToDelete: UUID?
-    @State private var showingDeleteAlert = false
+    // 削除確認を廃止（即時削除）
     
     // 時系列順にソートされた習慣リスト（SettingsViewと同じロジック）
     private var sortedHabits: [(habit: HabitType, time: DateComponents?)] {
@@ -94,10 +95,9 @@ struct HabitsSectionView: View {
                 // カスタム習慣（時系列順）
                 ForEach(sortedCustomHabits, id: \.id) { item in
                     customHabitRow(id: item.id, name: item.name, time: item.time)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                habitToDelete = item.id
-                                showingDeleteAlert = true
+                                appState.removeCustomHabit(id: item.id)
                             } label: {
                                 Label(String(localized: "common_delete"), systemImage: "trash")
                             }
@@ -107,10 +107,9 @@ struct HabitsSectionView: View {
                 // 時間未設定のカスタム習慣
                 ForEach(inactiveCustomHabits, id: \.id) { habit in
                     customHabitRow(id: habit.id, name: habit.name, time: nil)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: false) {
+                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                             Button(role: .destructive) {
-                                habitToDelete = habit.id
-                                showingDeleteAlert = true
+                                appState.removeCustomHabit(id: habit.id)
                             } label: {
                                 Label(String(localized: "common_delete"), systemImage: "trash")
                             }
@@ -151,19 +150,12 @@ struct HabitsSectionView: View {
                     .navigationTitle(String(localized: "habit_add_custom"))
                     .navigationBarTitleDisplayMode(.inline)
                 }
+            case .editor(let habit):
+                HabitEditSheet(habit: habit)
+                    .environmentObject(appState)
             }
         }
-        .alert(String(localized: "habit_delete_confirm"), isPresented: $showingDeleteAlert) {
-            Button(String(localized: "common_cancel"), role: .cancel) {
-                habitToDelete = nil
-            }
-            Button(String(localized: "common_delete"), role: .destructive) {
-                if let id = habitToDelete {
-                    appState.removeCustomHabit(id: id)
-                    habitToDelete = nil
-                }
-            }
-        }
+        // 削除確認UIは廃止
         .onAppear {
             loadHabitTimes()
         }
@@ -238,6 +230,10 @@ struct HabitsSectionView: View {
         .contentShape(Rectangle())
         .onTapGesture {
             if isActive {
+                // タップで統合エディタ（時刻＋フォローアップ）を開く
+                activeSheet = .editor(habit)
+            } else {
+                // 未設定の場合は時刻設定シートを開く
                 sheetTime = date ?? Date()
                 activeSheet = .habit(habit)
             }
@@ -292,7 +288,7 @@ struct HabitsSectionView: View {
     private func timePickerSheet(for habit: HabitType) -> some View {
         NavigationView {
             VStack(spacing: 24) {
-                Text(String(format: NSLocalizedString("onboarding_habit_time_title_format", comment: ""), habit.title))
+                Text(String(localized: "common_set_time"))
                     .font(.title2)
                     .padding(.top)
                 
@@ -333,7 +329,7 @@ struct HabitsSectionView: View {
     private func customTimePickerSheet(for id: UUID) -> some View {
         NavigationView {
             VStack(spacing: 24) {
-                Text(String(localized: "onboarding_habit_time_title_format"))
+                Text(String(localized: "common_set_time"))
                     .font(.title2)
                     .padding(.top)
                 
@@ -376,6 +372,60 @@ struct HabitsSectionView: View {
         appState.addCustomHabit(config)
         newCustomHabitName = ""
         activeSheet = nil
+    }
+}
+
+// 統合エディタ（時刻＋フォローアップ）
+struct HabitEditSheet: View {
+    @EnvironmentObject private var appState: AppState
+    let habit: HabitType
+    @State private var time = Date()
+    @Environment(\.dismiss) private var dismiss
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                // Time
+                DatePicker(String(localized: "common_time"), selection: $time, displayedComponents: [.hourAndMinute])
+                
+                // Follow-ups
+                switch habit {
+                case .wake:
+                    TextField(String(localized: "habit_wake_location"), text: Binding(
+                        get: { appState.userProfile.wakeLocation },
+                        set: { appState.updateWakeLocation($0) }
+                    ))
+                case .bedtime:
+                    TextField(String(localized: "habit_sleep_location"), text: Binding(
+                        get: { appState.userProfile.sleepLocation },
+                        set: { appState.updateSleepLocation($0) }
+                    ))
+                case .training:
+                    HabitTrainingFocusStepView(next: { }) // embed; saves via AppState
+                case .custom:
+                    EmptyView()
+                }
+            }
+            .navigationTitle(habit.title)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common_cancel")) { dismiss() }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common_save")) {
+                        Task { await appState.updateHabit(habit, time: time) }
+                        dismiss()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            // 現在の時刻を読み込む
+            if let components = appState.habitSchedules[habit],
+               let date = Calendar.current.date(from: components) {
+                time = date
+            }
+        }
     }
 }
 

@@ -526,6 +526,10 @@ final class AppState: ObservableObject {
     // MARK: - Custom Habit Management
     
     func addCustomHabit(_ configuration: CustomHabitConfiguration) {
+        let name = configuration.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !name.isEmpty else { return }
+        let exists = customHabits.contains { $0.name.compare(name, options: .caseInsensitive) == .orderedSame }
+        guard !exists else { return }
         customHabits.append(configuration)
         CustomHabitStore.shared.add(configuration)
     }

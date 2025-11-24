@@ -36,7 +36,8 @@
 
 "onboarding_habit_title" = "Set Your Habits";
 "onboarding_habit_description" = "Choose which habits you want to build and set their times.";
-"onboarding_habit_time_title_format" = "Set %@ Time";
+/* Not used anymore; keep for backward compat if referenced */
+"onboarding_habit_time_title_format" = "Set Time";
 
 "onboarding_profile_title" = "Tell us your name";
 "onboarding_profile_description" = "We'll use your name when Anicca speaks to you.";
@@ -66,20 +67,20 @@
 
 "habit_title_wake" = "Wake Up";
 "habit_title_training" = "Training";
-"habit_title_bedtime" = "Bedtime";
+"habit_title_bedtime" = "Sleep";
 "habit_title_custom_fallback" = "Custom Habit";
 "habit_detail_wake" = "Get woken up at your preferred time";
 "habit_detail_training" = "Reminders to start your workout";
 "habit_detail_bedtime" = "Gentle reminders to wind down and sleep";
 "habit_detail_custom" = "We'll remind you once you set a name and time.";
 "habit_custom_card_description" = "Give it a name and set the reminder time.";
-"habit_custom_name_placeholder" = "";
+"habit_custom_name_placeholder" = "Add your habit";
 "habit_custom_name_required" = "Please enter a habit name.";
 
 "next_schedule_message" = "%@ I'll nudge you for %@";
 "next_schedule_habit_wake" = "wake-up";
 "next_schedule_habit_training" = "training";
-"next_schedule_habit_bedtime" = "bedtime";
+"next_schedule_habit_bedtime" = "sleep";
 
 "session_button_talk" = "Talk to Anicca";
 "session_button_end" = "End Session";

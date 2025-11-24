@@ -9,7 +9,7 @@ extension Array {
         // destinationを有効な範囲に制限
         let validDestination = Swift.max(0, Swift.min(destination, self.count))
         
-        var itemsToMove = source.map { self[$0] }
+        let itemsToMove = source.map { self[$0] }
         var adjustedDestination = validDestination
         
         // 後ろから削除することで、インデックスのずれを防ぐ

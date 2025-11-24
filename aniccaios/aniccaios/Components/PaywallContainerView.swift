@@ -7,11 +7,13 @@ struct PaywallContainerView: View {
     var forcePresent: Bool = false
     var onPurchaseCompleted: (() -> Void)?
     var onDismissRequested: (() -> Void)?
+    var onPurchaseFailed: ((Error) -> Void)? // 追加: 購入失敗コールバック
     @EnvironmentObject private var appState: AppState
     @State private var offering: Offering?
     @State private var isLoading = true
     @State private var loadError: Error?
     @State private var hasCheckedEntitlement = false // 追加: チェック完了フラグ
+    @State private var purchaseError: Error? // 追加: 購入エラー状態
     
     var body: some View {
         Group {
@@ -36,7 +38,11 @@ struct PaywallContainerView: View {
                     // RevenueCatUIのPaywallViewを使用
                     PaywallView(offering: offeringToDisplay)
                         .onRequestedDismissal {
-                            // RevenueCat Paywall の「×」押下時に呼ばれる
+                            // 購入エラー中でも閉じられる（ユーザーの意思を尊重）
+                            // ただし、エラー状態をクリア
+                            if purchaseError != nil {
+                                purchaseError = nil
+                            }
                             onDismissRequested?()
                         }
                         .onPurchaseCompleted { customerInfo in
@@ -48,6 +54,19 @@ struct PaywallContainerView: View {
                         // 追加: キャンセル時のフリーズ対策
                         .onPurchaseCancelled {
                             print("[Paywall] Purchase cancelled by user")
+                            // キャンセル時はエラー状態をクリア
+                            Task { @MainActor in
+                                purchaseError = nil
+                            }
+                        }
+                        .onPurchaseFailure { error in
+                            print("[Paywall] Purchase failed: \(error.localizedDescription)")
+                            // 追加: 購入エラー時の処理
+                            Task { @MainActor in
+                                purchaseError = error
+                                // 購入失敗を親に通知
+                                onPurchaseFailed?(error)
+                            }
                         }
                         .onRestoreCompleted { customerInfo in
                             print("[Paywall] Restore completed: \(customerInfo)")
@@ -55,6 +74,25 @@ struct PaywallContainerView: View {
                                 await handlePurchaseResult(customerInfo)
                             }
                         }
+                    
+                    // 追加: 購入エラー時のエラーメッセージ表示
+                    if let error = purchaseError {
+                        VStack(spacing: 8) {
+                            Text("購入に失敗しました")
+                                .font(.headline)
+                                .foregroundColor(.red)
+                            Text(error.localizedDescription)
+                                .font(.subheadline)
+                                .foregroundColor(.secondary)
+                                .multilineTextAlignment(.center)
+                            Button("再試行") {
+                                purchaseError = nil
+                            }
+                            .buttonStyle(.borderedProminent)
+                        }
+                        .padding()
+                        .background(Color(.systemBackground))
+                    }
                 }
                 .safeAreaInset(edge: .bottom) {
                     // 下部: 法的リンクを常設
@@ -149,6 +187,9 @@ struct PaywallContainerView: View {
         await MainActor.run {
             let subscription = SubscriptionInfo(info: info)
             appState.updateSubscriptionInfo(subscription)
+            
+            // 購入成功時はエラー状態をクリア
+            purchaseError = nil
             
             // 購入完了時はonPurchaseCompletedのみ呼ぶ（onDismissRequestedは呼ばない）
             onPurchaseCompleted?()

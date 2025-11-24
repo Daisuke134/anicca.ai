@@ -42,9 +42,12 @@ router.delete('/', async (req, res, next) => {
       await client.query('BEGIN');
       // 関連データを削除（外部キー制約の順序に注意）
       await client.query('DELETE FROM usage_sessions WHERE user_id = $1', [userId]);
-      await client.query('DELETE FROM profiles WHERE user_id = $1', [userId]);
-      await client.query('DELETE FROM devices WHERE user_id = $1', [userId]);
-      await client.query('DELETE FROM users WHERE id = $1', [userId]);
+      await client.query('DELETE FROM mobile_profiles WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM mobile_voip_tokens WHERE user_id = $1', [userId]);
+      await client.query('DELETE FROM tokens WHERE user_id = $1', [userId]);
+      // profilesテーブルはidが主キーなので、user_idではなくidを使用
+      await client.query('DELETE FROM profiles WHERE id = $1::uuid', [userId]);
+      // user_settingsはON DELETE CASCADEで自動削除される
       await client.query('COMMIT');
     } catch (e) {
       await client.query('ROLLBACK');

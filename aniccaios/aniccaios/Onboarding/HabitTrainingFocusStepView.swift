@@ -5,6 +5,7 @@ struct HabitTrainingFocusStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
     @State private var selectedTrainingFocus: String = ""
+    @State private var trainingGoal: String = ""
     @State private var isSaving = false
 
     private struct TrainingFocusOption: Identifiable {
@@ -20,58 +21,75 @@ struct HabitTrainingFocusStepView: View {
     ]
 
     var body: some View {
-        VStack(spacing: 24) {
-            Text("onboarding_habit_training_title")
-                .font(.title)
-                .padding(.top, 40)
-
-            Text("onboarding_habit_training_description")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .padding(.horizontal)
-
-            VStack(spacing: 12) {
-                ForEach(trainingFocusOptions) { option in
-                    Button(action: {
-                        selectedTrainingFocus = option.id
-                    }) {
-                        HStack {
-                            Image(systemName: selectedTrainingFocus == option.id ? "checkmark.circle.fill" : "circle")
-                                .foregroundStyle(selectedTrainingFocus == option.id ? .blue : .secondary)
-                            Text(option.labelKey)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            Spacer()
+        navigationContainer {
+            Form {
+                // 上に「目標」入力フィールド（KOUJI.md仕様）
+                Section(String(localized: "habit_training_goal")) {
+                    TextField(String(localized: "habit_training_goal_placeholder"), text: $trainingGoal)
+                }
+                
+                // 下に「トレーニングの種類を選択」（KOUJI.md仕様）
+                Section(String(localized: "habit_training_types")) {
+                    ForEach(trainingFocusOptions) { option in
+                        // トグルスイッチ形式（KOUJI.md仕様）
+                        Toggle(isOn: Binding(
+                            get: { selectedTrainingFocus == option.id },
+                            set: { isOn in
+                                if isOn {
+                                    // 一つのトグルをONにすると、他のトグルは自動的にOFFになる
+                                    selectedTrainingFocus = option.id
+                                } else {
+                                    // トグルをOFFにする場合は選択をクリア
+                                    selectedTrainingFocus = ""
+                                }
+                            }
+                        )) {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(option.labelKey)
+                                    .font(.body)
+                                    .foregroundStyle(.primary)
+                                // 説明テキスト（Push-up/Coreは回数、Cardio/Stretchは時間）
+                                if option.id == "Push-up" || option.id == "Core" {
+                                    Text("回数で計測")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                } else if option.id == "Cardio" || option.id == "Stretch" {
+                                    Text("時間で計測")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                            }
                         }
-                        .padding()
-                        .background(
-                            RoundedRectangle(cornerRadius: 8)
-                                .fill(selectedTrainingFocus == option.id ? Color.blue.opacity(0.1) : Color.gray.opacity(0.1))
-                        )
                     }
-                    .buttonStyle(.plain)
                 }
             }
-            .padding(.horizontal, 32)
-
-            Spacer()
-
-            SUButton(
-                model: {
-                    var vm = ButtonVM()
-                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "common_continue")
-                    vm.style = .filled
-                    vm.size = .large
-                    vm.isFullWidth = true
-                    vm.isEnabled = !selectedTrainingFocus.isEmpty && !isSaving
-                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                    return vm
-                }(),
-                action: save
-            )
-            .padding(.horizontal)
-            .padding(.bottom)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common_save")) {
+                        save()
+                    }
+                    .disabled(selectedTrainingFocus.isEmpty || isSaving)
+                }
+            }
+            .onAppear {
+                // 既存の値を読み込む
+                trainingGoal = appState.userProfile.trainingGoal
+                selectedTrainingFocus = appState.userProfile.trainingFocus.first ?? ""
+            }
+        }
+    }
+    
+    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
+    @ViewBuilder
+    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        if #available(iOS 16.0, *) {
+            NavigationStack {
+                content()
+            }
+        } else {
+            NavigationView {
+                content()
+            }
         }
     }
 
@@ -79,6 +97,7 @@ struct HabitTrainingFocusStepView: View {
         guard !selectedTrainingFocus.isEmpty, !isSaving else { return }
         isSaving = true
         Task {
+            appState.updateTrainingGoal(trainingGoal)
             appState.updateTrainingFocus([selectedTrainingFocus])
             await MainActor.run {
                 isSaving = false

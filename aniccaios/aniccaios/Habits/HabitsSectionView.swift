@@ -318,7 +318,7 @@ struct HabitsSectionView: View {
                     Button(String(localized: "common_save")) {
                         habitTimes[habit] = sheetTime
                         activeHabits.insert(habit)
-                        let components = Calendar.current.dateComponents([.hour, .minute], from: sheetTime)
+                        _ = Calendar.current.dateComponents([.hour, .minute], from: sheetTime)
                         Task {
                             await appState.updateHabit(habit, time: sheetTime)
                         }

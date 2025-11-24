@@ -571,7 +571,7 @@ final class AppState: ObservableObject {
         do {
             let decoded = try JSONDecoder().decode([String: [String: Int]].self, from: data)
             // String (UUID文字列) と [String: Int] を UUID と DateComponents に変換
-            return decoded.compactMap { uuidString, componentsDict in
+            return decoded.compactMap { (uuidString: String, componentsDict: [String: Int]) -> (UUID, DateComponents)? in
                 guard let uuid = UUID(uuidString: uuidString),
                       let hour = componentsDict["hour"],
                       let minute = componentsDict["minute"] else {
@@ -581,7 +581,7 @@ final class AppState: ObservableObject {
                 components.hour = hour
                 components.minute = minute
                 return (uuid, components)
-            }.reduce(into: [UUID: DateComponents]()) { result, pair in
+            }.reduce(into: [UUID: DateComponents]()) { (result: inout [UUID: DateComponents], pair: (UUID, DateComponents)) in
                 result[pair.0] = pair.1
             }
         } catch {

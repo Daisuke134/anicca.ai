@@ -17,6 +17,7 @@ struct StartConversationIntent: AppIntent {
         try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
         
         // Prepare for immediate session
+        AppState.shared.selectedRootTab = .talk
         AppState.shared.prepareForImmediateSession(habit: habitType)
         
         return .result()

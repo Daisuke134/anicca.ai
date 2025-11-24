@@ -31,6 +31,12 @@ final class AppState: ObservableObject {
     @Published private(set) var customHabits: [CustomHabitConfiguration] = []
     @Published private(set) var customHabitSchedules: [UUID: DateComponents] = [:]
     private(set) var shouldStartSessionImmediately = false
+    
+    enum RootTab: Int, Hashable {
+        case talk = 0
+        case habits = 1
+    }
+    @Published var selectedRootTab: RootTab = .talk
 
     // Legacy support: computed property for backward compatibility
     var wakeTime: DateComponents? {
@@ -196,6 +202,7 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
         shouldStartSessionImmediately = true
+        selectedRootTab = .talk
     }
 
     func handleHabitTrigger(_ habit: HabitType) {

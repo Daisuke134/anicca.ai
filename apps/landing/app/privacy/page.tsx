@@ -84,6 +84,11 @@ export default function PrivacyPage() {
         ユーザーは自身の情報の開示・訂正・利用停止・削除を請求できます。keiodaisuke@gmail.com までご連絡ください。
       </p>
 
+      <h3 className="mt-6 text-lg font-semibold text-foreground">アカウント削除（iOS）</h3>
+      <p className="mt-3 text-muted-foreground">
+        iOSアプリの「設定」→「Delete Account」から、アプリ内でアカウント削除を完了できます。
+      </p>
+
       <h2 className="mt-10 text-xl font-semibold text-foreground">11. クッキー等</h2>
       <p className="mt-3 text-muted-foreground">ランディングページでは必要最小限のCookieを使用します。Cookie自体に個人情報は含まれません。</p>
 

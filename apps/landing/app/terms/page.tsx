@@ -14,6 +14,18 @@ export default function TermsPage() {
       <h2 className="mt-10 text-xl font-semibold text-foreground">第2条（定義）</h2>
       <p className="mt-3 text-muted-foreground">「ユーザー」とは、本サービスを利用する全ての者をいいます。「有料プラン」とはStripe決済によるAnicca Proプラン（月額5USD、価格ID: price_1S93SrEeDsUAcaLSNXvHMwPL）を指します。</p>
 
+      <h2 className="mt-10 text-xl font-semibold text-foreground">iOSアプリに関する特則</h2>
+      <p className="mt-3 text-muted-foreground">
+        iOS版の自動更新サブスクリプションはAppleを通じて課金され、利用条件は
+        Apple Standard EULA に従います。
+        <a className="text-primary underline ml-2"
+           href="https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
+           target="_blank" rel="noreferrer">Apple Standard EULA</a>
+      </p>
+      <p className="mt-3 text-muted-foreground">
+        本ページに記載のStripeに関する事項はデスクトップ版に適用され、iOS版には適用されません。
+      </p>
+
       <h2 className="mt-10 text-xl font-semibold text-foreground">第3条（利用登録）</h2>
       <p className="mt-3 text-muted-foreground">本サービスの利用希望者はSupabaseによる認証を完了し、本規約に同意することで利用登録が成立します。当方は必要に応じて登録の拒否・取消を行うことがあります。</p>
 

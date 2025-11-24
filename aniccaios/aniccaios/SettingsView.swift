@@ -210,6 +210,8 @@ struct SettingsView: View {
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
         request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        // JWT/Bearer を優先的に付与（存在すれば）
+        try? await NetworkSessionManager.shared.setAuthHeaders(for: &request)
         
         do {
             let (_, response) = try await NetworkSessionManager.shared.session.data(for: request)

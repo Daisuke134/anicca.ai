@@ -1,14 +1,16 @@
 import express from 'express';
-import { requireAuth } from '../../middleware/requireAuth.js';
+import requireAuth from '../../middleware/requireAuth.js';
 import { deleteSubscriber } from '../../services/revenuecat/api.js';
 import { pool } from '../../lib/db.js';
 
 const router = express.Router();
 
 // Guideline 5.1.1(v)対応: アカウント削除
-router.delete('/', requireAuth, async (req, res, next) => {
+router.delete('/', async (req, res, next) => {
   try {
-    const userId = req.user.id;
+    const auth = await requireAuth(req, res);
+    if (!auth) return;
+    const userId = auth.sub;
     
     // RevenueCatのSubscriber削除（App User ID）
     try {

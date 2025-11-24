@@ -7,7 +7,7 @@ struct RoutineItem: Identifiable {
 }
 
 struct HabitWakeFollowUpView: View {
-    let onRegisterSave: (((() -> Void)) -> Void)?
+    let onRegisterSave: ((@escaping () -> Void) -> Void)?
     @EnvironmentObject private var appState: AppState
     @State private var wakeLocation: String = ""
     @State private var routines: [RoutineItem] = [
@@ -16,7 +16,7 @@ struct HabitWakeFollowUpView: View {
         RoutineItem(text: "")
     ]
     
-    init(onRegisterSave: (((() -> Void)) -> Void)? = nil) {
+    init(onRegisterSave: ((@escaping () -> Void) -> Void)? = nil) {
         self.onRegisterSave = onRegisterSave
     }
     

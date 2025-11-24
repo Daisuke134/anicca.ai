@@ -53,10 +53,12 @@ extension PricingDisclosureBanner {
         }
         let price = package.storeProduct.price
         let perMonth = price / 12
-        let formatter = NumberFormatter()
-        formatter.numberStyle = .currency
-        formatter.currencyCode = package.storeProduct.priceLocale?.currencyCode
-        formatter.locale = package.storeProduct.priceLocale
+        let formatter = package.storeProduct.priceFormatter ?? {
+            let f = NumberFormatter()
+            f.numberStyle = .currency
+            f.locale = Locale.current
+            return f
+        }()
         formatter.maximumFractionDigits = 2
         if let formatted = formatter.string(from: NSDecimalNumber(decimal: perMonth)) {
             return "≈ \(formatted)/mo (for comparison)"

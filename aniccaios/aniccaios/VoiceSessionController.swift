@@ -91,19 +91,43 @@ final class VoiceSessionController: NSObject, ObservableObject {
     @MainActor
     private func establishSession(resumeImmediately: Bool) async {
         // マイクロフォン権限チェック（WebRTC初期化前に必須）
+        // Guideline 2.1対応: iPadでの即終了バグ修正のため、権限チェックを強化
+        let hasPermission: Bool
         if #available(iOS 17.0, *) {
-            guard AVAudioApplication.shared.recordPermission == .granted else {
-                logger.error("Microphone permission not granted")
-                setStatus(.disconnected)
-                return
+            let status = AVAudioApplication.shared.recordPermission
+            if status == .undetermined {
+                // 未決定の場合はリクエスト
+                let granted = await withCheckedContinuation { continuation in
+                    AVAudioApplication.requestRecordPermission { granted in
+                        continuation.resume(returning: granted)
+                    }
+                }
+                hasPermission = granted
+            } else {
+                hasPermission = status == .granted
             }
         } else {
-            guard AVAudioSession.sharedInstance().recordPermission == .granted else {
-                logger.error("Microphone permission not granted")
-                setStatus(.disconnected)
-                return
+            let status = AVAudioSession.sharedInstance().recordPermission
+            if status == .undetermined {
+                let granted = await withCheckedContinuation { continuation in
+                    AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                        continuation.resume(returning: granted)
+                    }
+                }
+                hasPermission = granted
+            } else {
+                hasPermission = status == .granted
             }
         }
+        
+        guard hasPermission else {
+            logger.error("Microphone permission not granted")
+            setStatus(.disconnected)
+            // ユーザーに権限が必要であることを通知（必要に応じてアラート表示）
+            return
+        }
+        
+        setStatus(.connecting)
         
         do {
             let secret = try await obtainClientSecret()
@@ -112,9 +136,17 @@ final class VoiceSessionController: NSObject, ObservableObject {
             setupLocalAudio()
             try await negotiateWebRTC(using: secret)
             sendSessionUpdate()
+        } catch VoiceSessionError.quotaExceeded {
+            // 402エラー時はPaywallを表示してセッションを終了
+            logger.warning("Quota exceeded, showing paywall")
+            await MainActor.run {
+                AppState.shared.markQuotaHold(plan: nil)
+            }
+            setStatus(.disconnected)
         } catch {
             logger.error("Failed to establish session: \(error.localizedDescription, privacy: .public)")
-            stop()
+            // 接続失敗時はユーザーに再試行可能な状態にする（即終了しない）
+            setStatus(.disconnected)
         }
     }
 

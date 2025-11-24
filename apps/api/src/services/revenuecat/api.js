@@ -124,4 +124,56 @@ export async function fetchCustomerEntitlements(appUserId) {
   }
 }
 
+// Guideline 5.1.1(v)対応: アカウント削除時にRevenueCatのSubscriberを削除
+export async function deleteSubscriber(appUserId) {
+  const key = BILLING_CONFIG.REVENUECAT_REST_API_KEY;
+  const projectId = BILLING_CONFIG.REVENUECAT_PROJECT_ID;
+  
+  if (!key || !projectId) {
+    logger.error('[RevenueCat] Missing API Key or Project ID for subscriber deletion', { 
+      hasKey: !!key, 
+      hasProjectId: !!projectId 
+    });
+    throw new Error('Missing RevenueCat configuration');
+  }
+  
+  // DELETE /v2/projects/{project_id}/customers/{customer_id}
+  const url = `${BASE_URL}/projects/${projectId}/customers/${encodeURIComponent(appUserId)}`;
+  
+  logger.info('[RevenueCat] Deleting subscriber', { appUserId, url });
+  
+  try {
+    const resp = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Authorization: `Bearer ${key}`,
+        Accept: 'application/json'
+      }
+    });
+    
+    if (!resp.ok) {
+      const txt = await resp.text().catch(() => '');
+      // 404は既に削除済みとして扱う（エラーをthrowしない）
+      if (resp.status === 404) {
+        logger.info('[RevenueCat] Subscriber already deleted', { appUserId });
+        return;
+      }
+      logger.warn('[RevenueCat] Failed to delete subscriber', { 
+        status: resp.status, 
+        appUserId, 
+        error: txt 
+      });
+      throw new Error(`RevenueCat API error: ${resp.status} ${txt}`);
+    }
+    
+    logger.info('[RevenueCat] Subscriber deleted successfully', { appUserId });
+  } catch (err) {
+    logger.error('[RevenueCat] Error deleting subscriber', { 
+      error: err.message, 
+      appUserId 
+    });
+    throw err;
+  }
+}
+
 

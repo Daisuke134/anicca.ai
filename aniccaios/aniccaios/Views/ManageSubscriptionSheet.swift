@@ -196,6 +196,9 @@ struct ManageSubscriptionSheet: View {
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
             }
+            
+            // Legal links (Guideline 3.1.2)
+            LegalLinksView()
         }
     }
     

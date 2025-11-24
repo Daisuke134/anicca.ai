@@ -269,6 +269,37 @@ final class AppState: ObservableObject {
         Task { await SubscriptionManager.shared.handleLogout() }
     }
     
+    // Guideline 5.1.1(v)対応: アカウント削除時の完全な状態リセット
+    func signOutAndWipe() {
+        authStatus = .signedOut
+        userProfile = UserProfile()
+        subscriptionInfo = .free
+        habitSchedules = [:]
+        customHabits = []
+        customHabitSchedules = [:]
+        pendingHabitTrigger = nil
+        pendingHabitPrompt = nil
+        cachedOffering = nil
+        
+        // UserDefaultsからすべてのユーザーデータを削除
+        defaults.removeObject(forKey: userCredentialsKey)
+        defaults.removeObject(forKey: userProfileKey)
+        defaults.removeObject(forKey: subscriptionKey)
+        defaults.removeObject(forKey: habitSchedulesKey)
+        defaults.removeObject(forKey: customHabitsKey)
+        defaults.removeObject(forKey: customHabitSchedulesKey)
+        
+        // 通知をすべてキャンセル
+        Task {
+            await scheduler.cancelAll()
+        }
+        
+        // RevenueCatからログアウト
+        Task {
+            await SubscriptionManager.shared.handleLogout()
+        }
+    }
+    
     private func loadUserCredentials() -> AuthStatus {
         guard let data = defaults.data(forKey: userCredentialsKey),
               let credentials = try? JSONDecoder().decode(UserCredentials.self, from: data) else {

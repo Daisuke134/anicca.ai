@@ -29,28 +29,44 @@ struct PaywallContainerView: View {
                         ?? Purchases.shared.cachedOfferings?.current,
                       offeringToDisplay.isSafeToDisplay,
                       !offeringToDisplay.availablePackages.isEmpty {
-                // RevenueCatUIのPaywallViewを使用
-                PaywallView(offering: offeringToDisplay)
-                    .onRequestedDismissal {
-                        // RevenueCat Paywall の「×」押下時に呼ばれる
-                        onDismissRequested?()
+                // Guideline 3.1.2対応: 請求額を最強調、法的リンクを常設
+                VStack(spacing: 0) {
+                    // 上部: 請求額を最も目立つ形で表示
+                    if let primaryPackage = offeringToDisplay.availablePackages.first {
+                        PricingDisclosureBanner(
+                            billedAmountText: PricingDisclosureBanner.billedText(for: primaryPackage),
+                            perMonthText: PricingDisclosureBanner.perMonthText(for: primaryPackage),
+                            noteText: "Cancel anytime. Price may vary by region and currency."
+                        )
                     }
-                    .onPurchaseCompleted { customerInfo in
-                        print("[Paywall] Purchase completed: \(customerInfo)")
-                        Task {
-                            await handlePurchaseResult(customerInfo)
+                    
+                    // RevenueCatUIのPaywallViewを使用
+                    PaywallView(offering: offeringToDisplay)
+                        .onRequestedDismissal {
+                            // RevenueCat Paywall の「×」押下時に呼ばれる
+                            onDismissRequested?()
                         }
-                    }
-                    // 追加: キャンセル時のフリーズ対策
-                    .onPurchaseCancelled {
-                        print("[Paywall] Purchase cancelled by user")
-                    }
-                    .onRestoreCompleted { customerInfo in
-                        print("[Paywall] Restore completed: \(customerInfo)")
-                        Task {
-                            await handlePurchaseResult(customerInfo)
+                        .onPurchaseCompleted { customerInfo in
+                            print("[Paywall] Purchase completed: \(customerInfo)")
+                            Task {
+                                await handlePurchaseResult(customerInfo)
+                            }
                         }
-                    }
+                        // 追加: キャンセル時のフリーズ対策
+                        .onPurchaseCancelled {
+                            print("[Paywall] Purchase cancelled by user")
+                        }
+                        .onRestoreCompleted { customerInfo in
+                            print("[Paywall] Restore completed: \(customerInfo)")
+                            Task {
+                                await handlePurchaseResult(customerInfo)
+                            }
+                        }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    // 下部: 法的リンクを常設
+                    LegalLinksView()
+                }
             } else if isLoading {
                 ProgressView(String(localized: "paywall_loading"))
             } else {

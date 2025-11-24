@@ -11,15 +11,15 @@ struct HabitFollowUpView: View {
             Group {
                 switch habit {
                 case .wake:
-                    HabitWakeFollowUpView(onRegisterSave: { [weak self] (action: (() -> Void)) in
+                    HabitWakeFollowUpView(onRegisterSave: { [weak self] action in
                         self?.childSaveAction = action
                     })
                 case .bedtime:
-                    HabitSleepFollowUpView(onRegisterSave: { [weak self] (action: (() -> Void)) in
+                    HabitSleepFollowUpView(onRegisterSave: { [weak self] action in
                         self?.childSaveAction = action
                     })
                 case .training:
-                    HabitTrainingFollowUpView(onRegisterSave: { [weak self] (action: (() -> Void)) in
+                    HabitTrainingFollowUpView(onRegisterSave: { [weak self] action in
                         self?.childSaveAction = action
                     })
                 case .custom:

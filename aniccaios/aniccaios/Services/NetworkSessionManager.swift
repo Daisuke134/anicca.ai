@@ -25,3 +25,47 @@ final class NetworkSessionManager {
     }
 }
 
+// MARK: - Auth helpers
+extension NetworkSessionManager {
+    enum AuthError: Error {
+        case notAuthenticated
+    }
+    
+    @MainActor
+    func setAuthHeaders(for request: inout URLRequest) async throws {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else {
+            throw AuthError.notAuthenticated
+        }
+        if let exp = credentials.accessTokenExpiresAt, exp.addingTimeInterval(-60) <= Date() {
+            try await refreshIfNeeded()
+        }
+        if let at = (AppState.shared.authStatus).accessToken {
+            request.setValue("Bearer \(at)", forHTTPHeaderField: "Authorization")
+        } else if let at = credentials.jwtAccessToken {
+            request.setValue("Bearer \(at)", forHTTPHeaderField: "Authorization")
+        }
+    }
+    
+    private func refreshIfNeeded() async throws {
+        guard let rtData = KeychainService.load(account: "rt"),
+              let rt = String(data: rtData, encoding: .utf8),
+              !rt.isEmpty else { return }
+        var req = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("auth/refresh"))
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.httpBody = try JSONSerialization.data(withJSONObject: ["refresh_token": rt])
+        let (data, response) = try await session.data(for: req)
+        guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+              let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
+        let newAT = json["token"] as? String
+        let expMs = json["expiresAt"] as? TimeInterval
+        let newRT = json["refreshToken"] as? String
+        if let newRT = newRT {
+            try? KeychainService.save(Data(newRT.utf8), account: "rt")
+        }
+        await MainActor.run {
+            AppState.shared.updateAccessToken(token: newAT, expiresAtMs: expMs)
+        }
+    }
+}
+

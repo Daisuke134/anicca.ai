@@ -145,11 +145,22 @@ final class AuthCoordinator {
             if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
                let backendUserId = json["userId"] as? String {
                 
-                let credentials = UserCredentials(
+                let jwtToken = json["token"] as? String
+                var expiresAt: Date? = nil
+                if let expMs = json["expiresAt"] as? TimeInterval {
+                    expiresAt = Date(timeIntervalSince1970: expMs / 1000)
+                }
+                if let rt = json["refreshToken"] as? String {
+                    try? KeychainService.save(Data(rt.utf8), account: "rt")
+                }
+                
+                var credentials = UserCredentials(
                     userId: backendUserId,
                     displayName: displayName,
                     email: email
                 )
+                credentials.jwtAccessToken = jwtToken
+                credentials.accessTokenExpiresAt = expiresAt
                 
                 await MainActor.run {
                     AppState.shared.updateUserCredentials(credentials)

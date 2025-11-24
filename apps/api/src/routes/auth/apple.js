@@ -2,6 +2,9 @@ import express from 'express';
 import { z } from 'zod';
 import { verifyIdentityToken, warmAppleKeys } from '../../services/auth/appleService.js';
 import baseLogger from '../../utils/logger.js';
+import { signJwtHs256 } from '../../utils/jwt.js';
+import crypto from 'crypto';
+import { upsertRefreshToken } from '../../services/auth/refreshStore.js';
 
 const router = express.Router();
 const logger = baseLogger.withContext('AppleAuth');
@@ -43,12 +46,49 @@ router.post('/', async (req, res) => {
       return res.status(401).json({ error: 'token_verification_failed' });
     }
     
-    // Return user ID (internal) and metadata
+    // Issue Access Token (15 min)
+    const jwtSecret = process.env.PROXY_AUTH_JWT_SECRET;
+    if (!jwtSecret) {
+      logger.error('PROXY_AUTH_JWT_SECRET not configured');
+      return res.status(500).json({ error: 'server_not_configured' });
+    }
+    const now = Math.floor(Date.now() / 1000);
+    const exp = now + (15 * 60);
+    const jti = crypto.randomUUID();
+    const accessPayload = {
+      sub: verifiedUser.userId,
+      iat: now,
+      exp,
+      jti,
+      iss: 'anicca-proxy',
+      aud: 'anicca-mobile'
+    };
+    const token = signJwtHs256(accessPayload, jwtSecret);
+
+    // Issue Refresh Token (30 days) and store hashed
+    const rt = crypto.randomBytes(32).toString('base64url');
+    try {
+      await upsertRefreshToken({
+        userId: verifiedUser.userId,
+        token: rt,
+        deviceId: (req.get('device-id') || 'unknown').toString(),
+        ttlDays: 30,
+        userAgent: req.get('user-agent') || null
+      });
+    } catch (e) {
+      logger.error('Failed to persist refresh token', e);
+      return res.status(500).json({ error: 'failed_to_issue_token' });
+    }
+
+    // Return tokens + user info
     return res.json({
-      userId: verifiedUser.userId,             // 内部UUID
-      appleUserId: verifiedUser.appleUserId,  // デバッグ用
+      userId: verifiedUser.userId,
+      appleUserId: verifiedUser.appleUserId,
       displayName: verifiedUser.displayName,
-      email: verifiedUser.email
+      email: verifiedUser.email,
+      token,
+      expiresAt: exp * 1000,
+      refreshToken: rt
     });
   } catch (error) {
     logger.error('Apple auth error', error);

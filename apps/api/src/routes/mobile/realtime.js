@@ -9,23 +9,15 @@ import {
   normalizePlanForResponse,
   canUseRealtime
 } from '../../services/subscriptionStore.js';
+import extractUserId from '../../middleware/extractUserId.js';
 
 const router = express.Router();
 const logger = baseLogger.withContext('MobileRealtime');
 
 router.get('/session', async (req, res) => {
   const deviceId = (req.get('device-id') || '').toString().trim();
-  const userId = (req.get('user-id') || '').toString().trim();
-  
-  if (!deviceId) {
-    logger.warn('Missing deviceId for client_secret request');
-    return res.status(400).json({ error: 'deviceId is required' });
-  }
-  
-  if (!userId) {
-    logger.warn('Missing userId for client_secret request');
-    return res.status(401).json({ error: 'user-id is required' });
-  }
+  const userId = await extractUserId(req, res);
+  if (!userId) return;
 
   try {
     // 利用制限チェック（分ベース）
@@ -61,10 +53,11 @@ router.get('/session', async (req, res) => {
 // セッション終了フック（分計測→VCデビット）
 router.post('/session/stop', async (req, res) => {
   const deviceId = (req.get('device-id') || '').toString().trim();
-  const userId = (req.get('user-id') || '').toString().trim();
+  const userId = await extractUserId(req, res);
+  if (!userId) return;
   const { session_id } = req.body || {};
   
-  if (!deviceId || !userId || !session_id) {
+  if (!deviceId || !session_id) {
     return res.status(400).json({ error: 'bad_request' });
   }
   

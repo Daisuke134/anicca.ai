@@ -270,6 +270,17 @@ final class AppState: ObservableObject {
         Task { await SubscriptionManager.shared.handleLogin(appUserId: credentials.userId) }
     }
     
+    // Update only access token in currently signed-in credentials
+    func updateAccessToken(token: String?, expiresAtMs: TimeInterval?) {
+        guard case .signedIn(var creds) = authStatus else { return }
+        creds.jwtAccessToken = token
+        if let ms = expiresAtMs {
+            creds.accessTokenExpiresAt = Date(timeIntervalSince1970: ms / 1000)
+        }
+        authStatus = .signedIn(creds)
+        saveUserCredentials(creds)
+    }
+    
     func clearUserCredentials() {
         authStatus = .signedOut
         defaults.removeObject(forKey: userCredentialsKey)
@@ -671,6 +682,15 @@ final class AppState: ObservableObject {
     func clearCustomHabit() {
         customHabit = nil
         CustomHabitStore.shared.save(nil)
+    }
+}
+
+extension AuthStatus {
+    var accessToken: String? {
+        switch self {
+        case .signedIn(let c): return c.jwtAccessToken
+        default: return nil
+        }
     }
 }
 

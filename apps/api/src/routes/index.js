@@ -13,6 +13,8 @@ import googleAuthRouter from './auth/google/index.js';
 import slackAuthRouter from './auth/slack/index.js';
 import entitlementRouter from './auth/entitlement.js';
 import appleAuthRouter from './auth/apple.js';
+import refreshAuthRouter from './auth/refresh.js';
+import logoutAuthRouter from './auth/logout.js';
 
 // Billing
 import billingRouter from './billing/index.js';
@@ -45,6 +47,8 @@ router.use('/auth/google', googleAuthRouter);
 router.use('/auth/slack', slackAuthRouter);
 router.use('/auth/entitlement', entitlementRouter);
 router.use('/auth/apple', appleAuthRouter);
+router.use('/auth/refresh', refreshAuthRouter);
+router.use('/auth/logout', logoutAuthRouter);
 
 router.use('/billing', billingRouter);
 

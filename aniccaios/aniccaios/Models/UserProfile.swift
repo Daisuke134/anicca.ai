@@ -81,6 +81,9 @@ struct UserCredentials: Codable {
     let userId: String
     let displayName: String
     let email: String?
+    // JWT Access Token (optional for backward compatibility)
+    var jwtAccessToken: String?
+    var accessTokenExpiresAt: Date?
 }
 
 enum AuthStatus: Codable, Equatable {

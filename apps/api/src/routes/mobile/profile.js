@@ -2,6 +2,7 @@ import express from 'express';
 import { z } from 'zod';
 import { getProfile, upsertProfile } from '../../services/mobile/profileService.js';
 import baseLogger from '../../utils/logger.js';
+import extractUserId from '../../middleware/extractUserId.js';
 
 const router = express.Router();
 const logger = baseLogger.withContext('MobileProfile');
@@ -20,17 +21,8 @@ const profileSchema = z.object({
  */
 router.get('/', async (req, res) => {
   const deviceId = (req.get('device-id') || '').toString().trim();
-  const userId = (req.get('user-id') || '').toString().trim();
-  
-  if (!deviceId) {
-    logger.warn('Missing device-id header');
-    return res.status(400).json({ error: 'device-id is required' });
-  }
-  
-  if (!userId) {
-    logger.warn('Missing user-id header');
-    return res.status(401).json({ error: 'user-id is required' });
-  }
+  const userId = await extractUserId(req, res);
+  if (!userId) return;
   
   try {
     const profileData = await getProfile(deviceId);
@@ -71,17 +63,8 @@ router.get('/', async (req, res) => {
  */
 router.put('/', async (req, res) => {
   const deviceId = (req.get('device-id') || '').toString().trim();
-  const userId = (req.get('user-id') || '').toString().trim();
-  
-  if (!deviceId) {
-    logger.warn('Missing device-id header');
-    return res.status(400).json({ error: 'device-id is required' });
-  }
-  
-  if (!userId) {
-    logger.warn('Missing user-id header');
-    return res.status(401).json({ error: 'user-id is required' });
-  }
+  const userId = await extractUserId(req, res);
+  if (!userId) return;
   
   try {
     const validationResult = profileSchema.safeParse(req.body);

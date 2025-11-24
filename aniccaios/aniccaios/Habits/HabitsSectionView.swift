@@ -260,7 +260,7 @@ struct HabitsSectionView: View {
                 if isActive {
                     activeSheet = .editor(habit)
                 } else {
-                    sheetTime = date ?? Date()
+                    sheetTime = date ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
                     activeSheet = .habit(habit)
                 }
             }
@@ -277,12 +277,16 @@ struct HabitsSectionView: View {
                 get: { isActive },
                 set: { isOn in
                     if isOn {
-                        activeHabits.insert(habit)
                         if let date = date {
+                            activeHabits.insert(habit)
                             habitTimes[habit] = date
+                        } else {
+                            // 時刻未設定なら即シート表示（Saveで確定、CancelでOFFへ戻す）
+                            sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
+                            activeSheet = .habit(habit)
+                            activeHabits.insert(habit) // 一時的にON表示
                         }
                     } else {
-                        // トグルOFFでも削除しない
                         activeHabits.remove(habit)
                     }
                 }
@@ -321,9 +325,13 @@ struct HabitsSectionView: View {
                 get: { isActive },
                 set: { isOn in
                     if isOn {
-                        activeCustomHabits.insert(id)
                         if let date = date {
+                            activeCustomHabits.insert(id)
                             customHabitTimes[id] = date
+                        } else {
+                            sheetTime = Date()
+                            activeSheet = .custom(id)
+                            activeCustomHabits.insert(id) // 一時的にON表示
                         }
                     } else {
                         activeCustomHabits.remove(id)
@@ -357,6 +365,8 @@ struct HabitsSectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
+                        // Cancel時はトグルを元に戻す
+                        activeHabits.remove(habit)
                         activeSheet = nil
                     }
                 }
@@ -398,15 +408,15 @@ struct HabitsSectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
+                        activeCustomHabits.remove(id)
                         activeSheet = nil
                     }
                 }
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
                         customHabitTimes[id] = sheetTime
+                        appState.updateCustomHabitSchedule(id: id, time: Calendar.current.dateComponents([.hour, .minute], from: sheetTime))
                         activeCustomHabits.insert(id)
-                        let components = Calendar.current.dateComponents([.hour, .minute], from: sheetTime)
-                        appState.updateCustomHabitSchedule(id: id, time: components)
                         activeSheet = nil
                     }
                 }

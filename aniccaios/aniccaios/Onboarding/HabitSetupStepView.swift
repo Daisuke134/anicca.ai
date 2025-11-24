@@ -263,15 +263,19 @@ struct HabitSetupStepView: View {
             }
             .padding()
             .navigationBarTitleDisplayMode(.inline)
-            .navigationBarItems(
-                leading: Button(String(localized: "common_cancel")) {
-                    showingTimePicker = nil
-                },
-                trailing: Button(String(localized: "common_save")) {
-                    habitTimes[habit] = sheetTime
-                    showingTimePicker = nil
+            .toolbar {
+                ToolbarItem(placement: .navigationBarLeading) {
+                    Button(String(localized: "common_cancel")) {
+                        showingTimePicker = nil
+                    }
                 }
-            )
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(String(localized: "common_save")) {
+                        habitTimes[habit] = sheetTime
+                        showingTimePicker = nil
+                    }
+                }
+            }
         }
     }
 

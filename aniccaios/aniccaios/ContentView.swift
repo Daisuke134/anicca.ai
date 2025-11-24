@@ -20,7 +20,7 @@ struct ContentRouterView: View {
             case .signingIn:
                 AuthenticationProcessingView()
             case .signedIn:
-                SessionView()
+                MainTabView()
             }
         }
     }

@@ -45,8 +45,18 @@ router.delete('/', async (req, res, next) => {
       await client.query('DELETE FROM mobile_profiles WHERE user_id = $1', [userId]);
       await client.query('DELETE FROM mobile_voip_tokens WHERE user_id = $1', [userId]);
       await client.query('DELETE FROM tokens WHERE user_id = $1', [userId]);
-      // profilesテーブルはidが主キーなので、user_idではなくidを使用
-      await client.query('DELETE FROM profiles WHERE id = $1::uuid', [userId]);
+      
+      // profilesテーブルの削除: userIdがUUID形式かどうかを確認
+      // UUID形式の場合は直接削除、そうでない場合はapple_user_idで検索
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+      if (uuidRegex.test(userId)) {
+        // UUID形式の場合
+        await client.query('DELETE FROM profiles WHERE id = $1::uuid', [userId]);
+      } else {
+        // Apple User IDの場合（metadataから検索）
+        await client.query(`DELETE FROM profiles WHERE metadata->>'apple_user_id' = $1`, [userId]);
+      }
+      
       // user_settingsはON DELETE CASCADEで自動削除される
       await client.query('COMMIT');
     } catch (e) {

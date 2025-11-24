@@ -100,6 +100,7 @@
 "settings_subscription_current_plan" = "現在のプラン";
 "settings_subscription_current" = "現在";
 "settings_subscription_select" = "選択";
+"settings_subscription_usage" = "利用量";
 "settings_subscription_no_plans" = "利用可能なプランがありません";
 "settings_subscription_restore" = "購入を復元";
 "settings_subscription_manage_app_store" = "App Storeで管理";

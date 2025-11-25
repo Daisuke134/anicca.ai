@@ -28,7 +28,7 @@ struct AuthenticationStepView: View {
             .signInWithAppleButtonStyle(.black)
             .frame(height: 50)
             .padding(.horizontal, 40)
-            .onChange(of: appState.authStatus) { _, status in
+            .onChange(of: appState.authStatus) { status in
                 handleAuthStatusChange(status)
             }
             

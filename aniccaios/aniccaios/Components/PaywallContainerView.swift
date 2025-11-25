@@ -78,14 +78,14 @@ struct PaywallContainerView: View {
                     // 追加: 購入エラー時のエラーメッセージ表示
                     if let error = purchaseError {
                         VStack(spacing: 8) {
-                            Text("購入に失敗しました")
+                            Text(String(localized: "paywall_purchase_failed_title"))
                                 .font(.headline)
                                 .foregroundColor(.red)
                             Text(error.localizedDescription)
                                 .font(.subheadline)
                                 .foregroundColor(.secondary)
                                 .multilineTextAlignment(.center)
-                            Button("再試行") {
+                            Button(String(localized: "paywall_retry")) {
                                 purchaseError = nil
                             }
                             .buttonStyle(.borderedProminent)
@@ -119,7 +119,7 @@ struct PaywallContainerView: View {
             // 重要: 表示前に最新のエンタイトルメント状態を確認
             await checkEntitlementAndLoadOffering()
         }
-        .onChange(of: appState.shouldShowPaywall) { _, shouldShow in
+        .onChange(of: appState.shouldShowPaywall) { shouldShow in
             // forcePresent: true の場合は shouldShowPaywall の変更を無視
             // エビデンス: 67-69行目でshouldShowPaywallがfalseになると閉じられる
             if !forcePresent && !shouldShow { onDismissRequested?() }

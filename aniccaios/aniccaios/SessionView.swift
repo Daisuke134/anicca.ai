@@ -1,4 +1,5 @@
 import SwiftUI
+import AVFoundation
 
 struct SessionView: View {
     @EnvironmentObject private var appState: AppState
@@ -6,6 +7,7 @@ struct SessionView: View {
     @State private var isShowingSettings = false
     @State private var isShowingLimitModal = false
     @State private var isShowingPaywall = false
+    @State private var showMicAlert = false
 
     @ViewBuilder
     var body: some View {
@@ -95,11 +97,11 @@ struct SessionView: View {
             }
             .onChange(of: appState.pendingHabitTrigger) { _, newValue in
                 guard newValue != nil else { return }
-                controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
+                ensureMicrophonePermissionAndStart(shouldResumeImmediately: appState.shouldStartSessionImmediately)
             }
             .onAppear {
                 if appState.pendingHabitTrigger != nil {
-                    controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
+                    ensureMicrophonePermissionAndStart(shouldResumeImmediately: appState.shouldStartSessionImmediately)
                 }
                 // 上限ホールドが既に立っていればモーダル表示
                 if appState.subscriptionHold {
@@ -119,6 +121,16 @@ struct SessionView: View {
                 if appState.subscriptionHold {
                     isShowingLimitModal = true
                 }
+            }
+            .alert("マイクのアクセスが必要です", isPresented: $showMicAlert) {
+                Button(String(localized: "common_open_settings")) {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                Button(String(localized: "common_cancel"), role: .cancel) {}
+            } message: {
+                Text("Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。")
             }
         }
     }
@@ -162,9 +174,48 @@ struct SessionView: View {
                         isShowingLimitModal = true
                         return
                     }
-                    controller.start()
+                    ensureMicrophonePermissionAndStart()
                 }
             )
+        }
+    }
+    
+    // Guideline 2.1対応: iPadでの即終了バグ修正のため、マイク権限をプリフライト
+    private func ensureMicrophonePermissionAndStart(shouldResumeImmediately: Bool = false) {
+        if #available(iOS 17.0, *) {
+            switch AVAudioApplication.shared.recordPermission {
+            case .granted:
+                controller.start(shouldResumeImmediately: shouldResumeImmediately)
+            case .undetermined:
+                AVAudioApplication.requestRecordPermission { granted in
+                    DispatchQueue.main.async {
+                        if granted {
+                            controller.start(shouldResumeImmediately: shouldResumeImmediately)
+                        } else {
+                            showMicAlert = true
+                        }
+                    }
+                }
+            default:
+                showMicAlert = true
+            }
+        } else {
+            switch AVAudioSession.sharedInstance().recordPermission {
+            case .granted:
+                controller.start(shouldResumeImmediately: shouldResumeImmediately)
+            case .undetermined:
+                AVAudioSession.sharedInstance().requestRecordPermission { granted in
+                    DispatchQueue.main.async {
+                        if granted {
+                            controller.start(shouldResumeImmediately: shouldResumeImmediately)
+                        } else {
+                            showMicAlert = true
+                        }
+                    }
+                }
+            default:
+                showMicAlert = true
+            }
         }
     }
 

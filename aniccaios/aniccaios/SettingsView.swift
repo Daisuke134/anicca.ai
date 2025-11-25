@@ -32,6 +32,15 @@ struct SettingsView: View {
                             Spacer()
                             Text("\(used)/\(limit)")
                         }
+                    } else if appState.subscriptionInfo.plan != .free {
+                        // Guideline 2.1対応: 無料プラン以外でUsage情報が未取得の場合、同期中であることを明示
+                        HStack {
+                            Text(String(localized: "settings_subscription_usage"))
+                            Spacer()
+                            Text("同期中…")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     Button(String(localized: "settings_subscription_manage")) {
                         showingManageSubscription = true

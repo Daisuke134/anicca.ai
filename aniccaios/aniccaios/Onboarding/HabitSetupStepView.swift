@@ -46,17 +46,13 @@ struct HabitSetupStepView: View {
         
         // 時系列順にソート（時刻が早い順）
         // 時刻が設定されている習慣を時系列順にソートし、時刻未設定の習慣は最後に配置
-        let habitsWithTime = allHabits.filter { $0.time != nil }
-        let habitsWithoutTime = allHabits.filter { $0.time == nil }
-        
-        let sortedWithTime = habitsWithTime.sorted { item1, item2 in
+        return allHabits.sorted { item1, item2 in
             guard let time1 = item1.time, let time2 = item2.time else {
-                return false
+                // 時刻未設定のものは最後に
+                return item1.time != nil
             }
             return time1 < time2
         }
-        
-        return sortedWithTime + habitsWithoutTime
     }
 
     var body: some View {

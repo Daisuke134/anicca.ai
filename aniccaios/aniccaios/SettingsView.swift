@@ -37,7 +37,7 @@ struct SettingsView: View {
                         HStack {
                             Text(String(localized: "settings_subscription_usage"))
                             Spacer()
-                            Text("同期中…")
+                            Text(String(localized: "settings_subscription_usage_syncing"))
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }

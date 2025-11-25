@@ -159,6 +159,15 @@ final class AppState: ObservableObject {
         await scheduler.applySchedules(habitSchedules)
     }
 
+    /// デフォルト習慣のスケジュールを削除（通知も更新）
+    func removeHabitSchedule(_ habit: HabitType) {
+        habitSchedules.removeValue(forKey: habit)
+        saveHabitSchedules()
+        Task {
+            await scheduler.applySchedules(habitSchedules)
+        }
+    }
+
     private func saveHabitSchedules() {
         var encoded: [String: [String: Int]] = [:]
         for (habit, components) in habitSchedules {

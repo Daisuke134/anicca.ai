@@ -164,9 +164,6 @@ struct HabitSetupStepView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(habit.title)
                     .font(.headline)
-                Text(habit.detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
             
             Spacer()
@@ -198,6 +195,12 @@ struct HabitSetupStepView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            // 選択状態に関わらずタップで時間設定シートを開く
+            sheetTime = habitTimes[habit] ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
+            showingTimePicker = habit
+        }
     }
     
     @ViewBuilder
@@ -236,6 +239,11 @@ struct HabitSetupStepView: View {
         .padding()
         .background(Color(.systemGray6))
         .cornerRadius(12)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            sheetTime = customHabitTimes[customHabit.id] ?? Date()
+            showingCustomTimePicker = customHabit.id
+        }
     }
     
     private func addCustomHabit() {
@@ -308,8 +316,7 @@ struct HabitSetupStepView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
-                        // Cancel時にselectedHabitsから削除
-                        selectedHabits.remove(habit)
+                        // キャンセルしてもトグル状態は保持
                         showingTimePicker = nil
                     }
                 }

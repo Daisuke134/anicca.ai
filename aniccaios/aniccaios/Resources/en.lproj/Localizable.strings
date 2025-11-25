@@ -182,3 +182,12 @@
 "tab_talk" = "Talk";
 "tab_habits" = "Habits";
 
+"session_mic_permission_title" = "Microphone Access Required";
+"session_mic_permission_message" = "Anicca uses the microphone for real-time conversation. Please enable it in Settings.";
+"settings_subscription_syncing" = "Syncing…";
+"settings_subscription_usage_syncing" = "Syncing…";
+"paywall_purchase_failed_title" = "Purchase Failed";
+"paywall_retry" = "Retry";
+"legal_privacy_policy" = "Privacy Policy";
+"legal_terms_of_use" = "Terms of Use (EULA)";
+

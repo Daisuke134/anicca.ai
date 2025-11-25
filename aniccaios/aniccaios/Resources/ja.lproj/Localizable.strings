@@ -180,3 +180,12 @@
 "tab_talk" = "会話";
 "tab_habits" = "習慣";
 
+"session_mic_permission_title" = "マイクのアクセスが必要です";
+"session_mic_permission_message" = "Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";
+"settings_subscription_syncing" = "同期中…";
+"settings_subscription_usage_syncing" = "同期中…";
+"paywall_purchase_failed_title" = "購入に失敗しました";
+"paywall_retry" = "再試行";
+"legal_privacy_policy" = "プライバシーポリシー";
+"legal_terms_of_use" = "利用規約 (EULA)";
+

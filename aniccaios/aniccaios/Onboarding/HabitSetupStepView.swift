@@ -44,14 +44,21 @@ struct HabitSetupStepView: View {
             ))
         }
         
-        // 時系列順にソート（時刻が早い順）
-        // 時刻が設定されている習慣を時系列順にソートし、時刻未設定の習慣は最後に配置
+        // 時系列順にソート（時刻が早い順、未設定は最後）
+        // Dateの基準日差による誤差を排除するため、時・分のみで比較する
         return allHabits.sorted { item1, item2 in
             guard let time1 = item1.time, let time2 = item2.time else {
                 // 時刻未設定のものは最後に
                 return item1.time != nil
             }
-            return time1 < time2
+            let cal = Calendar.current
+            let c1 = cal.dateComponents([.hour, .minute], from: time1)
+            let c2 = cal.dateComponents([.hour, .minute], from: time2)
+            let hour1 = c1.hour ?? 0
+            let hour2 = c2.hour ?? 0
+            let minute1 = c1.minute ?? 0
+            let minute2 = c2.minute ?? 0
+            return hour1 < hour2 || (hour1 == hour2 && minute1 < minute2)
         }
     }
 

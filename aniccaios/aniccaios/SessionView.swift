@@ -16,99 +16,109 @@ struct SessionView: View {
         }
     }
     
+    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
+    @ViewBuilder
+    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
+        if #available(iOS 16.0, *) {
+            NavigationStack {
+                content()
+            }
+        } else {
+            NavigationView {
+                content()
+            }
+        }
+    }
+    
     private var authenticatedContent: some View {
-        VStack(spacing: 24) {
-            HStack {
-                Spacer()
-                Button(action: {
-                    isShowingSettings = true
-                }) {
-                    Image(systemName: "gearshape")
-                        .font(.title3)
+        navigationContainer {
+            VStack(spacing: 24) {
+                Text("Anicca")
+                    .font(.system(size: 32, weight: .bold))
+
+                if shouldShowWakeSilentNotice {
+                    Text(String(localized: "session_wake_silent_notice"))
+                        .multilineTextAlignment(.center)
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .padding(16)
+                        .frame(maxWidth: .infinity)
+                        .background(
+                            RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                .fill(.thinMaterial)
+                        )
                 }
-                .buttonStyle(.bordered)
+
+                Spacer(minLength: 24)
+
+                sessionButton
             }
-            .frame(maxWidth: .infinity, alignment: .trailing)
-            .padding(.top)
-
-            Text("Anicca")
-                .font(.system(size: 32, weight: .bold))
-
-            if shouldShowWakeSilentNotice {
-                Text(String(localized: "session_wake_silent_notice"))
-                    .multilineTextAlignment(.center)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(16)
-                    .frame(maxWidth: .infinity)
-                    .background(
-                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                            .fill(.thinMaterial)
-                    )
+            .padding()
+            .toolbar {
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button(action: { isShowingSettings = true }) {
+                        Image(systemName: "gearshape")
+                    }
+                }
             }
-
-            Spacer(minLength: 24)
-
-            sessionButton
-        }
-        .padding()
-        .sheet(isPresented: $isShowingSettings) {
-            SettingsView()
+            .sheet(isPresented: $isShowingSettings) {
+                SettingsView()
+                    .environmentObject(appState)
+            }
+            .sheet(isPresented: $isShowingLimitModal) {
+                UsageLimitModalView(
+                    plan: appState.subscriptionHoldPlan ?? .free,
+                    reason: appState.quotaHoldReason ?? .quotaExceeded,
+                    onClose: { isShowingLimitModal = false },
+                    onUpgrade: {
+                        isShowingLimitModal = false
+                        isShowingPaywall = true
+                    },
+                    onManage: {
+                        isShowingLimitModal = false
+                        isShowingSettings = true
+                    }
+                )
+            }
+            .sheet(isPresented: $isShowingPaywall) {
+                PaywallContainerView(
+                    forcePresent: true,
+                    onPurchaseCompleted: {
+                        isShowingPaywall = false
+                    },
+                    onDismissRequested: {
+                        isShowingPaywall = false
+                    }
+                )
                 .environmentObject(appState)
-        }
-        .sheet(isPresented: $isShowingLimitModal) {
-            UsageLimitModalView(
-                plan: appState.subscriptionHoldPlan ?? .free,
-                reason: appState.quotaHoldReason ?? .quotaExceeded,
-                onClose: { isShowingLimitModal = false },
-                onUpgrade: {
-                    isShowingLimitModal = false
-                    isShowingPaywall = true
-                },
-                onManage: {
-                    isShowingLimitModal = false
-                    isShowingSettings = true
-                }
-            )
-        }
-        .sheet(isPresented: $isShowingPaywall) {
-            PaywallContainerView(
-                forcePresent: true,
-                onPurchaseCompleted: {
-                    isShowingPaywall = false
-                },
-                onDismissRequested: {
-                    isShowingPaywall = false
-                }
-            )
-            .environmentObject(appState)
-            .environment(\.locale, .autoupdatingCurrent)
-        }
-        .onChange(of: appState.pendingHabitTrigger) { _, newValue in
-            guard newValue != nil else { return }
-            controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
-        }
-        .onAppear {
-            if appState.pendingHabitTrigger != nil {
+                .environment(\.locale, .autoupdatingCurrent)
+            }
+            .onChange(of: appState.pendingHabitTrigger) { _, newValue in
+                guard newValue != nil else { return }
                 controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
             }
-            // 上限ホールドが既に立っていればモーダル表示
-            if appState.subscriptionHold {
-                isShowingLimitModal = true
+            .onAppear {
+                if appState.pendingHabitTrigger != nil {
+                    controller.start(shouldResumeImmediately: appState.shouldStartSessionImmediately)
+                }
+                // 上限ホールドが既に立っていればモーダル表示
+                if appState.subscriptionHold {
+                    isShowingLimitModal = true
+                }
             }
-        }
-        .onChange(of: appState.subscriptionHold) { _, hold in
-            if hold {
-                isShowingLimitModal = true
-            } else {
-                isShowingLimitModal = false
-                isShowingPaywall = false
+            .onChange(of: appState.subscriptionHold) { _, hold in
+                if hold {
+                    isShowingLimitModal = true
+                } else {
+                    isShowingLimitModal = false
+                    isShowingPaywall = false
+                }
             }
-        }
-        .onChange(of: appState.subscriptionHoldPlan) { _, _ in
-            // planが変更された時も表示
-            if appState.subscriptionHold {
-                isShowingLimitModal = true
+            .onChange(of: appState.subscriptionHoldPlan) { _, _ in
+                // planが変更された時も表示
+                if appState.subscriptionHold {
+                    isShowingLimitModal = true
+                }
             }
         }
     }

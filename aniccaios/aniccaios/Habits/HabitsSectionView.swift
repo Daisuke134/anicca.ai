@@ -251,10 +251,8 @@ struct HabitsSectionView: View {
             VStack(alignment: .leading, spacing: 8) {
                 Text(habit.title)
                     .font(.headline)
-                Text(habit.detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture {
                 if isActive {
@@ -293,6 +291,16 @@ struct HabitsSectionView: View {
             ))
             .labelsHidden()
         }
+        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+            Button(role: .destructive) {
+                // デフォルト習慣の削除＝スケジュールのクリア
+                appState.removeHabitSchedule(habit)
+                activeHabits.remove(habit)
+                habitTimes.removeValue(forKey: habit)
+            } label: {
+                Label(String(localized: "common_delete"), systemImage: "trash")
+            }
+        }
     }
     
     @ViewBuilder
@@ -305,6 +313,7 @@ struct HabitsSectionView: View {
                 Text(name)
                     .font(.headline)
             }
+            .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
             .onTapGesture {
                 if isActive {
@@ -365,8 +374,7 @@ struct HabitsSectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
-                        // Cancel時はトグルを元に戻す
-                        activeHabits.remove(habit)
+                        // キャンセルしてもトグル状態は保持
                         activeSheet = nil
                     }
                 }
@@ -408,7 +416,7 @@ struct HabitsSectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
-                        activeCustomHabits.remove(id)
+                        // キャンセルしてもトグル状態は保持
                         activeSheet = nil
                     }
                 }
@@ -502,12 +510,7 @@ struct HabitEditSheet: View {
                         save()
                     }
                 }
-                // ルーティン編集モード用のEditButton（Wake/Sleepのみ）
-                if habit == .wake || habit == .bedtime {
-                    ToolbarItem(placement: .navigationBarTrailing) {
-                        EditButton()
-                    }
-                }
+                // Editボタンは不要のため削除（ドラッグハンドルで順序変更可能）
             }
         }
         .onAppear {

@@ -95,7 +95,7 @@ struct SessionView: View {
                 .environmentObject(appState)
                 .environment(\.locale, .autoupdatingCurrent)
             }
-            .onChange(of: appState.pendingHabitTrigger) { _, newValue in
+            .onChange(of: appState.pendingHabitTrigger) { newValue in
                 guard newValue != nil else { return }
                 ensureMicrophonePermissionAndStart(shouldResumeImmediately: appState.shouldStartSessionImmediately)
             }
@@ -108,7 +108,7 @@ struct SessionView: View {
                     isShowingLimitModal = true
                 }
             }
-            .onChange(of: appState.subscriptionHold) { _, hold in
+            .onChange(of: appState.subscriptionHold) { hold in
                 if hold {
                     isShowingLimitModal = true
                 } else {
@@ -116,13 +116,13 @@ struct SessionView: View {
                     isShowingPaywall = false
                 }
             }
-            .onChange(of: appState.subscriptionHoldPlan) { _, _ in
+            .onChange(of: appState.subscriptionHoldPlan) { _ in
                 // planが変更された時も表示
                 if appState.subscriptionHold {
                     isShowingLimitModal = true
                 }
             }
-            .alert("マイクのアクセスが必要です", isPresented: $showMicAlert) {
+            .alert(String(localized: "session_mic_permission_title"), isPresented: $showMicAlert) {
                 Button(String(localized: "common_open_settings")) {
                     if let url = URL(string: UIApplication.openSettingsURLString) {
                         UIApplication.shared.open(url)
@@ -130,7 +130,7 @@ struct SessionView: View {
                 }
                 Button(String(localized: "common_cancel"), role: .cancel) {}
             } message: {
-                Text("Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。")
+                Text(String(localized: "session_mic_permission_message"))
             }
         }
     }

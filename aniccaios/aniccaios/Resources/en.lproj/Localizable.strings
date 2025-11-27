@@ -56,6 +56,11 @@
 "training_focus_option_core" = "Core";
 "training_focus_option_cardio" = "Cardio";
 "training_focus_option_stretch" = "Stretch";
+"training_measure_reps" = "Measured by reps";
+"training_measure_time" = "Measured by time";
+"followup_repeats_title" = "Reminder repeats";
+"followup_repeats_help" = "Re-alert every 10s, 1–10 times.";
+"followup_times_unit" = "times";
 
 "onboarding_completion_title" = "You're All Set!";
 "onboarding_completion_ready" = "Your habits are ready to go!";
@@ -82,7 +87,7 @@
 "next_schedule_habit_training" = "training";
 "next_schedule_habit_bedtime" = "sleep";
 
-"session_button_talk" = "Talk to Anicca";
+"session_button_talk" = "Consult Anicca";
 "session_button_end" = "End Session";
 "session_button_connecting" = "Connecting…";
 "session_wake_silent_notice" = "To guarantee the wake alarm plays, flip the side silent switch back up before going to bed so that silent mode is off.";
@@ -178,7 +183,7 @@
 "common_delete" = "Delete";
 "common_add" = "Add";
 "common_wake_location_fallback" = "Bed";
-"settings_contact_support" = "Contact Support";
+"settings_contact_support" = "Contact support";
 "tab_talk" = "Talk";
 "tab_habits" = "Habits";
 

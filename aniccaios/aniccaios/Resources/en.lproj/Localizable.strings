@@ -165,7 +165,16 @@
 "session_time_cap_title" = "Free session limit reached (5 min)";
 "session_time_cap_message" = "Your free session ended after 5 minutes. Upgrade to continue longer conversations.";
 "settings_habits" = "Habits";
-"settings_ideal_traits" = "Ideal Traits";
+"settings_ideal_traits" = "Ideal self";
+"ideal_trait_kind" = "Kind";
+"ideal_trait_altruistic" = "Altruistic";
+"ideal_trait_confident" = "Confident";
+"ideal_trait_mindful" = "Mindful";
+"ideal_trait_optimistic" = "Optimistic";
+"ideal_trait_resilient" = "Resilient";
+"ideal_trait_disciplined" = "Disciplined";
+"ideal_trait_honest" = "Honest";
+"ideal_trait_calm" = "Calm";
 "settings_personalization" = "Personalization";
 "habit_add_custom" = "Add Habit";
 "habit_add_routine" = "Add Routine";

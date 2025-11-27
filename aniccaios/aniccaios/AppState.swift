@@ -21,6 +21,8 @@ final class AppState: ObservableObject {
     }
     @Published private(set) var quotaHoldReason: QuotaHoldReason?
     @Published private(set) var habitSchedules: [HabitType: DateComponents] = [:]
+    @Published private(set) var habitFollowupCounts: [HabitType: Int] = [:]
+    @Published private(set) var customHabitFollowupCounts: [UUID: Int] = [:]
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
     @Published private(set) var onboardingStep: OnboardingStep
@@ -55,6 +57,8 @@ final class AppState: ObservableObject {
     private let habitSchedulesKey = "com.anicca.habitSchedules"
     private let onboardingKey = "com.anicca.onboardingComplete"
     private let onboardingStepKey = "com.anicca.onboardingStep"
+    private let followupCountsKey = "com.anicca.followupCounts"
+    private let customFollowupCountsKey = "com.anicca.customFollowupCounts"
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
     private let subscriptionKey = "com.anicca.subscription"
@@ -113,10 +117,12 @@ final class AppState: ObservableObject {
             }
         }
         
+        // Load followup counts (with defaults)
+        loadFollowupCounts()
+        
         // Sync scheduled alarms on app launch
-        Task {
-            await scheduler.applySchedules(habitSchedules)
-        }
+        Task { await scheduler.applySchedules(habitSchedules) }
+        Task { await applyCustomSchedulesToScheduler() }
     }
 
     // Legacy method for backward compatibility
@@ -137,6 +143,76 @@ final class AppState: ObservableObject {
         saveHabitSchedules()
 
         await scheduler.applySchedules(habitSchedules)
+    }
+    
+    // MARK: Followups
+    func followupCount(for habit: HabitType) -> Int {
+        if let n = habitFollowupCounts[habit] { return bounded(n) }
+        return defaultFollowupCount(for: habit)
+    }
+    
+    func customFollowupCount(for id: UUID) -> Int {
+        return bounded(customHabitFollowupCounts[id] ?? 2)
+    }
+    
+    func updateFollowupCount(for habit: HabitType, count: Int) {
+        habitFollowupCounts[habit] = bounded(count)
+        saveFollowupCounts()
+        Task { await scheduler.applySchedules(habitSchedules) }
+    }
+    
+    func updateCustomFollowupCount(id: UUID, count: Int) {
+        customHabitFollowupCounts[id] = bounded(count)
+        saveCustomFollowupCounts()
+        Task { await applyCustomSchedulesToScheduler() }
+    }
+    
+    private func defaultFollowupCount(for habit: HabitType) -> Int {
+        switch habit {
+        case .wake, .bedtime: return 5
+        default: return 2
+        }
+    }
+    
+    private func bounded(_ n: Int) -> Int {
+        max(1, min(10, n))
+    }
+    
+    private func loadFollowupCounts() {
+        if let data = defaults.data(forKey: followupCountsKey),
+           let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+            habitFollowupCounts = dict.compactMapKeys { HabitType(rawValue: $0) }
+        } else {
+            habitFollowupCounts = [.wake: 5, .bedtime: 5, .training: 2, .custom: 2]
+        }
+        if let data = defaults.data(forKey: customFollowupCountsKey),
+           let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
+            customHabitFollowupCounts = dict.compactMapKeys { UUID(uuidString: $0) }
+        }
+    }
+    
+    private func saveFollowupCounts() {
+        let enc = habitFollowupCounts.mapKeys { $0.rawValue }
+        if let data = try? JSONEncoder().encode(enc) {
+            defaults.set(data, forKey: followupCountsKey)
+        }
+    }
+    
+    private func saveCustomFollowupCounts() {
+        let enc = customHabitFollowupCounts.mapKeys { $0.uuidString }
+        if let data = try? JSONEncoder().encode(enc) {
+            defaults.set(data, forKey: customFollowupCountsKey)
+        }
+    }
+    
+    private func applyCustomSchedulesToScheduler() async {
+        var payload: [UUID: (String, DateComponents)] = [:]
+        for h in customHabits {
+            if let t = customHabitSchedules[h.id] {
+                payload[h.id] = (h.name, t)
+            }
+        }
+        await scheduler.applyCustomSchedules(payload)
     }
 
     func updateHabits(_ schedules: [HabitType: Date]) async {
@@ -591,9 +667,7 @@ final class AppState: ObservableObject {
         saveCustomHabitSchedules()
         
         // 通知を更新
-        Task {
-            await updateHabitNotifications()
-        }
+        Task { await applyCustomSchedulesToScheduler() }
     }
     
     // MARK: - UserProfile Update Methods

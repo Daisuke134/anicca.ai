@@ -50,11 +50,11 @@ struct HabitTrainingFocusStepView: View {
                                     .foregroundStyle(.primary)
                                 // 説明テキスト（Push-up/Coreは回数、Cardio/Stretchは時間）
                                 if option.id == "Push-up" || option.id == "Core" {
-                                    Text("回数で計測")
+                                    Text(String(localized: "training_measure_reps"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 } else if option.id == "Cardio" || option.id == "Stretch" {
-                                    Text("時間で計測")
+                                    Text(String(localized: "training_measure_time"))
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
                                 }

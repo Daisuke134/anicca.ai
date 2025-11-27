@@ -166,6 +166,15 @@
 "session_time_cap_message" = "無料セッションは5分で終了しました。より長い会話を続けるにはアップグレードしてください。";
 "settings_habits" = "習慣";
 "settings_ideal_traits" = "理想の姿";
+"ideal_trait_kind" = "やさしさ";
+"ideal_trait_altruistic" = "利他性";
+"ideal_trait_confident" = "自信";
+"ideal_trait_mindful" = "マインドフル";
+"ideal_trait_optimistic" = "楽観性";
+"ideal_trait_resilient" = "レジリエンス";
+"ideal_trait_disciplined" = "規律性";
+"ideal_trait_honest" = "誠実";
+"ideal_trait_calm" = "落ち着き";
 "settings_personalization" = "パーソナライズ";
 "habit_add_custom" = "習慣を追加";
 "habit_add_routine" = "ルーティンを追加";

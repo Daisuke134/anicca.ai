@@ -169,9 +169,8 @@ struct SettingsView: View {
     }
     
     private let idealTraitOptions = [
-        "confident", "empathetic", "gentle", "optimistic", "creative",
-        "energetic", "calm", "assertive", "motivational", "supportive",
-        "direct", "encouraging", "analytical", "patient", "friendly", "professional"
+        "kind", "altruistic", "confident", "mindful", "optimistic",
+        "resilient", "disciplined", "honest", "calm"
     ]
     
     @ViewBuilder
@@ -187,7 +186,7 @@ struct SettingsView: View {
             }
             appState.updateIdealTraits(traits)
         }) {
-            Text(trait)
+            Text(LocalizedStringKey("ideal_trait_\(trait)"))
                 .font(.subheadline)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

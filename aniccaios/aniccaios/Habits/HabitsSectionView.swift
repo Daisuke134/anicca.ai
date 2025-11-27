@@ -6,6 +6,7 @@ enum SheetRoute: Identifiable {
     case custom(UUID)
     case addCustom
     case editor(HabitType) // 統合エディタ
+    case customEditor(UUID) // カスタム習慣エディタ
     
     var id: String {
         switch self {
@@ -13,6 +14,7 @@ enum SheetRoute: Identifiable {
         case .custom(let id): return "custom:\(id.uuidString)"
         case .addCustom: return "addCustom"
         case .editor(let h): return "editor:\(h.id)"
+        case .customEditor(let id): return "customEditor:\(id.uuidString)"
         }
     }
 }
@@ -197,6 +199,11 @@ struct HabitsSectionView: View {
                     loadHabitTimes()
                 })
                     .environmentObject(appState)
+            case .customEditor(let id):
+                CustomHabitEditSheet(customId: id) {
+                    loadHabitTimes()
+                }
+                    .environmentObject(appState)
             }
         }
         // 削除確認UIは廃止
@@ -317,8 +324,7 @@ struct HabitsSectionView: View {
             .contentShape(Rectangle())
             .onTapGesture {
                 if isActive {
-                    sheetTime = date ?? Date()
-                    activeSheet = .custom(id)
+                    activeSheet = .customEditor(id)
                 }
             }
             
@@ -449,6 +455,7 @@ struct HabitEditSheet: View {
     let habit: HabitType
     let onSave: (() -> Void)?
     @State private var time = Date()
+    @State private var followups: Int = 2
     @State private var wakeLocation: String = ""
     @State private var sleepLocation: String = ""
     @State private var wakeRoutines: [RoutineItem] = []
@@ -466,6 +473,16 @@ struct HabitEditSheet: View {
                 // Time（全習慣共通）
                 Section {
                     DatePicker(String(localized: "common_time"), selection: $time, displayedComponents: [.hourAndMinute])
+                }
+                
+                // Follow-ups（全習慣共通）
+                Section(String(localized: "followup_repeats_title")) {
+                    Stepper(value: $followups, in: 1...10) {
+                        Text("\(followups) \(String(localized: "followup_times_unit"))")
+                    }
+                    Text(String(localized: "followup_repeats_help"))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
                 }
                 
                 // Follow-ups（習慣タイプ別）
@@ -515,6 +532,7 @@ struct HabitEditSheet: View {
         }
         .onAppear {
             load()
+            followups = appState.followupCount(for: habit)
         }
     }
     
@@ -557,11 +575,11 @@ struct HabitEditSheet: View {
                             .foregroundStyle(.primary)
                         // 説明テキスト
                         if option.id == "Push-up" || option.id == "Core" {
-                            Text("回数で計測")
+                            Text(String(localized: "training_measure_reps"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         } else if option.id == "Cardio" || option.id == "Stretch" {
-                            Text("時間で計測")
+                            Text(String(localized: "training_measure_time"))
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
@@ -667,6 +685,7 @@ struct HabitEditSheet: View {
         // 時刻を保存
         Task {
             await appState.updateHabit(habit, time: time)
+            appState.updateFollowupCount(for: habit, count: followups)
             // 保存後にコールバックを呼び出し
             await MainActor.run {
                 onSave?()
@@ -689,6 +708,64 @@ struct HabitEditSheet: View {
         }
         
         dismiss()
+    }
+}
+
+struct CustomHabitEditSheet: View {
+    @EnvironmentObject private var appState: AppState
+    @Environment(\.dismiss) private var dismiss
+    let customId: UUID
+    let onSave: () -> Void
+    @State private var time = Date()
+    @State private var followups: Int = 2
+    
+    var body: some View {
+        NavigationView {
+            Form {
+                Section {
+                    DatePicker(String(localized: "common_time"), selection: $time, displayedComponents: [.hourAndMinute])
+                }
+                Section(String(localized: "followup_repeats_title")) {
+                    Stepper(value: $followups, in: 1...10) {
+                        Text("\(followups) \(String(localized: "followup_times_unit"))")
+                    }
+                    Text(String(localized: "followup_repeats_help"))
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
+            }
+            .navigationTitle(appState.customHabits.first(where: { $0.id == customId })?.name ?? String(localized: "habit_title_custom_fallback"))
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common_cancel")) {
+                        dismiss()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common_save")) {
+                        save()
+                    }
+                }
+            }
+        }
+        .onAppear {
+            if let comps = appState.customHabitSchedules[customId],
+               let d = Calendar.current.date(from: comps) {
+                time = d
+            }
+            followups = appState.customFollowupCount(for: customId)
+        }
+    }
+    
+    private func save() {
+        appState.updateCustomHabitSchedule(id: customId, time: Calendar.current.dateComponents([.hour, .minute], from: time))
+        appState.updateCustomFollowupCount(id: customId, count: followups)
+        Task {
+            await MainActor.run {
+                onSave()
+                dismiss()
+            }
+        }
     }
 }
 

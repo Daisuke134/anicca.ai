@@ -20,8 +20,10 @@ final class NotificationScheduler {
     private enum AlarmLoop {
         /// 8秒サウンド + 2秒休止 = 10秒ごとに再通知
         static let intervalSeconds = 10
-        /// メイン通知のあとに繰り返すサウンド付き通知の最大回数
-        static let repeatCount = 10
+    }
+    
+    private func repeatCount(for habit: HabitType) -> Int {
+        return AppState.shared.followupCount(for: habit)
     }
     
     private init() {}
@@ -159,14 +161,14 @@ final class NotificationScheduler {
         }
     }
 
-    /// メイン通知の 0 秒起点から 10 秒間隔で最大 10 個のサウンド付きフォローアップを登録
+    /// メイン通知の 0 秒起点から 10 秒間隔で AppState 設定回数ぶんのフォローアップを登録
     private func scheduleFollowupLoop(for habit: HabitType, baseComponents: DateComponents) {
         Task {
             await removePending(withPrefix: followPrefix(for: habit))
             await removeDelivered(withPrefix: followPrefix(for: habit))
             guard let firstFireDate = nextFireDate(from: baseComponents) else { return }
 
-            for index in 1...AlarmLoop.repeatCount {
+            for index in 1...repeatCount(for: habit) {
                 guard let fireDate = Calendar.current.date(
                     byAdding: .second,
                     value: index * AlarmLoop.intervalSeconds,
@@ -314,6 +316,72 @@ final class NotificationScheduler {
                 continuation.resume()
             }
         }
+    }
+    
+    // MARK: - Custom Habit (UUID) support
+    func applyCustomSchedules(_ schedules: [UUID: (name: String, time: DateComponents)]) async {
+        // いったん全カスタムの pending/delivered を掃除（簡易実装）
+        await removePending(withPrefix: "HABIT_CUSTOM_MAIN_")
+        await removePending(withPrefix: "HABIT_CUSTOM_FOLLOW_")
+        await removeDelivered(withPrefix: "HABIT_CUSTOM_FOLLOW_")
+        for (id, entry) in schedules {
+            await scheduleCustomMain(id: id, name: entry.name, time: entry.time)
+            scheduleCustomFollowups(id: id, name: entry.name, baseComponents: entry.time)
+        }
+    }
+    
+    private func scheduleCustomMain(id: UUID, name: String, time: DateComponents) async {
+        let trigger = UNCalendarNotificationTrigger(dateMatching: time, repeats: true)
+        let req = UNNotificationRequest(
+            identifier: keyCustomMain(id: id, time: time),
+            content: customBaseContent(name: name, isFollowup: false),
+            trigger: trigger
+        )
+        try? await center.add(req)
+    }
+    
+    private func scheduleCustomFollowups(id: UUID, name: String, baseComponents: DateComponents) {
+        Task {
+            await removePending(withPrefix: keyCustomFollowPrefix(id: id))
+            await removeDelivered(withPrefix: keyCustomFollowPrefix(id: id))
+            guard let first = nextFireDate(from: baseComponents) else { return }
+            let repeats = AppState.shared.customFollowupCount(for: id)
+            for index in 1...max(1, min(10, repeats)) {
+                guard let fireDate = Calendar.current.date(byAdding: .second, value: index * AlarmLoop.intervalSeconds, to: first) else { continue }
+                let comps = Calendar.current.dateComponents([.year,.month,.day,.hour,.minute,.second], from: fireDate)
+                let trig = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
+                let req = UNNotificationRequest(
+                    identifier: keyCustomFollow(id: id, ts: Int(fireDate.timeIntervalSince1970)),
+                    content: customBaseContent(name: name, isFollowup: true),
+                    trigger: trig
+                )
+                try? await center.add(req)
+            }
+        }
+    }
+    
+    private func customBaseContent(name: String, isFollowup: Bool) -> UNMutableNotificationContent {
+        let c = UNMutableNotificationContent()
+        c.title = isFollowup ? String(format: localizedString("notification_custom_followup_title_format"), name) : name
+        c.body  = isFollowup ? String(format: localizedString("notification_custom_followup_body_format"), name) : String(format: localizedString("notification_custom_body_format"), name)
+        c.categoryIdentifier = Category.habitAlarm.rawValue
+        c.interruptionLevel = .timeSensitive
+        c.sound = wakeSound()
+        return c
+    }
+    
+    private func keyCustomMain(id: UUID, time: DateComponents) -> String {
+        let hour = time.hour ?? 0
+        let minute = time.minute ?? 0
+        return "HABIT_CUSTOM_MAIN_\(id.uuidString)_\(hour)_\(minute)"
+    }
+    
+    private func keyCustomFollow(id: UUID, ts: Int) -> String {
+        "HABIT_CUSTOM_FOLLOW_\(id.uuidString)_\(ts)"
+    }
+    
+    private func keyCustomFollowPrefix(id: UUID) -> String {
+        "HABIT_CUSTOM_FOLLOW_\(id.uuidString)_"
     }
 }
 

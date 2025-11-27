@@ -65,7 +65,7 @@ struct ManageSubscriptionSheet: View {
         }
         .sheet(isPresented: $showingCustomerCenter) {
             RevenueCatUI.CustomerCenterView()
-                .environment(\.locale, .autoupdatingCurrent)
+                .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
                 .onCustomerCenterRestoreCompleted { customerInfo in
                     Task {
                         let subscription = SubscriptionInfo(info: customerInfo)
@@ -204,8 +204,8 @@ struct ManageSubscriptionSheet: View {
             .buttonStyle(.bordered)
             
             // Contact support
-            Link(destination: URL(string: "https://aniccaai.com/support")!) {
-                Text("Contact support")
+            Link(destination: supportURL) {
+                Text(String(localized: "settings_contact_support"))
                     .font(.footnote)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity)
@@ -274,6 +274,11 @@ struct ManageSubscriptionSheet: View {
         formatter.dateStyle = .medium
         formatter.timeStyle = .none
         return formatter
+    }
+    
+    private var supportURL: URL {
+        let lang = appState.userProfile.preferredLanguage.rawValue
+        return URL(string: "https://aniccaai.com/support/\(lang)")!
     }
 }
 

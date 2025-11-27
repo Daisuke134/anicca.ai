@@ -86,6 +86,11 @@ struct ManageSubscriptionSheet: View {
                 Text(appState.subscriptionInfo.displayPlanName)
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
+                if appState.subscriptionInfo.plan == .free {
+                    Text(String(localized: "settings_subscription_free_description"))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
                 if let date = appState.subscriptionInfo.currentPeriodEnd {
                     if appState.subscriptionInfo.willRenew == false {
                         Text(String(format: NSLocalizedString("settings_subscription_canceled_until", comment: ""), dateFormatter.string(from: date)))

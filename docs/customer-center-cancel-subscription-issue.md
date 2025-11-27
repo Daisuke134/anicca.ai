@@ -265,3 +265,4 @@ public func onCustomerCenterShowingManageSubscriptions(
 
 - 2025-11-XX: 初版作成
 
+

@@ -186,6 +186,15 @@
 "session_mic_permission_message" = "Anicca uses the microphone for real-time conversation. Please enable it in Settings.";
 "settings_subscription_syncing" = "Syncing…";
 "settings_subscription_usage_syncing" = "Syncing…";
+"settings_subscription_free_description" = "Up to 30 minutes per month. Monthly plan: 300 minutes/month. Annual plan: 3600 minutes/year.";
+"settings_subscription_monthly_detail" = "Includes 300 minutes of voice conversations per month";
+"settings_subscription_annual_detail" = "Includes 3600 minutes of voice conversations per year";
+"settings_subscription_subscribe" = "Subscribe";
+"paywall_loading" = "Loading…";
+"paywall_unavailable_title" = "Plans Unavailable";
+"paywall_unavailable_message" = "Failed to load subscription plans. Please try again later.";
+"paywall_retry_button" = "Retry";
+"common_close" = "Close";
 "paywall_purchase_failed_title" = "Purchase Failed";
 "paywall_retry" = "Retry";
 "legal_privacy_policy" = "Privacy Policy";

@@ -184,6 +184,15 @@
 "session_mic_permission_message" = "Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";
 "settings_subscription_syncing" = "同期中…";
 "settings_subscription_usage_syncing" = "同期中…";
+"settings_subscription_free_description" = "月30分まで利用可能。月額: 月300分、年額: 年3,600分を含みます。";
+"settings_subscription_monthly_detail" = "月300分の音声対話を含みます";
+"settings_subscription_annual_detail" = "年間3,600分の音声対話を含みます";
+"settings_subscription_subscribe" = "サブスクライブ";
+"paywall_loading" = "読み込み中…";
+"paywall_unavailable_title" = "プランが利用できません";
+"paywall_unavailable_message" = "プラン情報の取得に失敗しました。しばらくしてから再度お試しください。";
+"paywall_retry_button" = "再試行";
+"common_close" = "閉じる";
 "paywall_purchase_failed_title" = "購入に失敗しました";
 "paywall_retry" = "再試行";
 "legal_privacy_policy" = "プライバシーポリシー";

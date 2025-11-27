@@ -273,7 +273,7 @@ struct PaywallContainerView: View {
     @ViewBuilder
     private var fallbackMessage: some View {
         VStack(spacing: 12) {
-            Text("paywall_unavailable_title")
+            Text(String(localized: "paywall_unavailable_title"))
                 .font(.headline)
             Text(loadError?.localizedDescription ?? String(localized: "paywall_unavailable_message"))
                 .font(.subheadline)

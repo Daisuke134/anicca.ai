@@ -24,10 +24,8 @@ struct ManageSubscriptionSheet: View {
                             .padding()
                     }
                     
-                    // Current plan section
-                    if appState.subscriptionInfo.plan != .free {
-                        currentPlanSection
-                    }
+                    // Current plan section (show also when free)
+                    currentPlanSection
                     
                     // Available plans
                     if let offering = offering {
@@ -125,6 +123,15 @@ struct ManageSubscriptionSheet: View {
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }
+                        if package.identifier.contains("monthly") || package.storeProduct.productIdentifier.contains("monthly") {
+                            Text(String(localized: "settings_subscription_monthly_detail"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        } else if package.identifier.contains("annual") || package.storeProduct.productIdentifier.contains("annual") || package.identifier.contains("yearly") || package.storeProduct.productIdentifier.contains("yearly") {
+                            Text(String(localized: "settings_subscription_annual_detail"))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                     Spacer()
                     if isCurrentPlan {
@@ -145,7 +152,9 @@ struct ManageSubscriptionSheet: View {
                     SUButton(
                         model: {
                             var vm = ButtonVM()
-                            vm.title = String(localized: "settings_subscription_select")
+                            vm.title = appState.subscriptionInfo.plan == .free
+                                ? String(localized: "settings_subscription_subscribe")
+                                : String(localized: "settings_subscription_select")
                             vm.style = .filled
                             vm.size = .medium
                             vm.isFullWidth = true

@@ -83,7 +83,7 @@ struct SettingsView: View {
                     Button(role: .destructive) {
                         isShowingDeleteAlert = true
                     } label: {
-                        Text("Delete Account")
+                        Text(String(localized: "settings_delete_account"))
                     }
                 }
             }
@@ -109,21 +109,21 @@ struct SettingsView: View {
                 // Guideline 3.1.2対応: 法的リンクを常設（購入フロー外からも1タップ到達）
                 LegalLinksView()
             }
-            .alert("Delete Account", isPresented: $isShowingDeleteAlert) {
-                Button("Cancel", role: .cancel) {}
-                Button("Delete", role: .destructive) {
+            .alert(String(localized: "settings_delete_account"), isPresented: $isShowingDeleteAlert) {
+                Button(String(localized: "common_cancel"), role: .cancel) {}
+                Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
                     Task {
                         await deleteAccount()
                     }
                 }
             } message: {
-                Text("This action cannot be undone. All your data, including purchase history and usage data, will be permanently deleted.")
+                Text(String(localized: "settings_delete_account_message"))
             }
-            .alert("Error", isPresented: Binding(
+            .alert(String(localized: "common_error"), isPresented: Binding(
                 get: { deleteAccountError != nil },
                 set: { if !$0 { deleteAccountError = nil } }
             )) {
-                Button("OK") {
+                Button(String(localized: "common_ok")) {
                     deleteAccountError = nil
                 }
             } message: {
@@ -134,7 +134,10 @@ struct SettingsView: View {
         }
         .sheet(isPresented: $showingManageSubscription) {
             if appState.subscriptionInfo.plan == .free {
-                PaywallContainerView(forcePresent: true)
+                PaywallContainerView(
+                    forcePresent: true,
+                    onDismissRequested: { showingManageSubscription = false }
+                )
                     .environment(\.locale, .autoupdatingCurrent)
                     .task { await SubscriptionManager.shared.refreshOfferings() }
             } else {

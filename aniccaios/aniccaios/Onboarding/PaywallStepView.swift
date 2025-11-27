@@ -8,6 +8,7 @@ struct PaywallStepView: View {
     
     var body: some View {
         PaywallContainerView(
+            forcePresent: true,
             onPurchaseCompleted: {
                 // 購入完了時のみ実行（重複防止）
                 guard !hasCompletedPurchase else { return }

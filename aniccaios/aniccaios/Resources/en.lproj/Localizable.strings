@@ -204,4 +204,9 @@
 "paywall_retry" = "Retry";
 "legal_privacy_policy" = "Privacy Policy";
 "legal_terms_of_use" = "Terms of Use (EULA)";
+"settings_delete_account" = "Delete Account";
+"settings_delete_account_confirm" = "Delete";
+"settings_delete_account_message" = "This action cannot be undone. All your data, including purchase history and usage data, will be permanently deleted.";
+"common_error" = "Error";
+"common_ok" = "OK";
 

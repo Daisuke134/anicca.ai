@@ -56,6 +56,11 @@
 "training_focus_option_core" = "体幹";
 "training_focus_option_cardio" = "有酸素";
 "training_focus_option_stretch" = "ストレッチ";
+"training_measure_reps" = "回数で計測";
+"training_measure_time" = "時間で計測";
+"followup_repeats_title" = "再通知回数";
+"followup_repeats_help" = "10秒ごとに再通知。1〜10回から選択。";
+"followup_times_unit" = "回";
 
 "onboarding_completion_title" = "準備が整いました！";
 "onboarding_completion_ready" = "習慣の準備が完了しました。";
@@ -82,7 +87,7 @@
 "next_schedule_habit_training" = "トレーニング";
 "next_schedule_habit_bedtime" = "就寝";
 
-"session_button_talk" = "Anicca と話す";
+"session_button_talk" = "Aniccaに相談する";
 "session_button_end" = "セッションを終了";
 "session_button_connecting" = "接続中…";
 "session_wake_silent_notice" = "起床アラームを確実に鳴らすために、寝る前に端末左側のサイレントスイッチを上げてマナーモードを解除してください。";
@@ -123,6 +128,8 @@
 "notification_custom_body_format" = "%@の時間です。進めましょう。";
 "notification_custom_followup_title_format" = "%@（再通知）";
 "notification_custom_followup_body_format" = "%@を始めましょう。";
+
+"common_sign_out" = "サインアウト";
 
 "notification_action_start_conversation" = "今すぐ対話を開始";
 "notification_action_dismiss" = "止める";

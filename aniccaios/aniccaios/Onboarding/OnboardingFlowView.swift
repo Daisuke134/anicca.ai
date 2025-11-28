@@ -58,8 +58,6 @@ struct OnboardingFlowView: View {
         case .notifications:
             step = .account
         case .account:
-            step = .profile
-        case .profile:
             step = .habitSetup
             // プロフィール完了時にオファリングをプリフェッチ（Paywall表示の準備）
             Task {

@@ -288,6 +288,8 @@ struct HabitSetupStepView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
                         customHabitTimes[id] = sheetTime
+                        // カスタム習慣も時刻設定で自動的に有効化（トグル表示用）
+                        // 注意: customHabitCardのToggleはhasTimeベースなので、時刻設定で自動的にON表示される
                         showingCustomTimePicker = nil
                     }
                 }
@@ -326,7 +328,7 @@ struct HabitSetupStepView: View {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(String(localized: "common_save")) {
                         habitTimes[habit] = sheetTime
-                        // 注意: selectedHabitsには既に含まれている（Toggle ON時に追加済み）
+                        selectedHabits.insert(habit)
                         showingTimePicker = nil
                     }
                 }

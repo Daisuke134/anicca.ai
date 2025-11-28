@@ -289,7 +289,7 @@ struct HabitsSectionView: View {
                             // 時刻未設定なら即シート表示（Saveで確定、CancelでOFFへ戻す）
                             sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
                             activeSheet = .habit(habit)
-                            activeHabits.insert(habit) // 一時的にON表示
+                            // 一時的にON表示しない（Cancel時にOFFに戻すため）
                         }
                     } else {
                         activeHabits.remove(habit)
@@ -325,6 +325,10 @@ struct HabitsSectionView: View {
             .onTapGesture {
                 if isActive {
                     activeSheet = .customEditor(id)
+                } else {
+                    // 時刻未設定時も時刻選択シートを表示
+                    sheetTime = date ?? Date()
+                    activeSheet = .custom(id)
                 }
             }
             
@@ -346,7 +350,7 @@ struct HabitsSectionView: View {
                         } else {
                             sheetTime = Date()
                             activeSheet = .custom(id)
-                            activeCustomHabits.insert(id) // 一時的にON表示
+                            // 一時的にON表示しない（Cancel時にOFFに戻すため）
                         }
                     } else {
                         activeCustomHabits.remove(id)
@@ -380,7 +384,10 @@ struct HabitsSectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
-                        // キャンセルしてもトグル状態は保持
+                        // Cancel時はトグルをOFFに戻す
+                        if !habitTimes.keys.contains(habit) {
+                            activeHabits.remove(habit)
+                        }
                         activeSheet = nil
                     }
                 }
@@ -422,7 +429,10 @@ struct HabitsSectionView: View {
             .toolbar {
                 ToolbarItem(placement: .navigationBarLeading) {
                     Button(String(localized: "common_cancel")) {
-                        // キャンセルしてもトグル状態は保持
+                        // Cancel時はトグルをOFFに戻す
+                        if !customHabitTimes.keys.contains(id) {
+                            activeCustomHabits.remove(id)
+                        }
                         activeSheet = nil
                     }
                 }

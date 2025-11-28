@@ -168,7 +168,9 @@ final class NotificationScheduler {
             await removeDelivered(withPrefix: followPrefix(for: habit))
             guard let firstFireDate = nextFireDate(from: baseComponents) else { return }
 
-            for index in 1...repeatCount(for: habit) {
+            let totalCount = repeatCount(for: habit)
+            // メイン通知1回 + フォローアップ通知（totalCount - 1）回 = 合計totalCount回
+            for index in 1..<totalCount {
                 guard let fireDate = Calendar.current.date(
                     byAdding: .second,
                     value: index * AlarmLoop.intervalSeconds,

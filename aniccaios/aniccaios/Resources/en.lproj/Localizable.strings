@@ -114,8 +114,8 @@
 "subscription_plan_monthly" = "Monthly Plan";
 "subscription_plan_annual" = "Annual Plan";
 "settings_personalization_title" = "Personalization";
-"settings_name_label" = "Name";
-"settings_name_placeholder" = "John";
+"settings_name_label" = "Your name";
+"settings_name_placeholder" = "Enter your name";
 "settings_sleep_location_label" = "Sleep Location";
 "settings_sleep_location_placeholder" = "Third-floor bedroom";
 "settings_training_focus_label" = "Training Focus";

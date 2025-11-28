@@ -77,7 +77,13 @@ final class AppState: ObservableObject {
         self.pendingHabitTrigger = nil
         // オンボーディング未完了時は強制的に.welcomeから開始
         if defaults.bool(forKey: onboardingKey) {
-            self.onboardingStep = OnboardingStep(rawValue: defaults.integer(forKey: onboardingStepKey)) ?? .completion
+            let rawValue = defaults.integer(forKey: onboardingStepKey)
+            // 後方互換性: rawValue = 4（旧.profile）を.habitSetupにマッピング
+            if rawValue == 4 {
+                self.onboardingStep = .habitSetup
+            } else {
+                self.onboardingStep = OnboardingStep(rawValue: rawValue) ?? .completion
+            }
         } else {
             // オンボーディング未完了なら、保存されたステップをクリアして.welcomeから開始
             defaults.removeObject(forKey: onboardingStepKey)

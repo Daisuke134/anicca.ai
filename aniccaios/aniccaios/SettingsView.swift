@@ -54,7 +54,17 @@ struct SettingsView: View {
                 
                 // Personalization
                 Section(String(localized: "settings_personalization")) {
-                    TextField(String(localized: "settings_name_label"), text: $displayName)
+                    SUCard(model: CardVM(), content: {
+                        HStack {
+                            Text(String(localized: "settings_name_label"))
+                                .font(.body)
+                            Spacer()
+                            TextField(String(localized: "settings_name_placeholder"), text: $displayName)
+                                .multilineTextAlignment(.trailing)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+                        }
+                    })
                     Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
                         Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
                         Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
@@ -188,6 +198,8 @@ struct SettingsView: View {
         }) {
             Text(NSLocalizedString("ideal_trait_\(trait)", comment: ""))
                 .font(.subheadline)
+                .lineLimit(1)
+                .fixedSize(horizontal: false, vertical: true)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(isSelected ? Color.black : Color(.systemGray6))
@@ -198,14 +210,19 @@ struct SettingsView: View {
     }
     
     private func loadPersonalizationData() {
-        displayName = appState.userProfile.displayName
+        // プレイスホルダーのみ表示するため、空文字列を設定
+        // 実際の値は保存時にappState.userProfile.displayNameから取得
+        displayName = ""
         preferredLanguage = appState.userProfile.preferredLanguage
     }
     
     private func save() {
         isSaving = true
         var profile = appState.userProfile
-        profile.displayName = displayName
+        // 入力が空の場合は既存の名前を保持、入力がある場合は更新
+        if !displayName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            profile.displayName = displayName.trimmingCharacters(in: .whitespacesAndNewlines)
+        }
         profile.preferredLanguage = preferredLanguage
         appState.updateUserProfile(profile, sync: true)
         isSaving = false

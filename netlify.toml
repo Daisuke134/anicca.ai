@@ -15,3 +15,13 @@
   from = "/billing/manage"
   to = "/"
   status = 301
+
+[[redirects]]
+  from = "/support"
+  to = "/support/en"
+  status = 301
+
+[[redirects]]
+  from = "/privacy"
+  to = "/privacy/en"
+  status = 301

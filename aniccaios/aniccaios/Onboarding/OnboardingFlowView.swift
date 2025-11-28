@@ -63,6 +63,9 @@ struct OnboardingFlowView: View {
             Task {
                 await SubscriptionManager.shared.refreshOfferings()
             }
+        case .profile:
+            // プロフィールステップは削除されたが、enum定義に残っているためフォールバック
+            step = .habitSetup
         case .habitSetup:
             // フォローアップを削除（直接Paywall/Completionへ）
             appState.clearHabitFollowUps()

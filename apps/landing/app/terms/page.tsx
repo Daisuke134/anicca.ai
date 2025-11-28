@@ -12,7 +12,7 @@ export default function TermsPage() {
       <p className="mt-3 text-muted-foreground">本規約は、ユーザーと成田大祐（個人事業主、以下「当方」）との間の本サービスの利用に関わる一切の関係に適用されます。</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">第2条（定義）</h2>
-      <p className="mt-3 text-muted-foreground">「ユーザー」とは、本サービスを利用する全ての者をいいます。「有料プラン」とはStripe決済によるAnicca Proプラン（月額5USD、価格ID: price_1S93SrEeDsUAcaLSNXvHMwPL）を指します。</p>
+      <p className="mt-3 text-muted-foreground">「ユーザー」とは、本サービスを利用する全ての者をいいます。「有料プラン」とはStripe決済によるAnicca Proプラン（月額5USD）を指します。</p>
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">iOSアプリに関する特則</h2>
       <p className="mt-3 text-muted-foreground">
@@ -45,7 +45,7 @@ export default function TermsPage() {
 
       <h2 className="mt-10 text-xl font-semibold text-foreground">第7条（料金・支払方法）</h2>
       <ul className="mt-3 list-disc pl-6 text-foreground space-y-2">
-        <li>料金：月額5米ドル（Stripe価格ID: price_1S93SrEeDsUAcaLSNXvHMwPL）。適用税額は決済時にStripeが算定します。</li>
+        <li>料金：月額5米ドル。適用税額は決済時にStripeが算定します。</li>
         <li>支払方法：Stripe Checkoutによるクレジットカード決済。</li>
         <li>請求タイミング：初回は申し込み直後、以降は申込日に基づき毎月自動決済。</li>
         <li>領収書：Stripeから送信される決済レシートをご利用ください。</li>

@@ -186,7 +186,7 @@ struct SettingsView: View {
             }
             appState.updateIdealTraits(traits)
         }) {
-            Text(LocalizedStringKey("ideal_trait_\(trait)"))
+            Text(NSLocalizedString("ideal_trait_\(trait)", comment: ""))
                 .font(.subheadline)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)

@@ -59,7 +59,7 @@
 "training_measure_reps" = "Measured by reps";
 "training_measure_time" = "Measured by time";
 "followup_repeats_title" = "Reminder repeats";
-"followup_repeats_help" = "Re-alert every 10s, 1–10 times.";
+"followup_repeats_help" = "1–10 times.";
 "followup_times_unit" = "times";
 
 "onboarding_completion_title" = "You're All Set!";

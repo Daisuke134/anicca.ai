@@ -59,7 +59,7 @@
 "training_measure_reps" = "回数で計測";
 "training_measure_time" = "時間で計測";
 "followup_repeats_title" = "再通知回数";
-"followup_repeats_help" = "10秒ごとに再通知。1〜10回から選択。";
+"followup_repeats_help" = "1〜10回から選択。";
 "followup_times_unit" = "回";
 
 "onboarding_completion_title" = "準備が整いました！";

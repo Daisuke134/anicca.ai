@@ -208,9 +208,8 @@ struct SettingsView: View {
     }
     
     private func loadPersonalizationData() {
-        // プレイスホルダーのみ表示するため、空文字列を設定
-        // 実際の値は保存時にappState.userProfile.displayNameから取得
-        displayName = ""
+        // 既存の名前を読み込む
+        displayName = appState.userProfile.displayName
         preferredLanguage = appState.userProfile.preferredLanguage
     }
     

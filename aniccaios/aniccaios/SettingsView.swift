@@ -54,17 +54,15 @@ struct SettingsView: View {
                 
                 // Personalization
                 Section(String(localized: "settings_personalization")) {
-                    SUCard(model: CardVM(), content: {
-                        HStack {
-                            Text(String(localized: "settings_name_label"))
-                                .font(.body)
-                            Spacer()
-                            TextField(String(localized: "settings_name_placeholder"), text: $displayName)
-                                .multilineTextAlignment(.trailing)
-                                .textInputAutocapitalization(.words)
-                                .autocorrectionDisabled()
-                        }
-                    })
+                    HStack {
+                        Text(String(localized: "settings_name_label"))
+                            .font(.body)
+                        Spacer()
+                        TextField(String(localized: "settings_name_placeholder"), text: $displayName)
+                            .multilineTextAlignment(.trailing)
+                            .textInputAutocapitalization(.words)
+                            .autocorrectionDisabled()
+                    }
                     Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
                         Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
                         Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
@@ -198,8 +196,8 @@ struct SettingsView: View {
         }) {
             Text(NSLocalizedString("ideal_trait_\(trait)", comment: ""))
                 .font(.subheadline)
-                .lineLimit(1)
-                .fixedSize(horizontal: false, vertical: true)
+                .lineLimit(nil)
+                .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
                 .background(isSelected ? Color.black : Color(.systemGray6))

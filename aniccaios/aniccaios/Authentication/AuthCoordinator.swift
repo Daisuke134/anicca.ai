@@ -102,7 +102,7 @@ final class AuthCoordinator {
                 identityToken: identityTokenString,
                 nonce: nonce,
                 userId: userId,
-                displayName: displayName.isEmpty ? "User" : displayName,
+                displayName: displayName,  // "User"を設定しない
                 email: email
             )
         }

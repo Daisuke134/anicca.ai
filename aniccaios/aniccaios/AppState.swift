@@ -353,8 +353,8 @@ final class AppState: ObservableObject {
         saveUserCredentials(credentials)
         
         // Update displayName in profile if empty and Apple provided a name
-        // Don't overwrite if credentials.displayName is empty (user will set it in profile step)
-        if userProfile.displayName.isEmpty && !credentials.displayName.isEmpty {
+        // Don't overwrite if credentials.displayName is empty or "User" (user will set it in profile step)
+        if userProfile.displayName.isEmpty && !credentials.displayName.isEmpty && credentials.displayName != "User" {
             userProfile.displayName = credentials.displayName
             saveUserProfile()
         }

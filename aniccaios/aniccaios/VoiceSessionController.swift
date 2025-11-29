@@ -21,6 +21,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var usageTrackingTask: Task<Void, Never>?
     private var sessionStartTime: Date?
     private var lastServerSyncTime: Date?
+    private var currentHabitType: HabitType?
     
     private override init() {
         super.init()
@@ -29,6 +30,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
     func start(shouldResumeImmediately: Bool = false) {
         guard connectionStatus != .connecting else { return }
         setStatus(.connecting)
+        // 現在の習慣タイプを設定（pendingHabitTriggerから取得）
+        currentHabitType = AppState.shared.pendingHabitTrigger?.habit
         Task { [weak self] in
             await self?.establishSession(resumeImmediately: shouldResumeImmediately)
         }
@@ -38,6 +41,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
         guard connectionStatus != .connecting else { return }
         setStatus(.connecting)
         
+        // 現在の習慣タイプを設定
+        currentHabitType = habit
         // Prepare prompt for the habit
         AppState.shared.prepareForImmediateSession(habit: habit)
         
@@ -48,6 +53,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     func stop() {
         logger.debug("Stopping realtime session")
+        currentHabitType = nil
         sessionTimeoutTask?.cancel()
         sessionTimeoutTask = nil
         usageTrackingTask?.cancel()
@@ -293,17 +299,13 @@ final class VoiceSessionController: NSObject, ObservableObject {
         guard let peerConnection else { return }
         
         // マイクロフォン権限の再確認（WebRTCがマイクにアクセスする直前）
-        if #available(iOS 17.0, *) {
-            guard AVAudioApplication.shared.recordPermission == .granted else {
-                logger.error("Microphone permission not granted in setupLocalAudio")
-                return
-            }
-        } else {
-            guard AVAudioSession.sharedInstance().recordPermission == .granted else {
-                logger.error("Microphone permission not granted in setupLocalAudio")
-                return
-            }
+        guard AVAudioSession.sharedInstance().recordPermission == .granted else {
+            logger.error("Microphone permission not granted in setupLocalAudio")
+            return
         }
+        
+        // トレーニング時はマイク入力を無効化
+        let isTrainingMode = currentHabitType == .training
         
         let constraints = RTCMediaConstraints(
             mandatoryConstraints: [
@@ -316,6 +318,13 @@ final class VoiceSessionController: NSObject, ObservableObject {
         )
         let audioSource = peerFactory.audioSource(with: constraints)
         let track = peerFactory.audioTrack(with: audioSource, trackId: "anicca_local_audio")
+        
+        // トレーニング時はマイクトラックを無効化
+        if isTrainingMode {
+            track.isEnabled = false
+            logger.info("Training mode: microphone input disabled")
+        }
+        
         peerConnection.add(track, streamIds: ["anicca"])
         audioTrack = track
     }
@@ -425,6 +434,10 @@ private extension VoiceSessionController {
     @MainActor
     func sendSessionUpdate() {
         guard let channel = dataChannel, channel.readyState == .open else { return }
+        
+        // トレーニング時はユーザーの割り込みを無効化（一方的な声かけモード）
+        let isTrainingMode = currentHabitType == .training
+        
         var sessionPayload: [String: Any] = [
             "modalities": ["text", "audio"],
             "voice": "alloy",
@@ -433,14 +446,23 @@ private extension VoiceSessionController {
             "input_audio_noise_reduction": [
                 "type": "near_field"
             ],
-            "turn_detection": [
+            "max_response_output_tokens": "inf"
+        ]
+        
+        // トレーニング時は turn_detection を null に設定してマイク入力を完全に無効化
+        if isTrainingMode {
+            // トレーニング時: マイク入力を完全に無効化（一方向モード）
+            sessionPayload["turn_detection"] = NSNull()
+            logger.info("Training mode: turn_detection disabled for one-way audio")
+        } else {
+            // その他の習慣: 双方向対話を維持
+            sessionPayload["turn_detection"] = [
                 "type": "semantic_vad",
                 "eagerness": "low",
                 "interrupt_response": true,
                 "create_response": true
-            ],
-            "max_response_output_tokens": "inf"
-        ]
+            ]
+        }
 
         var shouldTriggerHabitResponse = false
         if let prompt = AppState.shared.consumePendingPrompt() {

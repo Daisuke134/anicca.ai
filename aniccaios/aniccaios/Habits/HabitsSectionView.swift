@@ -120,50 +120,67 @@ struct HabitsSectionView: View {
     }
     
     var body: some View {
-        List {
-            Section(String(localized: "settings_habits")) {
+        ScrollView {
+            VStack(spacing: AppTheme.Spacing.md) {
+
                 // 全習慣を時系列順に表示（時刻設定済み）
                 ForEach(sortedAllHabits, id: \.id) { item in
                     if let habit = item.habit {
-                        habitRow(for: habit, time: item.time)
+                        CardView {
+                            habitRow(for: habit, time: item.time)
+                        }
                     } else if let customId = item.customId {
-                        customHabitRow(id: customId, name: item.name, time: item.time)
-                            .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        CardView {
+                            customHabitRow(id: customId, name: item.name, time: item.time)
+                                .contextMenu {
+                                    Button(role: .destructive) {
+                                        appState.removeCustomHabit(id: customId)
+                                    } label: {
+                                        Label(String(localized: "common_delete"), systemImage: "trash")
+                                    }
+                                }
+                        }
+                    }
+                }
+
+                // 時間未設定のデフォルト習慣
+                ForEach(inactiveDefaultHabits, id: \.self) { habit in
+                    CardView {
+                        habitRow(for: habit, time: nil)
+                    }
+                }
+
+                // 時間未設定のカスタム習慣
+                ForEach(inactiveCustomHabits, id: \.id) { habit in
+                    CardView {
+                        customHabitRow(id: habit.id, name: habit.name, time: nil)
+                            .contextMenu {
                                 Button(role: .destructive) {
-                                    appState.removeCustomHabit(id: customId)
+                                    appState.removeCustomHabit(id: habit.id)
                                 } label: {
                                     Label(String(localized: "common_delete"), systemImage: "trash")
                                 }
                             }
                     }
                 }
-                
-                // 時間未設定のデフォルト習慣
-                ForEach(inactiveDefaultHabits, id: \.self) { habit in
-                    habitRow(for: habit, time: nil)
-                }
-                
-                // 時間未設定のカスタム習慣
-                ForEach(inactiveCustomHabits, id: \.id) { habit in
-                    customHabitRow(id: habit.id, name: habit.name, time: nil)
-                        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-                            Button(role: .destructive) {
-                                appState.removeCustomHabit(id: habit.id)
-                            } label: {
-                                Label(String(localized: "common_delete"), systemImage: "trash")
-                            }
-                        }
-                }
-                
+
                 // 「習慣を追加」ボタン
-                Button(action: { activeSheet = .addCustom }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
-                        Text(String(localized: "habit_add_custom"))
+                CardView {
+                    Button(action: { activeSheet = .addCustom }) {
+                        HStack {
+                            Image(systemName: "plus.circle.fill")
+                            Text(String(localized: "habit_add_custom"))
+                        }
+                        .foregroundStyle(AppTheme.Colors.accent)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+
             }
+            .padding(.horizontal, AppTheme.Spacing.lg)
+            .padding(.vertical, AppTheme.Spacing.md)
         }
+        .background(AppBackground())
         .sheet(item: $activeSheet) { route in
             switch route {
             case .habit(let habit):
@@ -171,7 +188,7 @@ struct HabitsSectionView: View {
             case .custom(let id):
                 customTimePickerSheet(for: id)
             case .addCustom:
-                NavigationView {
+                NavigationStack {
                     Form {
                         Section {
                             TextField(String(localized: "habit_custom_name_placeholder"), text: $newCustomHabitName)
@@ -252,12 +269,12 @@ struct HabitsSectionView: View {
     private func habitRow(for habit: HabitType, time: DateComponents?) -> some View {
         let isActive = activeHabits.contains(habit)
         let date = time.flatMap { Calendar.current.date(from: $0) }
-        
+
         HStack {
-            // 左側ラベル領域のみタップ可能にして、トグル操作時にシートが開かないようにする
             VStack(alignment: .leading, spacing: 8) {
                 Text(habit.title)
-                    .font(.headline)
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -269,15 +286,15 @@ struct HabitsSectionView: View {
                     activeSheet = .habit(habit)
                 }
             }
-            
+
             Spacer()
-            
+
             if isActive, let date = date {
                 Text(date.formatted(.dateTime.hour().minute()))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(AppTheme.Typography.subheadlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
-            
+
             Toggle("", isOn: Binding(
                 get: { isActive },
                 set: { isOn in
@@ -286,27 +303,16 @@ struct HabitsSectionView: View {
                             activeHabits.insert(habit)
                             habitTimes[habit] = date
                         } else {
-                            // 時刻未設定なら即シート表示（Saveで確定、CancelでOFFへ戻す）
                             sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
                             activeSheet = .habit(habit)
-                            // 一時的にON表示しない（Cancel時にOFFに戻すため）
                         }
                     } else {
                         activeHabits.remove(habit)
+                        habitTimes.removeValue(forKey: habit)
                     }
                 }
             ))
             .labelsHidden()
-        }
-        .swipeActions(edge: .trailing, allowsFullSwipe: true) {
-            Button(role: .destructive) {
-                // デフォルト習慣の削除＝スケジュールのクリア
-                appState.removeHabitSchedule(habit)
-                activeHabits.remove(habit)
-                habitTimes.removeValue(forKey: habit)
-            } label: {
-                Label(String(localized: "common_delete"), systemImage: "trash")
-            }
         }
     }
     
@@ -314,11 +320,12 @@ struct HabitsSectionView: View {
     private func customHabitRow(id: UUID, name: String, time: DateComponents?) -> some View {
         let isActive = activeCustomHabits.contains(id)
         let date = time.flatMap { Calendar.current.date(from: $0) }
-        
+
         HStack {
             VStack(alignment: .leading, spacing: 8) {
                 Text(name)
-                    .font(.headline)
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -326,20 +333,19 @@ struct HabitsSectionView: View {
                 if isActive {
                     activeSheet = .customEditor(id)
                 } else {
-                    // 時刻未設定時も時刻選択シートを表示
                     sheetTime = date ?? Date()
                     activeSheet = .custom(id)
                 }
             }
-            
+
             Spacer()
-            
+
             if isActive, let date = date {
                 Text(date.formatted(.dateTime.hour().minute()))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(AppTheme.Typography.subheadlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
-            
+
             Toggle("", isOn: Binding(
                 get: { isActive },
                 set: { isOn in
@@ -350,7 +356,6 @@ struct HabitsSectionView: View {
                         } else {
                             sheetTime = Date()
                             activeSheet = .custom(id)
-                            // 一時的にON表示しない（Cancel時にOFFに戻すため）
                         }
                     } else {
                         activeCustomHabits.remove(id)
@@ -363,7 +368,7 @@ struct HabitsSectionView: View {
     
     @ViewBuilder
     private func timePickerSheet(for habit: HabitType) -> some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 Text(String(localized: "common_set_time"))
                     .font(.title2)
@@ -408,7 +413,7 @@ struct HabitsSectionView: View {
     
     @ViewBuilder
     private func customTimePickerSheet(for id: UUID) -> some View {
-        NavigationView {
+        NavigationStack {
             VStack(spacing: 24) {
                 Text(String(localized: "common_set_time"))
                     .font(.title2)

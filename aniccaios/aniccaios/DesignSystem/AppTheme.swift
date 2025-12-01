@@ -2,38 +2,30 @@ import SwiftUI
 
 enum AppTheme {
     enum Colors {
-        // Mobbinデザイン統合: 温かいカラーパレット
         static let accent: Color = .accentColor
         
-        // ライトテーマ - Mobbinの温かいベージュ背景
         static let background: Color = Color(hex: "#f8f5ed")
+        static let backgroundWithOpacity: Color = Color(red: 246/255, green: 245/255, blue: 236/255, opacity: 0.99)
+
         static let cardBackground: Color = Color(hex: "#fdfcfc")
         static let cardBackgroundAlt: Color = Color(hex: "#fcfcfb")
-        
-        // テキストカラー - Mobbinのダークグレー
+
         static let label: Color = Color(hex: "#393634")
         static let secondaryLabel: Color = Color(hex: "#898783")
-        
-        // ボタンカラー - Mobbinの選択状態
+
         static let buttonSelected: Color = Color(hex: "#222222")
         static let buttonUnselected: Color = Color(hex: "#e9e6e0")
         static let buttonTextSelected: Color = Color(hex: "#e1e1e1")
         static let buttonTextUnselected: Color = Color(hex: "#898783")
-        
-        // ボーダーカラー
+
         static let border: Color = Color(hex: "#c8c6bf")
         static let borderLight: Color = Color(hex: "#f2f0ed")
-        
-        // システムカラー（アクセシビリティ維持）
-        static let success: Color = .green
-        static let danger: Color = .red
-        
-        // ダークモード対応（必要に応じて）
+
         @available(iOS 15.0, *)
         static var adaptiveBackground: Color {
             Color(light: Color(hex: "#f8f5ed"), dark: Color(.systemGroupedBackground))
         }
-        
+
         @available(iOS 15.0, *)
         static var adaptiveCardBackground: Color {
             Color(light: Color(hex: "#fdfcfc"), dark: Color(.secondarySystemGroupedBackground))
@@ -52,27 +44,28 @@ enum AppTheme {
     enum Radius {
         static let sm: CGFloat = 8
         static let md: CGFloat = 12
-        static let lg: CGFloat = 20  // Mobbin: より大きな角丸
-        static let xl: CGFloat = 36   // Mobbin: 大きな角丸ボタン用
-        static let card: CGFloat = 37  // Mobbin: カード用の大きな角丸（37-87px範囲の最小値）
-        static let cardLarge: CGFloat = 76  // Mobbin: より大きなカード角丸（最大76px）
+        static let lg: CGFloat = 20
+        static let xl: CGFloat = 36
+        static let xxl: CGFloat = 76
+        
+        static let card: CGFloat = 37
+        static let cardLarge: CGFloat = 76
+        static let cardXLarge: CGFloat = 87
     }
     
     enum Typography {
-        // Mobbin: Interフォントに近いサイズ階層（Dynamic Typeベースだが、固定サイズも提供）
-        static let appTitle: Font = .system(size: 48, weight: .bold, design: .default)  // Mobbin: 44-50px
-        static let title2: Font = .system(size: 46, weight: .semibold, design: .default)  // Mobbin: 42-49px
-        static let headline: Font = .system(size: 43, weight: .semibold, design: .default)  // Mobbin: 見出し
-        static let body: Font = .system(size: 40, weight: .regular, design: .default)  // Mobbin: 37-48px
-        static let subheadline: Font = .system(size: 30, weight: .medium, design: .default)  // Mobbin: ラベル29-31px
-        static let footnote: Font = .footnote
-        
-        // Dynamic Type対応版（アクセシビリティ維持）
         static let appTitleDynamic: Font = .largeTitle
         static let title2Dynamic: Font = .title2
         static let headlineDynamic: Font = .headline
         static let bodyDynamic: Font = .body
         static let subheadlineDynamic: Font = .subheadline
+
+        static let appTitle: Font = .system(size: 48, weight: .bold)
+        static let title2: Font = .system(size: 46, weight: .semibold)
+        static let headline: Font = .system(size: 43, weight: .semibold)
+        static let body: Font = .system(size: 40, weight: .regular)
+        static let subheadline: Font = .system(size: 30, weight: .medium)
+        static let footnote: Font = .footnote
     }
 }
 

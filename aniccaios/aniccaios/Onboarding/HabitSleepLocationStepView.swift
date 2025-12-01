@@ -10,8 +10,9 @@ struct HabitSleepLocationStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("onboarding_habit_sleep_location_title")
-                .font(.title)
-                .padding(.top, 40)
+                .font(AppTheme.Typography.appTitle)
+                .fontWeight(.heavy)
+                .foregroundStyle(AppTheme.Colors.label)
 
             Text("onboarding_habit_sleep_location_description")
                 .font(.subheadline)
@@ -30,22 +31,17 @@ struct HabitSleepLocationStepView: View {
 
             Spacer()
 
-            SUButton(
-                model: {
-                    var vm = ButtonVM()
-                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "common_continue")
-                    vm.style = .filled
-                    vm.size = .large
-                    vm.isFullWidth = true
-                    vm.isEnabled = !sleepLocation.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
-                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                    return vm
-                }(),
-                action: save
-            )
+            PrimaryButton(
+                title: isSaving ? String(localized: "common_saving") : String(localized: "common_continue"),
+                isEnabled: !sleepLocation.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving,
+                isLoading: isSaving
+            ) { save() }
             .padding(.horizontal)
             .padding(.bottom)
+
         }
+        .padding(24)
+        .background(AppBackground())
     }
 
     private func save() {

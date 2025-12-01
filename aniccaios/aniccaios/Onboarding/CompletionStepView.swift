@@ -14,8 +14,9 @@ struct CompletionStepView: View {
                 .padding(.top, 40)
             
             Text("onboarding_completion_title")
-                .font(.title)
-                .fontWeight(.bold)
+                .font(AppTheme.Typography.appTitle)
+                .fontWeight(.heavy)
+                .foregroundStyle(AppTheme.Colors.label)
             
             if let nextSchedule = appState.getNextHabitSchedule() {
                 Text(String(format: NSLocalizedString("onboarding_completion_next_format", comment: ""), nextSchedule.message))
@@ -33,20 +34,12 @@ struct CompletionStepView: View {
             
             Spacer()
             
-            SUButton(
-                model: {
-                    var vm = ButtonVM()
-                    vm.title = String(localized: "onboarding_completion_continue")
-                    vm.style = .filled
-                    vm.size = .large
-                    vm.isFullWidth = true
-                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                    return vm
-                }(),
-                action: next
-            )
+            PrimaryButton(
+                title: String(localized: "onboarding_completion_continue")
+            ) { next() }
             .padding(.horizontal)
             .padding(.bottom)
+
         }
         .padding(24)
         .background(AppBackground())

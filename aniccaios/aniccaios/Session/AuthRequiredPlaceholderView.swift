@@ -18,6 +18,7 @@ struct AuthRequiredPlaceholderView: View {
                 .padding(.horizontal)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppBackground())
     }
 }
 

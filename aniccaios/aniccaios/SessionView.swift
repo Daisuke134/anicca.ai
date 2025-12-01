@@ -18,58 +18,44 @@ struct SessionView: View {
         }
     }
     
-    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
-    @ViewBuilder
-    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                content()
-            }
-        } else {
-            NavigationView {
-                content()
-            }
-        }
-    }
-    
     private var authenticatedContent: some View {
-        navigationContainer {
+        NavigationStack {
             VStack(spacing: AppTheme.Spacing.xl) {
                 Text("Anicca")
-                    .font(.system(size: 32, weight: .bold))
+                    .font(AppTheme.Typography.appTitle)
+                    .fontWeight(.heavy)
                     .foregroundStyle(AppTheme.Colors.label)
 
                 if shouldShowWakeSilentNotice {
                     Text(String(localized: "session_wake_silent_notice"))
                         .multilineTextAlignment(.center)
-                        .font(.subheadline)
+                        .font(AppTheme.Typography.subheadlineDynamic)
                         .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .padding(16)
+                        .padding(AppTheme.Spacing.lg)
                         .frame(maxWidth: .infinity)
                         .background(
-                            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(AppTheme.Colors.adaptiveCardBackground)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                        .stroke(AppTheme.Colors.border, lineWidth: 1)
-                                )
+                            RoundedRectangle(cornerRadius: AppTheme.Radius.card, style: .continuous)
+                                .fill(AppTheme.Colors.cardBackground)
+                                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
                         )
                 }
 
-                Spacer(minLength: 24)
+                Spacer(minLength: AppTheme.Spacing.xl)
 
                 sessionButton
-                    .buttonStyle(PrimaryButtonStyle())
             }
-            .padding(AppTheme.Spacing.xl)
+            .padding()
             .background(AppBackground())
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button(action: { isShowingSettings = true }) {
+                    Button {
+                        isShowingSettings = true
+                    } label: {
                         Image(systemName: "gearshape")
                     }
                 }
             }
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $isShowingSettings) {
                 SettingsView()
                     .environmentObject(appState)
@@ -144,12 +130,16 @@ struct SessionView: View {
 
     private var sessionButton: some View {
         let config = buttonConfig
-        return Button(config.title) {
-            config.action()
-        }
-        .buttonStyle(BorderedProminentButtonStyle())
-        .controlSize(.large)
-        .disabled(config.disabled)
+        let status = controller.connectionStatus
+        let icon: String? = (status == .connecting) ? "hourglass" : (status == .connected ? "stop.fill" : "mic.fill")
+        return PrimaryButton(
+            title: config.title,
+            icon: icon,
+            isEnabled: !config.disabled,
+            isLoading: status == .connecting,
+            style: .large,
+            action: config.action
+        )
     }
 
     private var buttonConfig: (title: String, disabled: Bool, action: () -> Void) {
@@ -176,7 +166,6 @@ struct SessionView: View {
                 action: {
                     let remaining = appState.subscriptionInfo.monthlyUsageRemaining ?? 1
                     if appState.subscriptionHold || (!appState.subscriptionInfo.isEntitled && remaining <= 0) {
-                        // 上限に達している時だけ毎回シートを表示
                         appState.markQuotaHold(plan: appState.subscriptionInfo.plan, reason: .quotaExceeded)
                         isShowingLimitModal = true
                         return
@@ -187,7 +176,6 @@ struct SessionView: View {
         }
     }
     
-    // Guideline 2.1対応: iPadでの即終了バグ修正のため、マイク権限をプリフライト
     private func ensureMicrophonePermissionAndStart(shouldResumeImmediately: Bool = false) {
         if #available(iOS 17.0, *) {
             switch AVAudioApplication.shared.recordPermission {

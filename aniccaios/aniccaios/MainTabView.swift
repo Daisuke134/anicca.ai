@@ -17,6 +17,7 @@ struct MainTabView: View {
                 }
                 .tag(AppState.RootTab.habits)
         }
+        .background(AppBackground())
     }
 }
 

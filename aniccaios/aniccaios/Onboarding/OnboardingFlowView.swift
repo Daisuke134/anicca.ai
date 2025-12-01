@@ -29,7 +29,6 @@ struct OnboardingFlowView: View {
                 CompletionStepView(next: advance)
             }
         }
-        .background(AppBackground())
         .onAppear {
             // オンボーディング完了済みなら完了画面から開始
             if appState.isOnboardingComplete {

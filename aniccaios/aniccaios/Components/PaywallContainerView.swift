@@ -104,6 +104,8 @@ struct PaywallContainerView: View {
                 fallbackMessage
             }
         }
+        .tint(AppTheme.Colors.accent)
+        .background(AppBackground())
         .task {
             // forcePresent: true の場合はエンタイトルメントチェックをスキップ
             // エビデンス: 60-65行目でcheckEntitlementStatus()が呼ばれ、エンタイトル済みと判定されると閉じられる

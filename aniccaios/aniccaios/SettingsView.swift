@@ -16,130 +16,260 @@ struct SettingsView: View {
 
     var body: some View {
         navigationContainer {
-            List {
-                // Subscription (復活)
-                Section(String(localized: "settings_subscription_title")) {
-                    Button {
-                        showingManageSubscription = true
-                    } label: {
+            if #available(iOS 16.0, *) {
+                List {
+                    // Subscription (復活)
+                    Section(String(localized: "settings_subscription_title")) {
+                        Button {
+                            showingManageSubscription = true
+                        } label: {
+                            HStack {
+                                Text(String(localized: "settings_subscription_current_plan"))
+                                Spacer()
+                                Text(appState.subscriptionInfo.displayPlanName)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        // SubscriptionInfoにmonthlyUsageCountとmonthlyUsageLimitが存在する場合のみ表示
+                        if let used = appState.subscriptionInfo.monthlyUsageCount,
+                           let limit = appState.subscriptionInfo.monthlyUsageLimit {
+                            HStack {
+                                Text(String(localized: "settings_subscription_usage"))
+                                Spacer()
+                                Text("\(used)/\(limit)")
+                            }
+                        } else if appState.subscriptionInfo.plan != .free {
+                            // Guideline 2.1対応: 無料プラン以外でUsage情報が未取得の場合、同期中であることを明示
+                            HStack {
+                                Text(String(localized: "settings_subscription_usage"))
+                                Spacer()
+                                Text(String(localized: "settings_subscription_usage_syncing"))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Button(String(localized: "settings_subscription_manage")) {
+                            showingManageSubscription = true
+                        }
+                    }
+                    
+                    // Personalization
+                    Section(String(localized: "settings_personalization")) {
                         HStack {
-                            Text(String(localized: "settings_subscription_current_plan"))
+                            Text(String(localized: "settings_name_label"))
+                                .font(.body)
                             Spacer()
-                            Text(appState.subscriptionInfo.displayPlanName)
+                            TextField(String(localized: "settings_name_placeholder"), text: $displayName)
+                                .multilineTextAlignment(.trailing)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
+                        }
+                        Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
+                            Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
+                            Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
                         }
                     }
-                    .buttonStyle(.plain)
-                    // SubscriptionInfoにmonthlyUsageCountとmonthlyUsageLimitが存在する場合のみ表示
-                    if let used = appState.subscriptionInfo.monthlyUsageCount,
-                       let limit = appState.subscriptionInfo.monthlyUsageLimit {
+                    
+                    // 理想の姿セクション（Phase 1に統合済み）
+                    Section(String(localized: "settings_ideal_traits")) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
+                            ForEach(idealTraitOptions, id: \.self) { trait in
+                                idealTraitButton(trait: trait)
+                            }
+                        }
+                    }
+                    
+                    // Sign out
+                    Section {
+                        Button(String(localized: "common_sign_out")) {
+                            appState.signOutAndWipe()
+                            dismiss()
+                        }
+                    }
+                    
+                    // Delete account
+                    Section {
+                        Button(role: .destructive) {
+                            isShowingDeleteAlert = true
+                        } label: {
+                            Text(String(localized: "settings_delete_account"))
+                        }
+                    }
+                }
+                .navigationTitle(String(localized: "settings_title"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button {
+                            save()
+                        } label: {
+                            Text(String(localized: "common_save"))
+                                .fontWeight(.semibold)
+                        }
+                        .controlSize(.large)
+                        .disabled(isSaving)
+                    }
+                }
+                .scrollContentBackground(.hidden)
+                .background(AppBackground())
+                .onAppear {
+                    loadPersonalizationData()
+                    Task { await SubscriptionManager.shared.syncNow() }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    // Guideline 3.1.2対応: 法的リンクを常設（購入フロー外からも1タップ到達）
+                    LegalLinksView()
+                }
+                .alert(String(localized: "settings_delete_account"), isPresented: $isShowingDeleteAlert) {
+                    Button(String(localized: "common_cancel"), role: .cancel) {}
+                    Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
+                        Task {
+                            await deleteAccount()
+                        }
+                    }
+                } message: {
+                    Text(String(localized: "settings_delete_account_message"))
+                }
+                .alert(String(localized: "common_error"), isPresented: Binding(
+                    get: { deleteAccountError != nil },
+                    set: { if !$0 { deleteAccountError = nil } }
+                )) {
+                    Button(String(localized: "common_ok")) {
+                        deleteAccountError = nil
+                    }
+                } message: {
+                    if let error = deleteAccountError {
+                        Text(error.localizedDescription)
+                    }
+                }
+            } else {
+                List {
+                    // Subscription (復活)
+                    Section(String(localized: "settings_subscription_title")) {
+                        Button {
+                            showingManageSubscription = true
+                        } label: {
+                            HStack {
+                                Text(String(localized: "settings_subscription_current_plan"))
+                                Spacer()
+                                Text(appState.subscriptionInfo.displayPlanName)
+                            }
+                        }
+                        .buttonStyle(.plain)
+                        // SubscriptionInfoにmonthlyUsageCountとmonthlyUsageLimitが存在する場合のみ表示
+                        if let used = appState.subscriptionInfo.monthlyUsageCount,
+                           let limit = appState.subscriptionInfo.monthlyUsageLimit {
+                            HStack {
+                                Text(String(localized: "settings_subscription_usage"))
+                                Spacer()
+                                Text("\(used)/\(limit)")
+                            }
+                        } else if appState.subscriptionInfo.plan != .free {
+                            // Guideline 2.1対応: 無料プラン以外でUsage情報が未取得の場合、同期中であることを明示
+                            HStack {
+                                Text(String(localized: "settings_subscription_usage"))
+                                Spacer()
+                                Text(String(localized: "settings_subscription_usage_syncing"))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        Button(String(localized: "settings_subscription_manage")) {
+                            showingManageSubscription = true
+                        }
+                    }
+                    
+                    // Personalization
+                    Section(String(localized: "settings_personalization")) {
                         HStack {
-                            Text(String(localized: "settings_subscription_usage"))
+                            Text(String(localized: "settings_name_label"))
+                                .font(.body)
                             Spacer()
-                            Text("\(used)/\(limit)")
+                            TextField(String(localized: "settings_name_placeholder"), text: $displayName)
+                                .multilineTextAlignment(.trailing)
+                                .textInputAutocapitalization(.words)
+                                .autocorrectionDisabled()
                         }
-                    } else if appState.subscriptionInfo.plan != .free {
-                        // Guideline 2.1対応: 無料プラン以外でUsage情報が未取得の場合、同期中であることを明示
-                        HStack {
-                            Text(String(localized: "settings_subscription_usage"))
-                            Spacer()
-                            Text(String(localized: "settings_subscription_usage_syncing"))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                        Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
+                            Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
+                            Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
                         }
                     }
-                    Button(String(localized: "settings_subscription_manage")) {
-                        showingManageSubscription = true
+                    
+                    // 理想の姿セクション（Phase 1に統合済み）
+                    Section(String(localized: "settings_ideal_traits")) {
+                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
+                            ForEach(idealTraitOptions, id: \.self) { trait in
+                                idealTraitButton(trait: trait)
+                            }
+                        }
                     }
-                }
-                
-                // Personalization
-                Section(String(localized: "settings_personalization")) {
-                    HStack {
-                        Text(String(localized: "settings_name_label"))
-                            .font(.body)
-                        Spacer()
-                        TextField(String(localized: "settings_name_placeholder"), text: $displayName)
-                            .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
+                    
+                    // Sign out
+                    Section {
+                        Button(String(localized: "common_sign_out")) {
+                            appState.signOutAndWipe()
+                            dismiss()
+                        }
                     }
-                    Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
-                        Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
-                        Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
-                    }
-                }
-                
-                // 理想の姿セクション（Phase 1に統合済み）
-                Section(String(localized: "settings_ideal_traits")) {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
-                        ForEach(idealTraitOptions, id: \.self) { trait in
-                            idealTraitButton(trait: trait)
+                    
+                    // Delete account
+                    Section {
+                        Button(role: .destructive) {
+                            isShowingDeleteAlert = true
+                        } label: {
+                            Text(String(localized: "settings_delete_account"))
                         }
                     }
                 }
-                
-                // Sign out
-                Section {
-                    Button(String(localized: "common_sign_out")) {
-                        appState.signOutAndWipe()
-                        dismiss()
+                .navigationTitle(String(localized: "settings_title"))
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button {
+                            save()
+                        } label: {
+                            Text(String(localized: "common_save"))
+                                .fontWeight(.semibold)
+                        }
+                        .controlSize(.large)
+                        .disabled(isSaving)
                     }
                 }
-                
-                // Delete account
-                Section {
-                    Button(role: .destructive) {
-                        isShowingDeleteAlert = true
-                    } label: {
-                        Text(String(localized: "settings_delete_account"))
+                .background(AppBackground())
+                .onAppear {
+                    loadPersonalizationData()
+                    Task { await SubscriptionManager.shared.syncNow() }
+                }
+                .safeAreaInset(edge: .bottom) {
+                    // Guideline 3.1.2対応: 法的リンクを常設（購入フロー外からも1タップ到達）
+                    LegalLinksView()
+                }
+                .alert(String(localized: "settings_delete_account"), isPresented: $isShowingDeleteAlert) {
+                    Button(String(localized: "common_cancel"), role: .cancel) {}
+                    Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
+                        Task {
+                            await deleteAccount()
+                        }
                     }
+                } message: {
+                    Text(String(localized: "settings_delete_account_message"))
                 }
-            }
-            .navigationTitle(String(localized: "settings_title"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        save()
-                    } label: {
-                        Text(String(localized: "common_save"))
-                            .fontWeight(.semibold)
+                .alert(String(localized: "common_error"), isPresented: Binding(
+                    get: { deleteAccountError != nil },
+                    set: { if !$0 { deleteAccountError = nil } }
+                )) {
+                    Button(String(localized: "common_ok")) {
+                        deleteAccountError = nil
                     }
-                    .controlSize(.large)
-                    .disabled(isSaving)
-                }
-            }
-            .onAppear {
-                loadPersonalizationData()
-                Task { await SubscriptionManager.shared.syncNow() }
-            }
-            .safeAreaInset(edge: .bottom) {
-                // Guideline 3.1.2対応: 法的リンクを常設（購入フロー外からも1タップ到達）
-                LegalLinksView()
-            }
-            .alert(String(localized: "settings_delete_account"), isPresented: $isShowingDeleteAlert) {
-                Button(String(localized: "common_cancel"), role: .cancel) {}
-                Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
-                    Task {
-                        await deleteAccount()
+                } message: {
+                    if let error = deleteAccountError {
+                        Text(error.localizedDescription)
                     }
-                }
-            } message: {
-                Text(String(localized: "settings_delete_account_message"))
-            }
-            .alert(String(localized: "common_error"), isPresented: Binding(
-                get: { deleteAccountError != nil },
-                set: { if !$0 { deleteAccountError = nil } }
-            )) {
-                Button(String(localized: "common_ok")) {
-                    deleteAccountError = nil
-                }
-            } message: {
-                if let error = deleteAccountError {
-                    Text(error.localizedDescription)
                 }
             }
         }
+        .background(AppBackground())
         .sheet(isPresented: $showingManageSubscription) {
             if appState.subscriptionInfo.plan == .free {
                 PaywallContainerView(

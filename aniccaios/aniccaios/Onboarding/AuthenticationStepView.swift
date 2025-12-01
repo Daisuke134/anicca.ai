@@ -7,14 +7,15 @@ struct AuthenticationStepView: View {
     @EnvironmentObject private var appState: AppState
     
     var body: some View {
-        VStack(spacing: 24) {
+        VStack(spacing: AppTheme.Spacing.lg) {
             Text("onboarding_account_title")
                 .font(.title)
+                .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
             
             Text("onboarding_account_description")
                 .font(.subheadline)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
@@ -34,7 +35,8 @@ struct AuthenticationStepView: View {
             
             Spacer()
         }
-        .padding(24)
+        .padding(AppTheme.Spacing.xl)
+        .background(AppBackground())
         .onAppear {
             Task {
                 await AuthHealthCheck.shared.warmBackend()

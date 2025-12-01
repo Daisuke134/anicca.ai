@@ -49,6 +49,7 @@ struct CompletionStepView: View {
             .padding(.bottom)
         }
         .padding(24)
+        .background(AppBackground())
     }
 }
 

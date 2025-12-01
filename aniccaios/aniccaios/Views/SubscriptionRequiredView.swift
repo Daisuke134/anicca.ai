@@ -8,6 +8,7 @@ struct SubscriptionRequiredView: View {
         )
             .environment(\.locale, .autoupdatingCurrent)
             .ignoresSafeArea()
+            .background(AppBackground())
     }
 }
 

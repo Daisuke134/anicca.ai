@@ -34,28 +34,35 @@ struct SessionView: View {
     
     private var authenticatedContent: some View {
         navigationContainer {
-            VStack(spacing: 24) {
+            VStack(spacing: AppTheme.Spacing.xl) {
                 Text("Anicca")
                     .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(AppTheme.Colors.label)
 
                 if shouldShowWakeSilentNotice {
                     Text(String(localized: "session_wake_silent_notice"))
                         .multilineTextAlignment(.center)
                         .font(.subheadline)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
                         .padding(16)
                         .frame(maxWidth: .infinity)
                         .background(
                             RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                .fill(.thinMaterial)
+                                .fill(AppTheme.Colors.adaptiveCardBackground)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 16, style: .continuous)
+                                        .stroke(AppTheme.Colors.border, lineWidth: 1)
+                                )
                         )
                 }
 
                 Spacer(minLength: 24)
 
                 sessionButton
+                    .buttonStyle(PrimaryButtonStyle())
             }
-            .padding()
+            .padding(AppTheme.Spacing.xl)
+            .background(AppBackground())
             .toolbar {
                 ToolbarItem(placement: .navigationBarTrailing) {
                     Button(action: { isShowingSettings = true }) {

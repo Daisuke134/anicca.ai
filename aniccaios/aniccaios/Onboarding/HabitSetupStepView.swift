@@ -65,7 +65,9 @@ struct HabitSetupStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("onboarding_habit_title")
-                .font(.title)
+                .font(AppTheme.Typography.appTitle)
+                .fontWeight(.heavy)
+                .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
 
             Text("onboarding_habit_description")
@@ -74,53 +76,56 @@ struct HabitSetupStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            List {
-                Section {
-                    // 全習慣を時系列順に表示
+            ScrollView {
+                VStack(spacing: AppTheme.Spacing.md) {
+
                     ForEach(sortedAllHabits, id: \.id) { item in
                         if item.isCustom, let customId = item.customId {
-                            customHabitCard(for: appState.customHabits.first(where: { $0.id == customId })!)
-                                .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-                                    Button(role: .destructive) {
-                                        appState.removeCustomHabit(id: customId)
-                                    } label: {
-                                        Label(String(localized: "common_delete"), systemImage: "trash")
+                            CardView {
+                                customHabitCard(for: appState.customHabits.first(where: { $0.id == customId })!)
+                                    .contextMenu {
+                                        Button(role: .destructive) {
+                                            appState.removeCustomHabit(id: customId)
+                                        } label: {
+                                            Label(String(localized: "common_delete"), systemImage: "trash")
+                                        }
                                     }
-                                }
+                            }
                         } else if let habit = HabitType(rawValue: item.id) {
-                            habitCard(for: habit, isCustom: false)
+                            CardView {
+                                habitCard(for: habit, isCustom: false)
+                            }
                         }
                     }
-                    
-                    // 「習慣を追加」ボタン
-                    Button(action: { showingAddCustomHabit = true }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text("habit_add_custom")
+
+                    CardView {
+                        Button {
+                            showingAddCustomHabit = true
+                        } label: {
+                            HStack {
+                                Image(systemName: "plus.circle.fill")
+                                Text("habit_add_custom")
+                            }
+                            .foregroundStyle(AppTheme.Colors.accent)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
                     }
+
                 }
+                .padding(.horizontal, AppTheme.Spacing.lg)
             }
-            .listStyle(.insetGrouped)
 
             Spacer()
 
-            SUButton(
-                model: {
-                    var vm = ButtonVM()
-                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "common_done")
-                    vm.style = .filled
-                    vm.size = .large
-                    vm.isFullWidth = true
-                    vm.isEnabled = canSave
-                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                    return vm
-                }(),
-                action: save
-            )
+            PrimaryButton(
+                title: isSaving ? String(localized: "common_saving") : String(localized: "common_done"),
+                isEnabled: canSave,
+                isLoading: isSaving
+            ) { save() }
             .padding(.horizontal)
             .padding(.bottom)
         }
+        .background(AppBackground())
         .sheet(isPresented: Binding(
             get: { showingTimePicker != nil },
             set: { if !$0 { showingTimePicker = nil } }
@@ -138,7 +143,7 @@ struct HabitSetupStepView: View {
             }
         }
         .sheet(isPresented: $showingAddCustomHabit) {
-            NavigationView {
+            NavigationStack {
                 Form {
                     Section {
                         TextField(String(localized: "habit_custom_name_placeholder"), text: $newCustomHabitName)

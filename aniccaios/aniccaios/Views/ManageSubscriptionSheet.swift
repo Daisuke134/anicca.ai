@@ -13,9 +13,9 @@ struct ManageSubscriptionSheet: View {
     @State private var showingCustomerCenter = false
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 24) {
                     // Environment status warning
                     if appState.purchaseEnvironmentStatus == .accountMissing {
                         Label(String(localized: "settings_subscription_account_missing"),
@@ -45,18 +45,12 @@ struct ManageSubscriptionSheet: View {
                 }
                 .padding()
             }
-            .navigationTitle("settings_subscription_manage_title")
+            .background(AppBackground())
+            .navigationTitle(String(localized: "settings_subscription_manage"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        dismiss()
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .foregroundStyle(.secondary)
-                            .frame(width: 24, height: 24)
-                            .contentShape(Rectangle())
-                    }
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common_cancel")) { dismiss() }
                 }
             }
         }
@@ -79,13 +73,14 @@ struct ManageSubscriptionSheet: View {
     }
     
     private var currentPlanSection: some View {
-        SUCard(model: CardVM(), content: {
+        CardView {
             VStack(alignment: .leading, spacing: 8) {
                 Text("settings_subscription_current_plan")
-                    .font(.headline)
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
                 Text(appState.subscriptionInfo.displayPlanName)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    .font(AppTheme.Typography.subheadlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 if appState.subscriptionInfo.plan == .free {
                     Text(String(localized: "settings_subscription_free_description"))
                         .font(.caption)
@@ -104,7 +99,7 @@ struct ManageSubscriptionSheet: View {
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
-        })
+        }
     }
     
     @ViewBuilder
@@ -117,65 +112,31 @@ struct ManageSubscriptionSheet: View {
     private func planCard(package: Package) -> some View {
         let isCurrentPlan = appState.subscriptionInfo.productIdentifier == package.storeProduct.productIdentifier
         
-        return SUCard(model: CardVM(), content: {
-            VStack(alignment: .leading, spacing: 12) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(package.storeProduct.localizedTitle)
-                            .font(.headline)
-                        if !package.storeProduct.localizedDescription.isEmpty {
-                            Text(package.storeProduct.localizedDescription)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        if package.identifier.contains("monthly") || package.storeProduct.productIdentifier.contains("monthly") {
-                            Text(String(localized: "settings_subscription_monthly_detail"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        } else if package.identifier.contains("annual") || package.storeProduct.productIdentifier.contains("annual") || package.identifier.contains("yearly") || package.storeProduct.productIdentifier.contains("yearly") {
-                            Text(String(localized: "settings_subscription_annual_detail"))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Spacer()
-                    if isCurrentPlan {
-                        SUBadge(model: {
-                            var vm = BadgeVM()
-                            vm.title = String(localized: "settings_subscription_current")
-                            vm.color = .init(main: .success, contrast: .white)
-                            return vm
-                        }())
-                    }
-                }
-                
+        return CardView {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(package.storeProduct.localizedTitle)
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
+
+                Text(package.storeProduct.localizedDescription)
+                    .font(AppTheme.Typography.subheadlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+
                 Text(package.localizedPriceString)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                
+                    .font(.title2)
+                    .foregroundStyle(AppTheme.Colors.label)
+
                 if !isCurrentPlan {
-                    SUButton(
-                        model: {
-                            var vm = ButtonVM()
-                            vm.title = appState.subscriptionInfo.plan == .free
-                                ? String(localized: "settings_subscription_subscribe")
-                                : String(localized: "settings_subscription_select")
-                            vm.style = .filled
-                            vm.size = .medium
-                            vm.isFullWidth = true
-                            vm.isEnabled = !isPurchasing
-                            vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                            return vm
-                        }(),
-                        action: {
-                            Task {
-                                await purchasePackage(package)
-                            }
-                        }
-                    )
+                    PrimaryButton(
+                        title: String(localized: "settings_subscription_select"),
+                        isEnabled: !isPurchasing,
+                        isLoading: isPurchasing
+                    ) {
+                        Task { await purchasePackage(package) }
+                    }
                 }
             }
-        })
+        }
     }
     
     private var actionsSection: some View {

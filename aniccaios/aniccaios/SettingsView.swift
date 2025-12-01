@@ -15,85 +15,124 @@ struct SettingsView: View {
     @State private var showingManageSubscription = false
 
     var body: some View {
-        navigationContainer {
-            List {
-                // Subscription (復活)
-                Section(String(localized: "settings_subscription_title")) {
-                    Button {
-                        showingManageSubscription = true
-                    } label: {
-                        HStack {
-                            Text(String(localized: "settings_subscription_current_plan"))
-                            Spacer()
-                            Text(appState.subscriptionInfo.displayPlanName)
+        NavigationStack {
+            ScrollView {
+                VStack(spacing: AppTheme.Spacing.md) {
+
+                    // --------------------------
+                    // Subscription Section
+                    // --------------------------
+                    CardView {
+                        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+
+                            Text(String(localized: "settings_subscription_title"))
+                                .font(AppTheme.Typography.headlineDynamic)
+                                .foregroundStyle(AppTheme.Colors.label)
+                                .padding(.bottom, AppTheme.Spacing.xs)
+
+                            SectionRow.button(
+                                label: String(localized: "settings_subscription_current_plan"),
+                                title: appState.subscriptionInfo.displayPlanName,
+                                action: { showingManageSubscription = true }
+                            )
+
+                            if let used = appState.subscriptionInfo.monthlyUsageCount,
+                               let limit = appState.subscriptionInfo.monthlyUsageLimit {
+                                SectionRow.text(
+                                    label: String(localized: "settings_subscription_usage"),
+                                    text: "\(used)/\(limit)"
+                                )
+                            } else if appState.subscriptionInfo.plan != .free {
+                                SectionRow(label: String(localized: "settings_subscription_usage")) {
+                                    Text(String(localized: "settings_subscription_usage_syncing"))
+                                        .font(.footnote)
+                                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                                }
+                            }
+
+                            SectionRow.button(
+                                label: String(localized: "settings_subscription_manage"),
+                                title: String(localized: "settings_subscription_manage"),
+                                action: { showingManageSubscription = true }
+                            )
+
                         }
                     }
-                    .buttonStyle(.plain)
-                    // SubscriptionInfoにmonthlyUsageCountとmonthlyUsageLimitが存在する場合のみ表示
-                    if let used = appState.subscriptionInfo.monthlyUsageCount,
-                       let limit = appState.subscriptionInfo.monthlyUsageLimit {
-                        HStack {
-                            Text(String(localized: "settings_subscription_usage"))
-                            Spacer()
-                            Text("\(used)/\(limit)")
-                        }
-                    } else if appState.subscriptionInfo.plan != .free {
-                        // Guideline 2.1対応: 無料プラン以外でUsage情報が未取得の場合、同期中であることを明示
-                        HStack {
-                            Text(String(localized: "settings_subscription_usage"))
-                            Spacer()
-                            Text(String(localized: "settings_subscription_usage_syncing"))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                    Button(String(localized: "settings_subscription_manage")) {
-                        showingManageSubscription = true
-                    }
-                }
-                
-                // Personalization
-                Section(String(localized: "settings_personalization")) {
-                    HStack {
-                        Text(String(localized: "settings_name_label"))
-                            .font(.body)
-                        Spacer()
-                        TextField(String(localized: "settings_name_placeholder"), text: $displayName)
-                            .multilineTextAlignment(.trailing)
-                            .textInputAutocapitalization(.words)
-                            .autocorrectionDisabled()
-                    }
-                    Picker(String(localized: "settings_language_label"), selection: $preferredLanguage) {
-                        Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
-                        Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
-                    }
-                }
-                
-                // 理想の姿セクション（Phase 1に統合済み）
-                Section(String(localized: "settings_ideal_traits")) {
-                    LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
-                        ForEach(idealTraitOptions, id: \.self) { trait in
-                            idealTraitButton(trait: trait)
+
+                    // --------------------------
+                    // Personalization / Name / Language
+                    // --------------------------
+                    CardView {
+                        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                            Text(String(localized: "settings_personalization"))
+                                .font(AppTheme.Typography.headlineDynamic)
+                                .foregroundStyle(AppTheme.Colors.label)
+                                .padding(.bottom, AppTheme.Spacing.xs)
+
+                            SectionRow(label: String(localized: "settings_name_label")) {
+                                TextField(String(localized: "settings_name_placeholder"), text: $displayName)
+                                    .multilineTextAlignment(.trailing)
+                                    .textInputAutocapitalization(.words)
+                                    .autocorrectionDisabled()
+                                    .font(AppTheme.Typography.subheadlineDynamic)
+                                    .foregroundStyle(AppTheme.Colors.label)
+                            }
+
+                            Picker(
+                                String(localized: "settings_language_label"),
+                                selection: $preferredLanguage
+                            ) {
+                                Text(String(localized: "language_preference_ja")).tag(LanguagePreference.ja)
+                                Text(String(localized: "language_preference_en")).tag(LanguagePreference.en)
+                            }
                         }
                     }
-                }
-                
-                // Sign out
-                Section {
-                    Button(String(localized: "common_sign_out")) {
-                        appState.signOutAndWipe()
-                        dismiss()
+
+                    // --------------------------
+                    // Ideal traits
+                    // --------------------------
+                    CardView {
+                        VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                            Text(String(localized: "settings_ideal_traits"))
+                                .font(AppTheme.Typography.headlineDynamic)
+                                .foregroundStyle(AppTheme.Colors.label)
+                                .padding(.bottom, AppTheme.Spacing.xs)
+
+                            LazyVGrid(columns: [GridItem(.adaptive(minimum: 100))], spacing: 12) {
+                                ForEach(idealTraitOptions, id: \.self) { trait in
+                                    idealTraitButton(trait: trait)
+                                }
+                            }
+                        }
                     }
-                }
-                
-                // Delete account
-                Section {
-                    Button(role: .destructive) {
-                        isShowingDeleteAlert = true
-                    } label: {
-                        Text(String(localized: "settings_delete_account"))
+
+                    // --------------------------
+                    // Sign out
+                    // --------------------------
+                    CardView {
+                        Button(String(localized: "common_sign_out")) {
+                            appState.signOutAndWipe()
+                            dismiss()
+                        }
+                        .foregroundStyle(AppTheme.Colors.label)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
+
+                    // --------------------------
+                    // Delete account
+                    // --------------------------
+                    CardView {
+                        Button(role: .destructive) {
+                            isShowingDeleteAlert = true
+                        } label: {
+                            Text(String(localized: "settings_delete_account"))
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    }
+
                 }
+                .padding(.horizontal, AppTheme.Spacing.lg)
+                .padding(.vertical, AppTheme.Spacing.md)
             }
             .navigationTitle(String(localized: "settings_title"))
             .navigationBarTitleDisplayMode(.inline)
@@ -117,6 +156,7 @@ struct SettingsView: View {
                 // Guideline 3.1.2対応: 法的リンクを常設（購入フロー外からも1タップ到達）
                 LegalLinksView()
             }
+            .background(AppBackground())
             .alert(String(localized: "settings_delete_account"), isPresented: $isShowingDeleteAlert) {
                 Button(String(localized: "common_cancel"), role: .cancel) {}
                 Button(String(localized: "settings_delete_account_confirm"), role: .destructive) {
@@ -162,20 +202,6 @@ struct SettingsView: View {
         }
     }
     
-    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
-    @ViewBuilder
-    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                content()
-            }
-        } else {
-            NavigationView {
-                content()
-            }
-        }
-    }
-    
     private let idealTraitOptions = [
         "kind", "altruistic", "confident", "mindful", "optimistic",
         "resilient", "disciplined", "honest", "calm"
@@ -184,8 +210,8 @@ struct SettingsView: View {
     @ViewBuilder
     private func idealTraitButton(trait: String) -> some View {
         let isSelected = appState.userProfile.idealTraits.contains(trait)
-        
-        Button(action: {
+
+        Button {
             var traits = appState.userProfile.idealTraits
             if isSelected {
                 traits.removeAll { $0 == trait }
@@ -193,16 +219,33 @@ struct SettingsView: View {
                 traits.append(trait)
             }
             appState.updateIdealTraits(traits)
-        }) {
+        } label: {
             Text(NSLocalizedString("ideal_trait_\(trait)", comment: ""))
                 .font(.subheadline)
                 .lineLimit(nil)
                 .fixedSize(horizontal: true, vertical: false)
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(isSelected ? Color.black : Color(.systemGray6))
-                .foregroundColor(isSelected ? .white : .secondary)
-                .cornerRadius(8)
+                .background(
+                    isSelected
+                    ? AppTheme.Colors.buttonSelected
+                    : AppTheme.Colors.buttonUnselected
+                )
+                .foregroundColor(
+                    isSelected
+                    ? AppTheme.Colors.buttonTextSelected
+                    : AppTheme.Colors.buttonTextUnselected
+                )
+                .cornerRadius(AppTheme.Radius.md)
+                .overlay(
+                    RoundedRectangle(cornerRadius: AppTheme.Radius.md)
+                        .stroke(
+                            isSelected
+                            ? AppTheme.Colors.border
+                            : AppTheme.Colors.borderLight,
+                            lineWidth: isSelected ? 2 : 1
+                        )
+                )
         }
         .buttonStyle(.plain)
     }

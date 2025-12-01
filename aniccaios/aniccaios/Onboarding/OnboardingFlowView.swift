@@ -5,29 +5,33 @@ struct OnboardingFlowView: View {
     @State private var step: OnboardingStep = .welcome
 
     var body: some View {
-        Group {
-            switch step {
-            case .welcome:
-                WelcomeStepView(next: advance)
-            case .microphone:
-                MicrophonePermissionStepView(next: advance)
-            case .notifications:
-                NotificationPermissionStepView(next: advance)
-            case .account:
-                AuthenticationStepView(next: advance)
-            case .habitSetup:
-                HabitSetupStepView(next: advance)
-            case .habitWakeLocation:
-                HabitWakeLocationStepView(next: advance)
-            case .habitSleepLocation:
-                HabitSleepLocationStepView(next: advance)
-            case .habitTrainingFocus:
-                HabitTrainingFocusStepView(next: advance)
-            case .paywall:
-                PaywallStepView(next: advance)
-            case .completion:
-                CompletionStepView(next: advance)
+        ZStack {
+            AppBackground()
+            Group {
+                switch step {
+                case .welcome:
+                    WelcomeStepView(next: advance)
+                case .microphone:
+                    MicrophonePermissionStepView(next: advance)
+                case .notifications:
+                    NotificationPermissionStepView(next: advance)
+                case .account:
+                    AuthenticationStepView(next: advance)
+                case .habitSetup:
+                    HabitSetupStepView(next: advance)
+                case .habitWakeLocation:
+                    HabitWakeLocationStepView(next: advance)
+                case .habitSleepLocation:
+                    HabitSleepLocationStepView(next: advance)
+                case .habitTrainingFocus:
+                    HabitTrainingFocusStepView(next: advance)
+                case .paywall:
+                    PaywallStepView(next: advance)
+                case .completion:
+                    CompletionStepView(next: advance)
+                }
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
             // オンボーディング完了済みなら完了画面から開始

@@ -24,13 +24,25 @@ struct NotificationPermissionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            PrimaryButton(
-                title: isRequesting
-                    ? String(localized: "common_requesting")
-                    : String(localized: "common_continue"),
-                isEnabled: !isRequesting,
-                isLoading: isRequesting
-            ) { requestNotifications() }
+            if notificationGranted {
+                Label(String(localized: "common_enabled"), systemImage: "checkmark.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.Colors.label)
+                PrimaryButton(
+                    title: String(localized: "common_enabled"),
+                    isEnabled: false,
+                    isLoading: false,
+                    style: .selected
+                ) { }
+            } else {
+                PrimaryButton(
+                    title: isRequesting
+                        ? String(localized: "common_requesting")
+                        : String(localized: "common_continue"),
+                    isEnabled: !isRequesting,
+                    isLoading: isRequesting
+                ) { requestNotifications() }
+            }
 
         }
         .padding(24)

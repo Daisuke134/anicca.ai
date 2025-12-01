@@ -27,24 +27,35 @@ struct MicrophonePermissionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            PrimaryButton(
-                title: isRequesting
-                    ? String(localized: "common_requesting")
-                    : String(localized: "common_continue"),
-                isEnabled: !isRequesting,
-                isLoading: isRequesting
-            ) { requestMicrophone() }
+            if micGranted {
+                // 許可済み: ステータスを表示しボタンは無効
+                Label(String(localized: "common_enabled"), systemImage: "checkmark.circle")
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.Colors.label)
+                PrimaryButton(
+                    title: String(localized: "common_enabled"),
+                    isEnabled: false,
+                    isLoading: false,
+                    style: .selected
+                ) { }
+            } else {
+                PrimaryButton(
+                    title: isRequesting
+                        ? String(localized: "common_requesting")
+                        : String(localized: "common_continue"),
+                    isEnabled: !isRequesting,
+                    isLoading: isRequesting
+                ) { requestMicrophone() }
+            }
 
         }
         .padding(24)
         .background(AppBackground())
         .onAppear {
             updatePermissionSnapshot()
+            // 既に許可されている場合はUIで明示しつつ、自動遷移は保持
             if micGranted {
-                // Auto-advance if already granted
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    next()
-                }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { next() }
             }
         }
     }

@@ -10,7 +10,7 @@ struct WelcomeStepView: View {
                 .fontWeight(.heavy)
                 .foregroundStyle(AppTheme.Colors.label)
 
-            Text("onboarding_welcome_description")
+            Text("onboarding_welcome_subtitle")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

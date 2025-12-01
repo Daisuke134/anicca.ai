@@ -2,7 +2,8 @@ import SwiftUI
 
 enum AppTheme {
     enum Colors {
-        static let accent: Color = .accentColor
+        // Global accent (monochrome)
+        static let accent: Color = Color(hex: "#222222")
         
         static let background: Color = Color(hex: "#f8f5ed")
         static let backgroundWithOpacity: Color = Color(red: 246/255, green: 245/255, blue: 236/255, opacity: 0.99)

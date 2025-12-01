@@ -5,8 +5,7 @@ struct HabitsTabView: View {
     @State private var showingSettings = false
     
     var body: some View {
-        navigationContainer {
-            // HabitsSectionViewを表示（習慣セクションのコンポーネントを再利用）
+        NavigationStack {
             HabitsSectionView()
                 .navigationTitle(String(localized: "settings_habits"))
                 .toolbar {
@@ -18,23 +17,10 @@ struct HabitsTabView: View {
                 }
         }
         .sheet(isPresented: $showingSettings) {
-            SettingsView() // Personalizationと理想の姿のみ
+            SettingsView()
                 .environmentObject(appState)
         }
-    }
-    
-    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
-    @ViewBuilder
-    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                content()
-            }
-        } else {
-            NavigationView {
-                content()
-            }
-        }
+        .background(AppBackground())
     }
 }
 

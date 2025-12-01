@@ -7,7 +7,7 @@ struct HabitFollowUpView: View {
     @State private var childSaveAction: (() -> Void)? = nil
     
     var body: some View {
-        navigationContainer {
+        NavigationStack {
             Group {
                 switch habit {
                 case .wake:
@@ -40,20 +40,7 @@ struct HabitFollowUpView: View {
                     }
                 }
             }
-        }
-    }
-    
-    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
-    @ViewBuilder
-    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                content()
-            }
-        } else {
-            NavigationView {
-                content()
-            }
+            .background(AppBackground())
         }
     }
     

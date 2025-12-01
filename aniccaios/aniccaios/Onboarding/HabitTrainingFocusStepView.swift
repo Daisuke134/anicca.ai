@@ -21,7 +21,7 @@ struct HabitTrainingFocusStepView: View {
     ]
 
     var body: some View {
-        navigationContainer {
+        NavigationStack {
             Form {
                 // 上に「目標」入力フィールド（KOUJI.md仕様）
                 Section(String(localized: "habit_training_goal")) {
@@ -72,24 +72,10 @@ struct HabitTrainingFocusStepView: View {
                 }
             }
             .onAppear {
-                // 既存の値を読み込む
                 trainingGoal = appState.userProfile.trainingGoal
                 selectedTrainingFocus = appState.userProfile.trainingFocus.first ?? ""
             }
-        }
-    }
-    
-    // iOS 16以降でNavigationStack、それ以前でNavigationViewを使用
-    @ViewBuilder
-    private func navigationContainer<Content: View>(@ViewBuilder content: () -> Content) -> some View {
-        if #available(iOS 16.0, *) {
-            NavigationStack {
-                content()
-            }
-        } else {
-            NavigationView {
-                content()
-            }
+            .background(AppBackground())
         }
     }
 

@@ -11,21 +11,18 @@ struct ContentRouterView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        Group {
-            if !appState.isOnboardingComplete {
+        if !appState.isOnboardingComplete {
+            OnboardingFlowView()
+        } else {
+            switch appState.authStatus {
+            case .signedOut:
                 OnboardingFlowView()
-            } else {
-                switch appState.authStatus {
-                case .signedOut:
-                    OnboardingFlowView()
-                case .signingIn:
-                    AuthenticationProcessingView()
-                case .signedIn:
-                    MainTabView()
-                }
+            case .signingIn:
+                AuthenticationProcessingView()
+            case .signedIn:
+                MainTabView()
             }
         }
-        .background(AppBackground())
     }
 }
 
@@ -39,6 +36,7 @@ struct AuthenticationProcessingView: View {
                 .foregroundStyle(.secondary)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(AppBackground())
     }
 }
 

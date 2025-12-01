@@ -7,15 +7,16 @@ struct AuthenticationStepView: View {
     @EnvironmentObject private var appState: AppState
     
     var body: some View {
-        VStack(spacing: AppTheme.Spacing.lg) {
+        VStack(spacing: 24) {
             Text("onboarding_account_title")
-                .font(.title)
+                .font(AppTheme.Typography.appTitle)
+                .fontWeight(.heavy)
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
             
             Text("onboarding_account_description")
                 .font(.subheadline)
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
             
@@ -35,7 +36,7 @@ struct AuthenticationStepView: View {
             
             Spacer()
         }
-        .padding(AppTheme.Spacing.xl)
+        .padding(24)
         .background(AppBackground())
         .onAppear {
             Task {

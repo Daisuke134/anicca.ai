@@ -10,7 +10,9 @@ struct ProfileInfoStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("onboarding_profile_title")
-                .font(.title)
+                .font(AppTheme.Typography.appTitle)
+                .fontWeight(.heavy)
+                .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
 
             Text("onboarding_profile_description")
@@ -27,22 +29,19 @@ struct ProfileInfoStepView: View {
 
             Spacer()
 
-            SUButton(
-                model: {
-                    var vm = ButtonVM()
-                    vm.title = isSaving ? String(localized: "common_saving") : String(localized: "onboarding_profile_continue")
-                    vm.style = .filled
-                    vm.size = .large
-                    vm.isFullWidth = true
-                    vm.isEnabled = !displayName.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving
-                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
-                    return vm
-                }(),
-                action: save
-            )
+            PrimaryButton(
+                title: isSaving
+                    ? String(localized: "common_saving")
+                    : String(localized: "onboarding_profile_continue"),
+                isEnabled: !displayName.trimmingCharacters(in: .whitespaces).isEmpty && !isSaving,
+                isLoading: isSaving
+            ) { save() }
             .padding(.horizontal)
             .padding(.bottom)
+
         }
+        .padding(24)
+        .background(AppBackground())
         .onAppear {
             let currentName = appState.userProfile.displayName.trimmingCharacters(in: .whitespaces)
             // Don't pre-fill with "User" - show placeholder instead

@@ -12,10 +12,16 @@ struct aniccaiosApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
     @StateObject private var appState = AppState.shared
 
+    init() {
+        Appearance.configure()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentRouterView()
                 .environmentObject(appState)
+                .tint(AppTheme.Colors.accent)
+                .background(AppBackground())
         }
     }
 }

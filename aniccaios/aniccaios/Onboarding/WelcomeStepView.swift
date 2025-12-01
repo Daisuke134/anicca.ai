@@ -4,15 +4,16 @@ struct WelcomeStepView: View {
     let next: () -> Void
 
     var body: some View {
-        VStack(spacing: 32) {
+        VStack(spacing: AppTheme.Spacing.xl) {
             Spacer()
 
             Text("onboarding_welcome_title")
                 .font(.system(size: 32, weight: .bold))
+                .foregroundStyle(AppTheme.Colors.label)
 
             Text("onboarding_welcome_subtitle")
                 .font(.body)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
 
             Spacer()
 
@@ -20,9 +21,9 @@ struct WelcomeStepView: View {
                 Text("onboarding_welcome_cta")
                     .frame(maxWidth: .infinity)
             }
-            .buttonStyle(.borderedProminent)
-            .controlSize(.large)
+            .buttonStyle(PrimaryButtonStyle())
         }
-        .padding(24)
+        .padding(AppTheme.Spacing.xl)
+        .background(AppBackground())
     }
 }

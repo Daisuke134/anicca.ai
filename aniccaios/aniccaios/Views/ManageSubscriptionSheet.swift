@@ -59,6 +59,8 @@ struct ManageSubscriptionSheet: View {
                     }
                 }
             }
+            .tint(AppTheme.Colors.accent)
+            .background(AppBackground())
         }
         .task {
             await loadOffering()

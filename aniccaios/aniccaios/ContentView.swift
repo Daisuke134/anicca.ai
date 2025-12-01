@@ -11,18 +11,21 @@ struct ContentRouterView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        if !appState.isOnboardingComplete {
-            OnboardingFlowView()
-        } else {
-            switch appState.authStatus {
-            case .signedOut:
+        Group {
+            if !appState.isOnboardingComplete {
                 OnboardingFlowView()
-            case .signingIn:
-                AuthenticationProcessingView()
-            case .signedIn:
-                MainTabView()
+            } else {
+                switch appState.authStatus {
+                case .signedOut:
+                    OnboardingFlowView()
+                case .signingIn:
+                    AuthenticationProcessingView()
+                case .signedIn:
+                    MainTabView()
+                }
             }
         }
+        .background(AppBackground())
     }
 }
 

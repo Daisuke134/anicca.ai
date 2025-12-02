@@ -204,8 +204,6 @@ struct HabitSetupStepView: View {
             .labelsHidden()
         }
         .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
         .contentShape(Rectangle())
         .onTapGesture {
             // 選択状態に関わらずタップで時間設定シートを開く
@@ -248,8 +246,6 @@ struct HabitSetupStepView: View {
             .labelsHidden()
         }
         .padding()
-        .background(Color(.systemGray6))
-        .cornerRadius(12)
         .contentShape(Rectangle())
         .onTapGesture {
             sheetTime = customHabitTimes[customHabit.id] ?? Date()

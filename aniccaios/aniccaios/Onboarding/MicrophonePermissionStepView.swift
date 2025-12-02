@@ -58,7 +58,9 @@ struct MicrophonePermissionStepView: View {
             updatePermissionSnapshot()
             // 既に許可されている場合はUIで明示しつつ、自動遷移は保持
             if micGranted {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { next() }
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                    withAnimation(.easeInOut(duration: 0.35)) { next() }
+                }
             }
         }
     }
@@ -84,7 +86,7 @@ struct MicrophonePermissionStepView: View {
             self.isRequesting = false
             // 許可/拒否に関わらず必ず次へ（5.1.1対策: プリプロンプト後はOSダイアログに必ず進ませる）
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                next()
+                withAnimation(.easeInOut(duration: 0.35)) { next() }
             }
         }
     }

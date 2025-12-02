@@ -66,7 +66,7 @@ struct NotificationPermissionStepView: View {
                 isRequesting = false
                 // 許可/拒否に関わらず必ず次へ（5.1.1対策: プリプロンプト後はOSダイアログに必ず進ませる）
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    next()
+                    withAnimation(.easeInOut(duration: 0.35)) { next() }
                 }
             }
             await refreshAuthorizationState(autoAdvance: false)
@@ -76,14 +76,16 @@ struct NotificationPermissionStepView: View {
     private func refreshAuthorizationState(autoAdvance: Bool) async {
         let settings = await UNUserNotificationCenter.current().notificationSettings()
         await MainActor.run {
-            notificationGranted = settings.authorizationStatus == .authorized
+            let authorized = settings.authorizationStatus == .authorized
                 || settings.authorizationStatus == .provisional
                 || settings.authorizationStatus == .ephemeral
+            let timeSensitiveOk = settings.timeSensitiveSetting != .disabled
+            notificationGranted = authorized && timeSensitiveOk
             notificationDenied = settings.authorizationStatus == .denied
 
             if autoAdvance, notificationGranted {
                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    next()
+                    withAnimation(.easeInOut(duration: 0.35)) { next() }
                 }
             }
         }

@@ -110,25 +110,35 @@ struct SettingsView: View {
                     // Sign out
                     // --------------------------
                     CardView {
-                        Button(String(localized: "common_sign_out")) {
-                            appState.signOutAndWipe()
-                            dismiss()
+                        HStack {
+                            Text(String(localized: "common_sign_out"))
+                                .foregroundStyle(AppTheme.Colors.label)
+                            Spacer()
                         }
-                        .foregroundStyle(AppTheme.Colors.label)
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        appState.signOutAndWipe()
+                        dismiss()
+                    }
+                    .accessibilityAddTraits(.isButton)
 
                     // --------------------------
                     // Delete account
                     // --------------------------
                     CardView {
-                        Button(role: .destructive) {
-                            isShowingDeleteAlert = true
-                        } label: {
+                        HStack {
                             Text(String(localized: "settings_delete_account"))
+                            Spacer()
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                     }
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        isShowingDeleteAlert = true
+                    }
+                    .accessibilityAddTraits(.isButton)
 
                 }
                 .padding(.horizontal, AppTheme.Spacing.lg)

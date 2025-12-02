@@ -207,8 +207,11 @@ struct HabitsSectionView: View {
                             }
                         }
                     }
+                    .scrollContentBackground(.hidden)
                     .navigationTitle(String(localized: "habit_add_custom"))
                     .navigationBarTitleDisplayMode(.inline)
+                    .background(AppBackground())
+                    .tint(AppTheme.Colors.accent)
                 }
             case .editor(let habit):
                 HabitEditSheet(habit: habit, onSave: {
@@ -409,6 +412,8 @@ struct HabitsSectionView: View {
                 }
             }
         }
+        .background(AppBackground())
+        .tint(AppTheme.Colors.accent)
     }
     
     @ViewBuilder
@@ -451,6 +456,8 @@ struct HabitsSectionView: View {
                 }
             }
         }
+        .background(AppBackground())
+        .tint(AppTheme.Colors.accent)
     }
     
     private func addCustomHabit() {

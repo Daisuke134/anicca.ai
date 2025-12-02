@@ -161,8 +161,11 @@ struct HabitSetupStepView: View {
                         }
                     }
                 }
+                .scrollContentBackground(.hidden)
                 .navigationTitle("habit_add_custom")
                 .navigationBarTitleDisplayMode(.inline)
+                .background(AppBackground())
+                .tint(AppTheme.Colors.accent)
             }
         }
     }
@@ -299,6 +302,8 @@ struct HabitSetupStepView: View {
                 }
             }
         }
+        .background(AppBackground())
+        .tint(AppTheme.Colors.accent)
     }
 
     @ViewBuilder
@@ -338,6 +343,8 @@ struct HabitSetupStepView: View {
                 }
             }
         }
+        .background(AppBackground())
+        .tint(AppTheme.Colors.accent)
     }
 
     private var canSave: Bool {

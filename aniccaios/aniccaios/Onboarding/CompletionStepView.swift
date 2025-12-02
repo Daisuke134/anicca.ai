@@ -14,12 +14,15 @@ struct CompletionStepView: View {
                 .padding(.top, 40)
             
             Text("onboarding_completion_title")
-                .font(AppTheme.Typography.appTitle)
+                .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .allowsTightening(true)
                 .foregroundStyle(AppTheme.Colors.label)
             
             if let nextSchedule = appState.getNextHabitSchedule() {
-                Text(String(format: NSLocalizedString("onboarding_completion_next_format", comment: ""), nextSchedule.message))
+                Text(nextSchedule.message)
                     .font(.headline)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)

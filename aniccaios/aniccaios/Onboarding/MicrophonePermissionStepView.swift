@@ -16,8 +16,11 @@ struct MicrophonePermissionStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("onboarding_microphone_title")
-                .font(AppTheme.Typography.appTitle)
+                .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .allowsTightening(true)
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
 

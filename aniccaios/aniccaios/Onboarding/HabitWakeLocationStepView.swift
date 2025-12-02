@@ -10,8 +10,11 @@ struct HabitWakeLocationStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text("onboarding_habit_wake_location_title")
-                .font(AppTheme.Typography.appTitle)
+                .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .allowsTightening(true)
                 .foregroundStyle(AppTheme.Colors.label)
 
             Text("onboarding_habit_wake_location_description")

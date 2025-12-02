@@ -29,7 +29,7 @@
 "onboarding_microphone_description" = "Aniccaは起床コールや習慣リマインダーのためにマイクを使いますが、許可しなくても続行できます。必要になったら設定アプリからいつでもオンにできます。";
 "onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→Aniccaでマイクをオンにし直してください。";
 
-"onboarding_notifications_title" = "時限アラート";
+"onboarding_notifications_title" = "通知アラート";
 "onboarding_notifications_card_title" = "通知アクセス";
 "onboarding_notifications_description" = "通知は習慣（起床・トレーニング・就寝）を思い出させるために便利ですが、必須ではありません。端末がサイレントでも動作します。";
 "onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→Aniccaからいつでも通知をオンにできます。";

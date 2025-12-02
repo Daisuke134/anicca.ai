@@ -6,8 +6,11 @@ struct WelcomeStepView: View {
     var body: some View {
         VStack(spacing: 32) {
             Text("onboarding_welcome_title")
-                .font(AppTheme.Typography.appTitle)
+                .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+                .allowsTightening(true)
                 .foregroundStyle(AppTheme.Colors.label)
 
             Text("onboarding_welcome_subtitle")

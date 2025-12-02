@@ -55,6 +55,9 @@ enum AppTheme {
     }
     
     enum Typography {
+        // オンボーディングの見出しを全画面で統一（1行収まる最大サイズ想定）
+        static let onboardingTitle: Font = .system(size: 36, weight: .heavy)
+        
         static let appTitleDynamic: Font = .largeTitle
         static let title2Dynamic: Font = .title2
         static let headlineDynamic: Font = .headline

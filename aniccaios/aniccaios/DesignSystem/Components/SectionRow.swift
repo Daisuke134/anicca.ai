@@ -1,8 +1,13 @@
 import SwiftUI
 
-struct SectionRow<Content: View>: View {
+struct SectionRow: View {
     let label: String
-    @ViewBuilder let content: () -> Content
+    private let content: AnyView
+
+    init(label: String, @ViewBuilder content: () -> some View) {
+        self.label = label
+        self.content = AnyView(content())
+    }
 
     var body: some View {
         HStack {
@@ -11,7 +16,7 @@ struct SectionRow<Content: View>: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
-            content()
+            content
         }
         .padding(.vertical, AppTheme.Spacing.sm)
     }
@@ -48,10 +53,10 @@ extension SectionRow {
         }
     }
 
-    static func picker<SelectionValue: Hashable>(
+    static func picker<SelectionValue: Hashable, Options: View>(
         label: String,
         selection: Binding<SelectionValue>,
-        @ViewBuilder content: () -> some View
+        @ViewBuilder content: () -> Options
     ) -> some View {
         SectionRow(label: label) {
             Picker("", selection: selection, content: content)

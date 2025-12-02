@@ -82,7 +82,7 @@
 "habit_custom_name_placeholder" = "Add your habit";
 "habit_custom_name_required" = "Please enter a habit name.";
 
-"next_schedule_message" = "%@ I'll nudge you for %@";
+"next_schedule_message" = "I'll nudge you for %2$@ at %1$@";
 "next_schedule_habit_wake" = "wake-up";
 "next_schedule_habit_training" = "training";
 "next_schedule_habit_bedtime" = "sleep";

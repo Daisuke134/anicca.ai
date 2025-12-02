@@ -532,6 +532,9 @@ struct HabitEditSheet: View {
                     EmptyView()
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppBackground())
+            .tint(AppTheme.Colors.accent)
             .navigationTitle(habit.title)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -749,6 +752,9 @@ struct CustomHabitEditSheet: View {
                         .foregroundStyle(.secondary)
                 }
             }
+            .scrollContentBackground(.hidden)
+            .background(AppBackground())
+            .tint(AppTheme.Colors.accent)
             .navigationTitle(appState.customHabits.first(where: { $0.id == customId })?.name ?? String(localized: "habit_title_custom_fallback"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

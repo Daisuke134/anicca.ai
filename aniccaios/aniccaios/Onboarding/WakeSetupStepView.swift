@@ -47,6 +47,8 @@ struct WakeSetupStepView: View {
             Spacer()
         }
         .padding(24)
+        .background(AppBackground())
+        .tint(AppTheme.Colors.accent)
         .onAppear(perform: preload)
     }
 

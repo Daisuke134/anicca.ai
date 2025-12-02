@@ -112,7 +112,7 @@ struct SettingsView: View {
                     CardView {
                         HStack {
                             Text(String(localized: "common_sign_out"))
-                                .foregroundStyle(AppTheme.Colors.label)
+                                .foregroundStyle(.red)
                             Spacer()
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -130,6 +130,7 @@ struct SettingsView: View {
                     CardView {
                         HStack {
                             Text(String(localized: "settings_delete_account"))
+                                .foregroundStyle(.red)
                             Spacer()
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)

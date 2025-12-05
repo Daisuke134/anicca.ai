@@ -14,7 +14,7 @@ export async function getProfile(deviceId) {
       `SELECT mp.profile, mp.language, mp.user_id, mp.updated_at, 
               COALESCE(us.language, 'en') as user_settings_language
        FROM mobile_profiles mp
-       LEFT JOIN user_settings us ON mp.user_id = us.user_id
+       LEFT JOIN user_settings us ON mp.user_id::uuid = us.user_id
        WHERE mp.device_id = $1`,
       [deviceId]
     );
@@ -65,7 +65,7 @@ export async function upsertProfile({ deviceId, userId, profile, language }) {
     if (language && (language === 'ja' || language === 'en')) {
       await query(
         `INSERT INTO user_settings (user_id, language, updated_at)
-         VALUES ($1, $2, NOW())
+         VALUES ($1::uuid, $2, NOW())
          ON CONFLICT (user_id)
          DO UPDATE SET
            language = EXCLUDED.language,
@@ -94,7 +94,7 @@ export async function getProfileByUserId(userId) {
               mp.updated_at,
               COALESCE(us.language, 'en') AS user_settings_language
        FROM mobile_profiles mp
-       LEFT JOIN user_settings us ON mp.user_id = us.user_id
+       LEFT JOIN user_settings us ON mp.user_id::uuid = us.user_id
        WHERE mp.user_id = $1
        ORDER BY mp.updated_at DESC
        LIMIT 1`,

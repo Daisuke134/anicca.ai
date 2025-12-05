@@ -142,6 +142,13 @@ struct HabitPromptBuilder {
             replacements["IDEAL_TRAITS"] = ""
         }
         
+        if !profile.problems.isEmpty {
+            let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
+            replacements["PROBLEMS"] = "今抱えている問題: " + localizedProblems.joined(separator: "、")
+        } else {
+            replacements["PROBLEMS"] = ""
+        }
+        
         // Perform replacements
         var result = template
         for (key, value) in replacements {

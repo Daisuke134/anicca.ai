@@ -7,3 +7,6 @@
 /* Notification permission description */
 "NSUserNotificationsUsageDescription" = "Aniccaは起床コールやルーティンの開始時刻をリマインドするために通知を使用します。";
 
+/* AlarmKit permission description */
+"NSAlarmKitUsageDescription" = "Aniccaは、習慣のリマインダーをフルスクリーンアラームとして表示し、確実に行動を促すために使用します。";
+

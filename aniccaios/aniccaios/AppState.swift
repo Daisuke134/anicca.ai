@@ -67,8 +67,9 @@ final class AppState: ObservableObject {
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
-
+    
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
+    private var pendingConsultPrompt: String?
 
     private init() {
         // Initialize all properties first
@@ -251,6 +252,13 @@ final class AppState: ObservableObject {
     }
 
     private func saveHabitSchedules() {
+        let encoded = serializedHabitSchedulesForSync()
+        if let data = try? JSONEncoder().encode(encoded) {
+            defaults.set(data, forKey: habitSchedulesKey)
+        }
+    }
+    
+    private func serializedHabitSchedulesForSync() -> [String: [String: Int]] {
         var encoded: [String: [String: Int]] = [:]
         for (habit, components) in habitSchedules {
             encoded[habit.rawValue] = [
@@ -258,9 +266,7 @@ final class AppState: ObservableObject {
                 "minute": components.minute ?? 0
             ]
         }
-        if let data = try? JSONEncoder().encode(encoded) {
-            defaults.set(data, forKey: habitSchedulesKey)
-        }
+        return encoded
     }
 
     func markOnboardingComplete() {
@@ -289,6 +295,7 @@ final class AppState: ObservableObject {
 
     // New habit-aware methods
     func prepareForImmediateSession(habit: HabitType) {
+        pendingConsultPrompt = nil
         let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
@@ -297,9 +304,23 @@ final class AppState: ObservableObject {
     }
 
     func handleHabitTrigger(_ habit: HabitType) {
+        pendingConsultPrompt = nil
         let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
+    }
+    
+    func prepareConsultSessionPrompt() {
+        let base = promptBuilder.buildPrompt(for: .custom, scheduledTime: nil, now: Date(), profile: userProfile)
+        let directive = """
+
+追加指示:
+- これは相談モード。ユーザーが望む言語(${LANGUAGE_LINE})のみで一貫して話すこと。
+- ${PROBLEMS} や ${IDEAL_TRAITS} がある場合は、必ず前提にした寄り添いと行動提案を続けること。
+- 起床用の強いトーンではなく、安心と伴走を重視すること。
+"""
+        pendingHabitPrompt = nil
+        pendingConsultPrompt = base + directive
     }
 
     func consumePendingPrompt() -> String? {
@@ -307,10 +328,17 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         return prompt
     }
+    
+    func consumePendingConsultPrompt() -> String? {
+        let prompt = pendingConsultPrompt
+        pendingConsultPrompt = nil
+        return prompt
+    }
 
     func clearPendingHabitTrigger() {
         pendingHabitTrigger = nil
         pendingHabitPrompt = nil
+        pendingConsultPrompt = nil
         shouldStartSessionImmediately = false
     }
 
@@ -320,6 +348,7 @@ final class AppState: ObservableObject {
         isOnboardingComplete = false
         pendingHabitTrigger = nil
         pendingHabitPrompt = nil
+        pendingConsultPrompt = nil
         onboardingStep = .welcome
         userProfile = UserProfile()
         subscriptionInfo = .free
@@ -388,6 +417,7 @@ final class AppState: ObservableObject {
         customHabitSchedules = [:]
         pendingHabitTrigger = nil
         pendingHabitPrompt = nil
+        pendingConsultPrompt = nil
         cachedOffering = nil
         
         // オンボーディング状態をリセット
@@ -431,8 +461,18 @@ final class AppState: ObservableObject {
     // MARK: - User Profile
     
     func updateUserProfile(_ profile: UserProfile, sync: Bool = true) {
+        let previousProfile = userProfile
         userProfile = profile
         saveUserProfile()
+        
+        // AlarmKit設定が変更された場合、通知を再スケジュール
+        if previousProfile.useAlarmKitForWake != profile.useAlarmKitForWake ||
+            previousProfile.useAlarmKitForTraining != profile.useAlarmKitForTraining ||
+            previousProfile.useAlarmKitForBedtime != profile.useAlarmKitForBedtime ||
+            previousProfile.useAlarmKitForCustom != profile.useAlarmKitForCustom ||
+            previousProfile.preferredLanguage != profile.preferredLanguage {
+            Task { await scheduler.applySchedules(habitSchedules) }
+        }
         
         if sync {
             Task {
@@ -444,6 +484,56 @@ final class AppState: ObservableObject {
     private func saveUserProfile() {
         if let data = try? JSONEncoder().encode(userProfile) {
             defaults.set(data, forKey: userProfileKey)
+        }
+    }
+    
+    func profileSyncPayload(for profile: UserProfile) -> [String: Any] {
+        var payload: [String: Any] = [
+            "displayName": profile.displayName,
+            "preferredLanguage": profile.preferredLanguage.rawValue,
+            "sleepLocation": profile.sleepLocation,
+            "trainingFocus": profile.trainingFocus,
+            "wakeLocation": profile.wakeLocation,
+            "wakeRoutines": profile.wakeRoutines,
+            "sleepRoutines": profile.sleepRoutines,
+            "trainingGoal": profile.trainingGoal,
+            "idealTraits": profile.idealTraits,
+            "problems": profile.problems,
+            "useAlarmKitForWake": profile.useAlarmKitForWake,
+            "useAlarmKitForTraining": profile.useAlarmKitForTraining,
+            "useAlarmKitForBedtime": profile.useAlarmKitForBedtime,
+            "useAlarmKitForCustom": profile.useAlarmKitForCustom,
+            "stickyModeEnabled": profile.stickyModeEnabled
+        ]
+        
+        payload["habitSchedules"] = serializedHabitSchedulesForSync()
+        payload["habitFollowupCounts"] = habitFollowupCounts.mapKeys { $0.rawValue }
+        payload["customHabits"] = customHabits.map { ["id": $0.id.uuidString, "name": $0.name, "updatedAt": $0.updatedAt.timeIntervalSince1970] }
+        payload["customHabitSchedules"] = serializedCustomHabitSchedulesForSync()
+        payload["customHabitFollowupCounts"] = customHabitFollowupCounts.mapKeys { $0.uuidString }
+        
+        return payload
+    }
+    
+    func bootstrapProfileFromServerIfAvailable() async {
+        guard case .signedIn(let credentials) = authStatus else { return }
+        
+        var request = URLRequest(url: AppConfig.profileSyncURL)
+        request.httpMethod = "GET"
+        request.setValue(resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        
+        do {
+            let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode) else {
+                return
+            }
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return
+            }
+            applyRemoteProfilePayload(json)
+        } catch {
+            // ネットワークがない場合などは無視してローカル状態を継続
         }
     }
     
@@ -739,19 +829,153 @@ final class AppState: ObservableObject {
     
     private func saveCustomHabitSchedules() {
         // UUID と DateComponents を String と [String: Int] に変換して保存
-        let stringKeyed: [String: [String: Int]] = customHabitSchedules.mapKeys { $0.uuidString }
-            .mapValues { components in
-                [
-                    "hour": components.hour ?? 0,
-                    "minute": components.minute ?? 0
-                ]
-            }
+        let stringKeyed = serializedCustomHabitSchedulesForSync()
         do {
             let data = try JSONEncoder().encode(stringKeyed)
             defaults.set(data, forKey: customHabitSchedulesKey)
             // UserDefaults.synchronize() は削除（iOSでは自動同期されるため非推奨）
         } catch {
             print("[AppState] Failed to encode custom habit schedules: \(error)")
+        }
+    }
+    
+    private func serializedCustomHabitSchedulesForSync() -> [String: [String: Int]] {
+        customHabitSchedules.mapKeys { $0.uuidString }
+            .mapValues { components in
+                [
+                    "hour": components.hour ?? 0,
+                    "minute": components.minute ?? 0
+                ]
+            }
+    }
+    
+    private func decodeHabitSchedules(from payload: [String: [String: Int]]) -> [HabitType: DateComponents] {
+        var schedules: [HabitType: DateComponents] = [:]
+        for (key, value) in payload {
+            guard let habit = HabitType(rawValue: key) else { continue }
+            schedules[habit] = decodeComponents(from: value)
+        }
+        return schedules
+    }
+    
+    private func decodeComponents(from payload: [String: Int]) -> DateComponents {
+        var components = DateComponents()
+        components.hour = payload["hour"]
+        components.minute = payload["minute"]
+        components.second = 0
+        return components
+    }
+    
+    private func applyRemoteProfilePayload(_ payload: [String: Any]) {
+        var profile = userProfile
+        if let name = payload["displayName"] as? String {
+            profile.displayName = name
+        }
+        if let preferredLanguage = payload["preferredLanguage"] as? String,
+           let language = LanguagePreference(rawValue: preferredLanguage) {
+            profile.preferredLanguage = language
+        }
+        if let sleepLocation = payload["sleepLocation"] as? String {
+            profile.sleepLocation = sleepLocation
+        }
+        if let trainingFocus = payload["trainingFocus"] as? [String] {
+            profile.trainingFocus = trainingFocus
+        }
+        if let wakeLocation = payload["wakeLocation"] as? String {
+            profile.wakeLocation = wakeLocation
+        }
+        if let wakeRoutines = payload["wakeRoutines"] as? [String] {
+            profile.wakeRoutines = wakeRoutines
+        }
+        if let sleepRoutines = payload["sleepRoutines"] as? [String] {
+            profile.sleepRoutines = sleepRoutines
+        }
+        if let trainingGoal = payload["trainingGoal"] as? String {
+            profile.trainingGoal = trainingGoal
+        }
+        if let idealTraits = payload["idealTraits"] as? [String] {
+            profile.idealTraits = idealTraits
+        }
+        if let problems = payload["problems"] as? [String] {
+            profile.problems = problems
+        }
+        // AlarmKit設定（各習慣ごと）
+        if let useAlarmKit = payload["useAlarmKitForWake"] as? Bool {
+            profile.useAlarmKitForWake = useAlarmKit
+        }
+        if let useAlarmKitTraining = payload["useAlarmKitForTraining"] as? Bool {
+            profile.useAlarmKitForTraining = useAlarmKitTraining
+        }
+        if let useAlarmKitBedtime = payload["useAlarmKitForBedtime"] as? Bool {
+            profile.useAlarmKitForBedtime = useAlarmKitBedtime
+        }
+        if let useAlarmKitCustom = payload["useAlarmKitForCustom"] as? Bool {
+            profile.useAlarmKitForCustom = useAlarmKitCustom
+        }
+        // Stickyモード（後方互換: wakeStickyModeEnabled も読み取る）
+        if let sticky = payload["stickyModeEnabled"] as? Bool {
+            profile.stickyModeEnabled = sticky
+        } else if let oldSticky = payload["wakeStickyModeEnabled"] as? Bool {
+            profile.stickyModeEnabled = oldSticky
+        }
+        updateUserProfile(profile, sync: false)
+        
+        if let schedules = payload["habitSchedules"] as? [String: [String: Int]] {
+            habitSchedules = decodeHabitSchedules(from: schedules)
+            saveHabitSchedules()
+            Task { await scheduler.applySchedules(habitSchedules) }
+        }
+        
+        if let followups = payload["habitFollowupCounts"] as? [String: Int] {
+            habitFollowupCounts = followups.compactMapKeys { HabitType(rawValue: $0) }
+                .mapValues { bounded($0) }
+            saveFollowupCounts()
+            Task { await scheduler.applySchedules(habitSchedules) }
+        }
+        
+        if let customHabitsPayload = payload["customHabits"] as? [[String: Any]] {
+            let configs = customHabitsPayload.compactMap { entry -> CustomHabitConfiguration? in
+                guard let idString = entry["id"] as? String,
+                      let uuid = UUID(uuidString: idString),
+                      let name = entry["name"] as? String else {
+                    return nil
+                }
+                let updatedAt: Date
+                if let ts = entry["updatedAt"] as? TimeInterval {
+                    updatedAt = Date(timeIntervalSince1970: ts)
+                } else {
+                    updatedAt = Date()
+                }
+                return CustomHabitConfiguration(id: uuid, name: name, updatedAt: updatedAt)
+            }
+            if !configs.isEmpty {
+                customHabits = configs
+                CustomHabitStore.shared.saveAll(configs)
+                customHabit = configs.first
+            }
+        }
+        
+        if let customSchedulesPayload = payload["customHabitSchedules"] as? [String: [String: Int]] {
+            customHabitSchedules = customSchedulesPayload.compactMapKeys { UUID(uuidString: $0) }
+                .mapValues { decodeComponents(from: $0) }
+            saveCustomHabitSchedules()
+            Task { await applyCustomSchedulesToScheduler() }
+        }
+        
+        if let customFollowups = payload["customHabitFollowupCounts"] as? [String: Int] {
+            customHabitFollowupCounts = customFollowups.compactMapKeys { UUID(uuidString: $0) }
+                .mapValues { bounded($0) }
+            saveCustomFollowupCounts()
+            Task { await applyCustomSchedulesToScheduler() }
+        }
+        
+        // サーバーにデータがあれば、オンボーディングを完全にスキップしてメイン画面へ直行
+        if !habitSchedules.isEmpty && !isOnboardingComplete {
+            isOnboardingComplete = true
+            defaults.set(true, forKey: onboardingKey)
+            // .completion ではなく、onboardingStepKeyを削除してメイン画面へ直行
+            defaults.removeObject(forKey: onboardingStepKey)
+            // Note: ContentView は isOnboardingComplete == true でメイン画面を表示
         }
     }
     

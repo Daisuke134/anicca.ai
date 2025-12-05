@@ -11,3 +11,6 @@ INFOPLIST_KEY_REVENUECAT_CUSTOMER_CENTER_ID = $(REVENUECAT_CUSTOMER_CENTER_ID)
 RESET_ON_LAUNCH = YES
 INFOPLIST_KEY_RESET_ON_LAUNCH = $(RESET_ON_LAUNCH)
 
+// AlarmKit Usage Description (iOS 26+)
+INFOPLIST_KEY_NSAlarmKitUsageDescription = Aniccaは、習慣のリマインダーをフルスクリーンアラームとして表示し、確実に行動を促すために使用します。
+

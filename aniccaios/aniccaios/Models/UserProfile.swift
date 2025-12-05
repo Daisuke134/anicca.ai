@@ -34,6 +34,16 @@ struct UserProfile: Codable {
     var sleepRoutines: [String]
     var trainingGoal: String
     var idealTraits: [String]
+    var problems: [String]
+    
+    // AlarmKit設定（各習慣ごと）
+    var useAlarmKitForWake: Bool
+    var useAlarmKitForTraining: Bool
+    var useAlarmKitForBedtime: Bool
+    var useAlarmKitForCustom: Bool
+    
+    // Stickyモード（全習慣共通）
+    var stickyModeEnabled: Bool
     
     init(
         displayName: String = "",
@@ -44,7 +54,13 @@ struct UserProfile: Codable {
         wakeRoutines: [String] = [],
         sleepRoutines: [String] = [],
         trainingGoal: String = "",
-        idealTraits: [String] = []
+        idealTraits: [String] = [],
+        problems: [String] = [],
+        useAlarmKitForWake: Bool = true,
+        useAlarmKitForTraining: Bool = true,
+        useAlarmKitForBedtime: Bool = true,
+        useAlarmKitForCustom: Bool = true,
+        stickyModeEnabled: Bool = true
     ) {
         self.displayName = displayName
         self.preferredLanguage = preferredLanguage
@@ -55,12 +71,21 @@ struct UserProfile: Codable {
         self.sleepRoutines = sleepRoutines
         self.trainingGoal = trainingGoal
         self.idealTraits = idealTraits
+        self.problems = problems
+        self.useAlarmKitForWake = useAlarmKitForWake
+        self.useAlarmKitForTraining = useAlarmKitForTraining
+        self.useAlarmKitForBedtime = useAlarmKitForBedtime
+        self.useAlarmKitForCustom = useAlarmKitForCustom
+        self.stickyModeEnabled = stickyModeEnabled
     }
     
     // 既存データとの互換性のためのカスタムデコーディング
     enum CodingKeys: String, CodingKey {
         case displayName, preferredLanguage, sleepLocation, trainingFocus
         case wakeLocation, wakeRoutines, sleepRoutines, trainingGoal, idealTraits
+        case problems
+        case useAlarmKitForWake, useAlarmKitForTraining, useAlarmKitForBedtime, useAlarmKitForCustom
+        case stickyModeEnabled, wakeStickyModeEnabled // 後方互換用
     }
     
     init(from decoder: Decoder) throws {
@@ -74,6 +99,42 @@ struct UserProfile: Codable {
         sleepRoutines = try container.decodeIfPresent([String].self, forKey: .sleepRoutines) ?? []
         trainingGoal = try container.decodeIfPresent(String.self, forKey: .trainingGoal) ?? ""
         idealTraits = try container.decodeIfPresent([String].self, forKey: .idealTraits) ?? []
+        problems = try container.decodeIfPresent([String].self, forKey: .problems) ?? []
+        
+        // AlarmKit設定（各習慣ごと）
+        useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? true
+        useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? true
+        useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? true
+        useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? true
+        
+        // Stickyモード（後方互換: wakeStickyModeEnabled も読み取る）
+        if let sticky = try container.decodeIfPresent(Bool.self, forKey: .stickyModeEnabled) {
+            stickyModeEnabled = sticky
+        } else if let oldSticky = try container.decodeIfPresent(Bool.self, forKey: .wakeStickyModeEnabled) {
+            stickyModeEnabled = oldSticky
+        } else {
+            stickyModeEnabled = true
+        }
+    }
+    
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(displayName, forKey: .displayName)
+        try container.encode(preferredLanguage, forKey: .preferredLanguage)
+        try container.encode(sleepLocation, forKey: .sleepLocation)
+        try container.encode(trainingFocus, forKey: .trainingFocus)
+        try container.encode(wakeLocation, forKey: .wakeLocation)
+        try container.encode(wakeRoutines, forKey: .wakeRoutines)
+        try container.encode(sleepRoutines, forKey: .sleepRoutines)
+        try container.encode(trainingGoal, forKey: .trainingGoal)
+        try container.encode(idealTraits, forKey: .idealTraits)
+        try container.encode(problems, forKey: .problems)
+        try container.encode(useAlarmKitForWake, forKey: .useAlarmKitForWake)
+        try container.encode(useAlarmKitForTraining, forKey: .useAlarmKitForTraining)
+        try container.encode(useAlarmKitForBedtime, forKey: .useAlarmKitForBedtime)
+        try container.encode(useAlarmKitForCustom, forKey: .useAlarmKitForCustom)
+        try container.encode(stickyModeEnabled, forKey: .stickyModeEnabled)
+        // wakeStickyModeEnabled は後方互換のデコード用のみなのでエンコードしない
     }
 }
 

@@ -77,12 +77,9 @@ actor ProfileSyncService {
         
         logger.debug("Syncing profile for device: \(deviceId), user: \(userId)")
         
-        let payload: [String: Any] = [
-            "displayName": profile.displayName,
-            "preferredLanguage": profile.preferredLanguage.rawValue,
-            "sleepLocation": profile.sleepLocation,
-            "trainingFocus": profile.trainingFocus
-        ]
+        let payload = await MainActor.run {
+            AppState.shared.profileSyncPayload(for: profile)
+        }
         
         request.httpBody = try JSONSerialization.data(withJSONObject: payload)
         

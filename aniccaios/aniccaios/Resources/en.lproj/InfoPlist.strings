@@ -7,3 +7,6 @@
 /* Notification permission description */
 "NSUserNotificationsUsageDescription" = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
 
+/* AlarmKit permission description */
+"NSAlarmKitUsageDescription" = "Anicca uses full-screen alarms to remind you of your habits and help you take action.";
+

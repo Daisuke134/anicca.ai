@@ -170,6 +170,7 @@ struct SessionView: View {
                         isShowingLimitModal = true
                         return
                     }
+                    appState.prepareConsultSessionPrompt()
                     ensureMicrophonePermissionAndStart()
                 }
             )

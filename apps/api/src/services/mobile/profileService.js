@@ -89,7 +89,15 @@ export async function upsertProfile({ deviceId, userId, profile, language }) {
 export async function getProfileByUserId(userId) {
   try {
     const result = await query(
-      'SELECT profile, language, updated_at FROM mobile_profiles WHERE user_id = $1 ORDER BY updated_at DESC LIMIT 1',
+      `SELECT mp.profile,
+              mp.language,
+              mp.updated_at,
+              COALESCE(us.language, 'en') AS user_settings_language
+       FROM mobile_profiles mp
+       LEFT JOIN user_settings us ON mp.user_id = us.user_id
+       WHERE mp.user_id = $1
+       ORDER BY mp.updated_at DESC
+       LIMIT 1`,
       [userId]
     );
     
@@ -101,6 +109,7 @@ export async function getProfileByUserId(userId) {
     return {
       profile: row.profile,
       language: row.language,
+      userSettingsLanguage: row.user_settings_language,
       updatedAt: row.updated_at
     };
   } catch (error) {

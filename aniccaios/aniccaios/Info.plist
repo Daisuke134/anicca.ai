@@ -42,6 +42,8 @@
 	<string>$(INFOPLIST_KEY_NSMicrophoneUsageDescription)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
+	<key>NSAlarmKitUsageDescription</key>
+	<string>$(INFOPLIST_KEY_NSAlarmKitUsageDescription)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
 	<key>UIBackgroundModes</key>

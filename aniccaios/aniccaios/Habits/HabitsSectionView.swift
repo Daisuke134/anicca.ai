@@ -507,6 +507,18 @@ struct HabitEditSheet: View {
                         .foregroundStyle(.secondary)
                 }
                 
+                // AlarmKit設定（iOS 26+ のみ）
+#if canImport(AlarmKit)
+                if #available(iOS 26.0, *) {
+                    Section(String(localized: "settings_alarmkit_section_title")) {
+                        alarmKitToggle
+                        Text(String(localized: "settings_alarmkit_description"))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+#endif
+                
                 // Follow-ups（習慣タイプ別）
                 switch habit {
                 case .wake:
@@ -560,6 +572,52 @@ struct HabitEditSheet: View {
             followups = appState.followupCount(for: habit)
         }
     }
+    
+    // AlarmKitトグル（習慣タイプに応じた設定）
+#if canImport(AlarmKit)
+    @available(iOS 26.0, *)
+    @ViewBuilder
+    private var alarmKitToggle: some View {
+        switch habit {
+        case .wake:
+            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
+                get: { appState.userProfile.useAlarmKitForWake },
+                set: { newValue in
+                    var profile = appState.userProfile
+                    profile.useAlarmKitForWake = newValue
+                    appState.updateUserProfile(profile, sync: true)
+                }
+            ))
+        case .training:
+            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
+                get: { appState.userProfile.useAlarmKitForTraining },
+                set: { newValue in
+                    var profile = appState.userProfile
+                    profile.useAlarmKitForTraining = newValue
+                    appState.updateUserProfile(profile, sync: true)
+                }
+            ))
+        case .bedtime:
+            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
+                get: { appState.userProfile.useAlarmKitForBedtime },
+                set: { newValue in
+                    var profile = appState.userProfile
+                    profile.useAlarmKitForBedtime = newValue
+                    appState.updateUserProfile(profile, sync: true)
+                }
+            ))
+        case .custom:
+            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
+                get: { appState.userProfile.useAlarmKitForCustom },
+                set: { newValue in
+                    var profile = appState.userProfile
+                    profile.useAlarmKitForCustom = newValue
+                    appState.updateUserProfile(profile, sync: true)
+                }
+            ))
+        }
+    }
+#endif
     
     // トレーニングセクション（目標＋種類選択を直接実装）
     @ViewBuilder

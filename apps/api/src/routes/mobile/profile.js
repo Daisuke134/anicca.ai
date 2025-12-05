@@ -1,6 +1,6 @@
 import express from 'express';
 import { z } from 'zod';
-import { getProfile, upsertProfile } from '../../services/mobile/profileService.js';
+import { getProfile, getProfileByUserId, upsertProfile } from '../../services/mobile/profileService.js';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
 
@@ -8,11 +8,40 @@ const router = express.Router();
 const logger = baseLogger.withContext('MobileProfile');
 
 // Validation schema
+const timeComponentSchema = z.object({
+  hour: z.number().int().min(0).max(23),
+  minute: z.number().int().min(0).max(59)
+});
+
 const profileSchema = z.object({
   displayName: z.string().optional(),
   preferredLanguage: z.enum(['ja', 'en']).optional(),
   sleepLocation: z.string().optional(),
-  trainingFocus: z.array(z.string()).optional()
+  trainingFocus: z.array(z.string()).optional(),
+  wakeLocation: z.string().optional(),
+  wakeRoutines: z.array(z.string()).optional(),
+  sleepRoutines: z.array(z.string()).optional(),
+  trainingGoal: z.string().optional(),
+  idealTraits: z.array(z.string()).optional(),
+  problems: z.array(z.string()).optional(),
+  // AlarmKit設定（各習慣ごと）
+  useAlarmKitForWake: z.boolean().optional(),
+  useAlarmKitForTraining: z.boolean().optional(),
+  useAlarmKitForBedtime: z.boolean().optional(),
+  useAlarmKitForCustom: z.boolean().optional(),
+  // Stickyモード（全習慣共通）
+  stickyModeEnabled: z.boolean().optional(),
+  // 後方互換用
+  wakeStickyModeEnabled: z.boolean().optional(),
+  habitSchedules: z.record(timeComponentSchema).optional(),
+  habitFollowupCounts: z.record(z.number().int()).optional(),
+  customHabits: z.array(z.object({
+    id: z.string(),
+    name: z.string(),
+    updatedAt: z.number().optional()
+  })).optional(),
+  customHabitSchedules: z.record(timeComponentSchema).optional(),
+  customHabitFollowupCounts: z.record(z.number().int()).optional()
 });
 
 /**
@@ -25,31 +54,64 @@ router.get('/', async (req, res) => {
   if (!userId) return;
   
   try {
-    const profileData = await getProfile(deviceId);
+    let profileData = await getProfileByUserId(userId);
+    if (!profileData) {
+      profileData = await getProfile(deviceId);
+    }
     
     if (!profileData) {
-      // Return default empty profile
       return res.json({
         displayName: '',
         preferredLanguage: 'en',
         sleepLocation: '',
-        trainingFocus: []
+        trainingFocus: [],
+        wakeLocation: '',
+        wakeRoutines: [],
+        sleepRoutines: [],
+        trainingGoal: '',
+        idealTraits: [],
+        problems: [],
+        useAlarmKitForWake: true,
+        useAlarmKitForTraining: true,
+        useAlarmKitForBedtime: true,
+        useAlarmKitForCustom: true,
+        stickyModeEnabled: true,
+        habitSchedules: {},
+        habitFollowupCounts: {},
+        customHabits: [],
+        customHabitSchedules: {},
+        customHabitFollowupCounts: {}
       });
     }
     
-    // Merge profile JSONB with defaults
-    // Priority: profile.preferredLanguage > mobile_profiles.language > user_settings.language > 'en'
     const profile = profileData.profile || {};
-    const preferredLanguage = profile.preferredLanguage || 
-                              profileData.language || 
-                              profileData.userSettingsLanguage || 
-                              'en';
+    const preferredLanguage = profile.preferredLanguage ||
+      profileData.language ||
+      profileData.userSettingsLanguage ||
+      'en';
     
     return res.json({
       displayName: profile.displayName || '',
-      preferredLanguage: preferredLanguage,
+      preferredLanguage,
       sleepLocation: profile.sleepLocation || '',
-      trainingFocus: profile.trainingFocus || []
+      trainingFocus: profile.trainingFocus || [],
+      wakeLocation: profile.wakeLocation || '',
+      wakeRoutines: profile.wakeRoutines || [],
+      sleepRoutines: profile.sleepRoutines || [],
+      trainingGoal: profile.trainingGoal || '',
+      idealTraits: profile.idealTraits || [],
+      problems: profile.problems || [],
+      useAlarmKitForWake: profile.useAlarmKitForWake ?? true,
+      useAlarmKitForTraining: profile.useAlarmKitForTraining ?? true,
+      useAlarmKitForBedtime: profile.useAlarmKitForBedtime ?? true,
+      useAlarmKitForCustom: profile.useAlarmKitForCustom ?? true,
+      // 後方互換: stickyModeEnabled を優先、なければ wakeStickyModeEnabled を使用
+      stickyModeEnabled: profile.stickyModeEnabled ?? profile.wakeStickyModeEnabled ?? true,
+      habitSchedules: profile.habitSchedules || {},
+      habitFollowupCounts: profile.habitFollowupCounts || {},
+      customHabits: profile.customHabits || [],
+      customHabitSchedules: profile.customHabitSchedules || {},
+      customHabitFollowupCounts: profile.customHabitFollowupCounts || {}
     });
   } catch (error) {
     logger.error('Failed to get profile', error);

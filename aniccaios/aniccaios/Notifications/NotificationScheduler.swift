@@ -1,6 +1,9 @@
 import Foundation
 import UserNotifications
 import OSLog
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 final class NotificationScheduler {
     static let shared = NotificationScheduler()
@@ -46,7 +49,13 @@ final class NotificationScheduler {
         do {
             // .timeSensitive は iOS 15 以降で非推奨。テスト済みのエンタイトルメント
             // (com.apple.developer.usernotifications.time-sensitive) を利用する。
-            return try await center.requestAuthorization(options: [.alert, .sound, .badge])
+            let notificationsGranted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+#if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                _ = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
+            }
+#endif
+            return notificationsGranted
         } catch {
             logger.error("Notification authorization error: \(error.localizedDescription, privacy: .public)")
             return false
@@ -105,6 +114,9 @@ final class NotificationScheduler {
         await removePending(withPrefix: "HABIT_")
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
+            if await scheduleWithAlarmKitIfNeeded(habit: habit, hour: hour, minute: minute) {
+                continue
+            }
             await scheduleMain(habit: habit, hour: hour, minute: minute)
             scheduleFollowupLoop(for: habit, baseComponents: components)
         }
@@ -115,6 +127,11 @@ final class NotificationScheduler {
             await removePending(withPrefix: mainPrefix(for: habit))
             await removePending(withPrefix: followPrefix(for: habit))
             await removeDelivered(withPrefix: followPrefix(for: habit))
+#if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                await AlarmKitHabitCoordinator.shared.cancelHabitAlarms(habit)
+            }
+#endif
         }
     }
 
@@ -208,6 +225,9 @@ final class NotificationScheduler {
     }
 
     private func wakeSound() -> UNNotificationSound {
+        if Bundle.main.url(forResource: "Defaul", withExtension: "mp3") != nil {
+            return UNNotificationSound(named: UNNotificationSoundName("Defaul.mp3"))
+        }
         if Bundle.main.url(forResource: "AniccaWake", withExtension: "caf") != nil {
             return UNNotificationSound(named: UNNotificationSoundName("AniccaWake.caf"))
         }
@@ -318,6 +338,44 @@ final class NotificationScheduler {
                 continuation.resume()
             }
         }
+    }
+    
+    private func shouldUseAlarmKit(for habit: HabitType) -> Bool {
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            let profile = AppState.shared.userProfile
+            switch habit {
+            case .wake:
+                return profile.useAlarmKitForWake
+            case .training:
+                return profile.useAlarmKitForTraining
+            case .bedtime:
+                return profile.useAlarmKitForBedtime
+            case .custom:
+                return profile.useAlarmKitForCustom
+            }
+        }
+#endif
+        return false
+    }
+    
+    private func scheduleWithAlarmKitIfNeeded(habit: HabitType, hour: Int, minute: Int) async -> Bool {
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            guard shouldUseAlarmKit(for: habit) else {
+                // AlarmKit無効の場合、既存のAlarmKitアラームをキャンセル
+                await AlarmKitHabitCoordinator.shared.cancelHabitAlarms(habit)
+                return false
+            }
+            let followups = repeatCount(for: habit)
+            let scheduled = await AlarmKitHabitCoordinator.shared.scheduleHabit(habit, hour: hour, minute: minute, followupCount: followups)
+            if !scheduled {
+                await AlarmKitHabitCoordinator.shared.cancelHabitAlarms(habit)
+            }
+            return scheduled
+        }
+#endif
+        return false
     }
     
     // MARK: - Custom Habit (UUID) support

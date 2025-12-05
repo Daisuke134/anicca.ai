@@ -165,6 +165,7 @@ final class AuthCoordinator {
                 await MainActor.run {
                     AppState.shared.updateUserCredentials(credentials)
                 }
+                await AppState.shared.bootstrapProfileFromServerIfAvailable()
                 
                 logger.info("Sign in successful for user: \(backendUserId, privacy: .public)")
             } else {

@@ -23,6 +23,15 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var lastServerSyncTime: Date?
     private var currentHabitType: HabitType?
     
+    // Sticky mode (applies to all habits when enabled)
+    private var stickyActive = false
+    private var stickyUserReplyCount = 0
+    private let stickyReleaseThreshold = 5
+    
+    private var isStickyEnabled: Bool {
+        AppState.shared.userProfile.stickyModeEnabled
+    }
+    
     private override init() {
         super.init()
     }
@@ -32,6 +41,14 @@ final class VoiceSessionController: NSObject, ObservableObject {
         setStatus(.connecting)
         // 現在の習慣タイプを設定（pendingHabitTriggerから取得）
         currentHabitType = AppState.shared.pendingHabitTrigger?.habit
+        // Stickyモードは全習慣に適用
+        if currentHabitType != nil && isStickyEnabled {
+            stickyActive = true
+            stickyUserReplyCount = 0
+        } else {
+            stickyActive = false
+            stickyUserReplyCount = 0
+        }
         Task { [weak self] in
             await self?.establishSession(resumeImmediately: shouldResumeImmediately)
         }
@@ -46,6 +63,15 @@ final class VoiceSessionController: NSObject, ObservableObject {
         // Prepare prompt for the habit
         AppState.shared.prepareForImmediateSession(habit: habit)
         
+        // Stickyモードは全習慣に適用
+        if isStickyEnabled {
+            stickyActive = true
+            stickyUserReplyCount = 0
+        } else {
+            stickyActive = false
+            stickyUserReplyCount = 0
+        }
+        
         Task { [weak self] in
             await self?.establishSession(resumeImmediately: true)
         }
@@ -54,6 +80,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
     func stop() {
         logger.debug("Stopping realtime session")
         currentHabitType = nil
+        stickyActive = false
+        stickyUserReplyCount = 0
         sessionTimeoutTask?.cancel()
         sessionTimeoutTask = nil
         usageTrackingTask?.cancel()
@@ -427,6 +455,12 @@ extension VoiceSessionController: RTCDataChannelDelegate {
     func dataChannel(_ dataChannel: RTCDataChannel, didReceiveMessageWith buffer: RTCDataBuffer) {
         guard let text = String(data: buffer.data, encoding: .utf8) else { return }
         logger.debug("Realtime event: \(text, privacy: .public)")
+        
+        guard let data = text.data(using: .utf8),
+              let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+            return
+        }
+        handleRealtimeEvent(json)
     }
 }
 
@@ -465,9 +499,15 @@ private extension VoiceSessionController {
         }
 
         var shouldTriggerHabitResponse = false
+        var instructions: String?
         if let prompt = AppState.shared.consumePendingPrompt() {
-            sessionPayload["instructions"] = prompt
+            instructions = prompt
             shouldTriggerHabitResponse = true   // habit プロンプト送信を記録
+        } else if let consultPrompt = AppState.shared.consumePendingConsultPrompt() {
+            instructions = consultPrompt
+        }
+        if let instructions {
+            sessionPayload["instructions"] = instructions
         }
 
         let update: [String: Any] = [
@@ -495,6 +535,32 @@ private extension VoiceSessionController {
         guard let channel = dataChannel, channel.readyState == .open else { return }
         guard let data = try? JSONSerialization.data(withJSONObject: ["type": "response.create"]) else { return }
         channel.sendData(RTCDataBuffer(data: data, isBinary: false))
+    }
+    
+    private func handleRealtimeEvent(_ event: [String: Any]) {
+        guard let type = event["type"] as? String else { return }
+        switch type {
+        case "conversation.item.completed":
+            guard stickyActive else { return }
+            if
+                let item = event["item"] as? [String: Any],
+                let role = item["role"] as? String,
+                role == "user"
+            {
+                self.stickyUserReplyCount += 1
+                logger.info("Sticky reply count: \(self.stickyUserReplyCount, privacy: .public)")
+                if self.stickyUserReplyCount >= stickyReleaseThreshold {
+                    stickyActive = false
+                    logger.info("Sticky released after \(self.stickyUserReplyCount, privacy: .public) replies")
+                }
+            }
+        case "response.completed":
+            if stickyActive {
+                sendWakeResponseCreate()
+            }
+        default:
+            break
+        }
     }
 }
 

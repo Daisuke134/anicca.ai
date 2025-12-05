@@ -61,6 +61,9 @@
 "followup_repeats_title" = "Reminder repeats";
 "followup_repeats_help" = "1–10 times.";
 "followup_times_unit" = "times";
+"settings_alarmkit_section_title" = "Alarm Display";
+"settings_alarmkit_toggle" = "Use full-screen alarm";
+"settings_alarmkit_description" = "When ON, a full-screen alarm will show even when iPhone is locked (iOS 26+)";
 
 "onboarding_completion_title" = "You're All Set!";
 "onboarding_completion_ready" = "Your habits are ready to go!";
@@ -116,6 +119,10 @@
 "settings_personalization_title" = "Personalization";
 "settings_name_label" = "Your name";
 "settings_name_placeholder" = "Enter your name";
+"settings_alarm_title" = "Alarm";
+"settings_sticky_mode_title" = "Sticky Mode";
+"settings_sticky_mode_description" = "When ON, Anicca keeps talking until you reply 5 times";
+"settings_problems_title" = "Current struggles";
 "settings_sleep_location_label" = "Sleep Location";
 "settings_sleep_location_placeholder" = "Third-floor bedroom";
 "settings_training_focus_label" = "Training Focus";
@@ -175,6 +182,10 @@
 "ideal_trait_disciplined" = "Disciplined";
 "ideal_trait_honest" = "Honest";
 "ideal_trait_calm" = "Calm";
+"problem_rumination" = "Rumination";
+"problem_jealousy" = "Jealousy";
+"problem_self_criticism" = "Self-criticism";
+"problem_anxiety" = "Anxiety";
 "settings_personalization" = "Personalization";
 "habit_add_custom" = "Add Habit";
 "habit_add_routine" = "Add Routine";

@@ -70,6 +70,8 @@ enum AppTheme {
         static let body: Font = .system(size: 40, weight: .regular)
         static let subheadline: Font = .system(size: 30, weight: .medium)
         static let footnote: Font = .footnote
+        static let caption1Dynamic: Font = .caption
+        static let caption2Dynamic: Font = .caption2
     }
 }
 

@@ -120,6 +120,9 @@
 - `StartConversationIntent`（AlarmKit が利用可能な場合のみビルド）。
 - `habitType` パラメータを `HabitType` に変換し、`AudioSessionCoordinator.configureForRealtime` → `AppState.prepareForImmediateSession` で音声セッションを準備。
 
+> **AlarmKit / Live Activity 注意:**  
+> 画面が点灯している状態でもアラームを Dynamic Island やバナーで表示させるには、アプリ本体の `Info.plist` で `NSSupportsLiveActivities` を `true` に設定しておく必要があります（widget extension 側の設定だけでは不足）。この設定がないと、ロック画面ではフルスクリーン表示されても、アンロック時は通知が出ずユーザーが気づけないため要確認。
+
 ## 13. 開発用オプション
 - `AppDelegate.application(_:didFinishLaunchingWithOptions:)` で `-resetOnLaunch` 引数が存在すれば UserDefaults をクリアし、`AppState.resetState` を実行。
 - 起動時に `ANICCA_PROXY_BASE_URL` をログ出力（Info.plist に必須）。

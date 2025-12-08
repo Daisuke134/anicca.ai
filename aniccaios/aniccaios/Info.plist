@@ -44,6 +44,10 @@
 	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSAlarmKitUsageDescription)</string>
+	<key>NSSupportsLiveActivities</key>
+	<true/>
+	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
+	<false/>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
 	<key>UIBackgroundModes</key>

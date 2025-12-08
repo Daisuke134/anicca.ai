@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>TraitsDetail</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		>
+		<link
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		>
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+		<style type="text/tailwindcss">
+		@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-font-sans: var(--font-sans);
+  --font-font-heading: var(--font-heading);
+  --font-font-serif: var(--font-serif);
+  --font-font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --tracking-normal: var(--tracking-normal);
+}
+
+		:root {
+			--background: #f8f5ed;
+			--foreground: #393634;
+			--primary: #222222;
+			--primary-foreground: #e1e1e1;
+			--secondary: #e9e6e0;
+			--secondary-foreground: #393634;
+			--muted: #e9e6e0;
+			--muted-foreground: #898783;
+			--accent: #f2f0ed;
+			--accent-foreground: #393634;
+			--destructive: #ef4444;
+			--card: #fdfcfc;
+			--card-foreground: #393634;
+			--popover: #fdfcfc;
+			--popover-foreground: #393634;
+			--border: #c8c6bf;
+			--input: #e9e6e0;
+			--ring: #222222;
+			--sidebar: #f8f5ed;
+			--sidebar-foreground: #393634;
+			--sidebar-primary: #222222;
+			--sidebar-primary-foreground: #e1e1e1;
+			--sidebar-accent: #e9e6e0;
+			--sidebar-accent-foreground: #393634;
+			--sidebar-border: #c8c6bf;
+			--sidebar-ring: #222222;
+			--chart-1: #393634;
+			--chart-2: #5c5956;
+			--chart-3: #898783;
+			--chart-4: #a8a6a1;
+			--chart-5: #c8c6bf;
+
+			--font-sans: "DM Sans";
+			--font-heading: "DM Sans";
+			--font-serif: "Playfair Display";
+			--font-mono: "JetBrains Mono";
+
+			--radius: 1.5rem;
+		}
+		</style>
+	</head>
+	<body>
+		<div
+			class="flex flex-col h-full bg-background font-sans text-foreground relative overflow-hidden"
+		>
+			<div class="h-12 w-full flex items-center justify-between px-6 pt-2">
+				<span class="text-sm font-bold">11:09</span>
+				<div class="flex items-center gap-1.5">
+					<iconify-icon icon="solar:signal-bold" class="size-4"></iconify-icon>
+					<iconify-icon icon="solar:battery-full-bold" class="size-6"></iconify-icon>
+				</div>
+			</div>
+			<div class="flex items-center justify-between px-4 py-3 mb-4">
+				<button class="flex items-center justify-center size-11">
+					<iconify-icon icon="solar:arrow-left-linear" class="size-6"></iconify-icon>
+				</button>
+				<h1 class="text-2xl font-bold font-heading text-foreground">Big Five Traits</h1>
+				<div class="size-11"/>
+			</div>
+			<div class="flex-1 overflow-y-auto px-4 pb-32 space-y-4">
+				<div class="bg-card rounded-3xl p-5 shadow-sm">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-base font-semibold text-foreground">Agreeableness</span><span
+							class="text-base font-bold text-foreground"
+							>82/100</span
+						>
+					</div>
+					<div class="w-full h-2 bg-secondary rounded-full overflow-hidden mb-3">
+						<div class="h-full bg-primary rounded-full" style="width: 82%"/>
+					</div>
+					<p class="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+						You are highly cooperative and value harmony with others. Your empathetic nature makes
+						you approachable and understanding in social situations.
+					</p>
+				</div>
+				<div class="bg-card rounded-3xl p-5 shadow-sm">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-base font-semibold text-foreground">Openness</span><span
+							class="text-base font-bold text-foreground"
+							>78/100</span
+						>
+					</div>
+					<div class="w-full h-2 bg-secondary rounded-full overflow-hidden mb-3">
+						<div class="h-full bg-primary rounded-full" style="width: 78%"/>
+					</div>
+					<p class="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+						You are strongly drawn to new ideas and experiences. Your curiosity drives you to
+						explore different perspectives and embrace creative thinking.
+					</p>
+				</div>
+				<div class="bg-card rounded-3xl p-5 shadow-sm">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-base font-semibold text-foreground">Conscientiousness</span><span
+							class="text-base font-bold text-foreground"
+							>65/100</span
+						>
+					</div>
+					<div class="w-full h-2 bg-secondary rounded-full overflow-hidden mb-3">
+						<div class="h-full bg-primary rounded-full" style="width: 65%"/>
+					</div>
+					<p class="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+						You balance structure with flexibility in your approach. While you appreciate
+						organization, you can also adapt when circumstances require it.
+					</p>
+				</div>
+				<div class="bg-card rounded-3xl p-5 shadow-sm">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-base font-semibold text-foreground">Emotional Stability</span><span
+							class="text-base font-bold text-foreground"
+							>58/100</span
+						>
+					</div>
+					<div class="w-full h-2 bg-secondary rounded-full overflow-hidden mb-3">
+						<div class="h-full bg-primary rounded-full" style="width: 58%"/>
+					</div>
+					<p class="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+						You manage stress reasonably well with occasional challenges. Your emotional responses
+						are generally balanced, though intense situations may affect you.
+					</p>
+				</div>
+				<div class="bg-card rounded-3xl p-5 shadow-sm">
+					<div class="flex items-center justify-between mb-3">
+						<span class="text-base font-semibold text-foreground">Extraversion</span><span
+							class="text-base font-bold text-foreground"
+							>52/100</span
+						>
+					</div>
+					<div class="w-full h-2 bg-secondary rounded-full overflow-hidden mb-3">
+						<div class="h-full bg-primary rounded-full" style="width: 52%"/>
+					</div>
+					<p class="text-sm text-muted-foreground leading-relaxed line-clamp-2">
+						You enjoy a mix of social interaction and alone time. You can be outgoing when needed
+						but also value quieter, more reflective moments.
+					</p>
+				</div>
+				<div class="mt-6 px-0">
+					<p class="text-xs text-muted-foreground text-center mb-4">
+						Want more accurate results? Take our comprehensive assessment.
+					</p>
+					<button
+						class="w-full py-3.5 px-4 bg-primary text-primary-foreground rounded-full font-semibold text-base active:scale-95 transition-transform"
+					>
+						Refine with a 10-question check
+					</button>
+				</div>
+			</div>
+			<div
+				class="fixed bottom-0 left-0 right-0 bg-card border-t border-border/20 safe-area-inset-bottom"
+			>
+				<div class="flex items-center justify-around px-4 py-2">
+					<button
+						class="flex flex-col items-center justify-center py-2 px-6 min-w-[44px] min-h-[44px] active:opacity-70 transition-opacity"
+					>
+						<iconify-icon
+							icon="solar:chat-round-dots-linear"
+							class="size-6 text-muted-foreground mb-1"
+						></iconify-icon>
+						<span class="text-[10px] font-medium text-muted-foreground">Talk</span>
+					</button>
+					<button
+						class="flex flex-col items-center justify-center py-2 px-6 min-w-[44px] min-h-[44px] active:opacity-70 transition-opacity"
+					>
+						<iconify-icon
+							icon="solar:graph-new-linear"
+							class="size-6 text-muted-foreground mb-1"
+						></iconify-icon>
+						<span class="text-[10px] font-medium text-muted-foreground">Behavior</span>
+					</button>
+					<button
+						class="flex flex-col items-center justify-center py-2 px-6 min-w-[44px] min-h-[44px] active:opacity-70 transition-opacity"
+					>
+						<iconify-icon icon="solar:user-bold" class="size-6 text-foreground mb-1"></iconify-icon>
+						<span class="text-[10px] font-semibold text-foreground">Profile</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

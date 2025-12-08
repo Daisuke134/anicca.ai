@@ -7,19 +7,56 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		840034502EE52C5200A2F44C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8400344F2EE52C5100A2F44C /* WidgetKit.framework */; };
+		840034522EE52C5200A2F44C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 840034512EE52C5200A2F44C /* SwiftUI.framework */; };
+		840034632EE52C5400A2F44C /* AniccaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		840BA3AA2EC772EA005CDB8D /* RevenueCat in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3A92EC772EA005CDB8D /* RevenueCat */; };
 		840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AB2EC772EA005CDB8D /* RevenueCatUI */; };
 		840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AE2EC77316005CDB8D /* ComponentsKit */; };
 		840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3B12EC77325005CDB8D /* WebRTC */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		840034612EE52C5400A2F44C /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8471AE732EB783E1002CECAA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8400344C2EE52C5100A2F44C;
+			remoteInfo = AniccaWidgetExtension;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXCopyFilesBuildPhase section */
+		8400346A2EE52C5400A2F44C /* Embed Foundation Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				840034632EE52C5400A2F44C /* AniccaWidgetExtension.appex in Embed Foundation Extensions */,
+			);
+			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXCopyFilesBuildPhase section */
+
 /* Begin PBXFileReference section */
+		8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		8400344F2EE52C5100A2F44C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
+		840034512EE52C5200A2F44C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
 		8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		840034692EE52C5400A2F44C /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */;
+		};
 		8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -30,6 +67,14 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
+		840034532EE52C5200A2F44C /* AniccaWidget */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				840034692EE52C5400A2F44C /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */,
+			);
+			path = AniccaWidget;
+			sourceTree = "<group>";
+		};
 		8471AE7D2EB783E1002CECAA /* aniccaios */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
@@ -41,6 +86,15 @@
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
+		8400344A2EE52C5100A2F44C /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				840034522EE52C5200A2F44C /* SwiftUI.framework in Frameworks */,
+				840034502EE52C5200A2F44C /* WidgetKit.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8471AE782EB783E1002CECAA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -55,10 +109,21 @@
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
+		8400344E2EE52C5100A2F44C /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				8400344F2EE52C5100A2F44C /* WidgetKit.framework */,
+				840034512EE52C5200A2F44C /* SwiftUI.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 		8471AE722EB783E1002CECAA = {
 			isa = PBXGroup;
 			children = (
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
+				840034532EE52C5200A2F44C /* AniccaWidget */,
+				8400344E2EE52C5100A2F44C /* Frameworks */,
 				8471AE7C2EB783E1002CECAA /* Products */,
 				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
 				8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */,
@@ -70,6 +135,7 @@
 			isa = PBXGroup;
 			children = (
 				8471AE7B2EB783E1002CECAA /* aniccaios.app */,
+				8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -84,6 +150,28 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 840034642EE52C5400A2F44C /* Build configuration list for PBXNativeTarget "AniccaWidgetExtension" */;
+			buildPhases = (
+				840034492EE52C5100A2F44C /* Sources */,
+				8400344A2EE52C5100A2F44C /* Frameworks */,
+				8400344B2EE52C5100A2F44C /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				840034532EE52C5200A2F44C /* AniccaWidget */,
+			);
+			name = AniccaWidgetExtension;
+			packageProductDependencies = (
+			);
+			productName = AniccaWidgetExtension;
+			productReference = 8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
 		8471AE7A2EB783E1002CECAA /* aniccaios */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8471AE862EB783E3002CECAA /* Build configuration list for PBXNativeTarget "aniccaios" */;
@@ -92,10 +180,12 @@
 				8471AE782EB783E1002CECAA /* Frameworks */,
 				8471AE792EB783E1002CECAA /* Resources */,
 				8471AE802EB783E1002CECAA /* Copy WebRTC dSYM */,
+				8400346A2EE52C5400A2F44C /* Embed Foundation Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				840034622EE52C5400A2F44C /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
@@ -121,6 +211,9 @@
 				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 2610;
 				TargetAttributes = {
+					8400344C2EE52C5100A2F44C = {
+						CreatedOnToolsVersion = 26.1.1;
+					};
 					8471AE7A2EB783E1002CECAA = {
 						CreatedOnToolsVersion = 26.1;
 					};
@@ -147,11 +240,19 @@
 			projectRoot = "";
 			targets = (
 				8471AE7A2EB783E1002CECAA /* aniccaios */,
+				8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		8400344B2EE52C5100A2F44C /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8471AE792EB783E1002CECAA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -184,6 +285,13 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		840034492EE52C5100A2F44C /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		8471AE772EB783E1002CECAA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -193,7 +301,147 @@
 		};
 /* End PBXSourcesBuildPhase section */
 
+/* Begin PBXTargetDependency section */
+		840034622EE52C5400A2F44C /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */;
+			targetProxy = 840034612EE52C5400A2F44C /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
 /* Begin XCBuildConfiguration section */
+		840034652EE52C5400A2F44C /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		840034662EE52C5400A2F44C /* staging Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Debug";
+		};
+		840034672EE52C5400A2F44C /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		840034682EE52C5400A2F44C /* staging Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				"CODE_SIGN_IDENTITY[sdk=iphoneos*]" = "iPhone Developer";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaWidget/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Release";
+		};
 		8471AE842EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
@@ -673,6 +921,17 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		840034642EE52C5400A2F44C /* Build configuration list for PBXNativeTarget "AniccaWidgetExtension" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				840034652EE52C5400A2F44C /* Debug */,
+				840034662EE52C5400A2F44C /* staging Debug */,
+				840034672EE52C5400A2F44C /* Release */,
+				840034682EE52C5400A2F44C /* staging Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		8471AE762EB783E1002CECAA /* Build configuration list for PBXProject "aniccaios" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

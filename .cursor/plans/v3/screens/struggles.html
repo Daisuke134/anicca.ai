@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Struggles</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		>
+		<link
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		>
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+		<style type="text/tailwindcss">
+		@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-font-sans: var(--font-sans);
+  --font-font-heading: var(--font-heading);
+  --font-font-serif: var(--font-serif);
+  --font-font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --tracking-normal: var(--tracking-normal);
+}
+
+		:root {
+			--background: #f8f5ed;
+			--foreground: #393634;
+			--primary: #222222;
+			--primary-foreground: #e1e1e1;
+			--secondary: #e9e6e0;
+			--secondary-foreground: #393634;
+			--muted: #e9e6e0;
+			--muted-foreground: #898783;
+			--accent: #f2f0ed;
+			--accent-foreground: #393634;
+			--destructive: #ef4444;
+			--card: #fdfcfc;
+			--card-foreground: #393634;
+			--popover: #fdfcfc;
+			--popover-foreground: #393634;
+			--border: #c8c6bf;
+			--input: #e9e6e0;
+			--ring: #222222;
+			--sidebar: #f8f5ed;
+			--sidebar-foreground: #393634;
+			--sidebar-primary: #222222;
+			--sidebar-primary-foreground: #e1e1e1;
+			--sidebar-accent: #e9e6e0;
+			--sidebar-accent-foreground: #393634;
+			--sidebar-border: #c8c6bf;
+			--sidebar-ring: #222222;
+			--chart-1: #393634;
+			--chart-2: #5c5956;
+			--chart-3: #898783;
+			--chart-4: #a8a6a1;
+			--chart-5: #c8c6bf;
+
+			--font-sans: "DM Sans";
+			--font-heading: "DM Sans";
+			--font-serif: "Playfair Display";
+			--font-mono: "JetBrains Mono";
+
+			--radius: 1.5rem;
+		}
+		</style>
+	</head>
+	<body>
+		<div class="flex flex-col h-full bg-background font-sans text-foreground">
+			<div class="flex-1 flex flex-col px-6 pt-16">
+				<div class="mb-8">
+					<h1
+						class="text-4xl font-bold font-heading tracking-tight text-foreground mb-3 text-center"
+					>
+						What are you struggling with now?
+					</h1>
+					<p class="text-foreground/70 text-base">Select all that apply.</p>
+				</div>
+				<div class="flex-1 flex items-start pt-6">
+					<div class="w-full space-y-3">
+						<div class="flex flex-wrap gap-3">
+							<button
+								class="px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Procrastination
+							</button>
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Anxiety
+							</button>
+						</div>
+						<div class="flex flex-wrap gap-3">
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Poor Sleep
+							</button>
+							<button
+								class="px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Stress
+							</button>
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Focus
+							</button>
+						</div>
+						<div class="flex flex-wrap gap-3">
+							<button
+								class="px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Motivation
+							</button>
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Self-doubt
+							</button>
+						</div>
+						<div class="flex flex-wrap gap-3">
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Time Management
+							</button>
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Burnout
+							</button>
+						</div>
+						<div class="flex flex-wrap gap-3">
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Relationships
+							</button>
+							<button
+								class="px-6 py-3 rounded-full bg-primary text-primary-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Energy
+							</button>
+						</div>
+						<div class="flex flex-wrap gap-3">
+							<button
+								class="px-6 py-3 rounded-full bg-input text-foreground font-medium text-base active:scale-95 transition-transform"
+							>
+								Work-Life Balance
+							</button>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div class="px-6 pb-16 flex gap-3">
+				<button
+					class="flex-1 bg-input text-foreground h-16 rounded-full flex items-center justify-center active:scale-98 transition-transform"
+				>
+					<span class="font-bold text-lg">Skip</span>
+				</button>
+				<button
+					class="flex-1 bg-primary text-primary-foreground h-16 rounded-full flex items-center justify-center shadow-lg active:scale-98 transition-transform"
+				>
+					<span class="font-bold text-lg">Next</span>
+				</button>
+			</div>
+		</div>
+	</body>
+</html>

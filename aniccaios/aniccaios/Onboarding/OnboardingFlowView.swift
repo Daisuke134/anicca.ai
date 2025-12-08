@@ -66,15 +66,12 @@ struct OnboardingFlowView: View {
                 await SubscriptionManager.shared.refreshOfferings()
             }
         case .habitSetup:
-            // フォローアップを削除（直接Paywall/Completionへ）
+            // フォローアップを削除
             appState.clearHabitFollowUps()
             
-            // 購入状態を再確認してから分岐
-            Task {
-                await SubscriptionManager.shared.syncNow()
-            }
-            
-            step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
+            // オンボーディングではPaywallを表示せず、直接完了画面へ
+            // （無料ユーザーへのPaywallは利用量超過時やセッション後に自然に誘導）
+            step = .completion
             appState.setOnboardingStep(step)
             return
         case .habitWakeLocation:

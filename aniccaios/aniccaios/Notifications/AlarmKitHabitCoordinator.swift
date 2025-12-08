@@ -280,7 +280,7 @@ final class AlarmKitHabitCoordinator {
                     }
                 } else if !allKnownIds.contains(alarm.id) {
                     // どの習慣にも属さない孤児アラーム → 強制キャンセル
-                    logger.warning("Cancelling orphan alarm \(alarm.id.uuidString, privacy: .public) not in any habit")
+                    logger.debug("Cancelling orphan alarm \(alarm.id.uuidString, privacy: .public) not in any habit")
                     do {
                         try manager.cancel(id: alarm.id)
                     } catch {

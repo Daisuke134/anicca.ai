@@ -1,538 +1,404 @@
-# Anicca iOS UI モダナイズ実装計画
-
-## 方針
-
-- **DesignSystem導入**（AppTheme: Colors/Spacing/Radius/Typography + AppBackground）を全画面の基盤に。
-- **PrimaryButton**を追加して主要CTAを統一（テンプレートのPrimaryButtonガイドに準拠）。
-- 既存`ComponentsKit`は活用しつつ、見出し・背景・CTAの統一で“プロ”品質へ。
-- 依存追加なし／iOSターゲット据え置き（`NavigationView`維持）。
-- ブランドカラーは既存`AccentColor`を使用。
-
-## 変更の要点（全体）
-
-- すべての主要画面に`AppBackground()`適用（安全なグループ背景）。
-- 画面タイトル（H1）は`AppTheme.Typography.appTitle` + `AppTheme.titleGradient`で統一。
-- 主要CTAは`PrimaryButton`へ置換（ローディング/無効状態/アイコン一貫性）。
-- ルートに`.tint(AppTheme.Colors.accent)`を適用（全体アクセント統一）。
-
-## 追加ファイル
-
-- `aniccaios/aniccaios/DesignSystem/AppTheme.swift`
-- `aniccaios/aniccaios/DesignSystem/AppBackground.swift`
-- `aniccaios/aniccaios/DesignSystem/Components/PrimaryButton.swift`
-
-## 既存ファイルの更新（代表）
-
-- `aniccaios/aniccaios/aniccaiosApp.swift`: グローバル`tint`
-- `aniccaios/aniccaios/SessionView.swift`: ツールバー化・見出し/CTA刷新・背景適用
-- `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift`: 見出し/CTA/背景統一
-- `aniccaios/aniccaios/Onboarding/AuthenticationStepView.swift`: 見出し/背景統一
-- `aniccaios/aniccaios/Onboarding/MicrophonePermissionStepView.swift`: CTA置換/見出し/背景
-- `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift`: CTA置換/見出し/背景
-- `aniccaios/aniccaios/SettingsView.swift`: 背景適用
-- `aniccaios/aniccaios/Views/ManageSubscriptionSheet.swift`: 背景適用
-- `aniccaios/aniccaios/ContentView.swift`（`AuthenticationProcessingView`）: 背景適用
+承知しました。各問題の擬似パッチを順番に示します。[[memory:11283936]]
 
 ---
 
-## 完全パッチ（そのまま適用可）
+## ① Stickyモードの回数を10回に変更 + ログ強化
 
-```
-*** Begin Patch
-*** Add File: aniccaios/aniccaios/DesignSystem/AppTheme.swift
-+import SwiftUI
-+
-+enum AppTheme {
-+    enum Colors {
-+        static let accent = Color.accentColor
-+        static let background = Color(.systemGroupedBackground)
-+        static let cardBackground = Color(.secondarySystemGroupedBackground)
-+        static let success = Color.green
-+        static let danger = Color.red
-+    }
-+
-+    enum Spacing {
-+        static let xs: CGFloat = 4
-+        static let sm: CGFloat = 8
-+        static let md: CGFloat = 12
-+        static let lg: CGFloat = 16
-+        static let xl: CGFloat = 24
-+        static let xxl: CGFloat = 32
-+    }
-+
-+    enum Radius {
-+        static let sm: CGFloat = 8
-+        static let md: CGFloat = 12
-+        static let lg: CGFloat = 16
-+    }
-+
-+    enum Typography {
-+        static let appTitle: Font = .system(size: 32, weight: .heavy, design: .rounded)
-+        static let headline: Font = .headline
-+        static let body: Font = .body
-+        static let subheadline: Font = .subheadline
-+        static let footnote: Font = .footnote
-+    }
-+
-+    static let titleGradient = LinearGradient(
-+        colors: [Colors.accent, Colors.accent.opacity(0.6)],
-+        startPoint: .leading,
-+        endPoint: .trailing
-+    )
-+}
-+
-*** End Patch
-```
-```
-*** Begin Patch
-*** Add File: aniccaios/aniccaios/DesignSystem/AppBackground.swift
-+import SwiftUI
-+
-+struct AppBackground: View {
-+    var body: some View {
-+        Color(.systemGroupedBackground).ignoresSafeArea()
-+    }
-+}
-+
-*** End Patch
-```
-```
-*** Begin Patch
-*** Add File: aniccaios/aniccaios/DesignSystem/Components/PrimaryButton.swift
-+import SwiftUI
-+
-+struct PrimaryButton: View {
-+    let title: String
-+    var icon: String? = nil
-+    var isEnabled: Bool = true
-+    var isLoading: Bool = false
-+    let action: () -> Void
-+
-+    var body: some View {
-+        Button {
-+            guard isEnabled, !isLoading else { return }
-+            UIImpactFeedbackGenerator(style: .medium).impactOccurred()
-+            action()
-+        } label: {
-+            HStack(spacing: 8) {
-+                if isLoading {
-+                    ProgressView().progressViewStyle(.circular)
-+                } else if let icon {
-+                    Image(systemName: icon)
-+                }
-+                Text(title)
-+                    .fontWeight(.semibold)
-+                    .lineLimit(1)
-+            }
-+            .frame(maxWidth: .infinity)
-+            .padding(.vertical, 14)
-+        }
-+        .foregroundStyle(.white)
-+        .background(
-+            RoundedRectangle(cornerRadius: AppTheme.Radius.lg, style: .continuous)
-+                .fill(isEnabled ? AppTheme.Colors.accent : AppTheme.Colors.accent.opacity(0.4))
-+        )
-+        .opacity(isEnabled ? 1 : 0.6)
-+        .contentShape(Rectangle())
-+        .accessibilityLabel(Text(title))
-+        .accessibilityAddTraits(.isButton)
-+        .disabled(!isEnabled || isLoading)
-+    }
-+}
-+
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/aniccaiosApp.swift
-@@
-         WindowGroup {
-             ContentRouterView()
-                 .environmentObject(appState)
-+                .tint(AppTheme.Colors.accent)
-         }
-     }
- }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/SessionView.swift
-@@
--    private var authenticatedContent: some View {
--        VStack(spacing: 24) {
--            HStack {
--                Spacer()
--                Button(action: {
--                    isShowingSettings = true
--                }) {
--                    Image(systemName: "gearshape")
--                        .font(.title3)
--                }
--                .buttonStyle(.bordered)
--            }
--            .frame(maxWidth: .infinity, alignment: .trailing)
--            .padding(.top)
--
--            Text("Anicca")
--                .font(.system(size: 32, weight: .bold))
--
--            if shouldShowWakeSilentNotice {
--                Text(String(localized: "session_wake_silent_notice"))
--                    .multilineTextAlignment(.center)
--                    .font(.subheadline)
--                    .foregroundStyle(.secondary)
--                    .padding(16)
--                    .frame(maxWidth: .infinity)
--                    .background(
--                        RoundedRectangle(cornerRadius: 16, style: .continuous)
--                            .fill(.thinMaterial)
--                    )
--            }
--
--            Spacer(minLength: 24)
--
--            sessionButton
--        }
--        .padding()
-+    private var authenticatedContent: some View {
-+        NavigationView {
-+            VStack(spacing: AppTheme.Spacing.xl) {
-+                Text("Anicca")
-+                    .font(AppTheme.Typography.appTitle)
-+                    .foregroundStyle(AppTheme.titleGradient)
-+
-+                if shouldShowWakeSilentNotice {
-+                    Text(String(localized: "session_wake_silent_notice"))
-+                        .multilineTextAlignment(.center)
-+                        .font(AppTheme.Typography.subheadline)
-+                        .foregroundStyle(.secondary)
-+                        .padding(16)
-+                        .frame(maxWidth: .infinity)
-+                        .background(
-+                            RoundedRectangle(cornerRadius: AppTheme.Radius.lg, style: .continuous)
-+                                .fill(AppTheme.Colors.cardBackground)
-+                        )
-+                }
-+
-+                Spacer(minLength: AppTheme.Spacing.xl)
-+
-+                sessionButton
-+            }
-+            .padding()
-+            .background(AppBackground())
-+            .toolbar {
-+                ToolbarItem(placement: .topBarTrailing) {
-+                    Button {
-+                        isShowingSettings = true
-+                    } label: {
-+                        Image(systemName: "gearshape")
-+                    }
-+                }
-+            }
-+            .navigationBarTitleDisplayMode(.inline)
-+        }
-@@
--    private var sessionButton: some View {
--        let config = buttonConfig
--        return Button(config.title) {
--            config.action()
--        }
--        .buttonStyle(BorderedProminentButtonStyle())
--        .controlSize(.large)
--        .disabled(config.disabled)
--    }
-+    private struct ButtonConfig {
-+        let title: String
-+        let icon: String?
-+        let isLoading: Bool
-+        let isEnabled: Bool
-+        let action: () -> Void
-+    }
-+
-+    private var sessionButton: some View {
-+        let config = buttonConfig
-+        return PrimaryButton(
-+            title: config.title,
-+            icon: config.icon,
-+            isEnabled: config.isEnabled,
-+            isLoading: config.isLoading,
-+            action: config.action
-+        )
-+    }
-@@
--    private var buttonConfig: (title: String, disabled: Bool, action: () -> Void) {
-+    private var buttonConfig: ButtonConfig {
-         switch controller.connectionStatus {
-         case .connected:
--            return (
--                title: String(localized: "session_button_end"),
--                disabled: false,
--                action: { 
--                    controller.stop()
--                    // エビデンス: stop()時にはmarkQuotaHoldを呼ばない（エンドセッション押下時の誤表示を防ぐ）
--                }
--            )
-+            return ButtonConfig(
-+                title: String(localized: "session_button_end"),
-+                icon: "stop.fill",
-+                isLoading: false,
-+                isEnabled: true,
-+                action: {
-+                    controller.stop()
-+                }
-+            )
-         case .connecting:
--            return (
--                title: String(localized: "session_button_connecting"),
--                disabled: true,
--                action: {}
--            )
-+            return ButtonConfig(
-+                title: String(localized: "session_button_connecting"),
-+                icon: "hourglass",
-+                isLoading: true,
-+                isEnabled: false,
-+                action: {}
-+            )
-         case .disconnected:
--            return (
--                title: String(localized: "session_button_talk"),
--                disabled: false,
--                action: {
--                    let remaining = appState.subscriptionInfo.monthlyUsageRemaining ?? 1
--                    if appState.subscriptionHold || (!appState.subscriptionInfo.isEntitled && remaining <= 0) {
--                        // 上限に達している時だけ毎回シートを表示
--                        appState.markQuotaHold(plan: appState.subscriptionInfo.plan, reason: .quotaExceeded)
--                        isShowingLimitModal = true
--                        return
--                    }
--                    controller.start()
--                }
--            )
-+            return ButtonConfig(
-+                title: String(localized: "session_button_talk"),
-+                icon: "mic.fill",
-+                isLoading: false,
-+                isEnabled: true,
-+                action: {
-+                    let remaining = appState.subscriptionInfo.monthlyUsageRemaining ?? 1
-+                    if appState.subscriptionHold || (!appState.subscriptionInfo.isEntitled && remaining <= 0) {
-+                        appState.markQuotaHold(plan: appState.subscriptionInfo.plan, reason: .quotaExceeded)
-+                        isShowingLimitModal = true
-+                        return
-+                    }
-+                    controller.start()
-+                }
-+            )
-         }
-     }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/Onboarding/WelcomeStepView.swift
-@@
--            Text("onboarding_welcome_title")
--                .font(.system(size: 32, weight: .bold))
-+            Text("onboarding_welcome_title")
-+                .font(AppTheme.Typography.appTitle)
-+                .foregroundStyle(AppTheme.titleGradient)
-@@
--            Button(action: next) {
--                Text("onboarding_welcome_cta")
--                    .frame(maxWidth: .infinity)
--            }
--            .buttonStyle(.borderedProminent)
--            .controlSize(.large)
-+            PrimaryButton(title: String(localized: "onboarding_welcome_cta")) {
-+                next()
-+            }
-         }
--        .padding(24)
-+        .padding(24)
-+        .background(AppBackground())
-     }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/Onboarding/AuthenticationStepView.swift
-@@
--            Text("onboarding_account_title")
--                .font(.title)
--                .padding(.top, 40)
-+            Text("onboarding_account_title")
-+                .font(AppTheme.Typography.appTitle)
-+                .foregroundStyle(AppTheme.titleGradient)
-+                .padding(.top, 40)
-@@
--        .padding(24)
-+        .padding(24)
-+        .background(AppBackground())
-         .onAppear {
-             Task {
-                 await AuthHealthCheck.shared.warmBackend()
+**ファイル**: `aniccaios/aniccaios/VoiceSessionController.swift`
+
+```diff
+--- a/aniccaios/aniccaios/VoiceSessionController.swift
++++ b/aniccaios/aniccaios/VoiceSessionController.swift
+@@ -26,7 +26,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
+     // Sticky mode (applies to all habits when enabled)
+     private var stickyActive = false
+     private var stickyUserReplyCount = 0
+-    private let stickyReleaseThreshold = 5
++    private let stickyReleaseThreshold = 10
+     
+     private var isStickyEnabled: Bool {
+         AppState.shared.userProfile.stickyModeEnabled
+@@ -548,10 +548,10 @@ private extension VoiceSessionController {
+                 role == "user"
+             {
+                 self.stickyUserReplyCount += 1
+-                logger.info("Sticky reply count: \(self.stickyUserReplyCount, privacy: .public)")
++                logger.info("Sticky reply \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold) from user")
+                 if self.stickyUserReplyCount >= stickyReleaseThreshold {
+                     stickyActive = false
+-                    logger.info("Sticky released after \(self.stickyUserReplyCount, privacy: .public) replies")
++                    logger.info("Sticky mode released after \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold) replies - session now free")
+                 }
              }
-         }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/Onboarding/MicrophonePermissionStepView.swift
-@@
--            Text("onboarding_microphone_title")
--                .font(.title)
--                .padding(.top, 40)
-+            Text("onboarding_microphone_title")
-+                .font(AppTheme.Typography.appTitle)
-+                .foregroundStyle(AppTheme.titleGradient)
-+                .padding(.top, 40)
-@@
--                        } else {
--                            SUButton(
--                                model: {
--                                    var vm = ButtonVM()
--                                    vm.title = isRequesting
--                                        ? String(localized: "common_requesting")
--                                        : String(localized: "common_continue")
--                                    vm.style = .filled
--                                    vm.size = .medium
--                                    vm.isFullWidth = true
--                                    vm.isEnabled = !isRequesting
--                                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
--                                    return vm
--                                }(),
--                                action: requestMicrophone
--                            )
-+                        } else {
-+                            PrimaryButton(
-+                                title: isRequesting
-+                                    ? String(localized: "common_requesting")
-+                                    : String(localized: "common_continue"),
-+                                isEnabled: !isRequesting,
-+                                isLoading: isRequesting
-+                            ) {
-+                                requestMicrophone()
-+                            }
-@@
--        .padding(24)
-+        .padding(24)
-+        .background(AppBackground())
-         .onAppear {
-             updatePermissionSnapshot()
-             if micGranted {
-@@
-     }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift
-@@
--            Text(String(localized: "onboarding_notifications_title"))
--                .font(.title)
--                .padding(.top, 40)
-+            Text(String(localized: "onboarding_notifications_title"))
-+                .font(AppTheme.Typography.appTitle)
-+                .foregroundStyle(AppTheme.titleGradient)
-+                .padding(.top, 40)
-@@
--                        } else {
--                            SUButton(
--                                model: {
--                                    var vm = ButtonVM()
--                                    vm.title = isRequesting
--                                        ? String(localized: "common_requesting")
--                                        : String(localized: "common_continue")
--                                    vm.style = .filled
--                                    vm.size = .medium
--                                    vm.isFullWidth = true
--                                    vm.isEnabled = !isRequesting
--                                    vm.color = .init(main: .universal(.uiColor(.systemBlue)), contrast: .white)
--                                    return vm
--                                }(),
--                                action: requestNotifications
--                            )
-+                        } else {
-+                            PrimaryButton(
-+                                title: isRequesting
-+                                    ? String(localized: "common_requesting")
-+                                    : String(localized: "common_continue"),
-+                                isEnabled: !isRequesting,
-+                                isLoading: isRequesting
-+                            ) {
-+                                requestNotifications()
-+                            }
-@@
--        .padding(24)
-+        .padding(24)
-+        .background(AppBackground())
-         .onAppear {
-             Task { await refreshAuthorizationState(autoAdvance: true) }
-         }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/SettingsView.swift
-@@
--        NavigationView {
-+        NavigationView {
-             ScrollView {
-@@
--            .navigationBarTitleDisplayMode(.inline)
-+            .navigationBarTitleDisplayMode(.inline)
-+            .background(AppBackground())
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/Views/ManageSubscriptionSheet.swift
-@@
--        NavigationView {
-+        NavigationView {
-             ScrollView {
-@@
--        }
-+        }
-+        .background(AppBackground())
-         .task {
-             await loadOffering()
-         }
-*** End Patch
-```
-```
-*** Begin Patch
-*** Update File: aniccaios/aniccaios/ContentView.swift
-@@
- struct AuthenticationProcessingView: View {
-     var body: some View {
-         VStack(spacing: 24) {
-             ProgressView()
-                 .scaleEffect(1.5)
-             Text("common_signing_in")
-                 .font(.headline)
-                 .foregroundStyle(.secondary)
-         }
-         .frame(maxWidth: .infinity, maxHeight: .infinity)
-+        .background(AppBackground())
-     }
- }
-*** End Patch
+         case "response.completed":
 ```
 
 ---
 
-## 補足（一括適用のための機械的置換ガイド）
+## ② iOS 26未満でAlarmKitトグル非表示
 
-- 見出し（タイトル級）: `font(.title)`や`font(.system(size: 32, weight: .bold))` → `font(AppTheme.Typography.appTitle)`＋`foregroundStyle(AppTheme.titleGradient)`。
-- CTAボタン: `.buttonStyle(.borderedProminent)/.controlSize(.large)`の主要CTA → `PrimaryButton(title:..., isEnabled:..., isLoading:...)`。
-- 画面背景: ルート`VStack`の直後に`.background(AppBackground())`。
-- 情報カード背景: `.thinMaterial`等 → `RoundedRectangle(...).fill(AppTheme.Colors.cardBackground)`に統一。
+**結果**: **既に正しく実装済み** ✅
 
-## テスト観点
+`HabitsSectionView.swift` の510-520行目で以下のように制御されています：
 
-- 既存機能（課金/認可/セッション開始・終了）の動作は不変であること。
-- Dynamic Typeでレイアウト破綻がないこと。
-- ダークモードでコントラスト違反がないこと。
+```swift
+// AlarmKit設定（iOS 26+ のみ）
+#if canImport(AlarmKit)
+if #available(iOS 26.0, *) {
+    Section(String(localized: "settings_alarmkit_section_title")) {
+        alarmKitToggle
+        // ...
+    }
+}
+#endif
+```
+
+iOS 26未満では表示されません。**修正不要**です。
+
+---
+
+## ③ カスタム習慣のAlarmKitデフォルトをOFFに変更
+
+**ファイル**: `aniccaios/aniccaios/Models/UserProfile.swift`
+
+```diff
+--- a/aniccaios/aniccaios/Models/UserProfile.swift
++++ b/aniccaios/aniccaios/Models/UserProfile.swift
+@@ -59,7 +59,7 @@ struct UserProfile: Codable {
+         useAlarmKitForWake: Bool = true,
+         useAlarmKitForTraining: Bool = true,
+         useAlarmKitForBedtime: Bool = true,
+-        useAlarmKitForCustom: Bool = true,
++        useAlarmKitForCustom: Bool = false,
+         stickyModeEnabled: Bool = true
+     ) {
+         // ...
+@@ -105,7 +105,7 @@ struct UserProfile: Codable {
+         useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? true
+         useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? true
+         useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? true
+-        useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? true
++        useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? false
+```
+
+---
+
+## ④ ${PROBLEMS}プレースホルダーの紐付け確認
+
+**結果**: **既に正しく実装済み** ✅
+
+`WakePromptBuilder.swift` の145-150行目で正しく処理されています：
+
+```swift
+if !profile.problems.isEmpty {
+    let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
+    replacements["PROBLEMS"] = "今抱えている問題: " + localizedProblems.joined(separator: "、")
+} else {
+    replacements["PROBLEMS"] = ""
+}
+```
+
+設定画面で選択された問題は `UserProfile.problems` に保存され、プロンプト生成時に正しく置換されます。**修正不要**です。
+
+---
+
+## ⑤ サインイン後の「習慣を設定」画面フラッシュ問題
+
+**ファイル**: `aniccaios/aniccaios/AppState.swift`
+
+**原因**: `bootstrapProfileFromServerIfAvailable()` が非同期で実行されるため、`authStatus` が先に `.signedIn` になり、ContentViewがオンボーディング画面を一瞬表示してしまう。
+
+```diff
+--- a/aniccaios/aniccaios/AppState.swift
++++ b/aniccaios/aniccaios/AppState.swift
+@@ -10,6 +10,9 @@ final class AppState: ObservableObject {
+ 
+     @Published private(set) var authStatus: AuthStatus = .signedOut
+     @Published private(set) var userProfile: UserProfile = UserProfile()
++    
++    // サーバーからのプロファイル取得中フラグ（UIフラッシュ防止用）
++    @Published private(set) var isBootstrappingProfile: Bool = false
+     @Published private(set) var subscriptionInfo: SubscriptionInfo = .free
+     // ... 省略 ...
+ 
+@@ -515,6 +518,7 @@ final class AppState: ObservableObject {
+     
+     func bootstrapProfileFromServerIfAvailable() async {
+         guard case .signedIn(let credentials) = authStatus else { return }
++        isBootstrappingProfile = true
+         
+         var request = URLRequest(url: AppConfig.profileSyncURL)
+         request.httpMethod = "GET"
+@@ -533,6 +537,8 @@ final class AppState: ObservableObject {
+         } catch {
+             // ネットワークがない場合などは無視してローカル状態を継続
+         }
++        
++        isBootstrappingProfile = false
+     }
+```
+
+**ファイル**: `aniccaios/aniccaios/ContentView.swift` (または該当のルートビュー)
+
+```diff
+--- a/aniccaios/aniccaios/ContentView.swift
++++ b/aniccaios/aniccaios/ContentView.swift
+@@ -XX,XX @@ struct ContentView: View {
+     var body: some View {
+-        if appState.isOnboardingComplete {
++        // プロファイル取得中は何も表示しない（フラッシュ防止）
++        if appState.isBootstrappingProfile {
++            // ローディング表示またはスプラッシュ
++            ProgressView()
++                .frame(maxWidth: .infinity, maxHeight: .infinity)
++                .background(AppBackground())
++        } else if appState.isOnboardingComplete {
+             MainTabView()
+         } else {
+             OnboardingFlowView()
+```
+
+---
+
+## ⑥⑦ 習慣トグルOFF時の状態が保存されない問題
+
+**ファイル**: `aniccaios/aniccaios/Habits/HabitsSectionView.swift`
+
+**原因**: トグルOFF時に `activeHabits.remove(habit)` のみ呼んでおり、`AppState.habitSchedules` から削除していない。
+
+```diff
+--- a/aniccaios/aniccaios/Habits/HabitsSectionView.swift
++++ b/aniccaios/aniccaios/Habits/HabitsSectionView.swift
+@@ -301,17 +301,19 @@ struct HabitsSectionView: View {
+             Toggle("", isOn: Binding(
+                 get: { isActive },
+                 set: { isOn in
+                     if isOn {
+                         if let date = date {
+                             activeHabits.insert(habit)
+                             habitTimes[habit] = date
++                            // 時刻が既にある場合はAppStateにも反映
++                            Task {
++                                await appState.updateHabit(habit, time: date)
++                            }
+                         } else {
+                             sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
+                             activeSheet = .habit(habit)
+                         }
+                     } else {
++                        // トグルOFF時はAppStateからも削除して永続化
+                         activeHabits.remove(habit)
+                         habitTimes.removeValue(forKey: habit)
++                        appState.removeHabitSchedule(habit)
+                     }
+                 }
+             ))
+@@ -352,12 +354,15 @@ struct HabitsSectionView: View {
+                     if isOn {
+                         if let date = date {
+                             activeCustomHabits.insert(id)
+                             customHabitTimes[id] = date
++                            // AppStateにも反映
++                            appState.updateCustomHabitSchedule(id: id, time: Calendar.current.dateComponents([.hour, .minute], from: date))
+                         } else {
+                             sheetTime = Date()
+                             activeSheet = .custom(id)
+                         }
+                     } else {
++                        // トグルOFF時はAppStateからも削除
+                         activeCustomHabits.remove(id)
++                        customHabitTimes.removeValue(forKey: id)
++                        appState.removeCustomHabitSchedule(id: id)
+                     }
+                 }
+```
+
+**ファイル**: `aniccaios/aniccaios/AppState.swift` (カスタム習慣用の削除メソッド追加)
+
+```diff
+--- a/aniccaios/aniccaios/AppState.swift
++++ b/aniccaios/aniccaios/AppState.swift
+@@ -245,6 +245,16 @@ final class AppState: ObservableObject {
+         }
+     }
+ 
++    /// カスタム習慣のスケジュールを削除（通知も更新）
++    func removeCustomHabitSchedule(id: UUID) {
++        customHabitSchedules.removeValue(forKey: id)
++        saveCustomHabitSchedules()
++        Task {
++            await applyCustomSchedulesToScheduler()
++        }
++    }
++
+     private func saveHabitSchedules() {
+```
+
+---
+
+## ⑧ AlarmKitアラームのSnooze/リピート対応
+
+**ファイル**: `aniccaios/aniccaios/Notifications/AlarmKitHabitCoordinator.swift`
+
+**現状の問題**: `HabitAlarmStopIntent` がすべてのアラームをキャンセルしてしまう。また、Snooze機能を使っていない。
+
+```diff
+--- a/aniccaios/aniccaios/Notifications/AlarmKitHabitCoordinator.swift
++++ b/aniccaios/aniccaios/Notifications/AlarmKitHabitCoordinator.swift
+@@ -8,6 +8,13 @@ import SwiftUI
+ // MARK: - AlarmButton Extension
+ @available(iOS 26.0, *)
+ extension AlarmButton {
++    static var snoozeButton: AlarmButton {
++        AlarmButton(
++            text: LocalizedStringResource("Snooze"),
++            textColor: .orange,
++            systemImageName: "bell.and.waves.left.and.right"
++        )
++    }
++    
+     static var stopButton: AlarmButton {
+         AlarmButton(
+             text: LocalizedStringResource("Stop"),
+@@ -83,14 +90,27 @@ final class AlarmKitHabitCoordinator {
+             
+             for offset in 0..<iterations {
+                 let (fireHour, fireMinute) = offsetMinutes(baseHour: hour, baseMinute: minute, offsetMinutes: offset)
+                 let time = Alarm.Schedule.Relative.Time(hour: fireHour, minute: fireMinute)
+                 let schedule = Alarm.Schedule.relative(.init(
+                     time: time,
+                     repeats: .weekly(Locale.Weekday.allWeekdays)
+                 ))
+                 
++                // 最後のアラーム以外はSnoozeボタン付き
++                let isLastAlarm = (offset == iterations - 1)
++                let secondaryButton: AlarmButton? = isLastAlarm ? .openAppButton : .snoozeButton
++                let secondaryBehavior: AlarmPresentation.Alert.SecondaryButtonBehavior? = isLastAlarm ? .custom : .countdown
++                
+                 let alert = AlarmPresentation.Alert(
+                     title: localizedTitle(for: habit),
+                     stopButton: .stopButton,
+-                    secondaryButton: .openAppButton,
+-                    secondaryButtonBehavior: .custom
++                    secondaryButton: secondaryButton,
++                    secondaryButtonBehavior: secondaryBehavior
+                 )
+                 let presentation = AlarmPresentation(alert: alert)
+                 let metadata = HabitAlarmMetadata(habit: habit.rawValue)
+                 let tintColor = tintColor(for: habit)
+                 let attributes = AlarmAttributes(presentation: presentation, metadata: metadata, tintColor: tintColor)
+                 
++                // Snooze用のカウントダウン設定（60秒後にリピート）
++                let countdownDuration: Alarm.CountdownDuration? = isLastAlarm ? nil : Alarm.CountdownDuration(postAlert: 60)
++                
+                 var secondary = StartConversationIntent()
+                 secondary.habitType = habit
+                 
+                 let identifier = UUID()
+                 let configuration = AlarmManager.AlarmConfiguration(
+-                    countdownDuration: nil,
++                    countdownDuration: countdownDuration,
+                     schedule: schedule,
+                     attributes: attributes,
+                     stopIntent: HabitAlarmStopIntent(alarmID: identifier.uuidString, habitRawValue: habit.rawValue),
+                     secondaryIntent: secondary
+                 )
+```
+
+**注意**: `HabitAlarmStopIntent` の `perform()` も修正が必要です。現在は全アラームをキャンセルしていますが、個別のアラームのみをキャンセルするように変更：
+
+```diff
+--- a/aniccaios/aniccaios/Notifications/AlarmKitHabitCoordinator.swift
++++ b/aniccaios/aniccaios/Notifications/AlarmKitHabitCoordinator.swift
+@@ -226,9 +226,12 @@ struct HabitAlarmStopIntent: LiveActivityIntent {
+     
+     func perform() async throws -> some IntentResult {
+-        if let habit = HabitType(rawValue: habitRawValue) {
+-            await AlarmKitHabitCoordinator.shared.cancelHabitAlarms(habit)
+-            NotificationScheduler.shared.cancelHabit(habit)
++        // 個別のアラームのみを停止（全アラームをキャンセルしない）
++        if let uuid = UUID(uuidString: alarmID) {
++            do {
++                try AlarmManager.shared.stop(id: uuid)
++            } catch {
++                // 既に停止済みの場合は無視
++            }
+         }
+         return .result()
+     }
+```
+
+---
+
+## ⑨ アプリがアクティブ時（画面オン時）のAlarmKit動作
+
+**調査結果**: AlarmKitは「Lock Screen」「Dynamic Island」「StandBy」に表示される設計で、**画面操作中のフルスクリーン表示は仕様上ない**。時計アプリも同様に、画面操作中はバナー通知として表示される。
+
+**問題の原因**: 現在の実装では、AlarmKitが有効な場合に通常のTime Sensitive通知をスキップしているため、画面ON時に何も表示されない。
+
+**ファイル**: `aniccaios/aniccaios/Notifications/NotificationScheduler.swift`
+
+```diff
+--- a/aniccaios/aniccaios/Notifications/NotificationScheduler.swift
++++ b/aniccaios/aniccaios/Notifications/NotificationScheduler.swift
+@@ -113,14 +113,16 @@ final class NotificationScheduler {
+     // MARK: Scheduling
+     func applySchedules(_ schedules: [HabitType: DateComponents]) async {
+         await removePending(withPrefix: "HABIT_")
+         for (habit, components) in schedules {
+             guard let hour = components.hour, let minute = components.minute else { continue }
+-            if await scheduleWithAlarmKitIfNeeded(habit: habit, hour: hour, minute: minute) {
+-                continue
+-            }
++            
++            // AlarmKitをスケジュール（ロック画面用フルスクリーンアラート）
++            _ = await scheduleWithAlarmKitIfNeeded(habit: habit, hour: hour, minute: minute)
++            
++            // 通常のTime Sensitive通知も必ずスケジュール（画面ON時のバナー通知用）
+             await scheduleMain(habit: habit, hour: hour, minute: minute)
+             scheduleFollowupLoop(for: habit, baseComponents: components)
+         }
+     }
+```
+
+**動作結果**:
+- **ロック画面**: AlarmKitのフルスクリーンアラート
+- **画面操作中**: Time Sensitive通知のバナー（上部に表示）
+
+---
+
+## ⑩ オンボーディングのPaywall非表示
+
+**要件**: オンボーディングフローでPaywallを表示しない。無料ユーザーは30分使用後にPaywallへ誘導されるため、オンボーディングでは不要。
+
+**ファイル**: `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift`
+
+```diff
+--- a/aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift
++++ b/aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift
+@@ -68,14 +68,12 @@ struct OnboardingFlowView: View {
+         case .habitSetup:
+-            // フォローアップを削除（直接Paywall/Completionへ）
+             appState.clearHabitFollowUps()
+             
+-            // 購入状態を再確認してから分岐
+             Task {
+                 await SubscriptionManager.shared.syncNow()
+             }
+             
+-            step = appState.subscriptionInfo.isEntitled ? .completion : .paywall
++            // Paywallをスキップして全員completionへ
++            step = .completion
+             appState.setOnboardingStep(step)
+             return
+```
+
+---
+
+## ⑪ iOS 26未満のAlarmKitトグル非表示
+
+**結果**: 問題②と同じ。**既に正しく実装済み** ✅
+
+---
+
+以上が全11問題の擬似パッチです。実装を開始してよろしいでしょうか？

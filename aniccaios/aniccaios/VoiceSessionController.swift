@@ -26,7 +26,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
     // Sticky mode (applies to all habits when enabled)
     private var stickyActive = false
     private var stickyUserReplyCount = 0
-    private let stickyReleaseThreshold = 5
+    private var stickyReady = false
+    private let stickyReleaseThreshold = 10
     
     private var isStickyEnabled: Bool {
         AppState.shared.userProfile.stickyModeEnabled
@@ -41,13 +42,21 @@ final class VoiceSessionController: NSObject, ObservableObject {
         setStatus(.connecting)
         // 現在の習慣タイプを設定（pendingHabitTriggerから取得）
         currentHabitType = AppState.shared.pendingHabitTrigger?.habit
+        
+        // ★★★ セッション開始時に残りのアラームをすべてキャンセル ★★★
+        if let habit = currentHabitType {
+            cancelRemainingAlarmsForHabit(habit)
+        }
+        
         // Stickyモードは全習慣に適用
         if currentHabitType != nil && isStickyEnabled {
             stickyActive = true
             stickyUserReplyCount = 0
+            stickyReady = false
         } else {
             stickyActive = false
             stickyUserReplyCount = 0
+            stickyReady = false
         }
         Task { [weak self] in
             await self?.establishSession(resumeImmediately: shouldResumeImmediately)
@@ -60,6 +69,10 @@ final class VoiceSessionController: NSObject, ObservableObject {
         
         // 現在の習慣タイプを設定
         currentHabitType = habit
+        
+        // ★★★ VoIPからのセッション開始時も残りのアラームをキャンセル ★★★
+        cancelRemainingAlarmsForHabit(habit)
+        
         // Prepare prompt for the habit
         AppState.shared.prepareForImmediateSession(habit: habit)
         
@@ -67,9 +80,11 @@ final class VoiceSessionController: NSObject, ObservableObject {
         if isStickyEnabled {
             stickyActive = true
             stickyUserReplyCount = 0
+            stickyReady = false
         } else {
             stickyActive = false
             stickyUserReplyCount = 0
+            stickyReady = false
         }
         
         Task { [weak self] in
@@ -82,6 +97,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
         currentHabitType = nil
         stickyActive = false
         stickyUserReplyCount = 0
+        stickyReady = false
         sessionTimeoutTask?.cancel()
         sessionTimeoutTask = nil
         usageTrackingTask?.cancel()
@@ -97,6 +113,14 @@ final class VoiceSessionController: NSObject, ObservableObject {
         setStatus(.disconnected)
         deactivateAudioSession()
         // stop()時にはmarkQuotaHoldを呼ばない（エンドセッション押下時の誤表示を防ぐ）
+    }
+    
+    /// 習慣セッション開始時に、その習慣の残りのアラーム/フォローアップをすべてキャンセル
+    private func cancelRemainingAlarmsForHabit(_ habit: HabitType) {
+        logger.info("Session started for \(habit.rawValue, privacy: .public) - cancelling all remaining alarms")
+        
+        // 通常の通知フォローアップをキャンセル（AlarmKit含む）
+        NotificationScheduler.shared.cancelFollowups(for: habit, includeAlarmKit: true)
     }
     
     private func notifyStopIfNeeded() async {
@@ -532,30 +556,47 @@ private extension VoiceSessionController {
     }
 
     private func sendWakeResponseCreate() {
-        guard let channel = dataChannel, channel.readyState == .open else { return }
-        guard let data = try? JSONSerialization.data(withJSONObject: ["type": "response.create"]) else { return }
+        guard let channel = dataChannel, channel.readyState == .open else {
+            logger.warning("Sticky: cannot send response.create - channel not ready")
+            return
+        }
+        guard let data = try? JSONSerialization.data(withJSONObject: ["type": "response.create"]) else {
+            logger.error("Sticky: failed to serialize response.create")
+            return
+        }
         channel.sendData(RTCDataBuffer(data: data, isBinary: false))
+        logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): sent response.create to keep talking")
     }
     
     private func handleRealtimeEvent(_ event: [String: Any]) {
         guard let type = event["type"] as? String else { return }
         switch type {
-        case "conversation.item.completed":
-            guard stickyActive else { return }
+        case "output_audio_buffer.started":
+            if stickyActive && !stickyReady {
+                stickyReady = true
+                logger.info("Sticky ready: first audio started")
+                print("Sticky ready: first audio started")
+            }
+        case "conversation.item.done":
+            guard stickyActive && stickyReady else { return }
             if
                 let item = event["item"] as? [String: Any],
                 let role = item["role"] as? String,
                 role == "user"
             {
                 self.stickyUserReplyCount += 1
-                logger.info("Sticky reply count: \(self.stickyUserReplyCount, privacy: .public)")
+                logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): user replied")
+                print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): user replied")
                 if self.stickyUserReplyCount >= stickyReleaseThreshold {
                     stickyActive = false
-                    logger.info("Sticky released after \(self.stickyUserReplyCount, privacy: .public) replies")
+                    logger.info("Sticky released at \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold)")
+                    print("Sticky released at \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold)")
                 }
             }
-        case "response.completed":
+        case "response.done":
             if stickyActive {
+                logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → trigger next")
+                print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → trigger next")
                 sendWakeResponseCreate()
             }
         default:

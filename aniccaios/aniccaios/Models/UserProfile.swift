@@ -59,7 +59,7 @@ struct UserProfile: Codable {
         useAlarmKitForWake: Bool = true,
         useAlarmKitForTraining: Bool = true,
         useAlarmKitForBedtime: Bool = true,
-        useAlarmKitForCustom: Bool = true,
+        useAlarmKitForCustom: Bool = false,
         stickyModeEnabled: Bool = true
     ) {
         self.displayName = displayName
@@ -105,7 +105,7 @@ struct UserProfile: Codable {
         useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? true
         useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? true
         useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? true
-        useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? true
+        useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? false
         
         // Stickyモード（後方互換: wakeStickyModeEnabled も読み取る）
         if let sticky = try container.decodeIfPresent(Bool.self, forKey: .stickyModeEnabled) {

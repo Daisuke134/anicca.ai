@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="UTF-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0">
+		<title>Behavior</title>
+		<link rel="preconnect" href="https://fonts.googleapis.com">
+		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+		<link
+			href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		>
+		<link
+			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+			rel="stylesheet"
+		>
+		<link
+			href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+			rel="stylesheet"
+		>
+		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+		<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+		<style type="text/tailwindcss">
+		@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+
+  --font-font-sans: var(--font-sans);
+  --font-font-heading: var(--font-heading);
+  --font-font-serif: var(--font-serif);
+  --font-font-mono: var(--font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+  --tracking-normal: var(--tracking-normal);
+}
+
+		:root {
+			--background: #f8f5ed;
+			--foreground: #393634;
+			--primary: #222222;
+			--primary-foreground: #e1e1e1;
+			--secondary: #e9e6e0;
+			--secondary-foreground: #393634;
+			--muted: #e9e6e0;
+			--muted-foreground: #898783;
+			--accent: #f2f0ed;
+			--accent-foreground: #393634;
+			--destructive: #ef4444;
+			--card: #fdfcfc;
+			--card-foreground: #393634;
+			--popover: #fdfcfc;
+			--popover-foreground: #393634;
+			--border: #c8c6bf;
+			--input: #e9e6e0;
+			--ring: #222222;
+			--sidebar: #f8f5ed;
+			--sidebar-foreground: #393634;
+			--sidebar-primary: #222222;
+			--sidebar-primary-foreground: #e1e1e1;
+			--sidebar-accent: #e9e6e0;
+			--sidebar-accent-foreground: #393634;
+			--sidebar-border: #c8c6bf;
+			--sidebar-ring: #222222;
+			--chart-1: #393634;
+			--chart-2: #5c5956;
+			--chart-3: #898783;
+			--chart-4: #a8a6a1;
+			--chart-5: #c8c6bf;
+
+			--font-sans: "DM Sans";
+			--font-heading: "DM Sans";
+			--font-serif: "Playfair Display";
+			--font-mono: "JetBrains Mono";
+
+			--radius: 1.5rem;
+		}
+		</style>
+	</head>
+	<body>
+		<div
+			class="flex flex-col h-full bg-background font-sans text-foreground relative overflow-hidden"
+		>
+			<div class="h-12 w-full flex items-center justify-between px-6 pt-2">
+				<span class="text-sm font-bold">11:09</span>
+				<div class="flex items-center gap-1.5">
+					<iconify-icon icon="solar:signal-bold" class="size-4"></iconify-icon>
+					<iconify-icon icon="solar:battery-full-bold" class="size-6"></iconify-icon>
+				</div>
+			</div>
+			<div class="absolute top-12 right-6 z-10"/>
+			<div class="flex-1 overflow-y-auto px-4 pb-32 pt-8">
+				<div class="flex justify-center mb-6 mt-4">
+					<h1 class="text-3xl font-bold font-heading text-foreground text-center">
+						Today's Insights
+					</h1>
+				</div>
+				<div class="bg-card rounded-[37px] p-6 mb-6 shadow-sm">
+					<p class="text-sm text-foreground/80 text-center leading-relaxed">
+						Your sleep was short today. Phone usage increased in the afternoon. Be mindful of
+						rumination at night.
+					</p>
+				</div>
+				<div class="bg-card rounded-[37px] p-6 mb-6 shadow-sm">
+					<h2 class="text-base font-bold text-foreground mb-4">24-Hour Timeline</h2>
+					<div class="relative h-12 bg-secondary/30 rounded-lg overflow-hidden mb-3">
+						<div class="absolute top-0 left-[2%] h-full w-[23%] bg-[#4A90E2]"/>
+						<div class="absolute top-0 left-[25%] h-full w-[33%] bg-[#F5A623]"/>
+						<div class="absolute top-0 left-[58%] h-full w-[17%] bg-[#E74C3C]"/>
+						<div class="absolute top-0 left-[75%] h-full w-[4.17%] bg-[#2ECC71] opacity-30"/>
+						<div class="absolute top-0 left-[79.17%] h-full w-[8.33%] bg-[#F5A623] opacity-30"/>
+						<div class="absolute top-0 left-[87.5%] h-full w-[8.33%] bg-[#E74C3C] opacity-30"/>
+						<div class="absolute top-0 left-[95.83%] h-full w-[4.17%] bg-[#4A90E2] opacity-30"/>
+					</div>
+					<div class="flex justify-between text-[10px] text-muted-foreground mb-4">
+						<span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>12am</span>
+					</div>
+					<div class="flex flex-wrap gap-x-4 gap-y-2 text-xs">
+						<div class="flex items-center gap-1.5">
+							<div class="w-3 h-3 rounded-sm bg-[#4A90E2]"/>
+							<span class="text-foreground/80">Sleep</span>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<div class="w-3 h-3 rounded-sm bg-[#F5A623]"/>
+							<span class="text-foreground/80">Focus</span>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<div class="w-3 h-3 rounded-sm bg-[#E74C3C]"/>
+							<span class="text-foreground/80">Scroll</span>
+						</div>
+						<div class="flex items-center gap-1.5">
+							<div class="w-3 h-3 rounded-sm bg-[#2ECC71]"/>
+							<span class="text-foreground/80">Activity</span>
+						</div>
+					</div>
+				</div>
+				<div class="mb-6">
+					<h2 class="text-lg font-bold text-foreground mb-4 px-2 font-heading">
+						Today's Highlights
+					</h2>
+					<div class="grid grid-cols-2 gap-3">
+						<div class="bg-card rounded-[24px] p-4 shadow-sm relative">
+							<div
+								class="absolute top-3 right-3 flex items-center gap-1.5 bg-secondary/50 rounded-full px-2 py-0.5"
+							>
+								<span class="text-sm">🌱</span><span class="text-xs font-medium text-[#6B8E6F]"
+									>5</span
+								>
+							</div>
+							<div class="flex items-center gap-2 mb-3">
+								<span class="text-xl text-[#2ECC71]">✓</span><span
+									class="text-sm font-bold text-foreground"
+									>Wake</span
+								>
+							</div>
+							<div class="text-xs text-foreground/70">Moving Forward</div>
+						</div>
+						<div class="bg-card rounded-[24px] p-4 shadow-sm relative">
+							<div
+								class="absolute top-3 right-3 flex items-center gap-1.5 bg-secondary/50 rounded-full px-2 py-0.5"
+							>
+								<span class="text-sm">🌱</span><span class="text-xs font-medium text-[#6B8E6F]"
+									>3</span
+								>
+							</div>
+							<div class="flex items-center gap-2 mb-3">
+								<span class="text-xl text-muted-foreground">→</span><span
+									class="text-sm font-bold text-foreground"
+									>Screen</span
+								>
+							</div>
+							<div class="text-xs text-foreground/70">Stable</div>
+						</div>
+						<div class="bg-card rounded-[24px] p-4 shadow-sm relative">
+							<div
+								class="absolute top-3 right-3 flex items-center gap-1.5 bg-secondary/50 rounded-full px-2 py-0.5"
+							>
+								<span class="text-sm">🌱</span><span class="text-xs font-medium text-[#6B8E6F]"
+									>1</span
+								>
+							</div>
+							<div class="flex items-center gap-2 mb-3">
+								<span class="text-xl text-[#F5A623]">⚠︎</span><span
+									class="text-sm font-bold text-foreground"
+									>Workout</span
+								>
+							</div>
+							<div class="text-xs text-foreground/70">Needs Attention</div>
+						</div>
+						<div class="bg-card rounded-[24px] p-4 shadow-sm relative">
+							<div
+								class="absolute top-3 right-3 flex items-center gap-1.5 bg-secondary/50 rounded-full px-2 py-0.5"
+							>
+								<span class="text-sm">🌱</span><span class="text-xs font-medium text-[#6B8E6F]"
+									>2</span
+								>
+							</div>
+							<div class="flex items-center gap-2 mb-3">
+								<span class="text-xl text-[#2ECC71]">✓</span><span
+									class="text-sm font-bold text-foreground"
+									>Rumination</span
+								>
+							</div>
+							<div class="text-xs text-foreground/70">Moving Forward</div>
+						</div>
+					</div>
+				</div>
+				<div class="space-y-6">
+					<div class="bg-card rounded-[37px] p-6 shadow-sm">
+						<h2 class="text-xl font-bold text-foreground mb-3 font-heading">10 Years From Now</h2>
+						<div class="space-y-2 text-sm text-foreground/80 leading-relaxed">
+							<p>
+								The habit of valuing dialogue with yourself is fully established, maintaining inner
+								peace.
+							</p>
+							<p>You're living a rich, human life while skillfully utilizing technology.</p>
+						</div>
+					</div>
+				</div>
+			</div>
+			<div
+				class="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-background via-background to-transparent pt-12 pb-[100px] px-4 pointer-events-none"
+			>
+				<div class="pointer-events-auto"/>
+			</div>
+			<div
+				class="fixed bottom-0 left-0 right-0 bg-card border-t border-border/20 safe-area-inset-bottom"
+			>
+				<div class="flex items-center justify-around px-4 py-2">
+					<button
+						class="flex flex-col items-center justify-center py-2 px-6 rounded-lg hover:bg-secondary/50 transition-colors min-w-[80px]"
+					>
+						<iconify-icon
+							icon="solar:chat-round-dots-linear"
+							class="size-6 text-muted-foreground mb-1"
+						></iconify-icon>
+						<span class="text-[10px] font-medium text-muted-foreground">Talk</span>
+					</button>
+					<button
+						class="flex flex-col items-center justify-center py-2 px-6 rounded-lg bg-secondary transition-colors min-w-[80px]"
+					>
+						<iconify-icon
+							icon="solar:graph-new-bold"
+							class="size-6 text-foreground mb-1"
+						></iconify-icon>
+						<span class="text-[10px] font-semibold text-foreground">Behavior</span>
+					</button>
+					<button
+						class="flex flex-col items-center justify-center py-2 px-6 rounded-lg hover:bg-secondary/50 transition-colors min-w-[80px]"
+					>
+						<iconify-icon
+							icon="solar:user-linear"
+							class="size-6 text-muted-foreground mb-1"
+						></iconify-icon>
+						<span class="text-[10px] font-medium text-muted-foreground">Profile</span>
+					</button>
+				</div>
+			</div>
+		</div>
+	</body>
+</html>

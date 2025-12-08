@@ -11,6 +11,9 @@ final class AppState: ObservableObject {
     @Published private(set) var authStatus: AuthStatus = .signedOut
     @Published private(set) var userProfile: UserProfile = UserProfile()
     @Published private(set) var subscriptionInfo: SubscriptionInfo = .free
+    
+    // サーバーからのプロファイル取得中フラグ（UIフラッシュ防止用）
+    @Published private(set) var isBootstrappingProfile: Bool = false
     @Published private(set) var purchaseEnvironmentStatus: PurchaseEnvironmentStatus = .ready
     @Published private(set) var subscriptionHold: Bool = false
     @Published private(set) var subscriptionHoldPlan: SubscriptionInfo.Plan? = nil
@@ -175,10 +178,7 @@ final class AppState: ObservableObject {
     }
     
     private func defaultFollowupCount(for habit: HabitType) -> Int {
-        switch habit {
-        case .wake, .bedtime: return 5
-        default: return 2
-        }
+        return 2  // すべての習慣で再通知回数を2に統一
     }
     
     private func bounded(_ n: Int) -> Int {
@@ -190,7 +190,7 @@ final class AppState: ObservableObject {
            let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
             habitFollowupCounts = dict.compactMapKeys { HabitType(rawValue: $0) }
         } else {
-            habitFollowupCounts = [.wake: 5, .bedtime: 5, .training: 2, .custom: 2]
+            habitFollowupCounts = [.wake: 2, .bedtime: 2, .training: 2, .custom: 2]
         }
         if let data = defaults.data(forKey: customFollowupCountsKey),
            let dict = try? JSONDecoder().decode([String: Int].self, from: data) {
@@ -247,6 +247,9 @@ final class AppState: ObservableObject {
         habitSchedules.removeValue(forKey: habit)
         saveHabitSchedules()
         Task {
+            // 削除された習慣のAlarmKit/通知を明示的にキャンセル
+            scheduler.cancelHabit(habit)
+            // 残りの習慣を再スケジュール
             await scheduler.applySchedules(habitSchedules)
         }
     }
@@ -517,6 +520,9 @@ final class AppState: ObservableObject {
     
     func bootstrapProfileFromServerIfAvailable() async {
         guard case .signedIn(let credentials) = authStatus else { return }
+        
+        isBootstrappingProfile = true
+        defer { isBootstrappingProfile = false }
         
         var request = URLRequest(url: AppConfig.profileSyncURL)
         request.httpMethod = "GET"

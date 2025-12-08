@@ -14,5 +14,10 @@ struct AniccaWidgetBundle: WidgetBundle {
         AniccaWidget()
         AniccaWidgetControl()
         AniccaWidgetLiveActivity()
+        
+        // AlarmKit用のLive Activity（iOS 26以上）
+        if #available(iOS 26.0, *) {
+            AniccaAlarmLiveActivity()
+        }
     }
 }

@@ -310,8 +310,10 @@ struct HabitsSectionView: View {
                             activeSheet = .habit(habit)
                         }
                     } else {
+                        // トグルOFF時はAppStateからも削除して永続化
                         activeHabits.remove(habit)
                         habitTimes.removeValue(forKey: habit)
+                        appState.removeHabitSchedule(habit)
                     }
                 }
             ))
@@ -361,7 +363,10 @@ struct HabitsSectionView: View {
                             activeSheet = .custom(id)
                         }
                     } else {
+                        // トグルOFF時はAppStateからも削除して永続化
                         activeCustomHabits.remove(id)
+                        customHabitTimes.removeValue(forKey: id)
+                        appState.updateCustomHabitSchedule(id: id, time: nil)
                     }
                 }
             ))

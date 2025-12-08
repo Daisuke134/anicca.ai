@@ -11,7 +11,12 @@ struct ContentRouterView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        if !appState.isOnboardingComplete {
+        // プロファイル取得中は何も表示しない（フラッシュ防止）
+        if appState.isBootstrappingProfile {
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(AppBackground())
+        } else if !appState.isOnboardingComplete {
             OnboardingFlowView()
         } else {
             switch appState.authStatus {

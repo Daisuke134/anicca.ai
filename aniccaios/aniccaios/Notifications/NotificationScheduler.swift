@@ -114,11 +114,18 @@ final class NotificationScheduler {
         await removePending(withPrefix: "HABIT_")
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
-            if await scheduleWithAlarmKitIfNeeded(habit: habit, hour: hour, minute: minute) {
-                continue
+            
+            // AlarmKitをスケジュール（iOS 26+ かつユーザーがONにしている場合）
+            let alarmKitScheduled = await scheduleWithAlarmKitIfNeeded(habit: habit, hour: hour, minute: minute)
+            
+            // AlarmKitがOFFの場合のみ、通常のTime Sensitive通知をスケジュール
+            // AlarmKitがONの場合、画面操作中でもDynamic Island/バナーでアラーム通知が表示される
+            if !alarmKitScheduled {
+                await scheduleMain(habit: habit, hour: hour, minute: minute)
+                scheduleFollowupLoop(for: habit, baseComponents: components)
             }
-            await scheduleMain(habit: habit, hour: hour, minute: minute)
-            scheduleFollowupLoop(for: habit, baseComponents: components)
+            
+            logger.info("Scheduled \(habit.rawValue, privacy: .public): AlarmKit=\(alarmKitScheduled, privacy: .public)")
         }
     }
 
@@ -140,10 +147,19 @@ final class NotificationScheduler {
         await removeDelivered(withPrefix: "HABIT_")
     }
 
-    func cancelFollowups(for habit: HabitType) {
+    /// フォローアップ通知をキャンセル
+    /// - Parameter habit: キャンセルする習慣タイプ
+    /// - Parameter includeAlarmKit: AlarmKitアラームもキャンセルするかどうか（デフォルトtrue）
+    func cancelFollowups(for habit: HabitType, includeAlarmKit: Bool = true) {
         Task {
             await removePending(withPrefix: followPrefix(for: habit))
             await removeDelivered(withPrefix: followPrefix(for: habit))
+            
+#if canImport(AlarmKit)
+            if #available(iOS 26.0, *), includeAlarmKit {
+                await AlarmKitHabitCoordinator.shared.cancelHabitAlarms(habit)
+            }
+#endif
         }
     }
 

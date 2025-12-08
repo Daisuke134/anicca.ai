@@ -53,7 +53,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
             stickyActive = true
             stickyUserReplyCount = 0
             stickyReady = false
-            logger.info("Sticky enabled for habit: \(String(describing: currentHabitType))")
+            logger.info("Sticky enabled for habit: \(String(describing: self.currentHabitType))")
         } else {
             stickyActive = false
             stickyUserReplyCount = 0
@@ -85,7 +85,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
             stickyActive = true
             stickyUserReplyCount = 0
             stickyReady = false
-            logger.info("Sticky enabled for VoIP habit: \(habit)")
+            logger.info("Sticky enabled for VoIP habit: \(String(describing: habit))")
         } else {
             stickyActive = false
             stickyUserReplyCount = 0
@@ -587,44 +587,28 @@ private extension VoiceSessionController {
                 logger.info("Sticky ready: first audio started → stickyReady=true")
                 print("Sticky ready: first audio started → stickyReady=true")
             }
-        case "conversation.item.done":
-            // デバッグログ: イベント受信を常に記録
-            logger.info("conversation.item.done: stickyActive=\(self.stickyActive), stickyReady=\(self.stickyReady)")
-            print("conversation.item.done: stickyActive=\(stickyActive), stickyReady=\(stickyReady)")
+        
+        case "input_audio_buffer.speech_stopped":
+            // ★★★ ユーザーの発話終了を検知（WebRTCでの正しいイベント）★★★
+            logger.info("input_audio_buffer.speech_stopped: stickyActive=\(self.stickyActive), stickyReady=\(self.stickyReady)")
+            print("input_audio_buffer.speech_stopped: stickyActive=\(stickyActive), stickyReady=\(stickyReady)")
+            guard stickyActive && stickyReady else { return }
             
-            guard stickyActive && stickyReady else {
-                logger.info("conversation.item.done: skipped (guard failed)")
-                return
+            self.stickyUserReplyCount += 1
+            logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): user speech stopped")
+            print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): user speech stopped")
+            if self.stickyUserReplyCount >= stickyReleaseThreshold {
+                stickyActive = false
+                logger.info("Sticky released at \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold)")
+                print("Sticky released at \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold)")
             }
-            
-            if let item = event["item"] as? [String: Any] {
-                let itemType = item["type"] as? String
-                let role = item["role"] as? String
-                
-                logger.info("conversation.item.done: type=\(itemType ?? "nil"), role=\(role ?? "nil")")
-                print("conversation.item.done: type=\(itemType ?? "nil"), role=\(role ?? "nil")")
-                
-                // type が "message" で role が "user" の場合のみカウント
-                if itemType == "message" && role == "user" {
-                    self.stickyUserReplyCount += 1
-                    logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): user replied")
-                    print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): user replied")
-                    if self.stickyUserReplyCount >= stickyReleaseThreshold {
-                        stickyActive = false
-                        logger.info("Sticky released at \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold)")
-                        print("Sticky released at \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold)")
-                    }
-                }
-            } else {
-                logger.warning("conversation.item.done: item is nil or invalid")
-                print("conversation.item.done: item is nil or invalid")
-            }
+        
         case "response.done":
             if stickyActive {
                 logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 2s")
                 print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 2s")
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 2_000_000_000) // 2秒遅延
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
                     guard self.stickyActive else {
                         self.logger.info("Sticky: cancelled during 2s delay (stickyActive=false)")
                         return
@@ -632,6 +616,7 @@ private extension VoiceSessionController {
                     self.sendWakeResponseCreate()
                 }
             }
+        
         default:
             break
         }

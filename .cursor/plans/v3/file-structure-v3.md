@@ -26,7 +26,7 @@ aniccaios/
 │   │   │   ├── BehaviorView.swift          # [新規] Today’s Insights＋ハイライト
 │   │   │   ├── TimelineView.swift          # [新規] 24hタイムライン
 │   │   │   ├── HighlightsCard.swift        # [新規] 4ドメイン芽バッジ
-│   │   │   └── FutureScenarioView.swift    # [新規] 10年後シナリオ
+│   │   │   └── FutureScenarioView.swift    # [新規] 10年後シナリオ表示
 │   │   ├── Profile/
 │   │   │   ├── ProfileView.swift           # [新規] Traits/Nudge設定
 │   │   │   └── TraitsDetailView.swift      # [新規] Big5 詳細
@@ -74,11 +74,13 @@ aniccaios/
 - `QuoteCard.swift`：30固定Quoteから日替わり表示。
 - `SessionView.swift`：音声セッション画面。オーブ表示・終了ボタン・状態テキスト。
 - `OrbView.swift`：AVAudioEngineのRMSに応じてスケールする青オーブ。
+
+- SessionView/OrbView: マイクRMS連動アニメ（平滑化含む）を実装する責務を明記。
 - `EMAModal.swift`：終了時の「楽になった？」Yes/No入力。
 - `BehaviorView.swift`：Today’s Insights・24hタイムライン・Highlights・未来カードを表示。
 - `TimelineView.swift`：睡眠/スクロール/集中/活動の24h帯状タイムライン。
 - `HighlightsCard.swift`：Wake/Screen/Workout/Ruminationのステータス＋芽バッジ。
-- `FutureScenarioView.swift`：10年後テキストを表示。
+- `FutureScenarioView.swift`：10年後シナリオテキストを表示（1年後/5年後は削除）。
 - `ProfileView.swift`：アカウント/Traits/Ideals/Struggles/Nudge強度/Data連携を編集。
 - `TraitsDetailView.swift`：Big5スコアと説明表示。
 - `WelcomeView.swift`：v3コピーのウェルカム。
@@ -139,7 +141,7 @@ apps/api/
 │   ├── prisma/
 │   │   └── schema.prisma              # [修正] 新7テーブル反映
 │   ├── middleware/                    # [既存]
-│   ├── config/environment.js          # [修正] mem0/Moss/Exaキー追加
+│   ├── config/environment.js          # [修正] MEM0_API_KEY追加
 │   └── utils/logger.js                # [既存] 変更なし
 ```
 
@@ -154,6 +156,8 @@ apps/api/
 - `modules/nudge/policy/mentalBandit.ts`：Feeling用EMA bandit。
 - `modules/nudge/features/stateBuilder.ts`：各DPの特徴量生成。
 - `modules/nudge/reward/rewardCalculator.ts`：ドメイン別成功判定・報酬化。
+
+- bandit/stateBuilder/reward で featureOrderHash を検証し、不一致時は起動エラーとする旨を1行追記。
 - `modules/simulation/futureScenario.ts`：LLMで10年後テキスト生成。
 - `modules/metrics/stateBuilder.ts`：daily_metricsからハイライト/タイムラインを作成。
 - `services/mobile/profileService.js`：traits/big5/nudge強度のCRUD。
@@ -161,7 +165,7 @@ apps/api/
 - `services/subscriptionStore.js`：entitlement + monthly_usage算出。
 - `services/revenuecat/virtualCurrency.js`：VCデビット/付与ロジック。
 - `prisma/schema.prisma`：tech-db-schema-v3.mdの新テーブル反映。
-- `config/environment.js`：mem0/Moss/Exaキーと上限値を管理。
+- `config/environment.js`：MEM0_API_KEYと上限値を管理。（Moss/Exaはv0.4以降）
 
 ## 3. 変更区分まとめ
 

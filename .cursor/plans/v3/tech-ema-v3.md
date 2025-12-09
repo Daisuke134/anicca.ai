@@ -87,6 +87,8 @@ Anicca v0.3 の Mental/Feeling ドメインでは、ユーザーが Talk タブ�
    - 5 秒未満（誤タップ等）は EMA をスキップし、`emaBetter = null` として保存。
 3. **Back ナビゲーション**でも End 同様の処理を行う。
 
+- セッション継続 <5秒ならモーダル非表示とし、emaBetter=null を送信する。
+
 ### 4.2 非表示条件
 
 - セッション継続時間 < 5 秒
@@ -131,20 +133,27 @@ Anicca v0.3 の Mental/Feeling ドメインでは、ユーザーが Talk タブ�
 
 ## 6. データストレージ
 
+API例:
+
+- POST /api/mobile/feeling/start -> { "sessionId": "...", "actionTemplate": "...", "context_snapshot": { ... } }
+
+- POST /api/mobile/feeling/end   -> { "sessionId": "...", "emaBetter": true|false|null, "summary": "..." }
+
 ### 6.1 テーブル: `feeling_sessions`
 
 ```prisma
 model FeelingSession {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  feelingId   String   // self_loathing / anxiety / irritation / other
-  topic       String?
-  startedAt   DateTime @default(now()) @db.Timestamptz
-  endedAt     DateTime?
-  emaBetter   Boolean?  // ← EMA 回答を保存
-  summary     String?  @db.Text
-  transcript  Json?    @db.JsonB
-  context     Json     @db.JsonB @default("{}") // state snapshot
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  feelingId      String   // self_loathing / anxiety / irritation / free_conversation
+  topic          String?
+  actionTemplate String?  // bandit が選択したテンプレートID
+  startedAt      DateTime @default(now()) @db.Timestamptz
+  endedAt        DateTime?
+  emaBetter      Boolean?  // ← EMA 回答を保存
+  summary        String?  @db.Text
+  transcript     Json?    @db.JsonB
+  context        Json     @db.JsonB @default("{}") // state snapshot (MentalState)
 
   @@index([userId, startedAt])
   @@index([feelingId, startedAt])
@@ -203,6 +212,8 @@ model FeelingSession {
 ## 8. 未回答時の処理
 
 ### 8.1 回答パターンと bandit 更新
+
+- 強制終了/スワイプdismiss/Skip/5秒未満はすべて emaBetter=null とし、bandit学習は行わない。
 
 | ユーザー行動 | `emaBetter` | `reward` | bandit 更新 |
 |--------------|-------------|----------|-------------|
@@ -281,16 +292,8 @@ async function handleFeelingEnd(
 
   await mentalBandit.save();
 
-  // 7. nudge_outcomes にも記録
-  await prisma.nudgeOutcome.create({
-    data: {
-      nudgeEventId: session.nudgeEventId, // NudgeEvent との関連（存在する場合）
-      reward,
-      emaScore: { better: emaBetter },
-      signals: {},
-      createdAt: new Date()
-    }
-  });
+  // 注意: FeelingSession は NudgeEvent とは独立して管理する
+  // nudge_outcomes への記録は行わない（feeling_sessions.emaBetter で十分）
 
   logger.info(`Session ${sessionId}: Bandit updated with reward=${reward}`);
 }
@@ -299,6 +302,8 @@ async function handleFeelingEnd(
 ### 9.2 MentalBandit の構造
 
 `tech-bandit-v3.md` で定義された LinTS を使用。
+
+- mentalBandit パラメータ: v=0.7, λ=1.0。actionId表（do_nothingを含む）を明記する。
 
 | パラメータ | 値 | 備考 |
 |------------|-----|------|

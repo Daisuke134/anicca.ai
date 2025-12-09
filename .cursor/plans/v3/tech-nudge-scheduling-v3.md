@@ -21,6 +21,14 @@
 - 落選DPは次窓へ延期（最大2窓まで）。2回延期後も競合なら破棄。
 - 例: 10:05にScreen/Movement同時→Screen採用、Movementは10:35まで延期、そこで再度競合判定。
 
+- quiet: 非Mentalは送信0件。active: 日上限1.5倍、クールダウン0.5x。
+
+- 全体上限到達後は Mental のみ許可。
+
+- 30分窓で競合時は優先度を比較し、落選DPは最大2窓まで延期。3回目も競合なら破棄。
+
+- metrics stale>15分 or 権限未許可時は送信しない（quiet扱い）。
+
 ## 3. クールダウン（ドメイン別・intensity補正）
 
 | ドメイン | 基本クールダウン | quiet | normal | active |
@@ -70,6 +78,9 @@ async function shouldSendNudge(userId: string, domain: string, now: Date): Promi
   // 0. データ鮮度
   const freshness = await getDailyMetricsFreshness(userId);
   if (freshness > 15 * MINUTE) return false; // staleなら送らない
+
+if (freshness > 15*MINUTE) return false;
+if (intensity === 'quiet' && domain !== 'mental') return false;
 
   // 1. nudgeIntensity + 権限
   const intensity = await getNudgeIntensity(userId); // quiet/normal/active

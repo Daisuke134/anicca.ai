@@ -210,6 +210,8 @@ Talk のコア機能（音声対話）のためにマイク権限を取得する
 * 今の感情・悩みに一番近いカードを押して、すぐ Anicca と話し始められる場所。
 * フリートークも `Something else` カード経由で開始する。
 
+- Talk: 4カード＋Quoteを固定（Talk to Anicca ボタンなし、Important Alarms 未採用）。
+
 ### レイアウト
 
 * ナビバータイトル（大きな見出し）: `How are you feeling now?`
@@ -226,7 +228,7 @@ Talk のコア機能（音声対話）のためにマイク権限を取得する
   * 例:
 
     * `Even when you hate yourself, you still deserve gentleness.`
-    * `You don’t have to fix your whole life tonight. One honest step is enough.`
+    * `You don't have to fix your whole life tonight. One honest step is enough.`
 
 #### B. Feeling カード（4枚）
 
@@ -387,6 +389,8 @@ Talk のコア機能（音声対話）のためにマイク権限を取得する
   * ハイライトカードは「評価＋ストリーク」だけを見せるレイヤー。
 
 **ストリーク計算ルール（仕様）**
+
+- Behavior Highlights: 🌱ストリークは Moving/Stable が続く日数、Needs Attention でリセット。状態判定ルールを明記。
 
 * 各ドメインごとに、その日の状態を 3値に分類：
 
@@ -576,6 +580,8 @@ Talk セッションの音声、Nudge 文言、Today’s Insights、10 Years Fro
   * 時間がある場合は、AVAudioEngine の RMS レベルに合わせてスケールを微調整する。
 * `Anicca is listening… / Anicca is speaking…` は Realtime API の状態に合わせて更新。
 * 右下の赤い丸ボタン（✕）はいつでもセッションを終了できる。
+
+- Session: 青オーブはマイクRMSに連動（scale 0.9–1.1 目安、平滑化係数 0.7:0.3）を必須仕様とする。
 
 ### 挙動
 

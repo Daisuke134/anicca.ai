@@ -70,6 +70,8 @@
 - 新規画面: `IdealsView.swift`, `StrugglesView.swift`, `ValueView.swift` をルーティングへ組み込み  
 - `SignInView`, `MicPermissionView`, `NotificationPermissionView` は v3 文言へ更新（`Skip/Continue` 整理）
 
+- 旧RawValueが保存されている場合、初期化時に新しい値へマッピングし直すこと。
+
 ### 1.5 その他 iOS 変更ポイント（抜粋）
 - `MainTabView.swift` を Talk/Behavior/Profile の3タブに更新  
 - `ProfileView.swift` へ `ideals/struggles/nudgeIntensity/stickyMode` 編集 UI を追加、`TraitsDetailView.swift` で `Big5Scores` を表示  
@@ -118,10 +120,193 @@
 - FamilyControls/ScreenTime 用の説明文（エンタイトルメント `com.apple.developer.family-controls` を使う前提で透明性を確保）  
 - 既存の `NSMicrophoneUsageDescription` / `NSUserNotificationUsageDescription` は v3 文言に更新（Talk/Nudge 目的を明記）
 
-## 6. 多言語方針（計画）
+## 5. 多言語方針（計画）
 - `preferredLanguage` (ja/en) をクライアント→サーバー間で保持し、サマリ文/Big5 summary/keywords/context_snapshot を同言語で生成・返却（未設定時はOS言語、なければ en）。Profile/Traits UI も同言語で表示する。
 
-## 5. 変更の優先順位
+## 6. 新規 API エンドポイント詳細仕様
+
+### 6.1 `GET /api/mobile/behavior/summary`
+
+**目的**: Today's Insights + ハイライト + 10年後シナリオを返す
+
+**リクエスト**:
+```http
+GET /api/mobile/behavior/summary
+Headers:
+  user-id: <uuid>
+  device-id: <uuid>
+```
+
+**レスポンス**:
+```json
+{
+  "todayInsight": "睡眠がいつもより短かった。午後のスクロールが増えた。",
+  "highlights": {
+    "wake": { "status": "on_track", "label": "Wake 7:30" },
+    "screen": { "status": "warning", "label": "SNS 2h 15m" },
+    "workout": { "status": "missed", "label": "No activity" },
+    "rumination": { "status": "ok", "label": "Low" }
+  },
+  "futureScenario": {
+    "ifContinue": "現在のパターンを続けると...",
+    "ifImprove": "少しの改善で..."
+  },
+  "timeline": [
+    { "type": "sleep", "start": "00:00", "end": "07:30" },
+    { "type": "scroll", "start": "08:00", "end": "08:45" }
+  ]
+}
+```
+
+### 6.2 `POST /api/mobile/feeling/start`
+
+**目的**: Feeling セッション開始を記録
+
+**リクエスト**:
+```json
+{
+  "feelingId": "self_loathing",
+  "topic": "今日の仕事で失敗した"
+}
+```
+
+**レスポンス**:
+```json
+{
+  "sessionId": "uuid",
+  "openingScript": "I'm here. Self-loathing is heavy..."
+}
+```
+
+### 6.3 `POST /api/mobile/feeling/end`
+
+**目的**: Feeling セッション終了 + EMA 回答を記録
+
+**リクエスト**:
+```json
+{
+  "sessionId": "uuid",
+  "emaBetter": true,
+  "summary": "自己批判の声を和らげることができた"
+}
+```
+
+**レスポンス**:
+```json
+{
+  "saved": true
+}
+```
+
+### 6.4 `POST /api/mobile/nudge/trigger`
+
+**目的**: iOS からの DP イベントを受信
+
+**リクエスト**:
+```json
+{
+  "eventType": "sns_30min",
+  "timestamp": "2025-01-15T14:30:00Z",
+  "payload": {
+    "snsMinutes": 30,
+    "app": "Instagram"
+  }
+}
+```
+
+**レスポンス**:
+```json
+{
+  "nudgeId": "uuid",
+  "templateId": "sns_break_gentle",
+  "message": "ここで一度、手を離そう。目と心を休める 5 分にしよう。"
+}
+```
+
+### 6.5 `POST /api/mobile/nudge/feedback`
+
+**目的**: Nudge の結果（成功/失敗）を記録
+
+**リクエスト**:
+```json
+{
+  "nudgeId": "uuid",
+  "outcome": "success",
+  "signals": {
+    "appClosed": true,
+    "noReopenMinutes": 15
+  }
+}
+```
+
+**レスポンス**:
+```json
+{
+  "recorded": true
+}
+```
+
+---
+
+## 7. エラーハンドリングパターン
+
+### 7.1 共通エラーレスポンス形式
+
+```json
+{
+  "error": {
+    "code": "ERROR_CODE",
+    "message": "Human readable message",
+    "details": {}
+  }
+}
+```
+
+### 7.2 エラーコード一覧
+
+| HTTP | code | 意味 | 対処 |
+|------|------|------|------|
+| 400 | `INVALID_REQUEST` | リクエスト形式が不正 | クライアント修正 |
+| 401 | `UNAUTHORIZED` | 認証失敗 | 再ログイン |
+| 402 | `QUOTA_EXCEEDED` | 月間利用量上限 | Paywall 表示 |
+| 403 | `FORBIDDEN` | 権限なし | - |
+| 404 | `NOT_FOUND` | リソースなし | - |
+| 422 | `VALIDATION_ERROR` | バリデーション失敗 | details 参照 |
+| 429 | `RATE_LIMITED` | レート制限 | リトライ |
+| 500 | `INTERNAL_ERROR` | サーバーエラー | リトライ |
+| 503 | `SERVICE_UNAVAILABLE` | メンテナンス中 | 後でリトライ |
+
+### 7.3 iOS 側のエラーハンドリング
+
+```swift
+enum AniccaAPIError: Error {
+    case invalidRequest(message: String)
+    case unauthorized
+    case quotaExceeded
+    case notFound
+    case validationError(details: [String: Any])
+    case rateLimited
+    case serverError
+    case serviceUnavailable
+    
+    init(statusCode: Int, body: [String: Any]) {
+        switch statusCode {
+        case 400: self = .invalidRequest(message: body["message"] as? String ?? "")
+        case 401: self = .unauthorized
+        case 402: self = .quotaExceeded
+        case 404: self = .notFound
+        case 422: self = .validationError(details: body["details"] as? [String: Any] ?? [:])
+        case 429: self = .rateLimited
+        case 503: self = .serviceUnavailable
+        default: self = .serverError
+        }
+    }
+}
+```
+
+---
+
+## 8. 変更の優先順位
 
 | 優先度 | ファイル/領域 | 理由 |
 |-------|---------------|------|
@@ -133,5 +318,19 @@
 | 6 | `OnboardingStep` + 新規 Onboarding Views | traits 取得の入口を作らないとプロファイルが埋まらない |
 | 7 | `ProfileView` / `TraitsDetailView` ほか UI | 編集・表示パスを提供するため |
 | 8 | `Info.plist` | センサー・権限が無いとリリース不可 |
+
+実装手順（依存順）
+
+1) Prisma/DB（schema.prisma + GIN raw SQL）
+
+2) profileService: traits/big5/nudgeIntensity/stickyMode 保存/取得
+
+3) realtime: /session で context_snapshot/entitlement を返却
+
+4) iOS AppState/Onboarding: enum値シフト対応（旧RawValueを新値にマップ）
+
+5) VoiceSessionController: context送信・EMA受信
+
+6) Sensors/Notifications: デバイス監視・再登録処理
 
 

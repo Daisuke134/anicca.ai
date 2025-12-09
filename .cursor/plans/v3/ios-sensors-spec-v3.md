@@ -76,11 +76,177 @@ class AniccaDeviceActivityMonitor: DeviceActivityMonitor {
 - `DeviceActivityCenter().startMonitoring(_:during:events:)` を本体アプリ起動時に一度だけ呼ぶ。
 - アプリが kill されても extension が監視を継続。イベント到達時は extension → App Group/通知で本体が起床。
 
-### 1.5 イベントハンドリングとプライバシー
+### 1.5 Extension ↔ 本体アプリ通信の実装詳細
+
+- App Group: 例 group.com.anicca.shared
+
+- Darwin通知名: com.anicca.threshold.reached
+
+- 起動時に UserDefaults(App Group) から未処理イベントを再取得し Nudge 送信
+
+- 端末再起動/アプリ起動で DeviceActivityCenter.startMonitoring を idempotent に再登録
+
+#### 通信フロー概要
+
+```
+[DeviceActivity Extension（別プロセス）]
+    │
+    ├─(1) しきい値到達を検知（eventDidReachThreshold）
+    │
+    ├─(2) App Group の UserDefaults に書き込み
+    │     Key: "com.anicca.lastThresholdEvent"
+    │     Value: { type: "sns_30min", timestamp: Date, activity: "sns" }
+    │
+    ├─(3) Darwin Notification を発火（ペイロードなし）
+    │     Name: "com.anicca.threshold.reached"
+    │
+    └─(4) 本体アプリが Darwin Notification を受信
+          → UserDefaults を読み取り
+          → NudgeTriggerService へ送信
+```
+
+#### なぜこの方法なのか
+- **Extension は本体アプリと別プロセス**で動作するため、直接のメモリ共有やメソッド呼び出しができない
+- **App Group**: 同じ開発者が作ったアプリ間でファイル/UserDefaultsを共有できる仕組み
+- **Darwin Notification**: OS レベルの通知機構。「何か起きたよ」だけを伝える（データは送れない）
+- **UserDefaults**: アプリの設定や小さなデータを保存する仕組み。App Group 経由で共有可能
+
+#### 実装コード（Swift）
+
+##### Extension側（DeviceActivityMonitor）
+
+```swift
+import DeviceActivity
+import os.log
+
+class AniccaDeviceActivityMonitor: DeviceActivityMonitor {
+    // App Group の UserDefaults（本体アプリと共有）
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.anicca.shared")!
+    private let logger = Logger(subsystem: "com.anicca.extension", category: "DeviceActivity")
+    
+    override func eventDidReachThreshold(_ event: DeviceActivityEvent.Name, activity: DeviceActivityName) {
+        logger.info("Threshold reached: \(event.rawValue)")
+        
+        // 1. App Group UserDefaults に書き込み
+        let eventData: [String: Any] = [
+            "type": event.rawValue,              // 例: "sns_30min"
+            "timestamp": Date().timeIntervalSince1970,
+            "activity": activity.rawValue       // 例: "sns_monitoring"
+        ]
+        sharedDefaults.set(eventData, forKey: "lastThresholdEvent")
+        sharedDefaults.synchronize()  // 即座に書き込み
+        
+        // 2. Darwin Notification で本体に「更新あり」を通知
+        let notificationName = CFNotificationName("com.anicca.threshold.reached" as CFString)
+        CFNotificationCenterPostNotification(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            notificationName,
+            nil,    // object: nil（Darwin は指定不可）
+            nil,    // userInfo: nil（Darwin はペイロードなし）
+            true    // deliverImmediately
+        )
+        
+        logger.info("Darwin notification posted")
+    }
+}
+```
+
+##### 本体アプリ側（起動時に登録）
+
+```swift
+import Foundation
+
+class ThresholdObserver {
+    static let shared = ThresholdObserver()
+    private let sharedDefaults = UserDefaults(suiteName: "group.com.anicca.shared")!
+    
+    private init() {
+        // Darwin Notification を監視開始
+        let name = CFNotificationName("com.anicca.threshold.reached" as CFString)
+        CFNotificationCenterAddObserver(
+            CFNotificationCenterGetDarwinNotifyCenter(),
+            Unmanaged.passUnretained(self).toOpaque(),  // observer
+            { center, observer, name, object, userInfo in
+                // コールバック（C関数スタイル）
+                // Swift の NotificationCenter に転送
+                NotificationCenter.default.post(name: .thresholdReached, object: nil)
+            },
+            name.rawValue,
+            nil,
+            .deliverImmediately
+        )
+    }
+    
+    /// UserDefaults から最新イベントを読み取り
+    func getLatestEvent() -> ThresholdEvent? {
+        guard let data = sharedDefaults.dictionary(forKey: "lastThresholdEvent"),
+              let type = data["type"] as? String,
+              let timestamp = data["timestamp"] as? TimeInterval else {
+            return nil
+        }
+        return ThresholdEvent(
+            type: type,
+            timestamp: Date(timeIntervalSince1970: timestamp),
+            activity: data["activity"] as? String
+        )
+    }
+}
+
+extension Notification.Name {
+    static let thresholdReached = Notification.Name("com.anicca.thresholdReached")
+}
+
+struct ThresholdEvent {
+    let type: String        // "sns_30min", "sns_60min" など
+    let timestamp: Date
+    let activity: String?
+}
+```
+
+##### 利用側（NudgeTriggerService）
+
+```swift
+class NudgeTriggerService {
+    init() {
+        // Darwin 経由の通知を購読
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleThresholdReached),
+            name: .thresholdReached,
+            object: nil
+        )
+    }
+    
+    @objc private func handleThresholdReached() {
+        guard let event = ThresholdObserver.shared.getLatestEvent() else { return }
+        
+        // サーバーに Nudge トリガーを送信
+        Task {
+            await sendNudgeTrigger(eventType: event.type, timestamp: event.timestamp)
+        }
+    }
+}
+```
+
+#### ユーザー体験の流れ
+
+1. **ユーザーが Instagram を 30分使う**
+2. **Extension が検知**（アプリが閉じていても動く）
+3. **本体アプリに通知が届く**（バックグラウンドでも受信可能）
+4. **サーバーに「SNS 30分超過」を送信**
+5. **サーバーが Nudge を決定**
+6. **プッシュ通知でユーザーに届く**: 「ここで一度、手を離そう。目と心を休める 5 分にしよう。」
+
+#### 制約事項
+- **Darwin Notification はペイロードを持てない**: 「何か起きた」しか伝えられないので、詳細データは必ず App Group UserDefaults 経由
+- **Extension のメモリ制限**: 約 6MB。重い処理は本体アプリに任せる
+- **アプリ kill 状態**: Extension は動作するが、本体アプリの Darwin observer は起動しない → 次回起動時に UserDefaults から未処理イベントを拾う設計にする
+
+### 1.6 イベントハンドリングとプライバシー
 - FamilyControls は選択内容をアプリに開示しない。得られるのは「カテゴリ名/ドメイン/アプリ bundleID の集合」までで、実利用ログはなし。
 - 送信データは「イベント種別 + 閾値到達時刻」のみ。個別サイトや閲覧内容を送らない。
 
-### 1.6 制約とテスト
+### 1.7 制約とテスト
 - 子どもデバイスでのテストは Family Sharing が必要。審査用に動画キャプチャを準備。
 - シミュレータ不可。実機で `Settings > Screen Time` が ON であることを確認。
 - 端末再起動時にスケジュールを再登録（`applicationDidBecomeActive` で idempotent に設定）。
@@ -194,6 +360,8 @@ func startActivityUpdates() {
 
 ## 5. Info.plist 追加キー
 
+- FamilyControls entitlement 申請文言例を追記する。
+
 | Key | Value (例) |
 | --- | --- |
 | `NSMotionUsageDescription` | "Anicca uses motion data to detect when you've been sitting too long." |
@@ -213,7 +381,9 @@ func startActivityUpdates() {
 5) HealthKit 認可フロー実装→ObserverQuery + BackgroundDelivery を登録。  
 6) 睡眠/歩数を日次集計し、03:00 UTC に `/daily_metrics` 送信。  
 7) CoreMotion の間欠監視を実装（1分/5分モード切替）、90 分 stationary で DP 送信。  
-8) Data Integration トグルと再権限要求導線を Profile/Settings に配置（UI 変更なしで文言のみ）。  
+8) Data Integration トグルと再権限要求導線を Profile/Settings に配置（UI 変更なしで文言のみ）。
+
+- TestFlight/審査用の実機動画を用意する。  
 
 ---
 

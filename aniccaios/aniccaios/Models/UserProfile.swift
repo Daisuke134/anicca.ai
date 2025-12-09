@@ -57,8 +57,8 @@ struct UserProfile: Codable {
         idealTraits: [String] = [],
         problems: [String] = [],
         useAlarmKitForWake: Bool = true,
-        useAlarmKitForTraining: Bool = true,
-        useAlarmKitForBedtime: Bool = true,
+        useAlarmKitForTraining: Bool = false,
+        useAlarmKitForBedtime: Bool = false,
         useAlarmKitForCustom: Bool = false,
         stickyModeEnabled: Bool = true
     ) {
@@ -103,9 +103,12 @@ struct UserProfile: Codable {
         
         // AlarmKit設定（各習慣ごと）
         useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? true
-        useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? true
-        useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? true
+        useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? false
+        useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? false
         useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? false
+        
+        // カスタム習慣のAlarmKitは常にOFFから始める（既存ユーザーも含めてリセット）
+        useAlarmKitForCustom = false
         
         // Stickyモード（後方互換: wakeStickyModeEnabled も読み取る）
         if let sticky = try container.decodeIfPresent(Bool.self, forKey: .stickyModeEnabled) {

@@ -1,329 +1,383 @@
-まず `todolist.md` を確認させてください。
+# Anicca v0.3 実装 TODO リスト
+
+## 概要
+- 総タスク数: 38
+- 推定実装期間: 4週間
+- 依存関係グラフ: 下記参照
+
+## フェーズ 1: 基盤（DB / 環境設定）
+
+### 1.1 Prisma新規モデル定義
+- **対象ファイル**: `apps/api/prisma/schema.prisma`
+- **依存**: なし
+- **概要**: `user_traits/daily_metrics/nudge_events/nudge_outcomes/feeling_sessions/habit_logs/bandit_models` を追加し既存テーブルもPrisma化。
+- **詳細仕様**: `tech-db-schema-v3.md` セクション4,3,10.1
+- **疑似パッチ**: (後で追加)
+
+### 1.2 JSONB GINインデックス用raw SQL追記
+- **対象ファイル**: `apps/api/prisma/migrations/*/migration.sql`
+- **依存**: 1.1
+- **概要**: `state/shortTerm/mindSummary` 等に `jsonb_path_ops` GIN を追加。
+- **詳細仕様**: `tech-db-schema-v3.md` セクション5,10.2
+- **疑似パッチ**: (後で追加)
+
+### 1.3 環境変数MEM0追加と削除リスト反映
+- **対象ファイル**: `apps/api/src/config/environment.js`
+- **依存**: なし
+- **概要**: `MEM0_API_KEY` を追加し Moss/Exa を非使用に明記。
+- **詳細仕様**: `v3-stack.md` セクション12.2-12.3
+- **疑似パッチ**: (後で追加)
+
+### 1.4 UUID移行/バックフィル計画のマイグレーションメモ
+- **対象ファイル**: `docs/migrations/uuid-plan.md` (新規)
+- **依存**: 1.1
+- **概要**: text `user_id` から `profile_id uuid` への二重書き込み手順を文書化。
+- **詳細仕様**: `tech-db-schema-v3.md` セクション10.1
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 2: API エンドポイント
+
+### 2.1 mem0クライアントラッパ追加
+- **対象ファイル**: `apps/api/src/modules/memory/mem0Client.ts`
+- **依存**: 1.3
+- **概要**: mem0 Node SDK の初期化と profile/behavior/interaction/nudge_meta の CRUD をまとめる。
+- **詳細仕様**: `v3-stack.md` セクション4.1, `tech-db-schema-v3.md` セクション6
+- **疑似パッチ**: (後で追加)
+
+### 2.2 traits/big5/nudge保存対応
+- **対象ファイル**: `apps/api/src/services/mobile/profileService.js`
+- **依存**: 1.1, 2.1
+- **概要**: `user_traits` 読み書き・旧 `idealTraits/problems` バックフィル・nudgeIntensity/stickyMode 更新。
+- **詳細仕様**: `migration-patch-v3.md` セクション2.2, `tech-db-schema-v3.md` セクション3
+- **疑似パッチ**: (後で追加)
+
+### 2.3 realtime context_snapshot拡張
+- **対象ファイル**: `apps/api/src/routes/mobile/realtime.js`
+- **依存**: 2.1, 2.2
+- **概要**: `/session` レスポンスに `context_snapshot` + entitlement を含め、`/session/stop` も同返却。
+- **詳細仕様**: `migration-patch-v3.md` セクション2.1
+- **疑似パッチ**: (後で追加)
+
+### 2.4 BehaviorサマリAPI新設
+- **対象ファイル**: `apps/api/src/routes/mobile/behavior.js`
+- **依存**: 1.1, 2.7
+- **概要**: `GET /behavior/summary` 実装（todayInsight/highlights/futureScenario/timeline）。
+- **詳細仕様**: `migration-patch-v3.md` セクション6.1
+- **疑似パッチ**: (後で追加)
+
+### 2.5 Feeling EMI API
+- **対象ファイル**: `apps/api/src/routes/mobile/feeling.js`
+- **依存**: 1.1, 2.9
+- **概要**: `POST /feeling/start`/`end` で feeling_sessions 保存・EMA reward 反映。
+- **詳細仕様**: `migration-patch-v3.md` セクション6.2-6.3
+- **疑似パッチ**: (後で追加)
+
+### 2.6 Nudge trigger/feedback API
+- **対象ファイル**: `apps/api/src/routes/mobile/nudge.js`
+- **依存**: 1.1, 2.7, 2.9
+- **概要**: `POST /nudge/trigger` で DP state→policy、`/nudge/feedback` で outcome 記録。
+- **詳細仕様**: `migration-patch-v3.md` セクション6.4-6.5
+- **疑似パッチ**: (後で追加)
+
+### 2.7 metrics state builder
+- **対象ファイル**: `apps/api/src/modules/metrics/stateBuilder.ts`
+- **依存**: 1.1
+- **概要**: `daily_metrics` から timeline/highlights/TodaysInsight 素材を生成。
+- **詳細仕様**: `v3-stack.md` セクション6.1, `tech-db-schema-v3.md` セクション6
+- **疑似パッチ**: (後で追加)
+
+### 2.8 未来シナリオ生成モジュール
+- **対象ファイル**: `apps/api/src/modules/simulation/futureScenario.ts`
+- **依存**: 2.7
+- **概要**: 1/5/10年シナリオ生成の LLM ラッパとプロンプト定義。
+- **詳細仕様**: `v3-stack.md` セクション6.2
+- **疑似パッチ**: (後で追加)
+
+### 2.9 LinTS/ポリシー実装
+- **対象ファイル**: `apps/api/src/modules/nudge/policy/{linTS.ts,wakeBandit.ts,mentalBandit.ts}`
+- **依存**: 1.1, 2.7
+- **概要**: LinTS 本体と wake/mental 用 policy を実装、featureOrderHash 検証を入れる。
+- **詳細仕様**: `v3-stack.md` セクション10, `tech-bandit-v3.md` 参照, `file-structure-v3.md` 2.1
+- **疑似パッチ**: (後で追加)
+
+### 2.10 Nudge state/rewardビルダー
+- **対象ファイル**: `apps/api/src/modules/nudge/features/stateBuilder.ts`, `apps/api/src/modules/nudge/reward/rewardCalculator.ts`
+- **依存**: 1.1, 2.9
+- **概要**: DP別特徴量生成と SNS/睡眠/座位/mental reward 判定を共通化。
+- **詳細仕様**: `v3-stack.md` セクション5.2-5.3, `tech-state-builder-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 2.11 Realtime tool結果整形
+- **対象ファイル**: `apps/api/src/services/openaiRealtimeService.js`
+- **依存**: 2.3
+- **概要**: `get_context_snapshot`/tool返却の JSON 形とエラー整形を更新。
+- **詳細仕様**: `v3-stack.md` セクション2.1,3.2.1
+- **疑似パッチ**: (後で追加)
+
+### 2.12 entitlement返却拡張
+- **対象ファイル**: `apps/api/src/services/subscriptionStore.js`
+- **依存**: 1.1
+- **概要**: `monthly_usage_limit/remaining/count` をレスポンスへ追加。
+- **詳細仕様**: `migration-patch-v3.md` セクション2.3,8
+- **疑似パッチ**: (後で追加)
+
+### 2.13 ルーター登録整理
+- **対象ファイル**: `apps/api/src/routes/mobile/index.js`
+- **依存**: 2.4-2.6
+- **概要**: behavior/feeling/nudge ルートをモジュール登録。
+- **詳細仕様**: `file-structure-v3.md` セクション2.1
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 3: iOS 基盤（AppState / Models）
+
+### 3.1 UserProfile拡張
+- **対象ファイル**: `aniccaios/aniccaios/Models/UserProfile.swift`
+- **依存**: 2.2
+- **概要**: `ideals/struggles/big5/keywords/summary/nudgeIntensity/stickyMode` 追加と後方互換。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.3
+- **疑似パッチ**: (後で追加)
+
+### 3.2 AppState同期項目拡張
+- **対象ファイル**: `aniccaios/aniccaios/AppState.swift`
+- **依存**: 3.1
+- **概要**: 新フィールドの保存/同期・profileSyncPayload 更新・traitsアップデートメソッド追加。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.1
+- **疑似パッチ**: (後で追加)
+
+### 3.3 OnboardingStep値シフト対応
+- **対象ファイル**: `aniccaios/aniccaios/Onboarding/OnboardingStep.swift`
+- **依存**: 3.2
+- **概要**: `.ideals/.struggles/.value` 追加と旧RawValueからのマイグレーション。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.4
+- **疑似パッチ**: (後で追加)
+
+### 3.4 NetworkSessionManagerエラー整形拡張
+- **対象ファイル**: `aniccaios/aniccaios/Services/NetworkSessionManager.swift`
+- **依存**: 2.11
+- **概要**: 共通エラーコードマップ（quotaExceeded等）を `AniccaAPIError` に合わせる。
+- **詳細仕様**: `migration-patch-v3.md` セクション7.3
+- **疑似パッチ**: (後で追加)
+
+### 3.5 QuoteProviderサービス追加
+- **対象ファイル**: `aniccaios/aniccaios/Services/QuoteProvider.swift`
+- **依存**: なし
+- **概要**: 固定30 Quote を日替わりで返すシンプルロジックを追加。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `quotes-v3.md`
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 4: iOS UI（Onboarding）
+
+### 4.1 Ideals/Struggles/Value 画面追加
+- **対象ファイル**: `aniccaios/aniccaios/Views/Onboarding/{IdealsView.swift,StrugglesView.swift,ValueView.swift}`
+- **依存**: 3.3
+- **概要**: タグ選択と3ユースケース表示、選択結果を AppState に保存。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.4, `v3-ui.md` Onboarding
+- **疑似パッチ**: (後で追加)
+
+### 4.2 既存権限/SignIn文言更新
+- **対象ファイル**: `aniccaios/aniccaios/Views/Onboarding/{SignInView.swift,MicPermissionView.swift,NotificationPermissionView.swift,WelcomeView.swift}`
+- **依存**: 4.1
+- **概要**: v3 コピー反映と Skip/Continue 整理。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.4, `v3-ui.md`
+- **疑似パッチ**: (後で追加)
+
+### 4.3 Onboardingフロー配線
+- **対象ファイル**: `aniccaios/aniccaios/ContentView.swift`
+- **依存**: 4.1, 4.2
+- **概要**: 新ステップ順 `.welcome→ideals→struggles→value→account→microphone→notifications→habitSetup...` へ変更。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.4
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 5: iOS UI（Talk / Session）
+
+### 5.1 TalkView/FeelingCard構築
+- **対象ファイル**: `aniccaios/aniccaios/Views/Talk/{TalkView.swift,FeelingCard.swift}`
+- **依存**: 3.2, 5.5
+- **概要**: Feeling3動的+Something else固定カード、タップで SessionView 起動。
+- **詳細仕様**: `v3-stack.md` セクション2.2.1, `file-structure-v3.md` 1.2
+- **疑似パッチ**: (後で追加)
+
+### 5.2 QuoteCard連携
+- **対象ファイル**: `aniccaios/aniccaios/Views/Talk/QuoteCard.swift`
+- **依存**: 3.5
+- **概要**: QuoteProvider から日替わり取得し TalkView に表示。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `quotes-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 5.3 SessionView/Orb/EMA UI
+- **対象ファイル**: `aniccaios/aniccaios/Views/Session/{SessionView.swift,OrbView.swift,EMAModal.swift}`
+- **依存**: 5.1
+- **概要**: 青オーブRMS連動・状態表示・終了ボタン・EMA Yes/No モーダルを実装。
+- **詳細仕様**: `v3-stack.md` セクション2.2.3, `file-structure-v3.md` 1.2
+- **疑似パッチ**: (後で追加)
+
+### 5.4 VoiceSessionController拡張
+- **対象ファイル**: `aniccaios/aniccaios/VoiceSessionController.swift`
+- **依存**: 5.3, 2.3
+- **概要**: `context` 送信・EMA 受信・sticky/nudgeIntensity 反映・entitlement/context_snapshot 保存。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.2
+- **疑似パッチ**: (後で追加)
+
+### 5.5 Realtimeプロンプト/ツール定義更新
+- **対象ファイル**: `aniccaios/aniccaios/Resources/Prompts/*`
+- **依存**: 5.4
+- **概要**: tool schema（get_context_snapshot/choose_nudge/log_nudge/get_behavior_summary）を最新に揃える。
+- **詳細仕様**: `v3-stack.md` セクション3.2.1, `prompts-v3.md`
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 6: iOS UI（Behavior / Profile）
+
+### 6.1 BehaviorViewデータ接続
+- **対象ファイル**: `aniccaios/aniccaios/Views/Behavior/BehaviorView.swift`
+- **依存**: 2.4, 3.4
+- **概要**: `/behavior/summary` 取得し Today’s Insights/未来/タイムラインを描画。
+- **詳細仕様**: `v3-stack.md` セクション2.2.2, `migration-patch-v3.md` セクション6.1
+- **疑似パッチ**: (後で追加)
+
+### 6.2 TimelineView実装
+- **対象ファイル**: `aniccaios/aniccaios/Views/Behavior/TimelineView.swift`
+- **依存**: 6.1
+- **概要**: sleep/scroll/focus/activity 帯状表示をタイムラインで描画。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `v3-ui.md`
+- **疑似パッチ**: (後で追加)
+
+### 6.3 HighlightsCard実装
+- **対象ファイル**: `aniccaios/aniccaios/Views/Behavior/HighlightsCard.swift`
+- **依存**: 6.1
+- **概要**: wake/screen/workout/rumination のステータス＋芽バッジを表示。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `v3-ui.md`
+- **疑似パッチ**: (後で追加)
+
+### 6.4 FutureScenarioView実装
+- **対象ファイル**: `aniccaios/aniccaios/Views/Behavior/FutureScenarioView.swift`
+- **依存**: 6.1
+- **概要**: 10年後テキスト表示（1/5年は非表示）。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `v3-stack.md` セクション6.2
+- **疑似パッチ**: (後で追加)
+
+### 6.5 ProfileView拡張
+- **対象ファイル**: `aniccaios/aniccaios/Views/Profile/ProfileView.swift`
+- **依存**: 3.2, 2.2
+- **概要**: ideals/struggles/nudgeIntensity/stickyMode/DataIntegrationトグル編集を追加。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.5,2.4
+- **疑似パッチ**: (後で追加)
+
+### 6.6 TraitsDetailView追加
+- **対象ファイル**: `aniccaios/aniccaios/Views/Profile/TraitsDetailView.swift`
+- **依存**: 6.5
+- **概要**: Big5レーダーと説明文を表示、override を AppState 経由で反映。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `v3-stack.md` セクション11
+- **疑似パッチ**: (後で追加)
+
+### 6.7 SettingsViewデータ連携
+- **対象ファイル**: `aniccaios/aniccaios/Settings/SettingsView.swift`
+- **依存**: 7.1-7.3
+- **概要**: ScreenTime/HealthKit/Motion トグルと連携状態表示。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `ios-sensors-spec-v3.md`
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 7: センサー連携
+
+### 7.1 DeviceActivityMonitor実装
+- **対象ファイル**: `aniccaios/aniccaios/Sensors/DeviceActivityMonitor.swift`
+- **依存**: 3.4
+- **概要**: SNS/Video カテゴリの連続使用監視としきい値超過イベント生成。
+- **詳細仕様**: `v3-stack.md` セクション2.3, `ios-sensors-spec-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 7.2 HealthKitManager実装
+- **対象ファイル**: `aniccaios/aniccaios/Sensors/HealthKitManager.swift`
+- **依存**: 3.4
+- **概要**: 睡眠/歩数の前日集計を取得しローカル保持。
+- **詳細仕様**: `v3-stack.md` セクション2.3, `ios-sensors-spec-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 7.3 MotionManager実装
+- **対象ファイル**: `aniccaios/aniccaios/Sensors/MotionManager.swift`
+- **依存**: 3.4
+- **概要**: 座位2h検知・アクティビティ状態のフックを提供。
+- **詳細仕様**: `v3-stack.md` セクション2.3, `ios-sensors-spec-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 7.4 MetricsUploader日次送信
+- **対象ファイル**: `aniccaios/aniccaios/Services/MetricsUploader.swift`
+- **依存**: 7.1-7.3, 2.4
+- **概要**: ScreenTime/睡眠/歩数/座位を日次で `/behavior/summary` 用集計として送信。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `tech-db-schema-v3.md` セクション6
+- **疑似パッチ**: (後で追加)
+
+### 7.5 権限状態の AppState 反映
+- **対象ファイル**: `aniccaios/aniccaios/AppState.swift`
+- **依存**: 7.1-7.3
+- **概要**: ScreenTime/HealthKit/Motion 許可フラグを永続化し UI へ露出。
+- **詳細仕様**: `v3-stack.md` セクション14.5, `ios-sensors-spec-v3.md`
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 8: Nudge システム
+
+### 8.1 NudgeTriggerService実装
+- **対象ファイル**: `aniccaios/aniccaios/Services/NudgeTriggerService.swift`
+- **依存**: 7.1-7.3, 2.6
+- **概要**: DP検知（SNS30/60, sleep前, sedentary2h, morning phone）で `/nudge/trigger` を送信。
+- **詳細仕様**: `v3-stack.md` セクション5.2, `tech-nudge-scheduling-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 8.2 NotificationSchedulerフォローアップ拡張
+- **対象ファイル**: `aniccaios/aniccaios/Notifications/NotificationScheduler.swift`
+- **依存**: 8.1
+- **概要**: Nudgeカテゴリ/フォローアップ通知の登録と nudgeIntensity に応じた頻度調整。
+- **詳細仕様**: `migration-patch-v3.md` セクション1.5, `tech-nudge-scheduling-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 8.3 AlarmKitHabitCoordinator起床DP連携
+- **対象ファイル**: `aniccaios/aniccaios/Notifications/AlarmKitHabitCoordinator.swift`
+- **依存**: 8.1
+- **概要**: 起床検知→DPイベント送信と Session 起動遷移のフック。
+- **詳細仕様**: `file-structure-v3.md` セクション1.2, `v3-stack.md` セクション5.2.1
+- **疑似パッチ**: (後で追加)
+
+### 8.4 Nudge結果フィードバック取得
+- **対象ファイル**: `aniccaios/aniccaios/Services/NudgeTriggerService.swift`
+- **依存**: 8.1
+- **概要**: 通知開封やスクリーン閉鎖時間を収集し `/nudge/feedback` へ送信。
+- **詳細仕様**: `migration-patch-v3.md` セクション6.5, `tech-nudge-scheduling-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 8.5 Talk Feeling bandit連携
+- **対象ファイル**: `aniccaios/aniccaios/VoiceSessionController.swift`
+- **依存**: 5.4, 2.5
+- **概要**: Feeling開始/終了で bandit state/EMA をサーバーへ送信し context_snapshot に反映。
+- **詳細仕様**: `v3-stack.md` セクション10, `tech-bandit-v3.md`
+- **疑似パッチ**: (後で追加)
+
+## フェーズ 9: 統合テスト / 仕上げ
+
+### 9.1 Info.plist 権限文言更新
+- **対象ファイル**: `aniccaios/aniccaios/Info.plist`
+- **依存**: 7.1-7.3
+- **概要**: Health/Motion/FamilyControls/マイク/通知の目的文言をv3仕様に更新。
+- **詳細仕様**: `migration-patch-v3.md` セクション4
+- **疑似パッチ**: (後で追加)
+
+### 9.2 手動動作確認チェックリスト作成
+- **対象ファイル**: `docs/checklists/v0.3-manual-test.md` (新規)
+- **依存**: 全フェーズ
+- **概要**: Talk→EMA、Behavior取得、ScreenTime/Sleep/Motion DP送信、Nudge通知までの手動検証項目を列挙。
+- **詳細仕様**: `v3-stack.md` セクション9, `tech-ema-v3.md`
+- **疑似パッチ**: (後で追加)
+
+### 9.3 Fallback/未許可UX文言確認
+- **対象ファイル**: `aniccaios/aniccaios/Views/Settings/SettingsView.swift`
+- **依存**: 7.5
+- **概要**: センサー未許可時の案内コピーを表示し Talk/Feeling 継続可を明示。
+- **詳細仕様**: `v3-stack.md` セクション14.5
+- **疑似パッチ**: (後で追加)
+
+## 依存関係図
+
+フェーズ1 ─→ フェーズ2 ─→ フェーズ3 ─┬→ フェーズ4
+                                    ├→ フェーズ5
+                                    └→ フェーズ6
+フェーズ3 ─→ フェーズ7 ─→ フェーズ8
+全フェーズ ─→ フェーズ9
 
-[1 tool called]
-
-`v3-ui.md` と `v3-data.md` も確認して、完全なリストを作成します。
-
-[2 tools called]
-
-すべてのドキュメントを確認しました。現在の状態を完全に把握した上で、**実装時の迷いを0にするために必要なもの**を完全にリストアップします。
-
----
-
-# 実装に必要なドキュメント：完全リスト
-
-## A. 既存ドキュメント（6ファイル）
-
-| ファイル | 状態 | 補足 |
-|---------|------|------|
-| `v3-ux.md` | ✓ 更新済み | UX全体像 |
-| `v3-stack.md` | ✓ 更新済み | 技術スタック全体 |
-| `v3-stack-revision.md` | ✓ 更新済み | EMA/Exa/BIG5追加 |
-| `v3-stack-nudge.md` | ✓ 更新済み | Nudge＋記憶レイヤー |
-| `v3-data.md` | ✓ OK | 6ドメインのstate/action/reward |
-| `v3-ui.md` | ✓ OK | UI仕様書（完全版） |
-
----
-
-## B. 新規作成が必要なドキュメント（9ファイル）
-
-### 1. `prompts-v3.md` - LLMプロンプト集 【Must】
-
-**なぜ必要か**: Anicca の人格、Nudge文言、サマリ生成などすべてのLLM呼び出しで使うプロンプトがないと、実装時に「何を書けばいいか」で止まる。
-
-**書くべき内容**:
-
-| セクション | 内容 |
-|-----------|------|
-| 1. Talk セッション system prompt | Anicca の人格・トーン・禁止事項・tool定義 |
-| 2. Feeling 導入スクリプト生成 | feelingId（self_loathing, anxiety, irritation, free_conversation）ごとのテンプレート |
-| 3. Nudge 文言生成 | domain × templateId ごとのプロンプト（wake_gentle, sns_direct 等） |
-| 4. Today's Insights 生成 | Behavior画面の「今日の一言」サマリ生成プロンプト |
-| 5. 10年後シナリオ生成 | 行動ログ → 長期未来シナリオ生成プロンプト |
-| 6. BIG5 推定 | 30日分ログ → Big Five スコア + 説明文 生成プロンプト |
-| 7. 核フレーズ一覧 | 「毎回同じ」内在化用フレーズ（wake, sleep, sns, self_loathing 等） |
-
----
-
-### 2. `quotes-v3.md` - Quoteカード固定メッセージ 【Must】
-
-**なぜ必要か**: Talk画面の「今日の一言」は30個の固定メッセージから選ぶと決まっている。これがないと実装できない。
-
-**書くべき内容**:
-
-```markdown
-# Anicca Quote Collection (30 messages)
-
-1. Even when you hate yourself, you still deserve gentleness.
-2. You don't have to fix your whole life tonight. One honest step is enough.
-3. ...（30個すべて）
-```
-
----
-
-### 3. `tech-bandit-v3.md` - Bandit実装仕様 【Must】
-
-**なぜ必要か**: 「LinTSを使う」とあるが、具体的にどう実装するか不明。
-
-**書くべき内容**:
-
-| セクション | 内容 |
-|-----------|------|
-| 1. 採用アルゴリズム | LinTS (Linear Thompson Sampling) の概要 |
-| 2. 実装言語・配置先 | TypeScript（`apps/api/src/modules/nudge/policy/`）|
-| 3. state → x エンコード | `number[]` / 正規化方法 / one-hot encoding |
-| 4. action space定義 | ドメイン別の action_id → template_id マッピング表 |
-| 5. 学習タイミング | reward判定後に即時更新 / バッチ更新 |
-| 6. モデル保存形式 | JSON（重み行列 / 分散行列）/ DB or Redis |
-| 7. 探索パラメータ | Thompson Samplingのσ / 探索率の調整方法 |
-| 8. 初期化方針 | prior設定 / cold start時の挙動 |
-
----
-
-### 4. `tech-db-schema-v3.md` - DBスキーマ定義 【Must】
-
-**なぜ必要か**: テーブル構造がないとAPI実装が始められない。
-
-**書くべき内容**:
-
-| セクション | 内容 |
-|-----------|------|
-| 1. ER図（概要） | テーブル間のリレーション |
-| 2. Prisma schema | 各テーブルの定義（SQL DDL相当） |
-
-**必要なテーブル**:
-
-| テーブル | 用途 |
-|---------|------|
-| `users` | ユーザー基本情報（apple_user_id等） |
-| `user_traits` | ideals[], struggles[], big5{}, nudge_intensity |
-| `daily_metrics` | 日次メトリクス（sleep, screen, steps等） |
-| `nudge_events` | Nudge送信記録（domain, state, action, reward） |
-| `nudge_outcomes` | Nudge結果記録（short_term_outcome, reward） |
-| `feeling_sessions` | Feelingセッション記録（ema_better等） |
-| `habit_logs` | 習慣ログ |
-| `quotes` | 固定Quote（またはコードに直接埋め込み） |
-| `bandit_models` | 各ドメインのbanditモデル重み |
-
----
-
-### 5. `tech-state-builder-v3.md` - State構築仕様 【Must】
-
-**なぜ必要か**: 各ドメインのstateをどう構築するか、データソースの特定が必要。
-
-**書くべき内容**:
-
-| 関数 | 入力 | 出力型 | データソース |
-|------|------|--------|-------------|
-| `buildWakeState(userId, now)` | userId, 現在時刻 | `WakeState` | `daily_metrics`(7日), `nudge_events`, `user_traits` |
-| `buildScreenState(userId, now)` | userId, 現在時刻 | `ScreenState` | DeviceActivity(当日), `daily_metrics`, `user_traits` |
-| `buildMovementState(userId, now)` | userId, 現在時刻 | `MovementState` | HealthKit, `daily_metrics` |
-| `buildMentalState(userId, feelingId)` | userId, feelingId | `MentalState` | mem0, `feeling_sessions`, `user_traits` |
-| `buildHabitState(userId, habitId)` | userId, habitId | `HabitState` | `habit_logs`, `user_traits` |
-
-**正規化ルール**も明記（例: `sleepDebtHours = avg7d - lastNight`）
-
----
-
-### 6. `ios-sensors-spec-v3.md` - iOSセンサー仕様 【Must】
-
-**なぜ必要か**: DeviceActivity / HealthKit の実装制約を知らないとiOS側が作れない。
-
-**書くべき内容**:
-
-| セクション | 内容 |
-|-----------|------|
-| **DeviceActivity / FamilyControls** | |
-| - entitlement申請 | 必要な capability と申請手順 |
-| - FamilyActivityPicker | 監視対象アプリ選択UIの実装方法 |
-| - 監視threshold | 30分/60分等の設定方法 |
-| - ShieldActionDelegate | 制限時の挙動 |
-| **HealthKit** | |
-| - HKSampleType一覧 | sleepAnalysis, stepCount, heartRate等 |
-| - 認可フロー | 許可リクエストの実装 |
-| - バックグラウンド読み取り | HKObserverQuery設定 |
-| **CoreMotion** | |
-| - CMMotionActivityManager | stationary判定ロジック |
-| - 電池消費対策 | 更新頻度の制限 |
-| **データ送信** | |
-| - タイミング | 1日1回バッチ or リアルタイム |
-| - JSON形式 | 送信するデータ構造 |
-
----
-
-### 7. `tech-nudge-scheduling-v3.md` - Nudgeスケジューリング仕様 【Should】
-
-**なぜ必要か**: 複数ドメインのNudgeが同時に発火した時のルールがないと混乱する。
-
-**書くべき内容**:
-
-| セクション | 内容 |
-|-----------|------|
-| ドメイン優先順位 | Sleep > Mental > Screen > Movement > Habit |
-| 時間窓制御 | 同じ30分窓で複数DP → 最優先1つだけ |
-| クールダウン | 同一ドメイン間の最小間隔（例: SNSは60分） |
-| 1日上限 | ドメインごとの最大Nudge数 |
-| Quiet Mode | ユーザー設定 `nudgeIntensity = quiet` の挙動 |
-
----
-
-### 8. `tech-ema-v3.md` - EMA仕様 【Should】
-
-**なぜ必要か**: 「さっきより楽になった？」の具体的なUIと未回答時の処理が曖昧。
-
-**書くべき内容**:
-
-| 項目 | 仕様 |
-|------|------|
-| 質問文 | 英: "Did you feel a bit better?" / 日: "さっきより楽になった？" |
-| 回答形式 | 2ボタン: "Yes" / "No" |
-| 表示タイミング | Session画面で「End」ボタンを押した後、モーダルで表示 |
-| 未回答時 | モーダルを閉じた場合は `reward = null` でbandit更新スキップ |
-| データ保存 | `feeling_sessions.ema_better` に true/false/null |
-
----
-
-### 9. `file-structure-v3.md` - ファイル構造ツリー 【Must】
-
-**なぜ必要か**: 新規ファイルをどこに作るか、既存ファイルをどう修正するかが明確でないと迷う。
-
-**書くべき内容**:
-
-```
-aniccaios/
-├── aniccaios/
-│   ├── Views/
-│   │   ├── Talk/
-│   │   │   ├── TalkView.swift       # Feelingカード + Quote
-│   │   │   ├── FeelingCard.swift    # 新規
-│   │   │   └── QuoteCard.swift      # 新規
-│   │   ├── Session/
-│   │   │   ├── SessionView.swift    # 新規：音声セッション画面
-│   │   │   ├── OrbView.swift        # 新規：青いオーブ
-│   │   │   └── EMAModal.swift       # 新規：終了時EMA
-│   │   ├── Behavior/
-│   │   │   ├── BehaviorView.swift   # 新規
-│   │   │   ├── TimelineView.swift
-│   │   │   ├── HighlightsCard.swift
-│   │   │   └── FutureScenarioView.swift
-│   │   ├── Profile/
-│   │   │   ├── ProfileView.swift    # 新規
-│   │   │   └── TraitsDetailView.swift
-│   │   └── Onboarding/
-│   │       ├── WelcomeView.swift
-│   │       ├── IdealsView.swift
-│   │       ├── StrugglesView.swift
-│   │       ├── ValueView.swift
-│   │       ├── SignInView.swift
-│   │       ├── MicPermissionView.swift
-│   │       └── NotificationPermissionView.swift
-│   ├── Sensors/
-│   │   ├── DeviceActivityMonitor.swift
-│   │   ├── HealthKitManager.swift
-│   │   └── MotionManager.swift
-│   └── Services/
-│       ├── NudgeTriggerService.swift
-│       └── MetricsUploader.swift
-
-apps/api/
-├── src/
-│   ├── routes/mobile/
-│   │   ├── behavior.ts      # 新規
-│   │   ├── feeling.ts       # 新規
-│   │   └── nudge.ts         # 新規
-│   └── modules/
-│       ├── memory/
-│       │   └── mem0Client.ts
-│       ├── nudge/
-│       │   ├── policy/
-│       │   │   ├── linTS.ts
-│       │   │   ├── wakeBandit.ts
-│       │   │   └── mentalBandit.ts
-│       │   ├── features/
-│       │   │   └── stateBuilder.ts
-│       │   └── reward/
-│       │       └── rewardCalculator.ts
-│       └── simulation/
-│           └── futureScenario.ts
-```
-
----
-
-### 10. `migration-patch-v3.md` - 修正パッチ一覧 【Must】
-
-**なぜ必要か**: 既存コードのどこをどう変えるかが分からないと、修正漏れが発生する。
-
-**書くべき内容**:
-
-| ファイル | 変更種別 | 概要 |
-|---------|---------|------|
-| `AppState.swift` | 修正 | ideals/struggles追加、onboardingStep更新 |
-| `VoiceSessionController.swift` | 修正 | Session画面用にcontext取得追加 |
-| `Info.plist` | 修正 | NSMotionUsageDescription等追加 |
-| `MainTabView.swift` | 修正 | Talk/Behavior/Profile 3タブに変更 |
-| `apps/api/src/routes/mobile/index.ts` | 修正 | /behavior, /feeling, /nudge追加 |
-| ... | ... | ... |
-
----
-
-## C. 既存ドキュメントで補足が必要な箇所
-
-### `v3-stack.md` の補足
-
-| 箇所 | 不足内容 | 追加すべき内容 |
-|------|---------|--------------|
-| API エンドポイント | 詳細なリクエスト/レスポンス形式 | JSONスキーマを明記 |
-| mem0 操作 | 具体的なadd/search呼び出し | 例: `mem0.add({data: ..., user_id: ...})` |
-| OpenAI Realtime tools | tool定義の具体例 | `get_context_snapshot` のスキーマ |
-
-### `v3-ui.md` の補足
-
-| 箇所 | 不足内容 | 追加すべき内容 |
-|------|---------|--------------|
-| Today's Highlights | API側の計算ロジック | バックエンドでどう計算するか |
-| 10 Years From Now | 生成タイミング | 毎日更新 / オンデマンド |
-
----
-
-## D. 完全なチェックリスト
-
-### 新規作成（9ファイル）
-
-- [ ] `prompts-v3.md` - LLMプロンプト集
-- [ ] `quotes-v3.md` - Quote固定メッセージ30個
-- [ ] `tech-bandit-v3.md` - Bandit実装仕様
-- [ ] `tech-db-schema-v3.md` - DBスキーマ
-- [ ] `tech-state-builder-v3.md` - State構築仕様
-- [ ] `ios-sensors-spec-v3.md` - iOSセンサー仕様
-- [ ] `tech-nudge-scheduling-v3.md` - Nudgeスケジューリング
-- [ ] `tech-ema-v3.md` - EMA仕様
-- [ ] `file-structure-v3.md` - ファイル構造ツリー
-- [ ] `migration-patch-v3.md` - 修正パッチ一覧
-
-### 既存更新（補足）
-
-- [ ] `v3-stack.md` にAPIスキーマ詳細を追記
-- [ ] `v3-ui.md` にバックエンド計算ロジックを追記
-
----
-
-## E. 優先順位
-
-| 優先度 | ドキュメント | 理由 |
-|-------|-------------|------|
-| 1 | `tech-db-schema-v3.md` | DBがないとAPI実装が始まらない |
-| 2 | `file-structure-v3.md` | ファイル配置が決まらないとコードが書けない |
-| 3 | `migration-patch-v3.md` | 既存コードへの変更を特定する |
-| 4 | `prompts-v3.md` | LLM呼び出し部分の実装に必要 |
-| 5 | `quotes-v3.md` | Talk画面のQuoteに必要（簡単） |
-| 6 | `tech-state-builder-v3.md` | Nudge機能の実装に必要 |
-| 7 | `tech-bandit-v3.md` | Nudge機能の実装に必要 |
-| 8 | `ios-sensors-spec-v3.md` | iOS側センサー実装に必要 |
-| 9 | `tech-nudge-scheduling-v3.md` | 複数Nudgeの制御に必要 |
-| 10 | `tech-ema-v3.md` | Feelingセッション終了時に必要 |
-
----
-
-これで **todolist.md を見れば何をやるべきかが完全に分かる** 状態になります。
-
-次のステップとして、どのドキュメントから作成を始めますか？

@@ -136,17 +136,18 @@ model NudgeOutcome {
 }
 
 model FeelingSession {
-  id          String   @id @default(uuid()) @db.Uuid
-  userId      String   @db.Uuid
-  feelingId   String   // self_loathing / anxiety / irritation / etc.
-  topic       String?
-  startedAt   DateTime @default(now()) @db.Timestamptz
-  endedAt     DateTime?
-  emaBetter   Boolean?
-  summary     String?  @db.Text
-  transcript  Json?    @db.JsonB
-  context     Json     @db.JsonB @default("{}") // state snapshot
-  createdAt   DateTime @default(now()) @db.Timestamptz
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @db.Uuid
+  feelingId      String   // self_loathing / anxiety / irritation / free_conversation
+  topic          String?
+  actionTemplate String?  // bandit が選択したテンプレートID
+  startedAt      DateTime @default(now()) @db.Timestamptz
+  endedAt        DateTime?
+  emaBetter      Boolean?
+  summary        String?  @db.Text
+  transcript     Json?    @db.JsonB
+  context        Json     @db.JsonB @default("{}") // state snapshot (MentalState)
+  createdAt      DateTime @default(now()) @db.Timestamptz
 
   @@index([userId, startedAt])
   @@index([feelingId, startedAt])
@@ -374,8 +375,22 @@ model MonthlyVcGrant {
 - ⑤ クリーンアップ: 2〜4週間程度の安定期間後に text `user_id` を非推奨→削除。  
 - 監視: `profile_id IS NULL` 件数をメトリクス化。バックフィルは再実行可能なバッチで。
 
+// 二重書き込み・読み優先
+
+- 読み: profile_id(uuid) を優先し、nullなら user_id(text) をフォールバック。
+
+- 書き: 移行期間は両方に書く（最低2〜4週）。profile_id IS NULL 件数を監視し、安定後に user_id を非推奨→削除。
+
+- 既存テーブルには nullable profile_id を追加し、緩いFKでバックフィル。切替後にFKを強める。
+
 ### 10.2 GIN インデックス（JSONB）追加手順
 Prisma Migrate 生成後に raw SQL を追記して適用（必要に応じて `CONCURRENTLY` を手動適用）。
+
+- Prisma Migrate 生成後に raw SQL で jsonb_path_ops GIN を追加する。
+
+- 大規模テーブルは CREATE INDEX CONCURRENTLY を手動適用。
+
+例:
 ```sql
 CREATE INDEX IF NOT EXISTS idx_nudge_events_state_gin
   ON public.nudge_events USING GIN (state jsonb_path_ops);

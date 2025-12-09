@@ -23,6 +23,8 @@
 - `prompts-v3.md` は内部仕様用の英語テンプレであり、実運用では `LANGUAGE_LINE` に応じて日本語/英語どちらか一方で出力させる。
 - タイムゾーンや DP 判定ロジックは言語設定とは独立し、常にユーザーのローカルタイムゾーンで処理する。
 
+- common.txt を必ず先頭に読み込み、LANGUAGE_LINE で出力言語を固定する。
+
 ---
 
 ## 1. Talk セッション system prompt
@@ -110,31 +112,12 @@ OpenAI Function Calling 準拠（JSON Schema）。`additionalProperties: false` 
 }
 ```
 
-```json
-{
-  "type": "function",
-  "function": {
-    "name": "log_ema_outcome",
-    "description": "Log end-of-session EMA outcome for Feeling session (proximal reward)",
-    "parameters": {
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "userId": { "type": "string" },
-        "nudgeId": { "type": "string" },
-        "feelingId": { "type": "string", "enum": ["self_loathing","anxiety","irritation","free_conversation"] },
-        "emaBetter": { "type": "boolean", "description": "Did the user feel better than before? yes/no" }
-      },
-      "required": ["userId","nudgeId","feelingId","emaBetter"]
-    }
-  }
-}
-```
-
 Tool 使用ガイド:
 - 文脈が不明な時は必ず `get_context_snapshot` を先に呼ぶ。
 - 日次要約やハイライト生成は `fetch_daily_metrics` の値に基づく。stale > 15 分はスキップ。
-- Feeling 終了時は `log_ema_outcome` を呼び、bandit 更新に供する。
+- Feeling 終了時の EMA は iOS から直接 `/api/mobile/feeling/end` に送信する（Realtime Tool ではなく API 経由）。
+
+- EMA は tool では扱わず、/api/mobile/feeling/end で受信する。
 
 ---
 
@@ -219,10 +202,116 @@ Good morning. Today begins gently—let’s rise together and keep it light.
 It’s time. If we get up now, the morning opens for you—let’s stand and take that first step.
 ```
 
-（参考テンプレの骨子のみ）
-- bedtime_gentle: 「今夜はここで一区切り。体を休ませよう。」
-- sns_break_gentle: 「ここで一度、手を離そう。目と心を休める 5 分にしよう。」
-- sedentary_break: 「長く座っていたね。1〜2分だけ立って体を伸ばそう。」
+### 3.3 bedtime_gentle（就寝・優しめ）
+入力:
+- `targetBedtime`, `now`, `snsMinutesToday`
+
+要件:
+- 1–2 文。休息への招待。プレッシャーを与えない。
+
+例:
+```text
+The day has given enough. Let's close this chapter and give your body the rest it's asking for.
+```
+
+### 3.4 bedtime_direct（就寝・率直）
+入力:
+- 同上
+
+要件:
+- 1–2 文。現実を伝えつつ、穏やかな行動提案。
+
+例:
+```text
+It's getting late. Tomorrow will come clearer if you rest now—let's put the screen down together.
+```
+
+### 3.5 sns_break_gentle（SNS休憩・優しめ）
+入力:
+- `snsCurrentSessionMinutes`, `snsMinutesToday`
+
+要件:
+- 1–2 文。強制ではなく提案。目と心の休息を示唆。
+
+例:
+```text
+You've been scrolling for a while. How about a five-minute pause to let your eyes and mind breathe?
+```
+
+### 3.6 sns_break_direct（SNS休憩・率直）
+入力:
+- 同上
+
+要件:
+- 1–2 文。時間の経過を認識させ、即座の行動を促す。
+
+例:
+```text
+An hour has slipped by. Let's set the phone face-down and reclaim these next few minutes.
+```
+
+### 3.7 sedentary_break（座位休憩）
+入力:
+- `sedentaryMinutesCurrent`, `stepsToday`
+
+要件:
+- 1–2 文。体への優しさを伝え、小さな動きを提案。
+
+例:
+```text
+Your body has been still for a while. Stand up, stretch, take a few steps—just one minute can reset your energy.
+```
+
+### 3.8 self_compassion（自己慈悲）
+入力:
+- `feelingId`, `struggles`, `recentFeelingCount`
+
+要件:
+- 2–3 文。自分への厳しさを和らげる。「親友になんて言う？」の視点転換。
+
+例:
+```text
+You're being hard on yourself right now. If a close friend felt this way, what would you say to them? 
+Try saying those same words to yourself—you deserve that kindness too.
+```
+
+### 3.9 cognitive_reframe（認知再構成）
+入力:
+- `feelingId`, `struggles`
+
+要件:
+- 2–3 文。事実と解釈の分離。断定せず問いかけで誘導。
+
+例:
+```text
+The thought feels heavy, but thoughts aren't always facts. 
+What's one small piece of evidence that tells a different story?
+```
+
+### 3.10 future_reference（将来参照）
+入力:
+- `struggles`, `ideals`
+
+要件:
+- 2–3 文。将来の自分を想像させ、今の選択と結びつける。
+
+例:
+```text
+Picture yourself a year from now, a little lighter, a little steadier. 
+What small choice tonight could bring you one step closer to that version of you?
+```
+
+### 3.11 behavioral_activation（行動活性化）
+入力:
+- `feelingId`, `stepsToday`, `sedentaryMinutesToday`
+
+要件:
+- 1–2 文。動くことで気分が変わる可能性を示唆。具体的な小さい行動を提案。
+
+例:
+```text
+When the mind feels stuck, the body can lead. Try stepping outside for just two minutes—fresh air can shift something.
+```
 
 ---
 
@@ -381,26 +470,11 @@ Avoid medical predictions or diagnoses. 3–4 sentences each.
         }
       }
     },
-    {
-      "type": "function",
-      "function": {
-        "name": "log_ema_outcome",
-        "description": "Log end-of-session EMA outcome for Feeling session (proximal reward)",
-        "parameters": {
-          "type": "object",
-          "additionalProperties": false,
-          "properties": {
-            "userId": { "type": "string" },
-            "nudgeId": { "type": "string" },
-            "feelingId": { "type": "string", "enum": ["self_loathing","anxiety","irritation","free_conversation"] },
-            "emaBetter": { "type": "boolean" }
-          },
-          "required": ["userId","nudgeId","feelingId","emaBetter"]
-        }
-      }
-    }
   ]
 }
+
+// 注意: EMA は iOS から直接 `/api/mobile/feeling/end` に送信する。
+// Realtime Tool での EMA 記録は行わない。
 ```
 
 ---

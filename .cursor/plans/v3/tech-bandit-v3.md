@@ -56,6 +56,8 @@ return chosen;
 ## 3. state → x エンコード（正規化と次元順序）
 `tech-state-builder-v3.md` のフィールドを正規化し、以下の順で 1 本のベクトル `x` を作る。bias 項 1 を先頭に追加する。未許可データは 0 埋め・quiet フラグで処理。
 
+- featureOrderHash は tech-state-builder-v3 の配列と一致必須。起動時に不一致ならエラー停止。
+
 ### 3.1 共通パート（全ドメイン共通）
 1. `bias` = 1
 2. `localHour_sin`, `localHour_cos`（`sin/cos(2π*hour/24)`）
@@ -165,6 +167,18 @@ return chosen;
 
 ### 5.1 v3 で LinTS 学習 ON のドメイン
 
+報酬判定窓:
+
+- Wake/Bedtime: 起床30–60分以内／就寝90分以内(+就寝後SNS<15分)
+
+- Screen/MorningPhone: 5分以内クローズ＋10–30分再開なし
+
+- Movement: 30分以内に+300〜500歩 or walking/running イベント
+
+- Mental: EMA Yes/No 即時
+
+- stale>15分の metrics は送信・学習ともに行わない
+
 | ドメイン | 成功判定時間 | v3 学習 | 備考 |
 | --- | --- | --- | --- |
 | Wake | 30–60分 | ✅ ON | HealthKit起床 + DeviceActivity使用継続 |
@@ -213,6 +227,8 @@ interface BanditModelData {
 | λ (regularization) | 1.0 | 標準的な L2 事前。特徴量は 0–1 クリップ済みで安定。 |
 | v (variance scale) | 0.5 | 報酬が 0/1 のベルヌーイであるため過度に広げない。cold start でも適度に探索。 |
 - 必要に応じてドメイン別に `v` を調整（Mental のみ 0.7 など）してもよいが、初期は統一。
+
+- v: mental=0.7, その他=0.5 を推奨。λ=1.0 固定。
 
 ---
 

@@ -59,6 +59,11 @@ final class AlarmKitHabitCoordinator {
         "com.anicca.alarmkit.\(habit.rawValue).ids"
     }
     
+    // Storage key for custom habits (UUID-based)
+    private func customStorageKey(for id: UUID) -> String {
+        "com.anicca.alarmkit.custom.\(id.uuidString).ids"
+    }
+    
     private init() {
         startAlarmMonitoring()
     }
@@ -85,13 +90,9 @@ final class AlarmKitHabitCoordinator {
                         }
                         await MainActor.run {
                             self.currentAlertingHabit = habit
-                            // アプリがフォアグラウンドの場合のみ音を鳴らす
-                            // 出典: mfaani.com "It does not show anything" (Dynamic Islandは表示されない)
-                            if UIApplication.shared.applicationState == .active {
-                                self.playAlarmSoundInApp()
-                            }
+                            // フォアグラウンド時でも、ここでは追加のアプリ内サウンドを鳴らさない。
+                            // アラーム音は AlarmKit / システム側の挙動に任せ、対話開始時は Anicca の音声だけにする。
                         }
-                        // 音を鳴らしたらこの更新の処理は終了（重複再生防止）
                         break
                     }
                 }
@@ -106,9 +107,12 @@ final class AlarmKitHabitCoordinator {
         // フルスクリーンアラームを使う習慣はAlarmKit UIに任せ、ここでは鳴らさない
         guard shouldPlayInApp(for: currentHabit) else { return }
         
-        // プロジェクト内の既存アラーム音ファイルを使用
-        guard let soundURL = Bundle.main.url(forResource: "Defaul", withExtension: "mp3")
-              ?? Bundle.main.url(forResource: "AniccaWake", withExtension: "caf") else {
+        // プロジェクト内のアラーム音ファイルを使用（優先: Defaul.caf → Defaul.mp3 → AniccaWake.caf）
+        guard let soundURL =
+            Bundle.main.url(forResource: "Defaul", withExtension: "caf")
+            ?? Bundle.main.url(forResource: "Defaul", withExtension: "mp3")
+            ?? Bundle.main.url(forResource: "AniccaWake", withExtension: "caf")
+        else {
             logger.warning("Alarm sound file not found in bundle")
             return
         }
@@ -250,6 +254,83 @@ final class AlarmKitHabitCoordinator {
         }
     }
     
+    /// Schedule alarm for a custom habit with UUID
+    /// - Parameters:
+    ///   - id: The custom habit UUID
+    ///   - name: The custom habit name for display
+    ///   - hour: Alarm hour
+    ///   - minute: Alarm minute
+    ///   - followupCount: Total number of alarms
+    func scheduleCustomHabit(_ id: UUID, name: String, hour: Int, minute: Int, followupCount: Int) async -> Bool {
+        do {
+            guard await requestAuthorizationIfNeeded() else {
+                return false
+            }
+            await cancelCustomHabitAlarms(id)
+            
+            let repeatCount = max(1, min(10, followupCount))
+            var scheduledIds: [UUID] = []
+            
+            for index in 0..<repeatCount {
+                let (fireHour, fireMinute) = offsetMinutes(baseHour: hour, baseMinute: minute, offsetMinutes: index)
+                let time = Alarm.Schedule.Relative.Time(hour: fireHour, minute: fireMinute)
+                let schedule = Alarm.Schedule.relative(.init(
+                    time: time,
+                    repeats: .weekly(Locale.Weekday.allWeekdays)
+                ))
+                
+                let alert = AlarmPresentation.Alert(
+                    title: LocalizedStringResource(stringLiteral: name),
+                    stopButton: .stopButton,
+                    secondaryButton: .openAppButton,
+                    secondaryButtonBehavior: .custom
+                )
+                
+                let presentation = AlarmPresentation(alert: alert)
+                let metadata = HabitAlarmMetadata(habit: "custom_\(id.uuidString)", repeatCount: repeatCount, alarmIndex: index)
+                let attributes = AlarmAttributes(presentation: presentation, metadata: metadata, tintColor: .orange)
+                
+                let secondary = StartConversationIntent()
+                secondary.habitType = .custom
+                
+                let identifier = UUID()
+                let configuration = AlarmManager.AlarmConfiguration(
+                    countdownDuration: nil,
+                    schedule: schedule,
+                    attributes: attributes,
+                    stopIntent: HabitAlarmStopIntent(alarmID: identifier.uuidString, habitRawValue: "custom"),
+                    secondaryIntent: secondary
+                )
+                
+                _ = try await manager.schedule(id: identifier, configuration: configuration)
+                scheduledIds.append(identifier)
+            }
+            
+            persistCustom(ids: scheduledIds, for: id)
+            logger.info("Scheduled \(repeatCount) AlarmKit alarms for custom habit \(id.uuidString, privacy: .public) at \(hour):\(minute)")
+            return true
+        } catch {
+            logger.error("AlarmKit scheduling failed for custom habit \(id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+    
+    /// Cancel all alarms for a specific custom habit
+    func cancelCustomHabitAlarms(_ id: UUID) async {
+        let persistedIds = loadCustomPersistedIds(for: id)
+        
+        for alarmId in persistedIds {
+            do {
+                try manager.cancel(id: alarmId)
+                logger.info("Cancelled AlarmKit alarm \(alarmId.uuidString, privacy: .public) for custom habit \(id.uuidString, privacy: .public)")
+            } catch {
+                logger.error("Failed to cancel AlarmKit alarm: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+        
+        persistCustom(ids: [], for: id)
+    }
+    
     /// Cancel all alarms for a specific habit
     func cancelHabitAlarms(_ habit: HabitType) async {
         // 1. UserDefaultsから保存されているIDをキャンセル
@@ -274,21 +355,14 @@ final class AlarmKitHabitCoordinator {
                 if persistedIds.contains(alarm.id) {
                     do {
                         try manager.cancel(id: alarm.id)
-                        logger.info("Cancelled orphaned AlarmKit alarm \(alarm.id.uuidString, privacy: .public) for \(habit.rawValue, privacy: .public)")
                     } catch {
-                        logger.error("Failed to cancel orphaned alarm: \(error.localizedDescription, privacy: .public)")
+                        logger.error("Failed to cancel alarm: \(error.localizedDescription, privacy: .public)")
                     }
                 } else if !allKnownIds.contains(alarm.id) {
-                    // どの習慣にも属さない孤児アラーム → 強制キャンセル
-                    logger.debug("Cancelling orphan alarm \(alarm.id.uuidString, privacy: .public) not in any habit")
-                    do {
-                        try manager.cancel(id: alarm.id)
-                    } catch {
-                        logger.error("Failed to cancel orphan alarm: \(error.localizedDescription, privacy: .public)")
-                    }
-                } else {
-                    logger.debug("Skipping alarm \(alarm.id.uuidString, privacy: .public) - belongs to other habit")
+                    // どの習慣にも属さない孤児アラーム → 静かにキャンセル
+                    try? manager.cancel(id: alarm.id)
                 }
+                // 他の習慣のアラームはスキップ（ログ不要）
             }
         } catch {
             logger.error("Failed to fetch current alarms: \(error.localizedDescription, privacy: .public)")
@@ -314,6 +388,20 @@ final class AlarmKitHabitCoordinator {
     
     private func loadPersistedIds(for habit: HabitType) -> [UUID] {
         guard let stored = UserDefaults.standard.array(forKey: storageKey(for: habit)) as? [String] else {
+            return []
+        }
+        return stored.compactMap(UUID.init(uuidString:))
+    }
+    
+    // MARK: - Custom Habit Persistence
+    
+    private func persistCustom(ids: [UUID], for customId: UUID) {
+        let raw = ids.map(\.uuidString)
+        UserDefaults.standard.set(raw, forKey: customStorageKey(for: customId))
+    }
+    
+    private func loadCustomPersistedIds(for customId: UUID) -> [UUID] {
+        guard let stored = UserDefaults.standard.array(forKey: customStorageKey(for: customId)) as? [String] else {
             return []
         }
         return stored.compactMap(UUID.init(uuidString:))

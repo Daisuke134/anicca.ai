@@ -170,6 +170,14 @@ final class NotificationScheduler {
         }
     }
 
+    /// 特定のカスタム習慣(UUID)に紐づくフォローアップ通知のみをキャンセル
+    func cancelCustomFollowups(id: UUID) {
+        Task {
+            await removePending(withPrefix: keyCustomFollowPrefix(id: id))
+            await removeDelivered(withPrefix: keyCustomFollowPrefix(id: id))
+        }
+    }
+
     func habit(fromIdentifier identifier: String) -> HabitType? {
         let parts = identifier.split(separator: "_")
         guard parts.count >= 3, parts[0] == "HABIT" else { return nil }
@@ -260,12 +268,15 @@ final class NotificationScheduler {
     }
 
     private func wakeSound() -> UNNotificationSound {
-        // UNNotificationSound でカスタムサウンドとしてサポートされる形式は aiff / wav / caf のみ（mp3 は非対応）。
-        // 仕様ドキュメント上も AniccaWake.caf を同梱する前提のため、ここでは .caf のみを使用する。
-        if Bundle.main.url(forResource: "AniccaWake", withExtension: "caf") != nil {
-            return UNNotificationSound(named: UNNotificationSoundName("AniccaWake.caf"))
+        // UNNotificationSound は aiff / wav / caf のみサポート（mp3は非対応）。
+        // 起床・フォローアップ通知では、Defaul.caf が必ずバンドルされている前提で使用する。
+        if Bundle.main.url(forResource: "Defaul", withExtension: "caf") != nil {
+            return UNNotificationSound(named: UNNotificationSoundName("Defaul.caf"))
         }
-        logger.error("Wake sound AniccaWake.caf missing in bundle; falling back to default alert")
+
+        // ここに到達するのはビルド設定ミスの場合のみ。
+        // その場合はログを出してシステムデフォルト音でフォールバックする。
+        logger.error("Wake sound Defaul.caf missing in bundle; falling back to default alert")
         return .default
     }
 

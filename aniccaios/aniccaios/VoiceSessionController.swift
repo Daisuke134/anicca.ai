@@ -48,18 +48,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
             cancelRemainingAlarmsForHabit(habit)
         }
         
-        // Stickyモードは全習慣に適用（Trainingを除く）
-        if currentHabitType != nil && currentHabitType != .training && isStickyEnabled {
+        // Stickyモードは起床習慣(.wake)のみに適用
+        if currentHabitType == .wake && isStickyEnabled {
             stickyActive = true
             stickyUserReplyCount = 0
             stickyReady = false
-            logger.info("Sticky enabled for habit: \(String(describing: self.currentHabitType))")
+            logger.info("Sticky enabled for wake habit")
         } else {
             stickyActive = false
             stickyUserReplyCount = 0
             stickyReady = false
             if currentHabitType == .training {
                 logger.info("Sticky disabled: Training mode is one-way interaction")
+            } else if currentHabitType != nil && currentHabitType != .wake {
+                logger.info("Sticky disabled: bidirectional dialog for non-wake habits")
             }
         }
         Task { [weak self] in
@@ -80,18 +82,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
         // Prepare prompt for the habit
         AppState.shared.prepareForImmediateSession(habit: habit)
         
-        // Stickyモードは全習慣に適用（Trainingを除く）
-        if habit != .training && isStickyEnabled {
+        // Stickyモードは起床習慣(.wake)のみに適用
+        if habit == .wake && isStickyEnabled {
             stickyActive = true
             stickyUserReplyCount = 0
             stickyReady = false
-            logger.info("Sticky enabled for VoIP habit: \(String(describing: habit))")
+            logger.info("Sticky enabled for VoIP wake habit")
         } else {
             stickyActive = false
             stickyUserReplyCount = 0
             stickyReady = false
             if habit == .training {
                 logger.info("Sticky disabled: Training mode is one-way interaction")
+            } else if habit != .wake {
+                logger.info("Sticky disabled: bidirectional dialog for non-wake habits")
             }
         }
         
@@ -605,12 +609,12 @@ private extension VoiceSessionController {
         
         case "response.done":
             if stickyActive {
-                logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 2s")
-                print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 2s")
+                logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 5s")
+                print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 5s")
                 Task { @MainActor in
-                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                    try? await Task.sleep(nanoseconds: 5_000_000_000)
                     guard self.stickyActive else {
-                        self.logger.info("Sticky: cancelled during 2s delay (stickyActive=false)")
+                        self.logger.info("Sticky: cancelled during 5s delay (stickyActive=false)")
                         return
                     }
                     self.sendWakeResponseCreate()

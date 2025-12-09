@@ -47,6 +47,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         let notificationIdentifier = response.notification.request.identifier
         
         guard let habit = NotificationScheduler.shared.habit(fromIdentifier: notificationIdentifier) else { return }
+        let customHabitId = NotificationScheduler.shared.customHabitId(fromIdentifier: notificationIdentifier)
 
         switch identifier {
         case NotificationScheduler.Action.startConversation.rawValue,
@@ -62,7 +63,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 }
                 await MainActor.run {
                     AppState.shared.selectedRootTab = .talk
-                    AppState.shared.prepareForImmediateSession(habit: habit)
+                    AppState.shared.prepareForImmediateSession(habit: habit, customHabitId: customHabitId)
                     habitLaunchLogger.info("AppState prepared immediate session for habit \(habit.rawValue, privacy: .public)")
                 }
             }

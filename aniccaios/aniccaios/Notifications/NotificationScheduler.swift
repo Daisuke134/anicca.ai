@@ -173,7 +173,26 @@ final class NotificationScheduler {
     func habit(fromIdentifier identifier: String) -> HabitType? {
         let parts = identifier.split(separator: "_")
         guard parts.count >= 3, parts[0] == "HABIT" else { return nil }
+
+        // カスタム習慣: HABIT_CUSTOM_MAIN_..., HABIT_CUSTOM_FOLLOW_... は .custom にマップ
+        if parts.count >= 2, parts[1] == "CUSTOM" {
+            return .custom
+        }
+
+        // デフォルト習慣: HABIT_MAIN_wake_..., HABIT_FOLLOW_bedtime_...
         return HabitType(rawValue: String(parts[2]))
+    }
+
+    /// カスタム習慣通知の識別子から UUID を抽出する
+    /// 期待フォーマット:
+    /// - HABIT_CUSTOM_MAIN_<UUID>_...
+    /// - HABIT_CUSTOM_FOLLOW_<UUID>_...
+    func customHabitId(fromIdentifier identifier: String) -> UUID? {
+        let parts = identifier.split(separator: "_")
+        guard parts.count >= 4,
+              parts[0] == "HABIT",
+              parts[1] == "CUSTOM" else { return nil }
+        return UUID(uuidString: String(parts[3]))
     }
 
     // MARK: Private helpers
@@ -241,13 +260,12 @@ final class NotificationScheduler {
     }
 
     private func wakeSound() -> UNNotificationSound {
-        if Bundle.main.url(forResource: "Defaul", withExtension: "mp3") != nil {
-            return UNNotificationSound(named: UNNotificationSoundName("Defaul.mp3"))
-        }
+        // UNNotificationSound でカスタムサウンドとしてサポートされる形式は aiff / wav / caf のみ（mp3 は非対応）。
+        // 仕様ドキュメント上も AniccaWake.caf を同梱する前提のため、ここでは .caf のみを使用する。
         if Bundle.main.url(forResource: "AniccaWake", withExtension: "caf") != nil {
             return UNNotificationSound(named: UNNotificationSoundName("AniccaWake.caf"))
         }
-        logger.error("Wake sound missing in bundle; falling back to default alert")
+        logger.error("Wake sound AniccaWake.caf missing in bundle; falling back to default alert")
         return .default
     }
 
@@ -400,10 +418,45 @@ final class NotificationScheduler {
         await removePending(withPrefix: "HABIT_CUSTOM_MAIN_")
         await removePending(withPrefix: "HABIT_CUSTOM_FOLLOW_")
         await removeDelivered(withPrefix: "HABIT_CUSTOM_FOLLOW_")
+        
         for (id, entry) in schedules {
-            await scheduleCustomMain(id: id, name: entry.name, time: entry.time)
-            scheduleCustomFollowups(id: id, name: entry.name, baseComponents: entry.time)
+            guard let hour = entry.time.hour, let minute = entry.time.minute else { continue }
+            
+            // AlarmKitをスケジュール（iOS 26+ かつユーザーがONにしている場合）
+            let alarmKitScheduled = await scheduleCustomWithAlarmKitIfNeeded(
+                id: id,
+                name: entry.name,
+                hour: hour,
+                minute: minute
+            )
+            
+            // AlarmKitがOFFの場合のみ、通常通知をスケジュール
+            if !alarmKitScheduled {
+                await scheduleCustomMain(id: id, name: entry.name, time: entry.time)
+                scheduleCustomFollowups(id: id, name: entry.name, baseComponents: entry.time)
+            }
+            
+            logger.info("Scheduled custom habit \(id.uuidString, privacy: .public): AlarmKit=\(alarmKitScheduled, privacy: .public)")
         }
+    }
+    
+    private func scheduleCustomWithAlarmKitIfNeeded(id: UUID, name: String, hour: Int, minute: Int) async -> Bool {
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            guard AppState.shared.userProfile.useAlarmKitForCustom else {
+                // AlarmKit無効の場合、既存のAlarmKitアラームをキャンセル
+                await AlarmKitHabitCoordinator.shared.cancelCustomHabitAlarms(id)
+                return false
+            }
+            let followups = AppState.shared.customFollowupCount(for: id)
+            let scheduled = await AlarmKitHabitCoordinator.shared.scheduleCustomHabit(id, name: name, hour: hour, minute: minute, followupCount: followups)
+            if !scheduled {
+                await AlarmKitHabitCoordinator.shared.cancelCustomHabitAlarms(id)
+            }
+            return scheduled
+        }
+#endif
+        return false
     }
     
     private func scheduleCustomMain(id: UUID, name: String, time: DateComponents) async {

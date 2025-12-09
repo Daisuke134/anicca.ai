@@ -52,7 +52,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         switch identifier {
         case NotificationScheduler.Action.startConversation.rawValue,
              UNNotificationDefaultActionIdentifier:
+            // ユーザーが通知から会話に入ったので、その習慣の後続フォローアップはすべてキャンセル
             NotificationScheduler.shared.cancelFollowups(for: habit)
+            if let customId = customHabitId {
+                NotificationScheduler.shared.cancelCustomFollowups(id: customId)
+            }
             Task {
                 habitLaunchLogger.info("Notification accepted for habit \(habit.rawValue, privacy: .public) id=\(notificationIdentifier, privacy: .public)")
                 do {
@@ -68,7 +72,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 }
             }
         case NotificationScheduler.Action.dismissAll.rawValue:
+            // 「止める」アクション時も、その習慣の後続フォローアップを完全にキャンセル
             NotificationScheduler.shared.cancelFollowups(for: habit)
+            if let customId = customHabitId {
+                NotificationScheduler.shared.cancelCustomFollowups(id: customId)
+            }
         default:
             break
         }

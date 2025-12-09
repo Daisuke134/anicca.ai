@@ -14,7 +14,13 @@ struct HabitPromptBuilder {
     }
     
     // DI化: AppState.sharedの直接参照を避け、UserProfileを引数として依存注入
-    func buildPrompt(for habit: HabitType, scheduledTime: DateComponents?, now: Date, profile: UserProfile) -> String {
+    func buildPrompt(
+        for habit: HabitType,
+        scheduledTime: DateComponents?,
+        now: Date,
+        profile: UserProfile,
+        customHabitName: String? = nil
+    ) -> String {
         // Load common and habit-specific templates
         let commonTemplate = loadPrompt(named: "common")?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
         let habitTemplate = loadPrompt(named: habit.promptFileName)?.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -23,7 +29,7 @@ struct HabitPromptBuilder {
         let mergedTemplate = "\(commonTemplate)\n\n\(habitTemplate)"
         
         // Render with user profile data
-        return render(template: mergedTemplate, habit: habit, scheduledTime: scheduledTime, now: now, profile: profile)
+        return render(template: mergedTemplate, habit: habit, scheduledTime: scheduledTime, now: now, profile: profile, customHabitName: customHabitName)
     }
     
     private func render(template: String, habit: HabitType, scheduledTime: DateComponents?, now: Date) -> String {
@@ -31,7 +37,14 @@ struct HabitPromptBuilder {
         return render(template: template, habit: habit, scheduledTime: scheduledTime, now: now, profile: profile)
     }
     
-    private func render(template: String, habit: HabitType, scheduledTime: DateComponents?, now: Date, profile: UserProfile) -> String {
+    private func render(
+        template: String,
+        habit: HabitType,
+        scheduledTime: DateComponents?,
+        now: Date,
+        profile: UserProfile,
+        customHabitName: String? = nil
+    ) -> String {
         
         // Build replacement dictionary
         var replacements: [String: String] = [:]
@@ -73,9 +86,11 @@ struct HabitPromptBuilder {
         case .bedtime:
             taskDescription = NSLocalizedString("habit_title_bedtime", comment: "")
         case .custom:
-            taskDescription = CustomHabitStore.shared.displayName(
-                fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
-            )
+            // 渡されたカスタム習慣名を優先し、なければ従来どおり先頭のカスタム習慣名にフォールバック
+            taskDescription = customHabitName
+                ?? CustomHabitStore.shared.displayName(
+                    fallback: NSLocalizedString("habit_title_custom_fallback", comment: "")
+                )
         }
         replacements["TASK_DESCRIPTION"] = taskDescription
         

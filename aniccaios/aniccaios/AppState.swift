@@ -297,18 +297,36 @@ final class AppState: ObservableObject {
     }
 
     // New habit-aware methods
-    func prepareForImmediateSession(habit: HabitType) {
+    func prepareForImmediateSession(habit: HabitType, customHabitId: UUID? = nil) {
         pendingConsultPrompt = nil
-        let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
+        let customHabitName = customHabitId.flatMap { id in
+            customHabits.first(where: { $0.id == id })?.name
+        }
+        let prompt = promptBuilder.buildPrompt(
+            for: habit,
+            scheduledTime: habitSchedules[habit],
+            now: Date(),
+            profile: userProfile,
+            customHabitName: customHabitName
+        )
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
         shouldStartSessionImmediately = true
         selectedRootTab = .talk
     }
 
-    func handleHabitTrigger(_ habit: HabitType) {
+    func handleHabitTrigger(_ habit: HabitType, customHabitId: UUID? = nil) {
         pendingConsultPrompt = nil
-        let prompt = promptBuilder.buildPrompt(for: habit, scheduledTime: habitSchedules[habit], now: Date(), profile: userProfile)
+        let customHabitName = customHabitId.flatMap { id in
+            customHabits.first(where: { $0.id == id })?.name
+        }
+        let prompt = promptBuilder.buildPrompt(
+            for: habit,
+            scheduledTime: habitSchedules[habit],
+            now: Date(),
+            profile: userProfile,
+            customHabitName: customHabitName
+        )
         pendingHabitPrompt = (habit: habit, prompt: prompt)
         pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
     }

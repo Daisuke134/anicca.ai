@@ -120,66 +120,77 @@ struct HabitsSectionView: View {
     }
     
     var body: some View {
-        ScrollView {
-            VStack(spacing: AppTheme.Spacing.md) {
-
-                // 全習慣を時系列順に表示（時刻設定済み）
-                ForEach(sortedAllHabits, id: \.id) { item in
-                    if let habit = item.habit {
-                        CardView {
-                            habitRow(for: habit, time: item.time)
-                        }
-                    } else if let customId = item.customId {
-                        CardView {
-                            customHabitRow(id: customId, name: item.name, time: item.time)
-                                .contextMenu {
-                                    Button(role: .destructive) {
-                                        appState.removeCustomHabit(id: customId)
-                                    } label: {
-                                        Label(String(localized: "common_delete"), systemImage: "trash")
-                                    }
-                                }
-                        }
-                    }
-                }
-
-                // 時間未設定のデフォルト習慣
-                ForEach(inactiveDefaultHabits, id: \.self) { habit in
+        List {
+            // 全習慣を時系列順に表示（時刻設定済み）
+            ForEach(sortedAllHabits, id: \.id) { item in
+                if let habit = item.habit {
                     CardView {
-                        habitRow(for: habit, time: nil)
+                        habitRow(for: habit, time: item.time)
                     }
-                }
-
-                // 時間未設定のカスタム習慣
-                ForEach(inactiveCustomHabits, id: \.id) { habit in
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                } else if let customId = item.customId {
                     CardView {
-                        customHabitRow(id: habit.id, name: habit.name, time: nil)
-                            .contextMenu {
-                                Button(role: .destructive) {
-                                    appState.removeCustomHabit(id: habit.id)
-                                } label: {
-                                    Label(String(localized: "common_delete"), systemImage: "trash")
-                                }
-                            }
+                        customHabitRow(id: customId, name: item.name, time: item.time)
                     }
-                }
-
-                // 「習慣を追加」ボタン
-                CardView {
-                    Button(action: { activeSheet = .addCustom }) {
-                        HStack {
-                            Image(systemName: "plus.circle.fill")
-                            Text(String(localized: "habit_add_custom"))
+                    .listRowBackground(Color.clear)
+                    .listRowSeparator(.hidden)
+                    .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                    .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                        Button(role: .destructive) {
+                            appState.removeCustomHabit(id: customId)
+                        } label: {
+                            Label(String(localized: "common_delete"), systemImage: "trash")
                         }
-                        .foregroundStyle(AppTheme.Colors.accent)
-                        .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
-
             }
-            .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.vertical, AppTheme.Spacing.md)
+
+            // 時間未設定のデフォルト習慣
+            ForEach(inactiveDefaultHabits, id: \.self) { habit in
+                CardView {
+                    habitRow(for: habit, time: nil)
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+            }
+
+            // 時間未設定のカスタム習慣
+            ForEach(inactiveCustomHabits, id: \.id) { habit in
+                CardView {
+                    customHabitRow(id: habit.id, name: habit.name, time: nil)
+                }
+                .listRowBackground(Color.clear)
+                .listRowSeparator(.hidden)
+                .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                .swipeActions(edge: .trailing, allowsFullSwipe: true) {
+                    Button(role: .destructive) {
+                        appState.removeCustomHabit(id: habit.id)
+                    } label: {
+                        Label(String(localized: "common_delete"), systemImage: "trash")
+                    }
+                }
+            }
+
+            // 「習慣を追加」ボタン
+            CardView {
+                Button(action: { activeSheet = .addCustom }) {
+                    HStack {
+                        Image(systemName: "plus.circle.fill")
+                        Text(String(localized: "habit_add_custom"))
+                    }
+                    .foregroundStyle(AppTheme.Colors.accent)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+            .listRowBackground(Color.clear)
+            .listRowSeparator(.hidden)
+            .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
         }
+        .listStyle(.plain)
+        .scrollContentBackground(.hidden)
         .background(AppBackground())
         .sheet(item: $activeSheet) { route in
             switch route {
@@ -821,6 +832,25 @@ struct CustomHabitEditSheet: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
+                
+                // AlarmKit設定（iOS 26+ のみ）
+#if canImport(AlarmKit)
+                if #available(iOS 26.0, *) {
+                    Section(String(localized: "settings_alarmkit_section_title")) {
+                        Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
+                            get: { appState.userProfile.useAlarmKitForCustom },
+                            set: { newValue in
+                                var profile = appState.userProfile
+                                profile.useAlarmKitForCustom = newValue
+                                appState.updateUserProfile(profile, sync: true)
+                            }
+                        ))
+                        Text(String(localized: "settings_alarmkit_description"))
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+#endif
             }
             .scrollContentBackground(.hidden)
             .background(AppBackground())

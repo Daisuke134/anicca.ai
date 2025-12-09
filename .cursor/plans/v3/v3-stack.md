@@ -19,9 +19,7 @@ DB 設計は一旦忘れて、スタックとサービス構成・データフ�
       iOS からの HTTP を受ける窓口。Realtime の tool を全部ここにマッピング
    2. Memory Service（mem0）([GitHub][1])
       対話・理想・ストラグル・行動要約など「その人の意味記憶」を保持
-   3. Semantic Search Service（Moss）([GitHub][2])
-      mem0 のメモリや日次サマリをリアルタイムに検索して、LLM に渡すコンテキストを返す
-   4. Nudge Policy Service（contextual bandits）([GitHub][3])
+   3. Nudge Policy Service（contextual bandits）([GitHub][3])
       状態ベクトルから「どの Nudge テンプレートを使うか」を選択
    5. Simulation Service（OpenAI Chat / Realtime）([OpenAI Platform][4])
       今日残り・明日・1/5/10 年後のシミュレーションテキストを生成
@@ -315,12 +313,10 @@ const results = await memory.search("夜更かし 後悔", {
    * 1 / 5 / 10 年後、「今の行動が続いた場合」のストーリーをテキストで表示。
    * このシミュレーションを Nudge ポリシーの内部でも使う（介入タイミングの根拠）。
 
-4. **記憶レイヤー + 知恵コーパス**
+4. **記憶レイヤー**
 
    * mem0 でユーザーの「理想」「苦しみ」「大事な発言」「行動の要約」を永続化。([docs.mem0.ai][3])
-   * Moss で、mem0 + Anicca Wisdom Corpus（ダンマパダなどパブリックドメインの教え）をリアルタイム検索。
-   * Exa でユーザーの Struggle（夜更かし、SNS 依存など）に関する最新の研究・記事を非同期で取得し、
-     Behavior タブの「インサイトカード」として提示。
+   * v0.3 では mem0 のみを使用（Moss/Exa は v0.4 以降で検討）。
 
 ### 0.2 v0.3 に含める機能
 
@@ -343,12 +339,10 @@ const results = await memory.search("夜更かし 後悔", {
   * 今日残りの 1 日シミュレーション（タイムライン）
   * 1 / 5 / 10 年後の未来シナリオ（「今の行動が続いた場合」だけを表示）
   * BIG5 / キャラクター分析（LLM によるテキスト要約）
-* 記憶と検索
+* 記憶
 
   * mem0 Node SDK によるメモリ保存 / 検索([docs.mem0.ai][5])
-  * Moss によるリアルタイム semantic search（user memories + 教えコーパス）([usemoss.dev][6])
-  * Exa で「ユーザーの Struggle に関連する情報」をバックグラウンドで取得し、
-    Behavior タブのインサイトに利用([docs.exa.ai][7])
+  * v0.3 では mem0 のみ使用（Moss/Exa は v0.4 以降）
 
 ### 0.3 v0.3 の非スコープ（v0.4 で実装）
 
@@ -422,11 +416,6 @@ Express アプリ内を以下のレイヤーに分割して整理する（新規
 
   * mem0 クライアント（Node SDK）
   * ユーザープロフィール / 行動サマリ / 対話メモリの読み書き
-
-* `modules/search/`
-
-  * Moss クライアント（HTTP / SDK）
-  * Exa クライアント（HTTP）
 
 * `modules/nudge/`
 
@@ -640,8 +629,6 @@ Express アプリ内を以下のレイヤーに分割して整理する（新規
 
   * OpenAI Realtime / Chat API
   * mem0 Node SDK([docs.mem0.ai][5])
-  * Moss（HTTP API）
-  * Exa（HTTP API）
 * データストア:
 
   * 既存の DB（Supabase / Prisma 等）を継続利用（詳細スキーマは別途）。
@@ -658,7 +645,6 @@ Express アプリ内を以下のレイヤーに分割して整理する（新規
   * 処理:
 
     * mem0 から最近の profile / interaction / behavior_summary を検索。
-    * Moss で `"user:<id>" + domain キーワード` を検索し、3〜5 件抽出。
     * 現在の metrics（今日の睡眠・SNS 時間など）を metrics モジュールから取得。
   * Output:
 
@@ -674,7 +660,7 @@ Express アプリ内を以下のレイヤーに分割して整理する（新規
 
   * Talk セッション終了時の要約を保存。
   * Input: `{ userId, summaryText, tags }`
-  * 処理: mem0 `"interaction"` に保存し、Moss インデックスも更新。
+  * 処理: mem0 `"interaction"` に保存。
 
 #### 3.2.2 Nudge まわり
 
@@ -763,7 +749,7 @@ Express アプリ内を以下のレイヤーに分割して整理する（新規
 
 ---
 
-## 4. Memory レイヤー (mem0) & 検索 (Moss / Exa)
+## 4. Memory レイヤー (mem0)
 
 ### 4.1 mem0（意味記憶レイヤー）
 
@@ -793,50 +779,6 @@ Express アプリ内を以下のレイヤーに分割して整理する（新規
 * 毎日深夜（またはアプリ起動時に前日分）→ `"behavior_summary"`
 * Talk セッション終了時 → `"interaction"`
 * Nudge フィードバック更新時 → `"nudge_meta"`
-
-### 4.2 Moss（semantic search）
-
-Moss は「リアルタイム semantic search runtime」として、
-端末 or サーバ側に近いところで高速検索を提供する。([usemoss.dev][6])
-
-**インデックス**
-
-* `index: "user_memories"`
-
-  * doc:
-
-    * `userId`
-    * `type`（profile / behavior_summary / interaction / nudge_meta）
-    * `text`
-    * `timestamp`
-
-**利用パターン**
-
-* Talk 中の `get_context_snapshot`:
-
-  * Query 例: `"user:u123 sleep regret last 7 days"`
-  * 戻り値として「最近の夜更かし後悔」などのテキストを 3〜5 件返す。
-* Feeling ボタン押下時:
-
-  * `"user:u123 anger OR jealousy"` などで、その感情に関する過去の発言を引く。
-* Behavior タブ:
-
-  * 1 日の終わりに Moss から代表的な出来事を引いて「一言サマリ」の材料にする。
-
-### 4.3 Exa（Struggle 関連リサーチ）
-
-Exa は意味ベースの Web 検索 API。([docs.exa.ai][7])
-
-**利用方針 v0.3**
-
-* Onboarding で選ばれた Struggle（例: `sns_addiction`, `rumination`）ごとに
-
-  * 週 1 回程度、バックエンドのバッチで Exa `/search` を呼び
-  * `summary=True` な形で数本の記事・研究を取得
-  * 「ユーザー用のインサイトカード」として Behavior タブに表示。
-* Anicca 自身の Nudge 改善のために、
-  「SNS 依存 / CBT / マインドフルネス」などのキーワードで随時検索してもよいが、
-  v0.3 ではまず「情報提供用（ユーザー向けカード）」に絞る。
 
 ---
 
@@ -1083,20 +1025,184 @@ interface NudgeContext {
      * 今日の一言サマリ
      * 今日残りのシミュレーション
      * 1 / 5 / 10 年後シナリオ
-   * mem0 / Moss の基本統合（プロフィール + 最近のメモリ検索）
+   * mem0 の基本統合（プロフィール + 最近のメモリ検索）
 
 2. **できれば v0.3 で入れたい (Should)**
 
-   * Exa による Struggle 関連インサイトカード
    * BIG5 / キャラクター分析表示
    * 簡易な Nudge 自律改善（成功率 / 疲労度に応じたテンプレ切替）
 
 3. **明確に v0.4 以降 (Later)**
 
-   * 本格的 contextual bandit（Linear UCB など）の導入
-   * EMA（感情自己報告）ベースのメンタル JITAI
+   * Moss / Exa の導入
    * Langfuse / TruLens による品質評価
    * Maestro / Mobile MCP での自動テスト
+
+---
+
+## 10. EMA ベースのメンタル bandit（Feeling ボタン用）
+
+### 10.1 目的と設計
+
+* 対象: Talk 画面の Feeling ボタン（自己嫌悪 / 不安 / 怒り など）
+* Goal: 「同じ feeling に対して、どのタイプの導き（テンプレ）がその人に一番効くか」をオンラインで学習
+
+v0.3 から LinTS（Thompson Sampling with linear model）を採用。
+
+### 10.2 Decision Point
+
+メンタル bandit の DP:
+
+1. **Feeling ボタン押下（ユーザー起動 JITAI/EMI）**
+   * `eventType = "feeling_button_pressed"`
+   * `feeling_id = "self_loathing" | "anxiety" | "anger" | ...`
+
+### 10.3 State（特徴量）
+
+```ts
+interface MentalState {
+  localHour: number;           // 0-23
+  dayOfWeek: number;           // 0-6
+  feelingId: string;           // "self_loathing" | "anxiety" | etc.
+  recentFeelingCount: number;  // 今日その feeling ボタンが押された回数
+  recentTalkMinutes: number;   // 今日話した合計時間
+  sleepDebtHours: number;      // 過去7日の平均と昨夜の差
+  snsMinutesToday: number;
+  ruminationProxy: number;     // 0-1（深夜SNS + 反芻発言から計算）
+  big5: { O: number; C: number; E: number; A: number; N: number };
+  struggles: string[];
+}
+```
+
+### 10.4 Action（テンプレ群）
+
+Feeling ドメインのテンプレ例:
+
+| ID | テンプレ名 | BCT タグ |
+|----|----------|---------|
+| A | self_compassion_soft | self_compassion |
+| B | cognitive_reframe | reappraisal |
+| C | behavioral_activation_micro | behavioral_activation |
+| D | metta_like | loving_kindness |
+| E | fact_check | cognitive_defusion |
+
+### 10.5 Reward（EMA ベース）
+
+セッション終了時に Anicca が短く聞く:
+> 「さっきより少し楽になった？」（はい / いいえ）
+
+* `emaBetter = true` → reward = 1
+* `emaBetter = false` → reward = 0
+
+### 10.6 API フロー
+
+1. iOS から Feeling ボタン押下 → `POST /api/mobile/feeling/start`
+2. サーバ: state 構築 → bandit でテンプレ選択 → mem0 検索 → スクリプト生成
+3. セッション終了 → `POST /api/mobile/feeling/end` で EMA 回答を送信
+4. サーバ: reward を bandit に更新、mem0 に保存
+
+---
+
+## 11. BIG5 / キャラクター分析（アンケート無し）
+
+### 11.1 文献ベースの妥当性
+
+* Peltonen et al. (2020): アプリカテゴリ使用時間から Big Five を高精度で予測可能
+* Stachl et al. (2020): 6クラスのスマホ行動データから Big Five を予測（R≈0.37〜0.4）
+
+### 11.2 特徴量設計
+
+30 日分のログから以下を抽出:
+
+* ScreenTime 系: SNS / Entertainment / Productivity minutes per day、Night usage (22:00-03:00)
+* 行動リズム: average sleep time、average wake time、weekend vs weekday differences
+* アクティビティ: 平均歩数、運動日数/週
+* Talk/Text 系: 自己言及頻度、sentiment ratio、抽象語 vs 具体語比率
+
+### 11.3 推定パイプライン
+
+1. 30日分の集約ログを bullet list にする
+2. OpenAI Chat に渡して Big Five (O, C, E, A, N) を 0.0〜1.0 で推定
+3. 結果を `user_traits.big5` と mem0 profile に保存
+4. Traits Detail 画面でレーダーチャートと文章で表示
+5. ユーザーが修正した場合は override として次回プロンプトに含める
+
+### 11.4 Nudge との接続
+
+* Neuroticism 高 → 強い脅しテンプレを避ける
+* Conscientiousness 低 → micro-step / self-compassion 系優先
+* Openness 高 → 理論説明を含むテンプレが効きやすい
+
+---
+
+## 12. 環境変数の完全リスト（Railway に設定）
+
+### 12.1 既存（変更なし）
+
+| 変数名 | 用途 |
+|--------|------|
+| `DATABASE_URL` | PostgreSQL 接続文字列 |
+| `OPENAI_API_KEY` | OpenAI API（Realtime 含む） |
+| `REVENUECAT_PROJECT_ID` | RevenueCat |
+| `REVENUECAT_REST_API_KEY` | RevenueCat |
+| `REVENUECAT_WEBHOOK_SECRET` | RevenueCat Webhook 検証 |
+| `REVENUECAT_ENTITLEMENT_ID` | RevenueCat エンタイトルメント |
+| `REVENUECAT_VC_CODE` | RevenueCat Virtual Currency |
+| `FREE_MONTHLY_LIMIT` | 無料ユーザーの月間上限（分） |
+| `PRO_MONTHLY_LIMIT` | PRO ユーザーの月間上限（分） |
+| `PROXY_GUEST_JWT_SECRET` | JWT 署名用 |
+
+### 12.2 新規追加（v0.3）
+
+| 変数名 | 用途 | 取得元 |
+|--------|------|--------|
+| `MEM0_API_KEY` | mem0 クラウド API キー | [mem0.ai](https://app.mem0.ai) ダッシュボード |
+
+- MEM0_API_KEY を追加（Railway に設定）。Moss/Exa は v0.4 以降で非使用と明記する。
+
+### 12.3 削除（v0.3 では不要）
+
+- ~~`MOSS_PROJECT_ID`~~ → v0.4 以降
+- ~~`MOSS_PROJECT_KEY`~~ → v0.4 以降
+- ~~`EXA_API_KEY`~~ → v0.4 以降
+
+---
+
+## 13. 3モダリティの位置づけ
+
+1. **自動 JITAI 通知**: Sleep / SNS / Movement / Priority Habit（行動ログベース reward）
+2. **通知タップ → Session 画面**: コンテキスト付き音声導き
+3. **Talk Feeling EMI**: ユーザーの Feeling ボタン押下が DP、EMA ベースの reward
+
+v0.3 において 3 モダリティはすべて含める（MUST）。
+
+---
+
+## 14. その他クリアにすべき点
+
+### 14.1 bandit 実装場所
+
+* v0.3 は Node/TS 内で LinTS を自前実装
+* オフライン解析用に Python 版は別レポ or サイドカーサービスとして持つ
+
+### 14.2 ログの取り方
+
+* すべての Nudge / Feeling セッションに対して `(state, action, reward, bct_tags)` を残す
+* これは後の「人類一般のパターン分析」のための必須データ
+
+### 14.3 プライバシ / セキュリティ
+
+* mem0 に入れるテキストからは名前/住所など個人特定情報を LLM で redact して保存
+
+### 14.4 タイムゾーンと日付計算
+
+* 全ての `daily_metrics` と Behavior 表示はユーザーのタイムゾーンベースで日付を切る
+* Nudge DP 判定も同様
+
+### 14.5 失敗時の fallback UX
+
+* センサーが許可されていない時は「今は詳しい行動データは見えていません」と明示
+* それでも Feeling ボタンと Talk だけで「メンタル側の導き」は提供可能
 
 ---
 
@@ -1104,7 +1210,7 @@ interface NudgeContext {
 
 * `apps/api` 側では
 
-  * `modules/` 以下に **memory / search / nudge / simulation / metrics** の各モジュールを切る。
+  * `modules/` 以下に **memory / nudge / simulation / metrics** の各モジュールを切る。
 * `aniccaios` 側では
 
   * Talk / Behavior / Onboarding / Sensors / Notifications の各レイヤーをはっきり分ける。

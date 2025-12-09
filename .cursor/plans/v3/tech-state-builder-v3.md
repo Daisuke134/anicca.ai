@@ -219,7 +219,7 @@ const sedentaryCurrent = today?.activitySummary?.sedentaryStreak?.currentMinutes
 | `recentFeelingCount7d` | number | `COUNT(*)` from feeling_sessions last 7d |
 | `sleepDebtHours` | number | 共通 |
 | `snsMinutesToday` | number | 共通 |
-| `ruminationProxy` | number | `(nightSNSNormalized + feelingPressCountNormalized)/2` など 0-1 |
+| `ruminationProxy` | number | 論文ベースの算出式（下記セクション7.1参照）0-1 |
 | `big5` | object | 共通 |
 | `struggles` | string[] | 共通 |
 
@@ -230,6 +230,77 @@ FROM feeling_sessions
 WHERE user_id = $1 AND feeling_id = $2
   AND started_at >= ($3::timestamptz - interval '7 days');
 ```
+
+### 7.1 ruminationProxy 算出式（論文ベース）
+
+#### 根拠論文
+- **Jacobucci et al. (2025)** "Passive vs Active Nighttime Smartphone Use as Markers of Next-Day Suicide Risk" - JAMA Network Open
+- 79人を28日間追跡、5秒ごとのスクリーンショットで使用パターンを分析
+- **主な知見**:
+  1. 夜23時〜深夜1時のスマホ使用が翌日の精神状態悪化と最も強く相関
+  2. パッシブ使用（スクロール）は悪影響、アクティブ使用（入力）は改善傾向
+  3. 7-9時間の無使用時間がある人は精神状態が良好
+
+#### データソース
+| フィールド | 取得元 | 説明 |
+|-----------|--------|------|
+| `lateNightSnsMinutes` | DeviceActivity | 23:00-01:00のSNSカテゴリ使用分数 |
+| `snsMinutes` | DeviceActivity | 当日のSNSカテゴリ合計分数 |
+| `totalScreenTime` | DeviceActivity | 当日の全カテゴリ合計分数 |
+| `sleepWindowPhoneMinutes` | DeviceActivity + HealthKit | 就寝〜起床間のスマホ使用分数 |
+| `longestNoUseHours` | DeviceActivity | 24時間内の最長未使用時間（時） |
+
+#### 算出式
+
+```typescript
+/**
+ * ruminationProxy: 反芻思考の代理指標（0.0 - 1.0）
+ * 
+ * 構成要素:
+ * 1. 夜間SNS使用（23:00-01:00）- 重み0.4
+ *    → 論文: この時間帯の使用が最もリスクと相関
+ * 2. SNS割合（パッシブ使用のproxy）- 重み0.3
+ *    → 論文: SNS=主にスクロール、パッシブ使用の代理
+ * 3. 睡眠時間帯の使用 - 重み0.3
+ *    → 論文: 睡眠中の覚醒とスマホ使用は精神状態悪化の指標
+ * 4. 十分な無使用時間（7-9時間）- ボーナス
+ *    → 論文: 適切な睡眠/デジタル休息の指標
+ */
+function calculateRuminationProxy(data: {
+  lateNightSnsMinutes: number;      // 23:00-01:00のSNS使用分数
+  snsMinutes: number;               // 当日SNS合計分数
+  totalScreenTime: number;          // 当日スクリーンタイム合計分数
+  sleepWindowPhoneMinutes: number;  // 就寝-起床間の使用分数
+  longestNoUseHours: number;        // 最長未使用時間（時）
+}): number {
+  // 1. 夜間SNS使用スコア（60分で上限、重み0.4）
+  const lateNightScore = Math.min(data.lateNightSnsMinutes / 60, 1.0) * 0.4;
+  
+  // 2. SNS割合スコア（パッシブ使用のproxy、重み0.3）
+  const snsRatio = data.totalScreenTime > 0 
+    ? data.snsMinutes / data.totalScreenTime 
+    : 0;
+  const snsScore = snsRatio * 0.3;
+  
+  // 3. 睡眠時間帯使用スコア（30分で上限、重み0.3）
+  const sleepWindowScore = Math.min(data.sleepWindowPhoneMinutes / 30, 1.0) * 0.3;
+  
+  // 4. 十分な無使用時間ボーナス（7-9時間でマイナス補正）
+  const restBonus = (data.longestNoUseHours >= 7 && data.longestNoUseHours <= 9) 
+    ? -0.2 
+    : 0;
+  
+  // 最終スコア（0.0 - 1.0 にクリップ）
+  return Math.max(0, Math.min(1, lateNightScore + snsScore + sleepWindowScore + restBonus));
+}
+```
+
+#### 制約事項
+- **パッシブ/アクティブ使用の区別は取得不可**: iOS APIではキーボード入力 vs スクロールの区別ができない
+- **代替手法**: SNSアプリ使用 = パッシブ、メッセージアプリ使用 = アクティブとして近似
+- **欠損時**: DeviceActivity権限がない場合は `ruminationProxy = 0` とし、nudgeIntensity を quiet 扱い
+
+- 権限未許可/欠損時は ruminationProxy=0、nudgeIntensity=quiet で扱う。
 
 ---
 
@@ -271,6 +342,10 @@ WHERE status = 'missed'
 ---
 
 ## 9. 正規化ルール（bandit へ渡す前）
+
+- 最終フィーチャ配列と正規化を本節に固定し、featureOrderHash をここで生成する。
+
+- サーバ起動時に bandit_models.meta.featureOrderHash と突合し、不一致なら起動エラーとする。
 
 | フィールド | 正規化方法 | 範囲 |
 |-----------|-----------|------|
@@ -317,7 +392,7 @@ WHERE status = 'missed'
 ---
 
 ## 13. 今後の拡張メモ
-- ruminationProxy は `nightSNSNormalized` と mem0 感情発話頻度から 0-1 を再設計予定（v3.1）。
+- ruminationProxy は論文ベースの算出式を v3 で実装済み（セクション7.1参照）。将来的に mem0 感情発話頻度を追加入力として精度向上を検討。
 - screen/movement のリアルタイムセッションテーブルを追加する場合は view `screen_time_sessions` / `activity_sessions` を作り stateBuilder は view を参照するだけにする。
 - bandit 入力ベクトルはここで定義した正規化を固定し、`tech-bandit-v3.md` で次元順序を再掲する。
 

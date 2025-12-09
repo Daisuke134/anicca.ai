@@ -134,3 +134,44 @@
 - `AuthRequiredPlaceholderView` は英語文言のまま。プロダクションで表示されるケースは限定的だが、日本語化の検討余地あり。
 
 
+## Anicca v0.3 ドキュメントレビュー指示
+
+### 概要
+Anicca v0.3 の技術仕様書（10ファイル）をレビューし、整合性・完全性・正確性を検証してください。
+
+### 読むべきファイル（フォルダ: `/Users/cbns03/Downloads/anicca-project/.cursor/plans/v3/`）
+
+| ファイル | 内容 | レビュー観点 |
+|---------|------|-------------|
+| `tech-db-schema-v3.md` | DBスキーマ（Prismaモデル） | テーブル定義の完全性、インデックス設計 |
+| `file-structure-v3.md` | ディレクトリ構造 | iOS/API両方の網羅性、[新規]/[修正]の正確性 |
+| `migration-patch-v3.md` | 既存コードへの変更 | 後方互換性、優先順位の妥当性 |
+| `tech-state-builder-v3.md` | State構築仕様 | 正規化ルール、SQL/Prismaスニペットの正確性 |
+| `tech-bandit-v3.md` | LinTS実装仕様 | 数式の正確性、パラメータの根拠 |
+| `prompts-v3.md` | LLMプロンプト集 | Realtimeガイドラインとの整合、CBT/ACTの妥当性 |
+| `quotes-v3.md` | 固定Quote30個 | トーン・文言の適切さ |
+| `ios-sensors-spec-v3.md` | センサー実装仕様 | Apple公式ドキュメントとの整合、制約の網羅性 |
+| `tech-nudge-scheduling-v3.md` | Nudge頻度制御 | 優先順位・クールダウンの妥当性 |
+| `tech-ema-v3.md` | EMA仕様 | UI設計、Skip処理、bandit連携 |
+
+### 併読すべき基盤ドキュメント
+- `v3-ux.md`: UX全体像
+- `v3-stack.md`: 技術スタック
+- `v3-data.md`: 6ドメインのstate/action/reward定義
+- `v3-ui.md`: UI仕様書（完全版）
+
+### レビューの観点
+1. **整合性**: ドキュメント間で矛盾がないか
+2. **完全性**: 実装に必要な情報が網羅されているか
+3. **正確性**: 技術的に正しいか（Apple/OpenAIの最新ドキュメント参照）
+4. **実行可能性**: 実装できるレベルで詳細か
+
+### 特に確認してほしい点
+- `tech-state-builder-v3.md` の `ruminationProxy` 算出式
+- `prompts-v3.md` のNudge文言テンプレート（完全版があるか）
+- `ios-sensors-spec-v3.md` の NudgeSignalBridge 実装詳細
+- 静音時間帯の設定UIがどこにあるか
+
+### 出力形式
+- 問題点があれば、ファイル名・行番号・問題内容・修正提案を記載
+- 問題がなければ「OK」と記載

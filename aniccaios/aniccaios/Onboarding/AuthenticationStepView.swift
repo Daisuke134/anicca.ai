@@ -36,6 +36,15 @@ struct AuthenticationStepView: View {
             .onChange(of: appState.authStatus) { status in
                 handleAuthStatusChange(status)
             }
+
+            Button(String(localized: "onboarding_account_skip")) {
+                // v3-ui.md: Skip for now で次へ
+                next()
+            }
+            .buttonStyle(.plain)
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .padding(.top, 4)
             
             Spacer()
         }

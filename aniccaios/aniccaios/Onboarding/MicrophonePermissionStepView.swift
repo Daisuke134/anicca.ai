@@ -30,26 +30,18 @@ struct MicrophonePermissionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            if micGranted {
-                // 許可済み: ステータスを表示しボタンは無効
-                Label(String(localized: "common_enabled"), systemImage: "checkmark.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.Colors.label)
-                PrimaryButton(
-                    title: String(localized: "common_enabled"),
-                    isEnabled: false,
-                    isLoading: false,
-                    style: .selected
-                ) { }
-            } else {
-                PrimaryButton(
-                    title: isRequesting
-                        ? String(localized: "common_requesting")
-                        : String(localized: "common_continue"),
-                    isEnabled: !isRequesting,
-                    isLoading: isRequesting
-                ) { requestMicrophone() }
-            }
+            Text(String(localized: micGranted ? "onboarding_permission_status_allowed" : "onboarding_permission_status_not_allowed"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            PrimaryButton(
+                title: isRequesting
+                    ? String(localized: "common_requesting")
+                    : String(localized: "onboarding_microphone_allow"),
+                isEnabled: !isRequesting && !micGranted,
+                isLoading: isRequesting,
+                style: micGranted ? .selected : .primary
+            ) { requestMicrophone() }
 
         }
         .padding(24)

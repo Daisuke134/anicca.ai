@@ -10,6 +10,7 @@ final class NotificationScheduler {
 
     enum Category: String {
         case habitAlarm = "HABIT_ALARM"
+        case nudge = "NUDGE"
     }
 
     enum Action: String {
@@ -106,7 +107,14 @@ final class NotificationScheduler {
             options: [.customDismissAction]
         )
 
-        center.setNotificationCategories([category])
+        let nudgeCategory = UNNotificationCategory(
+            identifier: Category.nudge.rawValue,
+            actions: [start, dismiss],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
+
+        center.setNotificationCategories([category, nudgeCategory])
     }
 
     // MARK: Scheduling
@@ -522,6 +530,49 @@ final class NotificationScheduler {
     
     private func keyCustomFollowPrefix(id: UUID) -> String {
         "HABIT_CUSTOM_FOLLOW_\(id.uuidString)_"
+    }
+
+    // MARK: - Nudge scheduling (v0.3)
+    /// /mobile/nudge/trigger の応答を「即時ローカル通知」として提示する。
+    /// - 注意: 頻度/クールダウン/優先度/延期はサーバ側で制御する（iOSは提示のみ）。
+    func scheduleNudgeNow(nudgeId: String, domain: String, message: String, userInfo: [String: Any]) async {
+        guard !nudgeId.isEmpty, !message.isEmpty else { return }
+
+        let content = UNMutableNotificationContent()
+        content.title = "Anicca"
+        content.body = message
+        content.categoryIdentifier = Category.nudge.rawValue
+        content.userInfo = userInfo
+
+        // v0.3: Nudge は habit alarm と異なり「連続リピート音」なし（gentle）
+        content.sound = .default
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .active
+        }
+
+        // 即時（1秒後）に提示
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)
+        let request = UNNotificationRequest(
+            identifier: keyNudgeMain(nudgeId: nudgeId),
+            content: content,
+            trigger: trigger
+        )
+        do {
+            try await center.add(request)
+        } catch {
+            logger.error("Failed to schedule nudge notification: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    func nudgeId(fromIdentifier identifier: String) -> String? {
+        // NUDGE_MAIN_<nudgeId>
+        let parts = identifier.split(separator: "_")
+        guard parts.count >= 3, parts[0] == "NUDGE", parts[1] == "MAIN" else { return nil }
+        return String(parts[2])
+    }
+
+    private func keyNudgeMain(nudgeId: String) -> String {
+        "NUDGE_MAIN_\(nudgeId)"
     }
 }
 

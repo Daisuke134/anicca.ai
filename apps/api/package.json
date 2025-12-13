@@ -8,7 +8,9 @@
     "dev": "vercel dev",
     "deploy": "vercel --prod",
     "start": "node src/server.js",
-    "dev:railway": "nodemon src/server.js"
+    "dev:railway": "nodemon src/server.js",
+    "prisma:generate": "prisma generate",
+    "prisma:studio": "prisma studio"
   },
   "keywords": [
     "proxy",
@@ -21,7 +23,8 @@
   "devDependencies": {
     "@types/node": "^24.0.4",
     "typescript": "^5.8.3",
-    "vercel": "^32.0.0"
+    "vercel": "^32.0.0",
+    "prisma": "7.1.0"
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.35",
@@ -47,6 +50,9 @@
     "pg": "^8.16.3",
     "stripe": "^16.6.0",
     "undici": "^6.22.0",
-    "uuid": "^9.0.0"
+    "uuid": "^9.0.0",
+    "@prisma/client": "7.1.0",
+    "zod": "^3.25.67",
+    "mem0ai": "2.1.38"
   }
 }

@@ -1,12 +1,19 @@
 /* Microphone permission description */
-"NSMicrophoneUsageDescription" = "Aniccaはリアルタイムで会話するためにマイクが必要です。";
+"NSMicrophoneUsageDescription" = "Aniccaはリアルタイム音声対話のためにマイクを使用します。";
 
 /* Camera permission description */
 "NSCameraUsageDescription" = "WebRTCライブラリがカメラAPIを参照していますが、このアプリはカメラを使用しません。";
 
 /* Notification permission description */
-"NSUserNotificationsUsageDescription" = "Aniccaは起床コールやルーティンの開始時刻をリマインドするために通知を使用します。";
+"NSUserNotificationsUsageDescription" = "Aniccaは起床やルーティンのタイミングで、やさしく促す通知を送ります。（この文言はOSの権限ダイアログに表示されない場合があります）";
 
 /* AlarmKit permission description */
-"NSAlarmKitUsageDescription" = "Aniccaは、習慣のリマインダーをフルスクリーンアラームとして表示し、確実に行動を促すために使用します。";
+"NSAlarmKitUsageDescription" = "Aniccaは起床やルーティンのためにアラームをスケジュールします。";
+
+/* Health permission descriptions */
+"NSHealthShareUsageDescription" = "Aniccaは睡眠や歩数などのデータを読み取り、インサイトや適切な促しの生成に使用します。";
+"NSHealthUpdateUsageDescription" = "Aniccaは、あなたが明示的に共有を選んだ場合にのみ、Healthへ限定的な書き込みを行います。";
+
+/* Motion permission description */
+"NSMotionUsageDescription" = "Aniccaは動作データを用いて、長時間の静止を検知しやさしいリマインドを行います。";
 

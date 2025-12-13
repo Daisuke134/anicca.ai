@@ -36,10 +36,15 @@ final class AppState: ObservableObject {
     @Published private(set) var customHabits: [CustomHabitConfiguration] = []
     @Published private(set) var customHabitSchedules: [UUID: DateComponents] = [:]
     private(set) var shouldStartSessionImmediately = false
+    @Published private(set) var hasSeenWakeSilentTip: Bool = false
+    
+    // Phase-7: sensor permissions + integration toggles
+    @Published private(set) var sensorAccess: SensorAccessState
     
     enum RootTab: Int, Hashable {
         case talk = 0
-        case habits = 1
+        case behavior = 1
+        case profile = 2
     }
     @Published var selectedRootTab: RootTab = .talk
 
@@ -67,12 +72,15 @@ final class AppState: ObservableObject {
     private let subscriptionKey = "com.anicca.subscription"
     private let customHabitsKey = "com.anicca.customHabits"
     private let customHabitSchedulesKey = "com.anicca.customHabitSchedules"
+    private let sensorAccessKey = "com.anicca.sensorAccessState"
+    private let hasSeenWakeSilentTipKey = "com.anicca.hasSeenWakeSilentTip"
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
     
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
     private var pendingConsultPrompt: String?
+    private var pendingAutoResponse: Bool = false
 
     private init() {
         // Initialize all properties first
@@ -82,12 +90,7 @@ final class AppState: ObservableObject {
         // オンボーディング未完了時は強制的に.welcomeから開始
         if defaults.bool(forKey: onboardingKey) {
             let rawValue = defaults.integer(forKey: onboardingStepKey)
-            // 後方互換性: rawValue = 4（旧.profile）を.habitSetupにマッピング
-            if rawValue == 4 {
-                self.onboardingStep = .habitSetup
-            } else {
-                self.onboardingStep = OnboardingStep(rawValue: rawValue) ?? .completion
-            }
+            self.onboardingStep = OnboardingStep.migratedFromLegacyRawValue(rawValue)
         } else {
             // オンボーディング未完了なら、保存されたステップをクリアして.welcomeから開始
             defaults.removeObject(forKey: onboardingStepKey)
@@ -103,6 +106,12 @@ final class AppState: ObservableObject {
         // カスタム習慣の読み込み
         self.customHabits = CustomHabitStore.shared.loadAll()
         self.customHabitSchedules = loadCustomHabitSchedules()
+        
+        // Phase-7: load sensor access state
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessKey)
+        
+        // Phase-9: load wake silent tip seen flag
+        self.hasSeenWakeSilentTip = defaults.bool(forKey: hasSeenWakeSilentTipKey)
         
         // Load habit schedules (new format)
         if let data = defaults.data(forKey: habitSchedulesKey),
@@ -342,6 +351,15 @@ final class AppState: ObservableObject {
 """
         pendingHabitPrompt = nil
         pendingConsultPrompt = base + directive
+        pendingAutoResponse = false
+    }
+
+    /// v0.3: サーバから返ってきた openingScript 等を、そのまま Realtime instructions に流す
+    /// - autoResponse=true の場合、VoiceSessionController が response.create を送って「Aniccaが先に話す」挙動にする
+    func prepareExternalPrompt(_ prompt: String, autoResponse: Bool) {
+        pendingHabitPrompt = nil
+        pendingConsultPrompt = prompt
+        pendingAutoResponse = autoResponse
     }
 
     func consumePendingPrompt() -> String? {
@@ -354,6 +372,12 @@ final class AppState: ObservableObject {
         let prompt = pendingConsultPrompt
         pendingConsultPrompt = nil
         return prompt
+    }
+
+    func consumePendingAutoResponse() -> Bool {
+        let v = pendingAutoResponse
+        pendingAutoResponse = false
+        return v
     }
 
     func clearPendingHabitTrigger() {
@@ -373,6 +397,7 @@ final class AppState: ObservableObject {
         onboardingStep = .welcome
         userProfile = UserProfile()
         subscriptionInfo = .free
+        sensorAccess = .default
         clearCustomHabit()
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
@@ -453,6 +478,7 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: habitSchedulesKey)
         defaults.removeObject(forKey: customHabitsKey)
         defaults.removeObject(forKey: customHabitSchedulesKey)
+        defaults.removeObject(forKey: sensorAccessKey)
         
         // 通知をすべてキャンセル
         Task {
@@ -518,14 +544,30 @@ final class AppState: ObservableObject {
             "wakeRoutines": profile.wakeRoutines,
             "sleepRoutines": profile.sleepRoutines,
             "trainingGoal": profile.trainingGoal,
-            "idealTraits": profile.idealTraits,
-            "problems": profile.problems,
+            // v0.3 traits
+            "ideals": profile.ideals,
+            "struggles": profile.struggles,
+            "keywords": profile.keywords,
+            "summary": profile.summary,
+            "nudgeIntensity": profile.nudgeIntensity.rawValue,
+            "stickyMode": profile.stickyMode,
             "useAlarmKitForWake": profile.useAlarmKitForWake,
             "useAlarmKitForTraining": profile.useAlarmKitForTraining,
             "useAlarmKitForBedtime": profile.useAlarmKitForBedtime,
-            "useAlarmKitForCustom": profile.useAlarmKitForCustom,
-            "stickyModeEnabled": profile.stickyModeEnabled
+            "useAlarmKitForCustom": profile.useAlarmKitForCustom
         ]
+        
+        if let big5 = profile.big5 {
+            var obj: [String: Any] = [
+                "openness": big5.openness,
+                "conscientiousness": big5.conscientiousness,
+                "extraversion": big5.extraversion,
+                "agreeableness": big5.agreeableness,
+                "neuroticism": big5.neuroticism
+            ]
+            if let s = big5.summary { obj["summary"] = s }
+            payload["big5"] = obj
+        }
         
         payload["habitSchedules"] = serializedHabitSchedulesForSync()
         payload["habitFollowupCounts"] = habitFollowupCounts.mapKeys { $0.rawValue }
@@ -728,6 +770,11 @@ final class AppState: ObservableObject {
         quotaHoldReason = reason
     }
     
+    func markHasSeenWakeSilentTip() {
+        hasSeenWakeSilentTip = true
+        defaults.set(true, forKey: hasSeenWakeSilentTipKey)
+    }
+    
     func updatePurchaseEnvironment(_ status: PurchaseEnvironmentStatus) {
         purchaseEnvironmentStatus = status
     }
@@ -820,6 +867,42 @@ final class AppState: ObservableObject {
         var profile = userProfile
         profile.idealTraits = traits
         updateUserProfile(profile, sync: true)
+    }
+    
+    // MARK: - v0.3 Traits update helpers
+    
+    func updateTraits(ideals: [String], struggles: [String]) {
+        var profile = userProfile
+        profile.ideals = ideals
+        profile.struggles = struggles
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateBig5(_ scores: Big5Scores?) {
+        var profile = userProfile
+        profile.big5 = scores
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateNudgeIntensity(_ intensity: NudgeIntensity) {
+        var profile = userProfile
+        profile.nudgeIntensity = intensity
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func setStickyMode(_ enabled: Bool) {
+        var profile = userProfile
+        profile.stickyMode = enabled
+        updateUserProfile(profile, sync: true)
+    }
+    
+    // MARK: - v0.3 Quote
+    
+    var todayQuote: String {
+        QuoteProvider.shared.todayQuote(
+            preferredLanguage: userProfile.preferredLanguage,
+            date: Date()
+        )
     }
     
     // MARK: - Private Helpers
@@ -917,11 +1000,37 @@ final class AppState: ObservableObject {
         if let trainingGoal = payload["trainingGoal"] as? String {
             profile.trainingGoal = trainingGoal
         }
-        if let idealTraits = payload["idealTraits"] as? [String] {
-            profile.idealTraits = idealTraits
+        // v0.3 traits (prefer new keys, fallback to legacy)
+        if let ideals = payload["ideals"] as? [String] {
+            profile.ideals = ideals
+        } else if let idealTraits = payload["idealTraits"] as? [String] {
+            profile.ideals = idealTraits
         }
-        if let problems = payload["problems"] as? [String] {
-            profile.problems = problems
+        if let struggles = payload["struggles"] as? [String] {
+            profile.struggles = struggles
+        } else if let problems = payload["problems"] as? [String] {
+            profile.struggles = problems
+        }
+        if let keywords = payload["keywords"] as? [String] {
+            profile.keywords = keywords
+        }
+        if let summary = payload["summary"] as? String {
+            profile.summary = summary
+        }
+        if let intensity = payload["nudgeIntensity"] as? String,
+           let v = NudgeIntensity(rawValue: intensity) {
+            profile.nudgeIntensity = v
+        }
+        if let big5 = payload["big5"] as? [String: Any] {
+            let scores = Big5Scores(
+                openness: big5["openness"] as? Int ?? 0,
+                conscientiousness: big5["conscientiousness"] as? Int ?? 0,
+                extraversion: big5["extraversion"] as? Int ?? 0,
+                agreeableness: big5["agreeableness"] as? Int ?? 0,
+                neuroticism: big5["neuroticism"] as? Int ?? 0,
+                summary: big5["summary"] as? String
+            )
+            profile.big5 = scores
         }
         // AlarmKit設定（各習慣ごと）
         if let useAlarmKit = payload["useAlarmKitForWake"] as? Bool {
@@ -936,11 +1045,13 @@ final class AppState: ObservableObject {
         if let useAlarmKitCustom = payload["useAlarmKitForCustom"] as? Bool {
             profile.useAlarmKitForCustom = useAlarmKitCustom
         }
-        // Stickyモード（後方互換: wakeStickyModeEnabled も読み取る）
-        if let sticky = payload["stickyModeEnabled"] as? Bool {
-            profile.stickyModeEnabled = sticky
+        // Stickyモード（後方互換: stickyModeEnabled / wakeStickyModeEnabled も読み取る）
+        if let sticky = payload["stickyMode"] as? Bool {
+            profile.stickyMode = sticky
+        } else if let sticky = payload["stickyModeEnabled"] as? Bool {
+            profile.stickyMode = sticky
         } else if let oldSticky = payload["wakeStickyModeEnabled"] as? Bool {
-            profile.stickyModeEnabled = oldSticky
+            profile.stickyMode = oldSticky
         }
         updateUserProfile(profile, sync: false)
         
@@ -1019,6 +1130,65 @@ final class AppState: ObservableObject {
     func clearCustomHabit() {
         customHabit = nil
         CustomHabitStore.shared.save(nil)
+    }
+    
+    // MARK: - Phase-7: Sensor Access State
+    
+    private static func loadSensorAccess(from defaults: UserDefaults, key: String) -> SensorAccessState {
+        guard let data = defaults.data(forKey: key),
+              let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) else {
+            return .default
+        }
+        return decoded
+    }
+    
+    private func saveSensorAccess() {
+        if let data = try? JSONEncoder().encode(sensorAccess) {
+            defaults.set(data, forKey: sensorAccessKey)
+        }
+    }
+    
+    // MARK: - Phase-7: integration toggles entry points (quiet fallback)
+    
+    func setScreenTimeEnabled(_ enabled: Bool) {
+        sensorAccess.screenTimeEnabled = enabled
+        saveSensorAccess()
+    }
+    
+    func setSleepEnabled(_ enabled: Bool) {
+        sensorAccess.sleepEnabled = enabled
+        saveSensorAccess()
+    }
+    
+    func setStepsEnabled(_ enabled: Bool) {
+        sensorAccess.stepsEnabled = enabled
+        saveSensorAccess()
+    }
+    
+    func setMotionEnabled(_ enabled: Bool) {
+        sensorAccess.motionEnabled = enabled
+        saveSensorAccess()
+    }
+    
+    func updateScreenTimePermission(_ status: SensorPermissionStatus) {
+        sensorAccess.screenTime = status
+        if status != .authorized { sensorAccess.screenTimeEnabled = false }
+        saveSensorAccess()
+    }
+    
+    func updateHealthKitPermission(_ status: SensorPermissionStatus) {
+        sensorAccess.healthKit = status
+        if status != .authorized {
+            sensorAccess.sleepEnabled = false
+            sensorAccess.stepsEnabled = false
+        }
+        saveSensorAccess()
+    }
+    
+    func updateMotionPermission(_ status: SensorPermissionStatus) {
+        sensorAccess.motion = status
+        if status != .authorized { sensorAccess.motionEnabled = false }
+        saveSensorAccess()
     }
 }
 

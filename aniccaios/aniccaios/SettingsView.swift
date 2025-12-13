@@ -2,6 +2,15 @@ import ComponentsKit
 import RevenueCat
 import RevenueCatUI
 import SwiftUI
+#if canImport(FamilyControls)
+import FamilyControls
+#endif
+#if canImport(HealthKit)
+import HealthKit
+#endif
+#if canImport(CoreMotion)
+import CoreMotion
+#endif
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -14,12 +23,22 @@ struct SettingsView: View {
     @State private var deleteAccountError: Error?
     @State private var showingManageSubscription = false
 
+    // Data Integration（v0.3: 最小は @AppStorage。フェーズ7でセンサー監視/送信に接続）
+    @AppStorage("com.anicca.dataIntegration.screenTimeEnabled") private var screenTimeEnabled = false
+    @AppStorage("com.anicca.dataIntegration.sleepEnabled") private var sleepEnabled = false
+    @AppStorage("com.anicca.dataIntegration.stepsEnabled") private var stepsEnabled = false
+    @AppStorage("com.anicca.dataIntegration.motionEnabled") private var motionEnabled = false
+
+    @State private var isShowingPermissionAlert = false
+    @State private var permissionAlertMessage = ""
+
     var body: some View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: AppTheme.Spacing.md) {
                     subscriptionSection
                     personalizationSection
+                    dataIntegrationFallbackSection
                     alarmSettingsSection
                     problemsSection
                     idealTraitsSection
@@ -57,6 +76,12 @@ struct SettingsView: View {
                 if let error = deleteAccountError {
                     Text(error.localizedDescription)
                 }
+            }
+            .alert("Permission required", isPresented: $isShowingPermissionAlert) {
+                Button("Open Settings") { openSystemSettings() }
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text(permissionAlertMessage)
             }
         }
         .sheet(isPresented: $showingManageSubscription) {
@@ -133,6 +158,32 @@ struct SettingsView: View {
         }
     }
     
+    // MARK: - Fallback UX (Permissions / Data)
+    @ViewBuilder
+    private var dataIntegrationFallbackSection: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                Text(String(localized: "settings_data_optional_title"))
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
+                    .padding(.bottom, AppTheme.Spacing.xs)
+
+                Text(String(localized: "settings_data_optional_description"))
+                    .font(AppTheme.Typography.caption1Dynamic)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+
+                Button(String(localized: "common_open_settings")) {
+                    if let url = URL(string: UIApplication.openSettingsURLString) {
+                        UIApplication.shared.open(url)
+                    }
+                }
+                .font(AppTheme.Typography.subheadlineDynamic)
+                .foregroundStyle(AppTheme.Colors.accent)
+                .buttonStyle(.plain)
+            }
+        }
+    }
+    
     // MARK: - Alarm Settings Section
     @ViewBuilder
     private var alarmSettingsSection: some View {
@@ -162,6 +213,225 @@ struct SettingsView: View {
                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
         }
+    }
+
+    // MARK: - Data Integration (Phase-7)
+    @ViewBuilder
+    private var dataIntegrationSection: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                Text("Data Integration")
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
+                    .padding(.bottom, AppTheme.Spacing.xs)
+
+                // Status (v3-stack.md 14.5: not connected message)
+                // Quiet fallback: show status, but don't block Talk.
+                SectionRow.text(label: "Screen Time", text: "\(appState.sensorAccess.screenTime)")
+                Toggle("Enable Screen Time", isOn: Binding(
+                    get: { appState.sensorAccess.screenTimeEnabled },
+                    set: { enabled in
+                        Task { @MainActor in
+                            if enabled {
+                                // Request only on toggle ON (quiet fallback)
+                                // try await DeviceActivityMonitorController.shared.requestAuthorization()
+                                // try DeviceActivityMonitorController.shared.startMonitoringIfNeeded()
+                                appState.setScreenTimeEnabled(true)
+                                appState.updateScreenTimePermission(.authorized)
+                            } else {
+                                // DeviceActivityMonitorController.shared.stopMonitoring()
+                                appState.setScreenTimeEnabled(false)
+                            }
+                        }
+                    }
+                ))
+
+                SectionRow.text(label: "HealthKit", text: "\(appState.sensorAccess.healthKit)")
+                Toggle("Enable Sleep", isOn: Binding(
+                    get: { appState.sensorAccess.sleepEnabled },
+                    set: { enabled in
+                        Task { @MainActor in
+                            if enabled {
+                                // try await HealthKitManager.shared.requestAuthorizationForSleepAndSteps()
+                                appState.setSleepEnabled(true)
+                                appState.updateHealthKitPermission(.authorized)
+                                HealthKitManager.shared.configureOnLaunchIfEnabled()
+                            } else {
+                                appState.setSleepEnabled(false)
+                            }
+                        }
+                    }
+                ))
+                Toggle("Enable Steps", isOn: Binding(
+                    get: { appState.sensorAccess.stepsEnabled },
+                    set: { enabled in
+                        Task { @MainActor in
+                            if enabled {
+                                // try await HealthKitManager.shared.requestAuthorizationForSleepAndSteps()
+                                appState.setStepsEnabled(true)
+                                appState.updateHealthKitPermission(.authorized)
+                                HealthKitManager.shared.configureOnLaunchIfEnabled()
+                            } else {
+                                appState.setStepsEnabled(false)
+                            }
+                        }
+                    }
+                ))
+
+                SectionRow.text(label: "Motion", text: "\(appState.sensorAccess.motion)")
+                Toggle("Enable Motion", isOn: Binding(
+                    get: { appState.sensorAccess.motionEnabled },
+                    set: { enabled in
+                        Task { @MainActor in
+                            if enabled {
+                                MotionManager.shared.startIfEnabled()
+                                appState.setMotionEnabled(true)
+                                appState.updateMotionPermission(.authorized)
+                            } else {
+                                MotionManager.shared.stop()
+                                appState.setMotionEnabled(false)
+                            }
+                        }
+                    }
+                ))
+
+                Text("If sensors are not permitted, Anicca keeps working (Talk/Feeling) and simply skips behavior data.")
+                    .font(AppTheme.Typography.caption1Dynamic)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+            }
+        }
+    }
+
+    // MARK: - Permission helpers (v0.3 UI / minimal)
+    private func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
+
+    private func showPermissionAlert(_ message: String) {
+        permissionAlertMessage = message
+        isShowingPermissionAlert = true
+    }
+
+    private func handleToggleScreenTime(_ enabled: Bool) async {
+        if !enabled {
+            screenTimeEnabled = false
+            return
+        }
+
+        #if canImport(FamilyControls)
+        do {
+            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+            screenTimeEnabled = (AuthorizationCenter.shared.authorizationStatus == .approved)
+            if !screenTimeEnabled {
+                showPermissionAlert("Screen Time permission was not granted. Please enable it in Settings.")
+            }
+        } catch {
+            screenTimeEnabled = false
+            showPermissionAlert("Screen Time permission was not granted. Please enable it in Settings.")
+        }
+        #else
+        screenTimeEnabled = false
+        showPermissionAlert("Screen Time integration is not available on this build.")
+        #endif
+    }
+
+    private func handleToggleHealthKitSleep(_ enabled: Bool) async {
+        if !enabled {
+            sleepEnabled = false
+            return
+        }
+
+        #if canImport(HealthKit)
+        guard HKHealthStore.isHealthDataAvailable(),
+              let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            sleepEnabled = false
+            showPermissionAlert("Health data is not available on this device.")
+            return
+        }
+
+        do {
+            try await HKHealthStore().requestAuthorization(toShare: [], read: [sleepType])
+            // 許可が取れなかった場合はOFFへ戻す（ios-sensors-spec-v3.md）
+            let status = HKHealthStore().authorizationStatus(for: sleepType)
+            sleepEnabled = (status == .sharingAuthorized)
+            if !sleepEnabled {
+                showPermissionAlert("Sleep access was not granted. Please enable Health access in Settings.")
+            }
+        } catch {
+            sleepEnabled = false
+            showPermissionAlert("Sleep access was not granted. Please enable Health access in Settings.")
+        }
+        #else
+        sleepEnabled = false
+        showPermissionAlert("HealthKit integration is not available on this build.")
+        #endif
+    }
+
+    private func handleToggleHealthKitSteps(_ enabled: Bool) async {
+        if !enabled {
+            stepsEnabled = false
+            return
+        }
+
+        #if canImport(HealthKit)
+        guard HKHealthStore.isHealthDataAvailable(),
+              let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else {
+            stepsEnabled = false
+            showPermissionAlert("Health data is not available on this device.")
+            return
+        }
+
+        do {
+            try await HKHealthStore().requestAuthorization(toShare: [], read: [stepsType])
+            let status = HKHealthStore().authorizationStatus(for: stepsType)
+            stepsEnabled = (status == .sharingAuthorized)
+            if !stepsEnabled {
+                showPermissionAlert("Steps access was not granted. Please enable Health access in Settings.")
+            }
+        } catch {
+            stepsEnabled = false
+            showPermissionAlert("Steps access was not granted. Please enable Health access in Settings.")
+        }
+        #else
+        stepsEnabled = false
+        showPermissionAlert("HealthKit integration is not available on this build.")
+        #endif
+    }
+
+    private func handleToggleMotion(_ enabled: Bool) async {
+        if !enabled {
+            motionEnabled = false
+            return
+        }
+
+        #if canImport(CoreMotion)
+        let status = CMMotionActivityManager.authorizationStatus()
+        switch status {
+        case .authorized:
+            motionEnabled = true
+        case .notDetermined:
+            // prompt を出すために軽く start/stop
+            let mgr = CMMotionActivityManager()
+            mgr.startActivityUpdates(to: .main) { _ in
+                mgr.stopActivityUpdates()
+            }
+            // 反映は次フレーム以降になるため、ここでは一旦ON→否なら戻す
+            motionEnabled = (CMMotionActivityManager.authorizationStatus() == .authorized)
+            if !motionEnabled {
+                showPermissionAlert("Motion access was not granted. Please enable Motion & Fitness in Settings.")
+            }
+        case .denied, .restricted:
+            motionEnabled = false
+            showPermissionAlert("Motion access is not available. Please enable Motion & Fitness in Settings.")
+        @unknown default:
+            motionEnabled = false
+            showPermissionAlert("Motion access is not available. Please check Settings.")
+        }
+        #else
+        motionEnabled = false
+        showPermissionAlert("Motion integration is not available on this build.")
+        #endif
     }
     
     // MARK: - Problems Section

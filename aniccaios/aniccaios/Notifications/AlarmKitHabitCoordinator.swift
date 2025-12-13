@@ -93,6 +93,13 @@ final class AlarmKitHabitCoordinator {
                             // フォアグラウンド時でも、ここでは追加のアプリ内サウンドを鳴らさない。
                             // アラーム音は AlarmKit / システム側の挙動に任せ、対話開始時は Anicca の音声だけにする。
                         }
+
+                        // v0.3: wake の alerting を DP としてサーバに通知（頻度/上限はサーバ側）
+                        if habit == .wake {
+                            Task.detached(priority: .utility) {
+                                await NudgeTriggerService.shared.triggerWakeAlarmFired()
+                            }
+                        }
                         break
                     }
                 }

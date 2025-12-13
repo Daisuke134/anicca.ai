@@ -21,7 +21,8 @@ struct ContentRouterView: View {
         } else {
             switch appState.authStatus {
             case .signedOut:
-                OnboardingFlowView()
+                // v3-ui.md: Sign in は Skip 可能。オンボーディング完了後はアプリに進める。
+                MainTabView()
             case .signingIn:
                 AuthenticationProcessingView()
             case .signedIn:

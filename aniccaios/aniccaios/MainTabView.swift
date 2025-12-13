@@ -5,22 +5,41 @@ struct MainTabView: View {
     
     var body: some View {
         TabView(selection: $appState.selectedRootTab) {
-            TalkTabView()
+            TalkView()
                 .tabItem {
                     Label(String(localized: "tab_talk"), systemImage: "message")
                 }
                 .tag(AppState.RootTab.talk)
             
-            HabitsTabView()
+            BehaviorTabView()
                 .tabItem {
-                    Label(String(localized: "tab_habits"), systemImage: "list.bullet")
+                    Label(String(localized: "tab_behavior"), systemImage: "chart.bar")
                 }
-                .tag(AppState.RootTab.habits)
+                .tag(AppState.RootTab.behavior)
+            
+            ProfileTabView()
+                .tabItem {
+                    Label(String(localized: "tab_profile"), systemImage: "person")
+                }
+                .tag(AppState.RootTab.profile)
         }
         .background(AppBackground())
     }
 }
 
-// SessionViewをTalkTabViewにリネーム
-typealias TalkTabView = SessionView
+// v3: Talk のルートは TalkView（Sessionは push 遷移）
+
+// Phase 3では既存のHabitsTabViewを暫定的にProfileに割り当てる（UI/UXは後続フェーズで差し替え）
+typealias ProfileTabView = HabitsTabView
+
+private struct BehaviorTabView: View {
+    var body: some View {
+        NavigationStack {
+            // フェーズ6で BehaviorView を実装して差し替える
+            VStack(spacing: 0) { }
+                .navigationTitle(String(localized: "tab_behavior"))
+        }
+        .background(AppBackground())
+    }
+}
 

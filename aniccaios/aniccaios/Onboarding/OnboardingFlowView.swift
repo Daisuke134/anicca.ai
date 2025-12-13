@@ -11,6 +11,12 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .welcome:
                     WelcomeStepView(next: advance)
+                case .ideals:
+                    IdealsStepView(next: advance)
+                case .struggles:
+                    StrugglesStepView(next: advance)
+                case .value:
+                    ValueStepView(next: advance)
                 case .microphone:
                     MicrophonePermissionStepView(next: advance)
                 case .notifications:
@@ -54,12 +60,18 @@ struct OnboardingFlowView: View {
     private func advance() {
         switch step {
         case .welcome:
+            step = .ideals
+        case .ideals:
+            step = .struggles
+        case .struggles:
+            step = .value
+        case .value:
+            step = .account
+        case .account:
             step = .microphone
         case .microphone:
             step = .notifications
         case .notifications:
-            step = .account
-        case .account:
             step = .habitSetup
             // プロフィール完了時にオファリングをプリフェッチ（Paywall表示の準備）
             Task {

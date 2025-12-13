@@ -1,4 +1,6 @@
 "common_continue" = "Continue";
+"common_skip" = "Skip";
+"common_next" = "Next";
 "common_done" = "Done";
 "common_saving" = "Saving…";
 "common_requesting" = "Requesting…";
@@ -8,6 +10,7 @@
 "common_set_time" = "Set Time";
 "common_not_selected" = "Not Selected";
 "common_cancel" = "Cancel";
+"common_back" = "Back";
 "common_save" = "Save";
 "common_time" = "Time";
 "common_maybe_later" = "Maybe Later";
@@ -17,21 +20,26 @@
 "common_signing_in" = "Signing in...";
 "settings_language_label" = "Language";
 
-"onboarding_welcome_title" = "Welcome to Anicca";
-"onboarding_welcome_subtitle" = "Let's configure your routines.";
-"onboarding_welcome_cta" = "Get Started";
+"onboarding_welcome_title" = "Anicca";
+"onboarding_welcome_subtitle" = "Anicca is a voice guide that helps you change your habits and soften your suffering.";
+"onboarding_welcome_cta" = "Get started";
 
 "onboarding_account_title" = "Sign in with Apple";
-"onboarding_account_description" = "Sign in to sync your habits and preferences across your devices.";
+"onboarding_account_description" = "Sign in to sync your data across devices.";
+"onboarding_account_skip" = "Skip for now";
 
-"onboarding_microphone_title" = "Microphone Access";
+"onboarding_microphone_title" = "Microphone access";
 "onboarding_microphone_card_title" = "Microphone Access";
-"onboarding_microphone_description" = "Anicca uses your microphone for wake-up calls and habit reminders. You can keep going without enabling it and turn it on anytime from Settings.";
+"onboarding_microphone_description" = "Anicca listens to you through the microphone so you can talk freely. Your voice is processed securely on your device and servers.";
+"onboarding_microphone_allow" = "Allow microphone";
+"onboarding_permission_status_allowed" = "Allowed";
+"onboarding_permission_status_not_allowed" = "Not allowed";
 "onboarding_microphone_optional_hint" = "Need the voice experience later? Just return to Settings → Anicca and flip the microphone back on when you're ready.";
 
-"onboarding_notifications_title" = "Time-Sensitive Alerts";
+"onboarding_notifications_title" = "Notifications";
 "onboarding_notifications_card_title" = "Notification Access";
-"onboarding_notifications_description" = "Notifications help Anicca nudge your habits (wake-up, training, bedtime), but they're optional and work even if you silence your phone.";
+"onboarding_notifications_description" = "Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.";
+"onboarding_notifications_allow" = "Allow notifications";
 "onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
 
 "onboarding_habit_title" = "Set Your Habits";
@@ -94,6 +102,9 @@
 "session_button_end" = "End Session";
 "session_button_connecting" = "Connecting…";
 "session_wake_silent_notice" = "To guarantee the wake alarm plays, flip the side silent switch back up before going to bed so that silent mode is off.";
+"wake_silent_modal_title" = "Wake alarms & Silent mode";
+"wake_silent_modal_message" = "Anicca can gently wake you at the right time, based on your routines.\n\nTo make sure you actually hear the alarm, please turn Silent mode off before going to sleep and keep your volume high enough to wake you.";
+"wake_silent_modal_ok" = "OK, got it";
 
 "settings_title" = "Settings";
 "settings_subscription_title" = "Subscription";
@@ -173,20 +184,46 @@
 "session_time_cap_message" = "Your free session ended after 5 minutes. Upgrade to continue longer conversations.";
 "settings_habits" = "Habits";
 "settings_ideal_traits" = "Ideal self";
+"onboarding_ideals_title" = "Who do you want to become?";
+"onboarding_ideals_subtitle" = "Choose as many as you like.";
+
+"onboarding_struggles_title" = "What are you struggling with right now?";
+"onboarding_struggles_subtitle" = "Select everything that applies.";
+
+"onboarding_value_title" = "What Anicca can do for you";
+"onboarding_value_card1_title" = "Be there when you're suffering";
+"onboarding_value_card1_body" = "Press one button when you feel stuck. Anicca speaks first and helps you untangle.";
+"onboarding_value_card2_body" = "Anicca quietly watches your sleep, screen time, and movement, and nudges you at the right moments.";
+"onboarding_value_card3_body" = "See how today's choices shape your future self.";
+
 "ideal_trait_kind" = "Kind";
-"ideal_trait_altruistic" = "Altruistic";
-"ideal_trait_confident" = "Confident";
+"ideal_trait_honest" = "Honest";
 "ideal_trait_mindful" = "Mindful";
+"ideal_trait_confident" = "Confident";
+"ideal_trait_early_riser" = "Early Riser";
+"ideal_trait_runner" = "Runner";
+"ideal_trait_healthy" = "Healthy";
+"ideal_trait_calm" = "Calm";
+"ideal_trait_disciplined" = "Disciplined";
+"ideal_trait_open" = "Open";
+"ideal_trait_courageous" = "Courageous";
+"ideal_trait_altruistic" = "Altruistic";
 "ideal_trait_optimistic" = "Optimistic";
 "ideal_trait_resilient" = "Resilient";
-"ideal_trait_disciplined" = "Disciplined";
-"ideal_trait_honest" = "Honest";
-"ideal_trait_calm" = "Calm";
+"problem_self_loathing" = "Self-loathing";
 "problem_rumination" = "Rumination";
-"problem_jealousy" = "Jealousy";
-"problem_self_criticism" = "Self-criticism";
 "problem_anxiety" = "Anxiety";
+"problem_anger" = "Anger";
+"problem_jealousy" = "Jealousy";
+"problem_loneliness" = "Loneliness";
+"problem_night_scrolling" = "Night scrolling";
+"problem_cant_wake_up" = "Can't wake up";
+"problem_no_motivation" = "No motivation";
+"problem_procrastination" = "Procrastination";
+"problem_self_criticism" = "Self-criticism";
 "settings_personalization" = "Personalization";
+"settings_data_optional_title" = "Data Integration (Optional)";
+"settings_data_optional_description" = "Sleep, Steps, Screen Time, and Motion are optional. Even if you keep them OFF, you can always use Talk. Behavior insights may be limited until you connect data.";
 "habit_add_custom" = "Add Habit";
 "habit_add_routine" = "Add Routine";
 "habit_routine_placeholder" = "Routine";
@@ -205,6 +242,32 @@
 "common_wake_location_fallback" = "Bed";
 "settings_contact_support" = "Contact support";
 "tab_talk" = "Talk";
+"tab_behavior" = "Behavior";
+"tab_profile" = "Profile";
+"talk_nav_title" = "How are you feeling now?";
+"talk_feeling_self_loathing_title" = "Self-Loathing";
+"talk_feeling_self_loathing_subtitle" = "When you’re being hard on yourself.";
+"talk_feeling_anxiety_title" = "Anxiety & Worry";
+"talk_feeling_anxiety_subtitle" = "When your mind won’t stop spinning.";
+"talk_feeling_irritation_title" = "Irritation";
+"talk_feeling_irritation_subtitle" = "When tension is rising in you.";
+"talk_feeling_something_else_title" = "Something else";
+"talk_feeling_something_else_subtitle" = "Start a free conversation.";
+
+"session_topic_self_loathing" = "Talking about self-loathing";
+"session_topic_anxiety" = "Talking about anxiety";
+"session_topic_irritation" = "Talking about irritation";
+"session_topic_free_conversation" = "Talking about something else";
+
+"session_status_connecting" = "Connecting…";
+"session_status_listening" = "Anicca is listening…";
+"session_status_speaking" = "Anicca is speaking…";
+"session_status_disconnected" = "Session ended";
+
+"ema_question" = "Did you feel a bit better?";
+"ema_yes" = "Yes";
+"ema_no" = "No";
+"ema_skip" = "Skip";
 "tab_habits" = "Habits";
 
 "session_mic_permission_title" = "Microphone Access Required";

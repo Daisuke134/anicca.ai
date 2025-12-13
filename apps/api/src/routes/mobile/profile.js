@@ -24,6 +24,22 @@ const profileSchema = z.object({
   trainingGoal: z.string().optional(),
   idealTraits: z.array(z.string()).optional(),
   problems: z.array(z.string()).optional(),
+  // v0.3: new traits keys（旧キーは互換として残す）
+  ideals: z.array(z.string()).optional(),
+  struggles: z.array(z.string()).optional(),
+  big5: z.object({
+    O: z.number().optional(),
+    C: z.number().optional(),
+    E: z.number().optional(),
+    A: z.number().optional(),
+    N: z.number().optional(),
+    summary: z.string().optional(),
+    keyTraits: z.array(z.string()).optional()
+  }).optional(),
+  keywords: z.array(z.string()).optional(),
+  summary: z.string().optional(),
+  nudgeIntensity: z.enum(['quiet', 'normal', 'active']).optional(),
+  stickyMode: z.boolean().optional(),
   // AlarmKit設定（各習慣ごと）
   useAlarmKitForWake: z.boolean().optional(),
   useAlarmKitForTraining: z.boolean().optional(),
@@ -101,6 +117,14 @@ router.get('/', async (req, res) => {
       trainingGoal: profile.trainingGoal || '',
       idealTraits: profile.idealTraits || [],
       problems: profile.problems || [],
+      // v0.3: new fields (best-effort; profileService upserts to user_traits)
+      ideals: profile.ideals || profile.idealTraits || [],
+      struggles: profile.struggles || profile.problems || [],
+      big5: profile.big5 || null,
+      keywords: profile.keywords || [],
+      summary: profile.summary || '',
+      nudgeIntensity: profile.nudgeIntensity || 'normal',
+      stickyMode: profile.stickyMode ?? profile.stickyModeEnabled ?? profile.wakeStickyModeEnabled ?? true,
       useAlarmKitForWake: profile.useAlarmKitForWake ?? true,
       useAlarmKitForTraining: profile.useAlarmKitForTraining ?? true,
       useAlarmKitForBedtime: profile.useAlarmKitForBedtime ?? true,

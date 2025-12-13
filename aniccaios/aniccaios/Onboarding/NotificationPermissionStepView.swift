@@ -27,25 +27,18 @@ struct NotificationPermissionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            if notificationGranted {
-                Label(String(localized: "common_enabled"), systemImage: "checkmark.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.Colors.label)
-                PrimaryButton(
-                    title: String(localized: "common_enabled"),
-                    isEnabled: false,
-                    isLoading: false,
-                    style: .selected
-                ) { }
-            } else {
-                PrimaryButton(
-                    title: isRequesting
-                        ? String(localized: "common_requesting")
-                        : String(localized: "common_continue"),
-                    isEnabled: !isRequesting,
-                    isLoading: isRequesting
-                ) { requestNotifications() }
-            }
+            Text(String(localized: notificationGranted ? "onboarding_permission_status_allowed" : "onboarding_permission_status_not_allowed"))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+
+            PrimaryButton(
+                title: isRequesting
+                    ? String(localized: "common_requesting")
+                    : String(localized: "onboarding_notifications_allow"),
+                isEnabled: !isRequesting && !notificationGranted,
+                isLoading: isRequesting,
+                style: notificationGranted ? .selected : .primary
+            ) { requestNotifications() }
 
         }
         .padding(24)

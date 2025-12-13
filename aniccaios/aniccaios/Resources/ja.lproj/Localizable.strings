@@ -1,4 +1,6 @@
 "common_continue" = "続ける";
+"common_skip" = "スキップ";
+"common_next" = "次へ";
 "common_done" = "完了";
 "common_saving" = "保存中…";
 "common_requesting" = "リクエスト中…";
@@ -8,6 +10,7 @@
 "common_set_time" = "時刻を設定";
 "common_not_selected" = "未選択";
 "common_cancel" = "キャンセル";
+"common_back" = "戻る";
 "common_save" = "保存";
 "common_time" = "時刻";
 "common_maybe_later" = "あとで設定する";
@@ -17,21 +20,26 @@
 "common_signing_in" = "サインイン中…";
 "settings_language_label" = "言語";
 
-"onboarding_welcome_title" = "Aniccaへようこそ";
-"onboarding_welcome_subtitle" = "一緒にルーティンを整えましょう。";
+"onboarding_welcome_title" = "Anicca";
+"onboarding_welcome_subtitle" = "音声ガイドとして、習慣を変え、苦しみをやわらげるお手伝いをします。";
 "onboarding_welcome_cta" = "はじめる";
 
 "onboarding_account_title" = "Sign in with Apple";
 "onboarding_account_description" = "デバイス間で習慣や設定を同期するためにサインインしてください。";
+"onboarding_account_skip" = "今はスキップ";
 
 "onboarding_microphone_title" = "マイクアクセス";
 "onboarding_microphone_card_title" = "マイクアクセス";
-"onboarding_microphone_description" = "Aniccaは起床コールや習慣リマインダーのためにマイクを使いますが、許可しなくても続行できます。必要になったら設定アプリからいつでもオンにできます。";
+"onboarding_microphone_description" = "Aniccaはマイクを通してあなたの声を聞き、自由に会話できるようにします。音声はデバイスとサーバーで安全に処理されます。";
+"onboarding_microphone_allow" = "マイクを許可";
+"onboarding_permission_status_allowed" = "許可済み";
+"onboarding_permission_status_not_allowed" = "未許可";
 "onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→Aniccaでマイクをオンにし直してください。";
 
-"onboarding_notifications_title" = "通知アラート";
+"onboarding_notifications_title" = "通知";
 "onboarding_notifications_card_title" = "通知アクセス";
-"onboarding_notifications_description" = "通知は習慣（起床・トレーニング・就寝）を思い出させるために便利ですが、必須ではありません。端末がサイレントでも動作します。";
+"onboarding_notifications_description" = "Aniccaは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。";
+"onboarding_notifications_allow" = "通知を許可";
 "onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→Aniccaからいつでも通知をオンにできます。";
 
 "onboarding_habit_title" = "習慣を設定";
@@ -94,6 +102,9 @@
 "session_button_end" = "セッションを終了";
 "session_button_connecting" = "接続中…";
 "session_wake_silent_notice" = "起床アラームを確実に鳴らすために、寝る前に端末左側のサイレントスイッチを上げてマナーモードを解除してください。";
+"wake_silent_modal_title" = "起床アラームとサイレントモード";
+"wake_silent_modal_message" = "Aniccaはあなたの習慣に合わせて、ちょうど良いタイミングでやさしく起床を促します。\n\nアラームを確実に聞くために、寝る前にサイレントモードをOFFにし、起きられる音量に設定してください。";
+"wake_silent_modal_ok" = "OK、わかりました";
 
 "settings_title" = "設定";
 "settings_subscription_title" = "プラン";
@@ -173,20 +184,46 @@
 "session_time_cap_message" = "無料セッションは5分で終了しました。より長い会話を続けるにはアップグレードしてください。";
 "settings_habits" = "習慣";
 "settings_ideal_traits" = "理想の姿";
+"onboarding_ideals_title" = "どんな自分になりたいですか？";
+"onboarding_ideals_subtitle" = "いくつでも選べます。";
+
+"onboarding_struggles_title" = "いま何に苦しんでいますか？";
+"onboarding_struggles_subtitle" = "当てはまるものをすべて選んでください。";
+
+"onboarding_value_title" = "Aniccaができること";
+"onboarding_value_card1_title" = "つらいときに寄り添う";
+"onboarding_value_card1_body" = "行き詰まったときにボタンを押すだけ。Aniccaが先に話し、ほどいていくのを助けます。";
+"onboarding_value_card2_body" = "睡眠・スクリーンタイム・動きを静かに見守り、適切なタイミングでそっと促します。";
+"onboarding_value_card3_body" = "今日の選択が未来の自分にどうつながるかを見える化します。";
+
 "ideal_trait_kind" = "優しい";
-"ideal_trait_altruistic" = "利他的";
-"ideal_trait_confident" = "自信がある";
+"ideal_trait_honest" = "誠実";
 "ideal_trait_mindful" = "マインドフル";
+"ideal_trait_confident" = "自信がある";
+"ideal_trait_early_riser" = "早起き";
+"ideal_trait_runner" = "ランナー";
+"ideal_trait_healthy" = "健康的";
+"ideal_trait_calm" = "冷静";
+"ideal_trait_disciplined" = "自分を律せる";
+"ideal_trait_open" = "オープン";
+"ideal_trait_courageous" = "勇敢";
+"ideal_trait_altruistic" = "利他的";
 "ideal_trait_optimistic" = "楽観的";
 "ideal_trait_resilient" = "忍耐強い";
-"ideal_trait_disciplined" = "自分を律せる";
-"ideal_trait_honest" = "誠実";
-"ideal_trait_calm" = "冷静";
+"problem_self_loathing" = "自己嫌悪";
 "problem_rumination" = "反芻";
-"problem_jealousy" = "嫉妬";
-"problem_self_criticism" = "自己批判";
 "problem_anxiety" = "不安";
+"problem_anger" = "怒り";
+"problem_jealousy" = "嫉妬";
+"problem_loneliness" = "孤独";
+"problem_night_scrolling" = "夜のスクロール";
+"problem_cant_wake_up" = "起きられない";
+"problem_no_motivation" = "やる気が出ない";
+"problem_procrastination" = "先延ばし";
+"problem_self_criticism" = "自己批判";
 "settings_personalization" = "パーソナライズ";
+"settings_data_optional_title" = "データ連携（任意）";
+"settings_data_optional_description" = "睡眠・歩数・スクリーンタイム・動作データの連携は任意です。未許可でもTalkはいつでも使えます。連携するとBehaviorのインサイト精度が向上します。";
 "habit_add_custom" = "習慣を追加";
 "habit_add_routine" = "ルーティンを追加";
 "habit_routine_placeholder" = "ルーティン";
@@ -205,7 +242,33 @@
 "common_wake_location_fallback" = "ベッド";
 "settings_contact_support" = "サポートに連絡";
 "tab_talk" = "会話";
+"talk_nav_title" = "今どんな感じ？";
+"talk_feeling_self_loathing_title" = "自己嫌悪";
+"talk_feeling_self_loathing_subtitle" = "自分を責めすぎているとき。";
+"talk_feeling_anxiety_title" = "不安";
+"talk_feeling_anxiety_subtitle" = "頭が止まらないとき。";
+"talk_feeling_irritation_title" = "苛立ち";
+"talk_feeling_irritation_subtitle" = "緊張が高まっているとき。";
+"talk_feeling_something_else_title" = "その他";
+"talk_feeling_something_else_subtitle" = "自由に話す。";
+
+"session_topic_self_loathing" = "自己嫌悪について";
+"session_topic_anxiety" = "不安について";
+"session_topic_irritation" = "苛立ちについて";
+"session_topic_free_conversation" = "自由に話す";
+
+"session_status_connecting" = "接続中…";
+"session_status_listening" = "Aniccaが聞いています…";
+"session_status_speaking" = "Aniccaが話しています…";
+"session_status_disconnected" = "セッションを終了しました";
+
+"ema_question" = "さっきより楽になった？";
+"ema_yes" = "はい";
+"ema_no" = "いいえ";
+"ema_skip" = "スキップ";
 "tab_habits" = "習慣";
+"tab_behavior" = "行動";
+"tab_profile" = "プロフィール";
 
 "session_mic_permission_title" = "マイクのアクセスが必要です";
 "session_mic_permission_message" = "Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";

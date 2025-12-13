@@ -632,15 +632,16 @@ private extension VoiceSessionController {
         
         // Realtime: audio.input.turn_detection
         let isTrainingMode = currentHabitType == .training
+        var audioDict = sessionPayload["audio"] as? [String: Any] ?? [:]
         if isTrainingMode {
             // 一方向（入力なし）
-            (sessionPayload["audio"] as? [String: Any])?["input"] = [
+            audioDict["input"] = [
                 "format": ["type": "audio/pcm", "rate": 24000],
                 "turn_detection": NSNull()
             ]
             logger.info("Training mode: turn_detection disabled for one-way audio")
         } else {
-            (sessionPayload["audio"] as? [String: Any])?["input"] = [
+            audioDict["input"] = [
                 "format": ["type": "audio/pcm", "rate": 24000],
                 "turn_detection": [
                     "type": "server_vad",
@@ -649,6 +650,7 @@ private extension VoiceSessionController {
                 ]
             ]
         }
+        sessionPayload["audio"] = audioDict
 
         var shouldTriggerImmediateResponse = false
         var instructions: String?

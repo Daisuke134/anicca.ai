@@ -17,6 +17,35 @@ struct SubscriptionInfo: Codable, Equatable {
     
     var isEntitled: Bool { plan != .free && status != "expired" }
     var shouldShowPaywall: Bool { !isEntitled }
+
+    // `init(from:)` を定義していると memberwise init が合成されないケースがあるため明示定義
+    init(
+        plan: Plan,
+        status: String,
+        currentPeriodEnd: Date?,
+        managementURL: URL?,
+        lastSyncedAt: Date,
+        productIdentifier: String?,
+        planDisplayName: String?,
+        priceDescription: String?,
+        monthlyUsageLimit: Int?,
+        monthlyUsageRemaining: Int?,
+        monthlyUsageCount: Int?,
+        willRenew: Bool?
+    ) {
+        self.plan = plan
+        self.status = status
+        self.currentPeriodEnd = currentPeriodEnd
+        self.managementURL = managementURL
+        self.lastSyncedAt = lastSyncedAt
+        self.productIdentifier = productIdentifier
+        self.planDisplayName = planDisplayName
+        self.priceDescription = priceDescription
+        self.monthlyUsageLimit = monthlyUsageLimit
+        self.monthlyUsageRemaining = monthlyUsageRemaining
+        self.monthlyUsageCount = monthlyUsageCount
+        self.willRenew = willRenew
+    }
     
     static let free = SubscriptionInfo(
         plan: .free,

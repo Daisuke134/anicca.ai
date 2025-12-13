@@ -62,11 +62,11 @@ struct ValueStepView: View {
                     .font(.title2)
                 VStack(alignment: .leading, spacing: 6) {
                     if let titleKey {
-                        Text(String(localized: titleKey))
+                        Text(NSLocalizedString(titleKey, comment: ""))
                             .font(.headline)
                             .foregroundStyle(AppTheme.Colors.label)
                     }
-                    Text(String(localized: bodyKey))
+                    Text(NSLocalizedString(bodyKey, comment: ""))
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 }

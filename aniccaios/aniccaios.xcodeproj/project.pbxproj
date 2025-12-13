@@ -55,14 +55,25 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				SessionView.swift,
 			);
 			target = 8471AE7A2EB783E1002CECAA /* aniccaios */;
+		};
+		84F1C0DE2F0D111100C0FFEE /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		840034532EE52C5200A2F44C /* AniccaWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				84F1C0DE2F0D111100C0FFEE /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */,
+			);
 			path = AniccaWidget;
 			sourceTree = "<group>";
 		};
@@ -201,7 +212,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					8400344C2EE52C5100A2F44C = {
 						CreatedOnToolsVersion = 26.1.1;
@@ -564,7 +575,6 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				STRIP_INSTALLED_PRODUCT = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;

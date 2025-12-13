@@ -29,7 +29,6 @@ final class AppState: ObservableObject {
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
     @Published private(set) var onboardingStep: OnboardingStep
-    @Published private(set) var pendingHabitFollowUps: [OnboardingStep] = []
     @Published private(set) var cachedOffering: Offering?
     @Published private(set) var customHabit: CustomHabitConfiguration?
     // 変更: カスタム習慣を配列で管理
@@ -97,6 +96,9 @@ final class AppState: ObservableObject {
             self.onboardingStep = .welcome
         }
         
+        // Phase-7: load sensor access state (must be before any instance method calls)
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessKey)
+        
         // Load user credentials and profile
         self.authStatus = loadUserCredentials()
         self.userProfile = loadUserProfile()
@@ -106,9 +108,6 @@ final class AppState: ObservableObject {
         // カスタム習慣の読み込み
         self.customHabits = CustomHabitStore.shared.loadAll()
         self.customHabitSchedules = loadCustomHabitSchedules()
-        
-        // Phase-7: load sensor access state
-        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessKey)
         
         // Phase-9: load wake silent tip seen flag
         self.hasSeenWakeSilentTip = defaults.bool(forKey: hasSeenWakeSilentTipKey)
@@ -285,7 +284,8 @@ final class AppState: ObservableObject {
         guard !isOnboardingComplete else { return }
         isOnboardingComplete = true
         defaults.set(true, forKey: onboardingKey)
-        setOnboardingStep(.completion)
+        // v3: 完了後はステップ情報を持たない（Habit/All set等の誤表示を根絶）
+        defaults.removeObject(forKey: onboardingStepKey)
     }
 
     // Legacy methods for backward compatibility
@@ -677,37 +677,6 @@ final class AppState: ObservableObject {
             return nil
         }
         return components
-    }
-    
-    // MARK: - Habit Follow-up Questions
-    
-    func prepareHabitFollowUps(selectedHabits: Set<HabitType>) {
-        var followUps: [OnboardingStep] = []
-        
-        // Wake location: if Wake is selected, ask wake location
-        // If both Wake and Bedtime are selected, only ask wake location (reuse for bedtime)
-        if selectedHabits.contains(.wake) {
-            followUps.append(.habitWakeLocation)
-        } else if selectedHabits.contains(.bedtime) {
-            // Only Bedtime selected, ask sleep location
-            followUps.append(.habitSleepLocation)
-        }
-        
-        // Training focus: if Training is selected, ask training focus
-        if selectedHabits.contains(.training) {
-            followUps.append(.habitTrainingFocus)
-        }
-        
-        pendingHabitFollowUps = followUps
-    }
-    
-    func consumeNextHabitFollowUp() -> OnboardingStep? {
-        guard !pendingHabitFollowUps.isEmpty else { return nil }
-        return pendingHabitFollowUps.removeFirst()
-    }
-    
-    func clearHabitFollowUps() {
-        pendingHabitFollowUps = []
     }
     
     func updateSleepLocation(_ location: String) {

@@ -117,7 +117,7 @@ enum AniccaAPIError: Error, LocalizedError {
 }
 
 extension NetworkSessionManager {
-    private struct ParsedError {
+    fileprivate struct ParsedError {
         let code: String?
         let message: String
         let details: [String: Any]
@@ -126,7 +126,7 @@ extension NetworkSessionManager {
     /// 後方互換を含むパース:
     /// - 新: `{"error":{"code","message","details"}}`
     /// - 旧: `{"error":"message"}`
-    fileprivate static func parseErrorPayload(_ data: Data) -> ParsedError {
+    nonisolated fileprivate static func parseErrorPayload(_ data: Data) -> ParsedError {
         guard
             let obj = try? JSONSerialization.jsonObject(with: data),
             let root = obj as? [String: Any]

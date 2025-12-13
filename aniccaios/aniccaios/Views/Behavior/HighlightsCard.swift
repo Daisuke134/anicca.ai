@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct HighlightsCard: View {
     let highlights: BehaviorSummary.Highlights

@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 /// v0.3: Big Five 詳細（v3-ui.md / 11-traits-detail.html）
 struct TraitsDetailView: View {

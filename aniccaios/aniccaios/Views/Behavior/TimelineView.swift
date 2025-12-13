@@ -1,4 +1,5 @@
 import SwiftUI
+import Combine
 
 struct TimelineView: View {
     let segments: [BehaviorSummary.TimelineSegment]

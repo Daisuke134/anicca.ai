@@ -25,8 +25,8 @@ final class MotionManager {
     }
 
     /// Returns local cached aggregates (yesterday) for MetricsUploader.
-    func loadCachedDailyMetrics(forLocalDate localDate: String) -> (sedentaryMinutes: Int?) {
-        return (sedentaryMinutes: nil)
+    func loadCachedDailyMetrics(forLocalDate localDate: String) -> Int? {
+        return nil
     }
 }
 

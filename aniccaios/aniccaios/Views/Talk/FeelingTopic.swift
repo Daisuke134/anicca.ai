@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// Talk/Session 共通のトピックID（v3-ui の topic 名に合わせて固定）
 enum FeelingTopic: String, CaseIterable, Hashable, Identifiable {

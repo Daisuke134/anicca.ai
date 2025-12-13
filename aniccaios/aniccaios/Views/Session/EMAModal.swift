@@ -1,5 +1,6 @@
 import SwiftUI
 import UIKit
+import Combine
 
 /// tech-ema-v3 準拠: 「楽になった？」Yes/No/Skip（dismissはSkip扱い）
 struct EMAModal: View {

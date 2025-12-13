@@ -384,9 +384,6 @@ struct HabitSetupStepView: View {
                 appState.updateCustomHabitSchedule(id: id, time: components)
             }
             
-            // フォローアップを削除（直接Paywall/Completionへ）
-            appState.clearHabitFollowUps()
-            
             await MainActor.run {
                 isSaving = false
                 next()

@@ -1,13 +1,13 @@
 import baseLogger from '../../utils/logger.js';
-import { Memory as PlatformMemory } from 'mem0ai';
+import { MemoryClient } from 'mem0ai';
 import { Memory as OSSMemory } from 'mem0ai/oss';
 
 // mem0 SDK:
-// - OSS:   import { Memory } from "mem0ai/oss";
-// - Cloud: import { Memory } from "mem0ai";
+// - OSS:      import { Memory } from "mem0ai/oss";
+// - Platform: import { MemoryClient } from "mem0ai";
 // Ref:
 // - https://docs.mem0.ai/open-source/node-quickstart
-// - https://docs.mem0.ai/platform/advanced-memory-operations
+// - https://docs.mem0.ai/platform/quickstart
 
 const logger = baseLogger.withContext('Mem0Client');
 
@@ -26,34 +26,82 @@ export function getMem0Client() {
 export function createMem0Client() {
   const mode = getMode();
   if (mode === 'platform') {
-    // Platform (hosted)
-    const memory = new PlatformMemory({ apiKey: process.env.MEM0_API_KEY, async: true });
+    // Platform (hosted) - MemoryClient is default export
+    const memory = new MemoryClient({ apiKey: process.env.MEM0_API_KEY });
     logger.info('Initialized mem0 platform client');
-    return wrap(memory);
+    return wrapPlatform(memory);
   }
   // OSS fallback (local-friendly)
   const memory = new OSSMemory();
   logger.warn('MEM0_API_KEY is not set; using mem0 OSS mode (local storage)');
-  return wrap(memory);
+  return wrapOSS(memory);
 }
 
-function wrap(memory) {
+// Platform版 (MemoryClient) 用ラッパー
+// API: client.add({ messages, user_id, metadata }), client.search(query, { user_id })
+function wrapPlatform(client) {
   return {
     async addProfile({ userId, content, metadata = {} }) {
-      return addText(memory, userId, content, { category: 'profile', ...metadata });
+      return addTextPlatform(client, userId, content, { category: 'profile', ...metadata });
     },
     async addBehaviorSummary({ userId, content, metadata = {} }) {
-      return addText(memory, userId, content, { category: 'behavior_summary', ...metadata });
+      return addTextPlatform(client, userId, content, { category: 'behavior_summary', ...metadata });
     },
     async addInteraction({ userId, content, metadata = {} }) {
-      return addText(memory, userId, content, { category: 'interaction', ...metadata });
+      return addTextPlatform(client, userId, content, { category: 'interaction', ...metadata });
     },
     async addNudgeMeta({ userId, content, metadata = {} }) {
-      return addText(memory, userId, content, { category: 'nudge_meta', ...metadata });
+      return addTextPlatform(client, userId, content, { category: 'nudge_meta', ...metadata });
+    },
+
+    async search({ userId, query, filters, topK = 3 }) {
+      return client.search(query, {
+        user_id: userId,
+        limit: topK,
+        ...(filters ? { filters } : {})
+      });
+    },
+
+    async getAll({ userId }) {
+      return client.getAll({ user_id: userId });
+    },
+    async update(memoryId, patch) {
+      return client.update(memoryId, patch);
+    },
+    async delete(memoryId) {
+      return client.delete(memoryId);
+    },
+    async deleteAll({ userId, runId }) {
+      return client.deleteAll({ user_id: userId, ...(runId ? { run_id: runId } : {}) });
+    }
+  };
+}
+
+async function addTextPlatform(client, userId, content, metadata) {
+  const messages = [
+    { role: 'user', content: String(content || '') }
+  ];
+  return client.add({ messages, user_id: userId, metadata });
+}
+
+// OSS版 (Memory) 用ラッパー
+// API: memory.add(messages, { userId, metadata }), memory.search(query, { userId })
+function wrapOSS(memory) {
+  return {
+    async addProfile({ userId, content, metadata = {} }) {
+      return addTextOSS(memory, userId, content, { category: 'profile', ...metadata });
+    },
+    async addBehaviorSummary({ userId, content, metadata = {} }) {
+      return addTextOSS(memory, userId, content, { category: 'behavior_summary', ...metadata });
+    },
+    async addInteraction({ userId, content, metadata = {} }) {
+      return addTextOSS(memory, userId, content, { category: 'interaction', ...metadata });
+    },
+    async addNudgeMeta({ userId, content, metadata = {} }) {
+      return addTextOSS(memory, userId, content, { category: 'nudge_meta', ...metadata });
     },
 
     async search({ userId, query, filters, topK = 3, rerank = true, includeVectors = false }) {
-      // mem0 platform supports rerank + filters; OSS supports a subset.
       return memory.search(query, {
         userId,
         topK,
@@ -78,11 +126,10 @@ function wrap(memory) {
   };
 }
 
-async function addText(memory, userId, content, metadata) {
-  // mem0 "add" expects a conversation array; keep it minimal.
-  const conversation = [
+async function addTextOSS(memory, userId, content, metadata) {
+  const messages = [
     { role: 'user', content: String(content || '') }
   ];
-  return memory.add(conversation, { userId, metadata });
+  return memory.add(messages, { userId, metadata });
 }
 

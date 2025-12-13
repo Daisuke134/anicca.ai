@@ -54,7 +54,7 @@ function renderMessage(templateId, lang) {
     case 'walk_invite':
       return ja
         ? '今、5分だけ歩こう。体が動くと、気分も少し変わるよ。'
-        : 'Let's walk for five minutes. When the body moves, the mind often shifts too.';
+        : "Let's walk for five minutes. When the body moves, the mind often shifts too.";
     default:
       return ja ? '今は送らないよ。' : 'No nudge for now.';
   }

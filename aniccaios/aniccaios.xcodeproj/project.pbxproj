@@ -50,13 +50,6 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		840034692EE52C5400A2F44C /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				Info.plist,
-			);
-			target = 8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */;
-		};
 		8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -69,9 +62,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		840034532EE52C5200A2F44C /* AniccaWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				840034692EE52C5400A2F44C /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */,
-			);
 			path = AniccaWidget;
 			sourceTree = "<group>";
 		};

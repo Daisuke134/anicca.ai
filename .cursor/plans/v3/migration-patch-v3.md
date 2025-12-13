@@ -98,6 +98,7 @@
 ### 2.3 その他 API 層
 - `subscriptionStore.js`：`normalizePlanForResponse` に `monthly_usage_limit/remaining/count` を含めて返却（クライアント側 UsageTracking と一致させる）  
 - 新規ルーター雛形: `routes/mobile/behavior.js`（サマリ/ハイライト/未来シナリオ）、`routes/mobile/feeling.js`（Feeling EMI start/end/EMA）、`routes/mobile/nudge.js`（trigger/feedback）
+- 認証/識別: v0.3 では既存のヘッダー方式を継続し、すべてのモバイル API は `user-id` / `device-id` ヘッダーを必須とする。UUID への内部移行はサービス層・DB 層で行い、HTTP インターフェースは変更しない。
 
 ## 3. Prisma schema の変更
 
@@ -157,6 +158,8 @@ Headers:
   ]
 }
 ```
+
+- 上記 JSON 形式を v0.3 の正式仕様とし、`highlights` は `wake` / `screen` / `workout` / `rumination` の 4 キーを持つ。各値は `{ "status": string, "label": string }` 形式で返す。
 
 ### 6.2 `POST /api/mobile/feeling/start`
 

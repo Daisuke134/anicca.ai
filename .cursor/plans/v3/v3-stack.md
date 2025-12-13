@@ -1,6 +1,8 @@
 ここからは「どう実装するか」の技術仕様だけに振り切るね。
 DB 設計は一旦忘れて、スタックとサービス構成・データフローに集中する。
 
+> 注: この直後に書かれている Python/FastAPI ベースのアーキテクチャは v0.2 時点の案として残しているものであり、**v0.3 の実装は後半に記載した Node/Express（apps/api）構成を正式採用とする**。
+
 ---
 
 ## 1. 全体アーキテクチャ概要
@@ -271,6 +273,7 @@ const results = await memory.search("夜更かし 後悔", {
 2. 1 ユーザーあたり 1 万件以上のメモリ
 3. オフライン検索が差別化要因になる
 4. デバイス上 RAG が必要になる
+- v0.3 では mem0 のクラウド版 hosted API を `MEM0_API_KEY` で利用し、自前ホスティング構成は採用しない。
 了解。じゃあ一回、**Anicca v0.3 全体の TECH 要件定義書**としてまとめ切るね。
 （7/8 ＝オブザーバビリティ / 自動テストは「v0.4 でやるので v0.3 では範囲外」と明示しておく）
 
@@ -379,7 +382,9 @@ const results = await memory.search("夜更かし 後悔", {
 
   * Apple Sign In
   * 理想の自分 / Struggle の選択（複数）
-  * 許可画面（Screen Time / HealthKit / Motion / 位置情報）
+  * 許可画面（マイク / 通知）
+  * Screen Time / HealthKit / Motion は Onboarding では聞かない（Permission Bombing回避）。
+    Profile > Data Integration のトグルを ON にした瞬間だけ OS 権限ダイアログを出す。
 
 * **Talk モジュール**
 
@@ -400,7 +405,7 @@ const results = await memory.search("夜更かし 後悔", {
 
 * **Notifications モジュール**
 
-  * Push 通知 / ローカル通知
+  * ローカル通知（v0.3の通知配信は端末内スケジュールを基本とする）
   * AlarmKit（iOS 18 以降で使用可能であれば起床 Nudge 用に検討）
 
 #### サーバ側（apps/api）
@@ -1094,6 +1099,8 @@ Feeling ドメインのテンプレ例:
 * `emaBetter = true` → reward = 1
 * `emaBetter = false` → reward = 0
 
+- v0.3 では EMA はこの Feeling EMI のみに導入し、自動 Nudge（Sleep / Morning Phone / SNS / Sedentary / Habit）側では EMA 質問は行わず、パッシブなシグナルのみで reward を計算する。
+
 ### 10.6 API フロー
 
 1. iOS から Feeling ボタン押下 → `POST /api/mobile/feeling/start`
@@ -1112,7 +1119,7 @@ Feeling ドメインのテンプレ例:
 
 ### 11.2 特徴量設計
 
-30 日分のログから以下を抽出:
+14〜30 日分のログから以下を抽出（14 日以上そろった時点で暫定推定を行い、30 日分そろって以降は 30 日ウィンドウを使って週 1 回再推定する）:
 
 * ScreenTime 系: SNS / Entertainment / Productivity minutes per day、Night usage (22:00-03:00)
 * 行動リズム: average sleep time、average wake time、weekend vs weekday differences
@@ -1121,7 +1128,7 @@ Feeling ドメインのテンプレ例:
 
 ### 11.3 推定パイプライン
 
-1. 30日分の集約ログを bullet list にする
+1. 直近 30 日分の集約ログを bullet list にする（初回は 14 日分そろった時点で暫定版を作成し、その後は 30 日ウィンドウで週 1 回更新）
 2. OpenAI Chat に渡して Big Five (O, C, E, A, N) を 0.0〜1.0 で推定
 3. 結果を `user_traits.big5` と mem0 profile に保存
 4. Traits Detail 画面でレーダーチャートと文章で表示

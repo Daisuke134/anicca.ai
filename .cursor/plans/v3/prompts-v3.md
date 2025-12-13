@@ -25,6 +25,15 @@
 
 - common.txt を必ず先頭に読み込み、LANGUAGE_LINE で出力言語を固定する。
 
+## 0.2 Template ID とファイル構成
+
+- テンプレートIDは `domain_purpose_tone` 形式とする。
+  - `domain`: `sleep`, `sns`, `sedentary`, `mental`, `habit` など
+  - `purpose`: `break`, `prep`, `remind`, `reframe` など
+  - `tone`: `gentle`, `soft`, `neutral`, `firm` など
+- 例: `sns_break_gentle`, `sleep_prep_soft`, `sedentary_standup_neutral`
+- iOS / サーバー間ではこの文字列IDをそのまま共有し、ログ・bandit・mem0 の `"nudge_meta"` にも同じIDを保存する。
+
 ---
 
 ## 1. Talk セッション system prompt
@@ -484,6 +493,6 @@ Avoid medical predictions or diagnoses. 3–4 sentences each.
 - v3-ux.md の人格・トーン・禁止事項に一致しているか
 - v3-data.md のドメイン/アクション/報酬窓に一致しているか
 - v3-ui.md の Today’s Insights / 10 Years From Now の生成要件に一致しているか
-- v3-stack-revision.md（BIG5）の出力 JSON・更新方針に一致しているか
+- v3-stack.md セクション11（BIG5）の出力 JSON・更新方針に一致しているか
 
 

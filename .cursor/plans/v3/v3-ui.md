@@ -494,11 +494,20 @@ Talk セッションの音声、Nudge 文言、Today’s Insights、10 Years Fro
 #### G. Data Integration
 
 * タイトル: `Data Integration`
-* 行ごとにトグル:
+* セクション全体の説明（小さめキャプション）:
 
-  * `Screen Time` [ON/OFF]
-  * `Sleep (HealthKit)` [ON/OFF]
-  * `Steps (HealthKit)` [ON/OFF]
+  > `Optional. Link your data so Anicca can nudge you more precisely. All core features work even if everything is OFF.`
+
+* 行ごとにトグルと 1 行説明（各トグルは任意。OFFでもコア機能は利用可能）:
+
+  * `Screen Time` [ON/OFF] — `When ON, Anicca reads your app categories to nudge you when scrolling too long.`
+  * `Sleep (HealthKit)` [ON/OFF] — `When ON, Anicca reads your sleep to understand your rhythm.`
+  * `Steps (HealthKit)` [ON/OFF] — `When ON, Anicca reads your steps to nudge you after long sitting.`
+
+* 実装ルール（迷い防止のため固定）:
+  * トグルを ON にした瞬間だけ OS 権限ダイアログを出す（Screen Time / HealthKit）。
+  * 権限が拒否されたら、トグルは自動で OFF に戻し、`Open Settings` 導線を表示する。
+  * ON のまま権限が後からOFFにされた場合は、表示を `Not connected` 扱いにし、該当ドメインの DP/送信は止める。
 
 #### H. Account Management
 

@@ -102,7 +102,7 @@ aniccaios/
 - `SubscriptionInfo.swift`：entitlement残量・プラン情報。
 - `HabitFollowUpView.swift`：優先習慣未達フォローUI。
 - `SettingsView.swift`：Data Integrationトグル（ScreenTime/HealthKit）。
-- `Prompts/*`：Session/Feeling/Nudge用プロンプトテンプレート集。
+- `Prompts/*`：Session/Feeling/Nudge用プロンプトテンプレート集。テンプレートIDは `domain_purpose_tone` 形式（例: `sns_break_gentle`, `sleep_prep_soft`）で統一し、iOS/サーバー間で共有する。
 
 ## 2. バックエンドAPI（apps/api）
 
@@ -157,7 +157,7 @@ apps/api/
 - `modules/nudge/features/stateBuilder.ts`：各DPの特徴量生成。
 - `modules/nudge/reward/rewardCalculator.ts`：ドメイン別成功判定・報酬化。
 
-- bandit/stateBuilder/reward で featureOrderHash を検証し、不一致時は起動エラーとする旨を1行追記。
+- bandit/stateBuilder/reward で featureOrderHash を検証し、不一致時は開発環境では起動エラーとし、本番環境では該当ドメインの bandit 機能のみ無効化してルールベース JITAI にフォールバックする旨を1行追記。
 - `modules/simulation/futureScenario.ts`：LLMで10年後テキスト生成。
 - `modules/metrics/stateBuilder.ts`：daily_metricsからハイライト/タイムラインを作成。
 - `services/mobile/profileService.js`：traits/big5/nudge強度のCRUD。

@@ -67,14 +67,15 @@ class AniccaDeviceActivityMonitor: DeviceActivityMonitor {
     // 例: 25分警告などを入れる場合に使用（任意）
   }
   override func eventDidReachThreshold(_ event: DeviceActivityEvent, activity: DeviceActivityName) {
-    // threshold 到達 → App Group 経由で本体へシグナル
-    NudgeSignalBridge.shared.send(.snsThresholdReached(name: event.name.rawValue,
-                                                       duration: event.threshold))
+    // threshold 到達 → v0.3 では Extension が直接 Nudge を成立させる（本体起床に依存しない）
+    // 1) App Group にイベントを永続化（後で本体がログ/再送に使う）
+    // 2) Extension から /api/mobile/nudge/trigger を呼ぶ（保存済み user-id / device-id を App Group から読む）
+    // 3) レスポンスの message/templateId を使ってローカル通知をスケジュール（APNs不要）
   }
 }
 ```
 - `DeviceActivityCenter().startMonitoring(_:during:events:)` を本体アプリ起動時に一度だけ呼ぶ。
-- アプリが kill されても extension が監視を継続。イベント到達時は extension → App Group/通知で本体が起床。
+- アプリが kill されても extension が監視を継続。イベント到達時に **Extension がローカル通知まで完結**するため、リアルタイムNudgeが成立する。
 
 ### 1.5 Extension ↔ 本体アプリ通信の実装詳細
 
@@ -93,16 +94,15 @@ class AniccaDeviceActivityMonitor: DeviceActivityMonitor {
     │
     ├─(1) しきい値到達を検知（eventDidReachThreshold）
     │
-    ├─(2) App Group の UserDefaults に書き込み
-    │     Key: "com.anicca.lastThresholdEvent"
-    │     Value: { type: "sns_30min", timestamp: Date, activity: "sns" }
+    ├─(2) App Group にイベントをキューとして永続化（後で本体が回収・再送できる）
     │
-    ├─(3) Darwin Notification を発火（ペイロードなし）
-    │     Name: "com.anicca.threshold.reached"
+    ├─(3) Extension が /api/mobile/nudge/trigger を呼ぶ
+    │     → サーバーがスケジューリング（上限/間隔/quiet等）を判定し message/templateId を返す
     │
-    └─(4) 本体アプリが Darwin Notification を受信
-          → UserDefaults を読み取り
-          → NudgeTriggerService へ送信
+    └─(4) Extension がローカル通知をスケジュールしてユーザーに表示（リアルタイム）
+
+[本体アプリ（任意）]
+    └─(5) 次回起動時に App Group の未処理イベントを回収し、ログ/メトリクスの穴埋めを行う
 ```
 
 #### なぜこの方法なのか
@@ -350,6 +350,7 @@ func startActivityUpdates() {
   "sedentaryMinutes": 300
 }
 ```
+- `date` はユーザーのタイムゾーンでのローカル日付（`daily_metrics.date` と同じ）であり、送信時刻（例: 03:00 UTC）とは独立して扱う。
 - リアルタイムイベントは `{ eventType, eventPayload, timestamp }` を `/nudge/trigger` に送る。
 
 ### 4.3 送信前のフィルタリング
@@ -403,5 +404,22 @@ func startActivityUpdates() {
 - HKObserverQuery: https://developer.apple.com/documentation/healthkit/hkobserverquery/  
 - enableBackgroundDelivery: https://developer.apple.com/documentation/healthkit/hkhealthstore/enablebackgrounddelivery(for:frequency:withcompletion:)  
 - CMMotionActivityManager: https://developer.apple.com/documentation/coremotion/cmmotionactivitymanager/  
+
+---
+
+## 9. 権限リクエスト UX（v0.3で固定）
+
+- **Onboardingで聞くのはマイク/通知のみ**
+  - Microphone: `06-microphonepermission.html` のボタン押下でだけ OS ダイアログ
+  - Notifications: `07-notificationpermission.html` のボタン押下でだけ OS ダイアログ
+
+- **Screen Time / HealthKit / Motion は Profile > Data Integration のトグルON時だけ**
+  - Screen Time: `Screen Time` トグルを ON にした瞬間だけ `AuthorizationCenter` の許可要求
+  - HealthKit: `Sleep` または `Steps` を ON にした瞬間だけ `HKHealthStore.requestAuthorization`
+  - Motion: Movement系が必要で初回だけ OS ダイアログ（拒否なら以後しつこく再要求しない）
+
+- **拒否・撤回時の挙動（フェイルセーフ固定）**
+  - 拒否されたらトグルは OFF に戻す + `Open Settings` 導線
+  - 後からOS設定でOFFにされたら `Not connected` 扱いにし、該当DP/送信は停止（他機能は継続）
 
 

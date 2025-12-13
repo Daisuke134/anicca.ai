@@ -22,24 +22,22 @@
 	<key>compileBitcode</key>
 	<false/>
 
-	<!-- Signing style: automatic or manual -->
-	<!-- Using automatic since we changed CODE_SIGN_STYLE to Automatic -->
+	<!-- Signing style: manual -->
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>manual</string>
 
-	<!-- Signing certificate: leave empty for automatic signing -->
-	<!-- Xcode will select the appropriate certificate based on the team -->
+	<!-- Signing certificate -->
 	<key>signingCertificate</key>
 	<string>Apple Distribution</string>
 
-	<!-- Provisioning profiles (optional for automatic signing) -->
-	<!-- Uncomment if you need to specify a specific provisioning profile
+	<!-- Provisioning profiles -->
 	<key>provisioningProfiles</key>
 	<dict>
 		<key>ai.anicca.app.ios</key>
-		<string>YOUR_PROVISIONING_PROFILE_NAME</string>
+		<string>anicca-appstore</string>
+		<key>ai.anicca.app.ios.AniccaWidget</key>
+		<string>anicca-widget-appstore</string>
 	</dict>
-	-->
 
 	<!-- Strip Swift symbols to reduce IPA size -->
 	<key>stripSwiftSymbols</key>

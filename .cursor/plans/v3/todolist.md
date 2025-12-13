@@ -165,6 +165,20 @@
 - **詳細仕様**: `file-structure-v3.md` セクション1.2, `quotes-v3.md`
 - **疑似パッチ**: (後で追加)
 
+### 3.6 MainTabView 3タブ化
+- **対象ファイル**: `aniccaios/aniccaios/MainTabView.swift`
+- **依存**: 3.2, 3.5
+- **概要**: 既存タブ構成を Talk / Behavior / Profile の3タブに整理し、`ContentView` からのルートをこの3タブ構成に揃える。
+- **詳細仕様**: `file-structure-v3.md` セクション1.1, `v3-ui.md` メインタブ
+- **疑似パッチ**: (後で追加)
+
+### 3.7 SubscriptionInfo entitlement拡張
+- **対象ファイル**: `aniccaios/aniccaios/Models/SubscriptionInfo.swift`
+- **依存**: 2.12
+- **概要**: `subscriptionStore.js` が返す `monthly_usage_limit/remaining/count` を `SubscriptionInfo` に追加し、`AppState.subscriptionInfo` と UI で残量と上限を正しく表示できるようにする。
+- **詳細仕様**: `migration-patch-v3.md` セクション2.3, 8
+- **疑似パッチ**: (後で追加)
+
 ## フェーズ 4: iOS UI（Onboarding）
 
 ### 4.1 Ideals/Struggles/Value 画面追加
@@ -192,7 +206,7 @@
 
 ### 5.1 TalkView/FeelingCard構築
 - **対象ファイル**: `aniccaios/aniccaios/Views/Talk/{TalkView.swift,FeelingCard.swift}`
-- **依存**: 3.2, 5.5
+- **依存**: 3.2, 3.5
 - **概要**: Feeling3動的+Something else固定カード、タップで SessionView 起動。
 - **詳細仕様**: `v3-stack.md` セクション2.2.1, `file-structure-v3.md` 1.2
 - **疑似パッチ**: (後で追加)
@@ -220,7 +234,7 @@
 
 ### 5.5 Realtimeプロンプト/ツール定義更新
 - **対象ファイル**: `aniccaios/aniccaios/Resources/Prompts/*`
-- **依存**: 5.4
+- **依存**: 2.3, 2.11
 - **概要**: tool schema（get_context_snapshot/choose_nudge/log_nudge/get_behavior_summary）を最新に揃える。
 - **詳細仕様**: `v3-stack.md` セクション3.2.1, `prompts-v3.md`
 - **疑似パッチ**: (後で追加)
@@ -371,6 +385,13 @@
 - **依存**: 7.5
 - **概要**: センサー未許可時の案内コピーを表示し Talk/Feeling 継続可を明示。
 - **詳細仕様**: `v3-stack.md` セクション14.5
+- **疑似パッチ**: (後で追加)
+
+### 9.4 Wakeサイレント説明モーダル
+- **対象ファイル**: `aniccaios/aniccaios/Views/Behavior/BehaviorView.swift` もしくは 起床DP処理に近い専用View
+- **依存**: 8.3, 7.1
+- **概要**: 起床DPを初めて有効化するタイミングで一度だけ、「サイレントモード中はアラームが鳴らない可能性がある」旨を説明する Just-in-time モーダルを表示し、了承後は `hasSeenWakeSilentTip` を AppState に記録する。
+- **詳細仕様**: `v3-ui.md` セクション「Wake Silent 説明モーダル」
 - **疑似パッチ**: (後で追加)
 
 ## 依存関係図

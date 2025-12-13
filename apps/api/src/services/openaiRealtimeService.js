@@ -26,8 +26,10 @@ export async function issueRealtimeClientSecret({ deviceId, userId }) {
         type: 'realtime',
         model: REALTIME_MODEL,
         // tools/instructions are set client-side via session.update (iOS) to match prompts-v3.md.
+        // output_modalities: ['audio'] is the only supported value (not ['audio', 'text'])
+        // Ref: https://platform.openai.com/docs/api-reference/realtime-sessions
         audio: { output: { voice: DEFAULT_VOICE } },
-        output_modalities: ['audio', 'text']
+        output_modalities: ['audio']
       }
     })
   });

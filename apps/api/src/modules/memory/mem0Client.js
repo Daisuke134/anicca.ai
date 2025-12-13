@@ -78,10 +78,12 @@ function wrapPlatform(client) {
 }
 
 async function addTextPlatform(client, userId, content, metadata) {
+  // Platform API: client.add(messages, { user_id, metadata })
+  // Ref: https://docs.mem0.ai/platform/quickstart
   const messages = [
     { role: 'user', content: String(content || '') }
   ];
-  return client.add({ messages, user_id: userId, metadata });
+  return client.add(messages, { user_id: userId, metadata });
 }
 
 // OSS版 (Memory) 用ラッパー

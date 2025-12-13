@@ -43,6 +43,8 @@ Anicca v0.3 の Mental/Feeling ドメインでは、ユーザーが Talk タブ�
 
 > 反芻中心 CBT の JITAI パイロット RCT では、EMA で反芻エピソード数と持続時間を測定し、介入群で有意な減少を確認している (Wang & Miller, 2023)。Anicca ではこれを応用し、介入の「即時的な主観的改善」を EMA で捕捉する。
 
+- v0.3 では EMA は Feeling セッション専用とし、自動 Nudge（Sleep / Morning Phone / SNS / Sedentary / Habit）側では EMA 質問は行わず、パッシブなセンサー信号のみで reward を計算する。
+
 ---
 
 ## 2. 質問文言

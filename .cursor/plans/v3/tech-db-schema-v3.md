@@ -356,7 +356,7 @@ model MonthlyVcGrant {
 ## 9. 留意点
 
 - **PII/センシティブデータ**: mem0 保存前に LLM で redact。DB 側にも必要以上の生 PII を置かない。
-- **タイムゾーン**: すべて UTC で保存し、日次集計はユーザー TZ をアプリ/API で計算してから `date` に格納。
+- **タイムゾーン**: すべての時刻カラム（`startedAt` など）は UTC (`@db.Timestamptz`) で保存し、日次集計用の `daily_metrics.date` には **ユーザーのタイムゾーンで丸めたローカル日付** を格納する。ユーザーTZは `user_settings.timezone` に IANA 文字列（例: `"Asia/Tokyo"`）で保持し、iOS 初回ログイン時と OS タイムゾーン変更時に同期する。
 - **データ保持**: Feeling セッションの全文は `transcript` に保存する場合でも期間を設けてローテーション可。要件が決まったら TTL ポリシーを別途定義。
 
 ---
@@ -368,6 +368,7 @@ model MonthlyVcGrant {
 ## 10. 追加詳細（移行・インデックス・保持・レダクション）
 
 ### 10.1 text user_id → UUID 移行計画
+- v0.3 のスコープでは以下の①〜③までを実施し、④〜⑤による完全移行は v0.4 以降で行う。  
 - ① 新カラム追加: 主要テーブルに `profile_id uuid` を追加（NULL許容、緩いFK）。  
 - ② バックフィル: `profiles.metadata->>'apple_user_id'` 等で突合し `profile_id` を埋める。重複/欠損はレポート。  
 - ③ 二重書き込み期間: API層で `user_id(text)` と `profile_id(uuid)` 両方に書く。読みは `profile_id` 優先、fallback `user_id`。  

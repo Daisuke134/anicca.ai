@@ -15,7 +15,7 @@ stateBuilder は DP（Decision Point）評価時に、ユーザー状況を表�
 参照すべきファイル:  
 - `v3-data.md`（stateフィールド定義）  
 - `tech-db-schema-v3.md`（テーブル定義）  
-- `v3-stack-nudge.md`（DPとstateの利用箇所）
+- `tech-nudge-scheduling-v3.md`（DPとstateの利用箇所と頻度制御）
 
 ---
 

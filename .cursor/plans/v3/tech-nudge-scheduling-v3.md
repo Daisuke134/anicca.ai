@@ -21,52 +21,57 @@
 - 落選DPは次窓へ延期（最大2窓まで）。2回延期後も競合なら破棄。
 - 例: 10:05にScreen/Movement同時→Screen採用、Movementは10:35まで延期、そこで再度競合判定。
 
-- quiet: 非Mentalは送信0件。active: 日上限1.5倍、クールダウン0.5x。
-
-- 全体上限到達後は Mental のみ許可。
-
+- 任意の2つの自動Nudge（Sleep / Morning Phone / Screen / Movement / Habit）の間には、
+  `nudgeIntensity` に応じたグローバル最小間隔（minInterval）を設ける:
+  - quiet: 4時間以上あける
+  - normal: 2時間以上あける
+  - active: 1時間以上あける
+- 起床 Nudge と Morning Phone Nudge は例外で、同じ朝の 30〜60 分の間にどちらか片方のみ送る（両方は送らない）。
+ 
 - 30分窓で競合時は優先度を比較し、落選DPは最大2窓まで延期。3回目も競合なら破棄。
-
+ 
 - metrics stale>15分 or 権限未許可時は送信しない（quiet扱い）。
 
 ## 3. クールダウン（ドメイン別・intensity補正）
 
-| ドメイン | 基本クールダウン | quiet | normal | active |
-|---------|----------------|-------|--------|--------|
-| Wake | 24h | 24h | 24h | 24h |
-| Sleep (bedtime) | 24h | 24h | 24h | 24h |
-| Screen | 60m | 60m | 60m | 30m (0.5x) |
-| Morning Phone | 45m | 45m | 45m | 25m (≈0.5x) |
-| Movement | 90m | 90m | 90m | 45m (0.5x) |
-| Mental (Feeling) | なし | なし | なし | なし |
-| Habit | 24h | 24h | 24h | 24h |
+| ドメイン           | 基本クールダウン | quiet | normal | active |
+|--------------------|------------------|-------|--------|--------|
+| Wake               | 24h              | 24h   | 24h    | 24h    |
+| Sleep (bedtime)    | 24h              | 24h   | 24h    | 24h    |
+| Screen             | 60m              | 60m   | 60m    | 30m    |
+| Morning Phone      | 45m              | 45m   | 45m    | 25m    |
+| Movement           | 90m              | 90m   | 90m    | 45m    |
+| Mental (Feeling)   | なし             | なし  | なし   | なし   |
+| Habit              | 24h              | 24h   | 24h    | 24h    |
 
-- quietは権限未許可（HealthKit/ScreenTime）やユーザー設定時に自動適用。quiet中はMental以外送信しない。
-- activeは明示設定時のみ。未設定ユーザーは常にnormal。
+- 上記は各ドメイン内での「同一ドメイン連続Nudge」のクールダウンを表す。
+- これとは別に、任意の2つの自動Nudgeの間には、前述のグローバル最小間隔
+  （quiet=4h / normal=2h / active=1h）を常に適用する。
 
 ## 4. 1日上限（local dateで集計）
 
-| ドメイン | normal上限 | quiet | active |
-|---------|-----------|-------|--------|
-| Wake | 1 | 0 | 1 |
-| Screen | 5 | 0 | 7 (ceil 5×1.5) |
-| Morning Phone | 2 | 0 | 3 |
-| Movement | 4 | 0 | 6 (ceil 4×1.5) |
-| Mental | 制限なし | 制限なし | 制限なし |
-| Habit | 1 | 0 | 1 |
-| **全体** | 8 | 0 | 12 (ceil 8×1.5) |
+| ドメイン             | quiet上限 | normal上限 | active上限 |
+|----------------------|-----------|------------|------------|
+| Wake                 | 1         | 1          | 1          |
+| Screen               | 1         | 2          | 3          |
+| Morning Phone        | 1         | 1          | 1          |
+| Movement             | 1         | 1          | 2          |
+| Mental (Feeling)     | 制限なし  | 制限なし   | 制限なし   |
+| Habit (Priority Habits) | 1      | 1          | 1          |
+| **全体（合計上限）** | 2         | 4          | 6          |
 
-- 上限判定はlocal dateで0時リセット。staleなmetricsの場合は送信しない（カウントも増やさない）。
+- 上限判定は local date で 0 時リセット。stale な metrics の場合は送信しない（カウントも増やさない）。
+- 注: 実装上のドメインキーは `habit` に固定。UI上のラベルは `Priority Habits`。
 
 ## 5. Quiet Mode / nudgeIntensity と権限
 
 | 設定 | 挙動 |
 |------|------|
-| `quiet` | 全自動Nudge無効（Mentalのみ許可）。クールダウン無効化は行わず、送信判定で即false。権限未許可/データ未同期(stale)時に自動でここへフォールバック。 |
-| `normal` | クールダウン・上限を基本値で運用。 |
-| `active` | クールダウンを半減、日上限を1.5倍（上表）。バーストしないよう優先順位・30分窓制御は据え置き。 |
+| `quiet` | 1日最大2件、グローバル最小間隔4h。各ドメイン上限は Wake / Screen / Morning Phone / Movement / Habit それぞれ 1件/日まで。権限未許可/データ未同期(stale)時は自動で quiet にフォールバックする。 |
+| `normal` | 1日最大4件、グローバル最小間隔2h。各ドメイン上限は上表の normal 列に従う。 |
+| `active` | 1日最大6件、グローバル最小間隔1h。各ドメイン上限は上表の active 列に従う。バーストしないよう優先順位・30分窓制御は据え置き。 |
 
-- Profile画面でHealthKit/ScreenTime許可がONになった瞬間からquiet解除し、次のDPから通常運用・可視化再開。
+- Profile画面でHealthKit/ScreenTime許可がONになった瞬間から、権限に依存するドメインについて quiet フォールバックを解除し、次のDPから通常運用・可視化再開。
 - stateBuilderは常に Big5/struggles/nudgeIntensity を含め、権限未許可は特徴量0/false埋めでbanditに渡す（キャッシュ禁止）。
 
 ## 6. 実装フロー（擬似コード）
@@ -79,18 +84,19 @@ async function shouldSendNudge(userId: string, domain: string, now: Date): Promi
   const freshness = await getDailyMetricsFreshness(userId);
   if (freshness > 15 * MINUTE) return false; // staleなら送らない
 
-if (freshness > 15*MINUTE) return false;
-if (intensity === 'quiet' && domain !== 'mental') return false;
-
   // 1. nudgeIntensity + 権限
-  const intensity = await getNudgeIntensity(userId); // quiet/normal/active
-  if (intensity === 'quiet' && domain !== 'mental') return false;
+  const intensity = await getNudgeIntensity(userId); // quiet / normal / active
   if (!hasRequiredPermissions(userId, domain) && domain !== 'mental') return false;
 
-  // 2. クールダウン
+  // 2. クールダウン（ドメイン別）
   const last = await getLastNudge(userId, domain);
   const cooldown = getCooldown(domain, intensity);
   if (last && now.getTime() - last.getTime() < cooldown) return false;
+
+  // 2-1. グローバル間隔（任意ドメイン間）
+  const lastAny = await getLastNudgeAny(userId);
+  const globalMin = getGlobalMinInterval(intensity); // quiet=4h, normal=2h, active=1h
+  if (lastAny && now.getTime() - lastAny.getTime() < globalMin) return false;
 
   // 3. 日次上限
   const todayCountDomain = await getNudgeCount(userId, domain, localDate);
@@ -121,7 +127,7 @@ if (intensity === 'quiet' && domain !== 'mental') return false;
 - **複数ドメイン重複時の延期上限**: 2窓まで。3窓目で再度衝突した場合は破棄しログのみ残す。
 - **静音時間帯**: ユーザー指定のサイレント時間帯は全ドメイン停止（Mentalも停止）。ただしUX仕様に従いWakeは指定外時間に調整せず破棄。
 - **サーバー/クライアント時刻差**: server clock vs device clockで±3分以上差異がある場合は送信をスキップし、メトリクス同期を優先。
-- **全体上限到達**: 全体上限8/12到達後はその日残りの自動Nudgeを破棄、Feeling起点のMentalのみ許可。
+- **全体上限到達**: intensity に応じた全体上限（quiet=2, normal=4, active=6）到達後は、その日残りの自動Nudgeを破棄し、Feeling起点のMentalのみ許可。
 
 ## 8. 参考文献メモ（頻度・クールダウン設定の根拠）
 
@@ -129,6 +135,6 @@ if (intensity === 'quiet' && domain !== 'mental') return false;
 - SNapp JITAI for steps (ScienceDirect 2024, S0749379724003155) — 歩行促進で1時間以内再通知を避け、日上限5回設計。
 - Shift (JMIR Human Factors 2025, e62960) — 怒り管理JITAIで「1日3–5件、クールダウン≥60分」を採用し通知疲れを回避。
 - Stress JITAI protocol (JMIR Res Protoc 2025, e58985) — ストレス介入で「30分窓＋優先度制御」を用い多重発火を抑制。
-- これらに基づき、本仕様では30分窓・上限8(quiet0/active12)・Screen/Movementクールダウン60–90分・Wake/Habit 24hを採用。
+- これらに基づき、本仕様では30分窓・全体上限2/4/6（quiet/normal/active）・Screen/Movementクールダウン60–90分・Wake/Habit 24h、および intensity ごとのグローバル最小間隔（4h/2h/1h）を採用。
 
 

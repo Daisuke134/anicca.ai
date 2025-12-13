@@ -181,7 +181,7 @@ Nudge イベントの発生パターン：
 
    * ドメインごとの Decision Point をルールで検知
    * bandit で「送る／送らない＋テンプレID」を決定
-   * 通知を Push
+   * 通知は v0.3 では **ローカル通知（端末内スケジュール）**で表示（APNs必須にしない）
 
 2. **通知 → Open App → Anicca声掛け**
 
@@ -340,7 +340,7 @@ def decide_and_maybe_send_wake_nudge(user_id, now):
     )
 
     message = llm_render_wake_message(template, state, context_texts)
-    send_push_notification(user_id, message)
+    schedule_local_notification(user_id, message)
 
     log_nudge_event(user_id, state, action, sent=True)
 ```

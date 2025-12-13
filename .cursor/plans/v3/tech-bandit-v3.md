@@ -167,6 +167,8 @@ return chosen;
 
 ### 5.1 v3 で LinTS 学習 ON のドメイン
 
+- v0.3 では LinTS を **Wake / Bedtime / Mental** に限定し、それ以外のドメイン（Morning Phone / Screen / Movement / Habit）はルールベース JITAI としてログ収集のみ行う。LinTS への拡張は v3.1 以降で行う。
+
 報酬判定窓:
 
 - Wake/Bedtime: 起床30–60分以内／就寝90分以内(+就寝後SNS<15分)
@@ -183,9 +185,9 @@ return chosen;
 | --- | --- | --- | --- |
 | Wake | 30–60分 | ✅ ON | HealthKit起床 + DeviceActivity使用継続 |
 | Bedtime | 90分 | ✅ ON | HealthKit sleep start + SNS<15分 |
-| Morning Phone | 5–30分 | ✅ ON | SNS/Videoクローズ + 再開なし |
-| Screen | 5–30分 | ✅ ON | 対象アプリクローズ + 再開なし |
-| Movement | 30分 | ✅ ON | 歩数+300〜500 or 歩行イベント検出 |
+| Morning Phone | 5–30分 | ❌ OFF | v0.3ではルールベースのみ（LinTSはv3.1以降） |
+| Screen | 5–30分 | ❌ OFF | 同上 |
+| Movement | 30分 | ❌ OFF | 同上 |
 | Mental | 即時（EMA） | ✅ ON | 「楽になった？」Yes/No |
 | **Habit** | **24時間** | ❌ OFF | v3.1で対応（遅延報酬問題） |
 

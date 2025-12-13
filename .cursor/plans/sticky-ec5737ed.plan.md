@@ -68,13 +68,6 @@
 
 このパッチをそのまま `VoiceSessionController.swift` に適用すれば、4秒待ちが5秒待ちに変わります。
 
-### To-dos
-
-- [ ] VoiceSessionController.handleRealtimeEvent(_:) 内で Sticky モードのタイマー起点と4秒待ちロジックを確認する。
-- [ ] response.done ハンドラ内の4秒待ち（ログ/スリープ/キャンセルログ）をすべて5秒に変更する。
-
----
-
 ## 通知タップ時に対話が始まらない問題（custom習慣）
 
 ### 現状
@@ -208,3 +201,8 @@ set: { isOn in
     }
 }
 ```
+
+### To-dos
+
+- [ ] VoiceSessionController.handleRealtimeEvent(_:) 内で Sticky モードのタイマー起点と4秒待ちロジックを確認する。
+- [ ] response.done ハンドラ内の4秒待ち（ログ/スリープ/キャンセルログ）をすべて5秒に変更する。

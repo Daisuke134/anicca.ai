@@ -218,6 +218,58 @@
 "problem_loneliness" = "孤独";
 "problem_night_scrolling" = "夜のスクロール";
 "problem_cant_wake_up" = "起きられない";
+
+/* v3 Behavior */
+"common_loading" = "読み込み中…";
+"common_retry" = "再試行";
+"behavior_title_today_insights" = "今日のインサイト";
+"behavior_error_failed_load" = "今日のインサイトを取得できませんでした。";
+"behavior_title_today_highlights" = "今日のハイライト";
+"behavior_title_timeline" = "24時間タイムライン";
+"behavior_title_future" = "10年後の未来";
+"behavior_highlight_wake" = "起床";
+"behavior_highlight_screen" = "スクリーン";
+"behavior_highlight_workout" = "運動";
+"behavior_highlight_rumination" = "反芻";
+"behavior_status_moving_forward" = "前進中";
+"behavior_status_needs_attention" = "要注意";
+"behavior_status_stable" = "安定";
+"timeline_label_sleep" = "睡眠";
+"timeline_label_focus" = "集中";
+"timeline_label_scroll" = "スクロール";
+"timeline_label_activity" = "活動";
+
+/* v3 Profile */
+"profile_title" = "プロフィール";
+"profile_row_name" = "名前";
+"profile_row_plan" = "プラン";
+"profile_row_language" = "言語";
+"profile_section_traits" = "あなたの特性";
+"profile_traits_summary_placeholder" = "協調性が高く、新しい経験にも前向き。柔軟さと適度な構造を両立しています。";
+"profile_traits_view_full" = "特性プロフィールを見る";
+"profile_section_ideal_self" = "理想の自分";
+"profile_section_current_struggles" = "今の悩み";
+"profile_section_nudge_strength" = "促しの強さ";
+"profile_nudge_quiet" = "控えめ";
+"profile_nudge_normal" = "標準";
+"profile_nudge_active" = "積極的";
+"profile_section_sticky_mode" = "スティッキーモード";
+"profile_sticky_description" = "ONにすると、5回応答するまでAniccaが話し続けます。";
+"profile_section_data_integration" = "データ連携";
+"profile_data_integration_hint" = "任意。データを連携すると、Aniccaがより適切に促せます。すべてOFFでも主要機能は利用できます。";
+"profile_toggle_screen_time" = "スクリーンタイム";
+"profile_toggle_sleep" = "睡眠（HealthKit）";
+"profile_toggle_steps" = "歩数（HealthKit）";
+"profile_toggle_movement" = "移動";
+
+/* v3 Traits Detail */
+"traits_title" = "ビッグファイブ特性";
+"trait_agreeableness" = "協調性";
+"trait_openness" = "開放性";
+"trait_conscientiousness" = "誠実性";
+"trait_emotional_stability" = "情緒安定性";
+"trait_extraversion" = "外向性";
+"trait_description_placeholder" = "調和を大切にし、周囲への配慮が自然にできる傾向があります。";
 "problem_no_motivation" = "やる気が出ない";
 "problem_procrastination" = "先延ばし";
 "problem_self_criticism" = "自己批判";

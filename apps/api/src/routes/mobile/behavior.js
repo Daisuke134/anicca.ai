@@ -38,7 +38,7 @@ router.get('/summary', async (req, res) => {
     });
   } catch (e) {
     logger.error('Failed to build behavior summary', e);
-    return res.status(500).json({ error: 'failed_to_get_behavior_summary' });
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to build behavior summary' } });
   }
 });
 

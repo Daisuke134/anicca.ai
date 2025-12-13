@@ -21,8 +21,6 @@
   "author": "ANICCA",
   "license": "MIT",
   "devDependencies": {
-    "@types/node": "^24.0.4",
-    "typescript": "^5.8.3",
     "vercel": "^32.0.0",
     "prisma": "7.1.0"
   },

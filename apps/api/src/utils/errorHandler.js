@@ -11,9 +11,10 @@ import { IS_PRODUCTION } from '../config/environment.js';
  * エラーレスポンスの統一フォーマット
  */
 export class ApiError extends Error {
-  constructor(message, statusCode = 500, details = null) {
+  constructor(code, message, statusCode = 500, details = null) {
     super(message);
     this.name = 'ApiError';
+    this.code = code;
     this.statusCode = statusCode;
     this.details = details;
   }
@@ -30,9 +31,11 @@ export function sendErrorResponse(res, error) {
   
   // エラーレスポンスの構造
   const errorResponse = {
-    error: true,
-    message: error.message || 'Internal server error',
-    ...(error.details && { details: error.details })
+    error: {
+      code: error instanceof ApiError ? error.code : 'INTERNAL_ERROR',
+      message: error.message || 'Internal server error',
+      ...(error.details && { details: error.details })
+    }
   };
   
   // 開発環境では詳細なエラー情報を含める
@@ -70,19 +73,19 @@ export function asyncHandler(handler) {
  */
 export const Errors = {
   // 認証エラー
-  unauthorized: (message = 'Unauthorized') => new ApiError(message, 401),
-  forbidden: (message = 'Forbidden') => new ApiError(message, 403),
+  unauthorized: (message = 'Unauthorized') => new ApiError('UNAUTHORIZED', message, 401),
+  forbidden: (message = 'Forbidden') => new ApiError('FORBIDDEN', message, 403),
   
   // リソースエラー
-  notFound: (resource = 'Resource') => new ApiError(`${resource} not found`, 404),
-  conflict: (message = 'Conflict') => new ApiError(message, 409),
+  notFound: (resource = 'Resource') => new ApiError('NOT_FOUND', `${resource} not found`, 404),
+  conflict: (message = 'Conflict') => new ApiError('CONFLICT', message, 409),
   
   // バリデーションエラー
-  badRequest: (message = 'Bad request', details = null) => new ApiError(message, 400, details),
+  badRequest: (message = 'Bad request', details = null) => new ApiError('INVALID_REQUEST', message, 400, details),
   
   // サーバーエラー
-  internal: (message = 'Internal server error') => new ApiError(message, 500),
-  serviceUnavailable: (message = 'Service temporarily unavailable') => new ApiError(message, 503)
+  internal: (message = 'Internal server error') => new ApiError('INTERNAL_ERROR', message, 500),
+  serviceUnavailable: (message = 'Service temporarily unavailable') => new ApiError('SERVICE_UNAVAILABLE', message, 503)
 };
 
 /**

@@ -21,6 +21,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
     // Feeling セッション識別（/api/mobile/feeling/end で使用）
     private var activeFeelingSessionId: String?
     private var activeFeelingTopic: FeelingTopic?
+    private var activeFeelingOpeningScript: String?
 
     private let logger = Logger(subsystem: "com.anicca.ios", category: "VoiceSession")
     private let peerFactory = RTCPeerConnectionFactory()
@@ -35,7 +36,6 @@ final class VoiceSessionController: NSObject, ObservableObject {
     private var sessionStartTime: Date?
     private var lastServerSyncTime: Date?
     private var currentHabitType: HabitType?
-    private var pendingFeelingEmaBetter: Bool?
     
     // Sticky mode (applies to all habits when enabled)
     private var stickyActive = false
@@ -123,18 +123,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
         guard connectionStatus != .connecting else { return }
         setStatus(.connecting)
         activeFeelingTopic = topic
+        activeFeelingSessionId = nil
+        activeFeelingOpeningScript = nil
         currentHabitType = nil
         stickyActive = AppState.shared.userProfile.stickyModeEnabled
         stickyUserReplyCount = 0
         stickyReady = false
         Task { [weak self] in
+            await self?.beginFeelingSession(topic: topic)
             await self?.establishSession(resumeImmediately: false)
         }
     }
 
     func stop() {
         logger.debug("Stopping realtime session")
-        Task { await self.endFeelingIfNeeded() }
         currentHabitType = nil
         stickyActive = false
         stickyUserReplyCount = 0
@@ -164,6 +166,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
             // まだ start が走っていない or 未ログインなら何もしない
             activeFeelingTopic = nil
             activeFeelingSessionId = nil
+            activeFeelingOpeningScript = nil
             return
         }
         var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/feeling/end"))
@@ -185,6 +188,35 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
         activeFeelingTopic = nil
         activeFeelingSessionId = nil
+        activeFeelingOpeningScript = nil
+    }
+
+    /// v3: Feeling開始（migration-patch-v3.md 6.2 /api/mobile/feeling/start）
+    /// - feeling_sessions の sessionId を取得して保持する（Realtimeの session_id と混同しない）
+    private func beginFeelingSession(topic: FeelingTopic) async {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        var req = URLRequest(url: AppConfig.feelingStartURL)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        req.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+
+        let body: [String: Any] = [
+            "feelingId": topic.rawValue
+        ]
+        do {
+            req.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, response) = try await NetworkSessionManager.shared.session.data(for: req)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return
+            }
+            // NOTE: APIは { sessionId, openingScript, ... } を返す
+            activeFeelingSessionId = json["sessionId"] as? String
+            activeFeelingOpeningScript = json["openingScript"] as? String
+        } catch {
+            logger.error("Failed to start feeling session: \(error.localizedDescription, privacy: .public)")
+        }
     }
 
     func toggleMicMuted() {
@@ -307,7 +339,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
             // 利用上限到達時の処理
             let plan: SubscriptionInfo.Plan
             if let env = try? JSONDecoder().decode(EntitlementEnvelope.self, from: data) {
-                let planString = env.entitlement?.plan ?? "free"
+                let planString = env.entitlement?.plan ?? env.error?.details?.entitlement?.plan ?? "free"
                 plan = SubscriptionInfo.Plan(rawValue: planString) ?? .free
             } else {
                 plan = .free
@@ -328,10 +360,6 @@ final class VoiceSessionController: NSObject, ObservableObject {
         let secret = payload.clientSecretModel
         cachedSecret = secret
         activeSessionId = payload.sessionId
-        // Feeling セッションの場合は sessionId を保存
-        if activeFeelingTopic != nil {
-            activeFeelingSessionId = payload.sessionId
-        }
         return secret
     }
 
@@ -631,7 +659,12 @@ private extension VoiceSessionController {
             instructions = consultPrompt
             shouldTriggerImmediateResponse = true   // consult: v3 では「モデルが先に話す」前提
         } else if let feeling = activeFeelingTopic {
-            instructions = RealtimePromptBuilder.buildFeelingInstructions(topic: feeling, profile: AppState.shared.userProfile)
+            let base = RealtimePromptBuilder.buildFeelingInstructions(topic: feeling, profile: AppState.shared.userProfile)
+            if let opening = activeFeelingOpeningScript, !opening.isEmpty {
+                instructions = base + "\n\n[Opening]\n" + opening
+            } else {
+                instructions = base
+            }
             shouldTriggerImmediateResponse = true
         }
         if let instructions {
@@ -834,7 +867,16 @@ private struct EntitlementEnvelope: Decodable {
     struct Ent: Decodable {
         let plan: String?
     }
+    struct ErrorDetails: Decodable {
+        let entitlement: Ent?
+    }
+    struct ErrorBody: Decodable {
+        let code: String?
+        let message: String?
+        let details: ErrorDetails?
+    }
     let entitlement: Ent?
+    let error: ErrorBody?
 }
 
 enum ConnectionState {
@@ -862,77 +904,6 @@ enum ConnectionState {
         case .connected:
             "You can talk freely—Anicca is listening."
         }
-    }
-}
-
-    // MARK: - Feeling EMI (v0.3)
-    /// Feeling ボタン押下から呼ぶ（Talkタブ側で使用）
-    func startFeeling(feelingId: String, topic: String?) {
-        guard connectionStatus != .connecting else { return }
-        setStatus(.connecting)
-        Task { [weak self] in
-            await self?.beginFeelingIfNeeded(feelingId: feelingId, topic: topic)
-            await self?.establishSession(resumeImmediately: true)
-        }
-    }
-
-    /// EMA（楽になった？）回答を UI から受け取る（Session終了時に /mobile/feeling/end へ送る）
-    func setFeelingEmaBetter(_ better: Bool) {
-        pendingFeelingEmaBetter = better
-    }
-
-    private func beginFeelingIfNeeded(feelingId: String, topic: String?) async {
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
-        var req = URLRequest(url: AppConfig.feelingStartURL)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-        req.setValue(credentials.userId, forHTTPHeaderField: "user-id")
-
-        let body: [String: Any] = [
-            "feelingId": feelingId,
-            "topic": topic ?? ""
-        ]
-        do {
-            req.httpBody = try JSONSerialization.data(withJSONObject: body)
-            let (data, response) = try await NetworkSessionManager.shared.session.data(for: req)
-            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
-                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else { return }
-            activeFeelingSessionId = json["sessionId"] as? String
-
-            // openingScript が返る設計（migration-patch-v3.md 6.2）なので、LLMが先に話すように consultPrompt に乗せる
-            if let opening = json["openingScript"] as? String, !opening.isEmpty {
-                await MainActor.run {
-                    AppState.shared.prepareExternalPrompt(opening, autoResponse: true)
-                }
-            }
-        } catch {
-            logger.error("feeling/start error: \(error.localizedDescription, privacy: .public)")
-        }
-    }
-
-    private func endFeelingIfNeeded() async {
-        guard let sessionId = activeFeelingSessionId else { return }
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
-        var req = URLRequest(url: AppConfig.feelingEndURL)
-        req.httpMethod = "POST"
-        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-        req.setValue(credentials.userId, forHTTPHeaderField: "user-id")
-
-        let body: [String: Any] = [
-            "sessionId": sessionId,
-            "emaBetter": pendingFeelingEmaBetter ?? NSNull(),
-            "summary": "" // v0.3: まずは空（後続フェーズで要約を追加）
-        ]
-        do {
-            req.httpBody = try JSONSerialization.data(withJSONObject: body)
-            _ = try await NetworkSessionManager.shared.session.data(for: req)
-        } catch {
-            logger.error("feeling/end error: \(error.localizedDescription, privacy: .public)")
-        }
-        activeFeelingSessionId = nil
-        pendingFeelingEmaBetter = nil
     }
 }
 
@@ -1027,7 +998,8 @@ private enum RealtimeToolRouter {
         guard case .signedIn(let credentials) = AppState.shared.authStatus else {
             return "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Not signed in\"}}"
         }
-        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("tools/\(name)"))
+        // v0.3 (Node/Express): tools は mobile/realtime 配下に集約
+        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/realtime/tools/\(name)"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")

@@ -1,8 +1,6 @@
 import fs from 'fs';
 import path from 'path';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 import { createClient } from '@supabase/supabase-js';
 import { PROXY_BASE_URL, SERVER_CONFIG, DIRECTORIES } from '../../../config/environment.js';
 

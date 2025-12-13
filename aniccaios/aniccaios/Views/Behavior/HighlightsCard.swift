@@ -11,16 +11,16 @@ struct HighlightsCard: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            Text("Today's Highlights")
+            Text(String(localized: "behavior_title_today_highlights"))
                 .font(.system(size: 20, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
             LazyVGrid(columns: columns, spacing: 12) {
-                highlightMiniCard(title: "Wake", apiStatus: highlights.wake.status, streak: streaks.wake)
-                highlightMiniCard(title: "Screen", apiStatus: highlights.screen.status, streak: streaks.screen)
-                highlightMiniCard(title: "Workout", apiStatus: highlights.workout.status, streak: streaks.workout)
-                highlightMiniCard(title: "Rumination", apiStatus: highlights.rumination.status, streak: streaks.rumination)
+                highlightMiniCard(title: String(localized: "behavior_highlight_wake"), apiStatus: highlights.wake.status, streak: streaks.wake)
+                highlightMiniCard(title: String(localized: "behavior_highlight_screen"), apiStatus: highlights.screen.status, streak: streaks.screen)
+                highlightMiniCard(title: String(localized: "behavior_highlight_workout"), apiStatus: highlights.workout.status, streak: streaks.workout)
+                highlightMiniCard(title: String(localized: "behavior_highlight_rumination"), apiStatus: highlights.rumination.status, streak: streaks.rumination)
             }
         }
     }
@@ -65,13 +65,13 @@ struct HighlightsCard: View {
         // v3-ui.md: ✓ / → / ⚠︎ と "Moving Forward / Stable / Needs Attention"
         switch apiStatus {
         case "on_track":
-            return ("✓", Color(red: 0.18, green: 0.80, blue: 0.44), "Moving Forward")
+            return ("✓", Color(red: 0.18, green: 0.80, blue: 0.44), String(localized: "behavior_status_moving_forward"))
         case "warning", "missed":
-            return ("⚠︎", Color(red: 0.96, green: 0.65, blue: 0.14), "Needs Attention")
+            return ("⚠︎", Color(red: 0.96, green: 0.65, blue: 0.14), String(localized: "behavior_status_needs_attention"))
         case "ok":
-            return ("→", AppTheme.Colors.secondaryLabel, "Stable")
+            return ("→", AppTheme.Colors.secondaryLabel, String(localized: "behavior_status_stable"))
         default:
-            return ("→", AppTheme.Colors.secondaryLabel, "Stable")
+            return ("→", AppTheme.Colors.secondaryLabel, String(localized: "behavior_status_stable"))
         }
     }
 }

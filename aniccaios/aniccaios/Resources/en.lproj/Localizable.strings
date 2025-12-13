@@ -218,6 +218,58 @@
 "problem_loneliness" = "Loneliness";
 "problem_night_scrolling" = "Night scrolling";
 "problem_cant_wake_up" = "Can't wake up";
+
+/* v3 Behavior */
+"common_loading" = "Loading…";
+"common_retry" = "Retry";
+"behavior_title_today_insights" = "Today's Insights";
+"behavior_error_failed_load" = "Failed to load today's insights.";
+"behavior_title_today_highlights" = "Today's Highlights";
+"behavior_title_timeline" = "24-Hour Timeline";
+"behavior_title_future" = "10 Years From Now";
+"behavior_highlight_wake" = "Wake";
+"behavior_highlight_screen" = "Screen";
+"behavior_highlight_workout" = "Workout";
+"behavior_highlight_rumination" = "Rumination";
+"behavior_status_moving_forward" = "Moving Forward";
+"behavior_status_needs_attention" = "Needs Attention";
+"behavior_status_stable" = "Stable";
+"timeline_label_sleep" = "Sleep";
+"timeline_label_focus" = "Focus";
+"timeline_label_scroll" = "Scroll";
+"timeline_label_activity" = "Activity";
+
+/* v3 Profile */
+"profile_title" = "Profile";
+"profile_row_name" = "Name";
+"profile_row_plan" = "Plan";
+"profile_row_language" = "Language";
+"profile_section_traits" = "Your Traits";
+"profile_traits_summary_placeholder" = "You're highly agreeable and open to new experiences, balancing structure with flexibility.";
+"profile_traits_view_full" = "View full trait profile";
+"profile_section_ideal_self" = "Ideal Self";
+"profile_section_current_struggles" = "Current Struggles";
+"profile_section_nudge_strength" = "Nudge strength";
+"profile_nudge_quiet" = "Quiet";
+"profile_nudge_normal" = "Normal";
+"profile_nudge_active" = "Active";
+"profile_section_sticky_mode" = "Sticky Mode";
+"profile_sticky_description" = "When ON, Anicca keeps talking until you respond 5 times.";
+"profile_section_data_integration" = "Data Integration";
+"profile_data_integration_hint" = "Optional. Link your data so Anicca can nudge you more precisely. All core features work even if everything is OFF.";
+"profile_toggle_screen_time" = "Screen Time";
+"profile_toggle_sleep" = "Sleep (HealthKit)";
+"profile_toggle_steps" = "Steps (HealthKit)";
+"profile_toggle_movement" = "Movement";
+
+/* v3 Traits Detail */
+"traits_title" = "Big Five Traits";
+"trait_agreeableness" = "Agreeableness";
+"trait_openness" = "Openness";
+"trait_conscientiousness" = "Conscientiousness";
+"trait_emotional_stability" = "Emotional Stability";
+"trait_extraversion" = "Extraversion";
+"trait_description_placeholder" = "Highly cooperative; you value harmony and tend to be considerate of others.";
 "problem_no_motivation" = "No motivation";
 "problem_procrastination" = "Procrastination";
 "problem_self_criticism" = "Self-criticism";

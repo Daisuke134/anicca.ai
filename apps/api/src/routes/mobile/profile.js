@@ -139,7 +139,7 @@ router.get('/', async (req, res) => {
     });
   } catch (error) {
     logger.error('Failed to get profile', error);
-    return res.status(500).json({ error: 'failed_to_get_profile' });
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to get profile' } });
   }
 });
 
@@ -157,9 +157,8 @@ router.put('/', async (req, res) => {
     
     if (!validationResult.success) {
       logger.warn('Invalid profile data', validationResult.error);
-      return res.status(400).json({ 
-        error: 'invalid_profile_data',
-        details: validationResult.error.errors 
+      return res.status(400).json({
+        error: { code: 'INVALID_REQUEST', message: 'Invalid profile data', details: validationResult.error.errors }
       });
     }
     
@@ -176,7 +175,7 @@ router.put('/', async (req, res) => {
     return res.json({ success: true });
   } catch (error) {
     logger.error('Failed to upsert profile', error);
-    return res.status(500).json({ error: 'failed_to_upsert_profile' });
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to upsert profile' } });
   }
 });
 

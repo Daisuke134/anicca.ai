@@ -16,6 +16,8 @@ struct aniccaiosApp: App {
         WindowGroup {
             ContentRouterView()
                 .environmentObject(appState)
+                // v0.3: 表示言語は userProfile.preferredLanguage に統一
+                .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
                 .tint(AppTheme.Colors.accent)
         }
     }

@@ -6,7 +6,7 @@ struct FutureScenarioView: View {
     var body: some View {
         CardView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("10 Years From Now")
+                Text(String(localized: "behavior_title_future"))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundStyle(AppTheme.Colors.label)
 

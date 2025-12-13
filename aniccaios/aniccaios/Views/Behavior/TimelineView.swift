@@ -6,7 +6,7 @@ struct TimelineView: View {
     var body: some View {
         CardView {
             VStack(alignment: .leading, spacing: 12) {
-                Text("24-Hour Timeline")
+                Text(String(localized: "behavior_title_timeline"))
                     .font(AppTheme.Typography.headlineDynamic)
                     .foregroundStyle(AppTheme.Colors.label)
 
@@ -53,10 +53,10 @@ struct TimelineView: View {
 
     private var legend: some View {
         FlexibleLegend(items: [
-            (.sleep, "Sleep"),
-            (.focus, "Focus"),
-            (.scroll, "Scroll"),
-            (.activity, "Activity"),
+            (.sleep, String(localized: "timeline_label_sleep")),
+            (.focus, String(localized: "timeline_label_focus")),
+            (.scroll, String(localized: "timeline_label_scroll")),
+            (.activity, String(localized: "timeline_label_activity")),
         ])
     }
 

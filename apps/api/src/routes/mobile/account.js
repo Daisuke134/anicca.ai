@@ -22,10 +22,10 @@ router.delete('/', async (req, res, next) => {
       const deviceId = (req.get('device-id') || '').toString().trim();
       userId = (req.get('user-id') || '').toString().trim();
       if (!deviceId) {
-        return res.status(400).json({ error: 'device-id is required' });
+        return res.status(400).json({ error: { code: 'INVALID_REQUEST', message: 'device-id is required' } });
       }
       if (!userId) {
-        return res.status(401).json({ error: 'user-id is required' });
+        return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'user-id is required' } });
       }
     }
     

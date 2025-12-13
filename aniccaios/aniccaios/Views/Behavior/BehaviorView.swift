@@ -16,7 +16,7 @@ struct BehaviorView: View {
                         CardView {
                             HStack(spacing: 12) {
                                 ProgressView()
-                                Text("Loading…")
+                                Text(String(localized: "common_loading"))
                                     .font(AppTheme.Typography.subheadlineDynamic)
                                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
                             }
@@ -30,7 +30,7 @@ struct BehaviorView: View {
                                     .font(AppTheme.Typography.subheadlineDynamic)
                                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
                                     .multilineTextAlignment(.center)
-                                Button("Retry") { Task { await load() } }
+                                Button(String(localized: "common_retry")) { Task { await load() } }
                                     .font(AppTheme.Typography.subheadlineDynamic)
                             }
                         }
@@ -59,7 +59,7 @@ struct BehaviorView: View {
 
     private var header: some View {
         VStack(spacing: 8) {
-            Text("Today's Insights")
+            Text(String(localized: "behavior_title_today_insights"))
                 .font(.system(size: 30, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .frame(maxWidth: .infinity, alignment: .center)
@@ -86,7 +86,7 @@ struct BehaviorView: View {
             summary = data
             BehaviorHighlightsStreakStore.shared.updateIfNeeded(with: data.highlights)
         } catch {
-            errorText = "Failed to load today's insights."
+            errorText = String(localized: "behavior_error_failed_load")
         }
         isLoading = false
     }

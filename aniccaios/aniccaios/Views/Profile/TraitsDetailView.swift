@@ -40,7 +40,7 @@ struct TraitsDetailView: View {
             .padding(.horizontal, AppTheme.Spacing.lg)
             .padding(.vertical, AppTheme.Spacing.md)
         }
-        .navigationTitle("Big Five Traits")
+        .navigationTitle(String(localized: "traits_title"))
         .navigationBarTitleDisplayMode(.inline)
         .background(AppBackground())
     }
@@ -54,11 +54,11 @@ struct TraitsDetailView: View {
 
         var title: String {
             switch self {
-            case .agreeableness: return "Agreeableness"
-            case .openness: return "Openness"
-            case .conscientiousness: return "Conscientiousness"
-            case .emotionalStability: return "Emotional Stability"
-            case .extraversion: return "Extraversion"
+            case .agreeableness: return String(localized: "trait_agreeableness")
+            case .openness: return String(localized: "trait_openness")
+            case .conscientiousness: return String(localized: "trait_conscientiousness")
+            case .emotionalStability: return String(localized: "trait_emotional_stability")
+            case .extraversion: return String(localized: "trait_extraversion")
             }
         }
 
@@ -66,7 +66,7 @@ struct TraitsDetailView: View {
         var score: Int { 82 }
 
         var description: String {
-            "Highly cooperative; you value harmony and tend to be considerate of others."
+            String(localized: "trait_description_placeholder")
         }
     }
 }

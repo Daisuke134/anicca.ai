@@ -43,7 +43,7 @@ struct ProfileView: View {
     }
 
     private var header: some View {
-        Text("Profile")
+        Text(String(localized: "profile_title"))
             .font(.system(size: 30, weight: .bold))
             .foregroundStyle(AppTheme.Colors.label)
             .frame(maxWidth: .infinity, alignment: .center)
@@ -53,30 +53,30 @@ struct ProfileView: View {
     private var accountCard: some View {
         CardView(cornerRadius: 32) {
             VStack(spacing: 0) {
-                row(label: "Name", value: appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName)
+                row(label: String(localized: "profile_row_name"), value: appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName)
                 divider
                 Button {
                     showingManageSubscription = true
                 } label: {
-                    row(label: "Plan", value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
+                    row(label: String(localized: "profile_row_plan"), value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
                 }
                 .buttonStyle(.plain)
                 divider
-                row(label: "Language", value: appState.userProfile.preferredLanguage.languageLine)
+                row(label: String(localized: "profile_row_language"), value: appState.userProfile.preferredLanguage.languageLine)
             }
         }
     }
 
     private var traitsCard: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Your Traits")
+            Text(String(localized: "profile_section_traits"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 14) {
-                    Text("You're highly agreeable and open to new experiences, balancing structure with flexibility.")
+                    Text(String(localized: "profile_traits_summary_placeholder"))
                         .font(.system(size: 16))
                         .foregroundStyle(AppTheme.Colors.label)
                         .multilineTextAlignment(.center)
@@ -93,7 +93,7 @@ struct ProfileView: View {
                         TraitsDetailView()
                     } label: {
                         HStack {
-                            Text("View full trait profile")
+                            Text(String(localized: "profile_traits_view_full"))
                                 .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(AppTheme.Colors.label)
                             Spacer()
@@ -110,7 +110,7 @@ struct ProfileView: View {
 
     private var idealsSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Ideal Self")
+            Text(String(localized: "profile_section_ideal_self"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
@@ -123,7 +123,7 @@ struct ProfileView: View {
 
     private var strugglesSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Current Struggles")
+            Text(String(localized: "profile_section_current_struggles"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
@@ -136,7 +136,7 @@ struct ProfileView: View {
 
     private var nudgeStrengthSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Nudge strength")
+            Text(String(localized: "profile_section_nudge_strength"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
@@ -144,9 +144,9 @@ struct ProfileView: View {
             // フェーズ3で NudgeIntensity を導入する前提（フェーズ6ではUI骨格のみ）
             CardView(cornerRadius: 999) {
                 HStack(spacing: 8) {
-                    pill("Quiet", isSelected: false)
-                    pill("Normal", isSelected: true)
-                    pill("Active", isSelected: false)
+                    pill(String(localized: "profile_nudge_quiet"), isSelected: false)
+                    pill(String(localized: "profile_nudge_normal"), isSelected: true)
+                    pill(String(localized: "profile_nudge_active"), isSelected: false)
                 }
             }
         }
@@ -154,7 +154,7 @@ struct ProfileView: View {
 
     private var stickyModeSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Sticky Mode")
+            Text(String(localized: "profile_section_sticky_mode"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
@@ -162,7 +162,7 @@ struct ProfileView: View {
             CardView(cornerRadius: 28) {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("Sticky Mode")
+                        Text(String(localized: "profile_section_sticky_mode"))
                             .font(.system(size: 16, weight: .medium))
                             .foregroundStyle(AppTheme.Colors.label)
                         Spacer()
@@ -176,7 +176,7 @@ struct ProfileView: View {
                         ))
                         .labelsHidden()
                     }
-                    Text("When ON, Anicca keeps talking until you respond 5 times.")
+                    Text(String(localized: "profile_sticky_description"))
                         .font(AppTheme.Typography.caption1Dynamic)
                         .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 }
@@ -186,27 +186,27 @@ struct ProfileView: View {
 
     private var dataIntegrationSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Data Integration")
+            Text(String(localized: "profile_section_data_integration"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
-            Text("Optional. Link your data so Anicca can nudge you more precisely. All core features work even if everything is OFF.")
+            Text(String(localized: "profile_data_integration_hint"))
                 .font(AppTheme.Typography.caption1Dynamic)
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {
-                    Toggle("Screen Time", isOn: $screenTimeEnabled)
+                    Toggle(String(localized: "profile_toggle_screen_time"), isOn: $screenTimeEnabled)
                         .tint(AppTheme.Colors.accent)
                     divider
-                    Toggle("Sleep (HealthKit)", isOn: $sleepEnabled)
+                    Toggle(String(localized: "profile_toggle_sleep"), isOn: $sleepEnabled)
                         .tint(AppTheme.Colors.accent)
                     divider
-                    Toggle("Steps (HealthKit)", isOn: $stepsEnabled)
+                    Toggle(String(localized: "profile_toggle_steps"), isOn: $stepsEnabled)
                         .tint(AppTheme.Colors.accent)
                     divider
-                    Toggle("Movement", isOn: $motionEnabled)
+                    Toggle(String(localized: "profile_toggle_movement"), isOn: $motionEnabled)
                         .tint(AppTheme.Colors.accent)
                 }
             }

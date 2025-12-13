@@ -2,11 +2,12 @@ import SwiftUI
 
 struct SubscriptionRequiredView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var appState: AppState
     var body: some View {
         PaywallContainerView(
             onDismissRequested: { dismiss() }
         )
-            .environment(\.locale, .autoupdatingCurrent)
+            .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
             .ignoresSafeArea()
     }
 }

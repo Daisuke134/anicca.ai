@@ -1,8 +1,8 @@
-# Anicca 分析基盤指示書（RevenueCat × Amplitude）
+# Anicca 分析基盤指示書（RevenueCat × Mixpanel）
 
-## 概要
+## 概要（更新: 2025-12）
 
-- **目的**: Aniccaの「行動ログ＋サブスクイベント」を一箇所（Amplitude）に集約し、
+- **目的**: Aniccaの「行動ログ＋サブスクイベント」を一箇所（Mixpanel）に集約し、
   - オンボーディング離脱ポイント
   - 音声セッション利用状況
   - ペイウォール → トライアル → 課金ファネル
@@ -10,22 +10,28 @@
 - **対象**:
   - iOSクライアント（`aniccaios/`）
   - RevenueCatダッシュボード
-  - Amplitudeプロジェクト
+  - Mixpanelプロジェクト
 
 ---
 
-## 1. 採用ツールと方針
+## 1. 採用ツールと方針（結論と理由）
 
-### 1.1 採用ツール
+### 1.1 採用ツール（推奨）
 
-- **Amplitude**（プロダクト分析・ファネル分析）
+- **Mixpanel**（プロダクト分析・ファネル分析）
 - **RevenueCat**（既に導入済みのサブスク管理）
-  - RevenueCat → Amplitude 公式連携を使用
+  - RevenueCat → Mixpanel 公式連携を使用
 
-### 1.2 追加ツールの扱い
+参考（公式）:
+- RevenueCat × Mixpanel 公式連携: https://www.revenuecat.com/docs/integrations/third-party-integrations/mixpanel
+- RevenueCat × Amplitude 公式連携（比較用）: https://www.revenuecat.com/docs/integrations/third-party-integrations/amplitude
+- RevenueCat 対応インテグレーション一覧: https://www.revenuecat.com/docs/integrations/third-party-integrations/supported-integrations-index
 
-- **Intercom / Mixpanel など**: 現フェーズでは導入しない
-  - 必要になったときに、Amplitudeのデータを見ながら別タスクで検討
+### 1.2 「Amplitudeはダメ？」への回答（バイアス排除）
+
+- **Amplitudeも成立**（RevenueCat公式連携あり）。
+- ただし、Aniccaの現状（少人数・最速で回す・ユーザー少なめ）では **Mixpanelのほうが「無料枠の理解と運用」が単純になりやすい** ため、まずMixpanel推奨。
+- チームがAmplitudeに慣れている/既存データ基盤がAmplitude中心ならAmplitude採用でもOK（この文書の手順を置換して進める）。
 
 ### 1.3 なぜ今導入するか
 
@@ -48,133 +54,103 @@
 | システム | IDの設定方法 | 確認箇所 |
 |----------|-------------|----------|
 | **RevenueCat** | `App User ID`に`user-id`をセット | `SubscriptionManager.handleLogin()` |
-| **Amplitude** | `setUserId(userId)`に`user-id`を渡す | クライアント初期化時 |
+| **Mixpanel** | `identify(userId)`に`user-id`を渡す | サインイン直後 |
 | **バックエンド** | 既に`user-id`ヘッダで処理 | 変更不要 |
 
 ### 2.3 匿名ユーザーの扱い
 
-- 未ログイン状態では、Amplitudeの自動生成anonymous IDのままでもよい
-- ログイン時に`setUserId()`で上書きする
+- 未ログイン状態では、Mixpanelの distinct_id（自動生成）でよい
+- ログイン時に `identify(userId)` で紐付ける
 
 ---
 
-## 3. Amplitude プロジェクト準備
+## 3. Mixpanel プロジェクト準備
 
 ### 3.1 プロジェクト作成
 
-1. [Amplitude](https://amplitude.com/)にログイン
-2. 「Create Project」→ プロジェクト名: `Anicca iOS`
-3. Platform: **iOS** を選択
+1. https://mixpanel.com/ にログイン
+2. Project を作成（例: `Anicca iOS`）
+3. Timezone を **Asia/Tokyo** に設定（可能なら）
 
-### 3.2 API Key取得
+### 3.2 Project Token 取得
 
-1. Settings → Projects → `Anicca iOS` → API Keys
-2. **API Key（クライアントキー）**を控える
-   - 例: `abc123def456...`（実際の値に置き換える）
+1. Project Settings から **Project Token** を控える（クライアント用）
 
-### 3.3 タイムゾーン設定
-
-1. Settings → Projects → `Anicca iOS` → General
-2. Timezone を **Asia/Tokyo (UTC+9)** に設定
-
-### 3.4 環境分け（オプション）
+### 3.3 環境分け（オプション）
 
 - 開発用・本番用を分ける場合は2プロジェクト作成 or Environment機能を利用
 - ここでは最低限「本番用プロジェクト」を用意しておけばよい
 
 ---
 
-## 4. RevenueCat → Amplitude 連携設定
+## 4. RevenueCat → Mixpanel 連携設定
 
 ### 4.1 連携有効化
 
 1. [RevenueCatダッシュボード](https://app.revenuecat.com/)にログイン
-2. プロジェクト選択 → **Integrations** → **Amplitude** を選択
-3. 「Connect Amplitude」をクリック
+2. プロジェクト選択 → **Integrations** → **Mixpanel** を選択
+3. Mixpanel連携を有効化
 
-### 4.2 設定項目
+### 4.2 設定項目（最低限）
 
-1. **Amplitude API Key**:
-   - 上記3.2で取得したAPI Keyを入力
-
-2. **Event Types**（送信するイベント）:
-   - ✅ `initial_purchase`
-   - ✅ `trial_started`
-   - ✅ `trial_converted`
-   - ✅ `renewal`
-   - ✅ `cancellation`
-   - ✅ `billing_issue`
-
-3. **User Identification**:
-   - RevenueCatの`App User ID`をAmplitudeの`user_id`として送る設定にする
-   - 「Map App User ID to Amplitude User ID」にチェック
-
-4. **Save**して有効化
+1. **Project Token**（Mixpanel側）を設定
+2. **User Identity**:
+   - RevenueCatの `App User ID` が、Mixpanel上の user identity（distinct_id）として扱われるよう設定
+3. **Save**して有効化
 
 ### 4.3 動作確認
 
 1. Sandbox環境でテスト用ユーザーで1件サブスクを開始
-2. 数分後、Amplitudeの「Events」画面で確認:
-   - `initial_purchase`（など）が届いている
-   - `user_id`に`user-id`が入っている
+2. 数分後、Mixpanelのイベント一覧で確認:
+   - RevenueCat起因のイベント（例: `rc_initial_purchase_event` 等）が届いている
+   - distinct_id が期待通り（`user-id`）になっている
 
 ---
 
-## 5. iOSクライアントへの Amplitude SDK 導入
+## 5. iOSクライアントへの Mixpanel SDK 導入
 
-### 5.1 依存関係追加
+### 5.1 依存関係追加（SPM）
 
-**Swift Package Manager (SPM) を使用**:
+**Swift Package Manager (SPM) を使用**（推奨）:
 
 1. Xcode → `aniccaios.xcodeproj` → Package Dependencies
 2. 「+」をクリック
-3. URL: `https://github.com/amplitude/Amplitude-iOS.git`
-4. Version: 最新の安定版（例: `8.17.0`）
+3. URL: `https://github.com/mixpanel/mixpanel-swift.git`
+4. Version: 最新の安定版（Xcodeが提示する安定版）
 5. Target: `aniccaios` に追加
 
-### 5.2 初期化コード
+### 5.2 初期化コード（例）
 
 **初期化場所**: `aniccaios/aniccaios/AppState.swift` または `AppDelegate.swift`
 
 **実装例**:
 
 ```swift
-import Amplitude
+import Mixpanel
 
 // AppState.swift または AppDelegate.swift
 class AppState: ObservableObject {
-    private var amplitude: Amplitude?
-    
     init() {
-        // Amplitude初期化
-        amplitude = Amplitude.instance()
-        amplitude?.initializeApiKey(Config.amplitudeApiKey)
-        
-        // デフォルト設定
-        amplitude?.setServerUrl("https://api2.amplitude.com")
+        Mixpanel.initialize(token: Config.mixpanelToken, trackAutomaticEvents: true)
     }
     
-    func setUserId(_ userId: String?) {
-        amplitude?.setUserId(userId)
-    }
-    
-    func clearUserId() {
-        amplitude?.setUserId(nil)
+    func identifyUser(_ userId: String) {
+        Mixpanel.mainInstance().identify(distinctId: userId)
     }
 }
 ```
 
-**Config.swift にAPI Keyを追加**:
+**Config.swift に Token を追加**:
 
 ```swift
 // Config.swift
 struct Config {
-    static var amplitudeApiKey: String {
+    static var mixpanelToken: String {
         // Info.plistから読み込む
-        guard let key = Bundle.main.object(forInfoDictionaryKey: "AMPLITUDE_API_KEY") as? String else {
-            fatalError("AMPLITUDE_API_KEY not found in Info.plist")
+        guard let token = Bundle.main.object(forInfoDictionaryKey: "MIXPANEL_TOKEN") as? String else {
+            fatalError("MIXPANEL_TOKEN not found in Info.plist")
         }
-        return key
+        return token
     }
 }
 ```
@@ -182,8 +158,8 @@ struct Config {
 **Info.plist に追加**:
 
 ```xml
-<key>AMPLITUDE_API_KEY</key>
-<string>YOUR_API_KEY_HERE</string>
+<key>MIXPANEL_TOKEN</key>
+<string>YOUR_TOKEN_HERE</string>
 ```
 
 ### 5.3 ユーザーID設定タイミング
@@ -195,25 +171,16 @@ struct Config {
 func updateUserCredentials(_ credentials: UserCredentials) {
     // ... 既存の処理 ...
     
-    // AmplitudeにユーザーIDを設定
-    setUserId(credentials.userId)
+    // MixpanelにユーザーIDを紐付け
+    identifyUser(credentials.userId)
 }
 ```
 
-**サインアウト時**:
-
-```swift
-func signOut() {
-    // ... 既存の処理 ...
-    
-    // AmplitudeのユーザーIDをクリア
-    clearUserId()
-}
-```
+**サインアウト時**: Mixpanel側の distinct_id を明示的にクリアする運用は必須ではない（要件に応じて設計）。
 
 ---
 
-## 6. クライアントイベント設計
+## 6. クライアントイベント設計（RevenueCatだけでは足りない分）
 
 ### 6.1 イベント命名規則
 
@@ -224,25 +191,20 @@ func signOut() {
   - `voice_session_started`
   - `voice_session_ended`
 
-### 6.2 AnalyticsService ラッパー作成
+### 6.2 AnalyticsService ラッパー作成（Mixpanel）
 
 **新規ファイル**: `aniccaios/aniccaios/Services/AnalyticsService.swift`
 
 ```swift
-import Amplitude
+import Mixpanel
 
 class AnalyticsService {
     static let shared = AnalyticsService()
-    private let amplitude = Amplitude.instance()
     
     private init() {}
     
     func track(_ eventName: String, properties: [String: Any]? = nil) {
-        amplitude?.logEvent(eventName, withEventProperties: properties)
-    }
-    
-    func setUserProperty(_ property: String, value: Any) {
-        amplitude?.setUserProperties([property: value])
+        Mixpanel.mainInstance().track(event: eventName, properties: properties)
     }
 }
 ```
@@ -333,11 +295,11 @@ func stop() {
 
 ---
 
-## 7. Amplitude 側でのダッシュボード構築
+## 7. Mixpanel 側でのダッシュボード構築
 
 ### 7.1 オンボーディングファネル
 
-1. Amplitudeダッシュボード → **Charts** → **Funnel**
+1. Mixpanel → **Funnels**
 2. イベントを順番に追加:
    - `onboarding_step_completed` (step = welcome)
    - `onboarding_step_completed` (step = account)
@@ -348,7 +310,7 @@ func stop() {
 
 ### 7.2 課金ファネル
 
-1. **Charts** → **Funnel**
+1. Mixpanel → **Funnels**
 2. イベントを順番に追加:
    - `paywall_shown`（クライアントイベント）
    - `trial_started`（RevenueCat経由）
@@ -357,10 +319,9 @@ func stop() {
 
 ### 7.3 セッション利用状況
 
-1. **Charts** → **User Composition** → **Active Users**
+1. Mixpanel → **Insights**
 2. イベント: `voice_session_started`
-3. 日次/週次で集計
-4. DAU/WAUとの相関を見るチャートを作る
+3. 日次/週次で推移を見る
 
 ---
 
@@ -370,33 +331,32 @@ func stop() {
 
 1. 開発環境で:
    - 仮ユーザー1人でオンボーディング→ペイウォール→セッションを1周する
-2. Amplitudeの「Live view」でイベントが想定どおりに届いているか確認:
-   - [Amplitude Live View](https://analytics.amplitude.com/your-project/live)
+2. Mixpanel の Live View（またはイベント一覧）でイベントが届いているか確認
 
 ### 8.2 RevenueCat連携確認
 
 1. Sandbox環境でテスト課金を1件発生させる
-2. 数分後、Amplitudeの「Events」画面で確認:
-   - `trial_started` / `initial_purchase` が届いている
-   - `user_id`が正しく設定されている
+2. 数分後、Mixpanelのイベント一覧で確認:
+   - RevenueCatイベントが届いている
+   - distinct_id が `user-id` と一致している
 
 ---
 
 ## 9. 成果物チェックリスト
 
-- [ ] Amplitudeプロジェクトが作成され、API Keyが管理されている
-- [ ] RevenueCat → Amplitude連携が有効で、RCイベントが届いている
+- [ ] Mixpanelプロジェクトが作成され、Tokenが管理されている
+- [ ] RevenueCat → Mixpanel連携が有効で、RCイベントが届いている
 - [ ] iOSクライアントから`onboarding_step_completed` / `paywall_shown` / `voice_session_started` / `voice_session_ended`が送信されている
-- [ ] ユーザーIDがRevenueCat / Amplitude / Backendで揃っている
-- [ ] オンボーディング・課金・セッションのファネルがAmplitudeで見える
+- [ ] ユーザーIDがRevenueCat / Mixpanel / Backendで揃っている
+- [ ] オンボーディング・課金・セッションのファネルがMixpanelで見える
 
 ---
 
 ## 10. 参考リンク
 
-- [RevenueCat Amplitude統合ガイド](https://www.revenuecat.com/docs/integrations/amplitude)
-- [Amplitude iOS SDK ドキュメント](https://developers.amplitude.com/docs/ios)
-- [Amplitude イベント設計ガイド](https://developers.amplitude.com/docs/event-design-guide)
+- [RevenueCat Mixpanel統合ガイド](https://www.revenuecat.com/docs/integrations/third-party-integrations/mixpanel)
+- [RevenueCat 対応インテグレーション一覧](https://www.revenuecat.com/docs/integrations/third-party-integrations/supported-integrations-index)
+- [Mixpanel Swift SDK](https://github.com/mixpanel/mixpanel-swift)
 
 ---
 
@@ -404,13 +364,13 @@ func stop() {
 
 ### イベントが届かない
 
-- Amplitude Live Viewで確認
-- API Keyが正しく設定されているか確認
+- MixpanelのLive View/イベント一覧で確認
+- Tokenが正しく設定されているか確認
 - ネットワーク接続を確認
 
 ### ユーザーIDが一致しない
 
 - RevenueCatダッシュボードで`App User ID`を確認
-- Amplitudeのイベント詳細で`user_id`を確認
-- クライアント側で`setUserId()`が正しく呼ばれているか確認
+- Mixpanelのイベント詳細で distinct_id を確認
+- クライアント側で`identify(...)`が正しく呼ばれているか確認
 

@@ -21,6 +21,9 @@
 - **理由**: 現フェーズでは不要
 - **将来**: もっと細かいセグメントや複雑なフローが必要になった段階で再検討
 
+参考（RevenueCat Paywalls）:
+- https://www.revenuecat.com/docs/paywalls
+
 ---
 
 ## 2. ゴール
@@ -112,7 +115,7 @@ RevenueCat iOS SDKにPaywalls機能が含まれているか確認:
 
 **方針**: 既存の`SubscriptionRequiredView`を、RevenueCat Paywallsで置き換える or 包む
 
-**実装例**:
+**実装例（注意: 疑似コード。最新APIはRevenueCat公式ドキュメントを参照して合わせること）**:
 
 ```swift
 // SubscriptionRequiredView.swift
@@ -123,7 +126,7 @@ struct SubscriptionRequiredView: View {
     let source: PaywallSource
     
     var body: some View {
-        // RevenueCat Paywallを表示
+        // RevenueCat Paywallを表示（APIはRCの最新ドキュメントに合わせる）
         PaywallView(
             paywallId: paywallIdForSource(source),
             onPurchase: { package in
@@ -273,9 +276,9 @@ RevenueCatダッシュボード → **Analytics** → **Paywalls** で確認:
 | トライアル開始率 | `default_onboarding_paywall_v1` | [%] | |
 | プラン別内訳 | `default_onboarding_paywall_v1` | [数値] | 月額/年額 |
 
-### 7.2 Amplitude連携（Step2と連動）
+### 7.2 Mixpanel連携（Step2と連動）
 
-Step2で導入したAmplitudeと組み合わせ:
+Step2で導入したMixpanelと組み合わせ:
 
 - `paywall_shown`イベントのプロパティに`paywall_id` or `paywall_variant`を持たせる
 - ファネル分析（例: `paywall_shown` → RevenueCat `initial_purchase`）に活用
@@ -297,19 +300,16 @@ Step2で導入したAmplitudeと組み合わせ:
 
 ## 8. A/Bテストの実施
 
-### 8.1 RevenueCatでのA/Bテスト設定
+### 8.1 RevenueCatでのA/Bテスト（実務上の現実）
 
-RevenueCatが提供するA/Bテスト機能を使用:
+RevenueCatのプラン/機能により、A/Bテストの持ち方が変わります。
+この指示書では「迷わない」ために、**次の優先順で実装**します。
 
-1. RevenueCatダッシュボード → **Experiments** → **Create Experiment**
-2. 実験名: `Onboarding Paywall Test v1`
-3. 対象Paywall: `default_onboarding_paywall`
-4. Variant設定:
-   - Variant A: `default_onboarding_paywall_v1`（ベースライン）
-   - Variant B: `default_onboarding_paywall_v2`
-   - Variant C: `default_onboarding_paywall_v3`（オプション）
-5. 配信比率: 50:50（または33:33:34）
-6. 開始
+1. **RevenueCatの機能だけで完結できる場合**:
+   - RevenueCatダッシュボード側に Paywalls 実験/比較機能が提供されているなら、それを最優先で使う（コード変更を減らす）。
+2. **機能が不足する/プラン的に使えない場合**:
+   - アプリ側で `PaywallConfig.paywallId(for:)` を Remote Config（自前API/Feature flag）で切り替えられるようにして、A/Bを回す。
+   - その際、Mixpanelで `paywall_id` を必ず送信し、ファネルで勝敗を判定する。
 
 ### 8.2 結果の判定
 
@@ -329,7 +329,7 @@ RevenueCatが提供するA/Bテスト機能を使用:
 ### 9.2 データドリブンな判断
 
 - RevenueCat Analyticsのデータを見ながら、仮説を立てる
-- Step2（Amplitude）のデータも参照し、「どのユーザーがコンバージョンしているか」を分析
+- Step2（Mixpanel）のデータも参照し、「どのユーザーがコンバージョンしているか」を分析
 
 ### 9.3 ドキュメント化
 
@@ -347,7 +347,7 @@ RevenueCatが提供するA/Bテスト機能を使用:
 - [ ] iOSクライアントからRevenueCat Paywallsが表示されている
 - [ ] 複数パターンのPaywall（A/B/C）が定義されている
 - [ ] RevenueCat AnalyticsでPaywallのパフォーマンスが確認できる
-- [ ] Amplitude連携で`paywall_shown`イベントに`paywall_id`が含まれている
+- [ ] Mixpanel連携で`paywall_shown`イベントに`paywall_id`が含まれている
 - [ ] A/Bテストが1つ以上実施されている
 
 ---

@@ -2,8 +2,87 @@
 
 ## 概要
 
-- **目的**: App Storeでの「インプレッション → プロダクトページ → ダウンロード」のコンバージョン率（現在 ≒13.8%）を、App Store Connectの機能＋スクショ/コピー改善で継続的に上げる
+- **目的**: App Storeでの「インプレッション → プロダクトページ → ダウンロード」のコンバージョン率を改善する
+- **現状CVR（実力値）**: **3.92%**（14%は友人紹介のまぐれ）
+- **目標CVR**: **10%**（第一段階）→ **25%+**（Health & Fitness平均）
 - **コード変更なし**。全部App Store Connectとデザインツール側の作業
+
+---
+
+## 関連ファイル（重要）
+
+| ファイル/フォルダ | 内容 |
+|---|---|
+| `.cursor/plans/PROMO/appstore-analytics-baseline.md` | CVR/インプレッション等の数値記録、目標値、PPO設定決定事項 |
+| `.cursor/plans/PROMO/screenshots/` | スクショ履歴（日付_CVRでフォルダ分け） |
+| `.cursor/plans/PROMO/screenshots/2024-12-14_cvr3.92/jp.jpg` | 改善前の日本語スクショ（ベースライン） |
+| `.cursor/plans/PROMO/screenshots/2024-12-14_cvr3.92/en.png` | 改善前の英語スクショ（ベースライン） |
+
+---
+
+## 今回やること（決定事項）
+
+### 変更対象
+
+**1枚目のスクリーンショットのみ**（2枚目・3枚目は変更しない）
+
+### 日本語版（jp）の1枚目
+
+| 要素 | 現在 | 変更後 |
+|---|---|---|
+| **見出し** | 習慣と時間を設定 | **夜更かしが、やめられる。** |
+| **中身** | UIスクショ（設定画面） | **削除**。代わりに「朝日が差し込む窓」のイメージ画像を背景にする |
+| **デバイスモック** | あり（iPhoneの枠） | **削除**。画像だけにする |
+| **背景色** | 水色 | **そのまま**（水色グラデでOK） |
+
+### 英語版（en）の1枚目
+
+| 要素 | 現在 | 変更後 |
+|---|---|---|
+| **見出し** | 1. Set Your Ideal Habits | **Finally stop staying up late.** |
+| **中身** | UIスクショ（設定画面） | **削除**。日本語版と同じ「朝日」イメージを使う |
+| **デバイスモック** | あり | **削除** |
+| **背景色** | 水色 | **そのまま** |
+
+### デザイン仕様
+
+- **見出しフォントサイズ**: 今の1.5倍（検索結果のサムネで読めるサイズ）
+- **見出し位置**: 画面中央やや上
+- **見出し色**: 白 or 濃い青（背景とのコントラストを確保）
+- **背景画像**: 「朝日 窓 シルエット」でフリー素材を検索して使う（Unsplash等）
+- **Aniccaロゴ**: 右下に小さく入れる（なくてもいい）
+- **画像サイズ**: iPhone 6.7インチ用（1290 x 2796 px）
+
+### PPOテスト設定（これを入力する）
+
+| 項目 | 入力値 |
+|---|---|
+| 参照名 | `ppo_2024-12-14_JPEN_ss1_benefit` |
+| トリートメント数 | **1** |
+| トラフィック割合 | **100%** |
+| ローカリゼーション | **日本語、英語** |
+| 改善率 | **30%** |
+
+### 作業手順
+
+1. Canva or Figma を開く
+2. 1枚目スクショを新規作成（iPhone 6.7インチサイズ: 1290 x 2796 px）
+3. 背景に水色グラデ + 朝日の窓画像を薄く重ねる
+4. 中央に「夜更かしが、やめられる。」を大きく配置
+5. 保存 → JP用
+6. 同じファイルを複製し、文言を「Finally stop staying up late.」に変える
+7. 保存 → EN用
+8. App Store Connect → 配信 → プロダクトページの最適化 → テストを作成
+9. 上の設定を入力
+10. Treatment に新しい1枚目を入れる
+11. テスト開始
+12. **90% Confidence**になるまで待つ
+13. 勝ったら「Apply treatment」をクリック
+
+### 勝敗判定基準
+
+- **90% Confidence（信頼度90%以上）**でTreatmentがControlを上回ったら「勝ち」
+- App Store Connect → プロダクトページの最適化 → テストを開く → Confidence を確認
 
 ---
 
@@ -11,8 +90,13 @@
 
 ### 1.1 App Store Connect機能
 
-- **Product Page Optimization (PPO)**: スクショ・アイコン・サブタイトル等のA/Bテスト
+- **Product Page Optimization (PPO)**: **アプリアイコン / スクリーンショット / プレビュー動画**のA/Bテスト
 - **Custom Product Pages (CPP)**: 広告用ランディング（Step5と連携）
+
+公式（一次情報）:
+- PPO: https://developer.apple.com/app-store/product-page-optimization/
+- PPO（App Store Connect Help）: https://developer.apple.com/help/app-store-connect/create-product-page-optimization-tests/overview-of-product-page-optimization/
+- CPP: https://developer.apple.com/app-store/custom-product-pages/
 
 ### 1.2 スクショ作成ツール
 
@@ -21,8 +105,9 @@
 
 ### 1.3 サードパーティツール
 
-- **今回は導入しない**: SensorTower、AppTweak等
-  - 必要になれば別タスクとして導入
+- **初期は導入しない（推奨）**: SplitMetrics / StoreMaven / AppTweak / SensorTower 等
+  - **役割**: 競合調査、キーワード分析、制作ワークフロー強化、PPO前の疑似テスト（有料が多い）
+  - **結論**: Aniccaの現状（ボトルネック解消が先）では、まず **PPO/CPPで回して勝ち筋を作ってから** 必要なら導入
 
 ---
 
@@ -159,6 +244,10 @@ Aniccaは、最新の音声AI技術で、あなたの生活リズムを自然に
 2. 「Create Test」をクリック
 3. テスト名: `Onboarding Paywall Test v1`（任意）
 
+**重要（PPOでテストできる要素）**:
+- Apple公式のPPOでテストできるのは主に **アプリアイコン / スクリーンショット / アプリプレビュー**。
+- サブタイトルや説明文などの「メタデータ」そのものはPPOのテスト要素に含まれない（変更は通常のメタデータ更新で行う）。
+
 ### 5.2 ベースライン設定
 
 - **Baseline**: 現在のストアページ（変更なし）
@@ -291,7 +380,7 @@ App Store Connect → **Analytics** → **Product Page Optimization** で確認:
 ### 9.2 データドリブンな判断
 
 - App Analyticsのデータを見ながら、仮説を立てる
-- Step2（Amplitude）のデータも参照し、「どのユーザーがコンバージョンしているか」を分析
+- Step2（Mixpanel）のデータも参照し、「どのユーザーがコンバージョンしているか」を分析
 
 ### 9.3 ドキュメント化
 
@@ -320,6 +409,27 @@ App Store Connect → **Analytics** → **Product Page Optimization** で確認:
 - [Product Page Optimization ガイド](https://developer.apple.com/app-store/product-page-optimization/)
 - [Custom Product Pages ガイド](https://developer.apple.com/app-store/custom-product-pages/)
 
+### 追加（自動化）
+
+- App Store Connect API（メタデータ/アセット管理の自動化入口）: https://developers.apple.com/app-store-connect/api
+- fastlane snapshot（スクショ自動生成）: https://docs.fastlane.tools/actions/snapshot
+- fastlane deliver（メタデータ/スクショ/バイナリのアップロード自動化）: https://docs.fastlane.tools/actions/deliver
+
+---
+
+## 13. どこまで自動化できるか（現実）
+
+### 13.1 自動化できること（強い）
+
+- **スクリーンショット生成**: fastlane `snapshot`（XCUITestで撮る）で、端末/言語ごとのスクショを自動生成できる
+- **スクリーンショット & メタデータのアップロード**: fastlane `deliver` で自動アップロードできる
+- **Custom Product Pages（CPP）のメタデータ管理**: Appleは「App Store Connect APIでカスタムプロダクトページのメタデータのアップロード/提出を自動化できる」旨を明記している
+
+### 13.2 自動化しにくいこと（GUIが主戦場）
+
+- **PPO（Product Page Optimization）の“テスト作成・配信設定・開始”**は、少なくともAppleヘルプはGUI手順中心。\n
+  したがって「スクショ作る/アップロードする」は自動化できても、**PPO自体の運用はApp Store Connect GUIに寄る**前提で設計するのが安全。
+
 ---
 
 ## 12. トラブルシューティング
@@ -335,3 +445,51 @@ App Store Connect → **Analytics** → **Product Page Optimization** で確認:
 - より大きく異なるパターンで再テスト
 - サンプルサイズが十分か確認
 
+# App Store CVR改善タスク
+
+## 現状
+- **CVR実力値: 3.92%**（先週）
+- 月次CVR: 14%（友人紹介のまぐれ含む）
+- **目標: 10%（第一段階）→ 25%+（理想）**
+- Health & Fitness平均は20-30%なので、現状は平均の1/5以下
+
+## ベースライン記録
+参照: `/Users/cbns03/Downloads/anicca-project/.cursor/plans/PROMO/appstore-analytics-baseline.md`
+
+| 期間 | インプレッション | ページ閲覧 | CVR | DL数 |
+|------|----------------|----------|-----|------|
+| 先週（12/6-12/12） | 80 | 15 | 3.92% | 2 |
+| 先月（11/13-12/12） | 318 | 97 | 14% | 20 |
+
+## PPOテスト設定（決定済み）
+- 参照名: `ppo_2024-12-14_JPEN_ss1_benefit`
+- トリートメント: 1（A/Bで最速）
+- トラフィック: 100%
+- ローカリゼーション: JP + EN
+- 改善率: 30%
+
+## 参照すべきファイル
+1. `/Users/cbns03/Downloads/anicca-project/.cursor/plans/step3-app-store-conversion.md` - 改善指示書
+2. `/Users/cbns03/Downloads/anicca-project/.cursor/plans/PROMO/appstore-analytics-baseline.md` - ベースライン
+
+## やること
+1. 現在のスクリーンショット構成の問題点を分析
+2. 改善版スクリーンショット5枚の構成を決定（ベネフィット重視）
+3. テキストオーバーレイのコピーを作成（JP + EN）
+4. PPOテスト用のバリアント設計
+
+## ベストプラクティス（調査済み）
+- 1枚目が最重要（ここでDL判断される）
+- ベネフィット訴求（「何ができるか」ではなく「何が良くなるか」）
+- 大きなフォント（24pt以上）
+- 高コントラスト
+- 5枚でストーリーを構成: 問題 → 解決策 → 機能1 → 機能2 → CTA
+
+## 提案されている構成
+1. 「朝型になる」+ 起床画面
+2. 「習慣化をサポート」+ Behaviorタブ
+3. 「導師が迎えに来る」+ Talkタブ
+4. 「内なるAniccaを育てる」+ 変容のビジュアル
+5. 「今すぐ始める」+ CTA
+
+まず、現状のスクリーンショットの問題点を分析し、改善版のコピーとデザイン案を出して。JP + EN両方。

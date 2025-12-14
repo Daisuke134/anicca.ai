@@ -1,4 +1,4 @@
- # Anicca 広告戦略指示書（Apple Search Ads / Meta Ads）
+# Anicca 広告戦略指示書（Apple Search Ads / Meta Ads）
 
 ## 概要
 
@@ -10,12 +10,12 @@
 
 ## 1. 広告を打つタイミング
 
-### 1.1 前提条件チェックリスト
+### 1.1 前提条件チェックリスト（更新: 2025-12）
 
 広告を打つ前に、以下が完了していること:
 
 - [ ] Step1: UI自動テストが導入され、リリース品質が担保されている
-- [ ] Step2: Amplitudeで分析基盤が整い、ファネルが見える状態
+- [ ] Step2: Mixpanelで分析基盤が整い、ファネルが見える状態
 - [ ] Step3: App Storeページが最適化され、CVRが改善されている（目標: 13.8% → 20%+）
 - [ ] Step4: ペイウォールが改善され、コンバージョン率が向上している
 
@@ -38,6 +38,10 @@
 - ✅ **高品質なユーザー**: App Store内で検索している = すでにアプリを探している
 - ✅ **iOSネイティブ**: iOSアプリに最適
 - ✅ **測定が容易**: App Store Connectと連携して測定可能
+
+参考（公式）:
+- Apple Search Ads Campaign Management API（自動化）: https://searchads.apple.com/help/campaigns/0022-use-the-campaign-management-api
+- Apple Search Ads API 3.0 PDF: https://ads.apple.com/adsdam/app-store/us/en_us/documents/help/0022-use-the-campaign-management-api/Apple-Search-Ads-API-3.0.pdf
 
 ### 2.2 アカウント作成
 
@@ -213,7 +217,7 @@ Step3で作成したCPPを活用:
 
 ### 4.2 ユーザーセグメント化
 
-Step2（Amplitude）で、広告経由のユーザーをセグメント化:
+Step2（Mixpanel）で、広告経由のユーザーをセグメント化:
 
 - `source = "apple_search_ads"` のユーザー
 - `source = "meta_ads"` のユーザー
@@ -274,7 +278,7 @@ Step2（Amplitude）で、広告経由のユーザーをセグメント化:
 ### 6.2 ターゲティングの原則
 
 1. **狭く深く**: 広く浅くより、狭く深くターゲティング
-2. **データドリブン**: Step2（Amplitude）のデータを見ながら、ターゲットを調整
+2. **データドリブン**: Step2（Mixpanel）のデータを見ながら、ターゲットを調整
 3. **継続的な最適化**: 週1回は広告のパフォーマンスを確認し、調整
 
 ### 6.3 測定の原則
@@ -291,7 +295,7 @@ Step2（Amplitude）で、広告経由のユーザーをセグメント化:
 - [ ] Meta Adsアカウントが作成され、App Installキャンペーンが開始されている
 - [ ] 複数のクリエイティブパターン（A/B/C）が作成され、A/Bテストが実施されている
 - [ ] Custom Product Pagesが広告と紐付けられている
-- [ ] Amplitudeで広告経由のユーザーがセグメント化されている
+- [ ] Mixpanelで広告経由のユーザーがセグメント化されている
 - [ ] CPA・継続率・LTVが測定されている
 - [ ] 広告の学びがプロダクト（App Storeページ・オンボーディング・ペイウォール）に反映されている
 
@@ -302,6 +306,11 @@ Step2（Amplitude）で、広告経由のユーザーをセグメント化:
 - [Apple Search Ads ヘルプ](https://searchads.apple.com/help/)
 - [Meta Ads ヘルプ](https://www.facebook.com/business/help)
 - [SKAdNetwork ガイド](https://developer.apple.com/documentation/storekit/skadnetwork)
+
+### 追加（自動化）
+
+- Apple Search Ads Campaign Management API（公式）: https://searchads.apple.com/help/campaigns/0022-use-the-campaign-management-api
+- App Store Connect API（アセット/メタデータ自動化入口）: https://developers.apple.com/app-store-connect/api
 
 ---
 

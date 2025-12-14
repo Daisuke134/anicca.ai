@@ -9,6 +9,22 @@
 
 ---
 
+## 2025-12-14 更新（今回のタスク範囲 / 実行準備OK）
+
+### 今回やること（確定）
+
+- **変更対象**: **スクリーンショット1枚目のみ**（JP/EN）
+- **狙い**: UI説明を捨てて「ベネフィット一言」を大きく出す
+
+### 成果物（このリポジトリ内の参照先）
+
+- 1枚目スクショ仕様: `.cursor/plans/PROMO/ss1-hero-spec.md`
+- Canva/Figma作成手順: `.cursor/plans/PROMO/ss1-hero-canva-figma-howto.md`
+- PPOテスト設計（設定値/勝敗ルール）: `.cursor/plans/PROMO/ppo-ss1-benefit-test.md`
+- App Store Connect操作手順: `.cursor/plans/PROMO/app-store-connect-ppo-step-by-step.md`
+
+---
+
 ## 関連ファイル（重要）
 
 | ファイル/フォルダ | 内容 |
@@ -253,16 +269,15 @@ Aniccaは、最新の音声AI技術で、あなたの生活リズムを自然に
 - **Baseline**: 現在のストアページ（変更なし）
 
 ### 5.3 Variant A/B 設定
+（この章は「将来の多変量テスト」用のメモとして残す）
 
-**Variant A**（パターンA）:
-- スクリーンショット1: パターンAの1枚目スクショ
-- サブタイトル: 「音声コーチで生活リズムを整える習慣アプリ」
-- その他: ベースラインと同じ
+**今回（2025-12-14）の設定は“Treatment 1つ”のみ**:
 
-**Variant B**（パターンB）:
-- スクリーンショット1: パターンBの1枚目スクショ
-- サブタイトル: 「AIコーチと一緒に、理想の生活リズムを作る」
-- その他: ベースラインと同じ
+- 参照名: `ppo_2024-12-14_JPEN_ss1_benefit`
+- 変更点: **スクショ1枚目だけ差し替え（JP/EN）**
+- 詳細手順/設定値は以下を参照:
+  - `.cursor/plans/PROMO/ppo-ss1-benefit-test.md`
+  - `.cursor/plans/PROMO/app-store-connect-ppo-step-by-step.md`
 
 ### 5.4 テスト期間設定
 
@@ -444,52 +459,3 @@ App Store Connect → **Analytics** → **Product Page Optimization** で確認:
 - テスト期間を延長（4週間以上）
 - より大きく異なるパターンで再テスト
 - サンプルサイズが十分か確認
-
-# App Store CVR改善タスク
-
-## 現状
-- **CVR実力値: 3.92%**（先週）
-- 月次CVR: 14%（友人紹介のまぐれ含む）
-- **目標: 10%（第一段階）→ 25%+（理想）**
-- Health & Fitness平均は20-30%なので、現状は平均の1/5以下
-
-## ベースライン記録
-参照: `/Users/cbns03/Downloads/anicca-project/.cursor/plans/PROMO/appstore-analytics-baseline.md`
-
-| 期間 | インプレッション | ページ閲覧 | CVR | DL数 |
-|------|----------------|----------|-----|------|
-| 先週（12/6-12/12） | 80 | 15 | 3.92% | 2 |
-| 先月（11/13-12/12） | 318 | 97 | 14% | 20 |
-
-## PPOテスト設定（決定済み）
-- 参照名: `ppo_2024-12-14_JPEN_ss1_benefit`
-- トリートメント: 1（A/Bで最速）
-- トラフィック: 100%
-- ローカリゼーション: JP + EN
-- 改善率: 30%
-
-## 参照すべきファイル
-1. `/Users/cbns03/Downloads/anicca-project/.cursor/plans/step3-app-store-conversion.md` - 改善指示書
-2. `/Users/cbns03/Downloads/anicca-project/.cursor/plans/PROMO/appstore-analytics-baseline.md` - ベースライン
-
-## やること
-1. 現在のスクリーンショット構成の問題点を分析
-2. 改善版スクリーンショット5枚の構成を決定（ベネフィット重視）
-3. テキストオーバーレイのコピーを作成（JP + EN）
-4. PPOテスト用のバリアント設計
-
-## ベストプラクティス（調査済み）
-- 1枚目が最重要（ここでDL判断される）
-- ベネフィット訴求（「何ができるか」ではなく「何が良くなるか」）
-- 大きなフォント（24pt以上）
-- 高コントラスト
-- 5枚でストーリーを構成: 問題 → 解決策 → 機能1 → 機能2 → CTA
-
-## 提案されている構成
-1. 「朝型になる」+ 起床画面
-2. 「習慣化をサポート」+ Behaviorタブ
-3. 「導師が迎えに来る」+ Talkタブ
-4. 「内なるAniccaを育てる」+ 変容のビジュアル
-5. 「今すぐ始める」+ CTA
-
-まず、現状のスクリーンショットの問題点を分析し、改善版のコピーとデザイン案を出して。JP + EN両方。

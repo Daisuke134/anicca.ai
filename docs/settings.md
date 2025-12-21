@@ -164,3 +164,5 @@ REVENUECAT_CUSTOMER_CENTER_ID = default
 - 2025-11-22: 初版作成（RevenueCat課金機能リリース準備時）
 
 
+
+

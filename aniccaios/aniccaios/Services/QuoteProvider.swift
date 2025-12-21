@@ -89,3 +89,5 @@ final class QuoteProvider {
         "割れた鐘のように静かに。そこに、安らぎがある。"
     ]
 }
+
+

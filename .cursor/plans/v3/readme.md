@@ -60,3 +60,5 @@ SwiftUI 実装は **HTMLの構造を崩さず**に写経する（要素順/文�
 ### 参考
 - App Store rejection 対応メモ: `docs/app-store-rejection-fix-2025-11.md`（リポジトリ外ではなく docs 配下を参照）
 
+
+

@@ -645,3 +645,5 @@
 - iOS 側の success/failure 判定を強化する場合は、フェーズ7（センサー）で `NudgeTriggerService` に追加の `recordSnsClosed(...)` / `recordStepsDelta(...)` などの入力口を増やし、`/nudge/feedback` に `signals` を追加送信する（窓幅は `tech-nudge-scheduling-v3.md` の共通前提に固定）。
 
 
+
+

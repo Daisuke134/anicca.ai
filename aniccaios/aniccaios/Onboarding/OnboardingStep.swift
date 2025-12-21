@@ -2,9 +2,9 @@ import Foundation
 
 enum OnboardingStep: Int {
     case welcome
-    case ideals
-    case struggles
-    case value
+    case value       // 2番目に移動
+    case ideals      // 3番目
+    case struggles   // 4番目
     case account
     case microphone
     case notifications

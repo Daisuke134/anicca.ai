@@ -153,3 +153,135 @@
 		</div>
 	</body>
 </html>
+ーーーーー
+
+
+import { Icon } from "@iconify/react";
+
+export function Session() {
+  return (
+    <div className="flex flex-col h-full bg-background font-sans text-foreground relative overflow-hidden">
+      <div className="flex items-center justify-between px-4 py-3 border-b border-border/20">
+        <button className="flex items-center justify-center size-11" />
+        <button className="flex items-center justify-center size-11" />
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center px-6">
+        <div className="mb-12">
+          <span className="inline-block px-4 py-2 bg-accent rounded-full text-sm font-medium text-muted-foreground">
+            Talking about self-loathing
+          </span>
+        </div>
+        <div className="relative mb-12">
+          <div className="size-72 rounded-full bg-gradient-to-b from-[#e6f5ff] via-[#b3d9ff] to-[#4da6ff] shadow-xl" />
+        </div>
+        <div className="mb-16">
+          <p className="text-center text-foreground/70 text-base font-medium">
+            Anicca is listening…
+          </p>
+        </div>
+      </div>
+      <div className="px-6 pb-12 flex items-center justify-between">
+        <button className="flex items-center justify-center size-20 bg-card rounded-full shadow-lg border border-border/20">
+          <Icon icon="solar:microphone-bold" className="size-8 text-foreground" />
+        </button>
+        <button className="flex items-center justify-center size-20 bg-destructive rounded-full shadow-lg">
+          <Icon icon="solar:close-circle-bold" className="size-8 text-white" />
+        </button>
+      </div>
+    </div>
+  );
+}
+
+
+@theme inline {
+	--color-background: var(--background);
+	--color-foreground: var(--foreground);
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--accent);
+	--color-accent-foreground: var(--accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-card: var(--card);
+	--color-card-foreground: var(--card-foreground);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-sidebar: var(--sidebar);
+	--color-sidebar-foreground: var(--sidebar-foreground);
+	--color-sidebar-primary: var(--sidebar-primary);
+	--color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+	--color-sidebar-accent: var(--sidebar-accent);
+	--color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+	--color-sidebar-border: var(--sidebar-border);
+	--color-sidebar-ring: var(--sidebar-ring);
+	--color-chart-1: var(--chart-1);
+	--color-chart-2: var(--chart-2);
+	--color-chart-3: var(--chart-3);
+	--color-chart-4: var(--chart-4);
+	--color-chart-5: var(--chart-5);
+  
+	--font-font-sans: var(--font-sans);
+	--font-font-heading: var(--font-heading);
+	--font-font-serif: var(--font-serif);
+	--font-font-mono: var(--font-mono);
+  
+	--radius-sm: calc(var(--radius) - 4px);
+	--radius-md: calc(var(--radius) - 2px);
+	--radius-lg: var(--radius);
+	--radius-xl: calc(var(--radius) + 4px);
+  
+	--tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+	--tracking-tight: calc(var(--tracking-normal) - 0.025em);
+	--tracking-wide: calc(var(--tracking-normal) + 0.025em);
+	--tracking-wider: calc(var(--tracking-normal) + 0.05em);
+	--tracking-widest: calc(var(--tracking-normal) + 0.1em);
+	--tracking-normal: var(--tracking-normal);
+  }
+	
+  :root {
+	  --background: #f8f5ed;
+	--foreground: #393634;
+	--primary: #222222;
+	--primary-foreground: #e1e1e1;
+	--secondary: #e9e6e0;
+	--secondary-foreground: #393634;
+	--muted: #e9e6e0;
+	--muted-foreground: #898783;
+	--accent: #f2f0ed;
+	--accent-foreground: #393634;
+	--destructive: #ef4444;
+	--card: #fdfcfc;
+	--card-foreground: #393634;
+	--popover: #fdfcfc;
+	--popover-foreground: #393634;
+	--border: #c8c6bf;
+	--input: #e9e6e0;
+	--ring: #222222;
+	--sidebar: #f8f5ed;
+	--sidebar-foreground: #393634;
+	--sidebar-primary: #222222;
+	--sidebar-primary-foreground: #e1e1e1;
+	--sidebar-accent: #e9e6e0;
+	--sidebar-accent-foreground: #393634;
+	--sidebar-border: #c8c6bf;
+	--sidebar-ring: #222222;
+	--chart-1: #393634;
+	--chart-2: #5c5956;
+	--chart-3: #898783;
+	--chart-4: #a8a6a1;
+	--chart-5: #c8c6bf;
+  
+	--font-sans: "DM Sans";
+	--font-heading: "DM Sans";
+	--font-serif: "Playfair Display";
+	--font-mono: "JetBrains Mono";
+  
+	--radius: 1.5rem;
+  }
+  

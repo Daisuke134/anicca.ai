@@ -1,147 +1,279 @@
 <!DOCTYPE html>
 <html lang="en">
-	<head>
-		<meta charset="UTF-8">
-		<meta name="viewport" content="width=device-width, initial-scale=1.0">
-		<title>SignInWithApple</title>
-		<link rel="preconnect" href="https://fonts.googleapis.com">
-		<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-		<link
-			href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
-			rel="stylesheet"
-		>
-		<link
-			href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
-			rel="stylesheet"
-		>
-		<link
-			href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
-			rel="stylesheet"
-		>
-		<script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-		<script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
-		<style type="text/tailwindcss">
-		@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --color-primary: var(--primary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-secondary: var(--secondary);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-accent: var(--accent);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-destructive: var(--destructive);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
-  --color-popover: var(--popover);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-border: var(--border);
-  --color-input: var(--input);
-  --color-ring: var(--ring);
-  --color-sidebar: var(--sidebar);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-chart-1: var(--chart-1);
-  --color-chart-2: var(--chart-2);
-  --color-chart-3: var(--chart-3);
-  --color-chart-4: var(--chart-4);
-  --color-chart-5: var(--chart-5);
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>SignInWithApple</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@100;200;300;400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;200;300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600;700;800;900&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://code.iconify.design/iconify-icon/3.0.0/iconify-icon.min.js"></script>
+    <style type="text/tailwindcss">
 
-  --font-font-sans: var(--font-sans);
-  --font-font-heading: var(--font-heading);
-  --font-font-serif: var(--font-serif);
-  --font-font-mono: var(--font-mono);
+      @theme inline {
+        --color-background: var(--background);
+        --color-foreground: var(--foreground);
+        --color-primary: var(--primary);
+        --color-primary-foreground: var(--primary-foreground);
+        --color-secondary: var(--secondary);
+        --color-secondary-foreground: var(--secondary-foreground);
+        --color-muted: var(--muted);
+        --color-muted-foreground: var(--muted-foreground);
+        --color-accent: var(--accent);
+        --color-accent-foreground: var(--accent-foreground);
+        --color-destructive: var(--destructive);
+        --color-card: var(--card);
+        --color-card-foreground: var(--card-foreground);
+        --color-popover: var(--popover);
+        --color-popover-foreground: var(--popover-foreground);
+        --color-border: var(--border);
+        --color-input: var(--input);
+        --color-ring: var(--ring);
+        --color-sidebar: var(--sidebar);
+        --color-sidebar-foreground: var(--sidebar-foreground);
+        --color-sidebar-primary: var(--sidebar-primary);
+        --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+        --color-sidebar-accent: var(--sidebar-accent);
+        --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+        --color-sidebar-border: var(--sidebar-border);
+        --color-sidebar-ring: var(--sidebar-ring);
+        --color-chart-1: var(--chart-1);
+        --color-chart-2: var(--chart-2);
+        --color-chart-3: var(--chart-3);
+        --color-chart-4: var(--chart-4);
+        --color-chart-5: var(--chart-5);
 
-  --radius-sm: calc(var(--radius) - 4px);
-  --radius-md: calc(var(--radius) - 2px);
-  --radius-lg: var(--radius);
-  --radius-xl: calc(var(--radius) + 4px);
+        --font-font-sans: var(--font-sans);
+        --font-font-heading: var(--font-heading);
+        --font-font-serif: var(--font-serif);
+        --font-font-mono: var(--font-mono);
 
-  --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
-  --tracking-tight: calc(var(--tracking-normal) - 0.025em);
-  --tracking-wide: calc(var(--tracking-normal) + 0.025em);
-  --tracking-wider: calc(var(--tracking-normal) + 0.05em);
-  --tracking-widest: calc(var(--tracking-normal) + 0.1em);
-  --tracking-normal: var(--tracking-normal);
-}
+        --radius-sm: calc(var(--radius) - 4px);
+        --radius-md: calc(var(--radius) - 2px);
+        --radius-lg: var(--radius);
+        --radius-xl: calc(var(--radius) + 4px);
 
-		:root {
-			--background: #f8f5ed;
-			--foreground: #393634;
-			--primary: #222222;
-			--primary-foreground: #e1e1e1;
-			--secondary: #e9e6e0;
-			--secondary-foreground: #393634;
-			--muted: #e9e6e0;
-			--muted-foreground: #898783;
-			--accent: #f2f0ed;
-			--accent-foreground: #393634;
-			--destructive: #ef4444;
-			--card: #fdfcfc;
-			--card-foreground: #393634;
-			--popover: #fdfcfc;
-			--popover-foreground: #393634;
-			--border: #c8c6bf;
-			--input: #e9e6e0;
-			--ring: #222222;
-			--sidebar: #f8f5ed;
-			--sidebar-foreground: #393634;
-			--sidebar-primary: #222222;
-			--sidebar-primary-foreground: #e1e1e1;
-			--sidebar-accent: #e9e6e0;
-			--sidebar-accent-foreground: #393634;
-			--sidebar-border: #c8c6bf;
-			--sidebar-ring: #222222;
-			--chart-1: #393634;
-			--chart-2: #5c5956;
-			--chart-3: #898783;
-			--chart-4: #a8a6a1;
-			--chart-5: #c8c6bf;
+        --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+        --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+        --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+        --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+        --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+        --tracking-normal: var(--tracking-normal);
+      }
 
-			--font-sans: "DM Sans";
-			--font-heading: "DM Sans";
-			--font-serif: "Playfair Display";
-			--font-mono: "JetBrains Mono";
+      :root {
+          --background: #f8f5ed;
+        --foreground: #393634;
+        --primary: #222222;
+        --primary-foreground: #e1e1e1;
+        --secondary: #e9e6e0;
+        --secondary-foreground: #393634;
+        --muted: #e9e6e0;
+        --muted-foreground: #898783;
+        --accent: #f2f0ed;
+        --accent-foreground: #393634;
+        --destructive: #ef4444;
+        --card: #fdfcfc;
+        --card-foreground: #393634;
+        --popover: #fdfcfc;
+        --popover-foreground: #393634;
+        --border: #c8c6bf;
+        --input: #e9e6e0;
+        --ring: #222222;
+        --sidebar: #f8f5ed;
+        --sidebar-foreground: #393634;
+        --sidebar-primary: #222222;
+        --sidebar-primary-foreground: #e1e1e1;
+        --sidebar-accent: #e9e6e0;
+        --sidebar-accent-foreground: #393634;
+        --sidebar-border: #c8c6bf;
+        --sidebar-ring: #222222;
+        --chart-1: #393634;
+        --chart-2: #5c5956;
+        --chart-3: #898783;
+        --chart-4: #a8a6a1;
+        --chart-5: #c8c6bf;
 
-			--radius: 1.5rem;
-		}
-		</style>
-	</head>
-	<body>
-		<div class="flex flex-col h-full bg-background font-sans text-foreground">
-			<div class="h-12 w-full flex items-center justify-between px-6 pt-2">
-				<span class="text-sm font-bold">11:09</span>
-				<div class="flex items-center gap-1.5">
-					<iconify-icon icon="solar:signal-bold" class="size-4"></iconify-icon>
-					<iconify-icon icon="solar:battery-full-bold" class="size-6"></iconify-icon>
-				</div>
-			</div>
-			<div class="flex-1 flex flex-col items-center justify-between px-6 pt-20 pb-16">
-				<div class="flex flex-col items-center text-center">
-					<h1 class="text-4xl font-bold font-heading mb-3 text-foreground">Save Your Progress</h1>
-					<p class="text-muted-foreground text-base leading-relaxed max-w-xs">
-						Sign in to sync your habits and settings across devices.
-					</p>
-				</div>
-				<div class="w-full flex items-center justify-center">
-					<button
-						class="w-full max-w-sm bg-primary text-primary-foreground h-14 rounded-xl flex items-center justify-center gap-3 shadow-sm active:scale-98 transition-transform"
-					>
-						<iconify-icon icon="ic:baseline-apple" class="size-6"></iconify-icon>
-						<span class="font-semibold text-base">Sign in with Apple</span>
-					</button>
-				</div>
-				<button class="text-foreground font-medium text-base active:opacity-70 transition-opacity">
-					Skip
-				</button>
-			</div>
-		</div>
-	</body>
+        --font-sans: "DM Sans";
+        --font-heading: "DM Sans";
+        --font-serif: "Playfair Display";
+        --font-mono: "JetBrains Mono";
+
+        --radius: 1.5rem;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="flex flex-col h-full bg-background font-sans text-foreground">
+      <div class="h-12 w-full flex items-center justify-between px-6 pt-2">
+        <span class="text-sm font-bold">11:09</span>
+        <div class="flex items-center gap-1.5">
+          <iconify-icon icon="solar:signal-bold" class="size-4"></iconify-icon
+          ><iconify-icon icon="solar:battery-full-bold" class="size-6"></iconify-icon>
+        </div>
+      </div>
+      <div class="flex-1 flex flex-col items-center justify-between px-6 pt-20 pb-16">
+        <div class="flex flex-col items-center text-center">
+          <h1 class="text-4xl font-bold font-heading mb-3 text-foreground">Save Your Progress</h1>
+          <p class="text-muted-foreground text-base leading-relaxed max-w-xs">
+            Sign in to sync your habits and settings across devices.
+          </p>
+        </div>
+        <div class="w-full flex items-center justify-center">
+          <button
+            class="w-full max-w-sm bg-primary text-primary-foreground h-14 rounded-xl flex items-center justify-center gap-3 shadow-sm active:scale-98 transition-transform"
+          >
+            <iconify-icon icon="ic:baseline-apple" class="size-6"></iconify-icon
+            ><span class="font-semibold text-base">Sign in with Apple</span>
+          </button>
+        </div>
+        <button class="text-foreground font-medium text-base active:opacity-70 transition-opacity">
+          Skip
+        </button>
+      </div>
+    </div>
+  </body>
 </html>
+
+--
+import { Icon } from "@iconify/react";
+
+export function SignInWithApple() {
+  return (
+    <div className="flex flex-col h-full bg-background font-sans text-foreground">
+      <div className="h-12 w-full flex items-center justify-between px-6 pt-2">
+        <span className="text-sm font-bold">11:09</span>
+        <div className="flex items-center gap-1.5">
+          <Icon icon="solar:signal-bold" className="size-4" />
+          <Icon icon="solar:battery-full-bold" className="size-6" />
+        </div>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-between px-6 pt-20 pb-16">
+        <div className="flex flex-col items-center text-center">
+          <h1 className="text-4xl font-bold font-heading mb-3 text-foreground">
+            Save Your Progress
+          </h1>
+          <p className="text-muted-foreground text-base leading-relaxed max-w-xs">
+            Sign in to sync your habits and settings across devices.
+          </p>
+        </div>
+        <div className="w-full flex items-center justify-center">
+          <button className="w-full max-w-sm bg-primary text-primary-foreground h-14 rounded-xl flex items-center justify-center gap-3 shadow-sm active:scale-98 transition-transform">
+            <Icon icon="ic:baseline-apple" className="size-6" />
+            <span className="font-semibold text-base">Sign in with Apple</span>
+          </button>
+        </div>
+        <button className="text-foreground font-medium text-base active:opacity-70 transition-opacity">
+          Skip
+        </button>
+      </div>
+    </div>
+  );
+}
+--
+
+
+@theme inline {
+    --color-background: var(--background);
+    --color-foreground: var(--foreground);
+    --color-primary: var(--primary);
+    --color-primary-foreground: var(--primary-foreground);
+    --color-secondary: var(--secondary);
+    --color-secondary-foreground: var(--secondary-foreground);
+    --color-muted: var(--muted);
+    --color-muted-foreground: var(--muted-foreground);
+    --color-accent: var(--accent);
+    --color-accent-foreground: var(--accent-foreground);
+    --color-destructive: var(--destructive);
+    --color-card: var(--card);
+    --color-card-foreground: var(--card-foreground);
+    --color-popover: var(--popover);
+    --color-popover-foreground: var(--popover-foreground);
+    --color-border: var(--border);
+    --color-input: var(--input);
+    --color-ring: var(--ring);
+    --color-sidebar: var(--sidebar);
+    --color-sidebar-foreground: var(--sidebar-foreground);
+    --color-sidebar-primary: var(--sidebar-primary);
+    --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+    --color-sidebar-accent: var(--sidebar-accent);
+    --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+    --color-sidebar-border: var(--sidebar-border);
+    --color-sidebar-ring: var(--sidebar-ring);
+    --color-chart-1: var(--chart-1);
+    --color-chart-2: var(--chart-2);
+    --color-chart-3: var(--chart-3);
+    --color-chart-4: var(--chart-4);
+    --color-chart-5: var(--chart-5);
+  
+    --font-font-sans: var(--font-sans);
+    --font-font-heading: var(--font-heading);
+    --font-font-serif: var(--font-serif);
+    --font-font-mono: var(--font-mono);
+  
+    --radius-sm: calc(var(--radius) - 4px);
+    --radius-md: calc(var(--radius) - 2px);
+    --radius-lg: var(--radius);
+    --radius-xl: calc(var(--radius) + 4px);
+  
+    --tracking-tighter: calc(var(--tracking-normal) - 0.05em);
+    --tracking-tight: calc(var(--tracking-normal) - 0.025em);
+    --tracking-wide: calc(var(--tracking-normal) + 0.025em);
+    --tracking-wider: calc(var(--tracking-normal) + 0.05em);
+    --tracking-widest: calc(var(--tracking-normal) + 0.1em);
+    --tracking-normal: var(--tracking-normal);
+  }
+    
+  :root {
+      --background: #f8f5ed;
+    --foreground: #393634;
+    --primary: #222222;
+    --primary-foreground: #e1e1e1;
+    --secondary: #e9e6e0;
+    --secondary-foreground: #393634;
+    --muted: #e9e6e0;
+    --muted-foreground: #898783;
+    --accent: #f2f0ed;
+    --accent-foreground: #393634;
+    --destructive: #ef4444;
+    --card: #fdfcfc;
+    --card-foreground: #393634;
+    --popover: #fdfcfc;
+    --popover-foreground: #393634;
+    --border: #c8c6bf;
+    --input: #e9e6e0;
+    --ring: #222222;
+    --sidebar: #f8f5ed;
+    --sidebar-foreground: #393634;
+    --sidebar-primary: #222222;
+    --sidebar-primary-foreground: #e1e1e1;
+    --sidebar-accent: #e9e6e0;
+    --sidebar-accent-foreground: #393634;
+    --sidebar-border: #c8c6bf;
+    --sidebar-ring: #222222;
+    --chart-1: #393634;
+    --chart-2: #5c5956;
+    --chart-3: #898783;
+    --chart-4: #a8a6a1;
+    --chart-5: #c8c6bf;
+  
+    --font-sans: "DM Sans";
+    --font-heading: "DM Sans";
+    --font-serif: "Playfair Display";
+    --font-mono: "JetBrains Mono";
+  
+    --radius: 1.5rem;
+  }
+  

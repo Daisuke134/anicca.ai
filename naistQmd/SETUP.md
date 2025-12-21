@@ -184,3 +184,5 @@ fc-list | grep -i "noto\|hiragino"
 
 詳細な使用方法は`README.md`を参照してください。
 
+
+

@@ -20,9 +20,9 @@
 "common_signing_in" = "Signing in...";
 "settings_language_label" = "Language";
 
-"onboarding_welcome_title" = "Anicca";
-"onboarding_welcome_subtitle" = "Anicca is a voice guide that helps you change your habits and soften your suffering.";
-"onboarding_welcome_cta" = "Get started";
+"onboarding_welcome_title" = "Welcome to Anicca";
+"onboarding_welcome_subtitle" = "Anicca is your voice coach guiding your actions and mind.";
+"onboarding_welcome_cta" = "Get Started";
 
 "onboarding_account_title" = "Sign in with Apple";
 "onboarding_account_description" = "Sign in to sync your data across devices.";
@@ -185,16 +185,18 @@
 "settings_habits" = "Habits";
 "settings_ideal_traits" = "Ideal self";
 "onboarding_ideals_title" = "Who do you want to become?";
-"onboarding_ideals_subtitle" = "Choose as many as you like.";
+"onboarding_ideals_subtitle" = "Choose as many as you like. These describe the kind of person you want to become.";
 
-"onboarding_struggles_title" = "What are you struggling with right now?";
-"onboarding_struggles_subtitle" = "Select everything that applies.";
+"onboarding_struggles_title" = "What are you struggling with now?";
+"onboarding_struggles_subtitle" = "Select all that apply.";
 
-"onboarding_value_title" = "What Anicca can do for you";
-"onboarding_value_card1_title" = "Be there when you're suffering";
-"onboarding_value_card1_body" = "Press one button when you feel stuck. Anicca speaks first and helps you untangle.";
-"onboarding_value_card2_body" = "Anicca quietly watches your sleep, screen time, and movement, and nudges you at the right moments.";
-"onboarding_value_card3_body" = "See how today's choices shape your future self.";
+"onboarding_value_title" = "What Anicca Can Do";
+"onboarding_value_card1_title" = "Support when you're struggling";
+"onboarding_value_card1_body" = "Get personalized guidance and encouragement during difficult moments to help you stay on track.";
+"onboarding_value_card2_title" = "Build better habits";
+"onboarding_value_card2_body" = "Develop sustainable routines with actionable insights tailored to your unique goals and lifestyle.";
+"onboarding_value_card3_title" = "Understand your patterns";
+"onboarding_value_card3_body" = "Gain clarity on your behaviors and thought patterns to make meaningful, lasting changes.";
 
 "ideal_trait_kind" = "Kind";
 "ideal_trait_honest" = "Honest";

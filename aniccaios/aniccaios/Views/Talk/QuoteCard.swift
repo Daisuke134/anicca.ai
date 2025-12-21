@@ -22,3 +22,5 @@ struct QuoteCard: View {
     }
 }
 
+
+

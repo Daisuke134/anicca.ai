@@ -64,14 +64,14 @@ struct IdealsStepView: View {
                 }
                 PrimaryButton(
                     title: String(localized: "common_next"),
-                    style: .primary
+                    style: .large
                 ) {
                     appState.updateIdealTraits(Array(selected))
                     next()
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 64)
         }
         .background(AppBackground())
         .onAppear {
@@ -90,22 +90,17 @@ struct IdealsStepView: View {
             }
         } label: {
             Text(NSLocalizedString("\(kind)_\(key)", comment: ""))
-                .font(.subheadline)
+                .font(.system(size: 16, weight: .medium))
                 .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
                 .background(isSelected ? AppTheme.Colors.buttonSelected : AppTheme.Colors.buttonUnselected)
-                .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.buttonTextUnselected)
-                .cornerRadius(AppTheme.Radius.md)
-                .overlay(
-                    RoundedRectangle(cornerRadius: AppTheme.Radius.md)
-                        .stroke(
-                            isSelected ? AppTheme.Colors.border : AppTheme.Colors.borderLight,
-                            lineWidth: isSelected ? 2 : 1
-                        )
-                )
+                .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
+                .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
 }
+
+
 

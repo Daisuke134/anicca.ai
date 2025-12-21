@@ -14,3 +14,5 @@ Operational
 - 文脈が不足している時は tools を使って確認する（推測で断定しない）。
 - ${LANGUAGE_LINE} 以外で話さない（common.txt の LANGUAGE LOCK に従う）。
 
+
+

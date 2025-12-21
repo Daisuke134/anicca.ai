@@ -64,7 +64,7 @@ struct StrugglesStepView: View {
                 }
                 PrimaryButton(
                     title: String(localized: "common_next"),
-                    style: .primary
+                    style: .large
                 ) {
                     var profile = appState.userProfile
                     profile.problems = Array(selected)
@@ -72,8 +72,8 @@ struct StrugglesStepView: View {
                     next()
                 }
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom)
+            .padding(.horizontal, 24)
+            .padding(.bottom, 64)
         }
         .background(AppBackground())
         .onAppear {
@@ -92,15 +92,17 @@ struct StrugglesStepView: View {
             }
         } label: {
             Text(NSLocalizedString("\(kind)_\(key)", comment: ""))
-                .font(.subheadline)
+                .font(.system(size: 16, weight: .medium))
                 .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+                .padding(.horizontal, 24)
+                .padding(.vertical, 12)
                 .background(isSelected ? AppTheme.Colors.buttonSelected : AppTheme.Colors.buttonUnselected)
-                .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.buttonTextUnselected)
-                .cornerRadius(AppTheme.Radius.md)
+                .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
+                .clipShape(Capsule())
         }
         .buttonStyle(.plain)
     }
 }
+
+
 

@@ -16,3 +16,5 @@ create index if not exists idx_daily_metrics_activity_summary_gin
 create index if not exists idx_daily_metrics_insights_gin
   on public.daily_metrics using gin (insights jsonb_path_ops);
 
+
+

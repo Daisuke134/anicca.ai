@@ -43,3 +43,5 @@ v0.3 で新設するテーブル（`user_traits`, `daily_metrics`, `nudge_*`, `f
 - `mobile_alarm_schedules.id` は過去マイグレーションが UUID/TEXT で揺れているため、実DBの型を先に確認すること。
   v0.3 ではここを無理に直さず、v0.4 で整理するのが安全。
 
+
+

@@ -20,8 +20,8 @@
 "common_signing_in" = "サインイン中…";
 "settings_language_label" = "言語";
 
-"onboarding_welcome_title" = "Anicca";
-"onboarding_welcome_subtitle" = "音声ガイドとして、習慣を変え、苦しみをやわらげるお手伝いをします。";
+"onboarding_welcome_title" = "Aniccaへようこそ";
+"onboarding_welcome_subtitle" = "行動と心を導くボイスコーチです。";
 "onboarding_welcome_cta" = "はじめる";
 
 "onboarding_account_title" = "Sign in with Apple";
@@ -185,16 +185,18 @@
 "settings_habits" = "習慣";
 "settings_ideal_traits" = "理想の姿";
 "onboarding_ideals_title" = "どんな自分になりたいですか？";
-"onboarding_ideals_subtitle" = "いくつでも選べます。";
+"onboarding_ideals_subtitle" = "いくつでも選んでください。なりたい自分を表しています。";
 
 "onboarding_struggles_title" = "いま何に苦しんでいますか？";
 "onboarding_struggles_subtitle" = "当てはまるものをすべて選んでください。";
 
 "onboarding_value_title" = "Aniccaができること";
 "onboarding_value_card1_title" = "つらいときに寄り添う";
-"onboarding_value_card1_body" = "行き詰まったときにボタンを押すだけ。Aniccaが先に話し、ほどいていくのを助けます。";
-"onboarding_value_card2_body" = "睡眠・スクリーンタイム・動きを静かに見守り、適切なタイミングでそっと促します。";
-"onboarding_value_card3_body" = "今日の選択が未来の自分にどうつながるかを見える化します。";
+"onboarding_value_card1_body" = "困難な瞬間に寄り添い、軌道に乗り続けるためのパーソナルな助言と励ましを提供します。";
+"onboarding_value_card2_title" = "より良い習慣を築く";
+"onboarding_value_card2_body" = "あなたの目標とライフスタイルに合わせた実践的なインサイトで、持続可能なルーティンを構築します。";
+"onboarding_value_card3_title" = "自分のパターンを理解する";
+"onboarding_value_card3_body" = "自分の行動や思考パターンを明確にし、意味のある持続的な変化を起こします。";
 
 "ideal_trait_kind" = "優しい";
 "ideal_trait_honest" = "誠実";

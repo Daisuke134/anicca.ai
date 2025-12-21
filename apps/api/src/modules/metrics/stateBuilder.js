@@ -83,3 +83,5 @@ export function pickTodayInsight({ todayStats, language = 'en' }) {
     : 'Not enough behavior data yet. We can shape today gently from here.';
 }
 
+
+

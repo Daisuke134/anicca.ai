@@ -5,44 +5,26 @@ struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
     
     var body: some View {
-        TabView(selection: $appState.selectedRootTab) {
-            TalkView()
-                .tabItem {
-                    Label(String(localized: "tab_talk"), systemImage: "message")
+        ZStack(alignment: .bottom) {
+            // コンテンツエリア
+            Group {
+                switch appState.selectedRootTab {
+                case .talk:
+                    TalkView()
+                case .behavior:
+                    BehaviorView()
+                case .profile:
+                    ProfileView()
+                        .environmentObject(appState)
                 }
-                .tag(AppState.RootTab.talk)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
             
-            BehaviorView()
-                .tabItem {
-                    Label(String(localized: "tab_behavior"), systemImage: "chart.bar")
-                }
-                .tag(AppState.RootTab.behavior)
-            
-            ProfileView()
-                .environmentObject(appState)
-                .tabItem {
-                    Label(String(localized: "tab_profile"), systemImage: "person")
-                }
-                .tag(AppState.RootTab.profile)
+            // Figmaデザイン準拠のカスタムタブバー
+            FigmaTabBar(selectedTab: $appState.selectedRootTab)
         }
         .background(AppBackground())
-        .onAppear {
-            let appearance = UITabBarAppearance()
-            appearance.configureWithOpaqueBackground()
-            appearance.backgroundColor = UIColor(AppTheme.Colors.background)
-            
-            // タブバーを固定（フロートしないように）
-            appearance.shadowColor = .clear  // 影を削除
-            appearance.shadowImage = UIImage()  // 影画像を削除
-            
-            UITabBar.appearance().standardAppearance = appearance
-            UITabBar.appearance().scrollEdgeAppearance = appearance
-            
-            // iOS 15+ でタブバーを常に表示（フロートしない）
-            if #available(iOS 15.0, *) {
-                UITabBar.appearance().isTranslucent = false
-            }
-        }
+        .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 }
 

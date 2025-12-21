@@ -262,10 +262,16 @@ struct ProfileView: View {
         Toggle(title, isOn: Binding(
             get: { isOn.wrappedValue },
             set: { newValue in
+                // OFFにする場合は即座に反映
+                if !newValue {
+                    isOn.wrappedValue = false
+                    return
+                }
+                // ONにする場合は、許可リクエストの結果を待ってから反映
+                // onEnable()内でmotionEnabled等が更新されるので、ここでは変更しない
                 if newValue && !isOn.wrappedValue {
                     onEnable()
                 }
-                isOn.wrappedValue = newValue
             }
         ))
         .tint(AppTheme.Colors.accent)

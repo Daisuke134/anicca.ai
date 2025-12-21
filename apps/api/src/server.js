@@ -40,6 +40,17 @@ await initializeServer().catch(err => {
   process.exit(1);
 });
 
+// mem0aiテレメトリーのETIMEDOUTエラーを無視
+process.on('unhandledRejection', (reason, promise) => {
+  if (reason?.message?.includes('Telemetry') || 
+      reason?.cause?.code === 'ETIMEDOUT' ||
+      (reason?.cause?.errors && Array.isArray(reason.cause.errors))) {
+    // テレメトリーエラーは無視（アプリ動作に影響なし）
+    return;
+  }
+  console.error('Unhandled Rejection:', reason);
+});
+
 // Middleware
 const corsOptions = {
   origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',

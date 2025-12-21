@@ -40,6 +40,10 @@ export function createMem0Client() {
 // Platform版 (MemoryClient) 用ラッパー
 // API: client.add({ messages, user_id, metadata }), client.search(query, { user_id })
 function wrapPlatform(client) {
+  // テレメトリーエラーを無視するためのラッパー
+  // mem0aiのcaptureEventは内部で呼ばれるため、直接ラップできない
+  // 代わりに、unhandledRejectionでキャッチする（server.jsで実装）
+  
   return {
     async addProfile({ userId, content, metadata = {} }) {
       return addTextPlatform(client, userId, content, { category: 'profile', ...metadata });

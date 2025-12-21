@@ -15,41 +15,50 @@ struct SessionView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // session.html: mb-12 (48pt) after topic pill
-            topicPill
-                .padding(.bottom, 48)
-
-            // session.html: mb-12 (48pt) after orb
-            OrbView()
-                .padding(.bottom, 48)
-
-            // session.html: text-base font-medium text-foreground/70, mb-16 (64pt)
-            Text(statusText)
-                .font(.system(size: 16, weight: .medium))
-                .foregroundStyle(AppTheme.Colors.label.opacity(0.7))
-                .padding(.bottom, 64)
-
-            Spacer()
-
-            controlsRow
-        }
-        .padding(.horizontal, 24)
-        .padding(.top, 24)
-        .padding(.bottom, 48)
-        .background(AppBackground())
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .navigationBarLeading) {
+            // ナビゲーションバー（session.md: 高さ69px、下部ボーダー）
+            HStack {
                 Button {
                     endSessionAndMaybeAskEMA()
                 } label: {
-                    HStack(spacing: 6) {
-                        Image(systemName: "chevron.left")
-                        Text(String(localized: "common_back"))
-                    }
+                    // chevronアイコンのみ（テキストなし）
+                    Image(systemName: "chevron.left")
+                        .font(.system(size: 20, weight: .medium))
+                        .foregroundStyle(AppTheme.Colors.label)
                 }
+                .frame(width: 44, height: 44)
+                
+                Spacer()
             }
+            .padding(.horizontal, 16)
+            .frame(height: 69)
+            .overlay(alignment: .bottom) {
+                Rectangle()
+                    .fill(Color(red: 200/255, green: 198/255, blue: 191/255, opacity: 0.2))
+                    .frame(height: 1)
+            }
+            
+            // メインコンテンツ
+            VStack(spacing: 0) {
+                topicPill
+                    .padding(.top, 30.5) // 99.5px - 69px = 30.5px
+                    .padding(.bottom, 48)
+                
+                OrbView()
+                    .padding(.bottom, 48)
+                
+                Text(statusText)
+                    .font(.system(size: 20, weight: .medium))
+                    .foregroundStyle(Color(red: 57/255, green: 54/255, blue: 52/255, opacity: 0.7))
+                    .padding(.bottom, 64)
+                
+                Spacer()
+                
+                controlsRow
+                    .padding(.bottom, 48)
+            }
+            .padding(.horizontal, 24)
         }
+        .background(Color(hex: "#F8F5ED")) // session.md: background
         .onAppear {
             ensureMicrophonePermissionAndStart()
         }
@@ -81,15 +90,15 @@ struct SessionView: View {
     }
 
     private var topicPill: some View {
-        // session.html: px-4 py-2 bg-accent rounded-full text-sm font-medium text-muted-foreground
+        // session.md: background: #F2F0ED, font-size: 20px, border-radius: 円形
         Text(topicLabel)
-            .font(.system(size: 14, weight: .medium))
+            .font(.system(size: 20, weight: .medium))
             .foregroundStyle(AppTheme.Colors.secondaryLabel)
-            .padding(.horizontal, 16)
-            .padding(.vertical, 8)
+            .padding(.horizontal, 31) // session.md: left: 31px
+            .padding(.vertical, 17)
             .background(
                 Capsule()
-                    .fill(AppTheme.Colors.accent)
+                    .fill(Color(hex: "#F2F0ED")) // session.md: background: #F2F0ED
             )
     }
 

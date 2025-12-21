@@ -35,18 +35,18 @@ router.post('/', async (req, res) => {
       },
       update: {
         sleepDurationMin: sleep_minutes ?? null,
-        steps: steps ?? null,
-        snsMinutesTotal: screen_time_minutes ?? null,
-        sedentaryMinutes: sedentary_minutes ?? null,
+        steps: steps ?? 0,  // Prismaスキーマ: Int @default(0) なのでnull不可
+        snsMinutesTotal: screen_time_minutes ?? 0,
+        sedentaryMinutes: sedentary_minutes ?? 0,
         updatedAt: new Date()
       },
       create: {
         userId,
         date: startOfDay,
         sleepDurationMin: sleep_minutes ?? null,
-        steps: steps ?? null,
-        snsMinutesTotal: screen_time_minutes ?? null,
-        sedentaryMinutes: sedentary_minutes ?? null
+        steps: steps ?? 0,
+        snsMinutesTotal: screen_time_minutes ?? 0,
+        sedentaryMinutes: sedentary_minutes ?? 0
       }
     });
 

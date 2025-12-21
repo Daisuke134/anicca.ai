@@ -2,6 +2,7 @@ import SwiftUI
 
 struct TalkView: View {
     @EnvironmentObject private var appState: AppState
+    @State private var selectedTopic: FeelingTopic?
 
     // v3-ux: 上3つは動的。v0.3 ではまず「固定 + 軽い並べ替え」→ tool/context 導入後に差し替え。
     private var topics: [FeelingTopic] {
@@ -36,7 +37,9 @@ struct TalkView: View {
 
                     VStack(spacing: AppTheme.Spacing.lg) {
                         ForEach(topics, id: \.self) { topic in
-                            NavigationLink(value: topic) {
+                            Button {
+                                selectedTopic = topic
+                            } label: {
                                 feelingCard(for: topic)
                             }
                             .buttonStyle(.plain)
@@ -49,7 +52,7 @@ struct TalkView: View {
             }
             .background(AppBackground())
             .navigationBarTitleDisplayMode(.inline)
-            .navigationDestination(for: FeelingTopic.self) { topic in
+            .fullScreenCover(item: $selectedTopic) { topic in
                 SessionView(topic: topic)
                     .environmentObject(appState)
             }

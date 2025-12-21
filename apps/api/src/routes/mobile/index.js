@@ -6,6 +6,7 @@ import accountRouter from './account.js';
 import behaviorRouter from './behavior.js';
 import feelingRouter from './feeling.js';
 import nudgeRouter from './nudge.js';
+import dailyMetricsRouter from './dailyMetrics.js';
 
 const router = express.Router();
 
@@ -16,5 +17,6 @@ router.use('/account', accountRouter);
 router.use('/behavior', behaviorRouter);
 router.use('/feeling', feelingRouter);
 router.use('/nudge', nudgeRouter);
+router.use('/daily_metrics', dailyMetricsRouter);
 
 export default router;

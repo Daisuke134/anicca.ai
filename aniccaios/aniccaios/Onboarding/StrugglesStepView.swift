@@ -4,18 +4,14 @@ struct StrugglesStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // v3-ui.md の例（推測で増やさない）
-    private let options: [String] = [
-        "self_loathing",
-        "rumination",
-        "anxiety",
-        "anger",
-        "jealousy",
-        "loneliness",
-        "night_scrolling",
-        "cant_wake_up",
-        "no_motivation",
-        "procrastination"
+    // screens/struggles.html の行構成に固定（スクショ通り）
+    private let rows: [[String]] = [
+        ["procrastination", "anxiety"],
+        ["poor_sleep", "stress", "focus"],
+        ["motivation", "self_doubt"],
+        ["time_management", "burnout"],
+        ["relationships", "energy"],
+        ["work_life_balance"]
     ]
 
     @State private var selected: Set<String> = []
@@ -38,12 +34,14 @@ struct StrugglesStepView: View {
                 .padding(.horizontal)
 
             ScrollView {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 140), spacing: 12)],
-                    spacing: 12
-                ) {
-                    ForEach(options, id: \.self) { key in
-                        chipButton(kind: "problem", key: key)
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                        HStack(spacing: 12) {
+                            ForEach(row, id: \.self) { key in
+                                chipButton(kind: "problem", key: key)
+                            }
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
                 .padding(.horizontal, 16)
@@ -52,25 +50,15 @@ struct StrugglesStepView: View {
 
             Spacer()
 
-            HStack(spacing: 12) {
-                PrimaryButton(
-                    title: String(localized: "common_skip"),
-                    style: .unselected
-                ) {
-                    var profile = appState.userProfile
-                    profile.problems = []
-                    appState.updateUserProfile(profile, sync: true)
-                    next()
-                }
-                PrimaryButton(
-                    title: String(localized: "common_next"),
-                    style: .large
-                ) {
-                    var profile = appState.userProfile
-                    profile.problems = Array(selected)
-                    appState.updateUserProfile(profile, sync: true)
-                    next()
-                }
+            PrimaryButton(
+                title: String(localized: "common_next"),
+                isEnabled: !selected.isEmpty,
+                style: .large
+            ) {
+                var profile = appState.userProfile
+                profile.problems = Array(selected)
+                appState.updateUserProfile(profile, sync: true)
+                next()
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 64)

@@ -27,9 +27,6 @@ struct NotificationPermissionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            Text(String(localized: notificationGranted ? "onboarding_permission_status_allowed" : "onboarding_permission_status_not_allowed"))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
 
             PrimaryButton(
                 title: isRequesting

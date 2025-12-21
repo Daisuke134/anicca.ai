@@ -14,24 +14,28 @@ struct SessionView: View {
     @State private var pendingDismissAfterEMA = false
 
     var body: some View {
-        VStack(spacing: AppTheme.Spacing.xl) {
+        VStack(spacing: 0) {
+            // session.html: mb-12 (48pt) after topic pill
             topicPill
+                .padding(.bottom, 48)
 
-            Spacer(minLength: AppTheme.Spacing.xl)
-
+            // session.html: mb-12 (48pt) after orb
             OrbView()
+                .padding(.bottom, 48)
 
+            // session.html: text-base font-medium text-foreground/70, mb-16 (64pt)
             Text(statusText)
-                .font(AppTheme.Typography.bodyDynamic)
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.label.opacity(0.7))
+                .padding(.bottom, 64)
 
-            Spacer(minLength: AppTheme.Spacing.xl)
+            Spacer()
 
             controlsRow
         }
-        .padding(.horizontal, AppTheme.Spacing.lg)
-        .padding(.top, AppTheme.Spacing.lg)
-        .padding(.bottom, AppTheme.Spacing.xxl)
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 48)
         .background(AppBackground())
         .navigationBarBackButtonHidden(true)
         .toolbar {
@@ -77,14 +81,15 @@ struct SessionView: View {
     }
 
     private var topicPill: some View {
+        // session.html: px-4 py-2 bg-accent rounded-full text-sm font-medium text-muted-foreground
         Text(topicLabel)
-            .font(AppTheme.Typography.caption1Dynamic)
+            .font(.system(size: 14, weight: .medium))
             .foregroundStyle(AppTheme.Colors.secondaryLabel)
-            .padding(.horizontal, AppTheme.Spacing.lg)
-            .padding(.vertical, AppTheme.Spacing.sm)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
             .background(
-                RoundedRectangle(cornerRadius: AppTheme.Radius.xl, style: .continuous)
-                    .fill(AppTheme.Colors.buttonUnselected)
+                Capsule()
+                    .fill(AppTheme.Colors.accent)
             )
     }
 
@@ -105,16 +110,18 @@ struct SessionView: View {
     }
 
     private var controlsRow: some View {
+        // session.html: size-20 (80px), shadow-lg, border-border/20
         HStack {
             Button {
                 controller.toggleMicMuted()
             } label: {
                 Image(systemName: controller.isMicMuted ? "mic.slash.fill" : "mic.fill")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 32, weight: .semibold))
                     .foregroundStyle(AppTheme.Colors.label)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 80, height: 80)
                     .background(Circle().fill(AppTheme.Colors.cardBackground))
-                    .overlay(Circle().stroke(AppTheme.Colors.borderLight, lineWidth: 1))
+                    .overlay(Circle().stroke(AppTheme.Colors.border.opacity(0.2), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
             }
 
             Spacer()
@@ -123,13 +130,14 @@ struct SessionView: View {
                 endSessionAndMaybeAskEMA()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 18, weight: .semibold))
+                    .font(.system(size: 32, weight: .semibold))
                     .foregroundStyle(Color.white)
-                    .frame(width: 56, height: 56)
+                    .frame(width: 80, height: 80)
                     .background(Circle().fill(Color.red))
+                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
             }
         }
-        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.horizontal, 24)
     }
 
     private func endSessionAndMaybeAskEMA() {

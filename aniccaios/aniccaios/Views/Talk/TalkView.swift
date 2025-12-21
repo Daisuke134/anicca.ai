@@ -24,6 +24,14 @@ struct TalkView: View {
         NavigationStack {
             ScrollView {
                 VStack(spacing: AppTheme.Spacing.xl) {
+                    // v3-ui: タイトルをヘッダとして表示（navigationTitleではなく）
+                    Text(String(localized: "talk_nav_title"))
+                        .font(.system(size: 30, weight: .bold))
+                        .foregroundStyle(AppTheme.Colors.label)
+                        .multilineTextAlignment(.center)
+                        .frame(maxWidth: .infinity)
+                        .padding(.top, AppTheme.Spacing.md)
+
                     QuoteCard(quote: QuoteProvider.shared.todayQuote())
 
                     VStack(spacing: AppTheme.Spacing.lg) {
@@ -40,8 +48,7 @@ struct TalkView: View {
                 .padding(.bottom, AppTheme.Spacing.xxl)
             }
             .background(AppBackground())
-            .navigationTitle(String(localized: "talk_nav_title"))
-            .navigationBarTitleDisplayMode(.large)
+            .navigationBarTitleDisplayMode(.inline)
             .navigationDestination(for: FeelingTopic.self) { topic in
                 SessionView(topic: topic)
                     .environmentObject(appState)

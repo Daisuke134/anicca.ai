@@ -6,6 +6,14 @@ struct BehaviorSummary: Codable, Equatable {
     let highlights: Highlights
     let futureScenario: FutureScenario
     let timeline: [TimelineSegment]
+    let streaks: Streaks?
+    
+    struct Streaks: Codable, Equatable {
+        let wake: Int
+        let screen: Int
+        let workout: Int
+        let rumination: Int
+    }
 
     struct Highlights: Codable, Equatable {
         let wake: Highlight

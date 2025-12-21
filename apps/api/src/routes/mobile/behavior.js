@@ -30,11 +30,15 @@ router.get('/summary', async (req, res) => {
       now: new Date()
     });
 
+    // Calculate streaks from recent daily_metrics
+    const streaks = await calculateStreaks(userId);
+    
     return res.json({
       todayInsight,
       highlights,
       futureScenario,
-      timeline
+      timeline,
+      streaks
     });
   } catch (e) {
     logger.error('Failed to build behavior summary', e);
@@ -55,10 +59,61 @@ router.get('/summary', async (req, res) => {
         ifContinue: '',
         ifImprove: ''
       },
-      timeline: []
+      timeline: [],
+      streaks: { wake: 0, screen: 0, workout: 0, rumination: 0 }
     });
   }
 });
+
+async function calculateStreaks(userId) {
+  const prisma = (await import('../../prisma/client.js')).default;
+  
+  try {
+    // Get last 30 days of metrics
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const metrics = await prisma.dailyMetrics.findMany({
+      where: {
+        userId,
+        date: { gte: thirtyDaysAgo }
+      },
+      orderBy: { date: 'desc' }
+    });
+    
+    // Calculate consecutive days for each category
+    let wake = 0, screen = 0, workout = 0, rumination = 0;
+    
+    for (const m of metrics) {
+      // Wake streak: has wakeAt recorded
+      if (m.wakeAt) wake++;
+      else break;
+    }
+    
+    // Reset and calculate screen streak
+    for (const m of metrics) {
+      if (m.screenTimeMinutes !== null && m.screenTimeMinutes < 180) screen++;
+      else break;
+    }
+    
+    // Workout streak: steps >= 5000
+    for (const m of metrics) {
+      if (m.steps !== null && m.steps >= 5000) workout++;
+      else break;
+    }
+    
+    // Rumination streak: low rumination proxy (placeholder)
+    for (const m of metrics) {
+      if (m.ruminationProxy !== null && m.ruminationProxy < 0.5) rumination++;
+      else break;
+    }
+    
+    return { wake, screen, workout, rumination };
+  } catch (e) {
+    logger.warn('Failed to calculate streaks', e);
+    return { wake: 0, screen: 0, workout: 0, rumination: 0 };
+  }
+}
 
 export default router;
 

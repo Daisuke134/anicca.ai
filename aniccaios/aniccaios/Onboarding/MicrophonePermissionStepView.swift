@@ -15,7 +15,7 @@ struct MicrophonePermissionStepView: View {
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("onboarding_microphone_title")
+            Text(String(localized: "onboarding_microphone_title"))
                 .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
                 .lineLimit(1)
@@ -24,15 +24,11 @@ struct MicrophonePermissionStepView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
 
-            Text("onboarding_microphone_description")
+            Text(String(localized: "onboarding_microphone_description"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
-
-            Text(String(localized: micGranted ? "onboarding_permission_status_allowed" : "onboarding_permission_status_not_allowed"))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
 
             PrimaryButton(
                 title: isRequesting

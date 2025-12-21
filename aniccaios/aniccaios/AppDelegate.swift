@@ -24,17 +24,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // Phase-7: register BGTask handlers (must complete before launch ends).
         // See Apple docs: BGTaskScheduler.register(...) must finish before end of launch.
         // NOTE: Requires Info.plist BGTaskSchedulerPermittedIdentifiers entry (done in phase-9 / Info.plist).
-        _ = BGTaskScheduler.shared.register(
-            forTaskWithIdentifier: MetricsUploader.taskId,
-            using: nil
-        ) { task in
-            // task.expirationHandler = { ... }
-            Task { @MainActor in
-                await MetricsUploader.shared.runUploadIfDue()
-                // task.setTaskCompleted(success: true)
-                MetricsUploader.shared.scheduleNextIfPossible()
-            }
-        }
+        MetricsUploader.shared.registerBGTask()
         
         Task {
             // オンボーディング完了済みの場合のみ、通知許可の状態を確認

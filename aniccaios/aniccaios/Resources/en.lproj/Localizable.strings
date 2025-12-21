@@ -20,11 +20,12 @@
 "common_signing_in" = "Signing in...";
 "settings_language_label" = "Language";
 
-"onboarding_welcome_title" = "Welcome to Anicca";
-"onboarding_welcome_subtitle" = "Anicca is your voice coach guiding your actions and mind.";
+"onboarding_welcome_title" = "Welcome to\nAnicca";
+"onboarding_welcome_subtitle_line1" = "Anicca is your voice coach guiding";
+"onboarding_welcome_subtitle_line2" = "your actions and mind.";
 "onboarding_welcome_cta" = "Get Started";
 
-"onboarding_account_title" = "Sign in with Apple";
+"onboarding_account_title" = "Save Your Progress";
 "onboarding_account_description" = "Sign in to sync your data across devices.";
 "onboarding_account_skip" = "Skip for now";
 
@@ -41,6 +42,10 @@
 "onboarding_notifications_description" = "Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.";
 "onboarding_notifications_allow" = "Allow notifications";
 "onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
+
+"onboarding_alarmkit_title" = "Alarms";
+"onboarding_alarmkit_description" = "To make wake nudges reliable, Anicca needs permission to schedule alarms.";
+"onboarding_alarmkit_allow" = "Allow alarms";
 
 "onboarding_habit_title" = "Set Your Habits";
 "onboarding_habit_description" = "Choose which habits you want to build and set their times.";
@@ -191,9 +196,9 @@
 "onboarding_struggles_subtitle" = "Select all that apply.";
 
 "onboarding_value_title" = "What Anicca Can Do";
-"onboarding_value_card1_title" = "Support when you're struggling";
+"onboarding_value_card1_title" = "Guide your struggles";
 "onboarding_value_card1_body" = "Get personalized guidance and encouragement during difficult moments to help you stay on track.";
-"onboarding_value_card2_title" = "Build better habits";
+"onboarding_value_card2_title" = "Help you build better habits";
 "onboarding_value_card2_body" = "Develop sustainable routines with actionable insights tailored to your unique goals and lifestyle.";
 "onboarding_value_card3_title" = "Understand your patterns";
 "onboarding_value_card3_body" = "Gain clarity on your behaviors and thought patterns to make meaningful, lasting changes.";
@@ -212,6 +217,12 @@
 "ideal_trait_altruistic" = "Altruistic";
 "ideal_trait_optimistic" = "Optimistic";
 "ideal_trait_resilient" = "Resilient";
+"ideal_trait_creative" = "Creative";
+"ideal_trait_organized" = "Organized";
+"ideal_trait_focused" = "Focused";
+"ideal_trait_grateful" = "Grateful";
+"ideal_trait_brave" = "Brave";
+"ideal_trait_patient" = "Patient";
 "problem_self_loathing" = "Self-loathing";
 "problem_rumination" = "Rumination";
 "problem_anxiety" = "Anxiety";
@@ -220,6 +231,16 @@
 "problem_loneliness" = "Loneliness";
 "problem_night_scrolling" = "Night scrolling";
 "problem_cant_wake_up" = "Can't wake up";
+"problem_poor_sleep" = "Poor Sleep";
+"problem_stress" = "Stress";
+"problem_focus" = "Focus";
+"problem_motivation" = "Motivation";
+"problem_self_doubt" = "Self-doubt";
+"problem_time_management" = "Time Management";
+"problem_burnout" = "Burnout";
+"problem_relationships" = "Relationships";
+"problem_energy" = "Energy";
+"problem_work_life_balance" = "Work-Life Balance";
 
 /* v3 Behavior */
 "common_loading" = "Loading…";

@@ -1,6 +1,8 @@
 import SwiftUI
 import Combine
 import Foundation
+import RevenueCatUI
+import ComponentsKit
 
 /// v0.3 Profile タブ（v3-ui.md 準拠）
 struct ProfileView: View {
@@ -40,8 +42,7 @@ struct ProfileView: View {
             .background(AppBackground())
         }
         .sheet(isPresented: $showingManageSubscription) {
-            // v3: Planタップは設定画面ではなく「Manage Plan（Customer Center / Paywall）」へ
-            ManageSubscriptionSheet()
+            subscriptionSheetContent
                 .environmentObject(appState)
         }
         .alert(String(localized: "settings_delete_account"), isPresented: $isShowingDeleteAlert) {
@@ -81,8 +82,6 @@ struct ProfileView: View {
                     row(label: String(localized: "profile_row_plan"), value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
                 }
                 .buttonStyle(.plain)
-                divider
-                row(label: String(localized: "profile_row_language"), value: appState.userProfile.preferredLanguage.languageLine)
             }
         }
     }
@@ -100,14 +99,6 @@ struct ProfileView: View {
                         .font(.system(size: 16))
                         .foregroundStyle(AppTheme.Colors.label)
                         .multilineTextAlignment(.center)
-
-                    // keywords はフェーズ3で AppState/UserProfile に導入（ここでは見た目だけ固定）
-                    HStack(spacing: 8) {
-                        chip("Openness")
-                        chip("Agreeableness")
-                        chip("Conscientiousness")
-                    }
-                    .frame(maxWidth: .infinity, alignment: .center)
 
                     NavigationLink {
                         TraitsDetailView()
@@ -135,9 +126,17 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
-            FlowChips(options: [
-                "Kind", "Altruistic", "Confident", "Mindful", "Honest", "Open", "Courageous"
-            ])
+            ProfileFlowChips(
+                options: ["Kind", "Altruistic", "Confident", "Mindful", "Honest", "Open", "Courageous"],
+                selected: Binding(
+                    get: { Set(appState.userProfile.ideals) },
+                    set: { newValue in
+                        var profile = appState.userProfile
+                        profile.ideals = Array(newValue)
+                        appState.updateUserProfile(profile, sync: true)
+                    }
+                )
+            )
         }
     }
 
@@ -148,9 +147,17 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
-            FlowChips(options: [
-                "Rumination", "Jealousy", "Self-Criticism", "Anxiety", "Loneliness", "Irritation"
-            ])
+            ProfileFlowChips(
+                options: ["Rumination", "Jealousy", "Self-Criticism", "Anxiety", "Loneliness", "Irritation"],
+                selected: Binding(
+                    get: { Set(appState.userProfile.struggles) },
+                    set: { newValue in
+                        var profile = appState.userProfile
+                        profile.struggles = Array(newValue)
+                        appState.updateUserProfile(profile, sync: true)
+                    }
+                )
+            )
         }
     }
 
@@ -217,16 +224,47 @@ struct ProfileView: View {
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {
-                    toggleRow(String(localized: "profile_toggle_screen_time"), isOn: $screenTimeEnabled)
+                    dataToggleRow(
+                        title: String(localized: "profile_toggle_screen_time"),
+                        isOn: $screenTimeEnabled,
+                        onEnable: { Task { await ScreenTimeManager.shared.requestAuthorization() } }
+                    )
                     divider
-                    toggleRow(String(localized: "profile_toggle_sleep"), isOn: $sleepEnabled)
+                    dataToggleRow(
+                        title: String(localized: "profile_toggle_sleep"),
+                        isOn: $sleepEnabled,
+                        onEnable: { Task { await HealthKitManager.shared.requestAuthorization() } }
+                    )
                     divider
-                    toggleRow(String(localized: "profile_toggle_steps"), isOn: $stepsEnabled)
+                    dataToggleRow(
+                        title: String(localized: "profile_toggle_steps"),
+                        isOn: $stepsEnabled,
+                        onEnable: { Task { await HealthKitManager.shared.requestAuthorization() } }
+                    )
                     divider
-                    toggleRow(String(localized: "profile_toggle_movement"), isOn: $motionEnabled)
+                    dataToggleRow(
+                        title: String(localized: "profile_toggle_movement"),
+                        isOn: $motionEnabled,
+                        onEnable: { Task { await MotionManager.shared.requestAuthorization() } }
+                    )
                 }
             }
         }
+    }
+    
+    private func dataToggleRow(title: String, isOn: Binding<Bool>, onEnable: @escaping () -> Void) -> some View {
+        Toggle(title, isOn: Binding(
+            get: { isOn.wrappedValue },
+            set: { newValue in
+                if newValue && !isOn.wrappedValue {
+                    onEnable()
+                }
+                isOn.wrappedValue = newValue
+            }
+        ))
+        .tint(AppTheme.Colors.accent)
+        .padding(.vertical, 14)
+        .padding(.horizontal, 2)
     }
 
     private func row(label: String, value: String, showsChevron: Bool = false) -> some View {
@@ -355,21 +393,41 @@ struct ProfileView: View {
             await MainActor.run { deleteAccountError = error }
         }
     }
+    
+    @ViewBuilder
+    private var subscriptionSheetContent: some View {
+        if appState.subscriptionInfo.plan == .free {
+            PaywallContainerView(
+                forcePresent: true,
+                onDismissRequested: { showingManageSubscription = false }
+            )
+            .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
+            .task { await SubscriptionManager.shared.refreshOfferings() }
+        } else {
+            RevenueCatUI.CustomerCenterView()
+                .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
+                .onCustomerCenterRestoreCompleted { customerInfo in
+                    Task {
+                        let subscription = SubscriptionInfo(info: customerInfo)
+                        await MainActor.run { appState.updateSubscriptionInfo(subscription) }
+                        await SubscriptionManager.shared.syncNow()
+                    }
+                }
+        }
+    }
 }
 
-/// v0.3: pill 風のチップ群（実装は最小。フェーズ4/3の traits 保存に接続する）
-private struct FlowChips: View {
+/// v0.3: pill 風のチップ群 - バックエンドと連携
+private struct ProfileFlowChips: View {
     let options: [String]
-    @State private var selected: Set<String> = []
+    @Binding var selected: Set<String>
 
     var body: some View {
-        // LazyVGrid で擬似的に折り返し
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 10)], spacing: 10) {
             ForEach(options, id: \.self) { item in
                 let isOn = selected.contains(item)
                 Button {
                     if isOn { selected.remove(item) } else { selected.insert(item) }
-                    // NOTE: 本保存（AppState.updateTraits）はフェーズ3のフィールド追加後に接続する
                 } label: {
                     Text(item)
                         .font(.system(size: 14, weight: .medium))
@@ -389,4 +447,6 @@ private struct FlowChips: View {
         }
     }
 }
+
+
 

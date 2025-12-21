@@ -54,10 +54,15 @@
 	<string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.anicca.metrics.daily</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 		<string>remote-notification</string>
+		<string>processing</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>

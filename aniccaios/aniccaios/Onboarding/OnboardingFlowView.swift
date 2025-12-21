@@ -23,6 +23,8 @@ struct OnboardingFlowView: View {
                     MicrophonePermissionStepView(next: advance)
                 case .notifications:
                     NotificationPermissionStepView(next: advance)
+                case .alarmkit:
+                    AlarmKitPermissionStepView(next: advance)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -52,7 +54,8 @@ struct OnboardingFlowView: View {
         case .microphone:
             step = .notifications
         case .notifications:
-            // v3: Notifications まででオンボーディング終了。Habit/All set/Paywallは出さない。
+            step = .alarmkit
+        case .alarmkit:
             appState.markOnboardingComplete()
             return
         }

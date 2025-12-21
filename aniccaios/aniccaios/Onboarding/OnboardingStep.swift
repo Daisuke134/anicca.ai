@@ -8,6 +8,7 @@ enum OnboardingStep: Int {
     case account
     case microphone
     case notifications
+    case alarmkit
 }
 
 extension OnboardingStep {

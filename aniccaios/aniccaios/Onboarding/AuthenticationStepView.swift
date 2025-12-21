@@ -8,7 +8,7 @@ struct AuthenticationStepView: View {
     
     var body: some View {
         VStack(spacing: 24) {
-            Text("onboarding_account_title")
+            Text(String(localized: "onboarding_account_title"))
                 .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
                 .lineLimit(1)
@@ -17,7 +17,7 @@ struct AuthenticationStepView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
             
-            Text("onboarding_account_description")
+            Text(String(localized: "onboarding_account_description"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

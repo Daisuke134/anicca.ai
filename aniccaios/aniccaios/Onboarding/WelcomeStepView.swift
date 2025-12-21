@@ -15,11 +15,18 @@ struct WelcomeStepView: View {
                     .multilineTextAlignment(.center)
                     .foregroundStyle(AppTheme.Colors.label)
 
-                Text(String(localized: "onboarding_welcome_subtitle"))
-                    .font(.system(size: 18, weight: .medium))
-                    .foregroundStyle(AppTheme.Colors.label.opacity(0.8))
-                    .multilineTextAlignment(.center)
-                    .padding(.horizontal, 32)
+                VStack(spacing: 8) {
+                    Text(String(localized: "onboarding_welcome_subtitle_line1"))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(AppTheme.Colors.label.opacity(0.8))
+                        .multilineTextAlignment(.center)
+
+                    Text(String(localized: "onboarding_welcome_subtitle_line2"))
+                        .font(.system(size: 18, weight: .medium))
+                        .foregroundStyle(AppTheme.Colors.label.opacity(0.8))
+                        .multilineTextAlignment(.center)
+                }
+                .padding(.horizontal, 32)
             }
             
             Spacer()

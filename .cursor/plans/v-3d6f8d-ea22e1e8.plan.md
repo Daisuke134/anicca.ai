@@ -1,37 +1,11 @@
 <!-- ea22e1e8-a782-4aa7-9581-06648747aeff 025734e2-65bc-4586-95d3-343f91d74425 -->
 # v3 Complete Fix Plan
 
----
-
-## 問題1: SDP Exchange 400 エラー（WebRTC接続失敗）
-
-**エラーメッセージ:**
-
-```
-Realtime SDP exchange failed with status 400
-Failed to establish session: VoiceSessionError error 3
-ICE state changed: 6
-```
-
-**根本原因:**
-
-[VoiceSessionController.swift](aniccaios/aniccaios/VoiceSessionController.swift) 419-425行目で旧エンドポイント `/v1/realtime` を使用。GA版は `/v1/realtime/calls`。
-
-**現状コード:**
-
-```swift
-var components = URLComponents(string: "https://api.openai.com/v1/realtime")
-components?.queryItems = [URLQueryItem(name: "model", value: sessionModel)]
-```
-
-**修正パッチ:**
-
-```swift
-// GA endpoint: POST /v1/realtime/calls (model already set in client_secret)
-guard let url = URL(string: "https://api.openai.com/v1/realtime/calls") else {
-    throw VoiceSessionError.remoteSDPFailed
-}
-```
+> **⚠️ 適用順序**
+> 1. **このファイル (v-3d6f8d) を先に適用**（SDP修正、Session/Profile/Talk/Behavior、Backend、新規Manager）
+> 2. **v-49d956-fb649cb7.plan.md を後に適用**（Onboarding画面、Localizable.strings、InfoPlist.strings）
+>
+> 両プランは**異なるファイル**を対象としているため、順番を守れば競合なし。
 
 ---
 
@@ -533,7 +507,22 @@ session.html のデザインをそのまま SwiftUI に反映（オーブのグ�
 
 ---
 
-## パッチ7: Session 画面オーブデザイン調整
+## パッチ7: Session 画面 - 完全なデザイン反映（session.html 準拠）
+
+### 仕様（session.html より）
+
+| 要素 | 仕様 |
+|------|------|
+| Topic Pill | `px-4 py-2 bg-accent rounded-full text-sm font-medium text-muted-foreground` |
+| Orb | `size-72` (288x288px), gradient `from-[#e6f5ff] via-[#b3d9ff] to-[#4da6ff]`, `shadow-xl` |
+| Status Text | `text-base font-medium text-foreground/70` → "Anicca is listening…" |
+| Mic Button | `size-20` (80x80px), `bg-card rounded-full shadow-lg border border-border/20` |
+| Close Button | `size-20` (80x80px), `bg-destructive rounded-full shadow-lg` |
+| Spacing | Topic→Orb: `mb-12` (48pt), Orb→Status: `mb-12` (48pt), Status→Bottom: `mb-16` (64pt) |
+
+---
+
+### パッチ7-A: OrbView 完全修正
 
 **ファイル:** `aniccaios/aniccaios/Views/Session/OrbView.swift`
 
@@ -556,6 +545,7 @@ session.html のデザインをそのまま SwiftUI に反映（オーブのグ�
 
 **new_string:**
 ```swift
+        // session.html: size-72 (288px), gradient from-[#e6f5ff] via-[#b3d9ff] to-[#4da6ff], shadow-xl
         Circle()
             .fill(
                 LinearGradient(
@@ -574,7 +564,100 @@ session.html のデザインをそのまま SwiftUI に反映（オーブのグ�
 
 ---
 
-## パッチ8: Session 画面ボタンサイズ調整
+### パッチ7-B: SessionView body 完全修正（レイアウト・間隔・スタイル）
+
+**ファイル:** `aniccaios/aniccaios/Views/Session/SessionView.swift`
+
+**old_string:**
+```swift
+    var body: some View {
+        VStack(spacing: AppTheme.Spacing.xl) {
+            topicPill
+
+            Spacer(minLength: AppTheme.Spacing.xl)
+
+            OrbView()
+
+            Text(statusText)
+                .font(AppTheme.Typography.bodyDynamic)
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+
+            Spacer(minLength: AppTheme.Spacing.xl)
+
+            controlsRow
+        }
+        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.top, AppTheme.Spacing.lg)
+        .padding(.bottom, AppTheme.Spacing.xxl)
+```
+
+**new_string:**
+```swift
+    var body: some View {
+        VStack(spacing: 0) {
+            // session.html: mb-12 (48pt) after topic pill
+            topicPill
+                .padding(.bottom, 48)
+
+            // session.html: mb-12 (48pt) after orb
+            OrbView()
+                .padding(.bottom, 48)
+
+            // session.html: text-base font-medium text-foreground/70, mb-16 (64pt)
+            Text(statusText)
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.label.opacity(0.7))
+                .padding(.bottom, 64)
+
+            Spacer()
+
+            controlsRow
+        }
+        .padding(.horizontal, 24)
+        .padding(.top, 24)
+        .padding(.bottom, 48)
+```
+
+---
+
+### パッチ7-C: Topic Pill スタイル調整
+
+**ファイル:** `aniccaios/aniccaios/Views/Session/SessionView.swift`
+
+**old_string:**
+```swift
+    private var topicPill: some View {
+        Text(topicLabel)
+            .font(AppTheme.Typography.caption1Dynamic)
+            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+            .padding(.horizontal, AppTheme.Spacing.lg)
+            .padding(.vertical, AppTheme.Spacing.sm)
+            .background(
+                RoundedRectangle(cornerRadius: AppTheme.Radius.xl, style: .continuous)
+                    .fill(AppTheme.Colors.buttonUnselected)
+            )
+    }
+```
+
+**new_string:**
+```swift
+    private var topicPill: some View {
+        // session.html: px-4 py-2 bg-accent rounded-full text-sm font-medium text-muted-foreground
+        Text(topicLabel)
+            .font(.system(size: 14, weight: .medium))
+            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(
+                Capsule()
+                    .fill(AppTheme.Colors.accent)
+            )
+    }
+```
+
+---
+
+### パッチ7-D: Controls Row 完全修正（80x80px + shadow-lg）
 
 **ファイル:** `aniccaios/aniccaios/Views/Session/SessionView.swift`
 
@@ -612,17 +695,18 @@ session.html のデザインをそのまま SwiftUI に反映（オーブのグ�
 **new_string:**
 ```swift
     private var controlsRow: some View {
+        // session.html: size-20 (80px), shadow-lg, border-border/20
         HStack {
             Button {
                 controller.toggleMicMuted()
             } label: {
                 Image(systemName: controller.isMicMuted ? "mic.slash.fill" : "mic.fill")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 32, weight: .semibold))
                     .foregroundStyle(AppTheme.Colors.label)
                     .frame(width: 80, height: 80)
                     .background(Circle().fill(AppTheme.Colors.cardBackground))
-                    .overlay(Circle().stroke(AppTheme.Colors.borderLight, lineWidth: 1))
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .overlay(Circle().stroke(AppTheme.Colors.border.opacity(0.2), lineWidth: 1))
+                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
             }
 
             Spacer()
@@ -631,20 +715,20 @@ session.html のデザインをそのまま SwiftUI に反映（オーブのグ�
                 endSessionAndMaybeAskEMA()
             } label: {
                 Image(systemName: "xmark")
-                    .font(.system(size: 24, weight: .semibold))
+                    .font(.system(size: 32, weight: .semibold))
                     .foregroundStyle(Color.white)
                     .frame(width: 80, height: 80)
                     .background(Circle().fill(Color.red))
-                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                    .shadow(color: .black.opacity(0.08), radius: 12, x: 0, y: 6)
             }
         }
-        .padding(.horizontal, AppTheme.Spacing.lg)
+        .padding(.horizontal, 24)
     }
 ```
 
 ---
 
-## パッチ9: MetricsUploader 完全実装
+## パッチ8: MetricsUploader 完全実装
 
 **ファイル:** `aniccaios/aniccaios/Services/MetricsUploader.swift`
 
@@ -1379,21 +1463,438 @@ var streaks: BehaviorHighlightsStreakStore.Streaks?
 
 ---
 
-### To-dos
+メインブランチの課金関連実装とバックエンド API を確認します。
 
-- [ ] VoiceSessionController: SDP エンドポイントを /v1/realtime/calls に修正
-- [ ] Info.plist: BGTaskSchedulerPermittedIdentifiers を追加
-- [ ] Info.plist: HealthKit/Motion 使用説明を追加
-- [ ] ProfileView: Language 行を削除
-- [ ] ProfileView: Traits キーワードチップを削除
-- [ ] TalkView: タイトル表示をヘッダに変更
-- [ ] SessionView/OrbView: session.htmlデザインを反映
-- [ ] MetricsUploader: BGTaskスケジュールとアップロード実装（パッチ9）
-- [ ] HealthKitManager: 新規作成（パッチ10）
-- [ ] ScreenTimeManager: 新規作成（パッチ11）
-- [ ] MotionManager: 新規作成（パッチ12）
-- [ ] ProfileView: Data Integration トグルに権限リクエスト接続（パッチ13）
-- [ ] ProfileView: Ideals/Strugglesをバックエンドと連携（パッチ14-15）
-- [ ] BehaviorView: ストリークをサーバーベースに変更（パッチ16-17）
-- [ ] バックエンド: /api/mobile/daily_metrics エンドポイント実装
-- [ ] バックエンド: behavior/summary に streaks を追加
+[10 tools called]
+
+理解しました。`SettingsView.swift` に正しい実装パターンがあります。`ProfileView.swift` で `ManageSubscriptionSheet` を使用していますが、これを `SettingsView.swift` と同じ `subscriptionSheetContent` パターンに変更すべきです。
+
+バックエンド API も確認します。
+
+[7 tools called]
+
+全て把握しました。チャットで残り2つのパッチを示します。
+
+---
+
+# 追加パッチ（チャット回答）
+
+---
+
+## パッチ19: ProfileView - Plan 画面を SettingsView と同じ実装に修正
+
+**問題**: `ManageSubscriptionSheet` がカスタム実装になっているが、`SettingsView.swift` と同じ `PaywallContainerView` / `CustomerCenterView` パターンを使うべき。
+
+**ファイル:** `aniccaios/aniccaios/Views/Profile/ProfileView.swift`
+
+**old_string:**
+```swift
+        .sheet(isPresented: $showingManageSubscription) {
+            // v3: Planタップは設定画面ではなく「Manage Plan（Customer Center / Paywall）」へ
+            ManageSubscriptionSheet()
+                .environmentObject(appState)
+        }
+```
+
+**new_string:**
+```swift
+        .sheet(isPresented: $showingManageSubscription) {
+            subscriptionSheetContent
+                .environmentObject(appState)
+        }
+```
+
+さらに、`ProfileView` の末尾（`deleteAccount` 関数の後）に以下を追加:
+
+**追加:**
+```swift
+    @ViewBuilder
+    private var subscriptionSheetContent: some View {
+        if appState.subscriptionInfo.plan == .free {
+            PaywallContainerView(
+                forcePresent: true,
+                onDismissRequested: { showingManageSubscription = false }
+            )
+            .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
+            .task { await SubscriptionManager.shared.refreshOfferings() }
+        } else {
+            RevenueCatUI.CustomerCenterView()
+                .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
+                .onCustomerCenterRestoreCompleted { customerInfo in
+                    Task {
+                        let subscription = SubscriptionInfo(info: customerInfo)
+                        await MainActor.run { appState.updateSubscriptionInfo(subscription) }
+                        await SubscriptionManager.shared.syncNow()
+                    }
+                }
+        }
+    }
+```
+
+さらに、ファイル先頭に import を追加:
+
+**old_string:**
+```swift
+import SwiftUI
+import Combine
+import Foundation
+```
+
+**new_string:**
+```swift
+import SwiftUI
+import Combine
+import Foundation
+import RevenueCatUI
+```
+
+---
+
+## パッチ20: ManageSubscriptionSheet.swift を削除
+
+**問題**: カスタム実装は不要。SettingsView と同じパターンを ProfileView で使用するため削除。
+
+**ファイル:** `aniccaios/aniccaios/Views/ManageSubscriptionSheet.swift`
+
+**操作:** ファイル削除
+
+---
+
+## パッチ21: バックエンド - POST /api/mobile/daily_metrics エンドポイント追加
+
+**ファイル:** `apps/api/src/routes/mobile/dailyMetrics.js` (新規作成)
+
+**new_file:**
+```javascript
+import express from 'express';
+import baseLogger from '../../utils/logger.js';
+import extractUserId from '../../middleware/extractUserId.js';
+import prisma from '../../prisma/client.js';
+
+const router = express.Router();
+const logger = baseLogger.withContext('DailyMetrics');
+
+// POST /api/mobile/daily_metrics
+router.post('/', async (req, res) => {
+  const deviceId = (req.get('device-id') || '').toString().trim();
+  const userId = await extractUserId(req, res);
+  if (!userId) return;
+
+  try {
+    const {
+      date,
+      timezone,
+      sleep_minutes,
+      steps,
+      screen_time_minutes,
+      sedentary_minutes
+    } = req.body;
+
+    // Upsert daily_metrics for this user + date
+    const parsedDate = new Date(date);
+    const startOfDay = new Date(parsedDate.toISOString().split('T')[0] + 'T00:00:00Z');
+
+    await prisma.dailyMetrics.upsert({
+      where: {
+        userId_date: {
+          userId,
+          date: startOfDay
+        }
+      },
+      update: {
+        timezone: timezone || 'UTC',
+        sleepMinutes: sleep_minutes ?? null,
+        steps: steps ?? null,
+        screenTimeMinutes: screen_time_minutes ?? null,
+        sedentaryMinutes: sedentary_minutes ?? null,
+        updatedAt: new Date()
+      },
+      create: {
+        userId,
+        deviceId,
+        date: startOfDay,
+        timezone: timezone || 'UTC',
+        sleepMinutes: sleep_minutes ?? null,
+        steps: steps ?? null,
+        screenTimeMinutes: screen_time_minutes ?? null,
+        sedentaryMinutes: sedentary_minutes ?? null
+      }
+    });
+
+    logger.info(`Saved daily_metrics for user ${userId} on ${date}`);
+    return res.status(200).json({ success: true });
+  } catch (e) {
+    logger.error('Failed to save daily_metrics', e);
+    return res.status(500).json({ error: 'Internal server error' });
+  }
+});
+
+export default router;
+```
+
+---
+
+## パッチ22: バックエンド - mobile/index.js に dailyMetrics ルーター追加
+
+**ファイル:** `apps/api/src/routes/mobile/index.js`
+
+**old_string:**
+```javascript
+import express from 'express';
+import realtimeRouter from './realtime.js';
+import profileRouter from './profile.js';
+import entitlementRouter from './entitlement.js';
+import accountRouter from './account.js';
+import behaviorRouter from './behavior.js';
+import feelingRouter from './feeling.js';
+import nudgeRouter from './nudge.js';
+
+const router = express.Router();
+
+router.use('/realtime', realtimeRouter);
+router.use('/profile', profileRouter);
+router.use('/entitlement', entitlementRouter);
+router.use('/account', accountRouter);
+router.use('/behavior', behaviorRouter);
+router.use('/feeling', feelingRouter);
+router.use('/nudge', nudgeRouter);
+
+export default router;
+```
+
+**new_string:**
+```javascript
+import express from 'express';
+import realtimeRouter from './realtime.js';
+import profileRouter from './profile.js';
+import entitlementRouter from './entitlement.js';
+import accountRouter from './account.js';
+import behaviorRouter from './behavior.js';
+import feelingRouter from './feeling.js';
+import nudgeRouter from './nudge.js';
+import dailyMetricsRouter from './dailyMetrics.js';
+
+const router = express.Router();
+
+router.use('/realtime', realtimeRouter);
+router.use('/profile', profileRouter);
+router.use('/entitlement', entitlementRouter);
+router.use('/account', accountRouter);
+router.use('/behavior', behaviorRouter);
+router.use('/feeling', feelingRouter);
+router.use('/nudge', nudgeRouter);
+router.use('/daily_metrics', dailyMetricsRouter);
+
+export default router;
+```
+
+---
+
+## パッチ23: バックエンド - behavior/summary に streaks フィールド追加
+
+**ファイル:** `apps/api/src/routes/mobile/behavior.js`
+
+**old_string:**
+```javascript
+    return res.json({
+      todayInsight,
+      highlights,
+      futureScenario,
+      timeline
+    });
+```
+
+**new_string:**
+```javascript
+    // Calculate streaks from recent daily_metrics
+    const streaks = await calculateStreaks(userId);
+    
+    return res.json({
+      todayInsight,
+      highlights,
+      futureScenario,
+      timeline,
+      streaks
+    });
+```
+
+さらに、ファイル末尾に以下の関数を追加:
+
+**追加:**
+```javascript
+async function calculateStreaks(userId) {
+  const prisma = (await import('../../prisma/client.js')).default;
+  
+  try {
+    // Get last 30 days of metrics
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    
+    const metrics = await prisma.dailyMetrics.findMany({
+      where: {
+        userId,
+        date: { gte: thirtyDaysAgo }
+      },
+      orderBy: { date: 'desc' }
+    });
+    
+    // Calculate consecutive days for each category
+    let wake = 0, screen = 0, workout = 0, rumination = 0;
+    
+    for (const m of metrics) {
+      // Wake streak: has wakeAt recorded
+      if (m.wakeAt) wake++;
+      else break;
+    }
+    
+    // Reset and calculate screen streak
+    for (const m of metrics) {
+      if (m.screenTimeMinutes !== null && m.screenTimeMinutes < 180) screen++;
+      else break;
+    }
+    
+    // Workout streak: steps >= 5000
+    for (const m of metrics) {
+      if (m.steps !== null && m.steps >= 5000) workout++;
+      else break;
+    }
+    
+    // Rumination streak: low rumination proxy (placeholder)
+    for (const m of metrics) {
+      if (m.ruminationProxy !== null && m.ruminationProxy < 0.5) rumination++;
+      else break;
+    }
+    
+    return { wake, screen, workout, rumination };
+  } catch (e) {
+    logger.warn('Failed to calculate streaks', e);
+    return { wake: 0, screen: 0, workout: 0, rumination: 0 };
+  }
+}
+```
+
+---
+
+## パッチ24: iOS - BehaviorSummary に streaks フィールド追加
+
+**ファイル:** `aniccaios/aniccaios/Models/BehaviorSummary.swift`
+
+**old_string:**
+```swift
+struct BehaviorSummary: Codable, Equatable {
+    let todayInsight: String
+    let highlights: Highlights
+    let futureScenario: FutureScenario
+    let timeline: [TimelineSegment]
+```
+
+**new_string:**
+```swift
+struct BehaviorSummary: Codable, Equatable {
+    let todayInsight: String
+    let highlights: Highlights
+    let futureScenario: FutureScenario
+    let timeline: [TimelineSegment]
+    let streaks: Streaks?
+    
+    struct Streaks: Codable, Equatable {
+        let wake: Int
+        let screen: Int
+        let workout: Int
+        let rumination: Int
+    }
+```
+
+---
+
+## パッチ25: Prisma スキーマに dailyMetrics モデル追加（既存確認が必要）
+
+**ファイル:** `apps/api/prisma/schema.prisma`
+
+**追加（もし存在しない場合）:**
+```prisma
+model DailyMetrics {
+  id                String   @id @default(cuid())
+  userId            String
+  deviceId          String?
+  date              DateTime
+  timezone          String   @default("UTC")
+  sleepMinutes      Int?
+  steps             Int?
+  screenTimeMinutes Int?
+  sedentaryMinutes  Int?
+  wakeAt            DateTime?
+  ruminationProxy   Float?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@unique([userId, date])
+  @@map("daily_metrics")
+}
+```
+
+---
+
+## パッチ26: TabBar 固定・背景付き
+
+**ファイル:** `aniccaios/aniccaios/MainTabView.swift`
+
+**変更内容:** TabBarを「下部固定＋背景付き」にしてスクショ通りに
+
+**追加:**
+```swift
+// body の TabView の後に追加
+.onAppear {
+    let appearance = UITabBarAppearance()
+    appearance.configureWithOpaqueBackground()
+    appearance.backgroundColor = UIColor(AppTheme.Colors.background)
+    UITabBar.appearance().standardAppearance = appearance
+    UITabBar.appearance().scrollEdgeAppearance = appearance
+}
+```
+
+---
+
+# 完全なパッチ一覧（最終確認）
+
+| 番号 | 対象 | 内容 |
+|------|------|------|
+| 1 | iOS | SDP エンドポイントを `/v1/realtime/calls` に修正 |
+| 2 | iOS | Info.plist に BGTaskSchedulerPermittedIdentifiers 追加 |
+| 3-4 | iOS | Profile: Language行削除、Traitsキーワード削除 |
+| 5-6 | iOS | Talk: タイトルをヘッダに変更 |
+| 7A-D | iOS | **Session: 完全なデザイン反映（Orb/Body/TopicPill/Controls）** |
+| 8-11 | iOS | MetricsUploader、HealthKit/ScreenTime/Motion Manager |
+| 12-14 | iOS | Data Integration 権限連携、Ideals/Struggles 連携 |
+| 15-16 | iOS | ストリークをサーバーベースに |
+| 17 | iOS | Info.plist に HealthKit/Motion 使用説明追加 |
+| 18-19 | iOS | Plan 画面修正（SettingsView パターンに統一、ManageSubscriptionSheet 削除） |
+| 20-21 | バックエンド | daily_metrics エンドポイント追加 |
+| 22 | バックエンド | behavior/summary に streaks 追加 |
+| 23 | iOS | BehaviorSummary に streaks 追加 |
+| 24 | バックエンド | Prisma スキーマ追加 |
+| 25 | iOS | MainTabView に TabBar appearance 設定 |
+
+---
+
+### To-dos（実装順）
+
+**P0: 最優先（アプリ動作不能を解消）**
+- [ ] パッチ1: VoiceSessionController - SDP エンドポイントを `/v1/realtime/calls` に修正
+- [ ] パッチ2: Info.plist - BGTaskSchedulerPermittedIdentifiers を追加
+
+**P1: UI完全一致（スクショ通りに）**
+- [ ] パッチ3-4: ProfileView - Language行削除、Traitsキーワード削除
+- [ ] パッチ5-6: TalkView - タイトル表示をヘッダに変更
+- [ ] パッチ7A-D: **Session完全反映（OrbView/Body/TopicPill/ControlsRow）** ← session.html準拠
+- [ ] パッチ25: MainTabView - TabBar appearance 設定（固定・背景付き）
+
+**P2: Data Integration・バックエンド連携**
+- [ ] パッチ8: MetricsUploader - BGTaskスケジュールとアップロード実装
+- [ ] パッチ9-11: HealthKitManager/ScreenTimeManager/MotionManager 新規作成
+- [ ] パッチ12-14: ProfileView - Data Integration トグルに権限リクエスト接続、Ideals/Struggles連携
+- [ ] パッチ15-16: BehaviorView - ストリークをサーバーベースに変更
+- [ ] パッチ17: Info.plist - HealthKit/Motion 使用説明を追加
+- [ ] パッチ18-19: Plan 画面修正（SettingsView パターンに統一）
+- [ ] パッチ20-21: バックエンド - /api/mobile/daily_metrics エンドポイント実装
+- [ ] パッチ22-24: バックエンド/iOS - streaks 追加

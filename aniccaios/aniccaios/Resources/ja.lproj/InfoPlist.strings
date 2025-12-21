@@ -5,7 +5,7 @@
 "NSCameraUsageDescription" = "WebRTCライブラリがカメラAPIを参照していますが、このアプリはカメラを使用しません。";
 
 /* Notification permission description */
-"NSUserNotificationsUsageDescription" = "Aniccaは起床やルーティンのタイミングで、やさしく促す通知を送ります。（この文言はOSの権限ダイアログに表示されない場合があります）";
+"NSUserNotificationsUsageDescription" = "Aniccaは起床やルーティンのタイミングで、やさしく促す通知を送ります。";
 
 /* AlarmKit permission description */
 "NSAlarmKitUsageDescription" = "Aniccaは起床やルーティンのためにアラームをスケジュールします。";

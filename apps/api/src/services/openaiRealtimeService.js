@@ -48,6 +48,8 @@ export async function issueRealtimeClientSecret({ deviceId, userId }) {
       expires_at: data.expires_at
     },
     // Keep full session for debugging (non-breaking additive)
-    session: data.session
+    session: data.session,
+    // Explicitly include model for iOS client
+    model: data.session?.model || REALTIME_MODEL
   };
 }

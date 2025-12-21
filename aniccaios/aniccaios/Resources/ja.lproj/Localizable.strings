@@ -20,11 +20,12 @@
 "common_signing_in" = "サインイン中…";
 "settings_language_label" = "言語";
 
-"onboarding_welcome_title" = "Aniccaへようこそ";
-"onboarding_welcome_subtitle" = "行動と心を導くボイスコーチです。";
+"onboarding_welcome_title" = "Aniccaへ\nようこそ";
+"onboarding_welcome_subtitle_line1" = "Aniccaはあなたの声のコーチです。";
+"onboarding_welcome_subtitle_line2" = "行動と心を導きます。";
 "onboarding_welcome_cta" = "はじめる";
 
-"onboarding_account_title" = "Sign in with Apple";
+"onboarding_account_title" = "進捗を保存";
 "onboarding_account_description" = "デバイス間で習慣や設定を同期するためにサインインしてください。";
 "onboarding_account_skip" = "今はスキップ";
 

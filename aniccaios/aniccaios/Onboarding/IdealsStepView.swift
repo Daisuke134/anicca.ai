@@ -4,19 +4,13 @@ struct IdealsStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // v3-ui.md の例（推測で増やさない）
-    private let options: [String] = [
-        "kind",
-        "honest",
-        "mindful",
-        "confident",
-        "early_riser",
-        "runner",
-        "healthy",
-        "calm",
-        "disciplined",
-        "open",
-        "courageous"
+    // screens/ideals.html の行構成に固定（スクショ通り）
+    private let rows: [[String]] = [
+        ["kind", "confident", "early_riser"],
+        ["runner", "creative"],
+        ["mindful", "organized", "calm"],
+        ["healthy", "patient"],
+        ["focused", "grateful", "brave"]
     ]
 
     @State private var selected: Set<String> = []
@@ -39,36 +33,29 @@ struct IdealsStepView: View {
                 .padding(.horizontal)
 
             ScrollView {
-                LazyVGrid(
-                    columns: [GridItem(.adaptive(minimum: 110), spacing: 12)],
-                    spacing: 12
-                ) {
-                    ForEach(options, id: \.self) { key in
-                        chipButton(kind: "ideal_trait", key: key)
+                VStack(alignment: .leading, spacing: 12) {
+                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                        HStack(spacing: 12) {
+                            ForEach(row, id: \.self) { key in
+                                chipButton(kind: "ideal_trait", key: key)
+                            }
+                            Spacer(minLength: 0)
+                        }
                     }
                 }
-                .padding(.horizontal, 16) // v3-ui.md: 画面左右 16pt
+                .padding(.horizontal, 16)
                 .padding(.top, 8)
             }
 
             Spacer()
 
-            HStack(spacing: 12) {
-                PrimaryButton(
-                    title: String(localized: "common_skip"),
-                    style: .unselected
-                ) {
-                    // v3-ui.md: Skip で次へ（空で保存）
-                    appState.updateIdealTraits([])
-                    next()
-                }
-                PrimaryButton(
-                    title: String(localized: "common_next"),
-                    style: .large
-                ) {
-                    appState.updateIdealTraits(Array(selected))
-                    next()
-                }
+            PrimaryButton(
+                title: String(localized: "common_next"),
+                isEnabled: !selected.isEmpty,
+                style: .large
+            ) {
+                appState.updateIdealTraits(Array(selected))
+                next()
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 64)

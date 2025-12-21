@@ -356,7 +356,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         let payload = try JSONDecoder().decode(RealtimeSessionResponse.self, from: data)
-        sessionModel = "gpt-realtime"
+        // Use model from backend response, fallback to default
+        sessionModel = payload.model ?? payload.sessionModel ?? "gpt-realtime"
         let secret = payload.clientSecretModel
         cachedSecret = secret
         activeSessionId = payload.sessionId
@@ -421,9 +422,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
             throw VoiceSessionError.missingClientSecret
         }
 
-        var components = URLComponents(string: "https://api.openai.com/v1/realtime")
-        components?.queryItems = [URLQueryItem(name: "model", value: sessionModel)]
-        guard let url = components?.url else {
+        // GA endpoint: POST /v1/realtime/calls (model already set in client_secret)
+        guard let url = URL(string: "https://api.openai.com/v1/realtime/calls") else {
             throw VoiceSessionError.remoteSDPFailed
         }
 
@@ -436,7 +436,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
         let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
             if let http = response as? HTTPURLResponse {
-                logger.error("Realtime SDP exchange failed with status \(http.statusCode)")
+                let errorBody = String(data: data, encoding: .utf8) ?? "no body"
+                logger.error("Realtime SDP exchange failed with status \(http.statusCode): \(errorBody, privacy: .public)")
             }
             cachedSecret = nil
             throw VoiceSessionError.remoteSDPFailed
@@ -824,19 +825,33 @@ private struct RealtimeSessionResponse: Decodable {
             case expiresAt = "expires_at"
         }
     }
+    
+    struct SessionPayload: Decodable {
+        let model: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case model
+        }
+    }
 
     let clientSecret: ClientSecretPayload
     let model: String?
+    let session: SessionPayload?
     let sessionId: String?
 
     enum CodingKeys: String, CodingKey {
         case clientSecret = "client_secret"
         case model
+        case session
         case sessionId = "session_id"
     }
 
     var clientSecretModel: ClientSecret {
         ClientSecret(value: clientSecret.value, expiresAt: clientSecret.expiresAt)
+    }
+    
+    var sessionModel: String? {
+        session?.model ?? model
     }
 }
 

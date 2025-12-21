@@ -3,7 +3,7 @@ import Combine
 
 struct HighlightsCard: View {
     let highlights: BehaviorSummary.Highlights
-    let streaks: BehaviorHighlightsStreakStore.Streaks
+    let streaks: BehaviorSummary.Streaks
 
     private let columns = [
         GridItem(.flexible(), spacing: 12),

@@ -1,7 +1,8 @@
 import express from 'express';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
-import prisma from '../../prisma/client.js';
+import { PrismaClient } from '../../generated/prisma/index.js';
+const prisma = new PrismaClient();
 
 const router = express.Router();
 const logger = baseLogger.withContext('DailyMetrics');

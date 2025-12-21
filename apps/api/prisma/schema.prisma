@@ -6,7 +6,7 @@
 // Prisma v7+ 注意: `prisma generate` は generator の `output` を必須とする（公式一次情報: Prisma v7.0.0 release notes）
 // - `https://github.com/prisma/prisma/releases/tag/7.0.0`
 generator client {
-  provider = "prisma-client"
+  provider = "prisma-client-js"
   output   = "../src/generated/prisma"
 }
 

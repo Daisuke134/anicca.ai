@@ -24,6 +24,10 @@ RUN apt-get update -qq && \
 COPY package-lock.json package.json ./
 RUN npm ci
 
+# Copy Prisma schema and generate client
+COPY prisma ./prisma
+RUN npx prisma generate
+
 # Copy only required application files to reduce build context
 COPY src ./src
 COPY railway.toml ./

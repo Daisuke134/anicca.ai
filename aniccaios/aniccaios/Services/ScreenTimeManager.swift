@@ -1,9 +1,6 @@
 import Foundation
 import os
-
-// NOTE: Full Screen Time API requires FamilyControls entitlement (com.apple.developer.family-controls)
-// and cannot be used without it. This is a placeholder for future implementation.
-// For now, we'll provide a stub that returns nil.
+import FamilyControls
 
 @MainActor
 final class ScreenTimeManager {
@@ -16,18 +13,41 @@ final class ScreenTimeManager {
         var totalMinutes: Int?
     }
     
-    /// Request Screen Time authorization
-    /// NOTE: Requires com.apple.developer.family-controls entitlement
+    /// Check if Screen Time is authorized
+    var isAuthorized: Bool {
+        AuthorizationCenter.shared.authorizationStatus == .approved
+    }
+    
+    /// Request Screen Time authorization using FamilyControls API
     func requestAuthorization() async -> Bool {
-        // FamilyControls entitlement is required for DeviceActivityMonitor
-        // Without it, we cannot access Screen Time data
-        logger.warning("ScreenTime API requires FamilyControls entitlement - not yet configured")
-        return false
+        do {
+            // Request authorization for individual (not child)
+            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
+            logger.info("ScreenTime authorization granted")
+            return true
+        } catch let error as FamilyControlsError {
+            switch error {
+            case .restricted:
+                logger.error("ScreenTime authorization restricted - parental controls may be blocking this")
+            case .unavailable:
+                logger.error("ScreenTime authorization unavailable - FamilyControls framework not set up")
+            case .authorizationCanceled:
+                logger.info("ScreenTime authorization canceled by user")
+            case .networkError:
+                logger.error("ScreenTime authorization failed - network error")
+            @unknown default:
+                logger.error("ScreenTime authorization failed: \(error)")
+            }
+            return false
+        } catch {
+            logger.error("ScreenTime authorization failed: \(error.localizedDescription)")
+            return false
+        }
     }
     
     func fetchDailySummary() async -> DailySummary {
-        // Placeholder - will be implemented when FamilyControls entitlement is added
+        // DeviceActivityReport extension is needed to get actual screen time data
+        // For now, return nil as placeholder
         return DailySummary(totalMinutes: nil)
     }
 }
-

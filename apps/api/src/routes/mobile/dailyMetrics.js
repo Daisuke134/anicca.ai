@@ -2,8 +2,8 @@ import express from 'express';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
 import { PrismaClient } from '../../generated/prisma/index.js';
-const prisma = new PrismaClient();
 
+const prisma = new PrismaClient();
 const router = express.Router();
 const logger = baseLogger.withContext('DailyMetrics');
 
@@ -16,7 +16,6 @@ router.post('/', async (req, res) => {
   try {
     const {
       date,
-      timezone,
       sleep_minutes,
       steps,
       screen_time_minutes,
@@ -27,7 +26,7 @@ router.post('/', async (req, res) => {
     const parsedDate = new Date(date);
     const startOfDay = new Date(parsedDate.toISOString().split('T')[0] + 'T00:00:00Z');
 
-    await prisma.dailyMetrics.upsert({
+    await prisma.dailyMetric.upsert({
       where: {
         userId_date: {
           userId,
@@ -35,21 +34,18 @@ router.post('/', async (req, res) => {
         }
       },
       update: {
-        timezone: timezone || 'UTC',
-        sleepMinutes: sleep_minutes ?? null,
+        sleepDurationMin: sleep_minutes ?? null,
         steps: steps ?? null,
-        screenTimeMinutes: screen_time_minutes ?? null,
+        snsMinutesTotal: screen_time_minutes ?? null,
         sedentaryMinutes: sedentary_minutes ?? null,
         updatedAt: new Date()
       },
       create: {
         userId,
-        deviceId,
         date: startOfDay,
-        timezone: timezone || 'UTC',
-        sleepMinutes: sleep_minutes ?? null,
+        sleepDurationMin: sleep_minutes ?? null,
         steps: steps ?? null,
-        screenTimeMinutes: screen_time_minutes ?? null,
+        snsMinutesTotal: screen_time_minutes ?? null,
         sedentaryMinutes: sedentary_minutes ?? null
       }
     });
@@ -63,4 +59,3 @@ router.post('/', async (req, res) => {
 });
 
 export default router;
-

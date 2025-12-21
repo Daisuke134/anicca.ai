@@ -233,25 +233,25 @@ struct ProfileView: View {
                     dataToggleRow(
                         title: String(localized: "profile_toggle_screen_time"),
                         isOn: $screenTimeEnabled,
-                        onEnable: { Task { await ScreenTimeManager.shared.requestAuthorization() } }
+                        onEnable: { Task { await requestScreenTimeAndUpdateToggle() } }
                     )
                     divider
                     dataToggleRow(
                         title: String(localized: "profile_toggle_sleep"),
                         isOn: $sleepEnabled,
-                        onEnable: { Task { await HealthKitManager.shared.requestAuthorization() } }
+                        onEnable: { Task { await requestHealthKitAndUpdateToggles() } }
                     )
                     divider
                     dataToggleRow(
                         title: String(localized: "profile_toggle_steps"),
                         isOn: $stepsEnabled,
-                        onEnable: { Task { await HealthKitManager.shared.requestAuthorization() } }
+                        onEnable: { Task { await requestHealthKitAndUpdateToggles() } }
                     )
                     divider
                     dataToggleRow(
                         title: String(localized: "profile_toggle_movement"),
                         isOn: $motionEnabled,
-                        onEnable: { Task { await MotionManager.shared.requestAuthorization() } }
+                        onEnable: { Task { await requestMotionAndUpdateToggle() } }
                     )
                 }
             }
@@ -397,6 +397,47 @@ struct ProfileView: View {
             }
         } catch {
             await MainActor.run { deleteAccountError = error }
+        }
+    }
+    
+    /// HealthKit許可をリクエストし、成功したらSleepとSteps両方のトグルをオンにする
+    private func requestHealthKitAndUpdateToggles() async {
+        let granted = await HealthKitManager.shared.requestAuthorization()
+        await MainActor.run {
+            if granted {
+                sleepEnabled = true
+                stepsEnabled = true
+            } else {
+                // 許可が拒否された場合、両方オフにする
+                sleepEnabled = false
+                stepsEnabled = false
+            }
+        }
+        // 許可された場合、即座にデータをアップロード
+        if granted {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+    }
+    
+    /// ScreenTime許可をリクエストし、結果に応じてトグルを更新する
+    private func requestScreenTimeAndUpdateToggle() async {
+        let granted = await ScreenTimeManager.shared.requestAuthorization()
+        await MainActor.run {
+            screenTimeEnabled = granted
+        }
+        if granted {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+    }
+    
+    /// Motion許可をリクエストし、結果に応じてトグルを更新する
+    private func requestMotionAndUpdateToggle() async {
+        let granted = await MotionManager.shared.requestAuthorization()
+        await MainActor.run {
+            motionEnabled = granted
+        }
+        if granted {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
         }
     }
     

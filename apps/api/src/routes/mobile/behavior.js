@@ -4,9 +4,11 @@ import extractUserId from '../../middleware/extractUserId.js';
 import { buildContextSnapshot } from '../../modules/realtime/contextSnapshot.js';
 import { buildHighlights, buildTimeline, pickTodayInsight } from '../../modules/metrics/stateBuilder.js';
 import { generateFutureScenario } from '../../modules/simulation/futureScenario.js';
+import { PrismaClient } from '../../generated/prisma/index.js';
 
 const router = express.Router();
 const logger = baseLogger.withContext('MobileBehavior');
+const prisma = new PrismaClient();
 
 // GET /api/mobile/behavior/summary
 router.get('/summary', async (req, res) => {
@@ -66,14 +68,12 @@ router.get('/summary', async (req, res) => {
 });
 
 async function calculateStreaks(userId) {
-  const prisma = (await import('../../generated/prisma/client.js')).default;
-  
   try {
     // Get last 30 days of metrics
     const thirtyDaysAgo = new Date();
     thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
     
-    const metrics = await prisma.dailyMetrics.findMany({
+    const metrics = await prisma.dailyMetric.findMany({
       where: {
         userId,
         date: { gte: thirtyDaysAgo }
@@ -92,7 +92,7 @@ async function calculateStreaks(userId) {
     
     // Reset and calculate screen streak
     for (const m of metrics) {
-      if (m.screenTimeMinutes !== null && m.screenTimeMinutes < 180) screen++;
+      if (m.snsMinutesTotal !== null && m.snsMinutesTotal < 180) screen++;
       else break;
     }
     
@@ -102,9 +102,11 @@ async function calculateStreaks(userId) {
       else break;
     }
     
-    // Rumination streak: low rumination proxy (placeholder)
+    // Rumination streak: check mindSummary for low rumination
     for (const m of metrics) {
-      if (m.ruminationProxy !== null && m.ruminationProxy < 0.5) rumination++;
+      // mindSummary is JSON, extract rumination value if exists
+      const ruminationValue = m.mindSummary?.rumination;
+      if (typeof ruminationValue === 'number' && ruminationValue < 0.5) rumination++;
       else break;
     }
     

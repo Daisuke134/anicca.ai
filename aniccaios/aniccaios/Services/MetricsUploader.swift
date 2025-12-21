@@ -56,18 +56,20 @@ final class MetricsUploader {
         scheduleNextIfPossible()
     }
 
-    func runUploadIfDue() async {
+    func runUploadIfDue(force: Bool = false) async {
         // Skip if not signed in
         guard case .signedIn(let credentials) = AppState.shared.authStatus else {
             logger.info("Skipping metrics upload: not signed in")
             return
         }
         
-        // Check if already uploaded today
-        let lastUpload = UserDefaults.standard.object(forKey: lastUploadKey) as? Date
-        if let last = lastUpload, Calendar.current.isDateInToday(last) {
-            logger.info("Already uploaded today, skipping")
-            return
+        // Check if already uploaded today (unless force is true)
+        if !force {
+            let lastUpload = UserDefaults.standard.object(forKey: lastUploadKey) as? Date
+            if let last = lastUpload, Calendar.current.isDateInToday(last) {
+                logger.info("Already uploaded today, skipping")
+                return
+            }
         }
         
         // Gather data from enabled sensors

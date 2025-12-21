@@ -51,11 +51,6 @@ final class NotificationScheduler {
             // .timeSensitive は iOS 15 以降で非推奨。テスト済みのエンタイトルメント
             // (com.apple.developer.usernotifications.time-sensitive) を利用する。
             let notificationsGranted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
-#if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
-                _ = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
-            }
-#endif
             return notificationsGranted
         } catch {
             logger.error("Notification authorization error: \(error.localizedDescription, privacy: .public)")

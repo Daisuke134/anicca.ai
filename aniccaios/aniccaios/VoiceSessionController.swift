@@ -1036,10 +1036,6 @@ private enum RealtimeToolRouter {
 /// Talk/Feeling 用の Realtime instructions を Resources/Prompts から構築
 private enum RealtimePromptBuilder {
     static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
-        // common.txt と talk_session.txt を読み込み
-        let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        
         let openerName: String = {
             switch topic {
             case .selfLoathing: return "feeling_self_loathing"
@@ -1050,16 +1046,15 @@ private enum RealtimePromptBuilder {
         }()
         let opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // 全てのテンプレートを結合
+        let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // common.txt + talk_session.txt + feeling_xxx.txt を結合
         let mergedTemplate = "\(commonTemplate)\n\n\(talkTemplate)\n\n\(opener)"
         
-        // 変数置換を行う
+        // 変数置換を実行
         let rendered = renderTemplate(mergedTemplate, profile: profile)
-        
-        // Profileセクションも追加（HabitPromptBuilderから取得）
-        let profileSection = HabitPromptBuilder().buildPrompt(for: .custom, scheduledTime: nil, now: Date(), profile: profile)
-        
-        return "\(rendered)\n\n[Profile]\n\(profileSection)"
+        return rendered
     }
 
     private static func load(name: String, ext: String) -> String? {
@@ -1070,30 +1065,28 @@ private enum RealtimePromptBuilder {
     private static func renderTemplate(_ template: String, profile: UserProfile) -> String {
         var result = template
         
-        // LANGUAGE_LINE
+        // 言語設定
         result = result.replacingOccurrences(of: "${LANGUAGE_LINE}", with: profile.preferredLanguage.languageLine)
         
-        // USER_NAME
+        // ユーザー名
         let userName = profile.displayName.isEmpty
             ? NSLocalizedString("common_user_fallback", comment: "")
             : profile.displayName
         result = result.replacingOccurrences(of: "${USER_NAME}", with: userName)
         
-        // TASK_TIME (現在時刻)
+        // 時刻
         let timeString = Date().formatted(.dateTime.hour().minute())
         result = result.replacingOccurrences(of: "${TASK_TIME}", with: timeString)
-        
-        // TASK_DESCRIPTION (Talk session)
         result = result.replacingOccurrences(of: "${TASK_DESCRIPTION}", with: "Talk Session")
         
-        // IDEAL_TRAITS
+        // 理想の自分
         if !profile.idealTraits.isEmpty {
             result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: profile.idealTraits.joined(separator: ", "))
         } else {
             result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: "")
         }
         
-        // PROBLEMS
+        // 問題・課題
         if !profile.problems.isEmpty {
             let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
             result = result.replacingOccurrences(of: "${PROBLEMS}", with: localizedProblems.joined(separator: ", "))
@@ -1101,7 +1094,7 @@ private enum RealtimePromptBuilder {
             result = result.replacingOccurrences(of: "${PROBLEMS}", with: "")
         }
         
-        // 残りのプレースホルダーを削除（安全のため）
+        // 未置換のプレースホルダーを削除
         let placeholderPattern = "\\$\\{[^}]+\\}"
         if let regex = try? NSRegularExpression(pattern: placeholderPattern, options: []) {
             result = regex.stringByReplacingMatches(in: result, options: [], range: NSRange(location: 0, length: result.utf16.count), withTemplate: "")

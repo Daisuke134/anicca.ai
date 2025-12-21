@@ -309,7 +309,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -342,7 +342,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -375,7 +375,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
@@ -408,7 +408,7 @@
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
-				GENERATE_INFOPLIST_FILE = YES;
+				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";

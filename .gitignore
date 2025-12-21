@@ -19,6 +19,9 @@ dist/
 !apps/desktop/resources/taskqueue-mcp/dist/**
 release/
 
+# iOS build artifacts
+aniccaios/build/
+
 # Logs
 logs
 *.log

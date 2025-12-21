@@ -30,6 +30,13 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             // オンボーディング完了済みの場合のみ、通知許可の状態を確認
             // オンボーディング未完了の場合は、NotificationPermissionStepViewでユーザーがボタンを押したときにのみリクエストする
             if AppState.shared.isOnboardingComplete {
+                // 既存のAlarmKitアラームを全てキャンセル（古い設定を無効化）
+                #if canImport(AlarmKit)
+                if #available(iOS 26.0, *) {
+                    await AlarmKitHabitCoordinator.shared.cancelAllAlarms()
+                }
+                #endif
+                
                 // 既に許可されている場合は何もしない（requestAuthorizationIfNeededは.notDeterminedの場合のみリクエストする）
             _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
                 // Phase-7: Configure HealthKit observers if user already enabled + authorized.

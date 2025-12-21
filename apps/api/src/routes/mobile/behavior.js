@@ -66,7 +66,7 @@ router.get('/summary', async (req, res) => {
 });
 
 async function calculateStreaks(userId) {
-  const prisma = (await import('../../prisma/client.js')).default;
+  const prisma = (await import('../../generated/prisma/client.js')).default;
   
   try {
     // Get last 30 days of metrics

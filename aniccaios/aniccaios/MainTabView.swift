@@ -30,8 +30,18 @@ struct MainTabView: View {
             let appearance = UITabBarAppearance()
             appearance.configureWithOpaqueBackground()
             appearance.backgroundColor = UIColor(AppTheme.Colors.background)
+            
+            // タブバーを固定（フロートしないように）
+            appearance.shadowColor = .clear  // 影を削除
+            appearance.shadowImage = UIImage()  // 影画像を削除
+            
             UITabBar.appearance().standardAppearance = appearance
             UITabBar.appearance().scrollEdgeAppearance = appearance
+            
+            // iOS 15+ でタブバーを常に表示（フロートしない）
+            if #available(iOS 15.0, *) {
+                UITabBar.appearance().isTranslucent = false
+            }
         }
     }
 }

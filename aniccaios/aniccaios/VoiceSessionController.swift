@@ -607,9 +607,10 @@ private extension VoiceSessionController {
         // refs:
         // - https://platform.openai.com/docs/api-reference/realtime-client-events/session/update
         // - https://platform.openai.com/docs/guides/realtime-conversations
+        // Note: OpenAI Realtime APIは ["audio"] または ["text"] のみサポート（両方同時は不可）
         var sessionPayload: [String: Any] = [
             "type": "realtime",
-            "output_modalities": ["audio", "text"],
+            "output_modalities": ["audio"],
             "max_output_tokens": "inf",
             "audio": [
                 "input": [
@@ -1035,9 +1036,10 @@ private enum RealtimeToolRouter {
 /// Talk/Feeling 用の Realtime instructions を Resources/Prompts から構築
 private enum RealtimePromptBuilder {
     static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
-        // common.txt は HabitPromptBuilder と同じ言語ロックを流用（LANGUAGE_LINE を埋める）
-        let common = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let talkSystem = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        // common.txt と talk_session.txt を読み込み
+        let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
         let openerName: String = {
             switch topic {
             case .selfLoathing: return "feeling_self_loathing"
@@ -1047,13 +1049,64 @@ private enum RealtimePromptBuilder {
             }
         }()
         let opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        // 既存の置換ロジックを最小限で複製（LANGUAGE_LINE/USER_NAME 等）
-        let rendered = HabitPromptBuilder().buildPrompt(for: .custom, scheduledTime: nil, now: Date(), profile: profile)
-        return [common, talkSystem, opener, "\n\n[Profile]\n\(rendered)"].joined(separator: "\n\n")
+        
+        // 全てのテンプレートを結合
+        let mergedTemplate = "\(commonTemplate)\n\n\(talkTemplate)\n\n\(opener)"
+        
+        // 変数置換を行う
+        let rendered = renderTemplate(mergedTemplate, profile: profile)
+        
+        // Profileセクションも追加（HabitPromptBuilderから取得）
+        let profileSection = HabitPromptBuilder().buildPrompt(for: .custom, scheduledTime: nil, now: Date(), profile: profile)
+        
+        return "\(rendered)\n\n[Profile]\n\(profileSection)"
     }
 
     private static func load(name: String, ext: String) -> String? {
         guard let url = Bundle.main.url(forResource: name, withExtension: ext) else { return nil }
         return try? String(contentsOf: url, encoding: .utf8)
+    }
+    
+    private static func renderTemplate(_ template: String, profile: UserProfile) -> String {
+        var result = template
+        
+        // LANGUAGE_LINE
+        result = result.replacingOccurrences(of: "${LANGUAGE_LINE}", with: profile.preferredLanguage.languageLine)
+        
+        // USER_NAME
+        let userName = profile.displayName.isEmpty
+            ? NSLocalizedString("common_user_fallback", comment: "")
+            : profile.displayName
+        result = result.replacingOccurrences(of: "${USER_NAME}", with: userName)
+        
+        // TASK_TIME (現在時刻)
+        let timeString = Date().formatted(.dateTime.hour().minute())
+        result = result.replacingOccurrences(of: "${TASK_TIME}", with: timeString)
+        
+        // TASK_DESCRIPTION (Talk session)
+        result = result.replacingOccurrences(of: "${TASK_DESCRIPTION}", with: "Talk Session")
+        
+        // IDEAL_TRAITS
+        if !profile.idealTraits.isEmpty {
+            result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: profile.idealTraits.joined(separator: ", "))
+        } else {
+            result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: "")
+        }
+        
+        // PROBLEMS
+        if !profile.problems.isEmpty {
+            let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
+            result = result.replacingOccurrences(of: "${PROBLEMS}", with: localizedProblems.joined(separator: ", "))
+        } else {
+            result = result.replacingOccurrences(of: "${PROBLEMS}", with: "")
+        }
+        
+        // 残りのプレースホルダーを削除（安全のため）
+        let placeholderPattern = "\\$\\{[^}]+\\}"
+        if let regex = try? NSRegularExpression(pattern: placeholderPattern, options: []) {
+            result = regex.stringByReplacingMatches(in: result, options: [], range: NSRange(location: 0, length: result.utf16.count), withTemplate: "")
+        }
+        
+        return result
     }
 }

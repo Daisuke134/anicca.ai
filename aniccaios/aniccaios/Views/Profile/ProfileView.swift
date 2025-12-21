@@ -127,7 +127,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 2)
 
             ProfileFlowChips(
-                options: ["Kind", "Altruistic", "Confident", "Mindful", "Honest", "Open", "Courageous"],
+                options: ["kind", "confident", "early_riser", "runner", "creative", "mindful", "organized", "calm", "healthy", "patient", "focused", "grateful", "brave"],
                 selected: Binding(
                     get: { Set(appState.userProfile.ideals) },
                     set: { newValue in
@@ -135,7 +135,10 @@ struct ProfileView: View {
                         profile.ideals = Array(newValue)
                         appState.updateUserProfile(profile, sync: true)
                     }
-                )
+                ),
+                labelProvider: { key in
+                    NSLocalizedString("ideal_trait_\(key)", comment: "")
+                }
             )
         }
     }
@@ -148,7 +151,7 @@ struct ProfileView: View {
                 .padding(.horizontal, 2)
 
             ProfileFlowChips(
-                options: ["Rumination", "Jealousy", "Self-Criticism", "Anxiety", "Loneliness", "Irritation"],
+                options: ["procrastination", "anxiety", "poor_sleep", "stress", "focus", "motivation", "self_doubt", "time_management", "burnout", "relationships", "energy", "work_life_balance"],
                 selected: Binding(
                     get: { Set(appState.userProfile.struggles) },
                     set: { newValue in
@@ -156,7 +159,10 @@ struct ProfileView: View {
                         profile.struggles = Array(newValue)
                         appState.updateUserProfile(profile, sync: true)
                     }
-                )
+                ),
+                labelProvider: { key in
+                    NSLocalizedString("problem_\(key)", comment: "")
+                }
             )
         }
     }
@@ -421,6 +427,7 @@ struct ProfileView: View {
 private struct ProfileFlowChips: View {
     let options: [String]
     @Binding var selected: Set<String>
+    var labelProvider: ((String) -> String)? = nil
 
     var body: some View {
         LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 10)], spacing: 10) {
@@ -429,7 +436,7 @@ private struct ProfileFlowChips: View {
                 Button {
                     if isOn { selected.remove(item) } else { selected.insert(item) }
                 } label: {
-                    Text(item)
+                    Text(labelProvider?(item) ?? item)
                         .font(.system(size: 14, weight: .medium))
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)

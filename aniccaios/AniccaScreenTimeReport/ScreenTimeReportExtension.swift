@@ -1,4 +1,5 @@
 import DeviceActivity
+import ManagedSettings  // bundleIdentifier 用に必要
 import SwiftUI
 import os.log
 

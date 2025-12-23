@@ -18,15 +18,15 @@ struct HighlightsCard: View {
                 .padding(.horizontal, 2)
 
             LazyVGrid(columns: columns, spacing: 12) {
-                highlightMiniCard(title: String(localized: "behavior_highlight_wake"), apiStatus: highlights.wake.status, streak: streaks.wake)
-                highlightMiniCard(title: String(localized: "behavior_highlight_screen"), apiStatus: highlights.screen.status, streak: streaks.screen)
-                highlightMiniCard(title: String(localized: "behavior_highlight_workout"), apiStatus: highlights.workout.status, streak: streaks.workout)
-                highlightMiniCard(title: String(localized: "behavior_highlight_rumination"), apiStatus: highlights.rumination.status, streak: streaks.rumination)
+                highlightMiniCard(title: String(localized: "behavior_highlight_wake"), apiStatus: highlights.wake.status, valueLabel: highlights.wake.label, streak: streaks.wake)
+                highlightMiniCard(title: String(localized: "behavior_highlight_screen"), apiStatus: highlights.screen.status, valueLabel: highlights.screen.label, streak: streaks.screen)
+                highlightMiniCard(title: String(localized: "behavior_highlight_workout"), apiStatus: highlights.workout.status, valueLabel: highlights.workout.label, streak: streaks.workout)
+                highlightMiniCard(title: String(localized: "behavior_highlight_rumination"), apiStatus: highlights.rumination.status, valueLabel: highlights.rumination.label, streak: streaks.rumination)
             }
         }
     }
 
-    private func highlightMiniCard(title: String, apiStatus: String, streak: Int) -> some View {
+    private func highlightMiniCard(title: String, apiStatus: String, valueLabel: String, streak: Int) -> some View {
         let ui = mapToUI(apiStatus)
 
         return ZStack(alignment: .topTrailing) {
@@ -42,9 +42,18 @@ struct HighlightsCard: View {
                         Spacer()
                     }
 
-                    Text(ui.label)
-                        .font(.system(size: 12))
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(ui.label)
+                            .font(.system(size: 12))
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                        
+                        // v3.1: バックエンドから返される具体的な数値（例: "Wake 6:30", "Steps 8524"）を表示
+                        if !valueLabel.isEmpty {
+                            Text(valueLabel)
+                                .font(.system(size: 11))
+                                .foregroundStyle(AppTheme.Colors.tertiaryLabel)
+                        }
+                    }
                 }
             }
 

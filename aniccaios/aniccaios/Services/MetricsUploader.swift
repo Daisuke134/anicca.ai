@@ -78,21 +78,38 @@ final class MetricsUploader {
             "timezone": TimeZone.current.identifier
         ]
         
+        // v3.1: activity_summary を構築
+        var activitySummary: [String: Any] = [:]
+        
         // v3: source of truth is AppState.sensorAccess (persisted as com.anicca.sensorAccessState)
+        var healthData: HealthKitManager.DailySummary?
         if AppState.shared.sensorAccess.sleepEnabled || AppState.shared.sensorAccess.stepsEnabled {
-            let healthData = await HealthKitManager.shared.fetchDailySummary()
-            if let sleep = healthData.sleepMinutes {
+            healthData = await HealthKitManager.shared.fetchDailySummary()
+            if let sleep = healthData?.sleepMinutes {
                 payload["sleep_minutes"] = sleep
             }
-            if let steps = healthData.steps {
+            if let steps = healthData?.steps {
                 payload["steps"] = steps
             }
             // v3: 睡眠の開始/終了時刻を推定して送信（Behavior timeline用）
-            if let sleepStart = healthData.sleepStartAt {
+            if let sleepStart = healthData?.sleepStartAt {
                 payload["sleep_start_at"] = ISO8601DateFormatter().string(from: sleepStart)
             }
-            if let wakeAt = healthData.wakeAt {
+            if let wakeAt = healthData?.wakeAt {
                 payload["wake_at"] = ISO8601DateFormatter().string(from: wakeAt)
+            }
+            
+            // v3.1: ワークアウトセッションを activity_summary に追加
+            if let sessions = healthData?.workoutSessions, !sessions.isEmpty {
+                let walkRunSessions = sessions.map { session -> [String: Any] in
+                    return [
+                        "startAt": ISO8601DateFormatter().string(from: session.startAt),
+                        "endAt": ISO8601DateFormatter().string(from: session.endAt),
+                        "type": session.type,
+                        "totalMinutes": session.totalMinutes
+                    ]
+                }
+                activitySummary["walkRunSessions"] = walkRunSessions
             }
         }
         
@@ -102,6 +119,22 @@ final class MetricsUploader {
             if let minutes = screenData.totalMinutes {
                 payload["screen_time_minutes"] = minutes
             }
+            // v3.1: SNS 使用時間と夜間使用時間を追加送信
+            if let socialMinutes = screenData.socialMinutes {
+                payload["sns_minutes_total"] = socialMinutes
+            }
+            if let lateNightMinutes = screenData.lateNightMinutes {
+                payload["sns_minutes_night"] = lateNightMinutes
+            }
+            
+            // v3.1: Screen Time データを activity_summary に追加
+            activitySummary["totalScreenTime"] = screenData.totalMinutes ?? 0
+            activitySummary["lateNightSnsMinutes"] = screenData.lateNightMinutes ?? 0
+            
+            // v3.1: snsSessions を activity_summary に追加
+            if let snsSessions = screenData.snsSessions, !snsSessions.isEmpty {
+                activitySummary["snsSessions"] = snsSessions
+            }
         }
         
         // Movement/Sedentary (if enabled)
@@ -110,6 +143,11 @@ final class MetricsUploader {
             if let sedentary = motionData.sedentaryMinutes {
                 payload["sedentary_minutes"] = sedentary
             }
+        }
+        
+        // v3.1: activity_summary が空でなければ送信
+        if !activitySummary.isEmpty {
+            payload["activity_summary"] = activitySummary
         }
         
         // POST to backend
@@ -124,7 +162,7 @@ final class MetricsUploader {
             let (_, response) = try await URLSession.shared.data(for: request)
             if let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 {
                 UserDefaults.standard.set(Date(), forKey: lastUploadKey)
-                logger.info("Daily metrics uploaded successfully")
+                logger.info("Daily metrics uploaded successfully with activity_summary")
             }
         } catch {
             logger.error("Failed to upload metrics: \(error.localizedDescription)")

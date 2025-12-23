@@ -10,6 +10,7 @@ final class NotificationScheduler {
 
     enum Category: String {
         case habitAlarm = "HABIT_ALARM"
+        case preReminder = "PRE_REMINDER"
         case nudge = "NUDGE"
     }
 
@@ -108,13 +109,22 @@ final class NotificationScheduler {
             intentIdentifiers: [],
             options: [.customDismissAction]
         )
+        
+        // PRE_REMINDER カテゴリ
+        let preReminderCategory = UNNotificationCategory(
+            identifier: Category.preReminder.rawValue,
+            actions: [start, dismiss],
+            intentIdentifiers: [],
+            options: [.customDismissAction]
+        )
 
-        center.setNotificationCategories([category, nudgeCategory])
+        center.setNotificationCategories([category, nudgeCategory, preReminderCategory])
     }
 
     // MARK: Scheduling
     func applySchedules(_ schedules: [HabitType: DateComponents]) async {
         await removePending(withPrefix: "HABIT_")
+        await cancelAllPreReminders()  // 追加: 事前通知もクリア
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
             
@@ -127,6 +137,9 @@ final class NotificationScheduler {
                 await scheduleMain(habit: habit, hour: hour, minute: minute)
                 scheduleFollowupLoop(for: habit, baseComponents: components)
             }
+            
+            // 事前通知をスケジュール（bedtime, training, customのみ）
+            await schedulePreReminder(habit: habit, hour: hour, minute: minute)
             
             logger.info("Scheduled \(habit.rawValue, privacy: .public): AlarmKit=\(alarmKitScheduled, privacy: .public)")
         }
@@ -431,10 +444,14 @@ final class NotificationScheduler {
         // いったん全カスタムの pending/delivered を掃除（簡易実装）
         await removePending(withPrefix: "HABIT_CUSTOM_MAIN_")
         await removePending(withPrefix: "HABIT_CUSTOM_FOLLOW_")
+        await removePending(withPrefix: "PRE_REMINDER_CUSTOM_")
         await removeDelivered(withPrefix: "HABIT_CUSTOM_FOLLOW_")
         
         for (id, entry) in schedules {
             guard let hour = entry.time.hour, let minute = entry.time.minute else { continue }
+            
+            // v3.1: カスタム習慣の事前通知をスケジュール（15分前）
+            await scheduleCustomPreReminder(id: id, name: entry.name, hour: hour, minute: minute)
             
             // AlarmKitをスケジュール（iOS 26+ かつユーザーがONにしている場合）
             let alarmKitScheduled = await scheduleCustomWithAlarmKitIfNeeded(
@@ -568,6 +585,195 @@ final class NotificationScheduler {
 
     private func keyNudgeMain(nudgeId: String) -> String {
         "NUDGE_MAIN_\(nudgeId)"
+    }
+    
+    // MARK: - Pre-Reminder Scheduling (Personalized)
+    
+    /// 各習慣タイプの事前通知タイミング（分）
+    private enum PreReminderTiming {
+        static let bedtime = 30    // 就寝30分前
+        static let training = 15   // トレーニング15分前
+        static let custom = 15     // カスタム習慣15分前
+        // wake は設定時刻ジャスト（事前通知なし、メインアラームのみ）
+    }
+    
+    /// 習慣の事前通知をスケジュール
+    /// - Parameters:
+    ///   - habit: 習慣タイプ
+    ///   - hour: 設定時刻（時）
+    ///   - minute: 設定時刻（分）
+    ///   - habitName: カスタム習慣の場合の名前（オプション）
+    ///   - customHabitId: カスタム習慣のUUID（オプション）
+    func schedulePreReminder(
+        habit: HabitType,
+        hour: Int,
+        minute: Int,
+        habitName: String? = nil,
+        customHabitId: UUID? = nil
+    ) async {
+        // 起床は事前通知なし（メインアラームとして動作）
+        guard habit != .wake else { return }
+        
+        let offsetMinutes: Int
+        switch habit {
+        case .bedtime:
+            offsetMinutes = PreReminderTiming.bedtime
+        case .training:
+            offsetMinutes = PreReminderTiming.training
+        case .custom:
+            offsetMinutes = PreReminderTiming.custom
+        case .wake:
+            return  // 起床は事前通知なし
+        }
+        
+        // 事前通知の時刻を計算
+        let (preHour, preMinute) = calculateOffsetTime(
+            baseHour: hour,
+            baseMinute: minute,
+            offsetMinutes: -offsetMinutes
+        )
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Anicca"
+        // デフォルトメッセージ（Notification Service Extension でパーソナライズされる）
+        content.body = defaultPreReminderBody(for: habit, habitName: habitName)
+        content.categoryIdentifier = Category.preReminder.rawValue
+        
+        // Notification Service Extension 用のフラグ
+        content.userInfo = [
+            "habitType": habit.rawValue,
+            "scheduledTime": String(format: "%02d:%02d", hour, minute),
+            "habitName": habitName ?? "",
+            "customHabitId": customHabitId?.uuidString ?? ""
+        ]
+        
+        // mutable-content を有効化（Service Extension が処理するため）
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .timeSensitive
+        }
+        content.sound = .default
+        
+        // 毎日繰り返し
+        var dateComponents = DateComponents()
+        dateComponents.hour = preHour
+        dateComponents.minute = preMinute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        
+        let identifier: String
+        if let customId = customHabitId {
+            identifier = "PRE_REMINDER_CUSTOM_\(customId.uuidString)"
+        } else {
+            identifier = "PRE_REMINDER_\(habit.rawValue)"
+        }
+        
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: content,
+            trigger: trigger
+        )
+        
+        do {
+            try await center.add(request)
+            logger.info("Scheduled pre-reminder for \(habit.rawValue) at \(preHour):\(preMinute)")
+        } catch {
+            logger.error("Failed to schedule pre-reminder: \(error.localizedDescription)")
+        }
+    }
+    
+    /// カスタム習慣の事前通知をスケジュール（15分前）
+    private func scheduleCustomPreReminder(id: UUID, name: String, hour: Int, minute: Int) async {
+        let minutesBefore = 15 // カスタム習慣は一律15分前
+        let (preHour, preMinute) = calculateOffsetTime(baseHour: hour, baseMinute: minute, offsetMinutes: -minutesBefore)
+        
+        let content = UNMutableNotificationContent()
+        content.title = "Anicca"
+        content.body = String(format: localizedString("pre_reminder_custom_body_format"), minutesBefore, name)
+        content.categoryIdentifier = Category.preReminder.rawValue
+        content.userInfo = [
+            "customHabitId": id.uuidString,
+            "habitType": "custom",
+            "type": "pre_reminder",
+            "scheduledTime": String(format: "%02d:%02d", hour, minute),
+            "habitName": name,
+            "minutesBefore": minutesBefore
+        ]
+        content.sound = .default
+        if #available(iOS 15.0, *) {
+            content.interruptionLevel = .active
+        }
+        
+        var dateComponents = DateComponents()
+        dateComponents.hour = preHour
+        dateComponents.minute = preMinute
+        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        
+        let request = UNNotificationRequest(
+            identifier: "PRE_REMINDER_CUSTOM_\(id.uuidString)_\(preHour)_\(preMinute)",
+            content: content,
+            trigger: trigger
+        )
+        
+        do {
+            try await center.add(request)
+            logger.info("Scheduled custom pre-reminder for \(id.uuidString) at \(preHour):\(preMinute)")
+        } catch {
+            logger.error("Failed to schedule custom pre-reminder: \(error.localizedDescription)")
+        }
+    }
+    
+    /// 事前通知をキャンセル
+    func cancelPreReminder(for habit: HabitType, customHabitId: UUID? = nil) {
+        Task {
+            if let customId = customHabitId {
+                await removePending(withPrefix: "PRE_REMINDER_CUSTOM_\(customId.uuidString)")
+            } else {
+                await removePending(withPrefix: "PRE_REMINDER_\(habit.rawValue)")
+            }
+        }
+    }
+    
+    /// 全ての事前通知をキャンセル
+    func cancelAllPreReminders() async {
+        await removePending(withPrefix: "PRE_REMINDER_")
+    }
+    
+    // MARK: - Private Helpers
+    
+    private func calculateOffsetTime(baseHour: Int, baseMinute: Int, offsetMinutes: Int) -> (hour: Int, minute: Int) {
+        var totalMinutes = baseHour * 60 + baseMinute + offsetMinutes
+        
+        // 日をまたぐ場合の処理
+        if totalMinutes < 0 {
+            totalMinutes += 24 * 60
+        } else if totalMinutes >= 24 * 60 {
+            totalMinutes -= 24 * 60
+        }
+        
+        return (totalMinutes / 60, totalMinutes % 60)
+    }
+    
+    private func defaultPreReminderBody(for habit: HabitType, habitName: String?) -> String {
+        let language = AppState.shared.userProfile.preferredLanguage
+        
+        switch habit {
+        case .bedtime:
+            return language == .ja
+                ? "そろそろ寝る準備を始めましょう。"
+                : "Time to start winding down for bed."
+        case .training:
+            return language == .ja
+                ? "トレーニングの時間が近づいています。"
+                : "Your training time is coming up."
+        case .custom:
+            let name = habitName ?? (language == .ja ? "習慣" : "your habit")
+            return language == .ja
+                ? "\(name)の時間が近づいています。"
+                : "Time for \(name) is approaching."
+        case .wake:
+            return language == .ja
+                ? "おはようございます。"
+                : "Good morning."
+        }
     }
 }
 

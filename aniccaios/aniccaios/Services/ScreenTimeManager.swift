@@ -8,9 +8,13 @@ final class ScreenTimeManager {
     private init() {}
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "ScreenTimeManager")
+    private let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
     
     struct DailySummary {
         var totalMinutes: Int?
+        var socialMinutes: Int?
+        var lateNightMinutes: Int?
+        var snsSessions: [[String: Any]]?  // v3.1: 追加
     }
     
     /// Check if Screen Time is authorized
@@ -46,8 +50,35 @@ final class ScreenTimeManager {
     }
     
     func fetchDailySummary() async -> DailySummary {
-        // DeviceActivityReport extension is needed to get actual screen time data
-        // For now, return nil as placeholder
-        return DailySummary(totalMinutes: nil)
+        // v3.1: DeviceActivityReportExtension が App Groups に保存したデータを読み取り
+        let today = ISO8601DateFormatter().string(from: Date()).prefix(10)
+        let todayKey = String(today)
+        
+        let totalMinutes = appGroupDefaults?.integer(forKey: "screenTime_totalMinutes_\(todayKey)")
+        let socialMinutes = appGroupDefaults?.integer(forKey: "screenTime_socialMinutes_\(todayKey)")
+        let lateNightMinutes = appGroupDefaults?.integer(forKey: "screenTime_lateNightMinutes_\(todayKey)")
+        
+        // v3.1: snsSessions を読み取り
+        var snsSessions: [[String: Any]]? = nil
+        if let sessionsJSON = appGroupDefaults?.string(forKey: "screenTime_snsSessions_\(todayKey)"),
+           let sessionsData = sessionsJSON.data(using: .utf8),
+           let sessions = try? JSONSerialization.jsonObject(with: sessionsData) as? [[String: Any]] {
+            snsSessions = sessions
+        }
+        
+        // データが存在しない場合（Extension がまだ実行されていない）
+        if totalMinutes == nil || totalMinutes == 0 {
+            logger.info("No screen time data in App Groups yet")
+            return DailySummary(totalMinutes: nil, socialMinutes: nil, lateNightMinutes: nil, snsSessions: nil)
+        }
+        
+        logger.info("Fetched screen time from App Groups: total=\(totalMinutes ?? 0), social=\(socialMinutes ?? 0), lateNight=\(lateNightMinutes ?? 0), sessions=\(snsSessions?.count ?? 0)")
+        
+        return DailySummary(
+            totalMinutes: totalMinutes,
+            socialMinutes: socialMinutes,
+            lateNightMinutes: lateNightMinutes,
+            snsSessions: snsSessions
+        )
     }
 }

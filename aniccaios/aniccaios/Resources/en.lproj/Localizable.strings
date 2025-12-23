@@ -345,6 +345,11 @@
 "ema_skip" = "Skip";
 "tab_habits" = "Habits";
 
+// Pre-Reminder (v3.1)
+"pre_reminder_bedtime_body" = "Time to start winding down. Put away screens and relax.";
+"pre_reminder_training_body" = "15 minutes until training. Get ready and warm up.";
+"pre_reminder_custom_body_format" = "%d minutes until \"%@\". Time to prepare.";
+
 "session_mic_permission_title" = "Microphone Access Required";
 "session_mic_permission_message" = "Anicca uses the microphone for real-time conversation. Please enable it in Settings.";
 "settings_subscription_syncing" = "Syncing…";

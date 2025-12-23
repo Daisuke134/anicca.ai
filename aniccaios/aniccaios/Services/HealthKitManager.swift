@@ -10,24 +10,35 @@ final class HealthKitManager {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "HealthKitManager")
     private let healthStore = HKHealthStore()
     
+    // v3.1: ワークアウトセッション構造体を追加
+    struct WorkoutSession: Codable {
+        let startAt: Date
+        let endAt: Date
+        let type: String  // "walk", "run", "workout"
+        let totalMinutes: Int
+    }
+    
     struct DailySummary {
         var sleepMinutes: Int?
         var steps: Int?
         // v3: Behavior timeline用の睡眠開始/終了時刻
         var sleepStartAt: Date?
         var wakeAt: Date?
+        var workoutSessions: [WorkoutSession]?  // v3.1: 追加
     }
     
     var isAuthorized: Bool {
         HKHealthStore.isHealthDataAvailable()
     }
     
-    // v3: 従来の両方リクエスト（後方互換）
+    // v3: 従来の両方リクエスト（後方互換）+ ワークアウト追加
     func requestAuthorization() async -> Bool {
-        let typesToRead: Set<HKObjectType> = [
+        var typesToRead: Set<HKObjectType> = [
             HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!,
             HKObjectType.quantityType(forIdentifier: .stepCount)!
         ]
+        // v3.1: ワークアウトタイプを追加
+        typesToRead.insert(HKObjectType.workoutType())
         return await requestAuthorizationFor(types: typesToRead)
     }
     
@@ -126,6 +137,51 @@ final class HealthKitManager {
             if let steps = steps {
                 summary.steps = Int(steps)
             }
+        }
+        
+        // v3.1: Fetch workouts (walk/run sessions)
+        let workoutType = HKObjectType.workoutType()
+        let workoutPredicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+        
+        do {
+            let workouts = try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKWorkout], Error>) in
+                let query = HKSampleQuery(
+                    sampleType: workoutType,
+                    predicate: workoutPredicate,
+                    limit: HKObjectQueryNoLimit,
+                    sortDescriptors: [NSSortDescriptor(key: HKSampleSortIdentifierStartDate, ascending: true)]
+                ) { _, samples, error in
+                    if let error = error {
+                        continuation.resume(throwing: error)
+                    } else {
+                        continuation.resume(returning: samples as? [HKWorkout] ?? [])
+                    }
+                }
+                healthStore.execute(query)
+            }
+            
+            summary.workoutSessions = workouts.map { workout in
+                let type: String
+                switch workout.workoutActivityType {
+                case .walking: type = "walk"
+                case .running: type = "run"
+                case .cycling: type = "cycling"
+                case .swimming: type = "swimming"
+                case .yoga: type = "yoga"
+                case .functionalStrengthTraining, .traditionalStrengthTraining: type = "strength"
+                case .highIntensityIntervalTraining: type = "hiit"
+                default: type = "workout"
+                }
+                return WorkoutSession(
+                    startAt: workout.startDate,
+                    endAt: workout.endDate,
+                    type: type,
+                    totalMinutes: Int(workout.duration / 60)
+                )
+            }
+            logger.info("Fetched \(workouts.count) workout sessions")
+        } catch {
+            logger.error("Failed to fetch workouts: \(error.localizedDescription)")
         }
         
         return summary

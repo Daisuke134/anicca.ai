@@ -12,8 +12,9 @@ struct ProfileView: View {
     @State private var isShowingDeleteAlert = false
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: Error?
-    @State private var showingNameEditor = false
-    @State private var editingName = ""
+    @State private var isEditingName = false
+    @State private var editingName: String = ""
+    @FocusState private var nameFieldFocused: Bool
 
     var body: some View {
         NavigationStack {
@@ -57,20 +58,6 @@ struct ProfileView: View {
         } message: {
             if let error = deleteAccountError { Text(error.localizedDescription) }
         }
-        .sheet(isPresented: $showingNameEditor) {
-            NameEditorSheet(
-                name: $editingName,
-                onSave: {
-                    var profile = appState.userProfile
-                    profile.displayName = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    appState.updateUserProfile(profile, sync: true)
-                    showingNameEditor = false
-                },
-                onCancel: {
-                    showingNameEditor = false
-                }
-            )
-        }
     }
 
     private var header: some View {
@@ -84,14 +71,8 @@ struct ProfileView: View {
     private var accountCard: some View {
         CardView(cornerRadius: 32) {
             VStack(spacing: 0) {
-                // v3: Nameをタップで編集可能に
-                Button {
-                    editingName = appState.userProfile.displayName
-                    showingNameEditor = true
-                } label: {
-                    row(label: String(localized: "profile_row_name"), value: appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName, showsChevron: true)
-                }
-                .buttonStyle(.plain)
+                // v3: Name をインライン編集
+                nameRow
                 divider
                 Button {
                     showingManageSubscription = true
@@ -99,8 +80,67 @@ struct ProfileView: View {
                     row(label: String(localized: "profile_row_plan"), value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
                 }
                 .buttonStyle(.plain)
+                divider
+                row(label: String(localized: "profile_row_language"), value: currentLanguageName, showsChevron: false)
             }
         }
+    }
+    
+    @ViewBuilder
+    private var nameRow: some View {
+        HStack {
+            Text(String(localized: "profile_row_name"))
+                .font(.system(size: 16))
+                .foregroundStyle(AppTheme.Colors.label)
+            Spacer()
+            
+            if isEditingName {
+                TextField("", text: $editingName)
+                    .font(.system(size: 16))
+                    .foregroundStyle(AppTheme.Colors.label)
+                    .multilineTextAlignment(.trailing)
+                    .focused($nameFieldFocused)
+                    .submitLabel(.done)
+                    .onSubmit {
+                        saveName()
+                    }
+                    .onAppear {
+                        nameFieldFocused = true
+                    }
+            } else {
+                Text(appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName)
+                    .font(.system(size: 16))
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.Colors.tertiaryLabel)
+            }
+        }
+        .padding(.horizontal, 18)
+        .padding(.vertical, 20)
+        .contentShape(Rectangle())
+        .onTapGesture {
+            if !isEditingName {
+                editingName = appState.userProfile.displayName
+                isEditingName = true
+            }
+        }
+        .onChange(of: nameFieldFocused) { _, focused in
+            // フォーカスが外れたら保存
+            if !focused && isEditingName {
+                saveName()
+            }
+        }
+    }
+    
+    private func saveName() {
+        let trimmed = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty && trimmed != appState.userProfile.displayName {
+            var profile = appState.userProfile
+            profile.displayName = trimmed
+            appState.updateUserProfile(profile, sync: true)
+        }
+        isEditingName = false
     }
 
     private var traitsCard: some View {
@@ -298,16 +338,18 @@ struct ProfileView: View {
                         onEnable: { Task { await requestStepsOnly() } },
                         onDisable: { appState.setStepsEnabled(false) }
                     )
-                    divider
-                    dataToggleRow(
-                        title: String(localized: "profile_toggle_movement"),
-                        isOn: Binding(
-                            get: { appState.sensorAccess.motionEnabled },
-                            set: { _ in }
-                        ),
-                        onEnable: { Task { await requestMotionAndUpdateToggle() } },
-                        onDisable: { appState.setMotionEnabled(false) }
-                    )
+                    // v3.1: Movement トグルは一時非表示（sedentaryMinutes が UI に反映されていないため）
+                    // 将来的に座りすぎ警告機能で使用する可能性があるため、コードは残す
+                    // divider
+                    // dataToggleRow(
+                    //     title: String(localized: "profile_toggle_movement"),
+                    //     isOn: Binding(
+                    //         get: { appState.sensorAccess.motionEnabled },
+                    //         set: { _ in }
+                    //     ),
+                    //     onEnable: { Task { await requestMotionAndUpdateToggle() } },
+                    //     onDisable: { appState.setMotionEnabled(false) }
+                    // )
                 }
             }
         }
@@ -539,8 +581,9 @@ private struct ProfileFlowChips: View {
     var labelProvider: ((String) -> String)? = nil
 
     var body: some View {
-        // FlowLayoutは現状存在しないため、LazyVGrid(adaptive)で折り返しを実現する
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8, alignment: .leading)], alignment: .leading, spacing: 8) {
+        // Figma準拠: 水平方向にflexWrap、均等spacing 8px（行間: 8px）
+        // minimum: 70で4個/行を許容しつつ、fixedSizeで幅をテキストに合わせる
+        FlowLayout(spacing: 8) {
             ForEach(options, id: \.self) { item in
                 let isOn = selected.contains(item)
                 Button {
@@ -548,7 +591,6 @@ private struct ProfileFlowChips: View {
                 } label: {
                     Text(labelProvider?(item) ?? item)
                         .font(.system(size: 14, weight: .medium))
-                        .fixedSize(horizontal: true, vertical: false)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
                         // Figma: selected=#222222(黒)/text=#E1E1E1, unselected=#FDFCFC/border
@@ -568,44 +610,48 @@ private struct ProfileFlowChips: View {
     }
 }
 
-// MARK: - Name Editor Sheet
+// MARK: - Flow Layout (Figma準拠の折り返しレイアウト)
 
-private struct NameEditorSheet: View {
-    @Binding var name: String
-    let onSave: () -> Void
-    let onCancel: () -> Void
+private struct FlowLayout: Layout {
+    var spacing: CGFloat = 8
     
-    var body: some View {
-        NavigationStack {
-            VStack(spacing: 24) {
-                Text(String(localized: "profile_edit_name_title"))
-                    .font(.headline)
-                    .padding(.top, 24)
-                
-                TextField(String(localized: "profile_name_placeholder"), text: $name)
-                    .textFieldStyle(.roundedBorder)
-                    .padding(.horizontal, 24)
-                
-                Spacer()
-            }
-            .navigationTitle(String(localized: "profile_edit_name"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button(String(localized: "common_cancel")) {
-                        onCancel()
-                    }
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common_save")) {
-                        onSave()
-                    }
-                    .fontWeight(.semibold)
-                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
-            }
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
+        return result.size
+    }
+    
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
+        for (index, position) in result.positions.enumerated() {
+            subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
         }
-        .presentationDetents([.medium])
+    }
+    
+    private func arrangeSubviews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
+        let maxWidth = proposal.width ?? .infinity
+        var positions: [CGPoint] = []
+        var currentX: CGFloat = 0
+        var currentY: CGFloat = 0
+        var lineHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+        
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            
+            // 行に収まらない場合は改行
+            if currentX + size.width > maxWidth && currentX > 0 {
+                currentX = 0
+                currentY += lineHeight + spacing
+                lineHeight = 0
+            }
+            
+            positions.append(CGPoint(x: currentX, y: currentY))
+            currentX += size.width + spacing
+            lineHeight = max(lineHeight, size.height)
+            totalHeight = max(totalHeight, currentY + lineHeight)
+        }
+        
+        return (CGSize(width: maxWidth, height: totalHeight), positions)
     }
 }
 

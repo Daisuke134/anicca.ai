@@ -42,8 +42,9 @@ final class AppState: ObservableObject {
     
     enum RootTab: Int, Hashable {
         case talk = 0
-        case behavior = 1
-        case profile = 2
+        case habits = 1      // 新規追加
+        case behavior = 2    // 1 → 2
+        case profile = 3     // 2 → 3
     }
     @Published var selectedRootTab: RootTab = .talk
 
@@ -426,6 +427,12 @@ final class AppState: ObservableObject {
     func updateUserCredentials(_ credentials: UserCredentials) {
         authStatus = .signedIn(credentials)
         saveUserCredentials(credentials)
+        
+        // App Groups に userId と deviceId を保存（Notification Service Extension 用）
+        let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+        appGroupDefaults?.set(credentials.userId, forKey: "userId")
+        appGroupDefaults?.set(resolveDeviceId(), forKey: "deviceId")
+        appGroupDefaults?.set(AppConfig.proxyBaseURL.absoluteString, forKey: "ANICCA_PROXY_BASE_URL")
         
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty or "User" (user will set it in profile step)

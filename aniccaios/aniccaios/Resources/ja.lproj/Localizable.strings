@@ -325,6 +325,11 @@
 "tab_behavior" = "行動";
 "tab_profile" = "プロフィール";
 
+// Pre-Reminder (v3.1)
+"pre_reminder_bedtime_body" = "そろそろ寝る準備を始めましょう。画面を消して、リラックスする時間です。";
+"pre_reminder_training_body" = "あと15分でトレーニングの時間です。着替えて準備しておきましょう。";
+"pre_reminder_custom_body_format" = "あと%d分で「%@」の時間です。準備しておきましょう。";
+
 "session_mic_permission_title" = "マイクのアクセスが必要です";
 "session_mic_permission_message" = "Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";
 "settings_subscription_syncing" = "同期中…";

@@ -1,4 +1,5 @@
 import { toLocalTimeHHMM } from '../../utils/timezone.js';
+import { calculateRuminationProxy } from '../nudge/features/stateBuilder.js';  // 追加
 
 /**
  * Build Behavior tab payload pieces from daily_metrics row.
@@ -8,7 +9,16 @@ export function buildHighlights({ todayStats, timezone }) {
   const wakeAt = todayStats?.wakeAt ? new Date(todayStats.wakeAt) : null;
   const snsMinutesTotal = Number(todayStats?.snsMinutesTotal ?? 0);
   const steps = Number(todayStats?.steps ?? 0);
-  const ruminationProxy = Number(todayStats?.mindSummary?.ruminationProxy ?? 0);
+  
+  // 修正: 計算式を直接使用
+  const activity = todayStats?.activitySummary || {};
+  const ruminationProxy = calculateRuminationProxy({
+    lateNightSnsMinutes: Number(activity?.lateNightSnsMinutes ?? 0),
+    snsMinutes: snsMinutesTotal,
+    totalScreenTime: Number(activity?.totalScreenTime ?? snsMinutesTotal),
+    sleepWindowPhoneMinutes: Number(activity?.sleepWindowPhoneMinutes ?? 0),
+    longestNoUseHours: Number(activity?.longestNoUseHours ?? 0)
+  });
 
   const wakeLabel = wakeAt ? `Wake ${toLocalTimeHHMM(wakeAt, timezone)}` : 'Wake';
   const wakeStatus = wakeAt ? 'on_track' : 'warning';
@@ -20,8 +30,9 @@ export function buildHighlights({ todayStats, timezone }) {
   const workoutStatus = steps >= 8000 ? 'on_track' : steps >= 3000 ? 'warning' : 'missed';
   const workoutLabel = steps > 0 ? `Steps ${steps}` : 'Workout';
 
+  // 修正: ruminationProxy の値に基づいてラベルも表示
   const ruminationStatus = ruminationProxy >= 0.7 ? 'warning' : ruminationProxy >= 0.4 ? 'ok' : 'ok';
-  const ruminationLabel = ruminationProxy > 0 ? 'Rumination' : 'Rumination';
+  const ruminationLabel = `Rumination ${Math.round(ruminationProxy * 100)}%`;
 
   return {
     wake: { status: wakeStatus, label: wakeLabel },

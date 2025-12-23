@@ -10,6 +10,9 @@ struct MainTabView: View {
             switch appState.selectedRootTab {
             case .talk:
                 TalkView()
+            case .habits:
+                HabitsTabView()
+                    .environmentObject(appState)
             case .behavior:
                 BehaviorView()
             case .profile:

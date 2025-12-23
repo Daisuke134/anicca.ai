@@ -348,3 +348,17 @@
 "common_error" = "エラー";
 "common_ok" = "OK";
 
+/* v3: AlarmKit Permission */
+"onboarding_alarmkit_granted" = "アラームが許可されました";
+"onboarding_alarmkit_denied_hint" = "設定からアラームを有効にできます";
+"onboarding_alarmkit_settings_needed" = "アラームの設定が必要です";
+"onboarding_alarmkit_settings_message" = "確実に起床するために、設定アプリでAniccaのアラーム許可を有効にしてください。";
+
+/* v3: Profile Name Edit */
+"profile_edit_name_title" = "名前を編集";
+"profile_edit_name" = "名前";
+"profile_name_placeholder" = "名前を入力";
+
+/* v3: 追加のStruggle */
+"problem_irritation" = "苛立ち";
+

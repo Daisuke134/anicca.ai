@@ -49,6 +49,12 @@ router.get('/summary', async (req, res) => {
     const todayInsight = lang === 'ja'
       ? 'データ連携は任意です。連携がなくてもTalkはいつでも使えます。'
       : 'Data integration is optional. You can always use Talk even without connected data.';
+    
+    // v3: futureScenarioのフォールバックを空にしない
+    const fallbackFuture = lang === 'ja'
+      ? { ifContinue: '十分なデータがありません', ifImprove: '十分なデータがありません' }
+      : { ifContinue: 'Not enough data available', ifImprove: 'Not enough data available' };
+    
     return res.json({
       todayInsight,
       highlights: {
@@ -57,10 +63,7 @@ router.get('/summary', async (req, res) => {
         workout: { status: 'ok', label: '' },
         rumination: { status: 'ok', label: '' }
       },
-      futureScenario: {
-        ifContinue: '',
-        ifImprove: ''
-      },
+      futureScenario: fallbackFuture,
       timeline: [],
       streaks: { wake: 0, screen: 0, workout: 0, rumination: 0 }
     });

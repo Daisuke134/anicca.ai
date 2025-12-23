@@ -7,7 +7,6 @@ struct SubscriptionRequiredView: View {
         PaywallContainerView(
             onDismissRequested: { dismiss() }
         )
-            .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
             .ignoresSafeArea()
     }
 }

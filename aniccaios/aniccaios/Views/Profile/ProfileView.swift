@@ -8,16 +8,12 @@ import ComponentsKit
 struct ProfileView: View {
     @EnvironmentObject private var appState: AppState
 
-    // Data Integration: 最小は @AppStorage（フェーズ7でセンサー送信開始/停止へ接続）
-    @AppStorage("com.anicca.dataIntegration.screenTimeEnabled") private var screenTimeEnabled = false
-    @AppStorage("com.anicca.dataIntegration.sleepEnabled") private var sleepEnabled = false
-    @AppStorage("com.anicca.dataIntegration.stepsEnabled") private var stepsEnabled = false
-    @AppStorage("com.anicca.dataIntegration.motionEnabled") private var motionEnabled = false
-
     @State private var showingManageSubscription = false
     @State private var isShowingDeleteAlert = false
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: Error?
+    @State private var showingNameEditor = false
+    @State private var editingName = ""
 
     var body: some View {
         NavigationStack {
@@ -26,12 +22,12 @@ struct ProfileView: View {
                     header
 
                     accountCard
+                    dataIntegrationSection  // v3: Plan の直下に移動
                     traitsCard
                     idealsSection
                     strugglesSection
                     nudgeStrengthSection
                     stickyModeSection
-                    dataIntegrationSection
                     accountManagementSection
 
                     LegalLinksView()
@@ -61,6 +57,20 @@ struct ProfileView: View {
         } message: {
             if let error = deleteAccountError { Text(error.localizedDescription) }
         }
+        .sheet(isPresented: $showingNameEditor) {
+            NameEditorSheet(
+                name: $editingName,
+                onSave: {
+                    var profile = appState.userProfile
+                    profile.displayName = editingName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    appState.updateUserProfile(profile, sync: true)
+                    showingNameEditor = false
+                },
+                onCancel: {
+                    showingNameEditor = false
+                }
+            )
+        }
     }
 
     private var header: some View {
@@ -74,7 +84,14 @@ struct ProfileView: View {
     private var accountCard: some View {
         CardView(cornerRadius: 32) {
             VStack(spacing: 0) {
-                row(label: String(localized: "profile_row_name"), value: appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName)
+                // v3: Nameをタップで編集可能に
+                Button {
+                    editingName = appState.userProfile.displayName
+                    showingNameEditor = true
+                } label: {
+                    row(label: String(localized: "profile_row_name"), value: appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName, showsChevron: true)
+                }
+                .buttonStyle(.plain)
                 divider
                 Button {
                     showingManageSubscription = true
@@ -126,8 +143,9 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
+            // profile.md (Figma) 準拠: kind, altruistic, confident, mindful, honest, open, courageous
             ProfileFlowChips(
-                options: ["kind", "confident", "early_riser", "runner", "creative", "mindful", "organized", "calm", "healthy", "patient", "focused", "grateful", "brave"],
+                options: ["kind", "altruistic", "confident", "mindful", "honest", "open", "courageous"],
                 selected: Binding(
                     get: { Set(appState.userProfile.ideals) },
                     set: { newValue in
@@ -150,8 +168,9 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
+            // profile.md (Figma) 準拠: rumination, jealousy, self_criticism, anxiety, loneliness, irritation
             ProfileFlowChips(
-                options: ["procrastination", "anxiety", "poor_sleep", "stress", "focus", "motivation", "self_doubt", "time_management", "burnout", "relationships", "energy", "work_life_balance"],
+                options: ["rumination", "jealousy", "self_criticism", "anxiety", "loneliness", "irritation"],
                 selected: Binding(
                     get: { Set(appState.userProfile.struggles) },
                     set: { newValue in
@@ -174,15 +193,33 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
-            // フェーズ3で NudgeIntensity を導入する前提（フェーズ6ではUI骨格のみ）
             CardView(cornerRadius: 999) {
                 HStack(spacing: 8) {
-                    pill(String(localized: "profile_nudge_quiet"), isSelected: false)
-                    pill(String(localized: "profile_nudge_normal"), isSelected: true)
-                    pill(String(localized: "profile_nudge_active"), isSelected: false)
+                    ForEach(NudgeIntensity.allCases, id: \.self) { intensity in
+                        nudgePill(intensity)
+                    }
                 }
             }
         }
+    }
+    
+    @ViewBuilder
+    private func nudgePill(_ intensity: NudgeIntensity) -> some View {
+        let isSelected = appState.userProfile.nudgeIntensity == intensity
+        let title: String = {
+            switch intensity {
+            case .quiet: return String(localized: "profile_nudge_quiet")
+            case .normal: return String(localized: "profile_nudge_normal")
+            case .active: return String(localized: "profile_nudge_active")
+            }
+        }()
+        
+        Button {
+            appState.updateNudgeIntensity(intensity)
+        } label: {
+            pill(title, isSelected: isSelected)
+        }
+        .buttonStyle(.plain)
     }
 
     private var stickyModeSection: some View {
@@ -232,43 +269,60 @@ struct ProfileView: View {
                 VStack(spacing: 0) {
                     dataToggleRow(
                         title: String(localized: "profile_toggle_screen_time"),
-                        isOn: $screenTimeEnabled,
-                        onEnable: { Task { await requestScreenTimeAndUpdateToggle() } }
+                        isOn: Binding(
+                            get: { appState.sensorAccess.screenTimeEnabled },
+                            set: { _ in }
+                        ),
+                        onEnable: { Task { await requestScreenTimeAndUpdateToggle() } },
+                        onDisable: { appState.setScreenTimeEnabled(false) }
                     )
                     divider
+                    // v3: 文言変更 Sleep (HealthKit) → Sleep
                     dataToggleRow(
-                        title: String(localized: "profile_toggle_sleep"),
-                        isOn: $sleepEnabled,
-                        onEnable: { Task { await requestHealthKitAndUpdateToggles() } }
+                        title: "Sleep",
+                        isOn: Binding(
+                            get: { appState.sensorAccess.sleepEnabled },
+                            set: { _ in }
+                        ),
+                        onEnable: { Task { await requestSleepOnly() } },
+                        onDisable: { appState.setSleepEnabled(false) }
                     )
                     divider
+                    // v3: 文言変更 Steps (HealthKit) → Steps
                     dataToggleRow(
-                        title: String(localized: "profile_toggle_steps"),
-                        isOn: $stepsEnabled,
-                        onEnable: { Task { await requestHealthKitAndUpdateToggles() } }
+                        title: "Steps",
+                        isOn: Binding(
+                            get: { appState.sensorAccess.stepsEnabled },
+                            set: { _ in }
+                        ),
+                        onEnable: { Task { await requestStepsOnly() } },
+                        onDisable: { appState.setStepsEnabled(false) }
                     )
                     divider
                     dataToggleRow(
                         title: String(localized: "profile_toggle_movement"),
-                        isOn: $motionEnabled,
-                        onEnable: { Task { await requestMotionAndUpdateToggle() } }
+                        isOn: Binding(
+                            get: { appState.sensorAccess.motionEnabled },
+                            set: { _ in }
+                        ),
+                        onEnable: { Task { await requestMotionAndUpdateToggle() } },
+                        onDisable: { appState.setMotionEnabled(false) }
                     )
                 }
             }
         }
     }
     
-    private func dataToggleRow(title: String, isOn: Binding<Bool>, onEnable: @escaping () -> Void) -> some View {
+    private func dataToggleRow(title: String, isOn: Binding<Bool>, onEnable: @escaping () -> Void, onDisable: @escaping () -> Void) -> some View {
         Toggle(title, isOn: Binding(
             get: { isOn.wrappedValue },
             set: { newValue in
                 // OFFにする場合は即座に反映
                 if !newValue {
-                    isOn.wrappedValue = false
+                    onDisable()
                     return
                 }
                 // ONにする場合は、許可リクエストの結果を待ってから反映
-                // onEnable()内でmotionEnabled等が更新されるので、ここでは変更しない
                 if newValue && !isOn.wrappedValue {
                     onEnable()
                 }
@@ -406,20 +460,26 @@ struct ProfileView: View {
         }
     }
     
-    /// HealthKit許可をリクエストし、成功したらSleepとSteps両方のトグルをオンにする
-    private func requestHealthKitAndUpdateToggles() async {
-        let granted = await HealthKitManager.shared.requestAuthorization()
+    // v3: SleepとStepsを完全に独立
+    private func requestSleepOnly() async {
+        let granted = await HealthKitManager.shared.requestSleepAuthorization()
         await MainActor.run {
             if granted {
-                sleepEnabled = true
-                stepsEnabled = true
-            } else {
-                // 許可が拒否された場合、両方オフにする
-                sleepEnabled = false
-                stepsEnabled = false
+                appState.setSleepEnabled(true)
             }
         }
-        // 許可された場合、即座にデータをアップロード
+        if granted {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+    }
+    
+    private func requestStepsOnly() async {
+        let granted = await HealthKitManager.shared.requestStepsAuthorization()
+        await MainActor.run {
+            if granted {
+                appState.setStepsEnabled(true)
+            }
+        }
         if granted {
             await MetricsUploader.shared.runUploadIfDue(force: true)
         }
@@ -429,7 +489,9 @@ struct ProfileView: View {
     private func requestScreenTimeAndUpdateToggle() async {
         let granted = await ScreenTimeManager.shared.requestAuthorization()
         await MainActor.run {
-            screenTimeEnabled = granted
+            if granted {
+                appState.setScreenTimeEnabled(true)
+            }
         }
         if granted {
             await MetricsUploader.shared.runUploadIfDue(force: true)
@@ -440,7 +502,9 @@ struct ProfileView: View {
     private func requestMotionAndUpdateToggle() async {
         let granted = await MotionManager.shared.requestAuthorization()
         await MainActor.run {
-            motionEnabled = granted
+            if granted {
+                appState.setMotionEnabled(true)
+            }
         }
         if granted {
             await MetricsUploader.shared.runUploadIfDue(force: true)
@@ -454,11 +518,9 @@ struct ProfileView: View {
                 forcePresent: true,
                 onDismissRequested: { showingManageSubscription = false }
             )
-            .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
             .task { await SubscriptionManager.shared.refreshOfferings() }
         } else {
             RevenueCatUI.CustomerCenterView()
-                .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
                 .onCustomerCenterRestoreCompleted { customerInfo in
                     Task {
                         let subscription = SubscriptionInfo(info: customerInfo)
@@ -477,7 +539,8 @@ private struct ProfileFlowChips: View {
     var labelProvider: ((String) -> String)? = nil
 
     var body: some View {
-        LazyVGrid(columns: [GridItem(.adaptive(minimum: 120), spacing: 10)], spacing: 10) {
+        // FlowLayoutは現状存在しないため、LazyVGrid(adaptive)で折り返しを実現する
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: 90), spacing: 8, alignment: .leading)], alignment: .leading, spacing: 8) {
             ForEach(options, id: \.self) { item in
                 let isOn = selected.contains(item)
                 Button {
@@ -485,20 +548,64 @@ private struct ProfileFlowChips: View {
                 } label: {
                     Text(labelProvider?(item) ?? item)
                         .font(.system(size: 14, weight: .medium))
+                        .fixedSize(horizontal: true, vertical: false)
                         .padding(.horizontal, 18)
                         .padding(.vertical, 10)
-                        .frame(maxWidth: .infinity)
-                        .background(isOn ? AppTheme.Colors.buttonSelected : AppTheme.Colors.cardBackground)
-                        .foregroundStyle(isOn ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
+                        // Figma: selected=#222222(黒)/text=#E1E1E1, unselected=#FDFCFC/border
+                        .background(isOn ? Color(hex: "#222222") : Color(hex: "#FDFCFC"))
+                        .foregroundStyle(isOn ? Color(hex: "#E1E1E1") : AppTheme.Colors.label)
                         .overlay(
-                            RoundedRectangle(cornerRadius: 999, style: .continuous)
-                                .stroke(AppTheme.Colors.border.opacity(0.2), lineWidth: 1)
+                            !isOn
+                                ? RoundedRectangle(cornerRadius: 999, style: .continuous)
+                                    .stroke(Color(red: 200/255, green: 198/255, blue: 191/255, opacity: 0.2), lineWidth: 1)
+                                : nil
                         )
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
             }
         }
+    }
+}
+
+// MARK: - Name Editor Sheet
+
+private struct NameEditorSheet: View {
+    @Binding var name: String
+    let onSave: () -> Void
+    let onCancel: () -> Void
+    
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                Text(String(localized: "profile_edit_name_title"))
+                    .font(.headline)
+                    .padding(.top, 24)
+                
+                TextField(String(localized: "profile_name_placeholder"), text: $name)
+                    .textFieldStyle(.roundedBorder)
+                    .padding(.horizontal, 24)
+                
+                Spacer()
+            }
+            .navigationTitle(String(localized: "profile_edit_name"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button(String(localized: "common_cancel")) {
+                        onCancel()
+                    }
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button(String(localized: "common_save")) {
+                        onSave()
+                    }
+                    .fontWeight(.semibold)
+                    .disabled(name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                }
+            }
+        }
+        .presentationDetents([.medium])
     }
 }
 

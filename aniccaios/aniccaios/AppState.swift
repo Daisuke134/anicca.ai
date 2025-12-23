@@ -434,6 +434,12 @@ final class AppState: ObservableObject {
             saveUserProfile()
         }
         Task { await SubscriptionManager.shared.handleLogin(appUserId: credentials.userId) }
+        
+        // v3: サインイン直後の無条件PUTは既存ユーザー上書き事故がありうるため、
+        // 「オンボーディング中 かつ ローカルに入力済みがある」場合のみ同期する
+        if !isOnboardingComplete && (!userProfile.ideals.isEmpty || !userProfile.struggles.isEmpty || !userProfile.displayName.isEmpty) {
+            Task { await ProfileSyncService.shared.enqueue(profile: userProfile) }
+        }
     }
     
     // Update only access token in currently signed-in credentials
@@ -971,13 +977,18 @@ final class AppState: ObservableObject {
         }
         // v0.3 traits (prefer new keys, fallback to legacy)
         if let ideals = payload["ideals"] as? [String] {
-            profile.ideals = ideals
-        } else if let idealTraits = payload["idealTraits"] as? [String] {
+            // v3: リモートが空配列ならローカルの非空値を保持（オンボーディングで設定した値が消えない）
+            if !ideals.isEmpty || profile.ideals.isEmpty {
+                profile.ideals = ideals
+            }
+        } else if let idealTraits = payload["idealTraits"] as? [String], !idealTraits.isEmpty || profile.ideals.isEmpty {
             profile.ideals = idealTraits
         }
         if let struggles = payload["struggles"] as? [String] {
-            profile.struggles = struggles
-        } else if let problems = payload["problems"] as? [String] {
+            if !struggles.isEmpty || profile.struggles.isEmpty {
+                profile.struggles = struggles
+            }
+        } else if let problems = payload["problems"] as? [String], !problems.isEmpty || profile.struggles.isEmpty {
             profile.struggles = problems
         }
         if let keywords = payload["keywords"] as? [String] {
@@ -1073,14 +1084,9 @@ final class AppState: ObservableObject {
             Task { await applyCustomSchedulesToScheduler() }
         }
         
-        // サーバーにデータがあれば、オンボーディングを完全にスキップしてメイン画面へ直行
-        if !habitSchedules.isEmpty && !isOnboardingComplete {
-            isOnboardingComplete = true
-            defaults.set(true, forKey: onboardingKey)
-            // .completion ではなく、onboardingStepKeyを削除してメイン画面へ直行
-            defaults.removeObject(forKey: onboardingStepKey)
-            // Note: ContentView は isOnboardingComplete == true でメイン画面を表示
-        }
+        // v3: サーバーにデータがあっても、オンボーディング強制完了はしない
+        // Mic/Notifications/AlarmKit画面を必ず通すため、isOnboardingCompleteの自動更新を廃止
+        // オンボーディング完了は markOnboardingComplete() でのみ行う
     }
     
     private func updateHabitNotifications() async {

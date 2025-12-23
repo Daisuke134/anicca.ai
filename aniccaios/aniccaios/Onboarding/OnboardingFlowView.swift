@@ -11,12 +11,6 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .welcome:
                     WelcomeStepView(next: advance)
-                case .value:
-                    ValueStepView(next: advance)
-                case .ideals:
-                    IdealsStepView(next: advance)
-                case .struggles:
-                    StrugglesStepView(next: advance)
                 case .account:
                     AuthenticationStepView(next: advance)
                 case .microphone:
@@ -25,6 +19,12 @@ struct OnboardingFlowView: View {
                     NotificationPermissionStepView(next: advance)
                 case .alarmkit:
                     AlarmKitPermissionStepView(next: advance)
+                case .ideals:
+                    IdealsStepView(next: advance)
+                case .struggles:
+                    StrugglesStepView(next: advance)
+                case .paywall:
+                    PaywallStepView(next: advance)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -42,12 +42,6 @@ struct OnboardingFlowView: View {
     private func advance() {
         switch step {
         case .welcome:
-            step = .value
-        case .value:
-            step = .ideals
-        case .ideals:
-            step = .struggles
-        case .struggles:
             step = .account
         case .account:
             step = .microphone
@@ -56,6 +50,12 @@ struct OnboardingFlowView: View {
         case .notifications:
             step = .alarmkit
         case .alarmkit:
+            step = .ideals
+        case .ideals:
+            step = .struggles
+        case .struggles:
+            step = .paywall
+        case .paywall:
             appState.markOnboardingComplete()
             return
         }

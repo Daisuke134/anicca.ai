@@ -78,9 +78,8 @@ final class MetricsUploader {
             "timezone": TimeZone.current.identifier
         ]
         
-        // Sleep/Steps from HealthKit (if enabled)
-        if UserDefaults.standard.bool(forKey: "com.anicca.dataIntegration.sleepEnabled") ||
-           UserDefaults.standard.bool(forKey: "com.anicca.dataIntegration.stepsEnabled") {
+        // v3: source of truth is AppState.sensorAccess (persisted as com.anicca.sensorAccessState)
+        if AppState.shared.sensorAccess.sleepEnabled || AppState.shared.sensorAccess.stepsEnabled {
             let healthData = await HealthKitManager.shared.fetchDailySummary()
             if let sleep = healthData.sleepMinutes {
                 payload["sleep_minutes"] = sleep
@@ -88,10 +87,17 @@ final class MetricsUploader {
             if let steps = healthData.steps {
                 payload["steps"] = steps
             }
+            // v3: 睡眠の開始/終了時刻を推定して送信（Behavior timeline用）
+            if let sleepStart = healthData.sleepStartAt {
+                payload["sleep_start_at"] = ISO8601DateFormatter().string(from: sleepStart)
+            }
+            if let wakeAt = healthData.wakeAt {
+                payload["wake_at"] = ISO8601DateFormatter().string(from: wakeAt)
+            }
         }
         
         // Screen Time (if enabled)
-        if UserDefaults.standard.bool(forKey: "com.anicca.dataIntegration.screenTimeEnabled") {
+        if AppState.shared.sensorAccess.screenTimeEnabled {
             let screenData = await ScreenTimeManager.shared.fetchDailySummary()
             if let minutes = screenData.totalMinutes {
                 payload["screen_time_minutes"] = minutes
@@ -99,7 +105,7 @@ final class MetricsUploader {
         }
         
         // Movement/Sedentary (if enabled)
-        if UserDefaults.standard.bool(forKey: "com.anicca.dataIntegration.motionEnabled") {
+        if AppState.shared.sensorAccess.motionEnabled {
             let motionData = await MotionManager.shared.fetchDailySummary()
             if let sedentary = motionData.sedentaryMinutes {
                 payload["sedentary_minutes"] = sedentary

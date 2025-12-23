@@ -1,10 +1,18 @@
 import SwiftUI
 import UIKit
+import UserNotifications
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 struct AlarmKitPermissionStepView: View {
     let next: () -> Void
 
     @State private var isRequesting = false
+    @State private var hasAttemptedPermission = false
+    @State private var permissionGranted = false
+    @State private var permissionDenied = false
+    @State private var showSettingsAlert = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -24,16 +32,42 @@ struct AlarmKitPermissionStepView: View {
                 .padding(.horizontal)
 
             PrimaryButton(
-                title: isRequesting ? String(localized: "common_requesting") : String(localized: "onboarding_alarmkit_allow"),
+                title: isRequesting
+                    ? String(localized: "common_requesting")
+                    : (permissionGranted || hasAttemptedPermission
+                        ? String(localized: "common_continue")
+                        : String(localized: "onboarding_alarmkit_allow")),
                 isEnabled: !isRequesting,
                 isLoading: isRequesting,
-                style: .primary
+                style: permissionGranted ? .selected : .primary
             ) {
-                requestAlarmKit()
+                if permissionGranted || hasAttemptedPermission {
+                    next()
+                } else {
+                    requestAlarmKit()
+                }
+            }
+
+            // iOS 26未満の場合は設定への誘導を表示
+            if permissionDenied {
+                Button(String(localized: "common_open_settings")) {
+                    openSettings()
+                }
+                .font(.subheadline)
+                .foregroundStyle(AppTheme.Colors.accent)
             }
         }
         .padding(24)
         .background(AppBackground())
+        .alert(String(localized: "onboarding_alarmkit_settings_needed"), isPresented: $showSettingsAlert) {
+            Button(String(localized: "common_open_settings")) { openSettings() }
+            Button(String(localized: "common_continue"), role: .cancel) { next() }
+        } message: {
+            Text(String(localized: "onboarding_alarmkit_settings_message"))
+        }
+        .onAppear {
+            checkCurrentPermission()
+        }
     }
 
     private func requestAlarmKit() {
@@ -41,18 +75,60 @@ struct AlarmKitPermissionStepView: View {
         isRequesting = true
 
         Task { @MainActor in
-            // AlarmKit is available iOS 26+ and only when linked framework exists.
             #if canImport(AlarmKit)
             if #available(iOS 26.0, *) {
-                _ = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
+                let granted = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
+                permissionGranted = granted
+                permissionDenied = !granted
+                hasAttemptedPermission = true
+                isRequesting = false
+                
+                if !granted {
+                    // 許可されなかった場合は設定への誘導ダイアログを表示
+                    showSettingsAlert = true
+                }
+                return
             }
             #endif
-
-            isRequesting = false
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                withAnimation(.easeInOut(duration: 0.35)) { next() }
+            
+            // iOS 26未満: AlarmKitは存在しないので、通知設定を確認
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            let authorized = settings.authorizationStatus == .authorized
+            let timeSensitiveOk = settings.timeSensitiveSetting != .disabled
+            
+            if authorized && timeSensitiveOk {
+                permissionGranted = true
+            } else {
+                permissionDenied = true
+                showSettingsAlert = true
             }
+
+            hasAttemptedPermission = true
+            isRequesting = false
         }
+    }
+    
+    private func checkCurrentPermission() {
+        Task { @MainActor in
+            #if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                // AlarmKitHabitCoordinatorはauthorizationStateを内部で見ているが、
+                // ここでは明示的に AlarmManager.shared.authorizationState を参照する
+                permissionGranted = (AlarmManager.shared.authorizationState == .authorized)
+                return
+            }
+            #endif
+            
+            // iOS 26未満: 通知設定を確認
+            let settings = await UNUserNotificationCenter.current().notificationSettings()
+            permissionGranted = settings.authorizationStatus == .authorized
+                && settings.timeSensitiveSetting != .disabled
+        }
+    }
+    
+    private func openSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
     }
 }
 

@@ -3,13 +3,13 @@ import { fetch } from 'undici';
 function fallback(language) {
   if (language === 'ja') {
     return {
-      ifContinue: '今のパターンが続くと、疲れが溜まりやすく、気持ちが重くなる日が増えるかもしれません。',
-      ifImprove: '小さな改善を積み重ねると、睡眠と集中が少しずつ安定して、気持ちに余白が戻ってきます。'
+      ifContinue: '十分なデータがありません',
+      ifImprove: '十分なデータがありません'
     };
   }
   return {
-    ifContinue: 'If current patterns continue, fatigue may accumulate and heavy days may become more frequent.',
-    ifImprove: 'With small, steady improvements, sleep and focus can stabilize and your days can feel lighter.'
+    ifContinue: 'Not enough data available',
+    ifImprove: 'Not enough data available'
   };
 }
 

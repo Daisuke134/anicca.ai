@@ -2,13 +2,14 @@ import Foundation
 
 enum OnboardingStep: Int {
     case welcome
-    case value       // 2番目に移動
-    case ideals      // 3番目
-    case struggles   // 4番目
-    case account
-    case microphone
-    case notifications
-    case alarmkit
+    // v3: サインインを先に
+    case account       // 1. Sign in with Apple
+    case microphone    // 2. マイク許可
+    case notifications // 3. 通知許可
+    case alarmkit      // 4. AlarmKit許可
+    case ideals        // 5. Ideal Self選択
+    case struggles     // 6. Current Struggles選択
+    case paywall       // 7. Paywall
 }
 
 extension OnboardingStep {
@@ -21,15 +22,13 @@ extension OnboardingStep {
             return step
         }
         
-        // v0.2系: 0..9 を明示的にマップ（v3ではHabit/Paywall/All setは廃止）
+        // v0.2系→v3へのマイグレーション
         switch rawValue {
         case 0: return .welcome
         case 1: return .microphone
         case 2: return .notifications
         case 3: return .account
-        // 旧: habit/paywall/completion 相当は全部welcomeへ戻す
-        case 4, 5, 6, 7, 8, 9:
-            return .welcome
+        case 4, 5, 6, 7, 8, 9: return .welcome
         default:
             return .welcome
         }

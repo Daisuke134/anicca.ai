@@ -19,7 +19,9 @@ router.post('/', async (req, res) => {
       sleep_minutes,
       steps,
       screen_time_minutes,
-      sedentary_minutes
+      sedentary_minutes,
+      sleep_start_at,
+      wake_at
     } = req.body;
 
     // Upsert daily_metrics for this user + date
@@ -38,6 +40,8 @@ router.post('/', async (req, res) => {
         steps: steps ?? 0,  // Prismaスキーマ: Int @default(0) なのでnull不可
         snsMinutesTotal: screen_time_minutes ?? 0,
         sedentaryMinutes: sedentary_minutes ?? 0,
+        sleepStartAt: sleep_start_at ? new Date(sleep_start_at) : null,
+        wakeAt: wake_at ? new Date(wake_at) : null,
         updatedAt: new Date()
       },
       create: {
@@ -46,7 +50,9 @@ router.post('/', async (req, res) => {
         sleepDurationMin: sleep_minutes ?? null,
         steps: steps ?? 0,
         snsMinutesTotal: screen_time_minutes ?? 0,
-        sedentaryMinutes: sedentary_minutes ?? 0
+        sedentaryMinutes: sedentary_minutes ?? 0,
+        sleepStartAt: sleep_start_at ? new Date(sleep_start_at) : null,
+        wakeAt: wake_at ? new Date(wake_at) : null
       }
     });
 

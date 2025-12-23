@@ -4,13 +4,10 @@ struct IdealsStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // screens/ideals.html の行構成に固定（スクショ通り）
+    // profile.md (Figma) 準拠: kind, altruistic, confident, mindful, honest, open, courageous
     private let rows: [[String]] = [
-        ["kind", "confident", "early_riser"],
-        ["runner", "creative"],
-        ["mindful", "organized", "calm"],
-        ["healthy", "patient"],
-        ["focused", "grateful", "brave"]
+        ["kind", "altruistic", "confident", "mindful"],
+        ["honest", "open", "courageous"]
     ]
 
     @State private var selected: Set<String> = []

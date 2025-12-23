@@ -1,7 +1,12 @@
-var view = UIView()
-view.frame = CGRect(x: 0, y: 0, width: 430, height: 932)
-view.layer.backgroundColor = UIColor(red: 1, green: 1, blue: 1, alpha: 1).cgColor
+/* Behavior */
 
+position: relative;
+width: 430px;
+height: 932px;
+
+background: #FFFFFF;
+
+-----
 /* Behavior */
 
 position: relative;
@@ -1896,3 +1901,8 @@ height: 0px;
 left: 406px;
 top: 48px;
 
+----
+var view = UIView()
+view.frame = CGRect(x: 0, y: 0, width: 430, height: 932)
+view.layer.backgroundColor = UIColor(red: 1, green: 1, blue: 1, alpha: 1).cgColor
+---

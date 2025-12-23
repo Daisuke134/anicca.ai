@@ -542,11 +542,9 @@ struct SettingsView: View {
                 forcePresent: true,
                 onDismissRequested: { showingManageSubscription = false }
             )
-            .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
             .task { await SubscriptionManager.shared.refreshOfferings() }
         } else {
             RevenueCatUI.CustomerCenterView()
-                .environment(\.locale, Locale(identifier: appState.userProfile.preferredLanguage.rawValue))
                 .onCustomerCenterRestoreCompleted { customerInfo in
                     Task {
                         let subscription = SubscriptionInfo(info: customerInfo)

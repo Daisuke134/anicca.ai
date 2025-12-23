@@ -13,25 +13,48 @@ final class HealthKitManager {
     struct DailySummary {
         var sleepMinutes: Int?
         var steps: Int?
+        // v3: Behavior timeline用の睡眠開始/終了時刻
+        var sleepStartAt: Date?
+        var wakeAt: Date?
     }
     
     var isAuthorized: Bool {
         HKHealthStore.isHealthDataAvailable()
     }
     
+    // v3: 従来の両方リクエスト（後方互換）
     func requestAuthorization() async -> Bool {
+        let typesToRead: Set<HKObjectType> = [
+            HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!,
+            HKObjectType.quantityType(forIdentifier: .stepCount)!
+        ]
+        return await requestAuthorizationFor(types: typesToRead)
+    }
+    
+    // v3: Sleepのみ許可リクエスト
+    func requestSleepAuthorization() async -> Bool {
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else {
+            return false
+        }
+        return await requestAuthorizationFor(types: [sleepType])
+    }
+    
+    // v3: Stepsのみ許可リクエスト
+    func requestStepsAuthorization() async -> Bool {
+        guard let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else {
+            return false
+        }
+        return await requestAuthorizationFor(types: [stepsType])
+    }
+    
+    private func requestAuthorizationFor(types: Set<HKObjectType>) async -> Bool {
         guard HKHealthStore.isHealthDataAvailable() else {
             logger.warning("HealthKit not available on this device")
             return false
         }
         
-        let typesToRead: Set<HKObjectType> = [
-            HKObjectType.categoryType(forIdentifier: .sleepAnalysis)!,
-            HKObjectType.quantityType(forIdentifier: .stepCount)!
-        ]
-        
         do {
-            try await healthStore.requestAuthorization(toShare: [], read: typesToRead)
+            try await healthStore.requestAuthorization(toShare: [], read: types)
             logger.info("HealthKit authorization granted")
             return true
         } catch {
@@ -73,6 +96,15 @@ final class HealthKitManager {
                     .filter { asleepValues.contains($0.value) }
                     .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
                 summary.sleepMinutes = Int(totalSleepSeconds / 60)
+                
+                // v3: 睡眠の開始/終了時刻を推定
+                let asleepSamples = samples.filter { asleepValues.contains($0.value) }
+                if !asleepSamples.isEmpty {
+                    // 最も早い開始時刻を sleepStartAt
+                    summary.sleepStartAt = asleepSamples.map { $0.startDate }.min()
+                    // 最も遅い終了時刻を wakeAt
+                    summary.wakeAt = asleepSamples.map { $0.endDate }.max()
+                }
             }
         }
         

@@ -4,14 +4,10 @@ struct StrugglesStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // screens/struggles.html の行構成に固定（スクショ通り）
+    // profile.md (Figma) 準拠: rumination, jealousy, self_criticism, anxiety, loneliness, irritation
     private let rows: [[String]] = [
-        ["procrastination", "anxiety"],
-        ["poor_sleep", "stress", "focus"],
-        ["motivation", "self_doubt"],
-        ["time_management", "burnout"],
-        ["relationships", "energy"],
-        ["work_life_balance"]
+        ["rumination", "jealousy", "self_criticism"],
+        ["anxiety", "loneliness", "irritation"]
     ]
 
     @State private var selected: Set<String> = []

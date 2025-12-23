@@ -368,3 +368,17 @@
 "common_error" = "Error";
 "common_ok" = "OK";
 
+/* v3: AlarmKit Permission */
+"onboarding_alarmkit_granted" = "Alarms enabled";
+"onboarding_alarmkit_denied_hint" = "You can enable alarms in Settings";
+"onboarding_alarmkit_settings_needed" = "Alarm Settings Needed";
+"onboarding_alarmkit_settings_message" = "To ensure reliable wake-ups, please enable alarm permissions for Anicca in the Settings app.";
+
+/* v3: Profile Name Edit */
+"profile_edit_name_title" = "Edit Name";
+"profile_edit_name" = "Name";
+"profile_name_placeholder" = "Enter your name";
+
+/* v3: Additional Struggle */
+"problem_irritation" = "Irritation";
+

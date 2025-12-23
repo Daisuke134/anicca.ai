@@ -12,6 +12,8 @@ struct MicrophonePermissionStepView: View {
     @State private var micGranted = false
     @State private var micDenied = false
     @State private var isRequesting = false
+    // v3: 既に許可済みでも画面は表示、自動遷移しない
+    @State private var hasAttemptedPermission = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -33,23 +35,25 @@ struct MicrophonePermissionStepView: View {
             PrimaryButton(
                 title: isRequesting
                     ? String(localized: "common_requesting")
-                    : String(localized: "onboarding_microphone_allow"),
-                isEnabled: !isRequesting && !micGranted,
+                    : (micGranted ? String(localized: "common_continue") : String(localized: "onboarding_microphone_allow")),
+                isEnabled: !isRequesting,
                 isLoading: isRequesting,
                 style: micGranted ? .selected : .primary
-            ) { requestMicrophone() }
+            ) {
+                if micGranted || hasAttemptedPermission {
+                    // 既に許可済み or リクエスト済みなら次へ
+                    next()
+                } else {
+                    requestMicrophone()
+                }
+            }
 
         }
         .padding(24)
         .background(AppBackground())
         .onAppear {
             updatePermissionSnapshot()
-            // 既に許可されている場合はUIで明示しつつ、自動遷移は保持
-            if micGranted {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    withAnimation(.easeInOut(duration: 0.35)) { next() }
-                }
-            }
+            // v3: 既に許可されていても自動遷移しない。画面は必ず表示。
         }
     }
 
@@ -72,10 +76,8 @@ struct MicrophonePermissionStepView: View {
             self.micGranted = granted
             self.micDenied = !granted
             self.isRequesting = false
-            // 許可/拒否に関わらず必ず次へ（5.1.1対策: プリプロンプト後はOSダイアログに必ず進ませる）
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.easeInOut(duration: 0.35)) { next() }
-            }
+            self.hasAttemptedPermission = true
+            // v3: 許可/拒否後も自動遷移しない。ボタンでユーザーが操作して次へ。
         }
     }
 

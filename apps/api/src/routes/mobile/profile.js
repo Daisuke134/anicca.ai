@@ -57,7 +57,14 @@ const profileSchema = z.object({
     updatedAt: z.number().optional()
   })).optional(),
   customHabitSchedules: z.record(timeComponentSchema).optional(),
-  customHabitFollowupCounts: z.record(z.number().int()).optional()
+  customHabitFollowupCounts: z.record(z.number().int()).optional(),
+  // v3: Data Integration状態をサーバ保存
+  sensorAccess: z.object({
+    screenTimeEnabled: z.boolean().optional(),
+    sleepEnabled: z.boolean().optional(),
+    stepsEnabled: z.boolean().optional(),
+    motionEnabled: z.boolean().optional()
+  }).optional()
 });
 
 /**
@@ -135,7 +142,8 @@ router.get('/', async (req, res) => {
       habitFollowupCounts: profile.habitFollowupCounts || {},
       customHabits: profile.customHabits || [],
       customHabitSchedules: profile.customHabitSchedules || {},
-      customHabitFollowupCounts: profile.customHabitFollowupCounts || {}
+      customHabitFollowupCounts: profile.customHabitFollowupCounts || {},
+      sensorAccess: profile.sensorAccess || null
     });
   } catch (error) {
     logger.error('Failed to get profile', error);

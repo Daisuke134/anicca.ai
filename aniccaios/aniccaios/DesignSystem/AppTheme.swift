@@ -13,6 +13,7 @@ enum AppTheme {
 
         static let label: Color = Color(hex: "#393634")
         static let secondaryLabel: Color = Color(hex: "#898783")
+        static let tertiaryLabel: Color = Color(hex: "#b8b6b0")
 
         static let buttonSelected: Color = Color(hex: "#222222")
         static let buttonUnselected: Color = Color(hex: "#e9e6e0")

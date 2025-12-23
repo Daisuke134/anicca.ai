@@ -3,6 +3,10 @@ import SwiftUI
 struct TalkView: View {
     @EnvironmentObject private var appState: AppState
     @State private var selectedTopic: FeelingTopic?
+    
+    // ★ アラームからのセッション起動用
+    @State private var habitSessionActive = false
+    @State private var pendingHabit: HabitType?
 
     // v3-ux: 上3つは動的。v0.3 ではまず「固定 + 軽い並べ替え」→ tool/context 導入後に差し替え。
     private var topics: [FeelingTopic] {
@@ -56,7 +60,28 @@ struct TalkView: View {
                 SessionView(topic: topic)
                     .environmentObject(appState)
             }
+            // ★ 習慣セッション用のfullScreenCover
+            .fullScreenCover(isPresented: $habitSessionActive) {
+                if let habit = pendingHabit {
+                    HabitSessionView(habit: habit)
+                        .environmentObject(appState)
+                }
+            }
+            .onAppear {
+                checkPendingHabitTrigger()
+            }
+            .onChange(of: appState.pendingHabitTrigger) { _ in
+                checkPendingHabitTrigger()
+            }
         }
+    }
+    
+    private func checkPendingHabitTrigger() {
+        guard let trigger = appState.pendingHabitTrigger,
+              appState.shouldStartSessionImmediately else { return }
+        pendingHabit = trigger.habit
+        habitSessionActive = true
+        appState.shouldStartSessionImmediately = false
     }
 
     @ViewBuilder

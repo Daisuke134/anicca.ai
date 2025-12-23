@@ -4,10 +4,13 @@ struct IdealsStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // profile.md (Figma) 準拠: kind, altruistic, confident, mindful, honest, open, courageous
-    private let rows: [[String]] = [
-        ["kind", "altruistic", "confident", "mindful"],
-        ["honest", "open", "courageous"]
+    // スクショ準拠: Kind, Confident, Early Riser, Runner, Creative, Mindful, Organized, Calm, Healthy, Patient, Focused, Grateful, Brave
+    private let options: [String] = [
+        "kind", "confident", "early_riser",
+        "runner", "creative",
+        "mindful", "organized", "calm",
+        "healthy", "patient",
+        "focused", "grateful", "brave"
     ]
 
     @State private var selected: Set<String> = []
@@ -15,44 +18,48 @@ struct IdealsStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text(String(localized: "onboarding_ideals_title"))
-                .font(AppTheme.Typography.onboardingTitle)
+                .font(.system(size: 36, weight: .bold))
                 .fontWeight(.heavy)
-                .lineLimit(2)
+                .lineSpacing(4) // line-height 40px
                 .minimumScaleFactor(0.8)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
+                .padding(.horizontal, 24)
 
             Text(String(localized: "onboarding_ideals_subtitle"))
-                .font(.subheadline)
+                .font(.system(size: 16))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                .padding(.horizontal, 24)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                        HStack(spacing: 12) {
-                            ForEach(row, id: \.self) { key in
-                                chipButton(kind: "ideal_trait", key: key)
-                            }
-                            Spacer(minLength: 0)
-                        }
+                FlowLayout(spacing: 12) {
+                    ForEach(options, id: \.self) { key in
+                        chipButton(kind: "ideal_trait", key: key)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 24)
                 .padding(.top, 8)
             }
 
             Spacer()
 
-            PrimaryButton(
-                title: String(localized: "common_next"),
-                isEnabled: !selected.isEmpty,
-                style: .large
-            ) {
-                appState.updateIdealTraits(Array(selected))
-                next()
+            VStack(spacing: 12) {
+                PrimaryButton(
+                    title: String(localized: "common_next"),
+                    isEnabled: !selected.isEmpty,
+                    style: .large
+                ) {
+                    appState.updateIdealTraits(Array(selected))
+                    next()
+                }
+                
+                Button(String(localized: "common_skip")) {
+                    next()
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 64)
@@ -76,8 +83,8 @@ struct IdealsStepView: View {
             Text(NSLocalizedString("\(kind)_\(key)", comment: ""))
                 .font(.system(size: 16, weight: .medium))
                 .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
                 .background(isSelected ? AppTheme.Colors.buttonSelected : AppTheme.Colors.buttonUnselected)
                 .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
                 .clipShape(Capsule())

@@ -15,6 +15,7 @@ struct ProfileView: View {
     @State private var isEditingName = false
     @State private var editingName: String = ""
     @FocusState private var nameFieldFocused: Bool
+    @State private var previousNameFieldFocused: Bool = false
 
     var body: some View {
         NavigationStack {
@@ -80,8 +81,6 @@ struct ProfileView: View {
                     row(label: String(localized: "profile_row_plan"), value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
                 }
                 .buttonStyle(.plain)
-                divider
-                row(label: String(localized: "profile_row_language"), value: currentLanguageName, showsChevron: false)
             }
         }
     }
@@ -111,9 +110,6 @@ struct ProfileView: View {
                 Text(appState.userProfile.displayName.isEmpty ? "-" : appState.userProfile.displayName)
                     .font(.system(size: 16))
                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 14, weight: .semibold))
-                    .foregroundStyle(AppTheme.Colors.tertiaryLabel)
             }
         }
         .padding(.horizontal, 18)
@@ -125,11 +121,12 @@ struct ProfileView: View {
                 isEditingName = true
             }
         }
-        .onChange(of: nameFieldFocused) { _, focused in
+        .onChange(of: nameFieldFocused) { focused in
             // フォーカスが外れたら保存
-            if !focused && isEditingName {
+            if !focused && previousNameFieldFocused && isEditingName {
                 saveName()
             }
+            previousNameFieldFocused = focused
         }
     }
     
@@ -504,6 +501,12 @@ struct ProfileView: View {
     
     // v3: SleepとStepsを完全に独立
     private func requestSleepOnly() async {
+        // ★ 既にauthorizedの場合はトグルをONにするだけ
+        if HealthKitManager.shared.isSleepAuthorized() {
+            await MainActor.run { appState.setSleepEnabled(true) }
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+            return
+        }
         let granted = await HealthKitManager.shared.requestSleepAuthorization()
         await MainActor.run {
             if granted {
@@ -516,6 +519,12 @@ struct ProfileView: View {
     }
     
     private func requestStepsOnly() async {
+        // ★ 既にauthorizedの場合はトグルをONにするだけ
+        if HealthKitManager.shared.isStepsAuthorized() {
+            await MainActor.run { appState.setStepsEnabled(true) }
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+            return
+        }
         let granted = await HealthKitManager.shared.requestStepsAuthorization()
         await MainActor.run {
             if granted {
@@ -610,50 +619,6 @@ private struct ProfileFlowChips: View {
     }
 }
 
-// MARK: - Flow Layout (Figma準拠の折り返しレイアウト)
-
-private struct FlowLayout: Layout {
-    var spacing: CGFloat = 8
-    
-    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
-        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
-        return result.size
-    }
-    
-    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
-        let result = arrangeSubviews(proposal: proposal, subviews: subviews)
-        for (index, position) in result.positions.enumerated() {
-            subviews[index].place(at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y), proposal: .unspecified)
-        }
-    }
-    
-    private func arrangeSubviews(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
-        let maxWidth = proposal.width ?? .infinity
-        var positions: [CGPoint] = []
-        var currentX: CGFloat = 0
-        var currentY: CGFloat = 0
-        var lineHeight: CGFloat = 0
-        var totalHeight: CGFloat = 0
-        
-        for subview in subviews {
-            let size = subview.sizeThatFits(.unspecified)
-            
-            // 行に収まらない場合は改行
-            if currentX + size.width > maxWidth && currentX > 0 {
-                currentX = 0
-                currentY += lineHeight + spacing
-                lineHeight = 0
-            }
-            
-            positions.append(CGPoint(x: currentX, y: currentY))
-            currentX += size.width + spacing
-            lineHeight = max(lineHeight, size.height)
-            totalHeight = max(totalHeight, currentY + lineHeight)
-        }
-        
-        return (CGSize(width: maxWidth, height: totalHeight), positions)
-    }
-}
 
 
 

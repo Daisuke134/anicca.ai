@@ -152,7 +152,9 @@ struct HabitPromptBuilder {
         
         // 理想の姿（全習慣で使用）
         if !profile.idealTraits.isEmpty {
-            replacements["IDEAL_TRAITS"] = "理想の姿として設定されている特性: " + profile.idealTraits.joined(separator: "、")
+            // ★ ローカライズして表示
+            let localizedTraits = profile.idealTraits.map { NSLocalizedString("ideal_trait_\($0)", comment: "") }
+            replacements["IDEAL_TRAITS"] = "理想の姿として設定されている特性: " + localizedTraits.joined(separator: "、")
         } else {
             replacements["IDEAL_TRAITS"] = ""
         }

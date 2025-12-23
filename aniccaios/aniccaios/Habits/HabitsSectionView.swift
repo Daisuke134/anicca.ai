@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 // Sheetの種類を一元管理
 enum SheetRoute: Identifiable {
@@ -314,6 +317,12 @@ struct HabitsSectionView: View {
                 set: { isOn in
                     if isOn {
                         if let date = date {
+                            // ★ 起床の場合、AlarmKit許可をリクエスト
+                            if habit == .wake {
+                                Task {
+                                    await requestAlarmKitPermissionIfNeeded()
+                                }
+                            }
                             activeHabits.insert(habit)
                             habitTimes[habit] = date
                         } else {
@@ -329,6 +338,7 @@ struct HabitsSectionView: View {
                 }
             ))
             .labelsHidden()
+            .tint(AppTheme.Colors.accent)
         }
     }
     
@@ -382,6 +392,7 @@ struct HabitsSectionView: View {
                 }
             ))
             .labelsHidden()
+            .tint(AppTheme.Colors.accent)
         }
     }
     
@@ -484,6 +495,31 @@ struct HabitsSectionView: View {
         appState.addCustomHabit(config)
         newCustomHabitName = ""
         activeSheet = nil
+    }
+    
+    private func requestAlarmKitPermissionIfNeeded() async {
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            let store = AlarmStore.shared
+            let status = await store.authorizationStatus
+            switch status {
+            case .notDetermined:
+                do {
+                    try await store.requestAuthorization()
+                    // 許可された場合、プロファイルのAlarmKit設定をON
+                    await MainActor.run {
+                        var profile = appState.userProfile
+                        profile.useAlarmKitForWake = true
+                        appState.updateUserProfile(profile, sync: true)
+                    }
+                } catch {
+                    // 拒否された場合は何もしない（通常の通知を使用）
+                }
+            default:
+                break
+            }
+        }
+#endif
     }
 }
 

@@ -1,4 +1,3 @@
-INTERNAL LANGUAGE LINE: ${LANGUAGE_LINE}
 LANGUAGE LOCK: ${LANGUAGE_LINE} で絶対に話すこと。他の言葉は一切使わない。
 
 ユーザーから明示的に言語変更の指示があれば、即座にそれに従い、その言語で話し続ける。

@@ -74,6 +74,22 @@ final class HealthKitManager {
         }
     }
     
+    // MARK: - Authorization Status Check
+    
+    /// 睡眠データが既に認可されているかチェック
+    func isSleepAuthorized() -> Bool {
+        guard HKHealthStore.isHealthDataAvailable() else { return false }
+        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return false }
+        return healthStore.authorizationStatus(for: sleepType) == .sharingAuthorized
+    }
+    
+    /// 歩数データが既に認可されているかチェック
+    func isStepsAuthorized() -> Bool {
+        guard HKHealthStore.isHealthDataAvailable() else { return false }
+        guard let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else { return false }
+        return healthStore.authorizationStatus(for: stepsType) == .sharingAuthorized
+    }
+    
     func fetchDailySummary() async -> DailySummary {
         var summary = DailySummary()
         

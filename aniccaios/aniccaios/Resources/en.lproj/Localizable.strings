@@ -250,6 +250,7 @@
 "behavior_title_today_highlights" = "Today's Highlights";
 "behavior_title_timeline" = "24-Hour Timeline";
 "behavior_title_future" = "10 Years From Now";
+"behavior_not_enough_data" = "Not enough data";
 "behavior_highlight_wake" = "Wake";
 "behavior_highlight_screen" = "Screen";
 "behavior_highlight_workout" = "Workout";

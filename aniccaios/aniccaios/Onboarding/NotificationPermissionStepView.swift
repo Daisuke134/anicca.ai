@@ -33,12 +33,13 @@ struct NotificationPermissionStepView: View {
             PrimaryButton(
                 title: isRequesting
                     ? String(localized: "common_requesting")
-                    : (notificationGranted ? String(localized: "common_continue") : String(localized: "onboarding_notifications_allow")),
+                    : (hasAttemptedPermission ? String(localized: "common_continue") : String(localized: "onboarding_notifications_allow")),
                 isEnabled: !isRequesting,
                 isLoading: isRequesting,
-                style: notificationGranted ? .selected : .primary
+                style: hasAttemptedPermission ? .selected : .primary
             ) {
-                if notificationGranted || hasAttemptedPermission {
+                if hasAttemptedPermission {
+                    // 許可/拒否に関わらず次へ進める
                     next()
                 } else {
                     requestNotifications()
@@ -64,9 +65,9 @@ struct NotificationPermissionStepView: View {
                 notificationDenied = !granted
                 isRequesting = false
                 hasAttemptedPermission = true
-                // v3: 自動遷移しない
+                // ★ 許可/拒否後に自動で次へ遷移
+                next()
             }
-            await refreshAuthorizationState(autoAdvance: false)
         }
     }
 

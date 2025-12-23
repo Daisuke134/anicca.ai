@@ -591,10 +591,10 @@ final class NotificationScheduler {
     
     /// 各習慣タイプの事前通知タイミング（分）
     private enum PreReminderTiming {
-        static let bedtime = 30    // 就寝30分前
+        static let bedtime = 15    // 就寝15分前
         static let training = 15   // トレーニング15分前
         static let custom = 15     // カスタム習慣15分前
-        // wake は設定時刻ジャスト（事前通知なし、メインアラームのみ）
+        static let wake = 5        // 起床5分前
     }
     
     /// 習慣の事前通知をスケジュール
@@ -611,9 +611,6 @@ final class NotificationScheduler {
         habitName: String? = nil,
         customHabitId: UUID? = nil
     ) async {
-        // 起床は事前通知なし（メインアラームとして動作）
-        guard habit != .wake else { return }
-        
         let offsetMinutes: Int
         switch habit {
         case .bedtime:
@@ -623,7 +620,7 @@ final class NotificationScheduler {
         case .custom:
             offsetMinutes = PreReminderTiming.custom
         case .wake:
-            return  // 起床は事前通知なし
+            offsetMinutes = PreReminderTiming.wake  // 5分前の事前通知を追加
         }
         
         // 事前通知の時刻を計算
@@ -638,6 +635,7 @@ final class NotificationScheduler {
         // デフォルトメッセージ（Notification Service Extension でパーソナライズされる）
         content.body = defaultPreReminderBody(for: habit, habitName: habitName)
         content.categoryIdentifier = Category.preReminder.rawValue
+        content.mutableContent = true  // ★ Service Extension を有効化
         
         // Notification Service Extension 用のフラグ
         content.userInfo = [
@@ -689,6 +687,7 @@ final class NotificationScheduler {
         content.title = "Anicca"
         content.body = String(format: localizedString("pre_reminder_custom_body_format"), minutesBefore, name)
         content.categoryIdentifier = Category.preReminder.rawValue
+        content.mutableContent = true  // ★ Service Extension を有効化
         content.userInfo = [
             "customHabitId": id.uuidString,
             "habitType": "custom",

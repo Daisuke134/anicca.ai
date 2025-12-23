@@ -4,10 +4,12 @@ struct StrugglesStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // profile.md (Figma) 準拠: rumination, jealousy, self_criticism, anxiety, loneliness, irritation
-    private let rows: [[String]] = [
-        ["rumination", "jealousy", "self_criticism"],
-        ["anxiety", "loneliness", "irritation"]
+    // スクショ準拠: Procrastination, Anxiety, Poor Sleep, Stress, Focus, Motivation, Self-doubt, Time Management, Burnout, Relationships, Energy, Work-Life Balance
+    private let options: [String] = [
+        "procrastination", "anxiety", "poor_sleep",
+        "stress", "focus", "motivation",
+        "self_doubt", "time_management", "burnout",
+        "relationships", "energy", "work_life_balance"
     ]
 
     @State private var selected: Set<String> = []
@@ -15,46 +17,50 @@ struct StrugglesStepView: View {
     var body: some View {
         VStack(spacing: 24) {
             Text(String(localized: "onboarding_struggles_title"))
-                .font(AppTheme.Typography.onboardingTitle)
+                .font(.system(size: 36, weight: .bold))
                 .fontWeight(.heavy)
-                .lineLimit(3)
+                .lineSpacing(4) // line-height 40px
                 .minimumScaleFactor(0.8)
                 .multilineTextAlignment(.center)
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
+                .padding(.horizontal, 24)
 
             Text(String(localized: "onboarding_struggles_subtitle"))
-                .font(.subheadline)
+                .font(.system(size: 16))
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
-                .padding(.horizontal)
+                .padding(.horizontal, 24)
 
             ScrollView {
-                VStack(alignment: .leading, spacing: 12) {
-                    ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
-                        HStack(spacing: 12) {
-                            ForEach(row, id: \.self) { key in
-                                chipButton(kind: "problem", key: key)
-                            }
-                            Spacer(minLength: 0)
-                        }
+                FlowLayout(spacing: 12) {
+                    ForEach(options, id: \.self) { key in
+                        chipButton(kind: "problem", key: key)
                     }
                 }
-                .padding(.horizontal, 16)
+                .padding(.horizontal, 24)
                 .padding(.top, 8)
             }
 
             Spacer()
 
-            PrimaryButton(
-                title: String(localized: "common_next"),
-                isEnabled: !selected.isEmpty,
-                style: .large
-            ) {
-                var profile = appState.userProfile
-                profile.problems = Array(selected)
-                appState.updateUserProfile(profile, sync: true)
-                next()
+            VStack(spacing: 12) {
+                PrimaryButton(
+                    title: String(localized: "common_next"),
+                    isEnabled: !selected.isEmpty,
+                    style: .large
+                ) {
+                    var profile = appState.userProfile
+                    profile.problems = Array(selected)
+                    appState.updateUserProfile(profile, sync: true)
+                    next()
+                }
+                
+                Button(String(localized: "common_skip")) {
+                    next()
+                }
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 64)
@@ -78,8 +84,8 @@ struct StrugglesStepView: View {
             Text(NSLocalizedString("\(kind)_\(key)", comment: ""))
                 .font(.system(size: 16, weight: .medium))
                 .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 24)
-                .padding(.vertical, 12)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 14)
                 .background(isSelected ? AppTheme.Colors.buttonSelected : AppTheme.Colors.buttonUnselected)
                 .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
                 .clipShape(Capsule())

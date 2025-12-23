@@ -213,6 +213,11 @@
 "ideal_trait_altruistic" = "利他的";
 "ideal_trait_optimistic" = "楽観的";
 "ideal_trait_resilient" = "忍耐強い";
+"ideal_trait_creative" = "クリエイティブ";
+"ideal_trait_organized" = "整理整頓";
+"ideal_trait_patient" = "忍耐強い";
+"ideal_trait_focused" = "集中力";
+"ideal_trait_grateful" = "感謝";
 "problem_self_loathing" = "自己嫌悪";
 "problem_rumination" = "反芻";
 "problem_anxiety" = "不安";
@@ -230,6 +235,7 @@
 "behavior_title_today_highlights" = "今日のハイライト";
 "behavior_title_timeline" = "24時間タイムライン";
 "behavior_title_future" = "10年後の未来";
+"behavior_not_enough_data" = "データが不足しています";
 "behavior_highlight_wake" = "起床";
 "behavior_highlight_screen" = "スクリーン";
 "behavior_highlight_workout" = "運動";
@@ -276,6 +282,16 @@
 "problem_no_motivation" = "やる気が出ない";
 "problem_procrastination" = "先延ばし";
 "problem_self_criticism" = "自己批判";
+"problem_poor_sleep" = "睡眠不足";
+"problem_stress" = "ストレス";
+"problem_focus" = "集中力不足";
+"problem_motivation" = "モチベーション";
+"problem_self_doubt" = "自己不信";
+"problem_time_management" = "時間管理";
+"problem_burnout" = "燃え尽き";
+"problem_relationships" = "人間関係";
+"problem_energy" = "エネルギー不足";
+"problem_work_life_balance" = "ワークライフバランス";
 "settings_personalization" = "パーソナライズ";
 "settings_data_optional_title" = "データ連携（任意）";
 "settings_data_optional_description" = "睡眠・歩数・スクリーンタイム・動作データの連携は任意です。未許可でもTalkはいつでも使えます。連携するとBehaviorのインサイト精度が向上します。";

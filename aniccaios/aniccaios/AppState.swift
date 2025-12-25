@@ -387,6 +387,10 @@ final class AppState: ObservableObject {
         pendingConsultPrompt = nil
         shouldStartSessionImmediately = false
     }
+    
+    func clearShouldStartSessionImmediately() {
+        shouldStartSessionImmediately = false
+    }
 
     func resetState() {
         authStatus = .signedOut

@@ -635,7 +635,6 @@ final class NotificationScheduler {
         // デフォルトメッセージ（Notification Service Extension でパーソナライズされる）
         content.body = defaultPreReminderBody(for: habit, habitName: habitName)
         content.categoryIdentifier = Category.preReminder.rawValue
-        content.mutableContent = true  // ★ Service Extension を有効化
         
         // Notification Service Extension 用のフラグ
         content.userInfo = [
@@ -687,7 +686,6 @@ final class NotificationScheduler {
         content.title = "Anicca"
         content.body = String(format: localizedString("pre_reminder_custom_body_format"), minutesBefore, name)
         content.categoryIdentifier = Category.preReminder.rawValue
-        content.mutableContent = true  // ★ Service Extension を有効化
         content.userInfo = [
             "customHabitId": id.uuidString,
             "habitType": "custom",

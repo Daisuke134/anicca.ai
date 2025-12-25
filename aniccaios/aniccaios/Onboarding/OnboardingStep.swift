@@ -22,7 +22,7 @@ extension OnboardingStep {
         // v0.2系→v3へのマイグレーション
         switch rawValue {
         case 0: return .welcome
-        case 1: return .microphone
+        case 1: return .welcome  // microphone は削除されたので welcome にマップ
         case 2: return .notifications
         case 3: return .account
         case 4, 5, 6, 7, 8, 9: return .welcome

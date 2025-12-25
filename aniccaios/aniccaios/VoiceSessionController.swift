@@ -594,7 +594,9 @@ extension VoiceSessionController: RTCDataChannelDelegate {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return
         }
-        handleRealtimeEvent(json)
+        Task { @MainActor in
+            handleRealtimeEvent(json)
+        }
     }
 }
 
@@ -709,7 +711,7 @@ private extension VoiceSessionController {
         logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): sent response.create to keep talking")
     }
     
-    private func handleRealtimeEvent(_ event: [String: Any]) {
+    @MainActor private func handleRealtimeEvent(_ event: [String: Any]) {
         guard let type = event["type"] as? String else { return }
         switch type {
         case "output_audio_buffer.started":

@@ -499,7 +499,7 @@ struct HabitsSectionView: View {
     
     private func requestAlarmKitPermissionIfNeeded() async {
 #if canImport(AlarmKit)
-        if #available(iOS 26.0, *) {
+        if #available(iOS 18.0, *) {
             let store = AlarmStore.shared
             let status = await store.authorizationStatus
             switch status {

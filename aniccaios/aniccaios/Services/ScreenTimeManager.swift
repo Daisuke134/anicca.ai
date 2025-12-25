@@ -31,7 +31,7 @@ final class ScreenTimeManager {
             return true
         } catch let error as FamilyControlsError {
             switch error {
-            case .restricted:
+            case .restricted, .denied:
                 logger.error("ScreenTime authorization restricted - parental controls may be blocking this")
             case .unavailable:
                 logger.error("ScreenTime authorization unavailable - FamilyControls framework not set up")

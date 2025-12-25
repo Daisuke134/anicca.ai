@@ -81,7 +81,7 @@ struct TalkView: View {
               appState.shouldStartSessionImmediately else { return }
         pendingHabit = trigger.habit
         habitSessionActive = true
-        appState.shouldStartSessionImmediately = false
+        appState.clearShouldStartSessionImmediately()
     }
 
     @ViewBuilder

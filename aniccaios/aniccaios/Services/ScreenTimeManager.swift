@@ -31,7 +31,7 @@ final class ScreenTimeManager {
             return true
         } catch let error as FamilyControlsError {
             switch error {
-            case .restricted, .denied:
+            case .restricted:
                 logger.error("ScreenTime authorization restricted - parental controls may be blocking this")
             case .unavailable:
                 logger.error("ScreenTime authorization unavailable - FamilyControls framework not set up")
@@ -39,6 +39,14 @@ final class ScreenTimeManager {
                 logger.info("ScreenTime authorization canceled by user")
             case .networkError:
                 logger.error("ScreenTime authorization failed - network error")
+            case .authorizationConflict:
+                logger.error("ScreenTime authorization conflict - another app already provides parental controls")
+            case .invalidArgument:
+                logger.error("ScreenTime authorization failed - invalid argument")
+            case .authenticationMethodUnavailable:
+                logger.error("ScreenTime authorization failed - device passcode required")
+            case .invalidAccountType:
+                logger.error("ScreenTime authorization failed - invalid iCloud account")
             @unknown default:
                 logger.error("ScreenTime authorization failed: \(error)")
             }

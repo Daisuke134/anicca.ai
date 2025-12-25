@@ -6,6 +6,7 @@ import SwiftUI
 import os.log
 
 @main
+@MainActor
 struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
     // iOS 18.2以降で必須のextensionPointプロパティ
     @AppExtensionPoint.Bind
@@ -15,7 +16,7 @@ struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
         AppExtensionPoint.Identifier(host: "com.apple.deviceactivityui", name: "report-extension")
     }
     
-    var body: some DeviceActivityReportScene {
+    nonisolated var body: some DeviceActivityReportScene {
         TotalActivityReport { activityReport in
             TotalActivityView(report: activityReport)
         }

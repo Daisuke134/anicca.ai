@@ -499,13 +499,13 @@ struct HabitsSectionView: View {
     
     private func requestAlarmKitPermissionIfNeeded() async {
 #if canImport(AlarmKit)
-        if #available(iOS 18.0, *) {
-            let store = AlarmStore.shared
-            let status = await store.authorizationStatus
+        if #available(iOS 26.0, *) {
+            let manager = AlarmManager.shared
+            let status = manager.authorizationState
             switch status {
             case .notDetermined:
                 do {
-                    try await store.requestAuthorization()
+                    try await manager.requestAuthorization()
                     // 許可された場合、プロファイルのAlarmKit設定をON
                     await MainActor.run {
                         var profile = appState.userProfile

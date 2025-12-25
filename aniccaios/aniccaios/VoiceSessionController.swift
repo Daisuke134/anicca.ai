@@ -580,8 +580,8 @@ extension VoiceSessionController: RTCDataChannelDelegate {
     func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
         logger.debug("Data channel state: \(dataChannel.readyState.rawValue)")
         if dataChannel.readyState == .open {
-            Task { @MainActor in
-                self.sendSessionUpdate()
+            DispatchQueue.main.async { [weak self] in
+                self?.sendSessionUpdate()
             }
         }
     }
@@ -594,8 +594,8 @@ extension VoiceSessionController: RTCDataChannelDelegate {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return
         }
-        Task { @MainActor in
-            handleRealtimeEvent(json)
+        DispatchQueue.main.async { [weak self] in
+            self?.handleRealtimeEvent(json)
         }
     }
 }

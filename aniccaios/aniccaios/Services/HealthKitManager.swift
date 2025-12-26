@@ -98,9 +98,13 @@ final class HealthKitManager {
         let startOfDay = calendar.startOfDay(for: now)
         let endOfDay = calendar.date(byAdding: .day, value: 1, to: startOfDay)!
         
+        // ★ 睡眠クエリ用: 前日18:00から取得（夜22時に寝て朝6時に起きるパターンを捕捉）
+        let sleepQueryStart = calendar.date(byAdding: .hour, value: -6, to: startOfDay)!
+        
         // Fetch sleep
         if let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) {
-            let predicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
+            // ★ .strictStartDate を削除し、範囲と重なるすべてのサンプルを取得
+            let predicate = HKQuery.predicateForSamples(withStart: sleepQueryStart, end: endOfDay, options: [])
             let sleepSamples = try? await withCheckedThrowingContinuation { (continuation: CheckedContinuation<[HKCategorySample], Error>) in
                 let query = HKSampleQuery(sampleType: sleepType, predicate: predicate, limit: HKObjectQueryNoLimit, sortDescriptors: nil) { _, samples, error in
                     if let error = error {
@@ -119,19 +123,25 @@ final class HealthKitManager {
                     HKCategoryValueSleepAnalysis.asleepREM.rawValue,
                     HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
                 ]
-                let totalSleepSeconds = samples
-                    .filter { asleepValues.contains($0.value) }
+                
+                // ★ 今日の起床時刻（=今日の日付で終了したサンプル）のみを対象にフィルタリング
+                let todayAsleepSamples = samples.filter { sample in
+                    asleepValues.contains(sample.value) && sample.endDate >= startOfDay
+                }
+                
+                let totalSleepSeconds = todayAsleepSamples
                     .reduce(0.0) { $0 + $1.endDate.timeIntervalSince($1.startDate) }
                 summary.sleepMinutes = Int(totalSleepSeconds / 60)
                 
                 // v3: 睡眠の開始/終了時刻を推定
-                let asleepSamples = samples.filter { asleepValues.contains($0.value) }
-                if !asleepSamples.isEmpty {
-                    // 最も早い開始時刻を sleepStartAt
-                    summary.sleepStartAt = asleepSamples.map { $0.startDate }.min()
-                    // 最も遅い終了時刻を wakeAt
-                    summary.wakeAt = asleepSamples.map { $0.endDate }.max()
+                if !todayAsleepSamples.isEmpty {
+                    // 最も早い開始時刻を sleepStartAt（昨夜の就寝時刻）
+                    summary.sleepStartAt = todayAsleepSamples.map { $0.startDate }.min()
+                    // 最も遅い終了時刻を wakeAt（今朝の起床時刻）
+                    summary.wakeAt = todayAsleepSamples.map { $0.endDate }.max()
                 }
+                
+                logger.info("Sleep query: found \(samples.count) samples, \(todayAsleepSamples.count) for today, duration=\(summary.sleepMinutes ?? 0)min")
             }
         }
         

@@ -1,3 +1,6 @@
+// Mem0テレメトリーを無効化（ETIMEDOUT エラー回避）
+process.env.MEM0_TELEMETRY = 'False';
+
 import baseLogger from '../../utils/logger.js';
 import { MemoryClient } from 'mem0ai';
 import { Memory as OSSMemory } from 'mem0ai/oss';

@@ -5,7 +5,7 @@ import { calculateRuminationProxy } from '../nudge/features/stateBuilder.js';  /
  * Build Behavior tab payload pieces from daily_metrics row.
  * This is a thin, deterministic mapper; richer insights may be generated upstream and stored into daily_metrics.insights.
  */
-export function buildHighlights({ todayStats, timezone }) {
+export function buildHighlights({ todayStats, timezone, language = 'en' }) {
   const wakeAt = todayStats?.wakeAt ? new Date(todayStats.wakeAt) : null;
   const snsMinutesTotal = Number(todayStats?.snsMinutesTotal ?? 0);
   const steps = Number(todayStats?.steps ?? 0);
@@ -20,19 +20,30 @@ export function buildHighlights({ todayStats, timezone }) {
     longestNoUseHours: Number(activity?.longestNoUseHours ?? 0)
   });
 
-  const wakeLabel = wakeAt ? `Wake ${toLocalTimeHHMM(wakeAt, timezone)}` : 'Wake';
+  const isJa = language === 'ja';
+  
+  // ★ ラベルをローカライズ
+  const wakeLabel = wakeAt 
+    ? (isJa ? `起床 ${toLocalTimeHHMM(wakeAt, timezone)}` : `Wake ${toLocalTimeHHMM(wakeAt, timezone)}`)
+    : (isJa ? '起床' : 'Wake');
   const wakeStatus = wakeAt ? 'on_track' : 'warning';
 
   // Minimal heuristics (v0.3): thresholds are placeholders until insights pipeline fills daily_metrics.insights.highlights
   const screenStatus = snsMinutesTotal >= 180 ? 'warning' : snsMinutesTotal >= 120 ? 'warning' : 'on_track';
-  const screenLabel = snsMinutesTotal > 0 ? `SNS ${snsMinutesTotal}m` : 'SNS';
+  const screenLabel = snsMinutesTotal > 0 
+    ? (isJa ? `SNS ${snsMinutesTotal}分` : `SNS ${snsMinutesTotal}m`) 
+    : 'SNS';
 
   const workoutStatus = steps >= 8000 ? 'on_track' : steps >= 3000 ? 'warning' : 'missed';
-  const workoutLabel = steps > 0 ? `Steps ${steps}` : 'Workout';
+  const workoutLabel = steps > 0 
+    ? (isJa ? `歩数 ${steps.toLocaleString()}` : `Steps ${steps.toLocaleString()}`) 
+    : (isJa ? '運動' : 'Workout');
 
   // 修正: ruminationProxy の値に基づいてラベルも表示
   const ruminationStatus = ruminationProxy >= 0.7 ? 'warning' : ruminationProxy >= 0.4 ? 'ok' : 'ok';
-  const ruminationLabel = `Rumination ${Math.round(ruminationProxy * 100)}%`;
+  const ruminationLabel = isJa 
+    ? `反芻 ${Math.round(ruminationProxy * 100)}%`
+    : `Rumination ${Math.round(ruminationProxy * 100)}%`;
 
   return {
     wake: { status: wakeStatus, label: wakeLabel },
@@ -88,7 +99,15 @@ export function buildTimeline({ todayStats, timezone }) {
 
 export function pickTodayInsight({ todayStats, language = 'en' }) {
   const insight = todayStats?.insights?.todayInsight;
-  if (typeof insight === 'string' && insight.trim()) return insight.trim();
+  if (typeof insight === 'string' && insight.trim()) {
+    return insight.trim();
+  }
+  // ★ 保存済みがない場合はnullを返し、呼び出し元でAI生成を促す
+  return null;
+}
+
+// ★ フォールバックメッセージを取得するユーティリティを追加
+export function getInsightFallback(language = 'en') {
   return language === 'ja'
     ? 'まだ十分な行動データがありません。今日の流れを一緒に整えていきましょう。'
     : 'Not enough behavior data yet. We can shape today gently from here.';

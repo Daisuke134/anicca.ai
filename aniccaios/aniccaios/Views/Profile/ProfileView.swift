@@ -180,9 +180,9 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
-            // profile.md (Figma) 準拠: kind, altruistic, confident, mindful, honest, open, courageous
+            // オンボーディングと同一リスト
             ProfileFlowChips(
-                options: ["kind", "altruistic", "confident", "mindful", "honest", "open", "courageous"],
+                options: ["kind", "confident", "early_riser", "runner", "creative", "mindful", "organized", "calm", "healthy", "patient", "focused", "grateful", "brave"],
                 selected: Binding(
                     get: { Set(appState.userProfile.ideals) },
                     set: { newValue in
@@ -205,9 +205,9 @@ struct ProfileView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)
 
-            // profile.md (Figma) 準拠: rumination, jealousy, self_criticism, anxiety, loneliness, irritation
+            // オンボーディングと同一リスト
             ProfileFlowChips(
-                options: ["rumination", "jealousy", "self_criticism", "anxiety", "loneliness", "irritation"],
+                options: ["procrastination", "anxiety", "poor_sleep", "stress", "focus", "motivation", "self_doubt", "time_management", "burnout", "relationships", "energy", "work_life_balance"],
                 selected: Binding(
                     get: { Set(appState.userProfile.struggles) },
                     set: { newValue in

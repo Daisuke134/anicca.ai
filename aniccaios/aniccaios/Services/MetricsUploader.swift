@@ -150,6 +150,21 @@ final class MetricsUploader {
             payload["activity_summary"] = activitySummary
         }
         
+        // ★ デバッグログ追加
+        logger.info("MetricsUploader: Payload keys: \(payload.keys.joined(separator: ", "))")
+        if let sleepStart = payload["sleep_start_at"] {
+            logger.info("MetricsUploader: sleep_start_at = \(sleepStart)")
+        }
+        if let wakeAt = payload["wake_at"] {
+            logger.info("MetricsUploader: wake_at = \(wakeAt)")
+        }
+        if let activitySummary = payload["activity_summary"] as? [String: Any] {
+            logger.info("MetricsUploader: activity_summary keys: \(activitySummary.keys.joined(separator: ", "))")
+            if let snsSessions = activitySummary["snsSessions"] as? [[String: Any]] {
+                logger.info("MetricsUploader: snsSessions count: \(snsSessions.count)")
+            }
+        }
+        
         // POST to backend
         var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/daily_metrics"))
         request.httpMethod = "POST"

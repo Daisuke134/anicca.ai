@@ -8,12 +8,17 @@ struct FutureScenarioView: View {
 
     var body: some View {
         if isEmpty {
-            // ★ データなし時は1行のみ表示
             CardView {
-                Text(String(localized: "behavior_not_enough_data"))
-                    .font(AppTheme.Typography.subheadlineDynamic)
-                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                    .frame(maxWidth: .infinity, alignment: .center)
+                VStack(alignment: .leading, spacing: 12) {
+                    // ★ タイトルを追加
+                    Text(String(localized: "behavior_title_future"))
+                        .font(.system(size: 20, weight: .bold))
+                        .foregroundStyle(AppTheme.Colors.label)
+                    Text(String(localized: "behavior_not_enough_data"))
+                        .font(AppTheme.Typography.subheadlineDynamic)
+                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                        .frame(maxWidth: .infinity, alignment: .center)
+                }
             }
             .frame(maxWidth: .infinity)  // ★ TimelineViewと同じ横幅
         } else {

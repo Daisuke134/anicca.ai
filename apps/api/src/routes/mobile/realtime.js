@@ -119,7 +119,7 @@ router.post('/tools/get_behavior_summary', async (req, res) => {
     const today = snapshot?.today_stats || null;
 
     const todayInsight = pickTodayInsight({ todayStats: today, language: lang });
-    const highlights = buildHighlights({ todayStats: today, timezone: tz });
+    const highlights = buildHighlights({ todayStats: today, timezone: tz, language: lang });  // ★ language 追加
     const timeline = buildTimeline({ todayStats: today, timezone: tz });
     const futureScenario = await generateFutureScenario({
       language: lang,

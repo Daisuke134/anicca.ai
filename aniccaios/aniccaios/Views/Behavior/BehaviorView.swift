@@ -104,21 +104,33 @@ struct BehaviorView: View {
         isLoading = true
         errorText = nil
         
+        // ★ デバッグログ追加
+        logger.info("BehaviorView: Starting data load")
+        logger.info("BehaviorView: screenTimeEnabled=\(appState.sensorAccess.screenTimeEnabled), sleepEnabled=\(appState.sensorAccess.sleepEnabled), stepsEnabled=\(appState.sensorAccess.stepsEnabled)")
+        
         // v3.1: Screen Time データを更新するために DeviceActivityReport を表示
         if appState.sensorAccess.screenTimeEnabled {
             showScreenTimeReport = true
-            // Extension がデータを App Groups に保存するのを待つ
-            try? await Task.sleep(nanoseconds: 500_000_000) // 0.5秒
+            logger.info("BehaviorView: Waiting for DeviceActivityReport...")
+            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1秒に延長
             showScreenTimeReport = false
         }
         
         // v3.1: 最新の HealthKit データを即座にバックエンドへ送信
+        logger.info("BehaviorView: Running MetricsUploader...")
         await MetricsUploader.shared.runUploadIfDue(force: true)
         
         do {
+            logger.info("BehaviorView: Fetching summary from backend...")
             let data = try await BehaviorSummaryService.shared.fetchSummary()
+            
+            // ★ デバッグログ追加
+            logger.info("BehaviorView: Summary received - timeline segments: \(data.timeline.count)")
+            logger.info("BehaviorView: Highlights - wake: \(data.highlights.wake.label), screen: \(data.highlights.screen.label), workout: \(data.highlights.workout.label), rumination: \(data.highlights.rumination.label)")
+            
             summary = data
         } catch {
+            logger.error("BehaviorView: Failed to load summary - \(error.localizedDescription)")
             errorText = String(localized: "behavior_error_failed_load")
         }
         isLoading = false

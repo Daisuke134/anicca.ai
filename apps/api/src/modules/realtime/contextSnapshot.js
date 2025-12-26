@@ -144,6 +144,7 @@ export async function buildContextSnapshot({ userId, deviceId, now = new Date() 
     today_stats: today
       ? {
           sleepDurationMin: today.sleep_duration_min ?? null,
+          sleepStartAt: today.sleep_start_at ?? null,  // ★ 追加: Timeline用
           wakeAt: today.wake_at ?? null,
           snsMinutesTotal: today.sns_minutes_total ?? 0,
           steps: today.steps ?? 0,

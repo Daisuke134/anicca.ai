@@ -245,9 +245,9 @@ async function generatePersonalizedMessage({ profileId, habitType, habitName, sc
   const trainingFocus = profile?.trainingFocus || [];
   const trainingGoal = profile?.trainingGoal || '';
   
-  // ★ idealTraits と problems を追加
-  const idealTraits = profile?.idealTraits || [];
-  const problems = profile?.problems || [];
+  // ★ idealTraits と problems を追加（ideals/strugglesをフォールバック）
+  const idealTraits = profile?.idealTraits || profile?.ideals || [];
+  const problems = profile?.problems || profile?.struggles || [];
 
   // 2. mem0から関連記憶を検索
   let memories = '';

@@ -2,8 +2,9 @@ import express from 'express';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
 import { buildContextSnapshot } from '../../modules/realtime/contextSnapshot.js';
-import { buildHighlights, buildTimeline, pickTodayInsight } from '../../modules/metrics/stateBuilder.js';
+import { buildHighlights, buildTimeline, pickTodayInsight, getInsightFallback } from '../../modules/metrics/stateBuilder.js';  // ★ getInsightFallback 追加
 import { generateFutureScenario } from '../../modules/simulation/futureScenario.js';
+import { generateTodayInsight } from '../../modules/insights/generateTodayInsight.js';  // ★ 追加
 import { PrismaClient } from '../../generated/prisma/index.js';
 
 const router = express.Router();
@@ -22,8 +23,22 @@ router.get('/summary', async (req, res) => {
     const lang = snapshot?.language || 'en';
     const today = snapshot?.today_stats || null;
 
-    const todayInsight = pickTodayInsight({ todayStats: today, language: lang });
-    const highlights = buildHighlights({ todayStats: today, timezone: tz });
+    // ★ 保存済みinsightをチェック、なければAI生成
+    let todayInsight = pickTodayInsight({ todayStats: today, language: lang });
+    if (!todayInsight) {
+      // AI生成を試みる
+      todayInsight = await generateTodayInsight({
+        todayStats: today,
+        traits: snapshot?.traits,
+        language: lang
+      });
+      // 生成に失敗した場合はフォールバック
+      if (!todayInsight) {
+        todayInsight = getInsightFallback(lang);
+      }
+    }
+
+    const highlights = buildHighlights({ todayStats: today, timezone: tz, language: lang });  // ★ language 追加
     const timeline = buildTimeline({ todayStats: today, timezone: tz });
     const futureScenario = await generateFutureScenario({
       language: lang,

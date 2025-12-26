@@ -4,7 +4,18 @@ enum LanguagePreference: String, Codable {
     case ja
     case en
     
+    /// プロンプト内のLANGUAGE LOCK用（ハードコーディングで確実に正しい言語名を返す）
     var languageLine: String {
+        switch self {
+        case .ja:
+            return "日本語"
+        case .en:
+            return "English"
+        }
+    }
+    
+    /// UI表示用のローカライズされた言語名
+    var displayName: String {
         switch self {
         case .ja:
             return NSLocalizedString("language_preference_ja", comment: "")
@@ -99,7 +110,7 @@ struct UserProfile: Codable {
         summary: String = "",
         nudgeIntensity: NudgeIntensity = .default,
         stickyMode: Bool = true,
-        useAlarmKitForWake: Bool = true,
+        useAlarmKitForWake: Bool = false,  // デフォルトOFF、Wake習慣ON時にユーザーに許可を求める
         useAlarmKitForTraining: Bool = false,
         useAlarmKitForBedtime: Bool = false,
         useAlarmKitForCustom: Bool = false
@@ -181,7 +192,7 @@ struct UserProfile: Codable {
         }
         
         // AlarmKit設定（各習慣ごと）
-        useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? true
+        useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? false
         useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? false
         useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? false
         useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? false

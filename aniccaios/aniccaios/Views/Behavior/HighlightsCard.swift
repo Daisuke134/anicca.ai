@@ -42,18 +42,10 @@ struct HighlightsCard: View {
                         Spacer()
                     }
 
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text(ui.label)
-                            .font(.system(size: 12))
-                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        
-                        // v3.1: バックエンドから返される具体的な数値（例: "Wake 6:30", "Steps 8524"）を表示
-                        if !valueLabel.isEmpty {
-                            Text(valueLabel)
-                                .font(.system(size: 11))
-                                .foregroundStyle(AppTheme.Colors.tertiaryLabel)
-                        }
-                    }
+                    // ★ 変更: ステータスラベルを削除し、値を同じサイズで表示
+                    Text(valueLabel.isEmpty ? "-" : valueLabel)
+                        .font(.system(size: 12))
+                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 }
             }
 

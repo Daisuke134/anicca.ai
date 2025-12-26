@@ -4,12 +4,12 @@ function fallback(language) {
   if (language === 'ja') {
     return {
       ifContinue: '十分なデータがありません',
-      ifImprove: '十分なデータがありません'
+      ifImprove: ''  // ★ 空にして1行のみ表示
     };
   }
   return {
     ifContinue: 'Not enough data available',
-    ifImprove: 'Not enough data available'
+    ifImprove: ''  // ★ 空にして1行のみ表示
   };
 }
 
@@ -53,8 +53,8 @@ export async function generateFutureScenario({
   ];
 
   try {
-    // Minimal call (Responses API assumed). If this fails, we fallback.
-    const resp = await fetch('https://api.openai.com/v1/responses', {
+    // ★ 正しいエンドポイント: /v1/chat/completions
+    const resp = await fetch('https://api.openai.com/v1/chat/completions', {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${apiKey}`,
@@ -62,15 +62,16 @@ export async function generateFutureScenario({
       },
       body: JSON.stringify({
         model,
-        input,
-        // Ask for JSON in text; parse best-effort below.
-        text: { format: { type: 'json_object' } }
+        messages: input,  // ★ 'input' → 'messages'
+        response_format: { type: 'json_object' },  // ★ フォーマット指定
+        max_tokens: 500,
+        temperature: 0.7
       })
     });
 
     if (!resp.ok) throw new Error(await resp.text());
     const data = await resp.json();
-    const text = data.output_text || '';
+    const text = data.choices?.[0]?.message?.content || '';  // ★ レスポンス解析修正
     const parsed = JSON.parse(text);
     if (parsed?.ifContinue && parsed?.ifImprove) {
       return { ifContinue: String(parsed.ifContinue), ifImprove: String(parsed.ifImprove) };

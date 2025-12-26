@@ -645,6 +645,9 @@ final class NotificationScheduler {
         ]
         
         // mutable-content を有効化（Service Extension が処理するため）
+        // ★ 重要: Service Extensionが呼ばれるにはこのフラグが必須
+        content.mutableContent = true
+        
         if #available(iOS 15.0, *) {
             content.interruptionLevel = .timeSensitive
         }

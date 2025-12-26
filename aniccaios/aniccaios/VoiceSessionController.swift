@@ -1038,7 +1038,9 @@ private enum RealtimeToolRouter {
 /// Talk/Feeling 用の Realtime instructions を Resources/Prompts から構築
 private enum RealtimePromptBuilder {
     static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
-        let openerName: String = {
+        let langSuffix = profile.preferredLanguage == .ja ? "_ja" : ""  // ★ 言語サフィックス
+        
+        let openerBaseName: String = {
             switch topic {
             case .selfLoathing: return "feeling_self_loathing"
             case .anxiety: return "feeling_anxiety"
@@ -1046,7 +1048,11 @@ private enum RealtimePromptBuilder {
             case .freeConversation: return "feeling_free_conversation"
             }
         }()
-        let opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // ★ 言語別ファイルがあればそれを、なければフォールバック
+        let opener = (load(name: openerBaseName + langSuffix, ext: "txt")
+            ?? load(name: openerBaseName, ext: "txt")
+            ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
         let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -1081,17 +1087,26 @@ private enum RealtimePromptBuilder {
         result = result.replacingOccurrences(of: "${TASK_TIME}", with: timeString)
         result = result.replacingOccurrences(of: "${TASK_DESCRIPTION}", with: "Talk Session")
         
-        // 理想の自分
+        // 理想の自分（ローカライズ）
         if !profile.idealTraits.isEmpty {
-            result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: profile.idealTraits.joined(separator: ", "))
+            let localizedTraits = profile.idealTraits.map { NSLocalizedString("ideal_trait_\($0)", comment: "") }
+            let prefix = profile.preferredLanguage == .ja
+                ? "理想の姿として設定されている特性: "
+                : "Ideal self traits: "
+            let separator = profile.preferredLanguage == .ja ? "、" : ", "
+            result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: prefix + localizedTraits.joined(separator: separator))
         } else {
             result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: "")
         }
         
-        // 問題・課題
+        // 問題・課題（ローカライズ）
         if !profile.problems.isEmpty {
             let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
-            result = result.replacingOccurrences(of: "${PROBLEMS}", with: localizedProblems.joined(separator: ", "))
+            let prefix = profile.preferredLanguage == .ja
+                ? "今抱えている問題: "
+                : "Current struggles: "
+            let separator = profile.preferredLanguage == .ja ? "、" : ", "
+            result = result.replacingOccurrences(of: "${PROBLEMS}", with: prefix + localizedProblems.joined(separator: separator))
         } else {
             result = result.replacingOccurrences(of: "${PROBLEMS}", with: "")
         }

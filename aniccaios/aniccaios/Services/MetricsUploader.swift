@@ -153,10 +153,10 @@ final class MetricsUploader {
         // ★ デバッグログ追加
         logger.info("MetricsUploader: Payload keys: \(payload.keys.joined(separator: ", "))")
         if let sleepStart = payload["sleep_start_at"] {
-            logger.info("MetricsUploader: sleep_start_at = \(sleepStart)")
+            logger.info("MetricsUploader: sleep_start_at = \(String(describing: sleepStart))")
         }
         if let wakeAt = payload["wake_at"] {
-            logger.info("MetricsUploader: wake_at = \(wakeAt)")
+            logger.info("MetricsUploader: wake_at = \(String(describing: wakeAt))")
         }
         if let activitySummary = payload["activity_summary"] as? [String: Any] {
             logger.info("MetricsUploader: activity_summary keys: \(activitySummary.keys.joined(separator: ", "))")

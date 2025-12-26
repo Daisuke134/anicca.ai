@@ -1,6 +1,7 @@
 import Foundation
 import UserNotifications
 import OSLog
+import UIKit
 #if canImport(AlarmKit)
 import AlarmKit
 #endif
@@ -589,6 +590,65 @@ final class NotificationScheduler {
     
     // MARK: - Pre-Reminder Scheduling (Personalized)
     
+    // MARK: - Pre-Reminder Message Fetching
+    
+    /// サーバーからパーソナライズされた事前通知メッセージを取得
+    private func fetchPreReminderMessage(
+        habitType: HabitType,
+        scheduledTime: String,
+        habitName: String?
+    ) async -> String? {
+        let baseURL = AppConfig.proxyBaseURL
+        let url = baseURL.appendingPathComponent("mobile/nudge/pre-reminder")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // 認証ヘッダーを追加
+        if let deviceId = UIDevice.current.identifierForVendor?.uuidString {
+            request.setValue(deviceId, forHTTPHeaderField: "device-id")
+        }
+        if case .signedIn(let credentials) = AppState.shared.authStatus {
+            request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        }
+        
+        request.timeoutInterval = 10
+        
+        var body: [String: Any] = [
+            "habitType": habitType.rawValue,
+            "scheduledTime": scheduledTime
+        ]
+        if let habitName = habitName {
+            body["habitName"] = habitName
+        }
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  (200..<300).contains(httpResponse.statusCode) else {
+                logger.warning("Non-2xx response from pre-reminder endpoint")
+                return nil
+            }
+            
+            guard let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+                  let message = json["message"] as? String, !message.isEmpty else {
+                logger.warning("Empty or invalid message in response")
+                return nil
+            }
+            
+            logger.info("Fetched personalized pre-reminder: \(message.prefix(30))...")
+            return message
+            
+        } catch {
+            logger.error("Failed to fetch pre-reminder message: \(error.localizedDescription)")
+            return nil
+        }
+    }
+    
     /// 各習慣タイプの事前通知タイミング（分）
     private enum PreReminderTiming {
         static let bedtime = 15    // 就寝15分前
@@ -630,10 +690,17 @@ final class NotificationScheduler {
             offsetMinutes: -offsetMinutes
         )
         
+        // ★ サーバーからパーソナライズメッセージを取得（フォールバック付き）
+        let scheduledTimeStr = String(format: "%02d:%02d", hour, minute)
+        let message = await fetchPreReminderMessage(
+            habitType: habit,
+            scheduledTime: scheduledTimeStr,
+            habitName: habitName
+        ) ?? defaultPreReminderBody(for: habit, habitName: habitName)
+        
         let content = UNMutableNotificationContent()
         content.title = "Anicca"
-        // デフォルトメッセージ（Notification Service Extension でパーソナライズされる）
-        content.body = defaultPreReminderBody(for: habit, habitName: habitName)
+        content.body = message  // ★ パーソナライズ済みメッセージ
         content.categoryIdentifier = Category.preReminder.rawValue
         
         // Notification Service Extension 用のフラグ
@@ -644,9 +711,9 @@ final class NotificationScheduler {
             "customHabitId": customHabitId?.uuidString ?? ""
         ]
         
-        // mutable-content を有効化（Service Extension が処理するため）
-        // ★ 重要: Service Extensionが呼ばれるにはこのフラグが必須
-        content.mutableContent = true
+        // ★ 注意: ローカル通知では Notification Service Extension は呼ばれない
+        // mutable-content はリモート通知（APNs）専用のフラグ
+        // ローカル通知では userInfo に情報を設定するだけで十分
         
         if #available(iOS 15.0, *) {
             content.interruptionLevel = .timeSensitive
@@ -685,15 +752,24 @@ final class NotificationScheduler {
         let minutesBefore = 15 // カスタム習慣は一律15分前
         let (preHour, preMinute) = calculateOffsetTime(baseHour: hour, baseMinute: minute, offsetMinutes: -minutesBefore)
         
+        // ★ サーバーからパーソナライズメッセージを取得（フォールバック付き）
+        let scheduledTimeStr = String(format: "%02d:%02d", hour, minute)
+        let message = await fetchPreReminderMessage(
+            habitType: .custom,
+            scheduledTime: scheduledTimeStr,
+            habitName: name
+        ) ?? String(format: localizedString("pre_reminder_custom_body_format"), minutesBefore, name)
+        
         let content = UNMutableNotificationContent()
         content.title = "Anicca"
-        content.body = String(format: localizedString("pre_reminder_custom_body_format"), minutesBefore, name)
+        content.body = message  // ★ パーソナライズ済みメッセージ
         content.categoryIdentifier = Category.preReminder.rawValue
+        content.mutableContent = true  // 将来APNs対応用
         content.userInfo = [
             "customHabitId": id.uuidString,
             "habitType": "custom",
             "type": "pre_reminder",
-            "scheduledTime": String(format: "%02d:%02d", hour, minute),
+            "scheduledTime": scheduledTimeStr,
             "habitName": name,
             "minutesBefore": minutesBefore
         ]
@@ -774,6 +850,37 @@ final class NotificationScheduler {
                 ? "おはようございます。"
                 : "Good morning."
         }
+    }
+    
+    // MARK: - Daily Pre-Reminder Refresh
+    
+    private let lastRefreshKey = "com.anicca.preReminder.lastRefresh"
+    
+    /// アプリ起動時に事前通知を更新（24時間ごと）
+    /// これにより毎日違うパーソナライズメッセージが表示される
+    func refreshPreRemindersIfNeeded() async {
+        let lastRefresh = UserDefaults.standard.double(forKey: lastRefreshKey)
+        let now = Date().timeIntervalSince1970
+        
+        // 24時間経過していなければスキップ
+        guard now - lastRefresh >= 86400 else {
+            logger.debug("Pre-reminder refresh skipped (last refresh within 24h)")
+            return
+        }
+        
+        logger.info("Refreshing pre-reminders with new personalized messages")
+        
+        // 現在の習慣スケジュールを再登録
+        let schedules = AppState.shared.habitSchedules
+        await cancelAllPreReminders()
+        
+        for (habit, components) in schedules {
+            guard let hour = components.hour, let minute = components.minute else { continue }
+            await schedulePreReminder(habit: habit, hour: hour, minute: minute)
+        }
+        
+        UserDefaults.standard.set(now, forKey: lastRefreshKey)
+        logger.info("Pre-reminder refresh completed")
     }
 }
 

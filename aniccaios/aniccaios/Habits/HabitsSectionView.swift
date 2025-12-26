@@ -505,7 +505,7 @@ struct HabitsSectionView: View {
             switch status {
             case .notDetermined:
                 do {
-                    try await manager.requestAuthorization()
+                    _ = try await manager.requestAuthorization()
                     // 許可された場合、プロファイルのAlarmKit設定をON
                     await MainActor.run {
                         var profile = appState.userProfile

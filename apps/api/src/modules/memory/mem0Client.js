@@ -1,5 +1,5 @@
-// Mem0テレメトリーを無効化（ETIMEDOUT エラー回避）
-process.env.MEM0_TELEMETRY = 'False';
+// ★ Mem0テレメトリーは server.js の先頭で無効化済み
+// ESモジュールでは import より前に環境変数を設定する必要があるため
 
 import baseLogger from '../../utils/logger.js';
 import { MemoryClient } from 'mem0ai';

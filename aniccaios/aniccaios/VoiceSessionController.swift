@@ -1038,9 +1038,7 @@ private enum RealtimeToolRouter {
 /// Talk/Feeling 用の Realtime instructions を Resources/Prompts から構築
 private enum RealtimePromptBuilder {
     static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
-        let langSuffix = profile.preferredLanguage == .ja ? "_ja" : ""  // ★ 言語サフィックス
-        
-        let openerBaseName: String = {
+        let openerName: String = {
             switch topic {
             case .selfLoathing: return "feeling_self_loathing"
             case .anxiety: return "feeling_anxiety"
@@ -1049,18 +1047,39 @@ private enum RealtimePromptBuilder {
             }
         }()
         
-        // ★ 言語別ファイルがあればそれを、なければフォールバック
-        let opener = (load(name: openerBaseName + langSuffix, ext: "txt")
-            ?? load(name: openerBaseName, ext: "txt")
-            ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        // ★ 言語別のFeelingラベル
+        let localizedFeelingLabel: String = {
+            let isJa = profile.preferredLanguage == .ja
+            switch topic {
+            case .selfLoathing: return isJa ? "自己嫌悪" : "self_loathing"
+            case .anxiety: return isJa ? "不安" : "anxiety"
+            case .irritation: return isJa ? "怒り" : "irritation"
+            case .freeConversation: return isJa ? "自由な対話" : "free_conversation"
+            }
+        }()
+        
+        // ファイルを読み込み（1つだけ）
+        var opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // ★ [Feeling: xxx] を動的に置換
+        let englishLabel: String = {
+            switch topic {
+            case .selfLoathing: return "self_loathing"
+            case .anxiety: return "anxiety"
+            case .irritation: return "irritation"
+            case .freeConversation: return "free_conversation"
+            }
+        }()
+        opener = opener.replacingOccurrences(
+            of: "[Feeling: \(englishLabel)]",
+            with: "[Feeling: \(localizedFeelingLabel)]"
+        )
         
         let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
-        // common.txt + talk_session.txt + feeling_xxx.txt を結合
         let mergedTemplate = "\(commonTemplate)\n\n\(talkTemplate)\n\n\(opener)"
         
-        // 変数置換を実行
         let rendered = renderTemplate(mergedTemplate, profile: profile)
         return rendered
     }

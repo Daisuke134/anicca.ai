@@ -318,7 +318,7 @@
 "talk_feeling_self_loathing_title" = "自己嫌悪";
 "talk_feeling_self_loathing_subtitle" = "自分を責めすぎているとき。";
 "talk_feeling_anxiety_title" = "不安";
-"talk_feeling_anxiety_subtitle" = "頭が止まらないとき。";
+"talk_feeling_anxiety_subtitle" = "不安が止まらないとき。";
 "talk_feeling_irritation_title" = "苛立ち";
 "talk_feeling_irritation_subtitle" = "緊張が高まっているとき。";
 "talk_feeling_something_else_title" = "その他";

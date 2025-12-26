@@ -1,3 +1,6 @@
+// ★ mem0aiテレメトリーを最初に無効化（ESモジュールのimport巻き上げ対策）
+process.env.MEM0_TELEMETRY = 'false';
+
 import express from 'express';
 import cors from 'cors';
 import { initDatabase } from './services/tokens/slackTokens.supabase.js';
@@ -42,7 +45,11 @@ await initializeServer().catch(err => {
 
 // mem0aiテレメトリーのETIMEDOUTエラーを無視
 process.on('unhandledRejection', (reason, promise) => {
-  if (reason?.message?.includes('Telemetry') || 
+  // テレメトリーエラーは完全に無視（ログ出力もしない）
+  if (reason?.message?.includes('Telemetry') ||
+      reason?.message?.includes('fetch failed') ||
+      reason?.stack?.includes('captureClientEvent') ||
+      reason?.stack?.includes('captureEvent') ||
       reason?.cause?.code === 'ETIMEDOUT' ||
       (reason?.cause?.errors && Array.isArray(reason.cause.errors))) {
     // テレメトリーエラーは無視（アプリ動作に影響なし）

@@ -50,6 +50,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         return true
     }
 
+    func applicationDidBecomeActive(_ application: UIApplication) {
+        // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
+        // これにより毎日違うメッセージが表示される
+        Task {
+            await NotificationScheduler.shared.refreshPreRemindersIfNeeded()
+        }
+    }
+    
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
         if #available(iOS 14.0, *) {
             completionHandler([.banner, .list, .sound])

@@ -931,22 +931,19 @@ enum LanguagePreference: String, Codable {
 
 ---
 
-## 問題11: Feeling プロンプトが英語のみ
+## 問題11: Feeling プロンプトのラベルが英語のみ
 
 ### 原因
 
-`feeling_free_conversation.txt` 等のプロンプトファイルが英語のみで、日本語版が存在しない。
+`[Feeling: irritation]` などのラベル部分が英語固定。
 
 ### パッチ
 
-#### パッチ11-1: VoiceSessionController.swift の修正
-
 **ファイル**: `aniccaios/aniccaios/VoiceSessionController.swift`
 
+言語に応じて `[Feeling: xxx]` を動的に置換する。`_ja.txt` ファイルは不要。
+
 ```swift
-// ============================================
-// 変更前 (1040-1060行目):
-// ============================================
 private enum RealtimePromptBuilder {
     static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
         let openerName: String = {
@@ -957,37 +954,34 @@ private enum RealtimePromptBuilder {
             case .freeConversation: return "feeling_free_conversation"
             }
         }()
-        let opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         
-        let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        let mergedTemplate = "\(commonTemplate)\n\n\(talkTemplate)\n\n\(opener)"
-        
-        let rendered = renderTemplate(mergedTemplate, profile: profile)
-        return rendered
-    }
-
-// ============================================
-// 変更後:
-// ============================================
-private enum RealtimePromptBuilder {
-    static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
-        let langSuffix = profile.preferredLanguage == .ja ? "_ja" : ""  // ★ 言語サフィックス
-        
-        let openerBaseName: String = {
+        // ★ 言語別のFeelingラベル
+        let localizedFeelingLabel: String = {
+            let isJa = profile.preferredLanguage == .ja
             switch topic {
-            case .selfLoathing: return "feeling_self_loathing"
-            case .anxiety: return "feeling_anxiety"
-            case .irritation: return "feeling_irritation"
-            case .freeConversation: return "feeling_free_conversation"
+            case .selfLoathing: return isJa ? "自己嫌悪" : "self_loathing"
+            case .anxiety: return isJa ? "不安" : "anxiety"
+            case .irritation: return isJa ? "怒り" : "irritation"
+            case .freeConversation: return isJa ? "自由な対話" : "free_conversation"
             }
         }()
         
-        // ★ 言語別ファイルがあればそれを、なければフォールバック
-        let opener = (load(name: openerBaseName + langSuffix, ext: "txt")
-            ?? load(name: openerBaseName, ext: "txt")
-            ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        // ファイルを読み込み（1つだけ）
+        var opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // ★ [Feeling: xxx] を動的に置換
+        let englishLabel: String = {
+            switch topic {
+            case .selfLoathing: return "self_loathing"
+            case .anxiety: return "anxiety"
+            case .irritation: return "irritation"
+            case .freeConversation: return "free_conversation"
+            }
+        }()
+        opener = opener.replacingOccurrences(
+            of: "[Feeling: \(englishLabel)]",
+            with: "[Feeling: \(localizedFeelingLabel)]"
+        )
         
         let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
         let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
@@ -997,118 +991,15 @@ private enum RealtimePromptBuilder {
         let rendered = renderTemplate(mergedTemplate, profile: profile)
         return rendered
     }
-```
-
-#### パッチ11-2: VoiceSessionController.swift の IDEAL_TRAITS 修正
-
-**ファイル**: `aniccaios/aniccaios/VoiceSessionController.swift`
-
-```swift
-// ============================================
-// 変更前 (1083-1097行目):
-// ============================================
-// 理想の自分
-if !profile.idealTraits.isEmpty {
-    result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: profile.idealTraits.joined(separator: ", "))
-} else {
-    result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: "")
-}
-
-// 問題・課題
-if !profile.problems.isEmpty {
-    let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
-    result = result.replacingOccurrences(of: "${PROBLEMS}", with: localizedProblems.joined(separator: ", "))
-} else {
-    result = result.replacingOccurrences(of: "${PROBLEMS}", with: "")
-}
-
-// ============================================
-// 変更後:
-// ============================================
-// 理想の自分（ローカライズ）
-if !profile.idealTraits.isEmpty {
-    let localizedTraits = profile.idealTraits.map { NSLocalizedString("ideal_trait_\($0)", comment: "") }
-    let prefix = profile.preferredLanguage == .ja
-        ? "理想の姿として設定されている特性: "
-        : "Ideal self traits: "
-    let separator = profile.preferredLanguage == .ja ? "、" : ", "
-    result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: prefix + localizedTraits.joined(separator: separator))
-} else {
-    result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: "")
-}
-
-// 問題・課題（ローカライズ）
-if !profile.problems.isEmpty {
-    let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
-    let prefix = profile.preferredLanguage == .ja
-        ? "今抱えている問題: "
-        : "Current struggles: "
-    let separator = profile.preferredLanguage == .ja ? "、" : ", "
-    result = result.replacingOccurrences(of: "${PROBLEMS}", with: prefix + localizedProblems.joined(separator: separator))
-} else {
-    result = result.replacingOccurrences(of: "${PROBLEMS}", with: "")
 }
 ```
 
-#### パッチ11-3: 日本語用プロンプトファイルの新規作成
+### 削除するファイル
 
-**ファイル**: `aniccaios/aniccaios/Resources/Prompts/feeling_self_loathing_ja.txt` （新規作成）
-
-```txt
-[Feeling: self_loathing]
-短い opener を 2–3 文で。痛みの承認→事実と解釈の分離→優しさの足場。
-質問攻めにしない。
-```
-
-**ファイル**: `aniccaios/aniccaios/Resources/Prompts/feeling_anxiety_ja.txt` （新規作成）
-
-```txt
-[Feeling: anxiety]
-短い opener を 2–3 文で。身体/現在へのグラウンディング→受容→最小の一歩。
-質問攻めにしない。
-```
-
-**ファイル**: `aniccaios/aniccaios/Resources/Prompts/feeling_irritation_ja.txt` （新規作成）
-
-```txt
-[Feeling: irritation]
-短い opener を 2–3 文で。怒りの承認→その下にある本当の感情を探る→一呼吸。
-質問攻めにしない。
-```
-
-**ファイル**: `aniccaios/aniccaios/Resources/Prompts/feeling_free_conversation_ja.txt` （新規作成）
-
-```txt
-[Feeling: free_conversation]
-
-ユーザーは「その他」を選びました。今の気持ちを言葉にできない、またはカテゴリに当てはまらない状態かもしれません。
-
-アプローチ:
-1. 温かく穏やかに挨拶する
-2. オープンに尋ねる：「何かあった？」「今どんな気持ち？」
-3. 感情にラベルをつけなくていいと伝える
-
-重要なガイドライン:
-- 聞くことを優先する
-- 決めつけない - ユーザーに語らせる
-- 不明瞭でも矛盾していても受け入れる
-- 言葉にできない場合は「それってどんな感じ？」と穏やかに探る
-- ユーザーの流れに従う
-
-覚えておくこと: あなたの役割は、判断せずに支える聞き手。既存のカテゴリに当てはまらなかったからこそ「その他」を選んだ - その選択を尊重して。
-```
-
-#### パッチ11-4: Xcodeプロジェクトへのファイル追加手順
-
-上記の日本語プロンプトファイルを作成した後、以下の手順でXcodeプロジェクトに追加する必要があります：
-
-1. Xcodeで `aniccaios.xcodeproj` を開く
-2. プロジェクトナビゲータで `Resources/Prompts` フォルダを右クリック
-3. "Add Files to 'aniccaios'..." を選択
-4. 作成した4つの `_ja.txt` ファイルを選択
-5. **"Copy items if needed"** にチェック
-6. **"Add to targets: aniccaios"** にチェックが入っていることを確認
-7. "Add" をクリック
+- `feeling_self_loathing_ja.txt`
+- `feeling_anxiety_ja.txt`
+- `feeling_irritation_ja.txt`
+- `feeling_free_conversation_ja.txt`
 
 ---
 

@@ -222,11 +222,26 @@ final class NotificationScheduler {
 
     // MARK: Private helpers
     private func scheduleMain(habit: HabitType, hour: Int, minute: Int) async {
+        // ★ サーバーからパーソナライズメッセージを取得（メイン通知用）
+        let scheduledTimeStr = String(format: "%02d:%02d", hour, minute)
+        let personalizedBody = await fetchMainNotificationMessage(
+            habitType: habit,
+            scheduledTime: scheduledTimeStr
+        )
+        
         let triggerComponents = DateComponents(hour: hour, minute: minute, second: 0)
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: true)
+        
+        let content = UNMutableNotificationContent()
+        content.title = habit.title
+        content.body = personalizedBody ?? primaryBody(for: habit)  // パーソナライズ優先、失敗時はフォールバック
+        content.categoryIdentifier = Category.habitAlarm.rawValue
+        content.interruptionLevel = .timeSensitive
+        content.sound = wakeSound()
+        
         let request = UNNotificationRequest(
             identifier: keyMain(for: habit, hour: hour, minute: minute),
-            content: baseContent(for: habit, isFollowup: false),
+            content: content,
             trigger: trigger
         )
 
@@ -592,6 +607,60 @@ final class NotificationScheduler {
     
     // MARK: - Pre-Reminder Message Fetching
     
+    /// サーバーからパーソナライズされたメイン通知メッセージを取得
+    private func fetchMainNotificationMessage(
+        habitType: HabitType,
+        scheduledTime: String,
+        habitName: String? = nil
+    ) async -> String? {
+        let baseURL = AppConfig.proxyBaseURL
+        let url = baseURL.appendingPathComponent("mobile/nudge/pre-reminder")
+        
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        
+        // 認証ヘッダーを追加
+        if let deviceId = UIDevice.current.identifierForVendor?.uuidString {
+            request.setValue(deviceId, forHTTPHeaderField: "device-id")
+        }
+        if case .signedIn(let credentials) = AppState.shared.authStatus {
+            request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        }
+        
+        request.timeoutInterval = 10
+        
+        var body: [String: Any] = [
+            "habitType": habitType.rawValue,
+            "scheduledTime": scheduledTime,
+            "notificationType": "main"  // メイン通知であることを示す
+        ]
+        if let habitName = habitName {
+            body["habitName"] = habitName
+        }
+        
+        do {
+            request.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, response) = try await URLSession.shared.data(for: request)
+            
+            guard let httpResponse = response as? HTTPURLResponse,
+                  httpResponse.statusCode == 200 else {
+                logger.warning("fetchMainNotificationMessage: server returned non-200")
+                return nil
+            }
+            
+            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+               let message = json["message"] as? String {
+                logger.info("Received personalized main notification: \(message.prefix(30), privacy: .public)...")
+                return message
+            }
+        } catch {
+            logger.warning("fetchMainNotificationMessage failed: \(error.localizedDescription, privacy: .public)")
+        }
+        
+        return nil
+    }
+    
     /// サーバーからパーソナライズされた事前通知メッセージを取得
     private func fetchPreReminderMessage(
         habitType: HabitType,
@@ -764,7 +833,8 @@ final class NotificationScheduler {
         content.title = "Anicca"
         content.body = message  // ★ パーソナライズ済みメッセージ
         content.categoryIdentifier = Category.preReminder.rawValue
-        content.mutableContent = true  // 将来APNs対応用
+        // ★ 注意: mutableContent はリモート通知（APNs）専用のフラグ
+        // ローカル通知では userInfo に情報を設定するだけで十分
         content.userInfo = [
             "customHabitId": id.uuidString,
             "habitType": "custom",

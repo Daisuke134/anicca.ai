@@ -21,7 +21,7 @@ router.get('/summary', async (req, res) => {
     const snapshot = await buildContextSnapshot({ userId, deviceId });
     const tz = snapshot?.timezone || 'UTC';
     const lang = snapshot?.language || 'en';
-    const today = snapshot?.today_stats || null;
+    const today = snapshot?.today_stats || await fetchLatestDailyMetric(snapshot?.profile_id);
     const profileId = snapshot?.profile_id || null;
     const localDate = snapshot?.local_date || null;
 
@@ -150,6 +150,26 @@ async function calculateStreaks(userId) {
     logger.warn('Failed to calculate streaks', e);
     return { wake: 0, screen: 0, workout: 0, rumination: 0 };
   }
+}
+
+async function fetchLatestDailyMetric(profileId) {
+  if (!profileId) return null;
+  const latest = await prisma.dailyMetric.findFirst({
+    where: { userId: profileId },
+    orderBy: { date: 'desc' }
+  });
+  if (!latest) return null;
+  return {
+    sleepDurationMin: latest.sleepDurationMin ?? null,
+    sleepStartAt: latest.sleepStartAt ?? null,
+    wakeAt: latest.wakeAt ?? null,
+    snsMinutesTotal: latest.snsMinutesTotal ?? 0,
+    steps: latest.steps ?? 0,
+    sedentaryMinutes: latest.sedentaryMinutes ?? 0,
+    mindSummary: latest.mindSummary ?? {},
+    activitySummary: latest.activitySummary ?? {},
+    insights: latest.insights ?? {}
+  };
 }
 
 export default router;

@@ -5,6 +5,12 @@ import BackgroundTasks
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
     private let habitLaunchLogger = Logger(subsystem: "com.anicca.ios", category: "HabitLaunch")
+    override init() {
+        super.init()
+        HabitLaunchBridge.startObserver { [weak self] in
+            Task { await self?.consumePendingHabitLaunch() }
+        }
+    }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         let proxy = Bundle.main.object(forInfoDictionaryKey: "ANICCA_PROXY_BASE_URL") as? String ?? "nil"
         print("ANICCA_PROXY_BASE_URL =", proxy)
@@ -54,23 +60,28 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Task {
             // AlarmKit / LiveActivityIntent からの「起動して会話開始」要求を回収
             // （IntentプロセスでAppStateを書いてもアプリ本体に反映されないケースがあるため）
-            let appGroupDefaults = AppGroup.userDefaults
-            let rawHabit = appGroupDefaults.string(forKey: "pending_habit_launch_habit")
-            let ts = appGroupDefaults.double(forKey: "pending_habit_launch_ts")
-            if let rawHabit,
-               let habit = HabitType(rawValue: rawHabit),
-               ts > 0,
-               Date().timeIntervalSince1970 - ts < 300 { // 5分以内の要求のみ処理
-                await MainActor.run {
-                    AppState.shared.prepareForImmediateSession(habit: habit)
-                }
-                appGroupDefaults.removeObject(forKey: "pending_habit_launch_habit")
-                appGroupDefaults.removeObject(forKey: "pending_habit_launch_ts")
-            }
+            await consumePendingHabitLaunch()
 
             // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
             await NotificationScheduler.shared.refreshPreRemindersIfNeeded()
         }
+    }
+    
+    private func consumePendingHabitLaunch() async {
+        let appGroupDefaults = AppGroup.userDefaults
+        let rawHabit = appGroupDefaults.string(forKey: "pending_habit_launch_habit")
+        let ts = appGroupDefaults.double(forKey: "pending_habit_launch_ts")
+        guard let rawHabit,
+              let habit = HabitType(rawValue: rawHabit),
+              ts > 0,
+              Date().timeIntervalSince1970 - ts < 300 else {
+            return
+        }
+        await MainActor.run {
+            AppState.shared.prepareForImmediateSession(habit: habit)
+        }
+        appGroupDefaults.removeObject(forKey: "pending_habit_launch_habit")
+        appGroupDefaults.removeObject(forKey: "pending_habit_launch_ts")
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {

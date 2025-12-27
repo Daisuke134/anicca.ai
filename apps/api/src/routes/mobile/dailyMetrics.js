@@ -1,6 +1,7 @@
 import express from 'express';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
+import { toLocalDateString } from '../../utils/timezone.js';
 import { PrismaClient } from '../../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
@@ -16,6 +17,7 @@ router.post('/', async (req, res) => {
   try {
     const {
       date,
+      timezone = 'UTC',
       sleep_minutes,
       steps,
       screen_time_minutes,
@@ -27,9 +29,14 @@ router.post('/', async (req, res) => {
       activity_summary  // v3.1: 追加
     } = req.body;
 
+    if (!date) {
+      return res.status(400).json({ error: 'date is required' });
+    }
+
     // Upsert daily_metrics for this user + date
     const parsedDate = new Date(date);
-    const startOfDay = new Date(parsedDate.toISOString().split('T')[0] + 'T00:00:00Z');
+    const localDate = toLocalDateString(parsedDate, timezone);
+    const startOfDay = new Date(`${localDate}T00:00:00Z`);
 
     await prisma.dailyMetric.upsert({
       where: {

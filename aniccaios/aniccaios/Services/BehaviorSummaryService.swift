@@ -33,6 +33,8 @@ final class BehaviorSummaryService {
         do {
             return try JSONDecoder().decode(BehaviorSummary.self, from: data)
         } catch {
+            Logger(subsystem: "com.anicca.ios", category: "BehaviorSummaryService")
+                .error("Decode failure: \(error.localizedDescription, privacy: .public)")
             throw ServiceError.decodeError
         }
     }

@@ -1297,6 +1297,14 @@ final class AppState: ObservableObject {
         if status != .authorized { sensorAccess.motionEnabled = false }
         saveSensorAccess()
     }
+    
+    func updateSensorAccess(_ access: SensorAccessState) {
+        sensorAccess = access
+        saveSensorAccess()
+        Task {
+            await SensorAccessSyncService.shared.sync(access: access)
+        }
+    }
 }
 
 extension AuthStatus {

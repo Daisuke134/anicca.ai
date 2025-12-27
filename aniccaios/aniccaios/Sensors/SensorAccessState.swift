@@ -20,18 +20,26 @@ struct SensorAccessState: Codable, Equatable {
 
     // Integration toggles (user intent)
     var screenTimeEnabled: Bool
+    var screenTimeAuthorized: Bool
     var sleepEnabled: Bool
+    var sleepAuthorized: Bool
     var stepsEnabled: Bool
+    var stepsAuthorized: Bool
     var motionEnabled: Bool
+    var motionAuthorized: Bool
 
     static let `default` = SensorAccessState(
         screenTime: .unknown,
         healthKit: .unknown,
         motion: .unknown,
         screenTimeEnabled: false,
+        screenTimeAuthorized: false,
         sleepEnabled: false,
+        sleepAuthorized: false,
         stepsEnabled: false,
-        motionEnabled: false
+        stepsAuthorized: false,
+        motionEnabled: false,
+        motionAuthorized: false
     )
 }
 

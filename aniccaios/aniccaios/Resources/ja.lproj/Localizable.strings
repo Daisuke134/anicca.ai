@@ -354,7 +354,7 @@
 "timeline_label_activity" = "活動";
 
 /* v3 Profile */
-"profile_title" = "プロフィール";
+"profile_title" = "プロファイル";
 "profile_row_name" = "名前";
 "profile_row_plan" = "プラン";
 "profile_row_language" = "言語";
@@ -454,7 +454,7 @@
 "ema_skip" = "スキップ";
 "tab_habits" = "習慣";
 "tab_behavior" = "行動";
-"tab_profile" = "プロフィール";
+"tab_profile" = "プロファイル";
 
 // Pre-Reminder (v3.1)
 "pre_reminder_bedtime_body" = "そろそろ寝る準備を始めましょう。画面を消して、リラックスする時間です。";

@@ -193,7 +193,6 @@ final class AlarmKitHabitCoordinator {
     
     func requestAuthorizationIfNeeded() async -> Bool {
         do {
-            // まず現在の認証状態を確認
             let currentState = manager.authorizationState
             logger.info("Current AlarmKit authorization state: \(String(describing: currentState), privacy: .public)")
             
@@ -201,10 +200,7 @@ final class AlarmKitHabitCoordinator {
                 return true
             }
             
-            if currentState == .denied {
-                logger.warning("AlarmKit authorization was previously denied. Prompting again due to explicit toggle request.")
-            }
-            
+            // iOS 18+: requestAuthorization() を再度呼ぶとダイアログを再提示できる
             let state = try await manager.requestAuthorization()
             logger.info("AlarmKit authorization result: \(String(describing: state), privacy: .public)")
             return state == .authorized

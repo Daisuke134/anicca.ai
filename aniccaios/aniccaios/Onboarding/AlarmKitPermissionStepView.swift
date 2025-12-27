@@ -67,7 +67,7 @@ struct AlarmKitPermissionStepView: View {
                 hasAttemptedPermission = true
                 isRequesting = false
                 // 許可・非許可ともに同じ遷移にする
-                next()
+                    next()
                 return
             }
             #endif

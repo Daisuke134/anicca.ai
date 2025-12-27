@@ -31,6 +31,8 @@ struct SettingsView: View {
 
     @State private var isShowingPermissionAlert = false
     @State private var permissionAlertMessage = ""
+    
+    var shouldShowScreenTime: Bool { false } // 一時的に非表示
 
     var body: some View {
         NavigationStack {
@@ -227,24 +229,26 @@ struct SettingsView: View {
 
                 // Status (v3-stack.md 14.5: not connected message)
                 // Quiet fallback: show status, but don't block Talk.
-                SectionRow.text(label: "Screen Time", text: "\(appState.sensorAccess.screenTime)")
-                Toggle("Enable Screen Time", isOn: Binding(
-                    get: { appState.sensorAccess.screenTimeEnabled },
-                    set: { enabled in
-                        Task { @MainActor in
-                            if enabled {
-                                // Request only on toggle ON (quiet fallback)
-                                // try await DeviceActivityMonitorController.shared.requestAuthorization()
-                                // try DeviceActivityMonitorController.shared.startMonitoringIfNeeded()
-                                appState.setScreenTimeEnabled(true)
-                                appState.updateScreenTimePermission(.authorized)
-                            } else {
-                                // DeviceActivityMonitorController.shared.stopMonitoring()
-                                appState.setScreenTimeEnabled(false)
+                if shouldShowScreenTime {
+                    SectionRow.text(label: "Screen Time", text: "\(appState.sensorAccess.screenTime)")
+                    Toggle("Enable Screen Time", isOn: Binding(
+                        get: { appState.sensorAccess.screenTimeEnabled },
+                        set: { enabled in
+                            Task { @MainActor in
+                                if enabled {
+                                    // Request only on toggle ON (quiet fallback)
+                                    // try await DeviceActivityMonitorController.shared.requestAuthorization()
+                                    // try DeviceActivityMonitorController.shared.startMonitoringIfNeeded()
+                                    appState.setScreenTimeEnabled(true)
+                                    appState.updateScreenTimePermission(.authorized)
+                                } else {
+                                    // DeviceActivityMonitorController.shared.stopMonitoring()
+                                    appState.setScreenTimeEnabled(false)
+                                }
                             }
                         }
-                    }
-                ))
+                    ))
+                }
 
                 SectionRow.text(label: "HealthKit", text: "\(appState.sensorAccess.healthKit)")
                 Toggle(String(localized: "profile_toggle_sleep"), isOn: Binding(

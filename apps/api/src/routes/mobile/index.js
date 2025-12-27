@@ -8,6 +8,7 @@ import feelingRouter from './feeling.js';
 import nudgeRouter from './nudge.js';
 import dailyMetricsRouter from './dailyMetrics.js';
 import preReminderRouter from './preReminder.js';
+import sensorsRouter from './sensors.js';
 
 const router = express.Router();
 
@@ -20,5 +21,6 @@ router.use('/feeling', feelingRouter);
 router.use('/nudge', nudgeRouter);
 router.use('/nudge', preReminderRouter);  // /mobile/nudge/pre-reminder
 router.use('/daily_metrics', dailyMetricsRouter);
+router.use('/sensors', sensorsRouter);
 
 export default router;

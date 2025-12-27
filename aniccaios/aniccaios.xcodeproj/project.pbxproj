@@ -492,13 +492,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -526,13 +526,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -560,13 +560,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -594,13 +594,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -775,15 +775,15 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
-				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -827,15 +827,15 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
-				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -946,15 +946,15 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
-				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1059,15 +1059,15 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
-				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1093,13 +1093,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1124,13 +1124,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1155,13 +1155,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1186,13 +1186,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1217,13 +1217,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1248,13 +1248,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1279,13 +1279,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -1310,13 +1310,13 @@
 				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.2;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",

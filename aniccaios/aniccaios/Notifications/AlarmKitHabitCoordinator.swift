@@ -12,16 +12,16 @@ import UIKit
 extension AlarmButton {
     /// 画面下部の「スワイプで停止」側の文言（ユーザーの意図が分かる表現にする）
     static func stopButton(for habit: HabitType) -> AlarmButton {
-        let key: String = {
+        let text: LocalizedStringResource = {
             switch habit {
-            case .wake: return "alarmkit_action_wake_stop"          // 二度寝する
-            case .training: return "alarmkit_action_training_stop"  // 後回しにする
-            case .bedtime: return "alarmkit_action_bedtime_stop"    // 夜更かしを続ける
-            case .custom: return "alarmkit_action_custom_stop"      // 後回しにする
+            case .wake: return LocalizedStringResource("alarmkit_action_wake_stop")          // 二度寝する
+            case .training: return LocalizedStringResource("alarmkit_action_training_stop")  // 後回しにする
+            case .bedtime: return LocalizedStringResource("alarmkit_action_bedtime_stop")    // 夜更かしを続ける
+            case .custom: return LocalizedStringResource("alarmkit_action_custom_stop")      // 後回しにする
             }
         }()
         return AlarmButton(
-            text: LocalizedStringResource(key),
+            text: text,
             textColor: .red,
             systemImageName: "stop.circle"
         )
@@ -29,16 +29,16 @@ extension AlarmButton {
     
     /// 画面上部の「Open」側の文言（ユーザーの意図が分かる表現にする）
     static func openAppButton(for habit: HabitType) -> AlarmButton {
-        let key: String = {
+        let text: LocalizedStringResource = {
             switch habit {
-            case .wake: return "alarmkit_action_wake_open"          // 起きる
-            case .training: return "alarmkit_action_training_open"  // 今トレーニングする
-            case .bedtime: return "alarmkit_action_bedtime_open"    // 今寝る
-            case .custom: return "alarmkit_action_custom_open"      // 今やる
+            case .wake: return LocalizedStringResource("alarmkit_action_wake_open")          // 起きる
+            case .training: return LocalizedStringResource("alarmkit_action_training_open")  // 今トレーニングする
+            case .bedtime: return LocalizedStringResource("alarmkit_action_bedtime_open")    // 今寝る
+            case .custom: return LocalizedStringResource("alarmkit_action_custom_open")      // 今やる
             }
         }()
         return AlarmButton(
-            text: LocalizedStringResource(key),
+            text: text,
             textColor: .white,
             systemImageName: "arrow.up.forward.app"
         )

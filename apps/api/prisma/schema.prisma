@@ -141,6 +141,17 @@ model UsageSession {
   @@map("usage_sessions")
 }
 
+model SensorAccessState {
+  userId             String   @id @db.Uuid @map("user_id")
+  screenTimeEnabled  Boolean  @default(false) @map("screen_time_enabled")
+  sleepEnabled       Boolean  @default(false) @map("sleep_enabled")
+  stepsEnabled       Boolean  @default(false) @map("steps_enabled")
+  motionEnabled      Boolean  @default(false) @map("motion_enabled")
+  updatedAt          DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  @@map("sensor_access_state")
+}
+
 model MonthlyVcGrant {
   userId     String @map("user_id")
   grantMonth DateTime @db.Date @map("grant_month")

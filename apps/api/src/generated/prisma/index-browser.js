@@ -220,6 +220,15 @@ exports.Prisma.UsageSessionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.SensorAccessStateScalarFieldEnum = {
+  userId: 'userId',
+  screenTimeEnabled: 'screenTimeEnabled',
+  sleepEnabled: 'sleepEnabled',
+  stepsEnabled: 'stepsEnabled',
+  motionEnabled: 'motionEnabled',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.MonthlyVcGrantScalarFieldEnum = {
   userId: 'userId',
   grantMonth: 'grantMonth',
@@ -376,6 +385,7 @@ exports.Prisma.ModelName = {
   RealtimeUsageDaily: 'RealtimeUsageDaily',
   SubscriptionEvent: 'SubscriptionEvent',
   UsageSession: 'UsageSession',
+  SensorAccessState: 'SensorAccessState',
   MonthlyVcGrant: 'MonthlyVcGrant',
   Profile: 'Profile',
   UserSetting: 'UserSetting',

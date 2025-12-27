@@ -59,6 +59,11 @@ export type SubscriptionEvent = $Result.DefaultSelection<Prisma.$SubscriptionEve
  */
 export type UsageSession = $Result.DefaultSelection<Prisma.$UsageSessionPayload>
 /**
+ * Model SensorAccessState
+ * 
+ */
+export type SensorAccessState = $Result.DefaultSelection<Prisma.$SensorAccessStatePayload>
+/**
  * Model MonthlyVcGrant
  * 
  */
@@ -316,6 +321,16 @@ export class PrismaClient<
     * ```
     */
   get usageSession(): Prisma.UsageSessionDelegate<ExtArgs, ClientOptions>;
+
+  /**
+   * `prisma.sensorAccessState`: Exposes CRUD operations for the **SensorAccessState** model.
+    * Example usage:
+    * ```ts
+    * // Fetch zero or more SensorAccessStates
+    * const sensorAccessStates = await prisma.sensorAccessState.findMany()
+    * ```
+    */
+  get sensorAccessState(): Prisma.SensorAccessStateDelegate<ExtArgs, ClientOptions>;
 
   /**
    * `prisma.monthlyVcGrant`: Exposes CRUD operations for the **MonthlyVcGrant** model.
@@ -866,6 +881,7 @@ export namespace Prisma {
     RealtimeUsageDaily: 'RealtimeUsageDaily',
     SubscriptionEvent: 'SubscriptionEvent',
     UsageSession: 'UsageSession',
+    SensorAccessState: 'SensorAccessState',
     MonthlyVcGrant: 'MonthlyVcGrant',
     Profile: 'Profile',
     UserSetting: 'UserSetting',
@@ -894,7 +910,7 @@ export namespace Prisma {
       omit: GlobalOmitOptions
     }
     meta: {
-      modelProps: "token" | "refreshToken" | "mobileProfile" | "mobileVoipToken" | "mobileAlarmSchedule" | "userSubscription" | "realtimeUsageDaily" | "subscriptionEvent" | "usageSession" | "monthlyVcGrant" | "profile" | "userSetting" | "userTrait" | "dailyMetric" | "nudgeEvent" | "nudgeOutcome" | "feelingSession" | "habitLog" | "banditModel"
+      modelProps: "token" | "refreshToken" | "mobileProfile" | "mobileVoipToken" | "mobileAlarmSchedule" | "userSubscription" | "realtimeUsageDaily" | "subscriptionEvent" | "usageSession" | "sensorAccessState" | "monthlyVcGrant" | "profile" | "userSetting" | "userTrait" | "dailyMetric" | "nudgeEvent" | "nudgeOutcome" | "feelingSession" | "habitLog" | "banditModel"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1561,6 +1577,80 @@ export namespace Prisma {
           count: {
             args: Prisma.UsageSessionCountArgs<ExtArgs>
             result: $Utils.Optional<UsageSessionCountAggregateOutputType> | number
+          }
+        }
+      }
+      SensorAccessState: {
+        payload: Prisma.$SensorAccessStatePayload<ExtArgs>
+        fields: Prisma.SensorAccessStateFieldRefs
+        operations: {
+          findUnique: {
+            args: Prisma.SensorAccessStateFindUniqueArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload> | null
+          }
+          findUniqueOrThrow: {
+            args: Prisma.SensorAccessStateFindUniqueOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
+          }
+          findFirst: {
+            args: Prisma.SensorAccessStateFindFirstArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload> | null
+          }
+          findFirstOrThrow: {
+            args: Prisma.SensorAccessStateFindFirstOrThrowArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
+          }
+          findMany: {
+            args: Prisma.SensorAccessStateFindManyArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>[]
+          }
+          create: {
+            args: Prisma.SensorAccessStateCreateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
+          }
+          createMany: {
+            args: Prisma.SensorAccessStateCreateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          createManyAndReturn: {
+            args: Prisma.SensorAccessStateCreateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>[]
+          }
+          delete: {
+            args: Prisma.SensorAccessStateDeleteArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
+          }
+          update: {
+            args: Prisma.SensorAccessStateUpdateArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
+          }
+          deleteMany: {
+            args: Prisma.SensorAccessStateDeleteManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateMany: {
+            args: Prisma.SensorAccessStateUpdateManyArgs<ExtArgs>
+            result: BatchPayload
+          }
+          updateManyAndReturn: {
+            args: Prisma.SensorAccessStateUpdateManyAndReturnArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>[]
+          }
+          upsert: {
+            args: Prisma.SensorAccessStateUpsertArgs<ExtArgs>
+            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
+          }
+          aggregate: {
+            args: Prisma.SensorAccessStateAggregateArgs<ExtArgs>
+            result: $Utils.Optional<AggregateSensorAccessState>
+          }
+          groupBy: {
+            args: Prisma.SensorAccessStateGroupByArgs<ExtArgs>
+            result: $Utils.Optional<SensorAccessStateGroupByOutputType>[]
+          }
+          count: {
+            args: Prisma.SensorAccessStateCountArgs<ExtArgs>
+            result: $Utils.Optional<SensorAccessStateCountAggregateOutputType> | number
           }
         }
       }
@@ -2409,6 +2499,7 @@ export namespace Prisma {
     realtimeUsageDaily?: RealtimeUsageDailyOmit
     subscriptionEvent?: SubscriptionEventOmit
     usageSession?: UsageSessionOmit
+    sensorAccessState?: SensorAccessStateOmit
     monthlyVcGrant?: MonthlyVcGrantOmit
     profile?: ProfileOmit
     userSetting?: UserSettingOmit
@@ -11880,6 +11971,1014 @@ export namespace Prisma {
      * Omit specific fields from the UsageSession
      */
     omit?: UsageSessionOmit<ExtArgs> | null
+  }
+
+
+  /**
+   * Model SensorAccessState
+   */
+
+  export type AggregateSensorAccessState = {
+    _count: SensorAccessStateCountAggregateOutputType | null
+    _min: SensorAccessStateMinAggregateOutputType | null
+    _max: SensorAccessStateMaxAggregateOutputType | null
+  }
+
+  export type SensorAccessStateMinAggregateOutputType = {
+    userId: string | null
+    screenTimeEnabled: boolean | null
+    sleepEnabled: boolean | null
+    stepsEnabled: boolean | null
+    motionEnabled: boolean | null
+    updatedAt: Date | null
+  }
+
+  export type SensorAccessStateMaxAggregateOutputType = {
+    userId: string | null
+    screenTimeEnabled: boolean | null
+    sleepEnabled: boolean | null
+    stepsEnabled: boolean | null
+    motionEnabled: boolean | null
+    updatedAt: Date | null
+  }
+
+  export type SensorAccessStateCountAggregateOutputType = {
+    userId: number
+    screenTimeEnabled: number
+    sleepEnabled: number
+    stepsEnabled: number
+    motionEnabled: number
+    updatedAt: number
+    _all: number
+  }
+
+
+  export type SensorAccessStateMinAggregateInputType = {
+    userId?: true
+    screenTimeEnabled?: true
+    sleepEnabled?: true
+    stepsEnabled?: true
+    motionEnabled?: true
+    updatedAt?: true
+  }
+
+  export type SensorAccessStateMaxAggregateInputType = {
+    userId?: true
+    screenTimeEnabled?: true
+    sleepEnabled?: true
+    stepsEnabled?: true
+    motionEnabled?: true
+    updatedAt?: true
+  }
+
+  export type SensorAccessStateCountAggregateInputType = {
+    userId?: true
+    screenTimeEnabled?: true
+    sleepEnabled?: true
+    stepsEnabled?: true
+    motionEnabled?: true
+    updatedAt?: true
+    _all?: true
+  }
+
+  export type SensorAccessStateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SensorAccessState to aggregate.
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SensorAccessStates to fetch.
+     */
+    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the start position
+     */
+    cursor?: SensorAccessStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SensorAccessStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SensorAccessStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Count returned SensorAccessStates
+    **/
+    _count?: true | SensorAccessStateCountAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the minimum value
+    **/
+    _min?: SensorAccessStateMinAggregateInputType
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
+     * 
+     * Select which fields to find the maximum value
+    **/
+    _max?: SensorAccessStateMaxAggregateInputType
+  }
+
+  export type GetSensorAccessStateAggregateType<T extends SensorAccessStateAggregateArgs> = {
+        [P in keyof T & keyof AggregateSensorAccessState]: P extends '_count' | 'count'
+      ? T[P] extends true
+        ? number
+        : GetScalarType<T[P], AggregateSensorAccessState[P]>
+      : GetScalarType<T[P], AggregateSensorAccessState[P]>
+  }
+
+
+
+
+  export type SensorAccessStateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    where?: SensorAccessStateWhereInput
+    orderBy?: SensorAccessStateOrderByWithAggregationInput | SensorAccessStateOrderByWithAggregationInput[]
+    by: SensorAccessStateScalarFieldEnum[] | SensorAccessStateScalarFieldEnum
+    having?: SensorAccessStateScalarWhereWithAggregatesInput
+    take?: number
+    skip?: number
+    _count?: SensorAccessStateCountAggregateInputType | true
+    _min?: SensorAccessStateMinAggregateInputType
+    _max?: SensorAccessStateMaxAggregateInputType
+  }
+
+  export type SensorAccessStateGroupByOutputType = {
+    userId: string
+    screenTimeEnabled: boolean
+    sleepEnabled: boolean
+    stepsEnabled: boolean
+    motionEnabled: boolean
+    updatedAt: Date
+    _count: SensorAccessStateCountAggregateOutputType | null
+    _min: SensorAccessStateMinAggregateOutputType | null
+    _max: SensorAccessStateMaxAggregateOutputType | null
+  }
+
+  type GetSensorAccessStateGroupByPayload<T extends SensorAccessStateGroupByArgs> = Prisma.PrismaPromise<
+    Array<
+      PickEnumerable<SensorAccessStateGroupByOutputType, T['by']> &
+        {
+          [P in ((keyof T) & (keyof SensorAccessStateGroupByOutputType))]: P extends '_count'
+            ? T[P] extends boolean
+              ? number
+              : GetScalarType<T[P], SensorAccessStateGroupByOutputType[P]>
+            : GetScalarType<T[P], SensorAccessStateGroupByOutputType[P]>
+        }
+      >
+    >
+
+
+  export type SensorAccessStateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["sensorAccessState"]>
+
+  export type SensorAccessStateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["sensorAccessState"]>
+
+  export type SensorAccessStateSelectUpdateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
+    userId?: boolean
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: boolean
+  }, ExtArgs["result"]["sensorAccessState"]>
+
+  export type SensorAccessStateSelectScalar = {
+    userId?: boolean
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: boolean
+  }
+
+  export type SensorAccessStateOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"userId" | "screenTimeEnabled" | "sleepEnabled" | "stepsEnabled" | "motionEnabled" | "updatedAt", ExtArgs["result"]["sensorAccessState"]>
+
+  export type $SensorAccessStatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    name: "SensorAccessState"
+    objects: {}
+    scalars: $Extensions.GetPayloadResult<{
+      userId: string
+      screenTimeEnabled: boolean
+      sleepEnabled: boolean
+      stepsEnabled: boolean
+      motionEnabled: boolean
+      updatedAt: Date
+    }, ExtArgs["result"]["sensorAccessState"]>
+    composites: {}
+  }
+
+  type SensorAccessStateGetPayload<S extends boolean | null | undefined | SensorAccessStateDefaultArgs> = $Result.GetResult<Prisma.$SensorAccessStatePayload, S>
+
+  type SensorAccessStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> =
+    Omit<SensorAccessStateFindManyArgs, 'select' | 'include' | 'distinct' | 'omit'> & {
+      select?: SensorAccessStateCountAggregateInputType | true
+    }
+
+  export interface SensorAccessStateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> {
+    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SensorAccessState'], meta: { name: 'SensorAccessState' } }
+    /**
+     * Find zero or one SensorAccessState that matches the filter.
+     * @param {SensorAccessStateFindUniqueArgs} args - Arguments to find a SensorAccessState
+     * @example
+     * // Get one SensorAccessState
+     * const sensorAccessState = await prisma.sensorAccessState.findUnique({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUnique<T extends SensorAccessStateFindUniqueArgs>(args: SelectSubset<T, SensorAccessStateFindUniqueArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findUnique", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find one SensorAccessState that matches the filter or throw an error with `error.code='P2025'`
+     * if no matches were found.
+     * @param {SensorAccessStateFindUniqueOrThrowArgs} args - Arguments to find a SensorAccessState
+     * @example
+     * // Get one SensorAccessState
+     * const sensorAccessState = await prisma.sensorAccessState.findUniqueOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findUniqueOrThrow<T extends SensorAccessStateFindUniqueOrThrowArgs>(args: SelectSubset<T, SensorAccessStateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findUniqueOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SensorAccessState that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateFindFirstArgs} args - Arguments to find a SensorAccessState
+     * @example
+     * // Get one SensorAccessState
+     * const sensorAccessState = await prisma.sensorAccessState.findFirst({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirst<T extends SensorAccessStateFindFirstArgs>(args?: SelectSubset<T, SensorAccessStateFindFirstArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findFirst", GlobalOmitOptions> | null, null, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find the first SensorAccessState that matches the filter or
+     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateFindFirstOrThrowArgs} args - Arguments to find a SensorAccessState
+     * @example
+     * // Get one SensorAccessState
+     * const sensorAccessState = await prisma.sensorAccessState.findFirstOrThrow({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     */
+    findFirstOrThrow<T extends SensorAccessStateFindFirstOrThrowArgs>(args?: SelectSubset<T, SensorAccessStateFindFirstOrThrowArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findFirstOrThrow", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Find zero or more SensorAccessStates that matches the filter.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateFindManyArgs} args - Arguments to filter and select certain fields only.
+     * @example
+     * // Get all SensorAccessStates
+     * const sensorAccessStates = await prisma.sensorAccessState.findMany()
+     * 
+     * // Get first 10 SensorAccessStates
+     * const sensorAccessStates = await prisma.sensorAccessState.findMany({ take: 10 })
+     * 
+     * // Only select the `userId`
+     * const sensorAccessStateWithUserIdOnly = await prisma.sensorAccessState.findMany({ select: { userId: true } })
+     * 
+     */
+    findMany<T extends SensorAccessStateFindManyArgs>(args?: SelectSubset<T, SensorAccessStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findMany", GlobalOmitOptions>>
+
+    /**
+     * Create a SensorAccessState.
+     * @param {SensorAccessStateCreateArgs} args - Arguments to create a SensorAccessState.
+     * @example
+     * // Create one SensorAccessState
+     * const SensorAccessState = await prisma.sensorAccessState.create({
+     *   data: {
+     *     // ... data to create a SensorAccessState
+     *   }
+     * })
+     * 
+     */
+    create<T extends SensorAccessStateCreateArgs>(args: SelectSubset<T, SensorAccessStateCreateArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "create", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Create many SensorAccessStates.
+     * @param {SensorAccessStateCreateManyArgs} args - Arguments to create many SensorAccessStates.
+     * @example
+     * // Create many SensorAccessStates
+     * const sensorAccessState = await prisma.sensorAccessState.createMany({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     *     
+     */
+    createMany<T extends SensorAccessStateCreateManyArgs>(args?: SelectSubset<T, SensorAccessStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Create many SensorAccessStates and returns the data saved in the database.
+     * @param {SensorAccessStateCreateManyAndReturnArgs} args - Arguments to create many SensorAccessStates.
+     * @example
+     * // Create many SensorAccessStates
+     * const sensorAccessState = await prisma.sensorAccessState.createManyAndReturn({
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Create many SensorAccessStates and only return the `userId`
+     * const sensorAccessStateWithUserIdOnly = await prisma.sensorAccessState.createManyAndReturn({
+     *   select: { userId: true },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    createManyAndReturn<T extends SensorAccessStateCreateManyAndReturnArgs>(args?: SelectSubset<T, SensorAccessStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "createManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Delete a SensorAccessState.
+     * @param {SensorAccessStateDeleteArgs} args - Arguments to delete one SensorAccessState.
+     * @example
+     * // Delete one SensorAccessState
+     * const SensorAccessState = await prisma.sensorAccessState.delete({
+     *   where: {
+     *     // ... filter to delete one SensorAccessState
+     *   }
+     * })
+     * 
+     */
+    delete<T extends SensorAccessStateDeleteArgs>(args: SelectSubset<T, SensorAccessStateDeleteArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "delete", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Update one SensorAccessState.
+     * @param {SensorAccessStateUpdateArgs} args - Arguments to update one SensorAccessState.
+     * @example
+     * // Update one SensorAccessState
+     * const sensorAccessState = await prisma.sensorAccessState.update({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    update<T extends SensorAccessStateUpdateArgs>(args: SelectSubset<T, SensorAccessStateUpdateArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "update", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+    /**
+     * Delete zero or more SensorAccessStates.
+     * @param {SensorAccessStateDeleteManyArgs} args - Arguments to filter SensorAccessStates to delete.
+     * @example
+     * // Delete a few SensorAccessStates
+     * const { count } = await prisma.sensorAccessState.deleteMany({
+     *   where: {
+     *     // ... provide filter here
+     *   }
+     * })
+     * 
+     */
+    deleteMany<T extends SensorAccessStateDeleteManyArgs>(args?: SelectSubset<T, SensorAccessStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SensorAccessStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateUpdateManyArgs} args - Arguments to update one or more rows.
+     * @example
+     * // Update many SensorAccessStates
+     * const sensorAccessState = await prisma.sensorAccessState.updateMany({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: {
+     *     // ... provide data here
+     *   }
+     * })
+     * 
+     */
+    updateMany<T extends SensorAccessStateUpdateManyArgs>(args: SelectSubset<T, SensorAccessStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
+
+    /**
+     * Update zero or more SensorAccessStates and returns the data updated in the database.
+     * @param {SensorAccessStateUpdateManyAndReturnArgs} args - Arguments to update many SensorAccessStates.
+     * @example
+     * // Update many SensorAccessStates
+     * const sensorAccessState = await prisma.sensorAccessState.updateManyAndReturn({
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * 
+     * // Update zero or more SensorAccessStates and only return the `userId`
+     * const sensorAccessStateWithUserIdOnly = await prisma.sensorAccessState.updateManyAndReturn({
+     *   select: { userId: true },
+     *   where: {
+     *     // ... provide filter here
+     *   },
+     *   data: [
+     *     // ... provide data here
+     *   ]
+     * })
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * 
+     */
+    updateManyAndReturn<T extends SensorAccessStateUpdateManyAndReturnArgs>(args: SelectSubset<T, SensorAccessStateUpdateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "updateManyAndReturn", GlobalOmitOptions>>
+
+    /**
+     * Create or update one SensorAccessState.
+     * @param {SensorAccessStateUpsertArgs} args - Arguments to update or create a SensorAccessState.
+     * @example
+     * // Update or create a SensorAccessState
+     * const sensorAccessState = await prisma.sensorAccessState.upsert({
+     *   create: {
+     *     // ... data to create a SensorAccessState
+     *   },
+     *   update: {
+     *     // ... in case it already exists, update
+     *   },
+     *   where: {
+     *     // ... the filter for the SensorAccessState we want to update
+     *   }
+     * })
+     */
+    upsert<T extends SensorAccessStateUpsertArgs>(args: SelectSubset<T, SensorAccessStateUpsertArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "upsert", GlobalOmitOptions>, never, ExtArgs, GlobalOmitOptions>
+
+
+    /**
+     * Count the number of SensorAccessStates.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateCountArgs} args - Arguments to filter SensorAccessStates to count.
+     * @example
+     * // Count the number of SensorAccessStates
+     * const count = await prisma.sensorAccessState.count({
+     *   where: {
+     *     // ... the filter for the SensorAccessStates we want to count
+     *   }
+     * })
+    **/
+    count<T extends SensorAccessStateCountArgs>(
+      args?: Subset<T, SensorAccessStateCountArgs>,
+    ): Prisma.PrismaPromise<
+      T extends $Utils.Record<'select', any>
+        ? T['select'] extends true
+          ? number
+          : GetScalarType<T['select'], SensorAccessStateCountAggregateOutputType>
+        : number
+    >
+
+    /**
+     * Allows you to perform aggregations operations on a SensorAccessState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
+     * @example
+     * // Ordered by age ascending
+     * // Where email contains prisma.io
+     * // Limited to the 10 users
+     * const aggregations = await prisma.user.aggregate({
+     *   _avg: {
+     *     age: true,
+     *   },
+     *   where: {
+     *     email: {
+     *       contains: "prisma.io",
+     *     },
+     *   },
+     *   orderBy: {
+     *     age: "asc",
+     *   },
+     *   take: 10,
+     * })
+    **/
+    aggregate<T extends SensorAccessStateAggregateArgs>(args: Subset<T, SensorAccessStateAggregateArgs>): Prisma.PrismaPromise<GetSensorAccessStateAggregateType<T>>
+
+    /**
+     * Group by SensorAccessState.
+     * Note, that providing `undefined` is treated as the value not being there.
+     * Read more here: https://pris.ly/d/null-undefined
+     * @param {SensorAccessStateGroupByArgs} args - Group by arguments.
+     * @example
+     * // Group by city, order by createdAt, get count
+     * const result = await prisma.user.groupBy({
+     *   by: ['city', 'createdAt'],
+     *   orderBy: {
+     *     createdAt: true
+     *   },
+     *   _count: {
+     *     _all: true
+     *   },
+     * })
+     * 
+    **/
+    groupBy<
+      T extends SensorAccessStateGroupByArgs,
+      HasSelectOrTake extends Or<
+        Extends<'skip', Keys<T>>,
+        Extends<'take', Keys<T>>
+      >,
+      OrderByArg extends True extends HasSelectOrTake
+        ? { orderBy: SensorAccessStateGroupByArgs['orderBy'] }
+        : { orderBy?: SensorAccessStateGroupByArgs['orderBy'] },
+      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
+      ByFields extends MaybeTupleToUnion<T['by']>,
+      ByValid extends Has<ByFields, OrderFields>,
+      HavingFields extends GetHavingFields<T['having']>,
+      HavingValid extends Has<ByFields, HavingFields>,
+      ByEmpty extends T['by'] extends never[] ? True : False,
+      InputErrors extends ByEmpty extends True
+      ? `Error: "by" must not be empty.`
+      : HavingValid extends False
+      ? {
+          [P in HavingFields]: P extends ByFields
+            ? never
+            : P extends string
+            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
+            : [
+                Error,
+                'Field ',
+                P,
+                ` in "having" needs to be provided in "by"`,
+              ]
+        }[HavingFields]
+      : 'take' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "take", you also need to provide "orderBy"'
+      : 'skip' extends Keys<T>
+      ? 'orderBy' extends Keys<T>
+        ? ByValid extends True
+          ? {}
+          : {
+              [P in OrderFields]: P extends ByFields
+                ? never
+                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+            }[OrderFields]
+        : 'Error: If you provide "skip", you also need to provide "orderBy"'
+      : ByValid extends True
+      ? {}
+      : {
+          [P in OrderFields]: P extends ByFields
+            ? never
+            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
+        }[OrderFields]
+    >(args: SubsetIntersection<T, SensorAccessStateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSensorAccessStateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
+  /**
+   * Fields of the SensorAccessState model
+   */
+  readonly fields: SensorAccessStateFieldRefs;
+  }
+
+  /**
+   * The delegate class that acts as a "Promise-like" for SensorAccessState.
+   * Why is this prefixed with `Prisma__`?
+   * Because we want to prevent naming conflicts as mentioned in
+   * https://github.com/prisma/prisma-client-js/issues/707
+   */
+  export interface Prisma__SensorAccessStateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, GlobalOmitOptions = {}> extends Prisma.PrismaPromise<T> {
+    readonly [Symbol.toStringTag]: "PrismaPromise"
+    /**
+     * Attaches callbacks for the resolution and/or rejection of the Promise.
+     * @param onfulfilled The callback to execute when the Promise is resolved.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of which ever callback is executed.
+     */
+    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
+    /**
+     * Attaches a callback for only the rejection of the Promise.
+     * @param onrejected The callback to execute when the Promise is rejected.
+     * @returns A Promise for the completion of the callback.
+     */
+    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
+    /**
+     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
+     * resolved value cannot be modified from the callback.
+     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
+     * @returns A Promise for the completion of the callback.
+     */
+    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
+  }
+
+
+
+
+  /**
+   * Fields of the SensorAccessState model
+   */
+  interface SensorAccessStateFieldRefs {
+    readonly userId: FieldRef<"SensorAccessState", 'String'>
+    readonly screenTimeEnabled: FieldRef<"SensorAccessState", 'Boolean'>
+    readonly sleepEnabled: FieldRef<"SensorAccessState", 'Boolean'>
+    readonly stepsEnabled: FieldRef<"SensorAccessState", 'Boolean'>
+    readonly motionEnabled: FieldRef<"SensorAccessState", 'Boolean'>
+    readonly updatedAt: FieldRef<"SensorAccessState", 'DateTime'>
+  }
+    
+
+  // Custom InputTypes
+  /**
+   * SensorAccessState findUnique
+   */
+  export type SensorAccessStateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * Filter, which SensorAccessState to fetch.
+     */
+    where: SensorAccessStateWhereUniqueInput
+  }
+
+  /**
+   * SensorAccessState findUniqueOrThrow
+   */
+  export type SensorAccessStateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * Filter, which SensorAccessState to fetch.
+     */
+    where: SensorAccessStateWhereUniqueInput
+  }
+
+  /**
+   * SensorAccessState findFirst
+   */
+  export type SensorAccessStateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * Filter, which SensorAccessState to fetch.
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SensorAccessStates to fetch.
+     */
+    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SensorAccessStates.
+     */
+    cursor?: SensorAccessStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SensorAccessStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SensorAccessStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SensorAccessStates.
+     */
+    distinct?: SensorAccessStateScalarFieldEnum | SensorAccessStateScalarFieldEnum[]
+  }
+
+  /**
+   * SensorAccessState findFirstOrThrow
+   */
+  export type SensorAccessStateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * Filter, which SensorAccessState to fetch.
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SensorAccessStates to fetch.
+     */
+    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for searching for SensorAccessStates.
+     */
+    cursor?: SensorAccessStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SensorAccessStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SensorAccessStates.
+     */
+    skip?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
+     * 
+     * Filter by unique combinations of SensorAccessStates.
+     */
+    distinct?: SensorAccessStateScalarFieldEnum | SensorAccessStateScalarFieldEnum[]
+  }
+
+  /**
+   * SensorAccessState findMany
+   */
+  export type SensorAccessStateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * Filter, which SensorAccessStates to fetch.
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
+     * 
+     * Determine the order of SensorAccessStates to fetch.
+     */
+    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
+     * 
+     * Sets the position for listing SensorAccessStates.
+     */
+    cursor?: SensorAccessStateWhereUniqueInput
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Take `±n` SensorAccessStates from the position of the cursor.
+     */
+    take?: number
+    /**
+     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
+     * 
+     * Skip the first `n` SensorAccessStates.
+     */
+    skip?: number
+    distinct?: SensorAccessStateScalarFieldEnum | SensorAccessStateScalarFieldEnum[]
+  }
+
+  /**
+   * SensorAccessState create
+   */
+  export type SensorAccessStateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * The data needed to create a SensorAccessState.
+     */
+    data: XOR<SensorAccessStateCreateInput, SensorAccessStateUncheckedCreateInput>
+  }
+
+  /**
+   * SensorAccessState createMany
+   */
+  export type SensorAccessStateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to create many SensorAccessStates.
+     */
+    data: SensorAccessStateCreateManyInput | SensorAccessStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SensorAccessState createManyAndReturn
+   */
+  export type SensorAccessStateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelectCreateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * The data used to create many SensorAccessStates.
+     */
+    data: SensorAccessStateCreateManyInput | SensorAccessStateCreateManyInput[]
+    skipDuplicates?: boolean
+  }
+
+  /**
+   * SensorAccessState update
+   */
+  export type SensorAccessStateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * The data needed to update a SensorAccessState.
+     */
+    data: XOR<SensorAccessStateUpdateInput, SensorAccessStateUncheckedUpdateInput>
+    /**
+     * Choose, which SensorAccessState to update.
+     */
+    where: SensorAccessStateWhereUniqueInput
+  }
+
+  /**
+   * SensorAccessState updateMany
+   */
+  export type SensorAccessStateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * The data used to update SensorAccessStates.
+     */
+    data: XOR<SensorAccessStateUpdateManyMutationInput, SensorAccessStateUncheckedUpdateManyInput>
+    /**
+     * Filter which SensorAccessStates to update
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * Limit how many SensorAccessStates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SensorAccessState updateManyAndReturn
+   */
+  export type SensorAccessStateUpdateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelectUpdateManyAndReturn<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * The data used to update SensorAccessStates.
+     */
+    data: XOR<SensorAccessStateUpdateManyMutationInput, SensorAccessStateUncheckedUpdateManyInput>
+    /**
+     * Filter which SensorAccessStates to update
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * Limit how many SensorAccessStates to update.
+     */
+    limit?: number
+  }
+
+  /**
+   * SensorAccessState upsert
+   */
+  export type SensorAccessStateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * The filter to search for the SensorAccessState to update in case it exists.
+     */
+    where: SensorAccessStateWhereUniqueInput
+    /**
+     * In case the SensorAccessState found by the `where` argument doesn't exist, create a new SensorAccessState with this data.
+     */
+    create: XOR<SensorAccessStateCreateInput, SensorAccessStateUncheckedCreateInput>
+    /**
+     * In case the SensorAccessState was found with the provided `where` argument, update it with this data.
+     */
+    update: XOR<SensorAccessStateUpdateInput, SensorAccessStateUncheckedUpdateInput>
+  }
+
+  /**
+   * SensorAccessState delete
+   */
+  export type SensorAccessStateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
+    /**
+     * Filter which SensorAccessState to delete.
+     */
+    where: SensorAccessStateWhereUniqueInput
+  }
+
+  /**
+   * SensorAccessState deleteMany
+   */
+  export type SensorAccessStateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Filter which SensorAccessStates to delete
+     */
+    where?: SensorAccessStateWhereInput
+    /**
+     * Limit how many SensorAccessStates to delete.
+     */
+    limit?: number
+  }
+
+  /**
+   * SensorAccessState without action
+   */
+  export type SensorAccessStateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
+    /**
+     * Select specific fields to fetch from the SensorAccessState
+     */
+    select?: SensorAccessStateSelect<ExtArgs> | null
+    /**
+     * Omit specific fields from the SensorAccessState
+     */
+    omit?: SensorAccessStateOmit<ExtArgs> | null
   }
 
 
@@ -22773,6 +23872,18 @@ export namespace Prisma {
   export type UsageSessionScalarFieldEnum = (typeof UsageSessionScalarFieldEnum)[keyof typeof UsageSessionScalarFieldEnum]
 
 
+  export const SensorAccessStateScalarFieldEnum: {
+    userId: 'userId',
+    screenTimeEnabled: 'screenTimeEnabled',
+    sleepEnabled: 'sleepEnabled',
+    stepsEnabled: 'stepsEnabled',
+    motionEnabled: 'motionEnabled',
+    updatedAt: 'updatedAt'
+  };
+
+  export type SensorAccessStateScalarFieldEnum = (typeof SensorAccessStateScalarFieldEnum)[keyof typeof SensorAccessStateScalarFieldEnum]
+
+
   export const MonthlyVcGrantScalarFieldEnum: {
     userId: 'userId',
     grantMonth: 'grantMonth',
@@ -23659,6 +24770,63 @@ export namespace Prisma {
     billedMinutes?: IntWithAggregatesFilter<"UsageSession"> | number
     source?: StringWithAggregatesFilter<"UsageSession"> | string
     updatedAt?: DateTimeWithAggregatesFilter<"UsageSession"> | Date | string
+  }
+
+  export type SensorAccessStateWhereInput = {
+    AND?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
+    OR?: SensorAccessStateWhereInput[]
+    NOT?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
+    userId?: UuidFilter<"SensorAccessState"> | string
+    screenTimeEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    sleepEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    stepsEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    motionEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    updatedAt?: DateTimeFilter<"SensorAccessState"> | Date | string
+  }
+
+  export type SensorAccessStateOrderByWithRelationInput = {
+    userId?: SortOrder
+    screenTimeEnabled?: SortOrder
+    sleepEnabled?: SortOrder
+    stepsEnabled?: SortOrder
+    motionEnabled?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SensorAccessStateWhereUniqueInput = Prisma.AtLeast<{
+    userId?: string
+    AND?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
+    OR?: SensorAccessStateWhereInput[]
+    NOT?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
+    screenTimeEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    sleepEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    stepsEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    motionEnabled?: BoolFilter<"SensorAccessState"> | boolean
+    updatedAt?: DateTimeFilter<"SensorAccessState"> | Date | string
+  }, "userId">
+
+  export type SensorAccessStateOrderByWithAggregationInput = {
+    userId?: SortOrder
+    screenTimeEnabled?: SortOrder
+    sleepEnabled?: SortOrder
+    stepsEnabled?: SortOrder
+    motionEnabled?: SortOrder
+    updatedAt?: SortOrder
+    _count?: SensorAccessStateCountOrderByAggregateInput
+    _max?: SensorAccessStateMaxOrderByAggregateInput
+    _min?: SensorAccessStateMinOrderByAggregateInput
+  }
+
+  export type SensorAccessStateScalarWhereWithAggregatesInput = {
+    AND?: SensorAccessStateScalarWhereWithAggregatesInput | SensorAccessStateScalarWhereWithAggregatesInput[]
+    OR?: SensorAccessStateScalarWhereWithAggregatesInput[]
+    NOT?: SensorAccessStateScalarWhereWithAggregatesInput | SensorAccessStateScalarWhereWithAggregatesInput[]
+    userId?: UuidWithAggregatesFilter<"SensorAccessState"> | string
+    screenTimeEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
+    sleepEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
+    stepsEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
+    motionEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
+    updatedAt?: DateTimeWithAggregatesFilter<"SensorAccessState"> | Date | string
   }
 
   export type MonthlyVcGrantWhereInput = {
@@ -25069,6 +26237,69 @@ export namespace Prisma {
     billedSeconds?: IntFieldUpdateOperationsInput | number
     billedMinutes?: IntFieldUpdateOperationsInput | number
     source?: StringFieldUpdateOperationsInput | string
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SensorAccessStateCreateInput = {
+    userId: string
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: Date | string
+  }
+
+  export type SensorAccessStateUncheckedCreateInput = {
+    userId: string
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: Date | string
+  }
+
+  export type SensorAccessStateUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
+    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SensorAccessStateUncheckedUpdateInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
+    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SensorAccessStateCreateManyInput = {
+    userId: string
+    screenTimeEnabled?: boolean
+    sleepEnabled?: boolean
+    stepsEnabled?: boolean
+    motionEnabled?: boolean
+    updatedAt?: Date | string
+  }
+
+  export type SensorAccessStateUpdateManyMutationInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
+    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
+    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
+  }
+
+  export type SensorAccessStateUncheckedUpdateManyInput = {
+    userId?: StringFieldUpdateOperationsInput | string
+    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
+    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
+    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
+    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -26512,6 +27743,33 @@ export namespace Prisma {
   export type UsageSessionSumOrderByAggregateInput = {
     billedSeconds?: SortOrder
     billedMinutes?: SortOrder
+  }
+
+  export type SensorAccessStateCountOrderByAggregateInput = {
+    userId?: SortOrder
+    screenTimeEnabled?: SortOrder
+    sleepEnabled?: SortOrder
+    stepsEnabled?: SortOrder
+    motionEnabled?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SensorAccessStateMaxOrderByAggregateInput = {
+    userId?: SortOrder
+    screenTimeEnabled?: SortOrder
+    sleepEnabled?: SortOrder
+    stepsEnabled?: SortOrder
+    motionEnabled?: SortOrder
+    updatedAt?: SortOrder
+  }
+
+  export type SensorAccessStateMinOrderByAggregateInput = {
+    userId?: SortOrder
+    screenTimeEnabled?: SortOrder
+    sleepEnabled?: SortOrder
+    stepsEnabled?: SortOrder
+    motionEnabled?: SortOrder
+    updatedAt?: SortOrder
   }
 
   export type MonthlyVcGrantUserIdGrantMonthReasonCompoundUniqueInput = {

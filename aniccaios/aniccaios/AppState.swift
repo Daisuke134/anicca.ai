@@ -488,6 +488,7 @@ final class AppState: ObservableObject {
         sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: credentials.userId)
         
         Task { [weak self] in
+            await SensorAccessSyncService.shared.fetchLatest()
             await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: true)
         }
         
@@ -1313,6 +1314,17 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(sensorAccess) {
             defaults.set(data, forKey: key)
         }
+    }
+
+    func mergeRemoteSensorAccess(sleep: Bool, steps: Bool, screenTime: Bool, motion: Bool) {
+        var next = sensorAccess
+        next.sleepEnabled = sleep
+        next.stepsEnabled = steps
+        next.screenTimeEnabled = screenTime
+        next.motionEnabled = motion
+        sensorAccess = next
+        saveSensorAccess()
+        Task { await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false) }
     }
 
     private func sensorAccessStorageKey(for userId: String?) -> String {

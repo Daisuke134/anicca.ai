@@ -22,6 +22,7 @@ final class NotificationScheduler {
 
     private let center = UNUserNotificationCenter.current()
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NotificationScheduler")
+    private let mainSchedulingHorizonDays = 14  // 2週間ぶんの通知を先に登録
     
     private enum AlarmLoop {
         /// 30秒ごとに再通知
@@ -227,28 +228,37 @@ final class NotificationScheduler {
 
     // MARK: Private helpers
     private func scheduleMain(habit: HabitType, hour: Int, minute: Int) async {
-        let triggerComponents = DateComponents(hour: hour, minute: minute, second: 0)
-        let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: true)
+        await removePending(withPrefix: mainPrefix(for: habit))
+        await removeDelivered(withPrefix: mainPrefix(for: habit))
         
-        let content = UNMutableNotificationContent()
-        content.title = habit.title
-        content.body = primaryBody(for: habit)  // 固定フレーズ（日付ベースローテーション）
-        content.categoryIdentifier = Category.habitAlarm.rawValue
-        content.interruptionLevel = .timeSensitive
-        content.sound = wakeSound()
-        
-        let request = UNNotificationRequest(
-            identifier: keyMain(for: habit, hour: hour, minute: minute),
-            content: content,
-            trigger: trigger
-        )
-
-        do {
-            try await center.add(request)
-            logger.info("Scheduled main notification for \(habit.rawValue, privacy: .public) at \(hour):\(minute)")
-        } catch {
-            logger.error("Failed to schedule main notification: \(error.localizedDescription, privacy: .public)")
+        guard let firstFireDate = nextDate(hour: hour, minute: minute) else { return }
+        for offset in 0..<mainSchedulingHorizonDays {
+            guard let fireDate = Calendar.current.date(byAdding: .day, value: offset, to: firstFireDate) else { continue }
+            
+            let triggerComponents = Calendar.current.dateComponents([.year, .month, .day, .hour, .minute, .second], from: fireDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
+            
+            let content = UNMutableNotificationContent()
+            content.title = habit.title
+            content.body = primaryBody(for: habit, at: fireDate)
+            content.categoryIdentifier = Category.habitAlarm.rawValue
+            content.interruptionLevel = .timeSensitive
+            content.sound = wakeSound()
+            
+            let request = UNNotificationRequest(
+                identifier: keyMain(for: habit, timestamp: Int(fireDate.timeIntervalSince1970)),
+                content: content,
+                trigger: trigger
+            )
+            
+            do {
+                try await center.add(request)
+            } catch {
+                logger.error("Failed to schedule main notification: \(error.localizedDescription, privacy: .public)")
+            }
         }
+        
+        logger.info("Scheduled rolling main notifications for \(habit.rawValue, privacy: .public) at \(hour):\(minute)")
     }
 
     /// メイン通知の 0 秒起点から 30 秒間隔で AppState 設定回数ぶんのフォローアップを登録
@@ -310,26 +320,21 @@ final class NotificationScheduler {
         return .default
     }
 
-    private func primaryBody(for habit: HabitType) -> String {
-        // 日付ベースでローテーション（1〜10）
-        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+    private func primaryBody(for habit: HabitType, at date: Date = Date()) -> String {
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: date) ?? 1
         let index = ((dayOfYear - 1) % 10) + 1
         let userName = AppState.shared.userProfile.displayName ?? localizedString("common_user_fallback")
         
         switch habit {
         case .wake:
-            let key = "notification_wake_main_\(index)"
-            return String(format: localizedString(key), userName)
+            return formattedLocalized("notification_wake_main_\(index)", userName)
         case .training:
-            let key = "notification_training_main_\(index)"
-            return String(format: localizedString(key), userName)
+            return formattedLocalized("notification_training_main_\(index)", userName)
         case .bedtime:
-            let key = "notification_bedtime_main_\(index)"
-            return String(format: localizedString(key), userName)
+            return formattedLocalized("notification_bedtime_main_\(index)", userName)
         case .custom:
             let habitName = customHabitDisplayName()
-            let key = "notification_custom_main_\(index)"
-            return String(format: localizedString(key), habitName)
+            return formattedLocalized("notification_custom_main_\(index)", habitName)
         }
     }
 
@@ -354,18 +359,14 @@ final class NotificationScheduler {
         
         switch habit {
         case .wake:
-            let key = "notification_wake_followup_\(rotationIndex)"
-            return String(format: localizedString(key), userName)
+            return formattedLocalized("notification_wake_followup_\(rotationIndex)", userName)
         case .training:
-            let key = "notification_training_followup_\(rotationIndex)"
-            return String(format: localizedString(key), userName)
+            return formattedLocalized("notification_training_followup_\(rotationIndex)", userName)
         case .bedtime:
-            let key = "notification_bedtime_followup_\(rotationIndex)"
-            return String(format: localizedString(key), userName)
+            return formattedLocalized("notification_bedtime_followup_\(rotationIndex)", userName)
         case .custom:
             let habitName = customHabitDisplayName()
-            let key = "notification_custom_followup_\(rotationIndex)"
-            return String(format: localizedString(key), habitName)
+            return formattedLocalized("notification_custom_followup_\(rotationIndex)", habitName)
         }
     }
 
@@ -388,8 +389,8 @@ final class NotificationScheduler {
         )
     }
 
-    private func keyMain(for habit: HabitType, hour: Int, minute: Int) -> String {
-        "HABIT_MAIN_\(habit.rawValue)_\(hour)_\(minute)"
+    private func keyMain(for habit: HabitType, timestamp: Int) -> String {
+        "HABIT_MAIN_\(habit.rawValue)_\(timestamp)"
     }
 
     private func keyFollow(for habit: HabitType, timestamp: Int) -> String {

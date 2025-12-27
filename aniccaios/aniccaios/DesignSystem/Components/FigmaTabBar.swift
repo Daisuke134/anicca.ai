@@ -2,9 +2,9 @@ import SwiftUI
 
 /// Figmaデザイン（profile.md）と完全一致するタブバー
 /// - 高さ: 76px（ボーダー含む）
-/// - 背景: #FDFCFC
-/// - 上部ボーダー: 1px solid rgba(200, 198, 191, 0.2)
-/// - 選択中タブ: #E9E6E0, border-radius: 24px
+/// - 背景: アダプティブ（ライト #FDFCFC / ダーク #2c2b2a）
+/// - 上部ボーダー: 1px solid アダプティブ
+/// - 選択中タブ: アダプティブ, border-radius: 24px
 struct FigmaTabBar: View {
     @Binding var selectedTab: AppState.RootTab
     
@@ -16,9 +16,9 @@ struct FigmaTabBar: View {
     
     var body: some View {
         VStack(spacing: 0) {
-            // 上部ボーダー（Figma: border-top: 1px solid rgba(200, 198, 191, 0.2)）
+            // 上部ボーダー（アダプティブ）
             Rectangle()
-                .fill(Color(red: 200/255, green: 198/255, blue: 191/255, opacity: 0.2))
+                .fill(AppTheme.Colors.tabBarBorder)
                 .frame(height: 1)
             
             // タブコンテナ（4タブ均等配置）
@@ -47,8 +47,8 @@ struct FigmaTabBar: View {
             .frame(height: tabBarHeight - 1) // ボーダー分を引く
             .frame(maxWidth: .infinity)
         }
-        // Figma: background: #FDFCFC
-        .background(Color(hex: "#FDFCFC"))
+        // アダプティブ背景
+        .background(AppTheme.Colors.tabBarBackground)
     }
     
     @ViewBuilder
@@ -77,13 +77,12 @@ struct FigmaTabBar: View {
             .frame(maxWidth: .infinity)
             .frame(height: tabButtonHeight)
             .background(
-                // Figma: 選択中は background: #E9E6E0, border-radius: 24px
+                // アダプティブ選択背景
                 RoundedRectangle(cornerRadius: tabCornerRadius)
-                    .fill(isSelected ? Color(hex: "#E9E6E0") : Color.clear)
+                    .fill(isSelected ? AppTheme.Colors.tabBarSelectedBackground : Color.clear)
             )
         }
         .buttonStyle(.plain)
         .padding(.top, 8) // Figma: top: 8px
     }
 }
-

@@ -62,7 +62,7 @@ struct PrimaryButton: View {
     private var foregroundColor: Color {
         switch style {
         case .primary, .large:
-            return .white
+            return AppTheme.Colors.buttonTextSelected  // .white から変更
         case .selected:
             return AppTheme.Colors.buttonTextSelected
         case .unselected:

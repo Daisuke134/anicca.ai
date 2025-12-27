@@ -56,7 +56,8 @@ function renderMessage(templateId, lang) {
         ? '今、5分だけ歩こう。体が動くと、気分も少し変わるよ。'
         : "Let's walk for five minutes. When the body moves, the mind often shifts too.";
     default:
-      return ja ? '今は送らないよ。' : 'No nudge for now.';
+      // do_nothing は通知を出さない（iOS側は message が空なら提示しない）
+      return '';
   }
 }
 
@@ -97,10 +98,11 @@ router.post('/trigger', async (req, res) => {
     const lang = langR.rows?.[0]?.language || 'en';
     const message = renderMessage(templateId, lang);
     const nudgeId = crypto.randomUUID();
+    const sent = Boolean(message && String(message).trim());
 
     await query(
       `insert into nudge_events (id, user_id, domain, subtype, decision_point, state, action_template, channel, sent, created_at)
-       values ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7, $8, true, timezone('utc', now()))`,
+       values ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7, $8, $9, timezone('utc', now()))`,
       [
         nudgeId,
         profileId,
@@ -109,7 +111,8 @@ router.post('/trigger', async (req, res) => {
         parsed.data.eventType,
         JSON.stringify(state || {}),
         templateId,
-        'notification'
+        'notification',
+        sent
       ]
     );
 

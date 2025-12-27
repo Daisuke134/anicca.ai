@@ -83,10 +83,7 @@ struct AlarmKitPermissionStepView: View {
                 hasAttemptedPermission = true
                 isRequesting = false
                 
-                if !granted {
-                    // 許可されなかった場合は設定への誘導ダイアログを表示
-                    showSettingsAlert = true
-                }
+                // 拒否/失敗時も自動アラートは出さず、画面内の「設定を開く」で明示的に誘導する
                 return
             }
             #endif
@@ -100,7 +97,6 @@ struct AlarmKitPermissionStepView: View {
                 permissionGranted = true
             } else {
                 permissionDenied = true
-                showSettingsAlert = true
             }
 
             hasAttemptedPermission = true

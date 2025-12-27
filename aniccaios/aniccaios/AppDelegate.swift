@@ -51,9 +51,24 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
-        // これにより毎日違うメッセージが表示される
         Task {
+            // AlarmKit / LiveActivityIntent からの「起動して会話開始」要求を回収
+            // （IntentプロセスでAppStateを書いてもアプリ本体に反映されないケースがあるため）
+            let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+            let rawHabit = appGroupDefaults?.string(forKey: "pending_habit_launch_habit")
+            let ts = appGroupDefaults?.double(forKey: "pending_habit_launch_ts") ?? 0
+            if let rawHabit,
+               let habit = HabitType(rawValue: rawHabit),
+               ts > 0,
+               Date().timeIntervalSince1970 - ts < 300 { // 5分以内の要求のみ処理
+                await MainActor.run {
+                    AppState.shared.prepareForImmediateSession(habit: habit)
+                }
+                appGroupDefaults?.removeObject(forKey: "pending_habit_launch_habit")
+                appGroupDefaults?.removeObject(forKey: "pending_habit_launch_ts")
+            }
+
+            // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
             await NotificationScheduler.shared.refreshPreRemindersIfNeeded()
         }
     }

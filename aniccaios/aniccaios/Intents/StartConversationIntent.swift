@@ -13,6 +13,11 @@ struct StartConversationIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult {
+        // Intentプロセスからアプリ本体へ渡すため、AppGroupに起動要求を永続化
+        let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+        appGroupDefaults?.set(habitType.rawValue, forKey: "pending_habit_launch_habit")
+        appGroupDefaults?.set(Date().timeIntervalSince1970, forKey: "pending_habit_launch_ts")
+
         // Configure audio session
         try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
         

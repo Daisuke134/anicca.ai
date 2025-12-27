@@ -22,6 +22,8 @@ router.get('/summary', async (req, res) => {
     const tz = snapshot?.timezone || 'UTC';
     const lang = snapshot?.language || 'en';
     const today = snapshot?.today_stats || null;
+    const profileId = snapshot?.profile_id || null;
+    const localDate = snapshot?.local_date || null;
 
     // ★ 保存済みinsightをチェック、なければAI生成
     let todayInsight = pickTodayInsight({ todayStats: today, language: lang });
@@ -32,6 +34,16 @@ router.get('/summary', async (req, res) => {
         traits: snapshot?.traits,
         language: lang
       });
+      // 生成できた場合は daily_metrics.insights に保存して同日中の再生成を防ぐ
+      if (todayInsight && today && profileId && localDate) {
+        const startOfDay = new Date(`${localDate}T00:00:00Z`);
+        const mergedInsights = { ...(today?.insights || {}), todayInsight };
+        // best-effort: 保存失敗でもUXは崩さない
+        prisma.dailyMetric.update({
+          where: { userId_date: { userId: profileId, date: startOfDay } },
+          data: { insights: mergedInsights, updatedAt: new Date() }
+        }).catch(() => {});
+      }
       // 生成に失敗した場合はフォールバック
       if (!todayInsight) {
         todayInsight = getInsightFallback(lang);

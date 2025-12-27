@@ -29,7 +29,19 @@ struct OnboardingFlowView: View {
         }
         .onAppear {
             // v3: オンボーディング未完了は常に保存ステップから開始（AppState側で未完了時は.welcomeへ強制）
-            step = appState.onboardingStep
+            let alarmKitSupported: Bool = {
+                #if canImport(AlarmKit)
+                if #available(iOS 26.0, *) { return true }
+                #endif
+                return false
+            }()
+            // もし保存ステップが alarmkit でも、非対応環境では notifications に戻す
+            if appState.onboardingStep == .alarmkit && !alarmKitSupported {
+                step = .notifications
+                appState.setOnboardingStep(.notifications)
+            } else {
+                step = appState.onboardingStep
+            }
             // Prefetch Paywall offering for faster display
             Task {
                 await SubscriptionManager.shared.refreshOfferings()
@@ -50,7 +62,18 @@ struct OnboardingFlowView: View {
         case .struggles:
             step = .notifications
         case .notifications:
-            step = .alarmkit
+            // AlarmKitは iOS 26+ のみ。非対応ならここで完了にする（通知権限と混同しない）
+            #if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                step = .alarmkit
+            } else {
+                appState.markOnboardingComplete()
+                return
+            }
+            #else
+            appState.markOnboardingComplete()
+            return
+            #endif
         case .alarmkit:
             // 最終ステップ: オンボーディング完了
             appState.markOnboardingComplete()

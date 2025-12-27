@@ -1,6 +1,7 @@
 import SwiftUI
 import DeviceActivity
 import os
+import Foundation
 
 /// v0.3 Behavior タブ: Today's Insights / 24h Timeline / Highlights / 10 Years From Now
 struct BehaviorView: View {
@@ -11,6 +12,7 @@ struct BehaviorView: View {
     @State private var showScreenTimeReport = false
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "BehaviorView")
+    private let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
 
     var body: some View {
         NavigationStack {
@@ -113,13 +115,20 @@ struct BehaviorView: View {
         if appState.sensorAccess.screenTimeEnabled {
             showScreenTimeReport = true
             logger.info("BehaviorView: Waiting for DeviceActivityReport...")
-            try? await Task.sleep(nanoseconds: 1_000_000_000) // 1秒に延長
+            // 固定sleepではなく、extensionがAppGroupへ書き込む lastUpdate を短時間待つ
+            let startTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
+            for _ in 0..<25 { // 最大5秒（0.2s * 25）
+                try? await Task.sleep(nanoseconds: 200_000_000)
+                let nowTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
+                if nowTs > startTs { break }
+            }
             showScreenTimeReport = false
         }
         
-        // v3.1: 最新の HealthKit データを即座にバックエンドへ送信
+        // v3.1: ここで毎回force送信すると日中のタブ再訪問で上書き＆空データ保存を誘発する。
+        // 当日未送信なら送信、送信済みなら何もしない（= runUploadIfDueの通常動作）にする。
         logger.info("BehaviorView: Running MetricsUploader...")
-        await MetricsUploader.shared.runUploadIfDue(force: true)
+        await MetricsUploader.shared.runUploadIfDue(force: false)
         
         do {
             logger.info("BehaviorView: Fetching summary from backend...")

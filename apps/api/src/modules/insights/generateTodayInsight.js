@@ -26,16 +26,18 @@ export async function generateTodayInsight({ todayStats, traits, language = 'en'
 
   const systemPrompt = language === 'ja'
     ? `あなたは行動データに基づいて、今日1日の短い洞察を提供します。
-       必ず30文字以内の1文にまとめてください。2行程度で表示されるように簡潔に。
-       ポジティブで具体的に。医療アドバイスは避けてください。`
+       1〜2文で、2行程度で表示される長さにしてください（目安: 40〜80文字）。
+       重要: 具体的な数値（歩数/分/%/時刻など）は書かないでください。全体の流れを要約してください。
+       ポジティブで実行しやすい言葉に。医療アドバイスは避けてください。`
     : `You provide brief insights based on behavioral data.
-       Keep it under 60 characters, one sentence only. Display in about 2 lines.
+       Write 1–2 short sentences that fit about 2 lines.
+       Important: Do NOT include specific numbers (steps/minutes/%/times). Summarize the overall day qualitatively.
        Use positive language. No medical advice.`;
 
   const userContent = JSON.stringify({
     task: language === 'ja' 
-      ? '今日の行動データに基づいて、30文字以内の1文で短い洞察を書いてください。'
-      : 'Write a brief insight in one sentence under 60 characters based on today\'s behavioral data.',
+      ? '今日の行動データに基づいて、2行程度の短い洞察を書いてください（数値は出さない）。'
+      : 'Write a short two-line insight (no numbers) based on today\'s behavioral data.',
     data: {
       sleepMinutes: todayStats.sleepDurationMin,
       wakeTime: todayStats.wakeAt,

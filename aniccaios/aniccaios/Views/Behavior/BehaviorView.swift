@@ -52,7 +52,8 @@ struct BehaviorView: View {
                             streaks: summary.streaks ?? BehaviorSummary.Streaks(wake: 0, screen: 0, workout: 0, rumination: 0)
                         )
 
-                        FutureScenarioView(future: summary.futureScenario)
+                        // 一時的に非表示 - 復活させる時はコメントを外す
+                        // FutureScenarioView(future: summary.futureScenario)
                     }
                 }
                 .padding(.horizontal, AppTheme.Spacing.lg)

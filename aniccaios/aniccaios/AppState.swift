@@ -966,7 +966,12 @@ final class AppState: ObservableObject {
         }
         if let preferredLanguage = payload["preferredLanguage"] as? String,
            let language = LanguagePreference(rawValue: preferredLanguage) {
-            profile.preferredLanguage = language
+            // デバイスの言語設定を優先: サーバーの言語とデバイスの言語が一致する場合のみ適用
+            let deviceLanguage = LanguagePreference.detectDefault()
+            if deviceLanguage == language {
+                profile.preferredLanguage = language
+            }
+            // 一致しない場合はデバイスの言語を維持（サーバーが間違った言語を返しても上書きしない）
         }
         if let sleepLocation = payload["sleepLocation"] as? String {
             profile.sleepLocation = sleepLocation

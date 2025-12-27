@@ -384,3 +384,6 @@
 /* v3: 追加のStruggle */
 "problem_irritation" = "苛立ち";
 
+/* v3: Account Management */
+"profile_account_management" = "アカウント管理";
+

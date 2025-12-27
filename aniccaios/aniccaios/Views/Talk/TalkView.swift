@@ -1,4 +1,5 @@
 import SwiftUI
+import UIKit
 
 struct TalkView: View {
     @EnvironmentObject private var appState: AppState
@@ -71,6 +72,10 @@ struct TalkView: View {
                 checkPendingHabitTrigger()
             }
             .onChange(of: appState.pendingHabitTrigger) { _ in
+                checkPendingHabitTrigger()
+            }
+            .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+                // アプリがアクティブになったときもチェック（通知からアプリに遷移した場合など）
                 checkPendingHabitTrigger()
             }
         }

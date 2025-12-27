@@ -427,7 +427,7 @@ struct ProfileView: View {
 
     private var accountManagementSection: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Text("Account Management")
+            Text(String(localized: "profile_account_management"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.horizontal, 2)

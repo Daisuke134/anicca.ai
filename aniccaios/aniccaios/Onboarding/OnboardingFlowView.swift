@@ -21,6 +21,8 @@ struct OnboardingFlowView: View {
                     StrugglesStepView(next: advance)
                 case .notifications:
                     NotificationPermissionStepView(next: advance)
+                case .alarmkit:
+                    AlarmKitPermissionStepView(next: advance)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -48,6 +50,8 @@ struct OnboardingFlowView: View {
         case .struggles:
             step = .notifications
         case .notifications:
+            step = .alarmkit
+        case .alarmkit:
             // 最終ステップ: オンボーディング完了
             appState.markOnboardingComplete()
             return

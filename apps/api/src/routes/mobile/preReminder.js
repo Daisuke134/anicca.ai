@@ -38,7 +38,7 @@ const PROMPT_TEMPLATES = {
 ユーザーが就寝15分前であることを踏まえ、睡眠準備を促す短いメッセージを生成してください。
 
 ルール:
-- 80文字以内（厳守）
+- 30文字以内（厳守）1-2行で表示されるように簡潔に
 - ユーザーの名前を必ず含める（「〇〇さん」または「〇〇」の形で文頭か文中に自然に）
 - ユーザーの理想の姿や現在の課題に関連付けて励ます
 - 今日の活動データ（歩数、睡眠時間など）があれば参照して具体的に
@@ -135,7 +135,7 @@ ${ctx.todayStats ? `- 昨日の活動: 歩数 ${ctx.todayStats.steps || 0}歩${c
 The user is 15 minutes before bedtime. Generate a short message to encourage sleep preparation.
 
 Rules:
-- Maximum 80 characters (strict)
+- Maximum 50 characters (strict) Keep it to 1-2 lines visible in notification
 - Always include the user's name (e.g., "Name, it's time to..." or "Good night, Name")
 - Reference their ideal self or current struggles when relevant
 - If today's activity data is available, reference it specifically
@@ -374,9 +374,10 @@ async function generatePersonalizedMessage({ profileId, habitType, habitName, sc
       throw new Error('Empty response from OpenAI');
     }
 
-    // 80文字を超えた場合は切り詰め
-    if (generatedMessage.length > 80) {
-      return generatedMessage.slice(0, 77) + '...';
+    // 文字数制限: 日本語30文字、英語50文字
+    const maxLength = language === 'ja' ? 30 : 50;
+    if (generatedMessage.length > maxLength) {
+      return generatedMessage.slice(0, maxLength - 3) + '...';
     }
 
     return generatedMessage;

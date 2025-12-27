@@ -6,7 +6,8 @@ enum OnboardingStep: Int {
     case account       // 2. Sign in with Apple
     case ideals        // 3. Ideal Self選択
     case struggles     // 4. Current Struggles選択
-    case notifications // 5. 通知許可（最終ステップ）
+    case notifications // 5. 通知許可
+    case alarmkit      // 6. アラーム許可（最終ステップ）
 }
 
 extension OnboardingStep {

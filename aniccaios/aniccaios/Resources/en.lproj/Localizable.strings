@@ -388,3 +388,6 @@
 /* v3: Additional Struggle */
 "problem_irritation" = "Irritation";
 
+/* v3: Account Management */
+"profile_account_management" = "Account Management";
+

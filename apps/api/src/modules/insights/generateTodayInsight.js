@@ -25,17 +25,17 @@ export async function generateTodayInsight({ todayStats, traits, language = 'en'
   const model = process.env.OPENAI_INSIGHT_MODEL || 'gpt-4o-mini';
 
   const systemPrompt = language === 'ja'
-    ? `あなたは行動データに基づいて、今日1日の短い洞察（1-2文）を提供します。
-       ポジティブで励ましの言葉を使い、医療的なアドバイスは避けてください。
-       データに基づいた具体的な観察と、小さな改善提案を含めてください。`
-    : `You provide brief insights (1-2 sentences) based on behavioral data.
-       Use positive, encouraging language. Avoid medical advice.
-       Include specific observations from the data and small improvement suggestions.`;
+    ? `あなたは行動データに基づいて、今日1日の短い洞察を提供します。
+       必ず30文字以内の1文にまとめてください。2行程度で表示されるように簡潔に。
+       ポジティブで具体的に。医療アドバイスは避けてください。`
+    : `You provide brief insights based on behavioral data.
+       Keep it under 60 characters, one sentence only. Display in about 2 lines.
+       Use positive language. No medical advice.`;
 
   const userContent = JSON.stringify({
     task: language === 'ja' 
-      ? '今日の行動データに基づいて、短い洞察を1-2文で書いてください。'
-      : 'Write a brief insight (1-2 sentences) based on today\'s behavioral data.',
+      ? '今日の行動データに基づいて、30文字以内の1文で短い洞察を書いてください。'
+      : 'Write a brief insight in one sentence under 60 characters based on today\'s behavioral data.',
     data: {
       sleepMinutes: todayStats.sleepDurationMin,
       wakeTime: todayStats.wakeAt,

@@ -8,7 +8,7 @@ final class ScreenTimeManager {
     private init() {}
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "ScreenTimeManager")
-    private let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+    private let appGroupDefaults = AppGroup.userDefaults
     
     struct DailySummary {
         var totalMinutes: Int?
@@ -63,13 +63,13 @@ final class ScreenTimeManager {
         let todayKey = String(today)
         
         // ★ object(forKey:)を使ってnilと0を区別（integer(forKey:)は未設定でも0を返す）
-        let totalMinutes = appGroupDefaults?.object(forKey: "screenTime_totalMinutes_\(todayKey)") as? Int
-        let socialMinutes = appGroupDefaults?.object(forKey: "screenTime_socialMinutes_\(todayKey)") as? Int
-        let lateNightMinutes = appGroupDefaults?.object(forKey: "screenTime_lateNightMinutes_\(todayKey)") as? Int
+        let totalMinutes = appGroupDefaults.object(forKey: "screenTime_totalMinutes_\(todayKey)") as? Int
+        let socialMinutes = appGroupDefaults.object(forKey: "screenTime_socialMinutes_\(todayKey)") as? Int
+        let lateNightMinutes = appGroupDefaults.object(forKey: "screenTime_lateNightMinutes_\(todayKey)") as? Int
         
         // v3.1: snsSessions を読み取り
         var snsSessions: [[String: Any]]? = nil
-        if let sessionsJSON = appGroupDefaults?.string(forKey: "screenTime_snsSessions_\(todayKey)"),
+        if let sessionsJSON = appGroupDefaults.string(forKey: "screenTime_snsSessions_\(todayKey)"),
            let sessionsData = sessionsJSON.data(using: .utf8),
            let sessions = try? JSONSerialization.jsonObject(with: sessionsData) as? [[String: Any]] {
             snsSessions = sessions

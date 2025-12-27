@@ -54,9 +54,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Task {
             // AlarmKit / LiveActivityIntent からの「起動して会話開始」要求を回収
             // （IntentプロセスでAppStateを書いてもアプリ本体に反映されないケースがあるため）
-            let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
-            let rawHabit = appGroupDefaults?.string(forKey: "pending_habit_launch_habit")
-            let ts = appGroupDefaults?.double(forKey: "pending_habit_launch_ts") ?? 0
+            let appGroupDefaults = AppGroup.userDefaults
+            let rawHabit = appGroupDefaults.string(forKey: "pending_habit_launch_habit")
+            let ts = appGroupDefaults.double(forKey: "pending_habit_launch_ts")
             if let rawHabit,
                let habit = HabitType(rawValue: rawHabit),
                ts > 0,
@@ -64,8 +64,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 await MainActor.run {
                     AppState.shared.prepareForImmediateSession(habit: habit)
                 }
-                appGroupDefaults?.removeObject(forKey: "pending_habit_launch_habit")
-                appGroupDefaults?.removeObject(forKey: "pending_habit_launch_ts")
+                appGroupDefaults.removeObject(forKey: "pending_habit_launch_habit")
+                appGroupDefaults.removeObject(forKey: "pending_habit_launch_ts")
             }
 
             // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
@@ -90,35 +90,31 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         // 1) Habit alarm（既存）
         if let habit = NotificationScheduler.shared.habit(fromIdentifier: notificationIdentifier) {
             let customHabitId = NotificationScheduler.shared.customHabitId(fromIdentifier: notificationIdentifier)
-
             switch identifier {
             case NotificationScheduler.Action.startConversation.rawValue,
                  UNNotificationDefaultActionIdentifier:
-                // ユーザーが通知から会話に入ったので、その習慣の後続フォローアップはすべてキャンセル
-                NotificationScheduler.shared.cancelFollowups(for: habit)
-                if let customId = customHabitId {
-                    NotificationScheduler.shared.cancelCustomFollowups(id: customId)
-                }
-                Task {
-                    habitLaunchLogger.info("Notification accepted for habit \(habit.rawValue, privacy: .public) id=\(notificationIdentifier, privacy: .public)")
-                    do {
-                        try AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
-                        habitLaunchLogger.info("Audio session configured for realtime")
-                    } catch {
-                        habitLaunchLogger.error("Audio session configure failed: \(error.localizedDescription, privacy: .public)")
-                    }
-                    await MainActor.run {
-                        AppState.shared.selectedRootTab = .talk
-                        AppState.shared.prepareForImmediateSession(habit: habit, customHabitId: customHabitId)
-                        habitLaunchLogger.info("AppState prepared immediate session for habit \(habit.rawValue, privacy: .public)")
-                    }
-                }
+                handleHabitLaunch(notificationId: notificationIdentifier, habit: habit, customHabitId: customHabitId)
             case NotificationScheduler.Action.dismissAll.rawValue:
-                // 「止める」アクション時も、その習慣の後続フォローアップを完全にキャンセル
                 NotificationScheduler.shared.cancelFollowups(for: habit)
                 if let customId = customHabitId {
                     NotificationScheduler.shared.cancelCustomFollowups(id: customId)
                 }
+            default:
+                break
+            }
+            return
+        }
+
+        let content = response.notification.request.content
+        if content.categoryIdentifier == NotificationScheduler.Category.preReminder.rawValue,
+           let (habit, customHabitId) = habitContext(from: content.userInfo) {
+            switch identifier {
+            case NotificationScheduler.Action.startConversation.rawValue,
+                 UNNotificationDefaultActionIdentifier:
+                NotificationScheduler.shared.cancelPreReminder(for: habit, customHabitId: customHabitId)
+                handleHabitLaunch(notificationId: notificationIdentifier, habit: habit, customHabitId: customHabitId)
+            case NotificationScheduler.Action.dismissAll.rawValue:
+                NotificationScheduler.shared.cancelPreReminder(for: habit, customHabitId: customHabitId)
             default:
                 break
             }
@@ -141,5 +137,40 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 }
             }
         }
+    }
+
+    private func handleHabitLaunch(notificationId: String, habit: HabitType, customHabitId: UUID?) {
+        NotificationScheduler.shared.cancelFollowups(for: habit)
+        if let customId = customHabitId {
+            NotificationScheduler.shared.cancelCustomFollowups(id: customId)
+        }
+        Task {
+            habitLaunchLogger.info("Notification accepted for habit \(habit.rawValue, privacy: .public) id=\(notificationId, privacy: .public)")
+            do {
+                try AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
+                habitLaunchLogger.info("Audio session configured for realtime")
+            } catch {
+                habitLaunchLogger.error("Audio session configure failed: \(error.localizedDescription, privacy: .public)")
+            }
+            await MainActor.run {
+                AppState.shared.selectedRootTab = .talk
+                AppState.shared.prepareForImmediateSession(habit: habit, customHabitId: customHabitId)
+                habitLaunchLogger.info("AppState prepared immediate session for habit \(habit.rawValue, privacy: .public)")
+            }
+        }
+    }
+
+    private func habitContext(from userInfo: [AnyHashable: Any]) -> (HabitType, UUID?)? {
+        guard let rawHabit = userInfo["habitType"] as? String else { return nil }
+        let habit: HabitType
+        if let parsed = HabitType(rawValue: rawHabit) {
+            habit = parsed
+        } else if rawHabit == "custom" {
+            habit = .custom
+        } else {
+            return nil
+        }
+        let customHabitId = (userInfo["customHabitId"] as? String).flatMap(UUID.init(uuidString:))
+        return (habit, customHabitId)
     }
 }

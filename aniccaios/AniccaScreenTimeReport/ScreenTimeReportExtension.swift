@@ -42,7 +42,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
     
     nonisolated func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityReport {
         let logger = Logger(subsystem: "ai.anicca.app.ios.screentime-report", category: "Report")
-        let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+        let appGroupDefaults = AppGroup.userDefaults
         
         var totalMinutes: Double = 0
         var lateNightMinutes: Double = 0

@@ -72,7 +72,7 @@ final class AppState: ObservableObject {
     private let subscriptionKey = "com.anicca.subscription"
     private let customHabitsKey = "com.anicca.customHabits"
     private let customHabitSchedulesKey = "com.anicca.customHabitSchedules"
-    private let sensorAccessKey = "com.anicca.sensorAccessState"
+    private let sensorAccessBaseKey = "com.anicca.sensorAccessState"
     private let hasSeenWakeSilentTipKey = "com.anicca.hasSeenWakeSilentTip"
 
     private let scheduler = NotificationScheduler.shared
@@ -101,11 +101,13 @@ final class AppState: ObservableObject {
             self.onboardingStep = .welcome
         }
         
+        let initialAuthStatus = loadUserCredentials()
+        self.authStatus = initialAuthStatus
+        
         // Phase-7: load sensor access state (must be before any instance method calls)
-        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessKey)
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: initialAuthStatus.userId)
         
         // Load user credentials and profile
-        self.authStatus = loadUserCredentials()
         self.userProfile = loadUserProfile()
         self.subscriptionInfo = loadSubscriptionInfo()
         self.customHabit = CustomHabitStore.shared.load()
@@ -157,14 +159,14 @@ final class AppState: ObservableObject {
         // オンボーディング前にセッション画面へ飛ぶのはUX的に破綻するため抑止
         guard isOnboardingComplete else { return }
         
-        let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
-        let rawHabit = appGroupDefaults?.string(forKey: pendingHabitLaunchHabitKey)
-        let ts = appGroupDefaults?.double(forKey: pendingHabitLaunchTsKey) ?? 0
+        let appGroupDefaults = AppGroup.userDefaults
+        let rawHabit = appGroupDefaults.string(forKey: pendingHabitLaunchHabitKey)
+        let ts = appGroupDefaults.double(forKey: pendingHabitLaunchTsKey)
         
         defer {
             // 連打/再起動でも同じ要求を繰り返さない
-            appGroupDefaults?.removeObject(forKey: pendingHabitLaunchHabitKey)
-            appGroupDefaults?.removeObject(forKey: pendingHabitLaunchTsKey)
+            appGroupDefaults.removeObject(forKey: pendingHabitLaunchHabitKey)
+            appGroupDefaults.removeObject(forKey: pendingHabitLaunchTsKey)
         }
         
         guard let rawHabit,
@@ -467,10 +469,12 @@ final class AppState: ObservableObject {
         saveUserCredentials(credentials)
         
         // App Groups に userId と deviceId を保存（Notification Service Extension 用）
-        let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
-        appGroupDefaults?.set(credentials.userId, forKey: "userId")
-        appGroupDefaults?.set(resolveDeviceId(), forKey: "deviceId")
-        appGroupDefaults?.set(AppConfig.proxyBaseURL.absoluteString, forKey: "ANICCA_PROXY_BASE_URL")
+        let appGroupDefaults = AppGroup.userDefaults
+        appGroupDefaults.set(credentials.userId, forKey: "userId")
+        appGroupDefaults.set(resolveDeviceId(), forKey: "deviceId")
+        appGroupDefaults.set(AppConfig.proxyBaseURL.absoluteString, forKey: "ANICCA_PROXY_BASE_URL")
+
+        sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: credentials.userId)
         
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty or "User" (user will set it in profile step)
@@ -522,14 +526,14 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: onboardingKey)
         setOnboardingStep(.welcome)
         
-        // UserDefaultsからユーザーデータを削除（sensorAccessKeyは削除しない）
+        // UserDefaultsからユーザーデータを削除（sensorAccessBaseKeyは削除しない）
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
         defaults.removeObject(forKey: habitSchedulesKey)
         defaults.removeObject(forKey: customHabitsKey)
         defaults.removeObject(forKey: customHabitSchedulesKey)
-        // ★ sensorAccessKey は削除しない - デバイス権限はユーザーアカウントではなくデバイスに紐づく
+        // ★ sensorAccessBaseKey は削除しない - デバイス権限はユーザーアカウントではなくデバイスに紐づく
         
         // 通知をすべてキャンセル
         Task {
@@ -567,7 +571,7 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: habitSchedulesKey)
         defaults.removeObject(forKey: customHabitsKey)
         defaults.removeObject(forKey: customHabitSchedulesKey)
-        defaults.removeObject(forKey: sensorAccessKey)
+        defaults.removeObject(forKey: sensorAccessBaseKey)
         
         // 通知をすべてキャンセル
         Task {
@@ -1197,18 +1201,33 @@ final class AppState: ObservableObject {
     
     // MARK: - Phase-7: Sensor Access State
     
-    private static func loadSensorAccess(from defaults: UserDefaults, key: String) -> SensorAccessState {
-        guard let data = defaults.data(forKey: key),
-              let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) else {
-            return .default
+    private static func loadSensorAccess(from defaults: UserDefaults, key: String, userId: String?) -> SensorAccessState {
+        if let userId,
+           let data = defaults.data(forKey: "\(key).\(userId)"),
+           let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) {
+            return decoded
         }
-        return decoded
+        if let data = defaults.data(forKey: key),
+           let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) {
+            return decoded
+        }
+        return .default
     }
     
-    private func saveSensorAccess() {
+    private func saveSensorAccess(for userId: String? = nil) {
+        let key = sensorAccessStorageKey(for: userId ?? currentUserId)
         if let data = try? JSONEncoder().encode(sensorAccess) {
-            defaults.set(data, forKey: sensorAccessKey)
+            defaults.set(data, forKey: key)
         }
+    }
+
+    private func sensorAccessStorageKey(for userId: String?) -> String {
+        guard let userId, !userId.isEmpty else { return sensorAccessBaseKey }
+        return "\(sensorAccessBaseKey).\(userId)"
+    }
+
+    private var currentUserId: String? {
+        authStatus.userId
     }
     
     // MARK: - Phase-7: integration toggles entry points (quiet fallback)
@@ -1259,6 +1278,13 @@ extension AuthStatus {
     var accessToken: String? {
         switch self {
         case .signedIn(let c): return c.jwtAccessToken
+        default: return nil
+        }
+    }
+
+    var userId: String? {
+        switch self {
+        case .signedIn(let c): return c.userId
         default: return nil
         }
     }

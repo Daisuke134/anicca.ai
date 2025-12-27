@@ -12,7 +12,7 @@ struct BehaviorView: View {
     @State private var showScreenTimeReport = false
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "BehaviorView")
-    private let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+    private let appGroupDefaults = AppGroup.userDefaults
 
     var body: some View {
         NavigationStack {
@@ -117,10 +117,10 @@ struct BehaviorView: View {
             showScreenTimeReport = true
             logger.info("BehaviorView: Waiting for DeviceActivityReport...")
             // extensionがAppGroupへ書き込む lastUpdate を"短時間だけ"待つ（最大5秒→短縮）
-            let startTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
+            let startTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
             for _ in 0..<25 { // 最大5秒（0.2s * 25）
                 try? await Task.sleep(nanoseconds: 200_000_000)
-                let nowTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
+                let nowTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
                 if nowTs > startTs {
                     shouldForceUpload = true
                     break

@@ -12,10 +12,10 @@ final class VoiceSessionController: NSObject, ObservableObject {
     @Published private(set) var isUserSpeaking: Bool = false
     @Published private(set) var isMicMuted: Bool = false
 
-    /// tech-ema-v3: 5秒以上のみ EMA を聞く
+    /// tech-ema-v3: 3秒以上のみ EMA を聞く（誤タップ対策）
     var shouldAskFeelingEMA: Bool {
         guard let start = sessionStartTime else { return false }
-        return Date().timeIntervalSince(start) >= 5
+        return Date().timeIntervalSince(start) >= 3
     }
 
     // Feeling セッション識別（/api/mobile/feeling/end で使用）

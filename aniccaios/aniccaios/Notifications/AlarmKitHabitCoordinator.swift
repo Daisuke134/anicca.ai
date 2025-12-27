@@ -202,8 +202,7 @@ final class AlarmKitHabitCoordinator {
             }
             
             if currentState == .denied {
-                logger.warning("AlarmKit authorization was denied by user. Please enable in Settings.")
-                return false
+                logger.warning("AlarmKit authorization was previously denied. Prompting again due to explicit toggle request.")
             }
             
             let state = try await manager.requestAuthorization()

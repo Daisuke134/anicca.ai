@@ -927,5 +927,26 @@ final class NotificationScheduler {
         UserDefaults.standard.set(now, forKey: lastRefreshKey)
         logger.info("Pre-reminder refresh completed")
     }
+    
+    // MARK: - Helper Functions
+    
+    private func formattedLocalized(_ key: String, _ value: String) -> String {
+        let template = localizedString(key)
+        guard template.contains("%@") else { return template }
+        return String(format: template, value)
+    }
+
+    private func nextDate(hour: Int, minute: Int) -> Date? {
+        var components = DateComponents()
+        components.hour = hour
+        components.minute = minute
+        components.second = 0
+        return Calendar.current.nextDate(
+            after: Date(),
+            matching: components,
+            matchingPolicy: .nextTimePreservingSmallerComponents,
+            direction: .forward
+        )
+    }
 }
 

@@ -21,12 +21,23 @@ struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
         }
     }
 
+    @MainActor
     var body: some DeviceActivityReportScene {
         TotalActivityReport { activityReport in
             TotalActivityView(report: activityReport)
         }
     }
 }
+private func resolvedAppGroupDefaults() -> UserDefaults {
+    if let defaults = UserDefaults(suiteName: "group.ai.anicca.app.ios") {
+        return defaults
+    }
+    if let defaults = UserDefaults(suiteName: "group.ai.anicca.app") {
+        return defaults
+    }
+    return .standard
+}
+
 
 // MARK: - Report Context
 
@@ -42,11 +53,13 @@ struct TotalActivityReport: DeviceActivityReportScene {
     
     nonisolated func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityReport {
         let logger = Logger(subsystem: "ai.anicca.app.ios.screentime-report", category: "Report")
-        let appGroupDefaults = AppGroup.userDefaults
+        let appGroupDefaults = resolvedAppGroupDefaults()
         
         var totalMinutes: Double = 0
         var lateNightMinutes: Double = 0
+        var socialMinutes: Double = 0
         var receivedAny = false
+        var snsSessionsPayload: [[String: Any]] = []
         
         let calendar = Calendar.current
         
@@ -60,9 +73,22 @@ struct TotalActivityReport: DeviceActivityReportScene {
                 // LaunchServices DB に触れないため、bundleIdentifier 依存をやめる。
                 // まずは「総スクリーン時間」と「夜間スクリーン時間」を安定して出す。
                 let minutes = segment.totalActivityDuration / 60.0
-                if minutes > 0 { receivedAny = true }
+                guard minutes > 0 else { continue }
+                
                 totalMinutes += minutes
                 if isLateNight { lateNightMinutes += minutes }
+                
+                let primaryCategory = segment.categories.first?.key.rawValue ?? "unknown"
+                if primaryCategory.localizedCaseInsensitiveContains("social") {
+                    socialMinutes += minutes
+                }
+                
+                snsSessionsPayload.append([
+                    "startAt": ISO8601DateFormatter().string(from: segment.dateInterval.start),
+                    "endAt": ISO8601DateFormatter().string(from: segment.dateInterval.end),
+                    "category": primaryCategory,
+                    "totalMinutes": minutes
+                ])
             }
         }
         
@@ -72,19 +98,23 @@ struct TotalActivityReport: DeviceActivityReportScene {
         
         // 重要: データが返ってこないケース（未承認/未生成）で 0 を書いて上書きしない
         if receivedAny {
-            appGroupDefaults?.set(Int(totalMinutes), forKey: "screenTime_totalMinutes_\(todayKey)")
-            // 互換: 既存パイプラインが snsMinutesTotal を参照するため、暫定で total を入れる
-            appGroupDefaults?.set(Int(totalMinutes), forKey: "screenTime_socialMinutes_\(todayKey)")
-            appGroupDefaults?.set(Int(lateNightMinutes), forKey: "screenTime_lateNightMinutes_\(todayKey)")
-            appGroupDefaults?.set(Date().timeIntervalSince1970, forKey: "screenTime_lastUpdate")
-            logger.info("Saved screen time: total=\(Int(totalMinutes))m, lateNight=\(Int(lateNightMinutes))m")
+            appGroupDefaults.set(Int(totalMinutes), forKey: "screenTime_totalMinutes_\(todayKey)")
+            // socialMinutes が未取得の場合は total をフォールバック
+            let socialValue = socialMinutes > 0 ? socialMinutes : totalMinutes
+            appGroupDefaults.set(Int(socialValue), forKey: "screenTime_socialMinutes_\(todayKey)")
+            appGroupDefaults.set(Int(lateNightMinutes), forKey: "screenTime_lateNightMinutes_\(todayKey)")
+            if let json = try? JSONSerialization.data(withJSONObject: snsSessionsPayload) {
+                appGroupDefaults.set(String(data: json, encoding: .utf8), forKey: "screenTime_snsSessions_\(todayKey)")
+            }
+            appGroupDefaults.set(Date().timeIntervalSince1970, forKey: "screenTime_lastUpdate")
+            logger.info("Saved screen time: total=\(Int(totalMinutes))m, lateNight=\(Int(lateNightMinutes))m, sessions=\(snsSessionsPayload.count)")
         } else {
             logger.info("No device activity data received; skipping App Group write")
         }
         
         return ActivityReport(
             totalMinutes: Int(totalMinutes),
-            socialMinutes: Int(totalMinutes),
+            socialMinutes: Int(socialMinutes),
             lateNightMinutes: Int(lateNightMinutes)
         )
     }

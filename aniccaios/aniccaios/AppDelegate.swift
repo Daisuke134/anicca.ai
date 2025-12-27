@@ -8,7 +8,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     override init() {
         super.init()
         HabitLaunchBridge.startObserver { [weak self] in
-            Task { await self?.consumePendingHabitLaunch() }
+            Task { await self?.consumePendingHabitLaunch(retry: true) }
         }
     }
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
@@ -60,23 +60,23 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         Task {
             // AlarmKit / LiveActivityIntent からの「起動して会話開始」要求を回収
             // （IntentプロセスでAppStateを書いてもアプリ本体に反映されないケースがあるため）
-            await consumePendingHabitLaunch()
+            await consumePendingHabitLaunch(retry: true)
 
             // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
             await NotificationScheduler.shared.refreshPreRemindersIfNeeded()
         }
     }
     
-    private func consumePendingHabitLaunch() async {
+    private func consumePendingHabitLaunch(retry: Bool = false) async {
         let appGroupDefaults = AppGroup.userDefaults
-        let rawHabit = appGroupDefaults.string(forKey: "pending_habit_launch_habit")
-        let ts = appGroupDefaults.double(forKey: "pending_habit_launch_ts")
-        guard let rawHabit,
-              let habit = HabitType(rawValue: rawHabit),
-              ts > 0,
-              Date().timeIntervalSince1970 - ts < 300 else {
-            return
-        }
+        guard let entry = (appGroupDefaults.array(forKey: "pending_habit_launch_queue") as? [[String: Any]])?.first,
+              let rawHabit = entry["habit"] as? String,
+              let habit = HabitType(rawValue: rawHabit) else { return }
+        
+        var queue = appGroupDefaults.array(forKey: "pending_habit_launch_queue") as? [[String: Any]] ?? []
+        queue.removeFirst()
+        appGroupDefaults.set(queue, forKey: "pending_habit_launch_queue")
+        
         do {
             try AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
         } catch {
@@ -85,8 +85,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         await MainActor.run {
             AppState.shared.prepareForImmediateSession(habit: habit)
         }
-        appGroupDefaults.removeObject(forKey: "pending_habit_launch_habit")
-        appGroupDefaults.removeObject(forKey: "pending_habit_launch_ts")
+        
+        if retry && !queue.isEmpty {
+            Task { await consumePendingHabitLaunch(retry: false) }
+        }
     }
     
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {

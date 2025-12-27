@@ -24,6 +24,13 @@ final class NotificationScheduler {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NotificationScheduler")
     private let mainSchedulingHorizonDays = 14  // 2週間ぶんの通知を先に登録
     
+    // MARK: - AI Personalization Configuration
+    
+    /// AIパーソナライズを使用するかどうか
+    /// - true: サーバーAPIでパーソナライズ
+    /// - false: 固定フレーズ（日付ベースローテーション）
+    private let useAIPersonalization = false
+    
     private enum AlarmLoop {
         /// 30秒ごとに再通知
         static let intervalSeconds = 30
@@ -45,6 +52,15 @@ final class NotificationScheduler {
             return NSLocalizedString(key, comment: comment)
         }
         return NSLocalizedString(key, tableName: nil, bundle: bundle, value: key, comment: comment)
+    }
+    
+    // MARK: - User Name Prefix
+    
+    private func userNamePrefix() -> String {
+        let language = AppState.shared.userProfile.preferredLanguage
+        let name = AppState.shared.userProfile.displayName
+        guard !name.isEmpty else { return "" }
+        return language == .ja ? "\(name)、" : "\(name), "
     }
 
     // MARK: Authorization
@@ -323,19 +339,18 @@ final class NotificationScheduler {
     private func primaryBody(for habit: HabitType, at date: Date = Date()) -> String {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: date) ?? 1
         let index = ((dayOfYear - 1) % 10) + 1
-        let rawName = AppState.shared.userProfile.displayName
-        let userName = rawName.isEmpty ? localizedString("common_user_fallback") : rawName
+        let prefix = userNamePrefix()
         
         switch habit {
         case .wake:
-            return formattedLocalized("notification_wake_main_\(index)", userName)
+            return formattedLocalized("notification_wake_main_\(index)", prefix)
         case .training:
-            return formattedLocalized("notification_training_main_\(index)", userName)
+            return formattedLocalized("notification_training_main_\(index)", prefix)
         case .bedtime:
-            return formattedLocalized("notification_bedtime_main_\(index)", userName)
+            return formattedLocalized("notification_bedtime_main_\(index)", prefix)
         case .custom:
             let habitName = customHabitDisplayName()
-            return formattedLocalized("notification_custom_main_\(index)", habitName)
+            return formattedLocalized("notification_custom_main_\(index)", prefix, habitName)
         }
     }
 
@@ -356,19 +371,18 @@ final class NotificationScheduler {
     private func followupBody(for habit: HabitType, index: Int = 1) -> String {
         // インデックスベースでローテーション（1〜10）
         let rotationIndex = ((index - 1) % 10) + 1
-        let rawName = AppState.shared.userProfile.displayName
-        let userName = rawName.isEmpty ? localizedString("common_user_fallback") : rawName
+        let prefix = userNamePrefix()
         
         switch habit {
         case .wake:
-            return formattedLocalized("notification_wake_followup_\(rotationIndex)", userName)
+            return formattedLocalized("notification_wake_followup_\(rotationIndex)", prefix)
         case .training:
-            return formattedLocalized("notification_training_followup_\(rotationIndex)", userName)
+            return formattedLocalized("notification_training_followup_\(rotationIndex)", prefix)
         case .bedtime:
-            return formattedLocalized("notification_bedtime_followup_\(rotationIndex)", userName)
+            return formattedLocalized("notification_bedtime_followup_\(rotationIndex)", prefix)
         case .custom:
             let habitName = customHabitDisplayName()
-            return String(format: localizedString("notification_custom_followup_\(rotationIndex)"), habitName)
+            return formattedLocalized("notification_custom_followup_\(rotationIndex)", prefix, habitName)
         }
     }
 
@@ -557,18 +571,19 @@ final class NotificationScheduler {
     private func customBaseContent(name: String, isFollowup: Bool, followupIndex: Int = 1) -> UNMutableNotificationContent {
         let c = UNMutableNotificationContent()
         c.title = isFollowup ? String(format: localizedString("notification_custom_followup_title_format"), name) : name
+        let prefix = userNamePrefix()
         
         if isFollowup {
             // インデックスベースでローテーション（1〜10）
             let rotationIndex = ((followupIndex - 1) % 10) + 1
             let key = "notification_custom_followup_\(rotationIndex)"
-            c.body = String(format: localizedString(key), name)
+            c.body = formattedLocalized(key, prefix, name)
         } else {
             // 日付ベースでローテーション（1〜10）
             let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
             let index = ((dayOfYear - 1) % 10) + 1
             let key = "notification_custom_main_\(index)"
-            c.body = String(format: localizedString(key), name)
+            c.body = formattedLocalized(key, prefix, name)
         }
         
         c.categoryIdentifier = Category.habitAlarm.rawValue
@@ -736,13 +751,17 @@ final class NotificationScheduler {
             offsetMinutes: -offsetMinutes
         )
         
-        // ★ サーバーからパーソナライズメッセージを取得（フォールバック付き）
         let scheduledTimeStr = String(format: "%02d:%02d", hour, minute)
-        let message = await fetchPreReminderMessage(
-            habitType: habit,
-            scheduledTime: scheduledTimeStr,
-            habitName: habitName
-        ) ?? defaultPreReminderBody(for: habit, habitName: habitName)
+        let message: String
+        if useAIPersonalization {
+            message = await fetchPreReminderMessage(
+                habitType: habit,
+                scheduledTime: scheduledTimeStr,
+                habitName: habitName
+            ) ?? preReminderBody(for: habit, habitName: habitName)
+        } else {
+            message = preReminderBody(for: habit, habitName: habitName)
+        }
         
         let content = UNMutableNotificationContent()
         content.title = "Anicca"
@@ -798,13 +817,17 @@ final class NotificationScheduler {
         let minutesBefore = 15 // カスタム習慣は一律15分前
         let (preHour, preMinute) = calculateOffsetTime(baseHour: hour, baseMinute: minute, offsetMinutes: -minutesBefore)
         
-        // ★ サーバーからパーソナライズメッセージを取得（フォールバック付き）
         let scheduledTimeStr = String(format: "%02d:%02d", hour, minute)
-        let message = await fetchPreReminderMessage(
-            habitType: .custom,
-            scheduledTime: scheduledTimeStr,
-            habitName: name
-        ) ?? String(format: localizedString("pre_reminder_custom_body_format"), minutesBefore, name)
+        let message: String
+        if useAIPersonalization {
+            message = await fetchPreReminderMessage(
+                habitType: .custom,
+                scheduledTime: scheduledTimeStr,
+                habitName: name
+            ) ?? preReminderBody(for: .custom, habitName: name)
+        } else {
+            message = preReminderBody(for: .custom, habitName: name)
+        }
         
         let content = UNMutableNotificationContent()
         content.title = "Anicca"
@@ -904,7 +927,7 @@ final class NotificationScheduler {
     private let lastRefreshKey = "com.anicca.preReminder.lastRefresh"
     
     /// アプリ起動時に事前通知を更新（24時間ごと）
-    /// これにより毎日違うパーソナライズメッセージが表示される
+    /// これにより毎日違うメッセージが表示される（固定フレーズモードでも日替わりローテーション）
     func refreshPreRemindersIfNeeded() async {
         let lastRefresh = UserDefaults.standard.double(forKey: lastRefreshKey)
         let now = Date().timeIntervalSince1970
@@ -915,27 +938,56 @@ final class NotificationScheduler {
             return
         }
         
-        logger.info("Refreshing pre-reminders with new personalized messages")
+        logger.info("Refreshing pre-reminders")
         
-        // 現在の習慣スケジュールを再登録
+        // ★重要: cancelAllPreReminders() だと PRE_REMINDER_CUSTOM_*（UUIDカスタム）も消える。
+        // ここでは「通常のPRE_REMINDER_*」と「UUIDカスタムのPRE_REMINDER_CUSTOM_*」を両方ちゃんと再登録する。
         let schedules = AppState.shared.habitSchedules
-        await cancelAllPreReminders()
+        await removePending(withPrefix: "PRE_REMINDER_wake")
+        await removePending(withPrefix: "PRE_REMINDER_training")
+        await removePending(withPrefix: "PRE_REMINDER_bedtime")
+        await removePending(withPrefix: "PRE_REMINDER_custom")
+        await removePending(withPrefix: "PRE_REMINDER_CUSTOM_")
         
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
             await schedulePreReminder(habit: habit, hour: hour, minute: minute)
         }
         
+        // UUIDカスタム習慣の事前通知も再登録
+        let customSchedules = AppState.shared.customHabitSchedules
+        for h in AppState.shared.customHabits {
+            guard let comps = customSchedules[h.id],
+                  let hour = comps.hour, let minute = comps.minute else { continue }
+            await scheduleCustomPreReminder(id: h.id, name: h.name, hour: hour, minute: minute)
+        }
+        
         UserDefaults.standard.set(now, forKey: lastRefreshKey)
         logger.info("Pre-reminder refresh completed")
     }
     
+    // MARK: - Pre-Reminder Body Generation
+    
+    private func preReminderBody(for habit: HabitType, habitName: String? = nil) -> String {
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+        let index = ((dayOfYear - 1) % 10) + 1
+        let prefix = userNamePrefix()
+        
+        switch habit {
+        case .wake, .training, .bedtime:
+            return formattedLocalized("notification_\(habit.rawValue)_prereminder_\(index)", prefix)
+        case .custom:
+            let name = habitName ?? customHabitDisplayName()
+            return formattedLocalized("notification_custom_prereminder_\(index)", prefix, name)
+        }
+    }
+    
     // MARK: - Helper Functions
     
-    private func formattedLocalized(_ key: String, _ value: String) -> String {
+    private func formattedLocalized(_ key: String, _ args: CVarArg...) -> String {
         let template = localizedString(key)
-        guard template.contains("%@") else { return template }
-        return String(format: template, value)
+        guard template.contains("%") else { return template }
+        return String(format: template, arguments: args)
     }
 
     private func nextDate(hour: Int, minute: Int) -> Date? {

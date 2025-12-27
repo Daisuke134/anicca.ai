@@ -556,6 +556,7 @@ struct HabitEditSheet: View {
     @State private var wakeRoutines: [RoutineItem] = []
     @State private var sleepRoutines: [RoutineItem] = []
     @Environment(\.dismiss) private var dismiss
+    @State private var showAlarmKitDeniedAlert = false
 
     init(habit: HabitType, onSave: (() -> Void)? = nil) {
         self.habit = habit
@@ -644,6 +645,15 @@ struct HabitEditSheet: View {
             load()
             followups = appState.followupCount(for: habit)
         }
+        .alert(String(localized: "onboarding_alarmkit_settings_needed"), isPresented: $showAlarmKitDeniedAlert) {
+            Button(String(localized: "common_open_settings")) {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                UIApplication.shared.open(url)
+            }
+            Button(String(localized: "common_ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "onboarding_alarmkit_settings_message"))
+        }
     }
     
     // AlarmKitトグル（習慣タイプに応じた設定）
@@ -655,22 +665,38 @@ struct HabitEditSheet: View {
         case .wake:
             Toggle(
                 String(localized: "settings_alarmkit_toggle"),
-                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForWake)
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForWake,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
             )
         case .training:
             Toggle(
                 String(localized: "settings_alarmkit_toggle"),
-                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForTraining)
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForTraining,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
             )
         case .bedtime:
             Toggle(
                 String(localized: "settings_alarmkit_toggle"),
-                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForBedtime)
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForBedtime,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
             )
         case .custom:
             Toggle(
                 String(localized: "settings_alarmkit_toggle"),
-                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForCustom)
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForCustom,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
             )
         }
     }
@@ -858,6 +884,7 @@ struct CustomHabitEditSheet: View {
     let onSave: () -> Void
     @State private var time = Date()
     @State private var followups: Int = 2
+    @State private var showAlarmKitDeniedAlert = false
     
     var body: some View {
         NavigationView {
@@ -880,7 +907,11 @@ struct CustomHabitEditSheet: View {
                     Section(String(localized: "settings_alarmkit_section_title")) {
                         Toggle(
                             String(localized: "settings_alarmkit_toggle"),
-                            isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForCustom)
+                            isOn: alarmKitPermissionBinding(
+                                appState: appState,
+                                keyPath: \.useAlarmKitForCustom,
+                                showDeniedAlert: $showAlarmKitDeniedAlert
+                            )
                         )
                         Text(String(localized: "settings_alarmkit_description"))
                             .font(.footnote)
@@ -913,6 +944,15 @@ struct CustomHabitEditSheet: View {
             }
             followups = appState.customFollowupCount(for: customId)
         }
+        .alert(String(localized: "onboarding_alarmkit_settings_needed"), isPresented: $showAlarmKitDeniedAlert) {
+            Button(String(localized: "common_open_settings")) {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                UIApplication.shared.open(url)
+            }
+            Button(String(localized: "common_ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "onboarding_alarmkit_settings_message"))
+        }
     }
     
     private func save() {
@@ -931,7 +971,8 @@ struct CustomHabitEditSheet: View {
 @available(iOS 26.0, *)
 private func alarmKitPermissionBinding(
     appState: AppState,
-    keyPath: WritableKeyPath<UserProfile, Bool>
+    keyPath: WritableKeyPath<UserProfile, Bool>,
+    showDeniedAlert: Binding<Bool>
 ) -> Binding<Bool> {
     Binding(
         get: { appState.userProfile[keyPath: keyPath] },
@@ -941,15 +982,21 @@ private func alarmKitPermissionBinding(
 
             if newValue {
                 Task { @MainActor in
-                    let granted = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
+                    let granted = await AlarmKitPermissionManager.requestIfNeeded()
                     var profile = appState.userProfile
                     profile[keyPath: keyPath] = granted
-                    appState.updateUserProfile(profile, sync: true)
+                    if granted {
+                        appState.updateUserProfile(profile, sync: true)
+                        Task { await NotificationScheduler.shared.applySchedules(appState.habitSchedules) }
+                    } else {
+                        showDeniedAlert.wrappedValue = true
+                    }
                 }
             } else {
                 var profile = appState.userProfile
                 profile[keyPath: keyPath] = false
                 appState.updateUserProfile(profile, sync: true)
+                Task { await NotificationScheduler.shared.applySchedules(appState.habitSchedules) }
             }
         }
     )

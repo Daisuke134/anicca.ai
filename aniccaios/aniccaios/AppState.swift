@@ -159,26 +159,21 @@ final class AppState: ObservableObject {
         // オンボーディング前にセッション画面へ飛ぶのはUX的に破綻するため抑止
         guard isOnboardingComplete else { return }
         
-        let appGroupDefaults = AppGroup.userDefaults
-        let rawHabit = appGroupDefaults.string(forKey: pendingHabitLaunchHabitKey)
-        let ts = appGroupDefaults.double(forKey: pendingHabitLaunchTsKey)
-        
-        defer {
-            // 連打/再起動でも同じ要求を繰り返さない
-            appGroupDefaults.removeObject(forKey: pendingHabitLaunchHabitKey)
-            appGroupDefaults.removeObject(forKey: pendingHabitLaunchTsKey)
+        let defaults = AppGroup.userDefaults
+        var queue = defaults.array(forKey: "pending_habit_launch_queue") as? [[String: Any]] ?? []
+        var consumed: [[String: Any]] = []
+        for entry in queue {
+            guard let raw = entry["habit"] as? String,
+                  let habit = HabitType(rawValue: raw),
+                  let ts = entry["ts"] as? TimeInterval,
+                  Date().timeIntervalSince1970 - ts < 300 else { continue }
+            prepareForImmediateSession(habit: habit)
+            shouldStartSessionImmediately = true
+            consumed.append(entry)
+            break
         }
-        
-        guard let rawHabit,
-              let habit = HabitType(rawValue: rawHabit),
-              ts > 0,
-              Date().timeIntervalSince1970 - ts < 300 else {
-            return
-        }
-        
-        // ここで prepareForImmediateSession まで行い、TalkView の初回 onAppear で即 fullScreenCover を出す
-        prepareForImmediateSession(habit: habit)
-        shouldStartSessionImmediately = true
+        queue.removeAll(where: { consumed.contains(where: { $0["ts"] as? TimeInterval == ($1["ts"] as? TimeInterval) }) })
+        defaults.set(queue, forKey: "pending_habit_launch_queue")
     }
 
     // Legacy method for backward compatibility
@@ -432,6 +427,9 @@ final class AppState: ObservableObject {
     
     func clearShouldStartSessionImmediately() {
         shouldStartSessionImmediately = false
+        if pendingHabitTrigger == nil {
+            AppGroup.userDefaults.removeObject(forKey: "pending_habit_launch_queue")
+        }
     }
 
     func resetState() {

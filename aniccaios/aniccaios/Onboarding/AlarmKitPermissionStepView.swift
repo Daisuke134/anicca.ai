@@ -61,7 +61,7 @@ struct AlarmKitPermissionStepView: View {
         Task { @MainActor in
             #if canImport(AlarmKit)
             if #available(iOS 26.0, *) {
-                let granted = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
+                let granted = await AlarmKitPermissionManager.requestIfNeeded()
                 permissionGranted = granted
                 permissionDenied = !granted
                 hasAttemptedPermission = true

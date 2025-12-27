@@ -157,55 +157,105 @@
 "notification_action_start_conversation" = "今すぐ対話を開始";
 "notification_action_dismiss" = "止める";
 
+/* ========== 事前通知（10種類ローテーション） ========== */
+
+/* 起床 - 事前通知（5分前） */
+"notification_wake_prereminder_1" = "%@あと5分で起床の時間だよ。";
+"notification_wake_prereminder_2" = "%@もうすぐ起床アラームが鳴るよ。";
+"notification_wake_prereminder_3" = "%@起床まであと5分。目覚めの準備を。";
+"notification_wake_prereminder_4" = "%@起床時間が近づいてるよ。";
+"notification_wake_prereminder_5" = "%@あと5分で起きる時間だよ。";
+"notification_wake_prereminder_6" = "%@起床の5分前だよ。";
+"notification_wake_prereminder_7" = "%@もうすぐ起床の時間だよ。";
+"notification_wake_prereminder_8" = "%@起床まで残り5分。";
+"notification_wake_prereminder_9" = "%@あと5分で朝の時間だよ。";
+"notification_wake_prereminder_10" = "%@起床アラームまであと5分。";
+
+/* トレーニング - 事前通知（15分前） */
+"notification_training_prereminder_1" = "%@あと15分でトレーニングの時間。";
+"notification_training_prereminder_2" = "%@トレーニングまであと15分。準備を。";
+"notification_training_prereminder_3" = "%@もうすぐトレーニングの時間だよ。";
+"notification_training_prereminder_4" = "%@トレーニングの15分前だよ。";
+"notification_training_prereminder_5" = "%@あと15分で運動の時間。";
+"notification_training_prereminder_6" = "%@トレーニング開始まで15分。";
+"notification_training_prereminder_7" = "%@運動の時間が近いよ。";
+"notification_training_prereminder_8" = "%@トレーニングまで残り15分。";
+"notification_training_prereminder_9" = "%@あと15分でトレーニング開始。";
+"notification_training_prereminder_10" = "%@トレーニングの準備を始めよう。";
+
+/* 就寝 - 事前通知（15分前） */
+"notification_bedtime_prereminder_1" = "%@あと15分で就寝の時間だよ。";
+"notification_bedtime_prereminder_2" = "%@就寝まであと15分。休む準備を。";
+"notification_bedtime_prereminder_3" = "%@もうすぐ就寝時間だよ。";
+"notification_bedtime_prereminder_4" = "%@就寝の15分前だよ。";
+"notification_bedtime_prereminder_5" = "%@あと15分で眠りの時間。";
+"notification_bedtime_prereminder_6" = "%@就寝時間まで15分。";
+"notification_bedtime_prereminder_7" = "%@眠りの時間が近いよ。";
+"notification_bedtime_prereminder_8" = "%@就寝まで残り15分。";
+"notification_bedtime_prereminder_9" = "%@あと15分で休む時間だよ。";
+"notification_bedtime_prereminder_10" = "%@そろそろ就寝の準備を。";
+
+/* カスタム - 事前通知 */
+"notification_custom_prereminder_1" = "%1$@あと15分で%2$@の時間だよ。";
+"notification_custom_prereminder_2" = "%1$@%2$@まであと15分。準備を。";
+"notification_custom_prereminder_3" = "%1$@もうすぐ%2$@の時間だよ。";
+"notification_custom_prereminder_4" = "%1$@%2$@の15分前だよ。";
+"notification_custom_prereminder_5" = "%1$@あと15分で%2$@を始める時間。";
+"notification_custom_prereminder_6" = "%1$@%2$@の時間が近いよ。";
+"notification_custom_prereminder_7" = "%1$@%2$@まで残り15分。";
+"notification_custom_prereminder_8" = "%1$@もうすぐ%2$@の時間。";
+"notification_custom_prereminder_9" = "%1$@あと15分で%2$@。";
+"notification_custom_prereminder_10" = "%1$@そろそろ%2$@の準備を。";
+
 /* ========== 本番通知（10種類ローテーション） ========== */
 
 /* 起床 - 本番通知 */
-"notification_wake_main_1" = "おはよう、%@。新しい一日が始まるよ。";
-"notification_wake_main_2" = "%@、起きる時間だよ。まず目を開けてみて。";
-"notification_wake_main_3" = "%@、朝だよ。一緒に始めよう。";
-"notification_wake_main_4" = "%@、今日という日が待ってるよ。起きよう。";
-"notification_wake_main_5" = "%@、朝の光が来てる。目を開けてみて。";
-"notification_wake_main_6" = "%@、起きる準備はできてる。さあ、起きよう。";
-"notification_wake_main_7" = "%@、新しい朝だよ。どんな一日にする？";
-"notification_wake_main_8" = "%@、起きる時間。深呼吸から始めよう。";
-"notification_wake_main_9" = "%@、今日も一緒にいるよ。起きよう。";
-"notification_wake_main_10" = "%@、朝が来たよ。まず身体を伸ばしてみて。";
+"notification_wake_main_1" = "%@おはよう。新しい一日が始まるよ。";
+"notification_wake_main_2" = "%@起きる時間だよ。目を開けてみて。";
+"notification_wake_main_3" = "%@朝だよ。一緒に始めよう。";
+"notification_wake_main_4" = "%@今日という日が待ってるよ。起きよう。";
+"notification_wake_main_5" = "%@朝の光が来てる。目を開けてみて。";
+"notification_wake_main_6" = "%@起きる準備はできてる。さあ、起きよう。";
+"notification_wake_main_7" = "%@新しい朝だよ。どんな一日にする？";
+"notification_wake_main_8" = "%@起きる時間。深呼吸から始めよう。";
+"notification_wake_main_9" = "%@今日も一緒にいるよ。起きよう。";
+"notification_wake_main_10" = "%@朝が来たよ。まず身体を伸ばしてみて。";
 
 /* トレーニング - 本番通知 */
-"notification_training_main_1" = "%@、トレーニングの時間だよ。身体を動かそう。";
-"notification_training_main_2" = "%@、運動の時間。準備はいい？";
-"notification_training_main_3" = "%@、身体が動きたがってる。さあ、始めよう。";
-"notification_training_main_4" = "%@、今日のトレーニング、まず1分から。";
-"notification_training_main_5" = "%@、運動の時間だよ。どこから始める？";
-"notification_training_main_6" = "%@、一緒にトレーニングしよう。";
-"notification_training_main_7" = "%@、身体を動かす時間。気持ちよくなるよ。";
-"notification_training_main_8" = "%@、トレーニング開始の時間だよ。";
-"notification_training_main_9" = "%@、今日も身体を鍛えよう。準備OK？";
-"notification_training_main_10" = "%@、運動の時間。まずウォームアップから。";
+"notification_training_main_1" = "%@トレーニングの時間だよ。身体を動かそう。";
+"notification_training_main_2" = "%@運動の時間。準備はいい？";
+"notification_training_main_3" = "%@身体が動きたがってる。さあ、始めよう。";
+"notification_training_main_4" = "%@今日のトレーニング、まず1分から。";
+"notification_training_main_5" = "%@運動の時間だよ。どこから始める？";
+"notification_training_main_6" = "%@一緒にトレーニングしよう。";
+"notification_training_main_7" = "%@身体を動かす時間。気持ちよくなるよ。";
+"notification_training_main_8" = "%@トレーニング開始の時間だよ。";
+"notification_training_main_9" = "%@今日も身体を鍛えよう。準備OK？";
+"notification_training_main_10" = "%@運動の時間。まずウォームアップから。";
 
 /* 就寝 - 本番通知 */
-"notification_bedtime_main_1" = "%@、そろそろ寝る時間だよ。今日もお疲れさま。";
-"notification_bedtime_main_2" = "%@、ベッドに入る時間だよ。";
-"notification_bedtime_main_3" = "%@、今日はもう十分頑張った。休もう。";
-"notification_bedtime_main_4" = "%@、眠りの準備を始めよう。";
-"notification_bedtime_main_5" = "%@、一日を閉じる時間。おやすみの準備を。";
-"notification_bedtime_main_6" = "%@、身体が休みを求めてるよ。ベッドへ。";
-"notification_bedtime_main_7" = "%@、今夜もゆっくり休もう。";
-"notification_bedtime_main_8" = "%@、明日のために、今夜は眠ろう。";
-"notification_bedtime_main_9" = "%@、スクリーンを閉じて、目を休めよう。";
-"notification_bedtime_main_10" = "%@、今日の終わり。安らかな眠りを。";
+"notification_bedtime_main_1" = "%@そろそろ寝る時間だよ。今日もお疲れさま。";
+"notification_bedtime_main_2" = "%@ベッドに入る時間だよ。";
+"notification_bedtime_main_3" = "%@今日はもう十分頑張った。休もう。";
+"notification_bedtime_main_4" = "%@眠りの準備を始めよう。";
+"notification_bedtime_main_5" = "%@一日を閉じる時間。おやすみの準備を。";
+"notification_bedtime_main_6" = "%@身体が休みを求めてるよ。ベッドへ。";
+"notification_bedtime_main_7" = "%@今夜もゆっくり休もう。";
+"notification_bedtime_main_8" = "%@明日のために、今夜は眠ろう。";
+"notification_bedtime_main_9" = "%@スクリーンを閉じて、目を休めよう。";
+"notification_bedtime_main_10" = "%@今日の終わり。安らかな眠りを。";
 
-/* カスタム - 本番通知（%@は習慣名） */
-"notification_custom_main_1" = "%@の時間だよ。始めよう。";
-"notification_custom_main_2" = "%@の時間。準備はいい？";
-"notification_custom_main_3" = "%@を始める時間だよ。";
-"notification_custom_main_4" = "今が%@のタイミング。さあ。";
-"notification_custom_main_5" = "%@、まず1分だけやってみよう。";
-"notification_custom_main_6" = "%@やろう。一緒に。";
-"notification_custom_main_7" = "%@の時間が来たよ。";
-"notification_custom_main_8" = "今日の%@、どこから始める？";
-"notification_custom_main_9" = "%@を始めれば、気持ちも変わるよ。";
-"notification_custom_main_10" = "%@の時間。小さく始めよう。";
+/* カスタム - 本番通知（%1$@はユーザー名プレフィックス、%2$@は習慣名） */
+"notification_custom_main_1" = "%1$@%2$@の時間だよ。始めよう。";
+"notification_custom_main_2" = "%1$@%2$@の時間。準備はいい？";
+"notification_custom_main_3" = "%1$@%2$@を始める時間だよ。";
+"notification_custom_main_4" = "%1$@今が%2$@のタイミング。さあ。";
+"notification_custom_main_5" = "%1$@%2$@、まず1分だけやってみよう。";
+"notification_custom_main_6" = "%1$@%2$@やろう。一緒に。";
+"notification_custom_main_7" = "%1$@%2$@の時間が来たよ。";
+"notification_custom_main_8" = "%1$@今日の%2$@、どこから始める？";
+"notification_custom_main_9" = "%1$@%2$@を始めれば、気持ちも変わるよ。";
+"notification_custom_main_10" = "%1$@%2$@の時間。小さく始めよう。";
 
 /* ========== フォローアップ通知（10種類ローテーション） ========== */
 
@@ -214,52 +264,52 @@
 "notification_bedtime_followup_title" = "就寝（再通知）";
 
 /* 起床 - フォローアップ */
-"notification_wake_followup_1" = "%@、まだ寝てる？目を開けてみて。";
-"notification_wake_followup_2" = "%@、起きよう。待ってるよ。";
-"notification_wake_followup_3" = "%@、朝だよ。まず身体を伸ばしてみて。";
-"notification_wake_followup_4" = "%@、起きる時間だよ。深呼吸してみて。";
-"notification_wake_followup_5" = "%@、もう少しで起きれるよ。頑張って。";
-"notification_wake_followup_6" = "%@、一日が始まるよ。布団から出てみて。";
-"notification_wake_followup_7" = "%@、一緒に朝を始めよう。";
-"notification_wake_followup_8" = "%@、身体は起きる準備ができてるよ。";
-"notification_wake_followup_9" = "%@、朝の光が待ってる。起きよう。";
-"notification_wake_followup_10" = "%@、今起きれば、いい一日になるよ。";
+"notification_wake_followup_1" = "%@まだ寝てる？目を開けてみて。";
+"notification_wake_followup_2" = "%@起きよう。待ってるよ。";
+"notification_wake_followup_3" = "%@朝だよ。まず身体を伸ばしてみて。";
+"notification_wake_followup_4" = "%@起きる時間だよ。深呼吸してみて。";
+"notification_wake_followup_5" = "%@もう少しで起きれるよ。頑張って。";
+"notification_wake_followup_6" = "%@一日が始まるよ。布団から出てみて。";
+"notification_wake_followup_7" = "%@一緒に朝を始めよう。";
+"notification_wake_followup_8" = "%@身体は起きる準備ができてるよ。";
+"notification_wake_followup_9" = "%@朝の光が待ってる。起きよう。";
+"notification_wake_followup_10" = "%@今起きれば、いい一日になるよ。";
 
 /* トレーニング - フォローアップ */
-"notification_training_followup_1" = "%@、トレーニングまだ？1分だけやろう。";
-"notification_training_followup_2" = "%@、運動しよう。待ってるよ。";
-"notification_training_followup_3" = "%@、身体を動かす時間だよ。さあ。";
-"notification_training_followup_4" = "%@、今からでも間に合う。動いてみて。";
-"notification_training_followup_5" = "%@、トレーニング1セットだけでもOK。";
-"notification_training_followup_6" = "%@、運動すると気持ちいいよ。始めよう。";
-"notification_training_followup_7" = "%@、一緒にトレーニングしよう。";
-"notification_training_followup_8" = "%@、身体が運動を待ってる。動こう。";
-"notification_training_followup_9" = "%@、今日のトレーニング、まだできるよ。";
-"notification_training_followup_10" = "%@、小さく始めても大丈夫。動いてみて。";
+"notification_training_followup_1" = "%@トレーニングまだ？1分だけやろう。";
+"notification_training_followup_2" = "%@運動しよう。待ってるよ。";
+"notification_training_followup_3" = "%@身体を動かす時間だよ。さあ。";
+"notification_training_followup_4" = "%@今からでも間に合う。動いてみて。";
+"notification_training_followup_5" = "%@トレーニング1セットだけでもOK。";
+"notification_training_followup_6" = "%@運動すると気持ちいいよ。始めよう。";
+"notification_training_followup_7" = "%@一緒にトレーニングしよう。";
+"notification_training_followup_8" = "%@身体が運動を待ってる。動こう。";
+"notification_training_followup_9" = "%@今日のトレーニング、まだできるよ。";
+"notification_training_followup_10" = "%@小さく始めても大丈夫。動いてみて。";
 
 /* 就寝 - フォローアップ */
-"notification_bedtime_followup_1" = "%@、そろそろ寝る準備を始めよう。";
-"notification_bedtime_followup_2" = "%@、照明を落として深呼吸しよう。";
-"notification_bedtime_followup_3" = "%@、スクリーンを閉じて、目を休めよう。";
-"notification_bedtime_followup_4" = "%@、今日はここまで。ベッドに入ろう。";
-"notification_bedtime_followup_5" = "%@、眠気がきたらそのまま休もう。";
-"notification_bedtime_followup_6" = "%@、おやすみルーティンを始めよう。";
-"notification_bedtime_followup_7" = "%@、今日もよく頑張った。目を閉じよう。";
-"notification_bedtime_followup_8" = "%@、歯みがきは済んだ？";
-"notification_bedtime_followup_9" = "%@、ベッドに横になって、身体を緩めよう。";
-"notification_bedtime_followup_10" = "%@、明日のために、今夜は眠ろう。";
+"notification_bedtime_followup_1" = "%@そろそろ寝る準備を始めよう。";
+"notification_bedtime_followup_2" = "%@照明を落として深呼吸しよう。";
+"notification_bedtime_followup_3" = "%@スクリーンを閉じて、目を休めよう。";
+"notification_bedtime_followup_4" = "%@今日はここまで。ベッドに入ろう。";
+"notification_bedtime_followup_5" = "%@眠気がきたらそのまま休もう。";
+"notification_bedtime_followup_6" = "%@おやすみルーティンを始めよう。";
+"notification_bedtime_followup_7" = "%@今日もよく頑張った。目を閉じよう。";
+"notification_bedtime_followup_8" = "%@歯みがきは済んだ？";
+"notification_bedtime_followup_9" = "%@ベッドに横になって、身体を緩めよう。";
+"notification_bedtime_followup_10" = "%@明日のために、今夜は眠ろう。";
 
-/* カスタム - フォローアップ（%@は習慣名） */
-"notification_custom_followup_1" = "%@を始めよう。今ならできる。";
-"notification_custom_followup_2" = "%@の時間を逃さないで。";
-"notification_custom_followup_3" = "%@、まず1分だけやってみて。";
-"notification_custom_followup_4" = "%@、今なら始められるよ。";
-"notification_custom_followup_5" = "%@、一緒にやってみよう。";
-"notification_custom_followup_6" = "%@をやると気持ちが変わるよ。";
-"notification_custom_followup_7" = "%@の準備はできてるよ。";
-"notification_custom_followup_8" = "%@、そろそろ進めよう。";
-"notification_custom_followup_9" = "%@を少しだけでも進めよう。";
-"notification_custom_followup_10" = "%@、待ってるよ。";
+/* カスタム - フォローアップ（%1$@はユーザー名プレフィックス、%2$@は習慣名） */
+"notification_custom_followup_1" = "%1$@%2$@を始めよう。今ならできる。";
+"notification_custom_followup_2" = "%1$@%2$@の時間を逃さないで。";
+"notification_custom_followup_3" = "%1$@%2$@、まず1分だけやってみて。";
+"notification_custom_followup_4" = "%1$@%2$@、今なら始められるよ。";
+"notification_custom_followup_5" = "%1$@%2$@、一緒にやってみよう。";
+"notification_custom_followup_6" = "%1$@%2$@をやると気持ちが変わるよ。";
+"notification_custom_followup_7" = "%1$@%2$@の準備はできてるよ。";
+"notification_custom_followup_8" = "%1$@%2$@、そろそろ進めよう。";
+"notification_custom_followup_9" = "%1$@%2$@を少しだけでも進めよう。";
+"notification_custom_followup_10" = "%1$@%2$@、待ってるよ。";
 
 /* 旧キー（後方互換用） */
 "notification_wake_body" = "Aniccaが起床を促します。";

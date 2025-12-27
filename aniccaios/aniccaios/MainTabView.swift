@@ -24,11 +24,12 @@ struct MainTabView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .fullScreenCover(isPresented: $habitSessionActive) {
-            if let habit = pendingHabit {
-                HabitSessionView(habit: habit)
-                    .environmentObject(appState)
-            }
+        .fullScreenCover(isPresented: $habitSessionActive, onDismiss: {
+            pendingHabit = nil
+            appState.clearPendingHabitTrigger()
+        }) {
+            HabitSessionView(habit: pendingHabit ?? .wake)
+                .environmentObject(appState)
         }
         .onAppear { checkPendingHabitTrigger(force: true) }
         .onChange(of: appState.pendingHabitTrigger) { _ in checkPendingHabitTrigger() }
@@ -52,10 +53,12 @@ struct MainTabView: View {
     }
     
     private func checkPendingHabitTrigger(force: Bool = false) {
-        guard let trigger = appState.pendingHabitTrigger,
-              (appState.shouldStartSessionImmediately || force) else { return }
+        guard let trigger = appState.pendingHabitTrigger else { return }
+        guard appState.shouldStartSessionImmediately || force else { return }
         pendingHabit = trigger.habit
-        habitSessionActive = true
+        if !habitSessionActive {
+            habitSessionActive = true
+        }
         appState.clearShouldStartSessionImmediately()
     }
 }

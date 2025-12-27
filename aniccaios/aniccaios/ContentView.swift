@@ -12,7 +12,7 @@ struct ContentRouterView: View {
 
     var body: some View {
         // プロファイル取得中のProgressは、オンボーディング完了後のみ（オンボーディング中の遷移を邪魔しない）
-        if appState.isBootstrappingProfile && appState.isOnboardingComplete {
+        if appState.isBootstrappingProfile && appState.isOnboardingComplete && appState.pendingHabitTrigger == nil {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AppBackground())

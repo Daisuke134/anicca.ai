@@ -15,10 +15,11 @@ actor SensorAccessSyncService {
         request.setValue(deviceId, forHTTPHeaderField: "device-id")
         request.setValue(creds.userId, forHTTPHeaderField: "user-id")
 
-        let encoder = JSONEncoder()
-        if let body = try? encoder.encode(access) {
-            request.httpBody = body
+        let body = await MainActor.run { () -> Data? in
+            let encoder = JSONEncoder()
+            return try? encoder.encode(access)
         }
+        request.httpBody = body
 
         do {
             let (_, response) = try await URLSession.shared.data(for: request)

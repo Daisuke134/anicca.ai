@@ -12,8 +12,12 @@ enum HabitLaunchBridge {
 
     static func postFromExtension(habitRawValue: String) {
         let defaults = AppGroup.userDefaults
-        defaults.set(habitRawValue, forKey: "pending_habit_launch_habit")
-        defaults.set(Date().timeIntervalSince1970, forKey: "pending_habit_launch_ts")
+        var queue = defaults.array(forKey: "pending_habit_launch_queue") as? [[String: Any]] ?? []
+        queue.append([
+            "habit": habitRawValue,
+            "ts": Date().timeIntervalSince1970
+        ])
+        defaults.set(queue, forKey: "pending_habit_launch_queue")
         CFNotificationCenterPostNotification(
             CFNotificationCenterGetDarwinNotifyCenter(),
             CFNotificationName(notificationName),

@@ -11,9 +11,10 @@ actor AuthHealthCheck {
         lastPing = Date()
         let baseURL = await MainActor.run { AppConfig.appleAuthURL }
         var request = URLRequest(url: baseURL.appending(path: "health"))
-        request.timeoutInterval = 5
         request.httpMethod = "GET"
-        _ = try? await NetworkSessionManager.shared.session.data(for: request)
+        request.timeoutInterval = 3
+        let session = URLSession(configuration: .ephemeral)
+        _ = try? await session.data(for: request)
     }
 }
 

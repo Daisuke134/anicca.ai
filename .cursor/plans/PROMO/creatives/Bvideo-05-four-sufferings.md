@@ -317,50 +317,6 @@ Nothing stays the same. 🔗
   },
   "text_overlay": {
     "text_en": "Birth - The beginning of suffering",
-    "position": "Bottom third",
-    "style": "White serif font, elegant, small shadow"
-  },
-  "negative": [
-    "Graphic gore",
-    "Peaceful birth",
-    "Happy expressions",
-    "Illegible text"
-  ]
-}
-```
-
-### シーン1: 生苦 - 難産（3-12秒）
-
-```json
-{
-  "subject": {
-    "primary": "A woman in difficult childbirth, hospital setting, emergency situation",
-    "appearance": {
-      "woman": "Late 20s to early 30s, Asian, exhausted, sweating, in pain",
-      "clothing": "Hospital gown, disheveled"
-    },
-    "secondary": "Medical staff in surgical attire, urgent movements"
-  },
-  "environment": {
-    "setting": "Hospital delivery room, modern but stark",
-    "lighting": "Harsh fluorescent overhead lighting",
-    "atmosphere": "Urgent, stressful, life-and-death"
-  },
-  "photography": {
-    "composition": "Medium shot focused on mother's face, medical staff blurred in background, 9:16 vertical",
-    "lens": "50mm equivalent",
-    "aperture": "f/2.8",
-    "lighting": {
-      "type": "Harsh hospital lighting",
-      "quality": "Unflattering, clinical"
-    }
-  },
-  "style": {
-    "aesthetic": "Cinematic drama, documentary-like realism",
-    "color_palette": "Desaturated, clinical whites and blues, spots of red (blood)",
-    "mood": "Intense suffering, the violence of birth"
-  },
-  "text_overlay": {
     "text_jp": "生苦 - 苦しみの始まり",
     "position": "Bottom third",
     "style": "White serif font, elegant, small shadow"

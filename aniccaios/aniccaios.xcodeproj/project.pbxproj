@@ -14,6 +14,8 @@
 		840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AB2EC772EA005CDB8D /* RevenueCatUI */; };
 		840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AE2EC77316005CDB8D /* ComponentsKit */; };
 		840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3B12EC77325005CDB8D /* WebRTC */; };
+		84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		84CC79322EFAAB95005078AE /* AniccaScreenTimeReport.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79262EFAAB95005078AE /* AniccaScreenTimeReport.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -24,6 +26,20 @@
 			remoteGlobalIDString = 8400344C2EE52C5100A2F44C;
 			remoteInfo = AniccaWidgetExtension;
 		};
+		84CC79182EFAA90F005078AE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8471AE732EB783E1002CECAA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 84CC79122EFAA90F005078AE;
+			remoteInfo = AniccaNotificationService;
+		};
+		84CC79302EFAAB95005078AE /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 8471AE732EB783E1002CECAA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 84CC79252EFAAB95005078AE;
+			remoteInfo = AniccaScreenTimeReport;
+		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -33,9 +49,21 @@
 			dstPath = "";
 			dstSubfolderSpec = 13;
 			files = (
+				84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */,
 				840034632EE52C5400A2F44C /* AniccaWidgetExtension.appex in Embed Foundation Extensions */,
 			);
 			name = "Embed Foundation Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		84CC79392EFAAB95005078AE /* Embed ExtensionKit Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
+			dstSubfolderSpec = 16;
+			files = (
+				84CC79322EFAAB95005078AE /* AniccaScreenTimeReport.appex in Embed ExtensionKit Extensions */,
+			);
+			name = "Embed ExtensionKit Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -47,6 +75,9 @@
 		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
 		8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
+		84A5279B2EEDDA2F008CAEA1 /* AniccaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AniccaWidgetExtension.entitlements; sourceTree = "<group>"; };
+		84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		84CC79262EFAAB95005078AE /* AniccaScreenTimeReport.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.extensionkit-extension"; includeInIndex = 0; path = AniccaScreenTimeReport.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -54,14 +85,46 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
+				SessionView.swift,
 			);
 			target = 8471AE7A2EB783E1002CECAA /* aniccaios */;
+		};
+		84CC79202EFAA90F005078AE /* Exceptions for "AniccaNotificationService" folder in "AniccaNotificationService" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 84CC79122EFAA90F005078AE /* AniccaNotificationService */;
+		};
+		84CC79382EFAAB95005078AE /* Exceptions for "AniccaScreenTimeReport" folder in "AniccaScreenTimeReport" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */;
+		};
+		84CC804E2F004B52005078AE /* Exceptions for "aniccaios" folder in "AniccaScreenTimeReport" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/ScreenTimeSharedStore.swift,
+			);
+			target = 84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */;
+		};
+		84F1C0DE2F0D111100C0FFEE /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		840034532EE52C5200A2F44C /* AniccaWidget */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				84F1C0DE2F0D111100C0FFEE /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */,
+			);
 			path = AniccaWidget;
 			sourceTree = "<group>";
 		};
@@ -69,8 +132,25 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */,
+				84CC804E2F004B52005078AE /* Exceptions for "aniccaios" folder in "AniccaScreenTimeReport" target */,
 			);
 			path = aniccaios;
+			sourceTree = "<group>";
+		};
+		84CC79142EFAA90F005078AE /* AniccaNotificationService */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				84CC79202EFAA90F005078AE /* Exceptions for "AniccaNotificationService" folder in "AniccaNotificationService" target */,
+			);
+			path = AniccaNotificationService;
+			sourceTree = "<group>";
+		};
+		84CC79272EFAAB95005078AE /* AniccaScreenTimeReport */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				84CC79382EFAAB95005078AE /* Exceptions for "AniccaScreenTimeReport" folder in "AniccaScreenTimeReport" target */,
+			);
+			path = AniccaScreenTimeReport;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -96,6 +176,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		84CC79102EFAA90F005078AE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		84CC79232EFAAB95005078AE /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXFrameworksBuildPhase section */
 
 /* Begin PBXGroup section */
@@ -111,8 +205,11 @@
 		8471AE722EB783E1002CECAA = {
 			isa = PBXGroup;
 			children = (
+				84A5279B2EEDDA2F008CAEA1 /* AniccaWidgetExtension.entitlements */,
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
 				840034532EE52C5200A2F44C /* AniccaWidget */,
+				84CC79142EFAA90F005078AE /* AniccaNotificationService */,
+				84CC79272EFAAB95005078AE /* AniccaScreenTimeReport */,
 				8400344E2EE52C5100A2F44C /* Frameworks */,
 				8471AE7C2EB783E1002CECAA /* Products */,
 				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
@@ -126,6 +223,8 @@
 			children = (
 				8471AE7B2EB783E1002CECAA /* aniccaios.app */,
 				8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */,
+				84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */,
+				84CC79262EFAAB95005078AE /* AniccaScreenTimeReport.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -171,11 +270,14 @@
 				8471AE792EB783E1002CECAA /* Resources */,
 				8471AE802EB783E1002CECAA /* Copy WebRTC dSYM */,
 				8400346A2EE52C5400A2F44C /* Embed Foundation Extensions */,
+				84CC79392EFAAB95005078AE /* Embed ExtensionKit Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
 				840034622EE52C5400A2F44C /* PBXTargetDependency */,
+				84CC79192EFAA90F005078AE /* PBXTargetDependency */,
+				84CC79312EFAAB95005078AE /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
@@ -191,6 +293,50 @@
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
 			productType = "com.apple.product-type.application";
 		};
+		84CC79122EFAA90F005078AE /* AniccaNotificationService */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 84CC791B2EFAA90F005078AE /* Build configuration list for PBXNativeTarget "AniccaNotificationService" */;
+			buildPhases = (
+				84CC790F2EFAA90F005078AE /* Sources */,
+				84CC79102EFAA90F005078AE /* Frameworks */,
+				84CC79112EFAA90F005078AE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				84CC79142EFAA90F005078AE /* AniccaNotificationService */,
+			);
+			name = AniccaNotificationService;
+			packageProductDependencies = (
+			);
+			productName = AniccaNotificationService;
+			productReference = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */;
+			productType = "com.apple.product-type.app-extension";
+		};
+		84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 84CC79332EFAAB95005078AE /* Build configuration list for PBXNativeTarget "AniccaScreenTimeReport" */;
+			buildPhases = (
+				84CC79222EFAAB95005078AE /* Sources */,
+				84CC79232EFAAB95005078AE /* Frameworks */,
+				84CC79242EFAAB95005078AE /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			fileSystemSynchronizedGroups = (
+				84CC79272EFAAB95005078AE /* AniccaScreenTimeReport */,
+			);
+			name = AniccaScreenTimeReport;
+			packageProductDependencies = (
+			);
+			productName = AniccaScreenTimeReport;
+			productReference = 84CC79262EFAAB95005078AE /* AniccaScreenTimeReport.appex */;
+			productType = "com.apple.product-type.extensionkit-extension";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -198,14 +344,20 @@
 			isa = PBXProject;
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
-				LastSwiftUpdateCheck = 2610;
-				LastUpgradeCheck = 2610;
+				LastSwiftUpdateCheck = 2620;
+				LastUpgradeCheck = 2620;
 				TargetAttributes = {
 					8400344C2EE52C5100A2F44C = {
 						CreatedOnToolsVersion = 26.1.1;
 					};
 					8471AE7A2EB783E1002CECAA = {
 						CreatedOnToolsVersion = 26.1;
+					};
+					84CC79122EFAA90F005078AE = {
+						CreatedOnToolsVersion = 26.2;
+					};
+					84CC79252EFAAB95005078AE = {
+						CreatedOnToolsVersion = 26.2;
 					};
 				};
 			};
@@ -231,6 +383,8 @@
 			targets = (
 				8471AE7A2EB783E1002CECAA /* aniccaios */,
 				8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */,
+				84CC79122EFAA90F005078AE /* AniccaNotificationService */,
+				84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */,
 			);
 		};
 /* End PBXProject section */
@@ -244,6 +398,20 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 		8471AE792EB783E1002CECAA /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		84CC79112EFAA90F005078AE /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		84CC79242EFAAB95005078AE /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -289,6 +457,20 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		84CC790F2EFAA90F005078AE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		84CC79222EFAAB95005078AE /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -296,6 +478,16 @@
 			isa = PBXTargetDependency;
 			target = 8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */;
 			targetProxy = 840034612EE52C5400A2F44C /* PBXContainerItemProxy */;
+		};
+		84CC79192EFAA90F005078AE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 84CC79122EFAA90F005078AE /* AniccaNotificationService */;
+			targetProxy = 84CC79182EFAA90F005078AE /* PBXContainerItemProxy */;
+		};
+		84CC79312EFAAB95005078AE /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */;
+			targetProxy = 84CC79302EFAAB95005078AE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -305,15 +497,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -338,15 +531,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -371,15 +565,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -404,15 +599,16 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				ASSETCATALOG_COMPILER_WIDGET_BACKGROUND_COLOR_NAME = WidgetBackground;
+				CODE_SIGN_ENTITLEMENTS = AniccaWidgetExtension.entitlements;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 35;
 				DEVELOPMENT_TEAM = S5U8UH3JLJ;
 				GENERATE_INFOPLIST_FILE = NO;
 				INFOPLIST_FILE = AniccaWidget/Info.plist;
 				INFOPLIST_KEY_CFBundleDisplayName = AniccaWidget;
 				INFOPLIST_KEY_NSHumanReadableCopyright = "";
-				IPHONEOS_DEPLOYMENT_TARGET = 26.1;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -558,7 +754,6 @@
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
 				STRING_CATALOG_GENERATE_SYMBOLS = YES;
-				STRIP_INSTALLED_PRODUCT = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				VALIDATE_PRODUCT = YES;
@@ -588,6 +783,7 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
@@ -595,7 +791,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -639,6 +835,7 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
@@ -646,7 +843,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -757,6 +954,7 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
@@ -764,7 +962,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -869,6 +1067,7 @@
 				INFOPLIST_KEY_CFBundleLocalizations = "ja en";
 				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
 				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.healthcare-fitness";
+				INFOPLIST_KEY_NSAlarmKitUsageDescription = "Anicca schedules alarms to wake you up and remind you of routines.";
 				INFOPLIST_KEY_NSCameraUsageDescription = "The WebRTC library references camera APIs, but this app does not use the camera.";
 				INFOPLIST_KEY_NSMicrophoneUsageDescription = "Anicca needs the microphone to talk with you in real time.";
 				INFOPLIST_KEY_NSUserNotificationsUsageDescription = "Anicca uses notifications to remind you about wake-up calls and routine start times.";
@@ -876,7 +1075,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -893,6 +1092,258 @@
 				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
 				SWIFT_VERSION = 5.9;
 				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = "staging Release";
+		};
+		84CC791C2EFAA90F005078AE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		84CC791D2EFAA90F005078AE /* staging Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Debug";
+		};
+		84CC791E2EFAA90F005078AE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		84CC791F2EFAA90F005078AE /* staging Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaNotificationService/AniccaNotificationService.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaNotificationService/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaNotificationService;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Release";
+		};
+		84CC79342EFAAB95005078AE /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaScreenTimeReport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		84CC79352EFAAB95005078AE /* staging Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaScreenTimeReport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = "staging Debug";
+		};
+		84CC79362EFAAB95005078AE /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaScreenTimeReport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		84CC79372EFAAB95005078AE /* staging Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				CODE_SIGN_ENTITLEMENTS = AniccaScreenTimeReport/AniccaScreenTimeReport.entitlements;
+				CODE_SIGN_IDENTITY = "Apple Development";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 35;
+				DEVELOPMENT_TEAM = S5U8UH3JLJ;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = AniccaScreenTimeReport/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = AniccaScreenTimeReport;
+				INFOPLIST_KEY_NSHumanReadableCopyright = "";
+				IPHONEOS_DEPLOYMENT_TARGET = 16.6;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@executable_path/../../Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaScreenTimeReport;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				PROVISIONING_PROFILE_SPECIFIER = "";
+				SKIP_INSTALL = YES;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = "1,2";
 			};
 			name = "staging Release";
 		};
@@ -928,6 +1379,28 @@
 				8471B0742EB8CD64002CECAA /* staging Debug */,
 				8471AE882EB783E3002CECAA /* Release */,
 				8471B0772EB8CD69002CECAA /* staging Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		84CC791B2EFAA90F005078AE /* Build configuration list for PBXNativeTarget "AniccaNotificationService" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				84CC791C2EFAA90F005078AE /* Debug */,
+				84CC791D2EFAA90F005078AE /* staging Debug */,
+				84CC791E2EFAA90F005078AE /* Release */,
+				84CC791F2EFAA90F005078AE /* staging Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		84CC79332EFAAB95005078AE /* Build configuration list for PBXNativeTarget "AniccaScreenTimeReport" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				84CC79342EFAAB95005078AE /* Debug */,
+				84CC79352EFAAB95005078AE /* staging Debug */,
+				84CC79362EFAAB95005078AE /* Release */,
+				84CC79372EFAAB95005078AE /* staging Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;

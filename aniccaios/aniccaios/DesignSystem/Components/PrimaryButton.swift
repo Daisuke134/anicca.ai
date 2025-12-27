@@ -33,7 +33,7 @@ struct PrimaryButton: View {
                     .lineLimit(1)
             }
             .frame(maxWidth: .infinity)
-            .padding(.vertical, 16)
+            .frame(height: 64)  // HTML仕様: h-16 = 64pt
         }
         .foregroundStyle(foregroundColor)
         .background(
@@ -62,7 +62,7 @@ struct PrimaryButton: View {
     private var foregroundColor: Color {
         switch style {
         case .primary, .large:
-            return .white
+            return AppTheme.Colors.buttonTextSelected  // .white から変更
         case .selected:
             return AppTheme.Colors.buttonTextSelected
         case .unselected:
@@ -73,11 +73,11 @@ struct PrimaryButton: View {
     private var cornerRadius: CGFloat {
         switch style {
         case .primary:
-            return AppTheme.Radius.lg
+            return AppTheme.Radius.xxl  // 丸角に変更
         case .selected, .unselected:
-            return AppTheme.Radius.xl
+            return .infinity  // 完全な丸(Capsule)
         case .large:
-            return AppTheme.Radius.xxl
+            return .infinity  // 完全な丸(Capsule)
         }
     }
 
@@ -101,4 +101,6 @@ struct PrimaryButton: View {
         }
     }
 }
+
+
 

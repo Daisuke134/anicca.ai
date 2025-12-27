@@ -1,4 +1,6 @@
 "common_continue" = "続ける";
+"common_skip" = "スキップ";
+"common_next" = "次へ";
 "common_done" = "完了";
 "common_saving" = "保存中…";
 "common_requesting" = "リクエスト中…";
@@ -8,6 +10,7 @@
 "common_set_time" = "時刻を設定";
 "common_not_selected" = "未選択";
 "common_cancel" = "キャンセル";
+"common_back" = "戻る";
 "common_save" = "保存";
 "common_time" = "時刻";
 "common_maybe_later" = "あとで設定する";
@@ -17,22 +20,32 @@
 "common_signing_in" = "サインイン中…";
 "settings_language_label" = "言語";
 
-"onboarding_welcome_title" = "Aniccaへようこそ";
-"onboarding_welcome_subtitle" = "一緒にルーティンを整えましょう。";
+"onboarding_welcome_title" = "Aniccaへ\nようこそ";
+"onboarding_welcome_subtitle_line1" = "Aniccaはあなたの声のコーチです。";
+"onboarding_welcome_subtitle_line2" = "行動と心を導きます。";
 "onboarding_welcome_cta" = "はじめる";
 
-"onboarding_account_title" = "Sign in with Apple";
+"onboarding_account_title" = "進捗を保存";
 "onboarding_account_description" = "デバイス間で習慣や設定を同期するためにサインインしてください。";
+"onboarding_account_skip" = "今はスキップ";
 
 "onboarding_microphone_title" = "マイクアクセス";
 "onboarding_microphone_card_title" = "マイクアクセス";
-"onboarding_microphone_description" = "Aniccaは起床コールや習慣リマインダーのためにマイクを使いますが、許可しなくても続行できます。必要になったら設定アプリからいつでもオンにできます。";
+"onboarding_microphone_description" = "Aniccaはマイクを通してあなたの声を聞き、自由に会話できるようにします。音声はデバイスとサーバーで安全に処理されます。";
+"onboarding_microphone_allow" = "マイクを許可";
+"onboarding_permission_status_allowed" = "許可済み";
+"onboarding_permission_status_not_allowed" = "未許可";
 "onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→Aniccaでマイクをオンにし直してください。";
 
-"onboarding_notifications_title" = "通知アラート";
+"onboarding_notifications_title" = "通知";
 "onboarding_notifications_card_title" = "通知アクセス";
-"onboarding_notifications_description" = "通知は習慣（起床・トレーニング・就寝）を思い出させるために便利ですが、必須ではありません。端末がサイレントでも動作します。";
+"onboarding_notifications_description" = "Aniccaは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。";
+"onboarding_notifications_allow" = "通知を許可";
 "onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→Aniccaからいつでも通知をオンにできます。";
+
+"onboarding_alarmkit_title" = "アラーム";
+"onboarding_alarmkit_description" = "確実に起床を促すために、アラームの利用許可が必要です。";
+"onboarding_alarmkit_allow" = "アラームを許可";
 
 "onboarding_habit_title" = "習慣を設定";
 "onboarding_habit_description" = "続けたい習慣を選び、時刻を設定しましょう。";
@@ -94,6 +107,9 @@
 "session_button_end" = "セッションを終了";
 "session_button_connecting" = "接続中…";
 "session_wake_silent_notice" = "起床アラームを確実に鳴らすために、寝る前に端末左側のサイレントスイッチを上げてマナーモードを解除してください。";
+"wake_silent_modal_title" = "起床アラームとサイレントモード";
+"wake_silent_modal_message" = "Aniccaはあなたの習慣に合わせて、ちょうど良いタイミングでやさしく起床を促します。\n\nアラームを確実に聞くために、寝る前にサイレントモードをOFFにし、起きられる音量に設定してください。";
+"wake_silent_modal_ok" = "OK、わかりました";
 
 "settings_title" = "設定";
 "settings_subscription_title" = "プラン";
@@ -141,14 +157,164 @@
 "notification_action_start_conversation" = "今すぐ対話を開始";
 "notification_action_dismiss" = "止める";
 
+/* ========== 事前通知（10種類ローテーション） ========== */
+
+/* 起床 - 事前通知（5分前） */
+"notification_wake_prereminder_1" = "%@あと5分で起床の時間だよ。";
+"notification_wake_prereminder_2" = "%@もうすぐ起床アラームが鳴るよ。";
+"notification_wake_prereminder_3" = "%@起床まであと5分。目覚めの準備を。";
+"notification_wake_prereminder_4" = "%@起床時間が近づいてるよ。";
+"notification_wake_prereminder_5" = "%@あと5分で起きる時間だよ。";
+"notification_wake_prereminder_6" = "%@起床の5分前だよ。";
+"notification_wake_prereminder_7" = "%@もうすぐ起床の時間だよ。";
+"notification_wake_prereminder_8" = "%@起床まで残り5分。";
+"notification_wake_prereminder_9" = "%@あと5分で朝の時間だよ。";
+"notification_wake_prereminder_10" = "%@起床アラームまであと5分。";
+
+/* トレーニング - 事前通知（15分前） */
+"notification_training_prereminder_1" = "%@あと15分でトレーニングの時間。";
+"notification_training_prereminder_2" = "%@トレーニングまであと15分。準備を。";
+"notification_training_prereminder_3" = "%@もうすぐトレーニングの時間だよ。";
+"notification_training_prereminder_4" = "%@トレーニングの15分前だよ。";
+"notification_training_prereminder_5" = "%@あと15分で運動の時間。";
+"notification_training_prereminder_6" = "%@トレーニング開始まで15分。";
+"notification_training_prereminder_7" = "%@運動の時間が近いよ。";
+"notification_training_prereminder_8" = "%@トレーニングまで残り15分。";
+"notification_training_prereminder_9" = "%@あと15分でトレーニング開始。";
+"notification_training_prereminder_10" = "%@トレーニングの準備を始めよう。";
+
+/* 就寝 - 事前通知（15分前） */
+"notification_bedtime_prereminder_1" = "%@あと15分で就寝の時間だよ。";
+"notification_bedtime_prereminder_2" = "%@就寝まであと15分。休む準備を。";
+"notification_bedtime_prereminder_3" = "%@もうすぐ就寝時間だよ。";
+"notification_bedtime_prereminder_4" = "%@就寝の15分前だよ。";
+"notification_bedtime_prereminder_5" = "%@あと15分で眠りの時間。";
+"notification_bedtime_prereminder_6" = "%@就寝時間まで15分。";
+"notification_bedtime_prereminder_7" = "%@眠りの時間が近いよ。";
+"notification_bedtime_prereminder_8" = "%@就寝まで残り15分。";
+"notification_bedtime_prereminder_9" = "%@あと15分で休む時間だよ。";
+"notification_bedtime_prereminder_10" = "%@そろそろ就寝の準備を。";
+
+/* カスタム - 事前通知 */
+"notification_custom_prereminder_1" = "%1$@あと15分で%2$@の時間だよ。";
+"notification_custom_prereminder_2" = "%1$@%2$@まであと15分。準備を。";
+"notification_custom_prereminder_3" = "%1$@もうすぐ%2$@の時間だよ。";
+"notification_custom_prereminder_4" = "%1$@%2$@の15分前だよ。";
+"notification_custom_prereminder_5" = "%1$@あと15分で%2$@を始める時間。";
+"notification_custom_prereminder_6" = "%1$@%2$@の時間が近いよ。";
+"notification_custom_prereminder_7" = "%1$@%2$@まで残り15分。";
+"notification_custom_prereminder_8" = "%1$@もうすぐ%2$@の時間。";
+"notification_custom_prereminder_9" = "%1$@あと15分で%2$@。";
+"notification_custom_prereminder_10" = "%1$@そろそろ%2$@の準備を。";
+
+/* ========== 本番通知（10種類ローテーション） ========== */
+
+/* 起床 - 本番通知 */
+"notification_wake_main_1" = "%@おはよう。新しい一日が始まるよ。";
+"notification_wake_main_2" = "%@起きる時間だよ。目を開けてみて。";
+"notification_wake_main_3" = "%@朝だよ。一緒に始めよう。";
+"notification_wake_main_4" = "%@今日という日が待ってるよ。起きよう。";
+"notification_wake_main_5" = "%@朝の光が来てる。目を開けてみて。";
+"notification_wake_main_6" = "%@起きる準備はできてる。さあ、起きよう。";
+"notification_wake_main_7" = "%@新しい朝だよ。どんな一日にする？";
+"notification_wake_main_8" = "%@起きる時間。深呼吸から始めよう。";
+"notification_wake_main_9" = "%@今日も一緒にいるよ。起きよう。";
+"notification_wake_main_10" = "%@朝が来たよ。まず身体を伸ばしてみて。";
+
+/* トレーニング - 本番通知 */
+"notification_training_main_1" = "%@トレーニングの時間だよ。身体を動かそう。";
+"notification_training_main_2" = "%@運動の時間。準備はいい？";
+"notification_training_main_3" = "%@身体が動きたがってる。さあ、始めよう。";
+"notification_training_main_4" = "%@今日のトレーニング、まず1分から。";
+"notification_training_main_5" = "%@運動の時間だよ。どこから始める？";
+"notification_training_main_6" = "%@一緒にトレーニングしよう。";
+"notification_training_main_7" = "%@身体を動かす時間。気持ちよくなるよ。";
+"notification_training_main_8" = "%@トレーニング開始の時間だよ。";
+"notification_training_main_9" = "%@今日も身体を鍛えよう。準備OK？";
+"notification_training_main_10" = "%@運動の時間。まずウォームアップから。";
+
+/* 就寝 - 本番通知 */
+"notification_bedtime_main_1" = "%@そろそろ寝る時間だよ。今日もお疲れさま。";
+"notification_bedtime_main_2" = "%@ベッドに入る時間だよ。";
+"notification_bedtime_main_3" = "%@今日はもう十分頑張った。休もう。";
+"notification_bedtime_main_4" = "%@眠りの準備を始めよう。";
+"notification_bedtime_main_5" = "%@一日を閉じる時間。おやすみの準備を。";
+"notification_bedtime_main_6" = "%@身体が休みを求めてるよ。ベッドへ。";
+"notification_bedtime_main_7" = "%@今夜もゆっくり休もう。";
+"notification_bedtime_main_8" = "%@明日のために、今夜は眠ろう。";
+"notification_bedtime_main_9" = "%@スクリーンを閉じて、目を休めよう。";
+"notification_bedtime_main_10" = "%@今日の終わり。安らかな眠りを。";
+
+/* カスタム - 本番通知（%1$@はユーザー名プレフィックス、%2$@は習慣名） */
+"notification_custom_main_1" = "%1$@%2$@の時間だよ。始めよう。";
+"notification_custom_main_2" = "%1$@%2$@の時間。準備はいい？";
+"notification_custom_main_3" = "%1$@%2$@を始める時間だよ。";
+"notification_custom_main_4" = "%1$@今が%2$@のタイミング。さあ。";
+"notification_custom_main_5" = "%1$@%2$@、まず1分だけやってみよう。";
+"notification_custom_main_6" = "%1$@%2$@やろう。一緒に。";
+"notification_custom_main_7" = "%1$@%2$@の時間が来たよ。";
+"notification_custom_main_8" = "%1$@今日の%2$@、どこから始める？";
+"notification_custom_main_9" = "%1$@%2$@を始めれば、気持ちも変わるよ。";
+"notification_custom_main_10" = "%1$@%2$@の時間。小さく始めよう。";
+
+/* ========== フォローアップ通知（10種類ローテーション） ========== */
+
+"notification_wake_followup_title" = "起床（再通知）";
+"notification_training_followup_title" = "トレーニング（再通知）";
+"notification_bedtime_followup_title" = "就寝（再通知）";
+
+/* 起床 - フォローアップ */
+"notification_wake_followup_1" = "%@まだ寝てる？目を開けてみて。";
+"notification_wake_followup_2" = "%@起きよう。待ってるよ。";
+"notification_wake_followup_3" = "%@朝だよ。まず身体を伸ばしてみて。";
+"notification_wake_followup_4" = "%@起きる時間だよ。深呼吸してみて。";
+"notification_wake_followup_5" = "%@もう少しで起きれるよ。頑張って。";
+"notification_wake_followup_6" = "%@一日が始まるよ。布団から出てみて。";
+"notification_wake_followup_7" = "%@一緒に朝を始めよう。";
+"notification_wake_followup_8" = "%@身体は起きる準備ができてるよ。";
+"notification_wake_followup_9" = "%@朝の光が待ってる。起きよう。";
+"notification_wake_followup_10" = "%@今起きれば、いい一日になるよ。";
+
+/* トレーニング - フォローアップ */
+"notification_training_followup_1" = "%@トレーニングまだ？1分だけやろう。";
+"notification_training_followup_2" = "%@運動しよう。待ってるよ。";
+"notification_training_followup_3" = "%@身体を動かす時間だよ。さあ。";
+"notification_training_followup_4" = "%@今からでも間に合う。動いてみて。";
+"notification_training_followup_5" = "%@トレーニング1セットだけでもOK。";
+"notification_training_followup_6" = "%@運動すると気持ちいいよ。始めよう。";
+"notification_training_followup_7" = "%@一緒にトレーニングしよう。";
+"notification_training_followup_8" = "%@身体が運動を待ってる。動こう。";
+"notification_training_followup_9" = "%@今日のトレーニング、まだできるよ。";
+"notification_training_followup_10" = "%@小さく始めても大丈夫。動いてみて。";
+
+/* 就寝 - フォローアップ */
+"notification_bedtime_followup_1" = "%@そろそろ寝る準備を始めよう。";
+"notification_bedtime_followup_2" = "%@照明を落として深呼吸しよう。";
+"notification_bedtime_followup_3" = "%@スクリーンを閉じて、目を休めよう。";
+"notification_bedtime_followup_4" = "%@今日はここまで。ベッドに入ろう。";
+"notification_bedtime_followup_5" = "%@眠気がきたらそのまま休もう。";
+"notification_bedtime_followup_6" = "%@おやすみルーティンを始めよう。";
+"notification_bedtime_followup_7" = "%@今日もよく頑張った。目を閉じよう。";
+"notification_bedtime_followup_8" = "%@歯みがきは済んだ？";
+"notification_bedtime_followup_9" = "%@ベッドに横になって、身体を緩めよう。";
+"notification_bedtime_followup_10" = "%@明日のために、今夜は眠ろう。";
+
+/* カスタム - フォローアップ（%1$@はユーザー名プレフィックス、%2$@は習慣名） */
+"notification_custom_followup_1" = "%1$@%2$@を始めよう。今ならできる。";
+"notification_custom_followup_2" = "%1$@%2$@の時間を逃さないで。";
+"notification_custom_followup_3" = "%1$@%2$@、まず1分だけやってみて。";
+"notification_custom_followup_4" = "%1$@%2$@、今なら始められるよ。";
+"notification_custom_followup_5" = "%1$@%2$@、一緒にやってみよう。";
+"notification_custom_followup_6" = "%1$@%2$@をやると気持ちが変わるよ。";
+"notification_custom_followup_7" = "%1$@%2$@の準備はできてるよ。";
+"notification_custom_followup_8" = "%1$@%2$@、そろそろ進めよう。";
+"notification_custom_followup_9" = "%1$@%2$@を少しだけでも進めよう。";
+"notification_custom_followup_10" = "%1$@%2$@、待ってるよ。";
+
+/* 旧キー（後方互換用） */
 "notification_wake_body" = "Aniccaが起床を促します。";
 "notification_training_body" = "筋トレの時間です。一緒に始めましょう。";
 "notification_bedtime_body" = "就寝準備を始めましょう。深い眠りを作ります。";
-
-"notification_wake_followup_title" = "起床（再通知）";
-"notification_training_followup_title" = "筋トレ（再通知）";
-"notification_bedtime_followup_title" = "就寝（再通知）";
-
 "notification_wake_followup_body" = "そろそろ起きましょう。深呼吸からスタートです。";
 "notification_training_followup_body" = "体を動かす準備はできています。フォームを意識していきましょう。";
 "notification_bedtime_followup_body" = "今日一日の疲れを手放しましょう。リラックスして眠りに入ります。";
@@ -173,20 +339,127 @@
 "session_time_cap_message" = "無料セッションは5分で終了しました。より長い会話を続けるにはアップグレードしてください。";
 "settings_habits" = "習慣";
 "settings_ideal_traits" = "理想の姿";
+"onboarding_ideals_title" = "どんな自分になりたいですか？";
+"onboarding_ideals_subtitle" = "いくつでも選んでください。なりたい自分を表しています。";
+
+"onboarding_struggles_title" = "いま何に苦しんでいますか？";
+"onboarding_struggles_subtitle" = "当てはまるものをすべて選んでください。";
+
+"onboarding_value_title" = "Aniccaができること";
+"onboarding_value_card1_title" = "つらいときに寄り添う";
+"onboarding_value_card1_body" = "困難な瞬間に寄り添い、軌道に乗り続けるためのパーソナルな助言と励ましを提供します。";
+"onboarding_value_card2_title" = "より良い習慣を築く";
+"onboarding_value_card2_body" = "あなたの目標とライフスタイルに合わせた実践的なインサイトで、持続可能なルーティンを構築します。";
+"onboarding_value_card3_title" = "自分のパターンを理解する";
+"onboarding_value_card3_body" = "自分の行動や思考パターンを明確にし、意味のある持続的な変化を起こします。";
+
 "ideal_trait_kind" = "優しい";
-"ideal_trait_altruistic" = "利他的";
-"ideal_trait_confident" = "自信がある";
+"ideal_trait_honest" = "誠実";
 "ideal_trait_mindful" = "マインドフル";
+"ideal_trait_confident" = "自信がある";
+"ideal_trait_early_riser" = "早起き";
+"ideal_trait_runner" = "ランナー";
+"ideal_trait_healthy" = "健康的";
+"ideal_trait_calm" = "冷静";
+"ideal_trait_disciplined" = "自分を律せる";
+"ideal_trait_open" = "オープン";
+"ideal_trait_courageous" = "勇敢";
+"ideal_trait_altruistic" = "利他的";
 "ideal_trait_optimistic" = "楽観的";
 "ideal_trait_resilient" = "忍耐強い";
-"ideal_trait_disciplined" = "自分を律せる";
-"ideal_trait_honest" = "誠実";
-"ideal_trait_calm" = "冷静";
+"ideal_trait_creative" = "クリエイティブ";
+"ideal_trait_organized" = "整理整頓";
+"ideal_trait_patient" = "忍耐強い";
+"ideal_trait_focused" = "集中力";
+"ideal_trait_grateful" = "感謝";
+"ideal_trait_brave" = "勇敢";
+"problem_self_loathing" = "自己嫌悪";
 "problem_rumination" = "反芻";
-"problem_jealousy" = "嫉妬";
-"problem_self_criticism" = "自己批判";
 "problem_anxiety" = "不安";
+"problem_anger" = "怒り";
+"problem_jealousy" = "嫉妬";
+"problem_loneliness" = "孤独";
+"problem_night_scrolling" = "夜のスクロール";
+"problem_cant_wake_up" = "起きられない";
+
+/* v3 Behavior */
+"common_loading" = "読み込み中…";
+"common_retry" = "再試行";
+"behavior_title_today_insights" = "今日のインサイト";
+"behavior_error_failed_load" = "今日のインサイトを取得できませんでした。";
+"behavior_title_today_highlights" = "今日のハイライト";
+"behavior_title_timeline" = "24時間タイムライン";
+"behavior_title_future" = "10年後の未来";
+"behavior_not_enough_data" = "データが不足しています";
+"behavior_highlight_wake" = "起床";
+"behavior_highlight_screen" = "スクリーン";
+"behavior_highlight_workout" = "運動";
+"behavior_highlight_rumination" = "反芻";
+"behavior_status_moving_forward" = "前進中";
+"behavior_status_needs_attention" = "要注意";
+"behavior_status_stable" = "安定";
+"timeline_label_sleep" = "睡眠";
+"timeline_label_focus" = "集中";
+"timeline_label_scroll" = "スクロール";
+"timeline_label_activity" = "活動";
+
+/* v3 Profile */
+"profile_title" = "プロファイル";
+"profile_row_name" = "名前";
+"profile_row_plan" = "プラン";
+"profile_row_language" = "言語";
+"profile_section_traits" = "あなたの特性";
+"profile_traits_summary_placeholder" = "協調性が高く、新しい経験にも前向き。柔軟さと適度な構造を両立しています。";
+"profile_traits_view_full" = "特性プロフィールを見る";
+"profile_section_ideal_self" = "理想の自分";
+"profile_section_current_struggles" = "今の悩み";
+"profile_section_nudge_strength" = "促しの強さ";
+"profile_nudge_quiet" = "控えめ";
+"profile_nudge_normal" = "標準";
+"profile_nudge_active" = "積極的";
+"profile_section_sticky_mode" = "スティッキーモード";
+"profile_sticky_description" = "ONにすると、5回応答するまでAniccaが話し続けます。";
+"profile_section_data_integration" = "データ連携";
+"profile_data_integration_hint" = "任意。データを連携すると、Aniccaがより適切に促せます。すべてOFFでも主要機能は利用できます。";
+"profile_toggle_screen_time" = "スクリーンタイム";
+"profile_toggle_sleep" = "就寝";
+"profile_toggle_steps" = "歩数";
+"profile_toggle_movement" = "移動";
+
+/* AlarmKit full-screen alarm actions */
+"alarmkit_action_wake_open" = "起きる";
+"alarmkit_action_wake_stop" = "二度寝する";
+"alarmkit_action_training_open" = "今トレーニングする";
+"alarmkit_action_training_stop" = "後回しにする";
+"alarmkit_action_bedtime_open" = "今寝る";
+"alarmkit_action_bedtime_stop" = "夜更かしを続ける";
+"alarmkit_action_custom_open" = "今やる";
+"alarmkit_action_custom_stop" = "後回しにする";
+
+/* v3 Traits Detail */
+"traits_title" = "ビッグファイブ特性";
+"trait_agreeableness" = "協調性";
+"trait_openness" = "開放性";
+"trait_conscientiousness" = "誠実性";
+"trait_emotional_stability" = "情緒安定性";
+"trait_extraversion" = "外向性";
+"trait_description_placeholder" = "調和を大切にし、周囲への配慮が自然にできる傾向があります。";
+"problem_no_motivation" = "やる気が出ない";
+"problem_procrastination" = "先延ばし";
+"problem_self_criticism" = "自己批判";
+"problem_poor_sleep" = "睡眠不足";
+"problem_stress" = "ストレス";
+"problem_focus" = "集中力不足";
+"problem_motivation" = "モチベーション";
+"problem_self_doubt" = "自己不信";
+"problem_time_management" = "時間管理";
+"problem_burnout" = "燃え尽き";
+"problem_relationships" = "人間関係";
+"problem_energy" = "エネルギー不足";
+"problem_work_life_balance" = "ワークライフバランス";
 "settings_personalization" = "パーソナライズ";
+"settings_data_optional_title" = "データ連携（任意）";
+"settings_data_optional_description" = "睡眠・歩数・スクリーンタイム・動作データの連携は任意です。未許可でもTalkはいつでも使えます。連携するとBehaviorのインサイト精度が向上します。";
 "habit_add_custom" = "習慣を追加";
 "habit_add_routine" = "ルーティンを追加";
 "habit_routine_placeholder" = "ルーティン";
@@ -205,7 +478,38 @@
 "common_wake_location_fallback" = "ベッド";
 "settings_contact_support" = "サポートに連絡";
 "tab_talk" = "会話";
+"talk_nav_title" = "今どんな感じ？";
+"talk_feeling_self_loathing_title" = "自己嫌悪";
+"talk_feeling_self_loathing_subtitle" = "自分を責めすぎているとき。";
+"talk_feeling_anxiety_title" = "不安";
+"talk_feeling_anxiety_subtitle" = "不安が止まらないとき。";
+"talk_feeling_irritation_title" = "苛立ち";
+"talk_feeling_irritation_subtitle" = "緊張が高まっているとき。";
+"talk_feeling_something_else_title" = "その他";
+"talk_feeling_something_else_subtitle" = "自由に話す。";
+
+"session_topic_self_loathing" = "自己嫌悪について";
+"session_topic_anxiety" = "不安について";
+"session_topic_irritation" = "苛立ちについて";
+"session_topic_free_conversation" = "自由に話す";
+
+"session_status_connecting" = "接続中…";
+"session_status_listening" = "Aniccaが聞いています…";
+"session_status_speaking" = "Aniccaが話しています…";
+"session_status_disconnected" = "セッションを終了しました";
+
+"ema_question" = "さっきより楽になった？";
+"ema_yes" = "はい";
+"ema_no" = "いいえ";
+"ema_skip" = "スキップ";
 "tab_habits" = "習慣";
+"tab_behavior" = "行動";
+"tab_profile" = "プロファイル";
+
+// Pre-Reminder (v3.1)
+"pre_reminder_bedtime_body" = "そろそろ寝る準備を始めましょう。画面を消して、リラックスする時間です。";
+"pre_reminder_training_body" = "あと15分でトレーニングの時間です。着替えて準備しておきましょう。";
+"pre_reminder_custom_body_format" = "あと%d分で「%@」の時間です。準備しておきましょう。";
 
 "session_mic_permission_title" = "マイクのアクセスが必要です";
 "session_mic_permission_message" = "Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";
@@ -229,4 +533,21 @@
 "settings_delete_account_message" = "この操作は取り消せません。購入履歴や利用データを含むすべてのデータが永久に削除されます。";
 "common_error" = "エラー";
 "common_ok" = "OK";
+
+/* v3: AlarmKit Permission */
+"onboarding_alarmkit_granted" = "アラームが許可されました";
+"onboarding_alarmkit_denied_hint" = "設定からアラームを有効にできます";
+"onboarding_alarmkit_settings_needed" = "アラームの設定が必要です";
+"onboarding_alarmkit_settings_message" = "確実に起床するために、設定アプリでAniccaのアラーム許可を有効にしてください。";
+
+/* v3: Profile Name Edit */
+"profile_edit_name_title" = "名前を編集";
+"profile_edit_name" = "名前";
+"profile_name_placeholder" = "名前を入力";
+
+/* v3: 追加のStruggle */
+"problem_irritation" = "苛立ち";
+
+/* v3: Account Management */
+"profile_account_management" = "アカウント管理";
 

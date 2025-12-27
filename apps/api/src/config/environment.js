@@ -41,7 +41,9 @@ export const API_KEYS = {
   OPENAI: !!process.env.OPENAI_API_KEY,
   SLACK_CLIENT_ID: !!process.env.SLACK_CLIENT_ID,
   SLACK_CLIENT_SECRET: !!process.env.SLACK_CLIENT_SECRET,
-  SLACK_TOKEN_ENCRYPTION_KEY: !!process.env.SLACK_TOKEN_ENCRYPTION_KEY
+  SLACK_TOKEN_ENCRYPTION_KEY: !!process.env.SLACK_TOKEN_ENCRYPTION_KEY,
+  // v0.3: mem0（Moss/Exa は v0.3 の新規実装では使用しない）
+  MEM0: !!process.env.MEM0_API_KEY
 };
 
 const proDailyLimitRaw = process.env.PRO_DAILY_LIMIT || '';
@@ -156,6 +158,11 @@ export function validateEnvironment() {
   }
   if (!API_KEYS.OPENAI) {
     warnings.push('OPENAI_API_KEY must be set');
+  }
+
+  // v0.3: mem0 が未設定の場合、v0.3 のパーソナライズ機能は無効化されるため警告
+  if (!API_KEYS.MEM0) {
+    warnings.push('MEM0_API_KEY is not set');
   }
 
   return warnings;

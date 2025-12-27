@@ -1,5 +1,6 @@
 import { query } from '../../lib/db.js';
 import baseLogger from '../../utils/logger.js';
+import { resolveProfileId, isUuid } from './userIdResolver.js';
 
 const logger = baseLogger.withContext('MobileProfileService');
 
@@ -75,10 +76,90 @@ export async function upsertProfile({ deviceId, userId, profile, language }) {
     }
     
     logger.info(`Profile upserted for device: ${deviceId}, language: ${language}`);
+
+    // v0.3: traits/big5/nudge settings are authoritative in user_traits (uuid key).
+    // We accept both legacy keys (idealTraits/problems/stickyModeEnabled) and new keys (ideals/struggles/big5/nudgeIntensity/stickyMode).
+    const profileId = await resolveProfileId(userId);
+    if (profileId) {
+      await upsertUserTraitsFromProfilePayload(profileId, profile);
+    } else {
+      // Non-uuid user_id can happen during migration; don't hard-fail profile upsert.
+      logger.warn('Could not resolve profileId; user_traits sync skipped', { userId });
+    }
   } catch (error) {
     logger.error('Failed to upsert profile', error);
     throw error;
   }
+}
+
+async function upsertUserTraitsFromProfilePayload(profileId, payload) {
+  // Normalize old → new
+  const ideals = Array.isArray(payload?.ideals) ? payload.ideals : Array.isArray(payload?.idealTraits) ? payload.idealTraits : [];
+  const struggles = Array.isArray(payload?.struggles) ? payload.struggles : Array.isArray(payload?.problems) ? payload.problems : [];
+
+  const nudgeIntensityRaw = String(payload?.nudgeIntensity || '').trim();
+  const nudgeIntensity = ['quiet', 'normal', 'active'].includes(nudgeIntensityRaw) ? nudgeIntensityRaw : null;
+
+  const stickyMode =
+    typeof payload?.stickyMode === 'boolean'
+      ? payload.stickyMode
+      : typeof payload?.stickyModeEnabled === 'boolean'
+        ? payload.stickyModeEnabled
+        : typeof payload?.wakeStickyModeEnabled === 'boolean'
+          ? payload.wakeStickyModeEnabled
+          : null;
+
+  const big5 = payload?.big5 && typeof payload.big5 === 'object' ? payload.big5 : null;
+  const keywords = Array.isArray(payload?.keywords) ? payload.keywords : [];
+  const summary = typeof payload?.summary === 'string' ? payload.summary : null;
+
+  // Only write if something is present (avoid overwriting with empties during partial updates)
+  const hasAny =
+    (ideals && ideals.length > 0) ||
+    (struggles && struggles.length > 0) ||
+    big5 ||
+    (keywords && keywords.length > 0) ||
+    (summary != null) ||
+    (nudgeIntensity != null) ||
+    (stickyMode != null);
+
+  if (!hasAny) return;
+
+  await query(
+    `insert into user_traits
+       (user_id, ideals, struggles, big5, keywords, summary, nudge_intensity, sticky_mode, created_at, updated_at)
+     values
+       ($1::uuid,
+        coalesce($2::text[], '{}'::text[]),
+        coalesce($3::text[], '{}'::text[]),
+        coalesce($4::jsonb, '{}'::jsonb),
+        coalesce($5::text[], '{}'::text[]),
+        coalesce($6::text, ''),
+        coalesce($7::text, 'normal'),
+        coalesce($8::boolean, false),
+        timezone('utc', now()),
+        timezone('utc', now()))
+     on conflict (user_id)
+     do update set
+       ideals = case when array_length(excluded.ideals,1) is null then user_traits.ideals else excluded.ideals end,
+       struggles = case when array_length(excluded.struggles,1) is null then user_traits.struggles else excluded.struggles end,
+       big5 = case when excluded.big5 = '{}'::jsonb then user_traits.big5 else excluded.big5 end,
+       keywords = case when array_length(excluded.keywords,1) is null then user_traits.keywords else excluded.keywords end,
+       summary = case when excluded.summary = '' then user_traits.summary else excluded.summary end,
+       nudge_intensity = coalesce(excluded.nudge_intensity, user_traits.nudge_intensity),
+       sticky_mode = coalesce(excluded.sticky_mode, user_traits.sticky_mode),
+       updated_at = timezone('utc', now())`,
+    [
+      profileId,
+      ideals.length ? ideals : null,
+      struggles.length ? struggles : null,
+      big5 ? JSON.stringify(big5) : null,
+      keywords.length ? keywords : null,
+      summary ?? null,
+      nudgeIntensity,
+      stickyMode
+    ]
+  );
 }
 
 /**

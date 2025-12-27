@@ -150,16 +150,25 @@ struct HabitPromptBuilder {
             break
         }
         
-        // 理想の姿（全習慣で使用）
+        // 理想の姿（全習慣で使用）- 言語設定に応じてプレフィックスをローカライズ
         if !profile.idealTraits.isEmpty {
-            replacements["IDEAL_TRAITS"] = "理想の姿として設定されている特性: " + profile.idealTraits.joined(separator: "、")
+            let localizedTraits = profile.idealTraits.map { NSLocalizedString("ideal_trait_\($0)", comment: "") }
+            let prefix = profile.preferredLanguage == .ja
+                ? "理想の姿として設定されている特性: "
+                : "Ideal self traits: "
+            let separator = profile.preferredLanguage == .ja ? "、" : ", "
+            replacements["IDEAL_TRAITS"] = prefix + localizedTraits.joined(separator: separator)
         } else {
             replacements["IDEAL_TRAITS"] = ""
         }
         
         if !profile.problems.isEmpty {
             let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
-            replacements["PROBLEMS"] = "今抱えている問題: " + localizedProblems.joined(separator: "、")
+            let prefix = profile.preferredLanguage == .ja
+                ? "今抱えている問題: "
+                : "Current struggles: "
+            let separator = profile.preferredLanguage == .ja ? "、" : ", "
+            replacements["PROBLEMS"] = prefix + localizedProblems.joined(separator: separator)
         } else {
             replacements["PROBLEMS"] = ""
         }

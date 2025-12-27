@@ -8,6 +8,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
     static let shared = VoiceSessionController()
     
     @Published private(set) var connectionStatus: ConnectionState = .disconnected
+    @Published private(set) var isModelSpeaking: Bool = false
+    @Published private(set) var isUserSpeaking: Bool = false
+    @Published private(set) var isMicMuted: Bool = false
+
+    /// tech-ema-v3: 3秒以上のみ EMA を聞く（誤タップ対策）
+    var shouldAskFeelingEMA: Bool {
+        guard let start = sessionStartTime else { return false }
+        return Date().timeIntervalSince(start) >= 3
+    }
+
+    // Feeling セッション識別（/api/mobile/feeling/end で使用）
+    private var activeFeelingSessionId: String?
+    private var activeFeelingTopic: FeelingTopic?
+    private var activeFeelingOpeningScript: String?
 
     private let logger = Logger(subsystem: "com.anicca.ios", category: "VoiceSession")
     private let peerFactory = RTCPeerConnectionFactory()
@@ -104,6 +118,23 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
     }
 
+    /// v3: Talk/Feeling セッション開始（TalkView→SessionView から呼ぶ）
+    func startFeeling(topic: FeelingTopic) {
+        guard connectionStatus != .connecting else { return }
+        setStatus(.connecting)
+        activeFeelingTopic = topic
+        activeFeelingSessionId = nil
+        activeFeelingOpeningScript = nil
+        currentHabitType = nil
+        stickyActive = AppState.shared.userProfile.stickyModeEnabled
+        stickyUserReplyCount = 0
+        stickyReady = false
+        Task { [weak self] in
+            await self?.beginFeelingSession(topic: topic)
+            await self?.establishSession(resumeImmediately: false)
+        }
+    }
+
     func stop() {
         logger.debug("Stopping realtime session")
         currentHabitType = nil
@@ -125,6 +156,72 @@ final class VoiceSessionController: NSObject, ObservableObject {
         setStatus(.disconnected)
         deactivateAudioSession()
         // stop()時にはmarkQuotaHoldを呼ばない（エンドセッション押下時の誤表示を防ぐ）
+    }
+
+    /// tech-ema-v3: Feeling セッション終了時の EMA をサーバへ送信（true/false/null）
+    @MainActor
+    func submitFeelingEMA(emaBetter: Bool?) async {
+        guard let feelingSessionId = activeFeelingSessionId,
+              case .signedIn(let credentials) = AppState.shared.authStatus else {
+            // まだ start が走っていない or 未ログインなら何もしない
+            activeFeelingTopic = nil
+            activeFeelingSessionId = nil
+            activeFeelingOpeningScript = nil
+            return
+        }
+        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/feeling/end"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+
+        let payload: [String: Any] = [
+            "session_id": feelingSessionId,
+            "emaBetter": emaBetter as Any
+        ]
+        request.httpBody = try? JSONSerialization.data(withJSONObject: payload, options: [])
+
+        do {
+            _ = try await NetworkSessionManager.shared.session.data(for: request)
+        } catch {
+            logger.error("Failed to submit EMA: \(error.localizedDescription, privacy: .public)")
+        }
+        activeFeelingTopic = nil
+        activeFeelingSessionId = nil
+        activeFeelingOpeningScript = nil
+    }
+
+    /// v3: Feeling開始（migration-patch-v3.md 6.2 /api/mobile/feeling/start）
+    /// - feeling_sessions の sessionId を取得して保持する（Realtimeの session_id と混同しない）
+    private func beginFeelingSession(topic: FeelingTopic) async {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        var req = URLRequest(url: AppConfig.feelingStartURL)
+        req.httpMethod = "POST"
+        req.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        req.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        req.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+
+        let body: [String: Any] = [
+            "feelingId": topic.rawValue
+        ]
+        do {
+            req.httpBody = try JSONSerialization.data(withJSONObject: body)
+            let (data, response) = try await NetworkSessionManager.shared.session.data(for: req)
+            guard let http = response as? HTTPURLResponse, (200..<300).contains(http.statusCode),
+                  let json = try JSONSerialization.jsonObject(with: data) as? [String: Any] else {
+                return
+            }
+            // NOTE: APIは { sessionId, openingScript, ... } を返す
+            activeFeelingSessionId = json["sessionId"] as? String
+            activeFeelingOpeningScript = json["openingScript"] as? String
+        } catch {
+            logger.error("Failed to start feeling session: \(error.localizedDescription, privacy: .public)")
+        }
+    }
+
+    func toggleMicMuted() {
+        isMicMuted.toggle()
+        audioTrack?.isEnabled = !isMicMuted
     }
     
     /// 習慣セッション開始時に、その習慣の残りのアラーム/フォローアップをすべてキャンセル
@@ -242,7 +339,7 @@ final class VoiceSessionController: NSObject, ObservableObject {
             // 利用上限到達時の処理
             let plan: SubscriptionInfo.Plan
             if let env = try? JSONDecoder().decode(EntitlementEnvelope.self, from: data) {
-                let planString = env.entitlement?.plan ?? "free"
+                let planString = env.entitlement?.plan ?? env.error?.details?.entitlement?.plan ?? "free"
                 plan = SubscriptionInfo.Plan(rawValue: planString) ?? .free
             } else {
                 plan = .free
@@ -259,7 +356,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
         }
 
         let payload = try JSONDecoder().decode(RealtimeSessionResponse.self, from: data)
-        sessionModel = "gpt-realtime"
+        // Use model from backend response, fallback to default
+        sessionModel = payload.model ?? payload.sessionModel ?? "gpt-realtime"
         let secret = payload.clientSecretModel
         cachedSecret = secret
         activeSessionId = payload.sessionId
@@ -324,9 +422,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
             throw VoiceSessionError.missingClientSecret
         }
 
-        var components = URLComponents(string: "https://api.openai.com/v1/realtime")
-        components?.queryItems = [URLQueryItem(name: "model", value: sessionModel)]
-        guard let url = components?.url else {
+        // GA endpoint: POST /v1/realtime/calls (model already set in client_secret)
+        guard let url = URL(string: "https://api.openai.com/v1/realtime/calls") else {
             throw VoiceSessionError.remoteSDPFailed
         }
 
@@ -339,7 +436,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
         let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
         guard let http = response as? HTTPURLResponse, (200 ..< 300).contains(http.statusCode) else {
             if let http = response as? HTTPURLResponse {
-                logger.error("Realtime SDP exchange failed with status \(http.statusCode)")
+                let errorBody = String(data: data, encoding: .utf8) ?? "no body"
+                logger.error("Realtime SDP exchange failed with status \(http.statusCode): \(errorBody, privacy: .public)")
             }
             cachedSecret = nil
             throw VoiceSessionError.remoteSDPFailed
@@ -482,8 +580,8 @@ extension VoiceSessionController: RTCDataChannelDelegate {
     func dataChannelDidChangeState(_ dataChannel: RTCDataChannel) {
         logger.debug("Data channel state: \(dataChannel.readyState.rawValue)")
         if dataChannel.readyState == .open {
-            Task { @MainActor in
-                self.sendSessionUpdate()
+            DispatchQueue.main.async { [weak self] in
+                self?.sendSessionUpdate()
             }
         }
     }
@@ -496,7 +594,9 @@ extension VoiceSessionController: RTCDataChannelDelegate {
               let json = try? JSONSerialization.jsonObject(with: data) as? [String: Any] else {
             return
         }
-        handleRealtimeEvent(json)
+        DispatchQueue.main.async { [weak self] in
+            self?.handleRealtimeEvent(json)
+        }
     }
 }
 
@@ -505,42 +605,73 @@ private extension VoiceSessionController {
     func sendSessionUpdate() {
         guard let channel = dataChannel, channel.readyState == .open else { return }
         
-        // トレーニング時はユーザーの割り込みを無効化（一方的な声かけモード）
-        let isTrainingMode = currentHabitType == .training
-        
+        // OpenAI Realtime 公式: session.update は audio.{input,output} / output_modalities 形式
+        // refs:
+        // - https://platform.openai.com/docs/api-reference/realtime-client-events/session/update
+        // - https://platform.openai.com/docs/guides/realtime-conversations
+        // Note: OpenAI Realtime APIは ["audio"] または ["text"] のみサポート（両方同時は不可）
         var sessionPayload: [String: Any] = [
-            "modalities": ["text", "audio"],
-            "voice": "alloy",
-            "input_audio_format": "pcm16",
-            "output_audio_format": "pcm16",
-            "input_audio_noise_reduction": [
-                "type": "near_field"
+            "type": "realtime",
+            "output_modalities": ["audio"],
+            "max_output_tokens": "inf",
+            "audio": [
+                "input": [
+                    "format": [
+                        "type": "audio/pcm",
+                        "rate": 24000
+                    ]
+                ],
+                "output": [
+                    "format": [
+                        "type": "audio/pcm",
+                        "rate": 24000
+                    ],
+                    "voice": "alloy",
+                    "speed": 1.0
+                ]
             ],
-            "max_response_output_tokens": "inf"
+            "tool_choice": "auto",
+            "tools": RealtimeTools.defaultTools
         ]
         
-        // トレーニング時は turn_detection を null に設定してマイク入力を完全に無効化
+        // Realtime: audio.input.turn_detection
+        let isTrainingMode = currentHabitType == .training
+        var audioDict = sessionPayload["audio"] as? [String: Any] ?? [:]
         if isTrainingMode {
-            // トレーニング時: マイク入力を完全に無効化（一方向モード）
-            sessionPayload["turn_detection"] = NSNull()
+            // 一方向（入力なし）
+            audioDict["input"] = [
+                "format": ["type": "audio/pcm", "rate": 24000],
+                "turn_detection": NSNull()
+            ]
             logger.info("Training mode: turn_detection disabled for one-way audio")
         } else {
-            // その他の習慣: 双方向対話を維持
-            sessionPayload["turn_detection"] = [
-                "type": "semantic_vad",
-                "eagerness": "low",
-                "interrupt_response": true,
-                "create_response": true
+            audioDict["input"] = [
+                "format": ["type": "audio/pcm", "rate": 24000],
+                "turn_detection": [
+                    "type": "server_vad",
+                    "create_response": true,
+                    "interrupt_response": true
+                ]
             ]
         }
+        sessionPayload["audio"] = audioDict
 
-        var shouldTriggerHabitResponse = false
+        var shouldTriggerImmediateResponse = false
         var instructions: String?
         if let prompt = AppState.shared.consumePendingPrompt() {
             instructions = prompt
-            shouldTriggerHabitResponse = true   // habit プロンプト送信を記録
+            shouldTriggerImmediateResponse = true   // habit: 起動時に話し始める
         } else if let consultPrompt = AppState.shared.consumePendingConsultPrompt() {
             instructions = consultPrompt
+            shouldTriggerImmediateResponse = true   // consult: v3 では「モデルが先に話す」前提
+        } else if let feeling = activeFeelingTopic {
+            let base = RealtimePromptBuilder.buildFeelingInstructions(topic: feeling, profile: AppState.shared.userProfile)
+            if let opening = activeFeelingOpeningScript, !opening.isEmpty {
+                instructions = base + "\n\n[Opening]\n" + opening
+            } else {
+                instructions = base
+            }
+            shouldTriggerImmediateResponse = true
         }
         if let instructions {
             sessionPayload["instructions"] = instructions
@@ -559,7 +690,7 @@ private extension VoiceSessionController {
             logger.error("Failed to send session.update: \(error.localizedDescription, privacy: .public)")
         }
 
-        if shouldTriggerHabitResponse {
+        if shouldTriggerImmediateResponse {
             sendWakeResponseCreate()
             Task { @MainActor in
                 AppState.shared.clearPendingHabitTrigger()
@@ -580,22 +711,30 @@ private extension VoiceSessionController {
         logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): sent response.create to keep talking")
     }
     
-    private func handleRealtimeEvent(_ event: [String: Any]) {
+    @MainActor private func handleRealtimeEvent(_ event: [String: Any]) {
         guard let type = event["type"] as? String else { return }
         switch type {
         case "output_audio_buffer.started":
             logger.info("output_audio_buffer.started: stickyActive=\(self.stickyActive), stickyReady=\(self.stickyReady)")
             print("output_audio_buffer.started: stickyActive=\(stickyActive), stickyReady=\(stickyReady)")
+            isModelSpeaking = true
             if stickyActive && !stickyReady {
                 stickyReady = true
                 logger.info("Sticky ready: first audio started → stickyReady=true")
                 print("Sticky ready: first audio started → stickyReady=true")
             }
+
+        case "output_audio_buffer.stopped", "output_audio_buffer.cleared":
+            isModelSpeaking = false
         
+        case "input_audio_buffer.speech_started":
+            isUserSpeaking = true
+
         case "input_audio_buffer.speech_stopped":
             // ★★★ ユーザーの発話終了を検知（WebRTCでの正しいイベント）★★★
             logger.info("input_audio_buffer.speech_stopped: stickyActive=\(self.stickyActive), stickyReady=\(self.stickyReady)")
             print("input_audio_buffer.speech_stopped: stickyActive=\(stickyActive), stickyReady=\(stickyReady)")
+            isUserSpeaking = false
             guard stickyActive && stickyReady else { return }
             
             self.stickyUserReplyCount += 1
@@ -608,6 +747,16 @@ private extension VoiceSessionController {
             }
         
         case "response.done":
+            // Function calling: response.done 内の function_call item を検出し、HTTP tool に転送して戻す
+            // refs:
+            // - https://platform.openai.com/docs/guides/realtime-conversations#function-calling
+            // - https://platform.openai.com/docs/api-reference/realtime-server-events
+            if let response = event["response"] as? [String: Any],
+               let output = response["output"] as? [[String: Any]] {
+                Task { @MainActor in
+                    await self.handleFunctionCallsIfNeeded(outputItems: output)
+                }
+            }
             if stickyActive {
                 logger.info("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 5s")
                 print("Sticky \(self.stickyUserReplyCount)/\(self.stickyReleaseThreshold): response.done → scheduling next in 5s")
@@ -625,6 +774,48 @@ private extension VoiceSessionController {
             break
         }
     }
+
+    @MainActor
+    private func handleFunctionCallsIfNeeded(outputItems: [[String: Any]]) async {
+        let functionCalls = outputItems.filter { ($0["type"] as? String) == "function_call" }
+        guard !functionCalls.isEmpty else { return }
+
+        for call in functionCalls {
+            guard let name = call["name"] as? String,
+                  let callId = call["call_id"] as? String,
+                  let arguments = call["arguments"] as? String else { continue }
+            let result = await RealtimeToolRouter.callTool(name: name, argumentsJSON: arguments)
+            sendFunctionCallOutput(callId: callId, output: result)
+        }
+        // ツール出力を足した後、モデルに続きの応答を作らせる
+        sendResponseCreate()
+    }
+
+    private func sendFunctionCallOutput(callId: String, output: String) {
+        let payload: [String: Any] = [
+            "type": "conversation.item.create",
+            "item": [
+                "type": "function_call_output",
+                "call_id": callId,
+                "output": output
+            ]
+        ]
+        sendEvent(payload)
+    }
+
+    private func sendResponseCreate() {
+        sendEvent(["type": "response.create"])
+    }
+
+    private func sendEvent(_ payload: [String: Any]) {
+        guard let channel = dataChannel, channel.readyState == .open else { return }
+        do {
+            let data = try JSONSerialization.data(withJSONObject: payload, options: [.fragmentsAllowed])
+            channel.sendData(RTCDataBuffer(data: data, isBinary: false))
+        } catch {
+            logger.error("Failed to send event \(payload["type"] as? String ?? "unknown"): \(error.localizedDescription, privacy: .public)")
+        }
+    }
 }
 
 private struct RealtimeSessionResponse: Decodable {
@@ -637,19 +828,33 @@ private struct RealtimeSessionResponse: Decodable {
             case expiresAt = "expires_at"
         }
     }
+    
+    struct SessionPayload: Decodable {
+        let model: String?
+        
+        enum CodingKeys: String, CodingKey {
+            case model
+        }
+    }
 
     let clientSecret: ClientSecretPayload
     let model: String?
+    let session: SessionPayload?
     let sessionId: String?
 
     enum CodingKeys: String, CodingKey {
         case clientSecret = "client_secret"
         case model
+        case session
         case sessionId = "session_id"
     }
 
     var clientSecretModel: ClientSecret {
         ClientSecret(value: clientSecret.value, expiresAt: clientSecret.expiresAt)
+    }
+    
+    var sessionModel: String? {
+        session?.model ?? model
     }
 }
 
@@ -682,7 +887,16 @@ private struct EntitlementEnvelope: Decodable {
     struct Ent: Decodable {
         let plan: String?
     }
+    struct ErrorDetails: Decodable {
+        let entitlement: Ent?
+    }
+    struct ErrorBody: Decodable {
+        let code: String?
+        let message: String?
+        let details: ErrorDetails?
+    }
     let entitlement: Ent?
+    let error: ErrorBody?
 }
 
 enum ConnectionState {
@@ -724,5 +938,204 @@ private extension Locale {
             return String(first)
         }
         return "en"
+    }
+}
+
+/// Realtime tools（v3-stack: /tools/*）の定義を Swift 側に固定（Prompts/Tools と同一）
+private enum RealtimeTools {
+    static var defaultTools: [[String: Any]] {
+        // Realtime API の tools 形（name/description/parameters がトップレベル）
+        // refs: https://platform.openai.com/docs/guides/realtime-conversations#configure-callable-functions
+        [
+            [
+                "type": "function",
+                "name": "get_context_snapshot",
+                "description": "Get the user's current context including recent behavior, feelings, and patterns",
+                "parameters": [
+                    "type": "object",
+                    "strict": true,
+                    "additionalProperties": false,
+                    "properties": [
+                        "userId": ["type": "string"],
+                        "includeDailyMetrics": ["type": "boolean"]
+                    ],
+                    "required": ["userId"]
+                ]
+            ],
+            [
+                "type": "function",
+                "name": "choose_nudge",
+                "description": "Choose the best nudge template for a target behavior",
+                "parameters": [
+                    "type": "object",
+                    "strict": true,
+                    "additionalProperties": false,
+                    "properties": [
+                        "userId": ["type": "string"],
+                        "targetBehavior": ["type": "string"]
+                    ],
+                    "required": ["userId", "targetBehavior"]
+                ]
+            ],
+            [
+                "type": "function",
+                "name": "log_nudge",
+                "description": "Log a nudge that was delivered and its metadata",
+                "parameters": [
+                    "type": "object",
+                    "strict": true,
+                    "additionalProperties": false,
+                    "properties": [
+                        "userId": ["type": "string"],
+                        "templateId": ["type": "string"],
+                        "channel": ["type": "string"]
+                    ],
+                    "required": ["userId", "templateId", "channel"]
+                ]
+            ],
+            [
+                "type": "function",
+                "name": "get_behavior_summary",
+                "description": "Get today's behavior summary for the Behavior tab",
+                "parameters": [
+                    "type": "object",
+                    "strict": true,
+                    "additionalProperties": false,
+                    "properties": [
+                        "userId": ["type": "string"]
+                    ],
+                    "required": ["userId"]
+                ]
+            ]
+        ]
+    }
+}
+
+/// tools 呼び出しを iOS→Backend にルーティングして JSON 文字列で返す
+private enum RealtimeToolRouter {
+    @MainActor
+    static func callTool(name: String, argumentsJSON: String) async -> String {
+        guard case .signedIn(let credentials) = AppState.shared.authStatus else {
+            return "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Not signed in\"}}"
+        }
+        // v0.3 (Node/Express): tools は mobile/realtime 配下に集約
+        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/realtime/tools/\(name)"))
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        request.httpBody = argumentsJSON.data(using: .utf8)
+
+        do {
+            let (data, _) = try await NetworkSessionManager.shared.session.data(for: request)
+            return String(data: data, encoding: .utf8) ?? "{}"
+        } catch {
+            return "{\"error\":{\"code\":\"NETWORK_ERROR\",\"message\":\"\(error.localizedDescription)\"}}"
+        }
+    }
+}
+
+/// Talk/Feeling 用の Realtime instructions を Resources/Prompts から構築
+private enum RealtimePromptBuilder {
+    static func buildFeelingInstructions(topic: FeelingTopic, profile: UserProfile) -> String {
+        let openerName: String = {
+            switch topic {
+            case .selfLoathing: return "feeling_self_loathing"
+            case .anxiety: return "feeling_anxiety"
+            case .irritation: return "feeling_irritation"
+            case .freeConversation: return "feeling_free_conversation"
+            }
+        }()
+        
+        // ★ 言語別のFeelingラベル
+        let localizedFeelingLabel: String = {
+            let isJa = profile.preferredLanguage == .ja
+            switch topic {
+            case .selfLoathing: return isJa ? "自己嫌悪" : "self_loathing"
+            case .anxiety: return isJa ? "不安" : "anxiety"
+            case .irritation: return isJa ? "怒り" : "irritation"
+            case .freeConversation: return isJa ? "自由な対話" : "free_conversation"
+            }
+        }()
+        
+        // ファイルを読み込み（1つだけ）
+        var opener = (load(name: openerName, ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        // ★ [Feeling: xxx] を動的に置換
+        let englishLabel: String = {
+            switch topic {
+            case .selfLoathing: return "self_loathing"
+            case .anxiety: return "anxiety"
+            case .irritation: return "irritation"
+            case .freeConversation: return "free_conversation"
+            }
+        }()
+        opener = opener.replacingOccurrences(
+            of: "[Feeling: \(englishLabel)]",
+            with: "[Feeling: \(localizedFeelingLabel)]"
+        )
+        
+        let commonTemplate = (load(name: "common", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        let talkTemplate = (load(name: "talk_session", ext: "txt") ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let mergedTemplate = "\(commonTemplate)\n\n\(talkTemplate)\n\n\(opener)"
+        
+        let rendered = renderTemplate(mergedTemplate, profile: profile)
+        return rendered
+    }
+
+    private static func load(name: String, ext: String) -> String? {
+        guard let url = Bundle.main.url(forResource: name, withExtension: ext) else { return nil }
+        return try? String(contentsOf: url, encoding: .utf8)
+    }
+    
+    private static func renderTemplate(_ template: String, profile: UserProfile) -> String {
+        var result = template
+        
+        // 言語設定
+        result = result.replacingOccurrences(of: "${LANGUAGE_LINE}", with: profile.preferredLanguage.languageLine)
+        
+        // ユーザー名
+        let userName = profile.displayName.isEmpty
+            ? NSLocalizedString("common_user_fallback", comment: "")
+            : profile.displayName
+        result = result.replacingOccurrences(of: "${USER_NAME}", with: userName)
+        
+        // 時刻
+        let timeString = Date().formatted(.dateTime.hour().minute())
+        result = result.replacingOccurrences(of: "${TASK_TIME}", with: timeString)
+        result = result.replacingOccurrences(of: "${TASK_DESCRIPTION}", with: "Talk Session")
+        
+        // 理想の自分（ローカライズ）
+        if !profile.idealTraits.isEmpty {
+            let localizedTraits = profile.idealTraits.map { NSLocalizedString("ideal_trait_\($0)", comment: "") }
+            let prefix = profile.preferredLanguage == .ja
+                ? "理想の姿として設定されている特性: "
+                : "Ideal self traits: "
+            let separator = profile.preferredLanguage == .ja ? "、" : ", "
+            result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: prefix + localizedTraits.joined(separator: separator))
+        } else {
+            result = result.replacingOccurrences(of: "${IDEAL_TRAITS}", with: "")
+        }
+        
+        // 問題・課題（ローカライズ）
+        if !profile.problems.isEmpty {
+            let localizedProblems = profile.problems.map { NSLocalizedString("problem_\($0)", comment: "") }
+            let prefix = profile.preferredLanguage == .ja
+                ? "今抱えている問題: "
+                : "Current struggles: "
+            let separator = profile.preferredLanguage == .ja ? "、" : ", "
+            result = result.replacingOccurrences(of: "${PROBLEMS}", with: prefix + localizedProblems.joined(separator: separator))
+        } else {
+            result = result.replacingOccurrences(of: "${PROBLEMS}", with: "")
+        }
+        
+        // 未置換のプレースホルダーを削除
+        let placeholderPattern = "\\$\\{[^}]+\\}"
+        if let regex = try? NSRegularExpression(pattern: placeholderPattern, options: []) {
+            result = regex.stringByReplacingMatches(in: result, options: [], range: NSRange(location: 0, length: result.utf16.count), withTemplate: "")
+        }
+        
+        return result
     }
 }

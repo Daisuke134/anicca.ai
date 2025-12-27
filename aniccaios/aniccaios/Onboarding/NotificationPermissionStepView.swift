@@ -9,6 +9,8 @@ struct NotificationPermissionStepView: View {
     @State private var notificationGranted = false
     @State private var notificationDenied = false
     @State private var isRequesting = false
+    // v3: 既に許可済みでも画面は表示、自動遷移しない
+    @State private var hasAttemptedPermission = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -27,31 +29,29 @@ struct NotificationPermissionStepView: View {
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            if notificationGranted {
-                Label(String(localized: "common_enabled"), systemImage: "checkmark.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.Colors.label)
-                PrimaryButton(
-                    title: String(localized: "common_enabled"),
-                    isEnabled: false,
-                    isLoading: false,
-                    style: .selected
-                ) { }
-            } else {
-                PrimaryButton(
-                    title: isRequesting
-                        ? String(localized: "common_requesting")
-                        : String(localized: "common_continue"),
-                    isEnabled: !isRequesting,
-                    isLoading: isRequesting
-                ) { requestNotifications() }
+
+            PrimaryButton(
+                title: isRequesting
+                    ? String(localized: "common_requesting")
+                    : (hasAttemptedPermission ? String(localized: "common_continue") : String(localized: "onboarding_notifications_allow")),
+                isEnabled: !isRequesting,
+                isLoading: isRequesting,
+                style: hasAttemptedPermission ? .selected : .primary
+            ) {
+                if hasAttemptedPermission {
+                    // 許可/拒否に関わらず次へ進める
+                    next()
+                } else {
+                    requestNotifications()
+                }
             }
 
         }
         .padding(24)
         .background(AppBackground())
         .onAppear {
-            Task { await refreshAuthorizationState(autoAdvance: true) }
+            // v3: autoAdvance を false にして自動遷移を廃止
+            Task { await refreshAuthorizationState(autoAdvance: false) }
         }
     }
 
@@ -64,12 +64,10 @@ struct NotificationPermissionStepView: View {
                 notificationGranted = granted
                 notificationDenied = !granted
                 isRequesting = false
-                // 許可/拒否に関わらず必ず次へ（5.1.1対策: プリプロンプト後はOSダイアログに必ず進ませる）
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    withAnimation(.easeInOut(duration: 0.35)) { next() }
-                }
+                hasAttemptedPermission = true
+                // ★ 許可/拒否後に自動で次へ遷移
+                next()
             }
-            await refreshAuthorizationState(autoAdvance: false)
         }
     }
 
@@ -83,11 +81,7 @@ struct NotificationPermissionStepView: View {
             notificationGranted = authorized && timeSensitiveOk
             notificationDenied = settings.authorizationStatus == .denied
 
-            if autoAdvance, notificationGranted {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    withAnimation(.easeInOut(duration: 0.35)) { next() }
-                }
-            }
+            // v3: autoAdvance は常に無効（画面を必ず表示）
         }
     }
 

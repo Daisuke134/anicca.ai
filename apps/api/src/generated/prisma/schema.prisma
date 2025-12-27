@@ -1,0 +1,303 @@
+// Anicca v0.3 Prisma schema (Node ESM .js runtime)
+// - v0.3 は Node ESM の .js を維持し、TypeScript導入は v0.4 以降
+// - 既存DB（snake_case）に合わせて @map/@@map を付ける
+// - v0.3 では Prisma Migrate 主導で既存DBを管理しない（トリガー/式インデックスがあるため）
+
+// Prisma v7+ 注意: `prisma generate` は generator の `output` を必須とする（公式一次情報: Prisma v7.0.0 release notes）
+// - `https://github.com/prisma/prisma/releases/tag/7.0.0`
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// -----------------------------
+// Existing tables (current repo)
+// -----------------------------
+
+model Token {
+  userId           String    @map("user_id")
+  provider         String
+  providerSub      String?   @map("provider_sub")
+  email            String?
+  accessTokenEnc   Json      @map("access_token_enc") @db.JsonB
+  refreshTokenEnc  Json?     @map("refresh_token_enc") @db.JsonB
+  scope            String?
+  expiry           DateTime? @db.Timestamptz
+  rotationFamilyId String?   @map("rotation_family_id")
+  revokedAt        DateTime? @map("revoked_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@id([userId, provider])
+  @@map("tokens")
+}
+
+model RefreshToken {
+  id            String    @id @default(uuid()) @db.Uuid
+  userId        String    @map("user_id") @db.Uuid
+  tokenHash     String    @map("token_hash")
+  deviceId      String    @map("device_id")
+  userAgent     String?   @map("user_agent")
+  createdAt     DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  expiresAt     DateTime  @map("expires_at") @db.Timestamptz
+  rotatedFrom   String?   @map("rotated_from") @db.Uuid
+  revokedAt     DateTime? @map("revoked_at") @db.Timestamptz
+  lastUsedAt    DateTime? @map("last_used_at") @db.Timestamptz
+  reuseDetected Boolean   @default(false) @map("reuse_detected")
+
+  @@map("refresh_tokens")
+}
+
+model MobileProfile {
+  deviceId  String    @id @map("device_id")
+  userId    String    @map("user_id")
+  profile   Json      @default("{}") @db.JsonB
+  language  String    @default("en")
+  updatedAt DateTime? @map("updated_at") @db.Timestamptz
+  createdAt DateTime? @map("created_at") @db.Timestamptz
+
+  @@map("mobile_profiles")
+}
+
+model MobileVoipToken {
+  userId      String   @map("user_id")
+  deviceToken String   @map("device_token")
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@id([userId, deviceToken])
+  @@map("mobile_voip_tokens")
+}
+
+// 注意: `mobile_alarm_schedules.id` は過去マイグレーションが UUID/TEXT で揺れている。
+// v0.3 の主要機能では必須ではないため、現DBの型に合わせて必要なら @db.Uuid/@db.Text を調整する。
+model MobileAlarmSchedule {
+  id         String    @id @map("id")
+  userId     String    @map("user_id")
+  habitType  String    @map("habit_type")
+  fireTime   DateTime  @map("fire_time") @db.Timestamptz
+  timezone   String
+  repeatRule String    @default("daily") @map("repeat_rule")
+  nextFireAt DateTime  @map("next_fire_at") @db.Timestamptz
+  createdAt  DateTime? @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz
+
+  @@map("mobile_alarm_schedules")
+}
+
+model UserSubscription {
+  userId                          String    @id @map("user_id")
+  plan                            String    @default("free")
+  status                          String    @default("free")
+  stripeCustomerId                String?   @map("stripe_customer_id")
+  stripeSubscriptionId            String?   @map("stripe_subscription_id")
+  entitlementSource               String    @default("revenuecat") @map("entitlement_source")
+  revenuecatEntitlementId         String?   @map("revenuecat_entitlement_id")
+  revenuecatOriginalTransactionId String?   @map("revenuecat_original_transaction_id")
+  entitlementPayload              Json?     @map("entitlement_payload") @db.JsonB
+  currentPeriodEnd                DateTime? @map("current_period_end") @db.Timestamptz
+  trialEnd                        DateTime? @map("trial_end") @db.Timestamptz
+  metadata                        Json      @default("{}") @db.JsonB
+  updatedAt                       DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("user_subscriptions")
+}
+
+model RealtimeUsageDaily {
+  userId    String   @map("user_id")
+  usageDate DateTime @map("usage_date") @db.Date
+  count     Int      @default(0)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@id([userId, usageDate])
+  @@map("realtime_usage_daily")
+}
+
+model SubscriptionEvent {
+  eventId   String   @id @map("event_id")
+  userId    String?  @map("user_id")
+  type      String
+  provider  String   @default("revenuecat")
+  payload   Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("subscription_events")
+}
+
+model UsageSession {
+  sessionId     String    @id @map("session_id")
+  userId        String    @map("user_id")
+  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz
+  billedSeconds Int       @default(0) @map("billed_seconds")
+  billedMinutes Int       @default(0) @map("billed_minutes")
+  source        String    @default("realtime")
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("usage_sessions")
+}
+
+model SensorAccessState {
+  userId            String   @id @map("user_id") @db.Uuid
+  screenTimeEnabled Boolean  @default(false) @map("screen_time_enabled")
+  sleepEnabled      Boolean  @default(false) @map("sleep_enabled")
+  stepsEnabled      Boolean  @default(false) @map("steps_enabled")
+  motionEnabled     Boolean  @default(false) @map("motion_enabled")
+  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("sensor_access_state")
+}
+
+model MonthlyVcGrant {
+  userId     String   @map("user_id")
+  grantMonth DateTime @map("grant_month") @db.Date
+  reason     String
+  minutes    Int
+  grantedAt  DateTime @default(now()) @map("granted_at") @db.Timestamptz
+
+  @@id([userId, grantMonth, reason])
+  @@map("monthly_vc_grants")
+}
+
+model Profile {
+  id        String   @id @db.Uuid
+  email     String?  @unique
+  metadata  Json     @default("{}") @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  settings UserSetting?
+
+  @@map("profiles")
+}
+
+model UserSetting {
+  userId               String   @id @map("user_id") @db.Uuid
+  language             String   @default("ja")
+  timezone             String   @default("Asia/Tokyo")
+  notificationsEnabled Boolean  @default(true) @map("notifications_enabled")
+  preferences          Json     @default("{}") @db.JsonB
+  createdAt            DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt            DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("user_settings")
+}
+
+// -----------------------------
+// New v0.3 tables
+// -----------------------------
+
+model UserTrait {
+  userId         String   @id @map("user_id") @db.Uuid
+  ideals         String[] @default([]) @db.Text
+  struggles      String[] @default([]) @db.Text
+  big5           Json     @default("{}") @db.JsonB
+  keywords       String[] @default([]) @db.Text
+  summary        String   @default("") @db.Text
+  nudgeIntensity String   @default("normal") @map("nudge_intensity")
+  stickyMode     Boolean  @default(false) @map("sticky_mode")
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt      DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("user_traits")
+}
+
+model DailyMetric {
+  userId           String    @map("user_id") @db.Uuid
+  date             DateTime  @db.Date
+  sleepDurationMin Int?      @map("sleep_duration_min")
+  sleepStartAt     DateTime? @map("sleep_start_at") @db.Timestamptz
+  wakeAt           DateTime? @map("wake_at") @db.Timestamptz
+  snsMinutesTotal  Int       @default(0) @map("sns_minutes_total")
+  snsMinutesNight  Int       @default(0) @map("sns_minutes_night")
+  steps            Int       @default(0)
+  sedentaryMinutes Int       @default(0) @map("sedentary_minutes")
+  activitySummary  Json      @default("{}") @map("activity_summary") @db.JsonB
+  mindSummary      Json      @default("{}") @map("mind_summary") @db.JsonB
+  insights         Json      @default("{}") @db.JsonB
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@id([userId, date])
+  @@map("daily_metrics")
+}
+
+model NudgeEvent {
+  id             String   @id @default(uuid()) @db.Uuid
+  userId         String   @map("user_id") @db.Uuid
+  domain         String
+  subtype        String
+  decisionPoint  String   @map("decision_point")
+  state          Json     @db.JsonB
+  actionTemplate String?  @map("action_template")
+  channel        String
+  sent           Boolean  @default(true)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  outcomes NudgeOutcome[]
+
+  @@map("nudge_events")
+}
+
+model NudgeOutcome {
+  id           String   @id @default(uuid()) @db.Uuid
+  nudgeEventId String   @map("nudge_event_id") @db.Uuid
+  reward       Float?
+  shortTerm    Json     @default("{}") @map("short_term") @db.JsonB
+  emaScore     Json?    @map("ema_score") @db.JsonB
+  signals      Json     @default("{}") @db.JsonB
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  event NudgeEvent @relation(fields: [nudgeEventId], references: [id], onDelete: Cascade)
+
+  @@map("nudge_outcomes")
+}
+
+model FeelingSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  feelingId      String    @map("feeling_id")
+  topic          String?
+  actionTemplate String?   @map("action_template")
+  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz
+  emaBetter      Boolean?  @map("ema_better")
+  summary        String?   @db.Text
+  transcript     Json?     @db.JsonB
+  context        Json      @default("{}") @db.JsonB
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("feeling_sessions")
+}
+
+model HabitLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  userId     String   @map("user_id") @db.Uuid
+  habitId    String   @map("habit_id")
+  occurredOn DateTime @map("occurred_on") @db.Date
+  status     String
+  payload    Json     @default("{}") @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("habit_logs")
+}
+
+model BanditModel {
+  id         String   @id @default(uuid()) @db.Uuid
+  domain     String
+  version    Int      @default(1)
+  weights    Json     @db.JsonB
+  covariance Json     @db.JsonB
+  meta       Json     @default("{}") @db.JsonB
+  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt  DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@unique([domain, version])
+  @@map("bandit_models")
+}

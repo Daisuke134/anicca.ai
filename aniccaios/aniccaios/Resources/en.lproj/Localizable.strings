@@ -1,4 +1,6 @@
 "common_continue" = "Continue";
+"common_skip" = "Skip";
+"common_next" = "Next";
 "common_done" = "Done";
 "common_saving" = "Saving…";
 "common_requesting" = "Requesting…";
@@ -8,6 +10,7 @@
 "common_set_time" = "Set Time";
 "common_not_selected" = "Not Selected";
 "common_cancel" = "Cancel";
+"common_back" = "Back";
 "common_save" = "Save";
 "common_time" = "Time";
 "common_maybe_later" = "Maybe Later";
@@ -17,22 +20,32 @@
 "common_signing_in" = "Signing in...";
 "settings_language_label" = "Language";
 
-"onboarding_welcome_title" = "Welcome to Anicca";
-"onboarding_welcome_subtitle" = "Let's configure your routines.";
+"onboarding_welcome_title" = "Welcome to\nAnicca";
+"onboarding_welcome_subtitle_line1" = "Anicca is your voice coach guiding";
+"onboarding_welcome_subtitle_line2" = "your actions and mind.";
 "onboarding_welcome_cta" = "Get Started";
 
-"onboarding_account_title" = "Sign in with Apple";
-"onboarding_account_description" = "Sign in to sync your habits and preferences across your devices.";
+"onboarding_account_title" = "Save Your Progress";
+"onboarding_account_description" = "Sign in to sync your data across devices.";
+"onboarding_account_skip" = "Skip for now";
 
-"onboarding_microphone_title" = "Microphone Access";
+"onboarding_microphone_title" = "Microphone access";
 "onboarding_microphone_card_title" = "Microphone Access";
-"onboarding_microphone_description" = "Anicca uses your microphone for wake-up calls and habit reminders. You can keep going without enabling it and turn it on anytime from Settings.";
+"onboarding_microphone_description" = "Anicca listens to you through the microphone so you can talk freely. Your voice is processed securely on your device and servers.";
+"onboarding_microphone_allow" = "Allow microphone";
+"onboarding_permission_status_allowed" = "Allowed";
+"onboarding_permission_status_not_allowed" = "Not allowed";
 "onboarding_microphone_optional_hint" = "Need the voice experience later? Just return to Settings → Anicca and flip the microphone back on when you're ready.";
 
-"onboarding_notifications_title" = "Time-Sensitive Alerts";
+"onboarding_notifications_title" = "Notifications";
 "onboarding_notifications_card_title" = "Notification Access";
-"onboarding_notifications_description" = "Notifications help Anicca nudge your habits (wake-up, training, bedtime), but they're optional and work even if you silence your phone.";
+"onboarding_notifications_description" = "Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.";
+"onboarding_notifications_allow" = "Allow notifications";
 "onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
+
+"onboarding_alarmkit_title" = "Alarms";
+"onboarding_alarmkit_description" = "To make wake nudges reliable, Anicca needs permission to schedule alarms.";
+"onboarding_alarmkit_allow" = "Allow alarms";
 
 "onboarding_habit_title" = "Set Your Habits";
 "onboarding_habit_description" = "Choose which habits you want to build and set their times.";
@@ -94,6 +107,9 @@
 "session_button_end" = "End Session";
 "session_button_connecting" = "Connecting…";
 "session_wake_silent_notice" = "To guarantee the wake alarm plays, flip the side silent switch back up before going to bed so that silent mode is off.";
+"wake_silent_modal_title" = "Wake alarms & Silent mode";
+"wake_silent_modal_message" = "Anicca can gently wake you at the right time, based on your routines.\n\nTo make sure you actually hear the alarm, please turn Silent mode off before going to sleep and keep your volume high enough to wake you.";
+"wake_silent_modal_ok" = "OK, got it";
 
 "settings_title" = "Settings";
 "settings_subscription_title" = "Subscription";
@@ -141,14 +157,164 @@
 "notification_action_start_conversation" = "Start Conversation Now";
 "notification_action_dismiss" = "Dismiss";
 
-"notification_wake_body" = "Anicca is here to wake you up.";
-"notification_training_body" = "It's time for training. Let's start together.";
-"notification_bedtime_body" = "Let's start preparing for bed. We'll create deep sleep.";
+/* ========== Pre-reminder Notifications (10 variants, rotating) ========== */
+
+/* Wake - Pre-reminder (5 min before) */
+"notification_wake_prereminder_1" = "%@5 min until wake-up time.";
+"notification_wake_prereminder_2" = "%@Wake alarm coming in 5 min.";
+"notification_wake_prereminder_3" = "%@5 min to wake. Get ready.";
+"notification_wake_prereminder_4" = "%@Wake time is near.";
+"notification_wake_prereminder_5" = "%@5 min to wake up.";
+"notification_wake_prereminder_6" = "%@5 min before wake.";
+"notification_wake_prereminder_7" = "%@Almost wake time.";
+"notification_wake_prereminder_8" = "%@5 min left until wake.";
+"notification_wake_prereminder_9" = "%@Morning in 5 min.";
+"notification_wake_prereminder_10" = "%@5 min to wake alarm.";
+
+/* Training - Pre-reminder (15 min before) */
+"notification_training_prereminder_1" = "%@Training in 15 min.";
+"notification_training_prereminder_2" = "%@15 min to training. Prepare.";
+"notification_training_prereminder_3" = "%@Training time soon.";
+"notification_training_prereminder_4" = "%@15 min before training.";
+"notification_training_prereminder_5" = "%@Exercise in 15 min.";
+"notification_training_prereminder_6" = "%@15 min until training.";
+"notification_training_prereminder_7" = "%@Workout time is near.";
+"notification_training_prereminder_8" = "%@15 min left to training.";
+"notification_training_prereminder_9" = "%@Training starts in 15 min.";
+"notification_training_prereminder_10" = "%@Time to prepare for training.";
+
+/* Bedtime - Pre-reminder (15 min before) */
+"notification_bedtime_prereminder_1" = "%@Bedtime in 15 min.";
+"notification_bedtime_prereminder_2" = "%@15 min to bed. Time to rest.";
+"notification_bedtime_prereminder_3" = "%@Bedtime soon.";
+"notification_bedtime_prereminder_4" = "%@15 min before bedtime.";
+"notification_bedtime_prereminder_5" = "%@Sleep time in 15 min.";
+"notification_bedtime_prereminder_6" = "%@15 min to bedtime.";
+"notification_bedtime_prereminder_7" = "%@Sleep time is near.";
+"notification_bedtime_prereminder_8" = "%@15 min left to bedtime.";
+"notification_bedtime_prereminder_9" = "%@Rest time in 15 min.";
+"notification_bedtime_prereminder_10" = "%@Time to prepare for bed.";
+
+/* Custom - Pre-reminder */
+"notification_custom_prereminder_1" = "%1$@%2$@ in 15 min.";
+"notification_custom_prereminder_2" = "%1$@15 min to %2$@. Prepare.";
+"notification_custom_prereminder_3" = "%1$@%2$@ time soon.";
+"notification_custom_prereminder_4" = "%1$@15 min before %2$@.";
+"notification_custom_prereminder_5" = "%1$@Time for %2$@ in 15 min.";
+"notification_custom_prereminder_6" = "%1$@%2$@ time is near.";
+"notification_custom_prereminder_7" = "%1$@15 min left to %2$@.";
+"notification_custom_prereminder_8" = "%1$@Almost time for %2$@.";
+"notification_custom_prereminder_9" = "%1$@%2$@ in 15 min.";
+"notification_custom_prereminder_10" = "%1$@Time to prepare for %2$@.";
+
+/* ========== Main Notifications (10 variants, rotating) ========== */
+
+/* Wake - Main */
+"notification_wake_main_1" = "%@Good morning. A new day begins.";
+"notification_wake_main_2" = "%@Time to wake up. Just open your eyes first.";
+"notification_wake_main_3" = "%@It's morning. Let's start together.";
+"notification_wake_main_4" = "%@Today is waiting for you. Let's wake up.";
+"notification_wake_main_5" = "%@Morning light is here. Open your eyes.";
+"notification_wake_main_6" = "%@You're ready. Time to get up.";
+"notification_wake_main_7" = "%@A fresh morning. What kind of day will it be?";
+"notification_wake_main_8" = "%@Time to wake. Start with a deep breath.";
+"notification_wake_main_9" = "%@I'm here with you today. Let's wake up.";
+"notification_wake_main_10" = "%@Morning is here. Try stretching first.";
+
+/* Training - Main */
+"notification_training_main_1" = "%@Training time. Let's move your body.";
+"notification_training_main_2" = "%@Time to work out. Ready?";
+"notification_training_main_3" = "%@Your body wants to move. Let's start.";
+"notification_training_main_4" = "%@Today's training. Start with 1 minute.";
+"notification_training_main_5" = "%@Time to exercise. Where do you start?";
+"notification_training_main_6" = "%@Let's train together.";
+"notification_training_main_7" = "%@Time to move. You'll feel great.";
+"notification_training_main_8" = "%@Time to start your training.";
+"notification_training_main_9" = "%@Let's strengthen your body today. Ready?";
+"notification_training_main_10" = "%@Exercise time. Start with a warm-up.";
+
+/* Bedtime - Main */
+"notification_bedtime_main_1" = "%@Time for bed. You did well today.";
+"notification_bedtime_main_2" = "%@Time to get into bed.";
+"notification_bedtime_main_3" = "%@You've done enough today. Time to rest.";
+"notification_bedtime_main_4" = "%@Let's prepare for sleep.";
+"notification_bedtime_main_5" = "%@Time to close the day. Get ready for sleep.";
+"notification_bedtime_main_6" = "%@Your body needs rest. Head to bed.";
+"notification_bedtime_main_7" = "%@Let's rest well tonight.";
+"notification_bedtime_main_8" = "%@Sleep tonight for a better tomorrow.";
+"notification_bedtime_main_9" = "%@Close your screens. Rest your eyes.";
+"notification_bedtime_main_10" = "%@End of the day. Sleep peacefully.";
+
+/* Custom - Main (%1$@ = user name prefix, %2$@ = habit name) */
+"notification_custom_main_1" = "%1$@Time for %2$@. Let's begin.";
+"notification_custom_main_2" = "%1$@Time for %2$@. Ready?";
+"notification_custom_main_3" = "%1$@Time to start %2$@.";
+"notification_custom_main_4" = "%1$@Now's the time for %2$@. Go.";
+"notification_custom_main_5" = "%1$@%2$@. Try just 1 minute first.";
+"notification_custom_main_6" = "%1$@Let's do %2$@. Together.";
+"notification_custom_main_7" = "%1$@%2$@ time has come.";
+"notification_custom_main_8" = "%1$@Today's %2$@. Where do you start?";
+"notification_custom_main_9" = "%1$@Starting %2$@ will shift your mood.";
+"notification_custom_main_10" = "%1$@Time for %2$@. Start small.";
+
+/* ========== Follow-up Notifications (10 variants, rotating) ========== */
 
 "notification_wake_followup_title" = "Wake Up (reminder)";
 "notification_training_followup_title" = "Training (reminder)";
 "notification_bedtime_followup_title" = "Bedtime (reminder)";
 
+/* Wake - Follow-up */
+"notification_wake_followup_1" = "%@Still in bed? Try opening your eyes.";
+"notification_wake_followup_2" = "%@Wake up. I'm waiting.";
+"notification_wake_followup_3" = "%@It's morning. Try stretching first.";
+"notification_wake_followup_4" = "%@Time to wake. Take a deep breath.";
+"notification_wake_followup_5" = "%@Almost there. You can do it.";
+"notification_wake_followup_6" = "%@The day is starting. Get out of bed.";
+"notification_wake_followup_7" = "%@Let's start the morning together.";
+"notification_wake_followup_8" = "%@Your body is ready to wake up.";
+"notification_wake_followup_9" = "%@Morning light awaits. Wake up.";
+"notification_wake_followup_10" = "%@Wake now for a great day ahead.";
+
+/* Training - Follow-up */
+"notification_training_followup_1" = "%@Training not done? Just 1 minute.";
+"notification_training_followup_2" = "%@Let's exercise. I'm waiting.";
+"notification_training_followup_3" = "%@Time to move your body. Let's go.";
+"notification_training_followup_4" = "%@Still time. Start moving.";
+"notification_training_followup_5" = "%@Training. Even 1 set is OK.";
+"notification_training_followup_6" = "%@Exercise feels good. Let's start.";
+"notification_training_followup_7" = "%@Let's train together.";
+"notification_training_followup_8" = "%@Your body awaits exercise. Move.";
+"notification_training_followup_9" = "%@Today's training. You can still do it.";
+"notification_training_followup_10" = "%@Starting small is fine. Just move.";
+
+/* Bedtime - Follow-up */
+"notification_bedtime_followup_1" = "%@Time to start winding down.";
+"notification_bedtime_followup_2" = "%@Dim the lights and take a deep breath.";
+"notification_bedtime_followup_3" = "%@Close your screens. Rest your eyes.";
+"notification_bedtime_followup_4" = "%@That's enough for today. Get into bed.";
+"notification_bedtime_followup_5" = "%@When sleepiness comes, just rest.";
+"notification_bedtime_followup_6" = "%@Let's start your bedtime routine.";
+"notification_bedtime_followup_7" = "%@You did well today. Close your eyes.";
+"notification_bedtime_followup_8" = "%@Have you brushed your teeth?";
+"notification_bedtime_followup_9" = "%@Lie down and let your body relax.";
+"notification_bedtime_followup_10" = "%@Sleep tonight for tomorrow.";
+
+/* Custom - Follow-up (%1$@ = user name prefix, %2$@ = habit name) */
+"notification_custom_followup_1" = "%1$@Let's start %2$@. You can do it now.";
+"notification_custom_followup_2" = "%1$@Don't miss the time for %2$@.";
+"notification_custom_followup_3" = "%1$@%2$@, just try 1 minute first.";
+"notification_custom_followup_4" = "%1$@%2$@, you can start now.";
+"notification_custom_followup_5" = "%1$@%2$@, let's do it together.";
+"notification_custom_followup_6" = "%1$@Doing %2$@ will change how you feel.";
+"notification_custom_followup_7" = "%1$@You're ready for %2$@.";
+"notification_custom_followup_8" = "%1$@%2$@, let's move forward.";
+"notification_custom_followup_9" = "%1$@Let's make progress on %2$@, even a little.";
+"notification_custom_followup_10" = "%1$@%2$@, I'm waiting.";
+
+/* Legacy keys (backward compatibility) */
+"notification_wake_body" = "Anicca is here to wake you up.";
+"notification_training_body" = "It's time for training. Let's start together.";
+"notification_bedtime_body" = "Let's start preparing for bed. We'll create deep sleep.";
 "notification_wake_followup_body" = "It's time to wake up. Let's start with deep breathing.";
 "notification_training_followup_body" = "You're ready to move your body. Let's be mindful of your form.";
 "notification_bedtime_followup_body" = "Let's release the fatigue of the day. Relax and drift into sleep.";
@@ -173,20 +339,127 @@
 "session_time_cap_message" = "Your free session ended after 5 minutes. Upgrade to continue longer conversations.";
 "settings_habits" = "Habits";
 "settings_ideal_traits" = "Ideal self";
+"onboarding_ideals_title" = "Who do you want to become?";
+"onboarding_ideals_subtitle" = "Choose as many as you like. These describe the kind of person you want to become.";
+
+"onboarding_struggles_title" = "What are you struggling with now?";
+"onboarding_struggles_subtitle" = "Select all that apply.";
+
+"onboarding_value_title" = "What Anicca Can Do";
+"onboarding_value_card1_title" = "Guide your struggles";
+"onboarding_value_card1_body" = "Get personalized guidance and encouragement during difficult moments to help you stay on track.";
+"onboarding_value_card2_title" = "Help you build better habits";
+"onboarding_value_card2_body" = "Develop sustainable routines with actionable insights tailored to your unique goals and lifestyle.";
+"onboarding_value_card3_title" = "Understand your patterns";
+"onboarding_value_card3_body" = "Gain clarity on your behaviors and thought patterns to make meaningful, lasting changes.";
+
 "ideal_trait_kind" = "Kind";
-"ideal_trait_altruistic" = "Altruistic";
-"ideal_trait_confident" = "Confident";
+"ideal_trait_honest" = "Honest";
 "ideal_trait_mindful" = "Mindful";
+"ideal_trait_confident" = "Confident";
+"ideal_trait_early_riser" = "Early Riser";
+"ideal_trait_runner" = "Runner";
+"ideal_trait_healthy" = "Healthy";
+"ideal_trait_calm" = "Calm";
+"ideal_trait_disciplined" = "Disciplined";
+"ideal_trait_open" = "Open";
+"ideal_trait_courageous" = "Courageous";
+"ideal_trait_altruistic" = "Altruistic";
 "ideal_trait_optimistic" = "Optimistic";
 "ideal_trait_resilient" = "Resilient";
-"ideal_trait_disciplined" = "Disciplined";
-"ideal_trait_honest" = "Honest";
-"ideal_trait_calm" = "Calm";
+"ideal_trait_creative" = "Creative";
+"ideal_trait_organized" = "Organized";
+"ideal_trait_focused" = "Focused";
+"ideal_trait_grateful" = "Grateful";
+"ideal_trait_brave" = "Brave";
+"ideal_trait_patient" = "Patient";
+"problem_self_loathing" = "Self-loathing";
 "problem_rumination" = "Rumination";
-"problem_jealousy" = "Jealousy";
-"problem_self_criticism" = "Self-criticism";
 "problem_anxiety" = "Anxiety";
+"problem_anger" = "Anger";
+"problem_jealousy" = "Jealousy";
+"problem_loneliness" = "Loneliness";
+"problem_night_scrolling" = "Night scrolling";
+"problem_cant_wake_up" = "Can't wake up";
+"problem_poor_sleep" = "Poor Sleep";
+"problem_stress" = "Stress";
+"problem_focus" = "Focus";
+"problem_motivation" = "Motivation";
+"problem_self_doubt" = "Self-doubt";
+"problem_time_management" = "Time Management";
+"problem_burnout" = "Burnout";
+"problem_relationships" = "Relationships";
+"problem_energy" = "Energy";
+"problem_work_life_balance" = "Work-Life Balance";
+
+/* v3 Behavior */
+"common_loading" = "Loading…";
+"common_retry" = "Retry";
+"behavior_title_today_insights" = "Today's Insights";
+"behavior_error_failed_load" = "Failed to load today's insights.";
+"behavior_title_today_highlights" = "Today's Highlights";
+"behavior_title_timeline" = "24-Hour Timeline";
+"behavior_title_future" = "10 Years From Now";
+"behavior_not_enough_data" = "Not enough data";
+"behavior_highlight_wake" = "Wake";
+"behavior_highlight_screen" = "Screen";
+"behavior_highlight_workout" = "Workout";
+"behavior_highlight_rumination" = "Rumination";
+"behavior_status_moving_forward" = "Moving Forward";
+"behavior_status_needs_attention" = "Needs Attention";
+"behavior_status_stable" = "Stable";
+"timeline_label_sleep" = "Sleep";
+"timeline_label_focus" = "Focus";
+"timeline_label_scroll" = "Scroll";
+"timeline_label_activity" = "Activity";
+
+/* v3 Profile */
+"profile_title" = "Profile";
+"profile_row_name" = "Name";
+"profile_row_plan" = "Plan";
+"profile_row_language" = "Language";
+"profile_section_traits" = "Your Traits";
+"profile_traits_summary_placeholder" = "You're highly agreeable and open to new experiences, balancing structure with flexibility.";
+"profile_traits_view_full" = "View full trait profile";
+"profile_section_ideal_self" = "Ideal Self";
+"profile_section_current_struggles" = "Current Struggles";
+"profile_section_nudge_strength" = "Nudge strength";
+"profile_nudge_quiet" = "Quiet";
+"profile_nudge_normal" = "Normal";
+"profile_nudge_active" = "Active";
+"profile_section_sticky_mode" = "Sticky Mode";
+"profile_sticky_description" = "When ON, Anicca keeps talking until you respond 5 times.";
+"profile_section_data_integration" = "Data Integration";
+"profile_data_integration_hint" = "Optional. Link your data so Anicca can nudge you more precisely. All core features work even if everything is OFF.";
+"profile_toggle_screen_time" = "Screen Time";
+"profile_toggle_sleep" = "Sleep";
+"profile_toggle_steps" = "Steps";
+"profile_toggle_movement" = "Movement";
+
+/* AlarmKit full-screen alarm actions */
+"alarmkit_action_wake_open" = "Wake up";
+"alarmkit_action_wake_stop" = "Go back to sleep";
+"alarmkit_action_training_open" = "Train now";
+"alarmkit_action_training_stop" = "Do it later";
+"alarmkit_action_bedtime_open" = "Go to sleep now";
+"alarmkit_action_bedtime_stop" = "Stay up";
+"alarmkit_action_custom_open" = "Do it now";
+"alarmkit_action_custom_stop" = "Do it later";
+
+/* v3 Traits Detail */
+"traits_title" = "Big Five Traits";
+"trait_agreeableness" = "Agreeableness";
+"trait_openness" = "Openness";
+"trait_conscientiousness" = "Conscientiousness";
+"trait_emotional_stability" = "Emotional Stability";
+"trait_extraversion" = "Extraversion";
+"trait_description_placeholder" = "Highly cooperative; you value harmony and tend to be considerate of others.";
+"problem_no_motivation" = "No motivation";
+"problem_procrastination" = "Procrastination";
+"problem_self_criticism" = "Self-criticism";
 "settings_personalization" = "Personalization";
+"settings_data_optional_title" = "Data Integration (Optional)";
+"settings_data_optional_description" = "Sleep, Steps, Screen Time, and Motion are optional. Even if you keep them OFF, you can always use Talk. Behavior insights may be limited until you connect data.";
 "habit_add_custom" = "Add Habit";
 "habit_add_routine" = "Add Routine";
 "habit_routine_placeholder" = "Routine";
@@ -205,7 +478,38 @@
 "common_wake_location_fallback" = "Bed";
 "settings_contact_support" = "Contact support";
 "tab_talk" = "Talk";
+"tab_behavior" = "Behavior";
+"tab_profile" = "Profile";
+"talk_nav_title" = "How are you feeling now?";
+"talk_feeling_self_loathing_title" = "Self-Loathing";
+"talk_feeling_self_loathing_subtitle" = "When you’re being hard on yourself.";
+"talk_feeling_anxiety_title" = "Anxiety & Worry";
+"talk_feeling_anxiety_subtitle" = "When your mind won’t stop spinning.";
+"talk_feeling_irritation_title" = "Irritation";
+"talk_feeling_irritation_subtitle" = "When tension is rising in you.";
+"talk_feeling_something_else_title" = "Something else";
+"talk_feeling_something_else_subtitle" = "Start a free conversation.";
+
+"session_topic_self_loathing" = "Talking about self-loathing";
+"session_topic_anxiety" = "Talking about anxiety";
+"session_topic_irritation" = "Talking about irritation";
+"session_topic_free_conversation" = "Talking about something else";
+
+"session_status_connecting" = "Connecting…";
+"session_status_listening" = "Anicca is listening…";
+"session_status_speaking" = "Anicca is speaking…";
+"session_status_disconnected" = "Session ended";
+
+"ema_question" = "Did you feel a bit better?";
+"ema_yes" = "Yes";
+"ema_no" = "No";
+"ema_skip" = "Skip";
 "tab_habits" = "Habits";
+
+// Pre-Reminder (v3.1)
+"pre_reminder_bedtime_body" = "Time to start winding down. Put away screens and relax.";
+"pre_reminder_training_body" = "15 minutes until training. Get ready and warm up.";
+"pre_reminder_custom_body_format" = "%d minutes until \"%@\". Time to prepare.";
 
 "session_mic_permission_title" = "Microphone Access Required";
 "session_mic_permission_message" = "Anicca uses the microphone for real-time conversation. Please enable it in Settings.";
@@ -229,4 +533,21 @@
 "settings_delete_account_message" = "This action cannot be undone. All your data, including purchase history and usage data, will be permanently deleted.";
 "common_error" = "Error";
 "common_ok" = "OK";
+
+/* v3: AlarmKit Permission */
+"onboarding_alarmkit_granted" = "Alarms enabled";
+"onboarding_alarmkit_denied_hint" = "You can enable alarms in Settings";
+"onboarding_alarmkit_settings_needed" = "Alarm Settings Needed";
+"onboarding_alarmkit_settings_message" = "To ensure reliable wake-ups, please enable alarm permissions for Anicca in the Settings app.";
+
+/* v3: Profile Name Edit */
+"profile_edit_name_title" = "Edit Name";
+"profile_edit_name" = "Name";
+"profile_name_placeholder" = "Enter your name";
+
+/* v3: Additional Struggle */
+"problem_irritation" = "Irritation";
+
+/* v3: Account Management */
+"profile_account_management" = "Account Management";
 

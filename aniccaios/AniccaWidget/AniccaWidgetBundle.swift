@@ -12,8 +12,12 @@ import SwiftUI
 struct AniccaWidgetBundle: WidgetBundle {
     var body: some Widget {
         AniccaWidget()
-        AniccaWidgetControl()
         AniccaWidgetLiveActivity()
+        
+        // Control Widget は iOS 18.0 以上のみ
+        if #available(iOS 18.0, *) {
+            AniccaWidgetControl()
+        }
         
         // AlarmKit用のLive Activity（iOS 26以上）
         if #available(iOS 26.0, *) {

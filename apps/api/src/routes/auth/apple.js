@@ -101,27 +101,13 @@ router.post('/', async (req, res) => {
  * Health check endpoint for warming up Apple auth infrastructure
  */
 router.get('/health', async (req, res) => {
-  try {
-    // タイムアウトを30秒に設定（デフォルトは短い可能性がある）
-    const timeoutPromise = new Promise((_, reject) => 
-      setTimeout(() => reject(new Error('Health check timeout')), 30000)
-    );
-    
-    await Promise.race([
-      warmAppleKeys(),
-      timeoutPromise
-    ]);
-    
-    return res.status(200).json({ status: 'ok' });
-  } catch (error) {
-    logger.error('Health check failed', error);
-    // タイムアウトでも500ではなく503（Service Unavailable）を返す
-    const statusCode = error.message.includes('timeout') ? 503 : 500;
-    return res.status(statusCode).json({ 
-      status: 'error', 
-      message: error.message 
-    });
-  }
+  // iOS側のウォームアップ用途。ここは「速く200を返す」が最優先（タイムアウト/UX悪化を防ぐ）
+  res.status(200).json({ status: 'ok' });
+
+  // fire-and-forget: 失敗してもhealth自体は落とさない
+  warmAppleKeys().catch((e) => {
+    logger.warn('Apple keys warmup failed', e);
+  });
 });
 
 export default router;

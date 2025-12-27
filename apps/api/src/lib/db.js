@@ -1,4 +1,6 @@
-import { Pool } from 'pg';
+// pg is CommonJS. This project is ESM ("type": "module"), so use default import.
+import pg from 'pg';
+const { Pool } = pg;
 
 const { DATABASE_URL } = process.env;
 if (!DATABASE_URL) {

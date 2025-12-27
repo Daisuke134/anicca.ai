@@ -10,17 +10,35 @@ import UIKit
 // MARK: - AlarmButton Extension
 @available(iOS 26.0, *)
 extension AlarmButton {
-    static var stopButton: AlarmButton {
-        AlarmButton(
-            text: LocalizedStringResource("Stop"),
+    /// 画面下部の「スワイプで停止」側の文言（ユーザーの意図が分かる表現にする）
+    static func stopButton(for habit: HabitType) -> AlarmButton {
+        let text: LocalizedStringResource = {
+            switch habit {
+            case .wake: return LocalizedStringResource("alarmkit_action_wake_stop")          // 二度寝する
+            case .training: return LocalizedStringResource("alarmkit_action_training_stop")  // 後回しにする
+            case .bedtime: return LocalizedStringResource("alarmkit_action_bedtime_stop")    // 夜更かしを続ける
+            case .custom: return LocalizedStringResource("alarmkit_action_custom_stop")      // 後回しにする
+            }
+        }()
+        return AlarmButton(
+            text: text,
             textColor: .red,
             systemImageName: "stop.circle"
         )
     }
     
-    static var openAppButton: AlarmButton {
-        AlarmButton(
-            text: LocalizedStringResource("Open"),
+    /// 画面上部の「Open」側の文言（ユーザーの意図が分かる表現にする）
+    static func openAppButton(for habit: HabitType) -> AlarmButton {
+        let text: LocalizedStringResource = {
+            switch habit {
+            case .wake: return LocalizedStringResource("alarmkit_action_wake_open")          // 起きる
+            case .training: return LocalizedStringResource("alarmkit_action_training_open")  // 今トレーニングする
+            case .bedtime: return LocalizedStringResource("alarmkit_action_bedtime_open")    // 今寝る
+            case .custom: return LocalizedStringResource("alarmkit_action_custom_open")      // 今やる
+            }
+        }()
+        return AlarmButton(
+            text: text,
             textColor: .white,
             systemImageName: "arrow.up.forward.app"
         )
@@ -52,6 +70,7 @@ final class AlarmKitHabitCoordinator {
     private let manager = AlarmManager.shared
     private var audioPlayer: AVAudioPlayer?
     private var alarmMonitorTask: Task<Void, Never>?
+    private let reporterRateLimiter = RateLimiter(eventsPerSecond: 28)
     @MainActor private var currentAlertingHabit: HabitType?
     
     // Storage keys for each habit
@@ -79,6 +98,7 @@ final class AlarmKitHabitCoordinator {
             // AlarmManager.alarmUpdates は AsyncSequence（Apple Doc確認済み）
             for await alarms in AlarmManager.shared.alarmUpdates {
                 guard let self = self else { break }
+                await reporterRateLimiter.tick()
                 
                 // アラームが alerting 状態になった = 発火した
                 // AlarmUpdatesはアラームのリストを返すため、発火中のアラームがあるか確認
@@ -92,6 +112,13 @@ final class AlarmKitHabitCoordinator {
                             self.currentAlertingHabit = habit
                             // フォアグラウンド時でも、ここでは追加のアプリ内サウンドを鳴らさない。
                             // アラーム音は AlarmKit / システム側の挙動に任せ、対話開始時は Anicca の音声だけにする。
+                        }
+
+                        // v0.3: wake の alerting を DP としてサーバに通知（頻度/上限はサーバ側）
+                        if habit == .wake {
+                            Task.detached(priority: .utility) {
+                                await NudgeTriggerService.shared.triggerWakeAlarmFired()
+                            }
                         }
                         break
                     }
@@ -166,7 +193,6 @@ final class AlarmKitHabitCoordinator {
     
     func requestAuthorizationIfNeeded() async -> Bool {
         do {
-            // まず現在の認証状態を確認
             let currentState = manager.authorizationState
             logger.info("Current AlarmKit authorization state: \(String(describing: currentState), privacy: .public)")
             
@@ -174,11 +200,7 @@ final class AlarmKitHabitCoordinator {
                 return true
             }
             
-            if currentState == .denied {
-                logger.warning("AlarmKit authorization was denied by user. Please enable in Settings.")
-                return false
-            }
-            
+            // ユーザー操作起点（オンボーディング/設定トグル）で呼ばれる前提で、常にリクエストする
             let state = try await manager.requestAuthorization()
             logger.info("AlarmKit authorization result: \(String(describing: state), privacy: .public)")
             return state == .authorized
@@ -196,7 +218,10 @@ final class AlarmKitHabitCoordinator {
     ///   - followupCount: Total number of alarms (1 = single, 5 = 5 alarms at 1-minute intervals)
     func scheduleHabit(_ habit: HabitType, hour: Int, minute: Int, followupCount: Int) async -> Bool {
         do {
-            guard await requestAuthorizationIfNeeded() else {
+            // 重要: ここで requestAuthorization() を呼ぶと、ログイン直後/バックグラウンド処理等で
+            // 予期せず許可ダイアログが出る。許可リクエストはオンボーディング画面のボタン起点に限定する。
+            guard manager.authorizationState == .authorized else {
+                logger.info("AlarmKit not authorized; skipping schedule for \(habit.rawValue, privacy: .public)")
                 return false
             }
             await cancelHabitAlarms(habit)
@@ -214,12 +239,10 @@ final class AlarmKitHabitCoordinator {
                     repeats: .weekly(Locale.Weekday.allWeekdays)
                 ))
                 
-                // 全てのアラームで同じUI: 「アプリを開く」+「スワイプで停止」
-                // 「スワイプで停止」はその回のみ停止、次の1分後のアラームは独立して鳴る
                 let alert = AlarmPresentation.Alert(
                     title: localizedTitle(for: habit),
-                    stopButton: .stopButton,
-                    secondaryButton: .openAppButton,
+                    stopButton: .stopButton(for: habit),
+                    secondaryButton: .openAppButton(for: habit),
                     secondaryButtonBehavior: .custom
                 )
                 
@@ -263,7 +286,9 @@ final class AlarmKitHabitCoordinator {
     ///   - followupCount: Total number of alarms
     func scheduleCustomHabit(_ id: UUID, name: String, hour: Int, minute: Int, followupCount: Int) async -> Bool {
         do {
-            guard await requestAuthorizationIfNeeded() else {
+            // 許可リクエストはここでは行わない（オンボーディングでのみ）
+            guard manager.authorizationState == .authorized else {
+                logger.info("AlarmKit not authorized; skipping schedule for custom habit \(id.uuidString, privacy: .public)")
                 return false
             }
             await cancelCustomHabitAlarms(id)
@@ -281,8 +306,8 @@ final class AlarmKitHabitCoordinator {
                 
                 let alert = AlarmPresentation.Alert(
                     title: LocalizedStringResource(stringLiteral: name),
-                    stopButton: .stopButton,
-                    secondaryButton: .openAppButton,
+                    stopButton: .stopButton(for: .custom),
+                    secondaryButton: .openAppButton(for: .custom),
                     secondaryButtonBehavior: .custom
                 )
                 
@@ -323,8 +348,12 @@ final class AlarmKitHabitCoordinator {
             do {
                 try manager.cancel(id: alarmId)
                 logger.info("Cancelled AlarmKit alarm \(alarmId.uuidString, privacy: .public) for custom habit \(id.uuidString, privacy: .public)")
-            } catch {
-                logger.error("Failed to cancel AlarmKit alarm: \(error.localizedDescription, privacy: .public)")
+            } catch let nsError as NSError {
+                if nsError.domain == "com.apple.AlarmKit.Alarm" && nsError.code == 0 {
+                    logger.debug("Alarm already gone for \(alarmId.uuidString, privacy: .public)")
+                } else {
+                    logger.error("Failed to cancel AlarmKit alarm: \(nsError.localizedDescription, privacy: .public)")
+                }
             }
         }
         
@@ -342,8 +371,12 @@ final class AlarmKitHabitCoordinator {
             do {
                 try manager.cancel(id: id)
                 logger.info("Cancelled AlarmKit alarm \(id.uuidString, privacy: .public) for \(habit.rawValue, privacy: .public)")
-            } catch {
-                logger.error("Failed to cancel AlarmKit alarm \(id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            } catch let nsError as NSError {
+                if nsError.domain == "com.apple.AlarmKit.Alarm" && nsError.code == 0 {
+                    logger.debug("Alarm already gone for \(id.uuidString, privacy: .public)")
+                } else {
+                    logger.error("Failed to cancel AlarmKit alarm \(id.uuidString, privacy: .public): \(nsError.localizedDescription, privacy: .public)")
+                }
             }
         }
         
@@ -446,6 +479,20 @@ final class AlarmKitHabitCoordinator {
     private func tintColor(for habit: HabitType) -> Color {
         // すべての習慣で統一のオレンジ色を使用
         return .orange
+    }
+    
+    /// Check if there are pending alarm sessions
+    var hasPendingSessions: Bool {
+        for habit in HabitType.allCases {
+            let ids = loadPersistedIds(for: habit)
+            if !ids.isEmpty { return true }
+        }
+        return false
+    }
+    
+    /// Flush pending alarm stops (cancel all pending alarms)
+    func flushPendingStops() async {
+        await cancelAllAlarms()
     }
 }
 

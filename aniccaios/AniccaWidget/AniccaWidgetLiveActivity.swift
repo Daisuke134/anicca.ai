@@ -154,9 +154,13 @@ extension AniccaWidgetAttributes.ContentState {
      }
 }
 
+// Preview を iOS 17+ に制限
+#if swift(>=5.9)
+@available(iOS 17.0, *)
 #Preview("Notification", as: .content, using: AniccaWidgetAttributes.preview) {
    AniccaWidgetLiveActivity()
 } contentStates: {
     AniccaWidgetAttributes.ContentState.smiley
     AniccaWidgetAttributes.ContentState.starEyes
 }
+#endif

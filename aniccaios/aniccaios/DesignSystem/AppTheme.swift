@@ -2,34 +2,106 @@ import SwiftUI
 
 enum AppTheme {
     enum Colors {
-        // Global accent (monochrome)
-        static let accent: Color = Color(hex: "#222222")
+        // MARK: - Adaptive Colors (Light/Dark Mode対応)
         
-        static let background: Color = Color(hex: "#f8f5ed")
-        static let backgroundWithOpacity: Color = Color(red: 246/255, green: 245/255, blue: 236/255, opacity: 0.99)
-
-        static let cardBackground: Color = Color(hex: "#fdfcfc")
-        static let cardBackgroundAlt: Color = Color(hex: "#fcfcfb")
-
-        static let label: Color = Color(hex: "#393634")
-        static let secondaryLabel: Color = Color(hex: "#898783")
-
-        static let buttonSelected: Color = Color(hex: "#222222")
-        static let buttonUnselected: Color = Color(hex: "#e9e6e0")
-        static let buttonTextSelected: Color = Color(hex: "#e1e1e1")
-        static let buttonTextUnselected: Color = Color(hex: "#898783")
-
-        static let border: Color = Color(hex: "#c8c6bf")
-        static let borderLight: Color = Color(hex: "#f2f0ed")
-
+        /// Global accent (monochrome, adapts to dark mode)
+        static var accent: Color {
+            Color(light: Color(hex: "#222222"), dark: Color(hex: "#e5e5e5"))
+        }
+        
+        /// Main background
+        static var background: Color {
+            Color(light: Color(hex: "#f8f5ed"), dark: Color(hex: "#1c1b1a"))
+        }
+        
+        /// Background with opacity (for overlays)
+        static var backgroundWithOpacity: Color {
+            Color(light: Color(red: 246/255, green: 245/255, blue: 236/255, opacity: 0.99),
+                  dark: Color(red: 28/255, green: 27/255, blue: 26/255, opacity: 0.99))
+        }
+        
+        /// Card background
+        static var cardBackground: Color {
+            Color(light: Color(hex: "#fdfcfc"), dark: Color(hex: "#2c2b2a"))
+        }
+        
+        /// Alternative card background
+        static var cardBackgroundAlt: Color {
+            Color(light: Color(hex: "#fcfcfb"), dark: Color(hex: "#333231"))
+        }
+        
+        /// Primary label color
+        static var label: Color {
+            Color(light: Color(hex: "#393634"), dark: Color(hex: "#e5e4e2"))
+        }
+        
+        /// Secondary label color
+        static var secondaryLabel: Color {
+            Color(light: Color(hex: "#898783"), dark: Color(hex: "#a0a09e"))
+        }
+        
+        /// Tertiary label color
+        static var tertiaryLabel: Color {
+            Color(light: Color(hex: "#b8b6b0"), dark: Color(hex: "#6e6e6c"))
+        }
+        
+        /// Selected button background
+        static var buttonSelected: Color {
+            Color(light: Color(hex: "#222222"), dark: Color(hex: "#e5e5e5"))
+        }
+        
+        /// Unselected button background
+        static var buttonUnselected: Color {
+            Color(light: Color(hex: "#e9e6e0"), dark: Color(hex: "#3a3938"))
+        }
+        
+        /// Selected button text
+        static var buttonTextSelected: Color {
+            Color(light: Color(hex: "#e1e1e1"), dark: Color(hex: "#1c1b1a"))
+        }
+        
+        /// Unselected button text
+        static var buttonTextUnselected: Color {
+            Color(light: Color(hex: "#898783"), dark: Color(hex: "#a0a09e"))
+        }
+        
+        /// Border color
+        static var border: Color {
+            Color(light: Color(hex: "#c8c6bf"), dark: Color(hex: "#4a4948"))
+        }
+        
+        /// Light border color
+        static var borderLight: Color {
+            Color(light: Color(hex: "#f2f0ed"), dark: Color(hex: "#3a3938"))
+        }
+        
+        /// Tab bar background
+        static var tabBarBackground: Color {
+            Color(light: Color(hex: "#FDFCFC"), dark: Color(hex: "#2c2b2a"))
+        }
+        
+        /// Tab bar selected background
+        static var tabBarSelectedBackground: Color {
+            Color(light: Color(hex: "#E9E6E0"), dark: Color(hex: "#3a3938"))
+        }
+        
+        /// Tab bar border
+        static var tabBarBorder: Color {
+            Color(light: Color(red: 200/255, green: 198/255, blue: 191/255, opacity: 0.2),
+                  dark: Color(red: 80/255, green: 80/255, blue: 78/255, opacity: 0.3))
+        }
+        
+        // MARK: - Legacy (iOS 14以下のフォールバック用)
+        // これらはiOS 15+でadaptiveカラーを使用できない場合のフォールバック
+        
         @available(iOS 15.0, *)
         static var adaptiveBackground: Color {
-            Color(light: Color(hex: "#f8f5ed"), dark: Color(.systemGroupedBackground))
+            background
         }
-
+        
         @available(iOS 15.0, *)
         static var adaptiveCardBackground: Color {
-            Color(light: Color(hex: "#fdfcfc"), dark: Color(.secondarySystemGroupedBackground))
+            cardBackground
         }
     }
     
@@ -63,7 +135,6 @@ enum AppTheme {
         static let headlineDynamic: Font = .headline
         static let bodyDynamic: Font = .body
         static let subheadlineDynamic: Font = .subheadline
-
         static let appTitle: Font = .system(size: 48, weight: .bold)
         static let title2: Font = .system(size: 46, weight: .semibold)
         static let headline: Font = .system(size: 43, weight: .semibold)
@@ -75,8 +146,9 @@ enum AppTheme {
     }
 }
 
-// Color拡張: hex文字列からColorを生成
+// MARK: - Color拡張
 extension Color {
+    /// hex文字列からColorを生成
     init(hex: String) {
         let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
         var int: UInt64 = 0
@@ -101,11 +173,10 @@ extension Color {
         )
     }
     
-    @available(iOS 15.0, *)
+    /// Light/Dark mode対応のColor初期化
     init(light: Color, dark: Color) {
         self.init(uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
         })
     }
 }
-

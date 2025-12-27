@@ -10,7 +10,7 @@ actor ProfileSyncService {
     
     private init() {}
     
-    func enqueue(profile: UserProfile) async {
+    func enqueue(profile: UserProfile, sensorAccess: [String: Bool]? = nil) async {
         let authStatus = await MainActor.run { AppState.shared.authStatus }
         guard case .signedIn = authStatus else {
             logger.debug("Not signed in, skipping profile sync")

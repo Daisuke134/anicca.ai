@@ -11,37 +11,35 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .welcome:
                     WelcomeStepView(next: advance)
-                case .microphone:
-                    MicrophonePermissionStepView(next: advance)
-                case .notifications:
-                    NotificationPermissionStepView(next: advance)
+                case .value:
+                    ValueStepView(next: advance)
                 case .account:
                     AuthenticationStepView(next: advance)
-                case .habitSetup:
-                    HabitSetupStepView(next: advance)
-                case .habitWakeLocation:
-                    HabitWakeLocationStepView(next: advance)
-                case .habitSleepLocation:
-                    HabitSleepLocationStepView(next: advance)
-                case .habitTrainingFocus:
-                    HabitTrainingFocusStepView(next: advance)
-                case .paywall:
-                    PaywallStepView(next: advance)
-                case .completion:
-                    CompletionStepView(next: advance)
+                case .ideals:
+                    IdealsStepView(next: advance)
+                case .struggles:
+                    StrugglesStepView(next: advance)
+                case .notifications:
+                    NotificationPermissionStepView(next: advance)
+                case .alarmkit:
+                    AlarmKitPermissionStepView(next: advance)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
         .onAppear {
-            // オンボーディング完了済みなら完了画面から開始
-            if appState.isOnboardingComplete {
-                step = .completion
+            // v3: オンボーディング未完了は常に保存ステップから開始（AppState側で未完了時は.welcomeへ強制）
+            let alarmKitSupported: Bool = {
+                #if canImport(AlarmKit)
+                if #available(iOS 26.0, *) { return true }
+                #endif
+                return false
+            }()
+            // もし保存ステップが alarmkit でも、非対応環境では notifications に戻す
+            if appState.onboardingStep == .alarmkit && !alarmKitSupported {
+                step = .notifications
+                appState.setOnboardingStep(.notifications)
             } else {
-                // オンボーディング未完了時、paywallやcompletionが保存されていたら.welcomeにリセット
-                if appState.onboardingStep == .paywall || appState.onboardingStep == .completion {
-                    appState.setOnboardingStep(.welcome)
-                }
                 step = appState.onboardingStep
             }
             // Prefetch Paywall offering for faster display
@@ -54,37 +52,30 @@ struct OnboardingFlowView: View {
     private func advance() {
         switch step {
         case .welcome:
-            step = .microphone
-        case .microphone:
-            step = .notifications
-        case .notifications:
+            step = .value
+        case .value:
             step = .account
         case .account:
-            step = .habitSetup
-            // プロフィール完了時にオファリングをプリフェッチ（Paywall表示の準備）
-            Task {
-                await SubscriptionManager.shared.refreshOfferings()
+            step = .ideals
+        case .ideals:
+            step = .struggles
+        case .struggles:
+            step = .notifications
+        case .notifications:
+            // AlarmKitは iOS 26+ のみ。非対応ならここで完了にする（通知権限と混同しない）
+            #if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                step = .alarmkit
+            } else {
+                appState.markOnboardingComplete()
+                return
             }
-        case .habitSetup:
-            // フォローアップを削除
-            appState.clearHabitFollowUps()
-            
-            // オンボーディングではPaywallを表示せず、直接完了画面へ
-            // （無料ユーザーへのPaywallは利用量超過時やセッション後に自然に誘導）
-            step = .completion
-            appState.setOnboardingStep(step)
+            #else
+            appState.markOnboardingComplete()
             return
-        case .habitWakeLocation:
-            step = .habitSleepLocation
-        case .habitSleepLocation:
-            step = .habitTrainingFocus
-        case .habitTrainingFocus:
-            step = .paywall
-        case .paywall:
-            // Paywallのステップを保存してから完了画面へ
-            appState.setOnboardingStep(.paywall)
-            step = .completion
-        case .completion:
+            #endif
+        case .alarmkit:
+            // 最終ステップ: オンボーディング完了
             appState.markOnboardingComplete()
             return
         }

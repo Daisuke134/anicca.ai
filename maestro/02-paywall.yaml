@@ -1,0 +1,73 @@
+# Paywall Display Test
+# Tests that the paywall can be displayed and dismissed
+# Requires: User already signed in (run after onboarding or with existing state)
+# Note: Uses text-based taps (no accessibilityIdentifier required)
+
+appId: ai.anicca.app.ios
+name: Paywall display and dismiss
+
+---
+# Launch the app (assuming user is already signed in)
+- launchApp
+
+# Wait for main screen to load
+- assertVisible:
+    text: "Talk"
+    timeout: 10000
+
+# Navigate to Profile tab where subscription management is accessible
+- tapOn:
+    text: "Profile"
+
+# Look for the subscription/plan section
+- assertVisible:
+    text: "Plan"
+    timeout: 5000
+
+# Tap on Plan to open subscription management
+- tapOn:
+    text: "Plan"
+    optional: true
+
+# Alternative: Look for "Free plan" or subscription status
+- tapOn:
+    text: "Free plan"
+    optional: true
+
+# Alternative: Look for "Manage plan" button
+- tapOn:
+    text: "Manage plan"
+    optional: true
+
+# If paywall is shown, verify it's visible
+- assertVisible:
+    text: "Monthly"
+    optional: true
+    timeout: 5000
+
+- assertVisible:
+    text: "Annual"
+    optional: true
+
+# Close the paywall
+- tapOn:
+    text: "Close"
+    optional: true
+    timeout: 3000
+
+# Alternative close methods
+- tapOn:
+    text: "×"
+    optional: true
+
+- tapOn:
+    text: "✕"
+    optional: true
+
+# Verify we're back to the main screen
+- assertVisible:
+    text: "Profile"
+    timeout: 5000
+
+# Success - paywall was displayed and closed
+

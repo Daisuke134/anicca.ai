@@ -24,6 +24,22 @@ const profileSchema = z.object({
   trainingGoal: z.string().optional(),
   idealTraits: z.array(z.string()).optional(),
   problems: z.array(z.string()).optional(),
+  // v0.3: new traits keys（旧キーは互換として残す）
+  ideals: z.array(z.string()).optional(),
+  struggles: z.array(z.string()).optional(),
+  big5: z.object({
+    O: z.number().optional(),
+    C: z.number().optional(),
+    E: z.number().optional(),
+    A: z.number().optional(),
+    N: z.number().optional(),
+    summary: z.string().optional(),
+    keyTraits: z.array(z.string()).optional()
+  }).optional(),
+  keywords: z.array(z.string()).optional(),
+  summary: z.string().optional(),
+  nudgeIntensity: z.enum(['quiet', 'normal', 'active']).optional(),
+  stickyMode: z.boolean().optional(),
   // AlarmKit設定（各習慣ごと）
   useAlarmKitForWake: z.boolean().optional(),
   useAlarmKitForTraining: z.boolean().optional(),
@@ -41,7 +57,14 @@ const profileSchema = z.object({
     updatedAt: z.number().optional()
   })).optional(),
   customHabitSchedules: z.record(timeComponentSchema).optional(),
-  customHabitFollowupCounts: z.record(z.number().int()).optional()
+  customHabitFollowupCounts: z.record(z.number().int()).optional(),
+  // v3: Data Integration状態をサーバ保存
+  sensorAccess: z.object({
+    screenTimeEnabled: z.boolean().optional(),
+    sleepEnabled: z.boolean().optional(),
+    stepsEnabled: z.boolean().optional(),
+    motionEnabled: z.boolean().optional()
+  }).optional()
 });
 
 /**
@@ -101,6 +124,14 @@ router.get('/', async (req, res) => {
       trainingGoal: profile.trainingGoal || '',
       idealTraits: profile.idealTraits || [],
       problems: profile.problems || [],
+      // v0.3: new fields (best-effort; profileService upserts to user_traits)
+      ideals: profile.ideals || profile.idealTraits || [],
+      struggles: profile.struggles || profile.problems || [],
+      big5: profile.big5 || null,
+      keywords: profile.keywords || [],
+      summary: profile.summary || '',
+      nudgeIntensity: profile.nudgeIntensity || 'normal',
+      stickyMode: profile.stickyMode ?? profile.stickyModeEnabled ?? profile.wakeStickyModeEnabled ?? true,
       useAlarmKitForWake: profile.useAlarmKitForWake ?? true,
       useAlarmKitForTraining: profile.useAlarmKitForTraining ?? true,
       useAlarmKitForBedtime: profile.useAlarmKitForBedtime ?? true,
@@ -111,11 +142,12 @@ router.get('/', async (req, res) => {
       habitFollowupCounts: profile.habitFollowupCounts || {},
       customHabits: profile.customHabits || [],
       customHabitSchedules: profile.customHabitSchedules || {},
-      customHabitFollowupCounts: profile.customHabitFollowupCounts || {}
+      customHabitFollowupCounts: profile.customHabitFollowupCounts || {},
+      sensorAccess: profile.sensorAccess || null
     });
   } catch (error) {
     logger.error('Failed to get profile', error);
-    return res.status(500).json({ error: 'failed_to_get_profile' });
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to get profile' } });
   }
 });
 
@@ -133,9 +165,8 @@ router.put('/', async (req, res) => {
     
     if (!validationResult.success) {
       logger.warn('Invalid profile data', validationResult.error);
-      return res.status(400).json({ 
-        error: 'invalid_profile_data',
-        details: validationResult.error.errors 
+      return res.status(400).json({
+        error: { code: 'INVALID_REQUEST', message: 'Invalid profile data', details: validationResult.error.errors }
       });
     }
     
@@ -152,7 +183,7 @@ router.put('/', async (req, res) => {
     return res.json({ success: true });
   } catch (error) {
     logger.error('Failed to upsert profile', error);
-    return res.status(500).json({ error: 'failed_to_upsert_profile' });
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to upsert profile' } });
   }
 });
 

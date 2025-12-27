@@ -1,8 +1,6 @@
 import { BaseWorker } from './BaseWorker.js';
 import { fork } from 'child_process';
-import { createRequire } from 'module';
-const require = createRequire(import.meta.url);
-const { v4: uuidv4 } = require('uuid');
+import { v4 as uuidv4 } from 'uuid';
 import { loadWorkspace, saveWorkspace } from '../../storage/workerMemory.js';
 import { getSlackTokensForUser } from '../../tokens/slackTokens.supabase.js';
 import { createClient } from '@supabase/supabase-js';

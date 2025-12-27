@@ -16,6 +16,7 @@ struct aniccaiosApp: App {
         WindowGroup {
             ContentRouterView()
                 .environmentObject(appState)
+                // v3: OSロケールに追従（locale overrideを撤廃）
                 .tint(AppTheme.Colors.accent)
         }
     }

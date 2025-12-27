@@ -1,4 +1,7 @@
 import SwiftUI
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 // Sheetの種類を一元管理
 enum SheetRoute: Identifiable {
@@ -310,25 +313,44 @@ struct HabitsSectionView: View {
             }
 
             Toggle("", isOn: Binding(
-                get: { isActive },
+                get: { activeHabits.contains(habit) },
                 set: { isOn in
-                    if isOn {
-                        if let date = date {
-                            activeHabits.insert(habit)
-                            habitTimes[habit] = date
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        if isOn {
+                            if let date = date {
+                                // ★ 起床の場合、AlarmKit許可をリクエスト
+                                if habit == .wake {
+                                    Task {
+                                        await requestAlarmKitPermissionIfNeeded()
+                                    }
+                                }
+                                activeHabits.insert(habit)
+                                habitTimes[habit] = date
+                            } else {
+                                sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
+                                activeSheet = .habit(habit)
+                            }
                         } else {
-                            sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
-                            activeSheet = .habit(habit)
+                            // 1) まずトグル状態だけをアニメーション（行の移動/セクション移動は起こさない）
+                            activeHabits.remove(habit)
+
+                            // 2) 少し遅延して、構造変化（schedule削除＝セクション移動）をアニメ無しで実行
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 220_000_000)
+                                var t = Transaction()
+                                t.disablesAnimations = true
+                                withTransaction(t) {
+                                    habitTimes.removeValue(forKey: habit)
+                                    appState.removeHabitSchedule(habit)
+                                }
+                            }
                         }
-                    } else {
-                        // トグルOFF時はAppStateからも削除して永続化
-                        activeHabits.remove(habit)
-                        habitTimes.removeValue(forKey: habit)
-                        appState.removeHabitSchedule(habit)
                     }
                 }
             ))
             .labelsHidden()
+            .tint(AppTheme.Colors.accent)
+            // NOTE: withAnimation側で制御する（ここでList構造変化まで巻き込むと崩れやすい）
         }
     }
     
@@ -363,25 +385,35 @@ struct HabitsSectionView: View {
             }
 
             Toggle("", isOn: Binding(
-                get: { isActive },
+                get: { activeCustomHabits.contains(id) },
                 set: { isOn in
-                    if isOn {
-                        if let date = date {
-                            activeCustomHabits.insert(id)
-                            customHabitTimes[id] = date
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        if isOn {
+                            if let date = date {
+                                activeCustomHabits.insert(id)
+                                customHabitTimes[id] = date
+                            } else {
+                                sheetTime = Date()
+                                activeSheet = .custom(id)
+                            }
                         } else {
-                            sheetTime = Date()
-                            activeSheet = .custom(id)
+                            activeCustomHabits.remove(id)
+
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 220_000_000)
+                                var t = Transaction()
+                                t.disablesAnimations = true
+                                withTransaction(t) {
+                                    customHabitTimes.removeValue(forKey: id)
+                                    appState.updateCustomHabitSchedule(id: id, time: nil)
+                                }
+                            }
                         }
-                    } else {
-                        // トグルOFF時はAppStateからも削除して永続化
-                        activeCustomHabits.remove(id)
-                        customHabitTimes.removeValue(forKey: id)
-                        appState.updateCustomHabitSchedule(id: id, time: nil)
                     }
                 }
             ))
             .labelsHidden()
+            .tint(AppTheme.Colors.accent)
         }
     }
     
@@ -485,6 +517,31 @@ struct HabitsSectionView: View {
         newCustomHabitName = ""
         activeSheet = nil
     }
+    
+    private func requestAlarmKitPermissionIfNeeded() async {
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            let manager = AlarmManager.shared
+            let status = manager.authorizationState
+            switch status {
+            case .notDetermined:
+                do {
+                    _ = try await manager.requestAuthorization()
+                    // 許可された場合、プロファイルのAlarmKit設定をON
+                    await MainActor.run {
+                        var profile = appState.userProfile
+                        profile.useAlarmKitForWake = true
+                        appState.updateUserProfile(profile, sync: true)
+                    }
+                } catch {
+                    // 拒否された場合は何もしない（通常の通知を使用）
+                }
+            default:
+                break
+            }
+        }
+#endif
+    }
 }
 
 // 統合エディタ（時刻＋フォローアップ）
@@ -499,7 +556,8 @@ struct HabitEditSheet: View {
     @State private var wakeRoutines: [RoutineItem] = []
     @State private var sleepRoutines: [RoutineItem] = []
     @Environment(\.dismiss) private var dismiss
-    
+    @State private var showAlarmKitDeniedAlert = false
+
     init(habit: HabitType, onSave: (() -> Void)? = nil) {
         self.habit = habit
         self.onSave = onSave
@@ -587,6 +645,15 @@ struct HabitEditSheet: View {
             load()
             followups = appState.followupCount(for: habit)
         }
+        .alert(String(localized: "onboarding_alarmkit_settings_needed"), isPresented: $showAlarmKitDeniedAlert) {
+            Button(String(localized: "common_open_settings")) {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                UIApplication.shared.open(url)
+            }
+            Button(String(localized: "common_ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "onboarding_alarmkit_settings_message"))
+        }
     }
     
     // AlarmKitトグル（習慣タイプに応じた設定）
@@ -596,41 +663,41 @@ struct HabitEditSheet: View {
     private var alarmKitToggle: some View {
         switch habit {
         case .wake:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForWake },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForWake = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForWake,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
+            )
         case .training:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForTraining },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForTraining = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForTraining,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
+            )
         case .bedtime:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForBedtime },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForBedtime = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForBedtime,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
+            )
         case .custom:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForCustom },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForCustom = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(
+                    appState: appState,
+                    keyPath: \.useAlarmKitForCustom,
+                    showDeniedAlert: $showAlarmKitDeniedAlert
+                )
+            )
         }
     }
 #endif
@@ -817,6 +884,7 @@ struct CustomHabitEditSheet: View {
     let onSave: () -> Void
     @State private var time = Date()
     @State private var followups: Int = 2
+    @State private var showAlarmKitDeniedAlert = false
     
     var body: some View {
         NavigationView {
@@ -837,14 +905,14 @@ struct CustomHabitEditSheet: View {
 #if canImport(AlarmKit)
                 if #available(iOS 26.0, *) {
                     Section(String(localized: "settings_alarmkit_section_title")) {
-                        Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                            get: { appState.userProfile.useAlarmKitForCustom },
-                            set: { newValue in
-                                var profile = appState.userProfile
-                                profile.useAlarmKitForCustom = newValue
-                                appState.updateUserProfile(profile, sync: true)
-                            }
-                        ))
+                        Toggle(
+                            String(localized: "settings_alarmkit_toggle"),
+                            isOn: alarmKitPermissionBinding(
+                                appState: appState,
+                                keyPath: \.useAlarmKitForCustom,
+                                showDeniedAlert: $showAlarmKitDeniedAlert
+                            )
+                        )
                         Text(String(localized: "settings_alarmkit_description"))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -876,6 +944,15 @@ struct CustomHabitEditSheet: View {
             }
             followups = appState.customFollowupCount(for: customId)
         }
+        .alert(String(localized: "onboarding_alarmkit_settings_needed"), isPresented: $showAlarmKitDeniedAlert) {
+            Button(String(localized: "common_open_settings")) {
+                guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+                UIApplication.shared.open(url)
+            }
+            Button(String(localized: "common_ok"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "onboarding_alarmkit_settings_message"))
+        }
     }
     
     private func save() {
@@ -889,4 +966,40 @@ struct CustomHabitEditSheet: View {
         }
     }
 }
+
+#if canImport(AlarmKit)
+@available(iOS 26.0, *)
+private func alarmKitPermissionBinding(
+    appState: AppState,
+    keyPath: WritableKeyPath<UserProfile, Bool>,
+    showDeniedAlert: Binding<Bool>
+) -> Binding<Bool> {
+    Binding(
+        get: { appState.userProfile[keyPath: keyPath] },
+        set: { newValue in
+            let currentValue = appState.userProfile[keyPath: keyPath]
+            guard currentValue != newValue else { return }
+
+            if newValue {
+                Task { @MainActor in
+                    let granted = await AlarmKitPermissionManager.requestIfNeeded()
+                    var profile = appState.userProfile
+                    profile[keyPath: keyPath] = granted
+                    if granted {
+                        appState.updateUserProfile(profile, sync: true)
+                        Task { await NotificationScheduler.shared.applySchedules(appState.habitSchedules) }
+                    } else {
+                        showDeniedAlert.wrappedValue = true
+                    }
+                }
+            } else {
+                var profile = appState.userProfile
+                profile[keyPath: keyPath] = false
+                appState.updateUserProfile(profile, sync: true)
+                Task { await NotificationScheduler.shared.applySchedules(appState.habitSchedules) }
+            }
+        }
+    )
+}
+#endif
 

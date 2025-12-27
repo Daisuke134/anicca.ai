@@ -1,13 +1,15 @@
 import SwiftUI
 import AVFoundation
 
-struct SessionView: View {
+/// v0.2/現行の「Talkタブ相当」画面（フェーズ5以降は TalkView に置き換え）
+struct LegacyTalkRootView: View {
     @EnvironmentObject private var appState: AppState
     @ObservedObject private var controller = VoiceSessionController.shared
     @State private var isShowingSettings = false
     @State private var isShowingLimitModal = false
     @State private var isShowingPaywall = false
     @State private var showMicAlert = false
+    @State private var showWakeSilentTip = false
 
     @ViewBuilder
     var body: some View {
@@ -25,20 +27,6 @@ struct SessionView: View {
                     .font(AppTheme.Typography.appTitle)
                     .fontWeight(.heavy)
                     .foregroundStyle(AppTheme.Colors.label)
-
-                if shouldShowWakeSilentNotice {
-                    Text(String(localized: "session_wake_silent_notice"))
-                        .multilineTextAlignment(.center)
-                        .font(AppTheme.Typography.subheadlineDynamic)
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .padding(AppTheme.Spacing.lg)
-                        .frame(maxWidth: .infinity)
-                        .background(
-                            RoundedRectangle(cornerRadius: AppTheme.Radius.card, style: .continuous)
-                                .fill(AppTheme.Colors.cardBackground)
-                                .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
-                        )
-                }
 
                 Spacer(minLength: AppTheme.Spacing.xl)
 
@@ -90,6 +78,7 @@ struct SessionView: View {
             }
             .onChange(of: appState.pendingHabitTrigger) { newValue in
                 guard newValue != nil else { return }
+                maybePresentWakeSilentTip(trigger: newValue)
                 ensureMicrophonePermissionAndStart(shouldResumeImmediately: appState.shouldStartSessionImmediately)
             }
             .onAppear {
@@ -125,7 +114,34 @@ struct SessionView: View {
             } message: {
                 Text(String(localized: "session_mic_permission_message"))
             }
+            .alert(String(localized: "wake_silent_modal_title"), isPresented: $showWakeSilentTip) {
+                Button(String(localized: "wake_silent_modal_ok")) {
+                    appState.markHasSeenWakeSilentTip()
+                }
+            } message: {
+                Text(String(localized: "wake_silent_modal_message"))
+            }
         }
+    }
+    
+    private func maybePresentWakeSilentTip(trigger: PendingHabitTrigger?) {
+        guard let trigger else { return }
+        guard trigger.habit == .wake else { return }
+        guard !appState.hasSeenWakeSilentTip else { return }
+
+        // v3-ui: AlarmKit 非対応等「確実に鳴らす保証がない」デバイスでのみ表示
+        let isEligible: Bool = {
+            #if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                // AlarmKitを使わない起床（通知/音に依存）なら説明対象
+                return !appState.userProfile.useAlarmKitForWake
+            }
+            #endif
+            return true
+        }()
+
+        guard isEligible else { return }
+        showWakeSilentTip = true
     }
 
     private var sessionButton: some View {
@@ -215,7 +231,4 @@ struct SessionView: View {
         }
     }
 
-    private var shouldShowWakeSilentNotice: Bool {
-        appState.habitSchedules[HabitType.wake] != nil
-    }
 }

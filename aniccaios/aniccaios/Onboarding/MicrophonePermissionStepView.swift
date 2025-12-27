@@ -12,10 +12,12 @@ struct MicrophonePermissionStepView: View {
     @State private var micGranted = false
     @State private var micDenied = false
     @State private var isRequesting = false
+    // v3: 既に許可済みでも画面は表示、自動遷移しない
+    @State private var hasAttemptedPermission = false
 
     var body: some View {
         VStack(spacing: 24) {
-            Text("onboarding_microphone_title")
+            Text(String(localized: "onboarding_microphone_title"))
                 .font(AppTheme.Typography.onboardingTitle)
                 .fontWeight(.heavy)
                 .lineLimit(1)
@@ -24,31 +26,26 @@ struct MicrophonePermissionStepView: View {
                 .foregroundStyle(AppTheme.Colors.label)
                 .padding(.top, 40)
 
-            Text("onboarding_microphone_description")
+            Text(String(localized: "onboarding_microphone_description"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.horizontal)
 
-            if micGranted {
-                // 許可済み: ステータスを表示しボタンは無効
-                Label(String(localized: "common_enabled"), systemImage: "checkmark.circle")
-                    .font(.subheadline)
-                    .foregroundStyle(AppTheme.Colors.label)
-                PrimaryButton(
-                    title: String(localized: "common_enabled"),
-                    isEnabled: false,
-                    isLoading: false,
-                    style: .selected
-                ) { }
-            } else {
-                PrimaryButton(
-                    title: isRequesting
-                        ? String(localized: "common_requesting")
-                        : String(localized: "common_continue"),
-                    isEnabled: !isRequesting,
-                    isLoading: isRequesting
-                ) { requestMicrophone() }
+            PrimaryButton(
+                title: isRequesting
+                    ? String(localized: "common_requesting")
+                    : (micGranted ? String(localized: "common_continue") : String(localized: "onboarding_microphone_allow")),
+                isEnabled: !isRequesting,
+                isLoading: isRequesting,
+                style: micGranted ? .selected : .primary
+            ) {
+                if micGranted || hasAttemptedPermission {
+                    // 既に許可済み or リクエスト済みなら次へ
+                    next()
+                } else {
+                    requestMicrophone()
+                }
             }
 
         }
@@ -56,12 +53,7 @@ struct MicrophonePermissionStepView: View {
         .background(AppBackground())
         .onAppear {
             updatePermissionSnapshot()
-            // 既に許可されている場合はUIで明示しつつ、自動遷移は保持
-            if micGranted {
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                    withAnimation(.easeInOut(duration: 0.35)) { next() }
-                }
-            }
+            // v3: 既に許可されていても自動遷移しない。画面は必ず表示。
         }
     }
 
@@ -84,10 +76,8 @@ struct MicrophonePermissionStepView: View {
             self.micGranted = granted
             self.micDenied = !granted
             self.isRequesting = false
-            // 許可/拒否に関わらず必ず次へ（5.1.1対策: プリプロンプト後はOSダイアログに必ず進ませる）
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                withAnimation(.easeInOut(duration: 0.35)) { next() }
-            }
+            self.hasAttemptedPermission = true
+            // v3: 許可/拒否後も自動遷移しない。ボタンでユーザーが操作して次へ。
         }
     }
 

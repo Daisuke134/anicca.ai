@@ -29,17 +29,29 @@ final class AppState: ObservableObject {
     @Published private(set) var isOnboardingComplete: Bool
     @Published private(set) var pendingHabitTrigger: PendingHabitTrigger?
     @Published private(set) var onboardingStep: OnboardingStep
-    @Published private(set) var pendingHabitFollowUps: [OnboardingStep] = []
     @Published private(set) var cachedOffering: Offering?
     @Published private(set) var customHabit: CustomHabitConfiguration?
     // 変更: カスタム習慣を配列で管理
     @Published private(set) var customHabits: [CustomHabitConfiguration] = []
     @Published private(set) var customHabitSchedules: [UUID: DateComponents] = [:]
     private(set) var shouldStartSessionImmediately = false
+    @Published private(set) var hasSeenWakeSilentTip: Bool = false
+    
+    // Phase-7: sensor permissions + integration toggles
+    @Published private(set) var sensorAccess: SensorAccessState
+    private var needsSensorRepairAfterOnboarding: Bool = false
+    
+    enum SensorRepairSource {
+        case remoteSync
+        case onboardingCompleted
+        case explicitUserAction
+    }
     
     enum RootTab: Int, Hashable {
         case talk = 0
-        case habits = 1
+        case habits = 1      // 新規追加
+        case behavior = 2    // 1 → 2
+        case profile = 3     // 2 → 3
     }
     @Published var selectedRootTab: RootTab = .talk
 
@@ -67,12 +79,20 @@ final class AppState: ObservableObject {
     private let subscriptionKey = "com.anicca.subscription"
     private let customHabitsKey = "com.anicca.customHabits"
     private let customHabitSchedulesKey = "com.anicca.customHabitSchedules"
+    private let sensorAccessBaseKey = "com.anicca.sensorAccessState"
+    private let sensorRepairPendingKey = "com.anicca.sensorRepairPending"
+    private let hasSeenWakeSilentTipKey = "com.anicca.hasSeenWakeSilentTip"
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
     
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
     private var pendingConsultPrompt: String?
+    private var pendingAutoResponse: Bool = false
+    
+    // AlarmKit / LiveActivityIntent → App 本体の起動要求（AppGroup 経由）
+    private let pendingHabitLaunchHabitKey = "pending_habit_launch_habit"
+    private let pendingHabitLaunchTsKey = "pending_habit_launch_ts"
 
     private init() {
         // Initialize all properties first
@@ -82,27 +102,31 @@ final class AppState: ObservableObject {
         // オンボーディング未完了時は強制的に.welcomeから開始
         if defaults.bool(forKey: onboardingKey) {
             let rawValue = defaults.integer(forKey: onboardingStepKey)
-            // 後方互換性: rawValue = 4（旧.profile）を.habitSetupにマッピング
-            if rawValue == 4 {
-                self.onboardingStep = .habitSetup
-            } else {
-                self.onboardingStep = OnboardingStep(rawValue: rawValue) ?? .completion
-            }
+            self.onboardingStep = OnboardingStep.migratedFromLegacyRawValue(rawValue)
         } else {
             // オンボーディング未完了なら、保存されたステップをクリアして.welcomeから開始
             defaults.removeObject(forKey: onboardingStepKey)
             self.onboardingStep = .welcome
         }
         
-        // Load user credentials and profile
+        let initialAuthStatus = AuthStatus.signedOut
+        self.authStatus = initialAuthStatus
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: nil)
+        self.userProfile = UserProfile()
+        self.subscriptionInfo = .free
         self.authStatus = loadUserCredentials()
         self.userProfile = loadUserProfile()
         self.subscriptionInfo = loadSubscriptionInfo()
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
+        self.needsSensorRepairAfterOnboarding = defaults.bool(forKey: sensorRepairPendingKey)
         self.customHabit = CustomHabitStore.shared.load()
         
         // カスタム習慣の読み込み
         self.customHabits = CustomHabitStore.shared.loadAll()
         self.customHabitSchedules = loadCustomHabitSchedules()
+        
+        // Phase-9: load wake silent tip seen flag
+        self.hasSeenWakeSilentTip = defaults.bool(forKey: hasSeenWakeSilentTipKey)
         
         // Load habit schedules (new format)
         if let data = defaults.data(forKey: habitSchedulesKey),
@@ -130,9 +154,42 @@ final class AppState: ObservableObject {
         // Load followup counts (with defaults)
         loadFollowupCounts()
         
+        Task { [weak self] in
+            await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
+        }
+        
+        // AlarmKit/Intent 経由の起動要求は、UI初期表示より前に回収して「白画面ラグ」を避ける
+        consumePendingHabitLaunchIfAny()
+        
         // Sync scheduled alarms on app launch
         Task { await scheduler.applySchedules(habitSchedules) }
         Task { await applyCustomSchedulesToScheduler() }
+    }
+
+    /// Intentプロセス（AlarmKit / LiveActivityIntent）からの「会話開始」要求をAppGroupから回収する。
+    /// - NOTE: この処理は UI を即表示するため、なるべく早いタイミング（init内）で実行する。
+    private func consumePendingHabitLaunchIfAny() {
+        // オンボーディング前にセッション画面へ飛ぶのはUX的に破綻するため抑止
+        guard isOnboardingComplete else { return }
+        
+        let defaults = AppGroup.userDefaults
+        var queue = defaults.array(forKey: "pending_habit_launch_queue") as? [[String: Any]] ?? []
+        var consumed: [[String: Any]] = []
+        for entry in queue {
+            guard let raw = entry["habit"] as? String,
+                  let habit = HabitType(rawValue: raw),
+                  let ts = entry["ts"] as? TimeInterval,
+                  Date().timeIntervalSince1970 - ts < 300 else { continue }
+            prepareForImmediateSession(habit: habit)
+            shouldStartSessionImmediately = true
+            consumed.append(entry)
+            break
+        }
+        queue.removeAll { candidate in
+            guard let ts = candidate["ts"] as? TimeInterval else { return false }
+            return consumed.contains(where: { ($0["ts"] as? TimeInterval) == ts })
+        }
+        defaults.set(queue, forKey: "pending_habit_launch_queue")
     }
 
     // Legacy method for backward compatibility
@@ -276,7 +333,14 @@ final class AppState: ObservableObject {
         guard !isOnboardingComplete else { return }
         isOnboardingComplete = true
         defaults.set(true, forKey: onboardingKey)
-        setOnboardingStep(.completion)
+        // v3: 完了後はステップ情報を持たない（Habit/All set等の誤表示を根絶）
+        defaults.removeObject(forKey: onboardingStepKey)
+        Task {
+            // 初回ログイン直後に即座に当日分の指標をアップロードして挙動タブを埋める
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+            MetricsUploader.shared.scheduleNextIfPossible()
+            await scheduleSensorRepairIfNeeded(source: .onboardingCompleted)
+        }
     }
 
     // Legacy methods for backward compatibility
@@ -342,6 +406,15 @@ final class AppState: ObservableObject {
 """
         pendingHabitPrompt = nil
         pendingConsultPrompt = base + directive
+        pendingAutoResponse = false
+    }
+
+    /// v0.3: サーバから返ってきた openingScript 等を、そのまま Realtime instructions に流す
+    /// - autoResponse=true の場合、VoiceSessionController が response.create を送って「Aniccaが先に話す」挙動にする
+    func prepareExternalPrompt(_ prompt: String, autoResponse: Bool) {
+        pendingHabitPrompt = nil
+        pendingConsultPrompt = prompt
+        pendingAutoResponse = autoResponse
     }
 
     func consumePendingPrompt() -> String? {
@@ -356,11 +429,24 @@ final class AppState: ObservableObject {
         return prompt
     }
 
+    func consumePendingAutoResponse() -> Bool {
+        let v = pendingAutoResponse
+        pendingAutoResponse = false
+        return v
+    }
+
     func clearPendingHabitTrigger() {
         pendingHabitTrigger = nil
         pendingHabitPrompt = nil
         pendingConsultPrompt = nil
         shouldStartSessionImmediately = false
+    }
+    
+    func clearShouldStartSessionImmediately() {
+        shouldStartSessionImmediately = false
+        if pendingHabitTrigger == nil {
+            AppGroup.userDefaults.removeObject(forKey: "pending_habit_launch_queue")
+        }
     }
 
     func resetState() {
@@ -373,6 +459,7 @@ final class AppState: ObservableObject {
         onboardingStep = .welcome
         userProfile = UserProfile()
         subscriptionInfo = .free
+        sensorAccess = .default
         clearCustomHabit()
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
@@ -402,6 +489,19 @@ final class AppState: ObservableObject {
         authStatus = .signedIn(credentials)
         saveUserCredentials(credentials)
         
+        // App Groups に userId と deviceId を保存（Notification Service Extension 用）
+        let appGroupDefaults = AppGroup.userDefaults
+        appGroupDefaults.set(credentials.userId, forKey: "userId")
+        appGroupDefaults.set(resolveDeviceId(), forKey: "deviceId")
+        appGroupDefaults.set(AppConfig.proxyBaseURL.absoluteString, forKey: "ANICCA_PROXY_BASE_URL")
+
+        sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: credentials.userId)
+        
+        Task { [weak self] in
+            await SensorAccessSyncService.shared.fetchLatest()
+            await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: true)
+        }
+        
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty or "User" (user will set it in profile step)
         if userProfile.displayName.isEmpty && !credentials.displayName.isEmpty && credentials.displayName != "User" {
@@ -409,6 +509,12 @@ final class AppState: ObservableObject {
             saveUserProfile()
         }
         Task { await SubscriptionManager.shared.handleLogin(appUserId: credentials.userId) }
+        
+        // v3: サインイン直後の無条件PUTは既存ユーザー上書き事故がありうるため、
+        // 「オンボーディング中 かつ ローカルに入力済みがある」場合のみ同期する
+        if !isOnboardingComplete && (!userProfile.ideals.isEmpty || !userProfile.struggles.isEmpty || !userProfile.displayName.isEmpty) {
+            Task { await ProfileSyncService.shared.enqueue(profile: userProfile) }
+        }
     }
     
     // Update only access token in currently signed-in credentials
@@ -426,6 +532,44 @@ final class AppState: ObservableObject {
         authStatus = .signedOut
         defaults.removeObject(forKey: userCredentialsKey)
         Task { await SubscriptionManager.shared.handleLogout() }
+    }
+    
+    /// 通常ログアウト: デバイス権限/連携トグルは維持する（Account deletionとは別）
+    func signOutPreservingSensorAccess() {
+        authStatus = .signedOut
+        userProfile = UserProfile()
+        subscriptionInfo = .free
+        habitSchedules = [:]
+        customHabits = []
+        customHabitSchedules = [:]
+        pendingHabitTrigger = nil
+        pendingHabitPrompt = nil
+        pendingConsultPrompt = nil
+        cachedOffering = nil
+        
+        // オンボーディングはサインアウト時に戻す
+        isOnboardingComplete = false
+        defaults.removeObject(forKey: onboardingKey)
+        setOnboardingStep(.welcome)
+        
+        // UserDefaultsからユーザーデータを削除（sensorAccessBaseKeyは削除しない）
+        defaults.removeObject(forKey: userCredentialsKey)
+        defaults.removeObject(forKey: userProfileKey)
+        defaults.removeObject(forKey: subscriptionKey)
+        defaults.removeObject(forKey: habitSchedulesKey)
+        defaults.removeObject(forKey: customHabitsKey)
+        defaults.removeObject(forKey: customHabitSchedulesKey)
+        // ★ sensorAccessBaseKey は削除しない - デバイス権限はユーザーアカウントではなくデバイスに紐づく
+        
+        // 通知をすべてキャンセル
+        Task {
+            await scheduler.cancelAll()
+        }
+        
+        // RevenueCatからログアウト
+        Task {
+            await SubscriptionManager.shared.handleLogout()
+        }
     }
     
     // Guideline 5.1.1(v)対応: アカウント削除時の完全な状態リセット
@@ -453,6 +597,7 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: habitSchedulesKey)
         defaults.removeObject(forKey: customHabitsKey)
         defaults.removeObject(forKey: customHabitSchedulesKey)
+        defaults.removeObject(forKey: sensorAccessBaseKey)
         
         // 通知をすべてキャンセル
         Task {
@@ -518,22 +663,48 @@ final class AppState: ObservableObject {
             "wakeRoutines": profile.wakeRoutines,
             "sleepRoutines": profile.sleepRoutines,
             "trainingGoal": profile.trainingGoal,
-            "idealTraits": profile.idealTraits,
-            "problems": profile.problems,
+            // v0.3 traits
+            "ideals": profile.ideals,
+            "struggles": profile.struggles,
+            "keywords": profile.keywords,
+            "summary": profile.summary,
+            "nudgeIntensity": profile.nudgeIntensity.rawValue,
+            "stickyMode": profile.stickyMode,
             "useAlarmKitForWake": profile.useAlarmKitForWake,
             "useAlarmKitForTraining": profile.useAlarmKitForTraining,
             "useAlarmKitForBedtime": profile.useAlarmKitForBedtime,
-            "useAlarmKitForCustom": profile.useAlarmKitForCustom,
-            "stickyModeEnabled": profile.stickyModeEnabled
+            "useAlarmKitForCustom": profile.useAlarmKitForCustom
         ]
+        
+        if let big5 = profile.big5 {
+            var obj: [String: Any] = [
+                "openness": big5.openness,
+                "conscientiousness": big5.conscientiousness,
+                "extraversion": big5.extraversion,
+                "agreeableness": big5.agreeableness,
+                "neuroticism": big5.neuroticism
+            ]
+            if let s = big5.summary { obj["summary"] = s }
+            payload["big5"] = obj
+        }
         
         payload["habitSchedules"] = serializedHabitSchedulesForSync()
         payload["habitFollowupCounts"] = habitFollowupCounts.mapKeys { $0.rawValue }
         payload["customHabits"] = customHabits.map { ["id": $0.id.uuidString, "name": $0.name, "updatedAt": $0.updatedAt.timeIntervalSince1970] }
         payload["customHabitSchedules"] = serializedCustomHabitSchedulesForSync()
         payload["customHabitFollowupCounts"] = customHabitFollowupCounts.mapKeys { $0.uuidString }
+        payload["sensorAccess"] = sensorAccessForSync()
         
         return payload
+    }
+    
+    func sensorAccessForSync() -> [String: Bool] {
+        return [
+            "screenTimeEnabled": sensorAccess.screenTimeEnabled,
+            "sleepEnabled": sensorAccess.sleepEnabled,
+            "stepsEnabled": sensorAccess.stepsEnabled,
+            "motionEnabled": sensorAccess.motionEnabled
+        ]
     }
     
     func bootstrapProfileFromServerIfAvailable() async {
@@ -637,37 +808,6 @@ final class AppState: ObservableObject {
         return components
     }
     
-    // MARK: - Habit Follow-up Questions
-    
-    func prepareHabitFollowUps(selectedHabits: Set<HabitType>) {
-        var followUps: [OnboardingStep] = []
-        
-        // Wake location: if Wake is selected, ask wake location
-        // If both Wake and Bedtime are selected, only ask wake location (reuse for bedtime)
-        if selectedHabits.contains(.wake) {
-            followUps.append(.habitWakeLocation)
-        } else if selectedHabits.contains(.bedtime) {
-            // Only Bedtime selected, ask sleep location
-            followUps.append(.habitSleepLocation)
-        }
-        
-        // Training focus: if Training is selected, ask training focus
-        if selectedHabits.contains(.training) {
-            followUps.append(.habitTrainingFocus)
-        }
-        
-        pendingHabitFollowUps = followUps
-    }
-    
-    func consumeNextHabitFollowUp() -> OnboardingStep? {
-        guard !pendingHabitFollowUps.isEmpty else { return nil }
-        return pendingHabitFollowUps.removeFirst()
-    }
-    
-    func clearHabitFollowUps() {
-        pendingHabitFollowUps = []
-    }
-    
     func updateSleepLocation(_ location: String) {
         var profile = userProfile
         profile.sleepLocation = location
@@ -726,6 +866,11 @@ final class AppState: ObservableObject {
         subscriptionHoldPlan = plan
         subscriptionHold = plan != nil
         quotaHoldReason = reason
+    }
+    
+    func markHasSeenWakeSilentTip() {
+        hasSeenWakeSilentTip = true
+        defaults.set(true, forKey: hasSeenWakeSilentTipKey)
     }
     
     func updatePurchaseEnvironment(_ status: PurchaseEnvironmentStatus) {
@@ -822,6 +967,42 @@ final class AppState: ObservableObject {
         updateUserProfile(profile, sync: true)
     }
     
+    // MARK: - v0.3 Traits update helpers
+    
+    func updateTraits(ideals: [String], struggles: [String]) {
+        var profile = userProfile
+        profile.ideals = ideals
+        profile.struggles = struggles
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateBig5(_ scores: Big5Scores?) {
+        var profile = userProfile
+        profile.big5 = scores
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateNudgeIntensity(_ intensity: NudgeIntensity) {
+        var profile = userProfile
+        profile.nudgeIntensity = intensity
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func setStickyMode(_ enabled: Bool) {
+        var profile = userProfile
+        profile.stickyMode = enabled
+        updateUserProfile(profile, sync: true)
+    }
+    
+    // MARK: - v0.3 Quote
+    
+    var todayQuote: String {
+        QuoteProvider.shared.todayQuote(
+            preferredLanguage: userProfile.preferredLanguage,
+            date: Date()
+        )
+    }
+    
     // MARK: - Private Helpers
     
     private func loadCustomHabitSchedules() -> [UUID: DateComponents] {
@@ -897,7 +1078,12 @@ final class AppState: ObservableObject {
         }
         if let preferredLanguage = payload["preferredLanguage"] as? String,
            let language = LanguagePreference(rawValue: preferredLanguage) {
-            profile.preferredLanguage = language
+            // デバイスの言語設定を優先: サーバーの言語とデバイスの言語が一致する場合のみ適用
+            let deviceLanguage = LanguagePreference.detectDefault()
+            if deviceLanguage == language {
+                profile.preferredLanguage = language
+            }
+            // 一致しない場合はデバイスの言語を維持（サーバーが間違った言語を返しても上書きしない）
         }
         if let sleepLocation = payload["sleepLocation"] as? String {
             profile.sleepLocation = sleepLocation
@@ -917,11 +1103,42 @@ final class AppState: ObservableObject {
         if let trainingGoal = payload["trainingGoal"] as? String {
             profile.trainingGoal = trainingGoal
         }
-        if let idealTraits = payload["idealTraits"] as? [String] {
-            profile.idealTraits = idealTraits
+        // v0.3 traits (prefer new keys, fallback to legacy)
+        if let ideals = payload["ideals"] as? [String] {
+            // v3: リモートが空配列ならローカルの非空値を保持（オンボーディングで設定した値が消えない）
+            if !ideals.isEmpty || profile.ideals.isEmpty {
+                profile.ideals = ideals
+            }
+        } else if let idealTraits = payload["idealTraits"] as? [String], !idealTraits.isEmpty || profile.ideals.isEmpty {
+            profile.ideals = idealTraits
         }
-        if let problems = payload["problems"] as? [String] {
-            profile.problems = problems
+        if let struggles = payload["struggles"] as? [String] {
+            if !struggles.isEmpty || profile.struggles.isEmpty {
+                profile.struggles = struggles
+            }
+        } else if let problems = payload["problems"] as? [String], !problems.isEmpty || profile.struggles.isEmpty {
+            profile.struggles = problems
+        }
+        if let keywords = payload["keywords"] as? [String] {
+            profile.keywords = keywords
+        }
+        if let summary = payload["summary"] as? String {
+            profile.summary = summary
+        }
+        if let intensity = payload["nudgeIntensity"] as? String,
+           let v = NudgeIntensity(rawValue: intensity) {
+            profile.nudgeIntensity = v
+        }
+        if let big5 = payload["big5"] as? [String: Any] {
+            let scores = Big5Scores(
+                openness: big5["openness"] as? Int ?? 0,
+                conscientiousness: big5["conscientiousness"] as? Int ?? 0,
+                extraversion: big5["extraversion"] as? Int ?? 0,
+                agreeableness: big5["agreeableness"] as? Int ?? 0,
+                neuroticism: big5["neuroticism"] as? Int ?? 0,
+                summary: big5["summary"] as? String
+            )
+            profile.big5 = scores
         }
         // AlarmKit設定（各習慣ごと）
         if let useAlarmKit = payload["useAlarmKitForWake"] as? Bool {
@@ -936,11 +1153,13 @@ final class AppState: ObservableObject {
         if let useAlarmKitCustom = payload["useAlarmKitForCustom"] as? Bool {
             profile.useAlarmKitForCustom = useAlarmKitCustom
         }
-        // Stickyモード（後方互換: wakeStickyModeEnabled も読み取る）
-        if let sticky = payload["stickyModeEnabled"] as? Bool {
-            profile.stickyModeEnabled = sticky
+        // Stickyモード（後方互換: stickyModeEnabled / wakeStickyModeEnabled も読み取る）
+        if let sticky = payload["stickyMode"] as? Bool {
+            profile.stickyMode = sticky
+        } else if let sticky = payload["stickyModeEnabled"] as? Bool {
+            profile.stickyMode = sticky
         } else if let oldSticky = payload["wakeStickyModeEnabled"] as? Bool {
-            profile.stickyModeEnabled = oldSticky
+            profile.stickyMode = oldSticky
         }
         updateUserProfile(profile, sync: false)
         
@@ -993,14 +1212,18 @@ final class AppState: ObservableObject {
             Task { await applyCustomSchedulesToScheduler() }
         }
         
-        // サーバーにデータがあれば、オンボーディングを完全にスキップしてメイン画面へ直行
-        if !habitSchedules.isEmpty && !isOnboardingComplete {
-            isOnboardingComplete = true
-            defaults.set(true, forKey: onboardingKey)
-            // .completion ではなく、onboardingStepKeyを削除してメイン画面へ直行
-            defaults.removeObject(forKey: onboardingStepKey)
-            // Note: ContentView は isOnboardingComplete == true でメイン画面を表示
+        if let sensor = payload["sensorAccess"] as? [String: Bool] {
+            sensorAccess.screenTimeEnabled = sensor["screenTimeEnabled"] ?? sensorAccess.screenTimeEnabled
+            sensorAccess.sleepEnabled = sensor["sleepEnabled"] ?? sensorAccess.sleepEnabled
+            sensorAccess.stepsEnabled = sensor["stepsEnabled"] ?? sensorAccess.stepsEnabled
+            sensorAccess.motionEnabled = sensor["motionEnabled"] ?? sensorAccess.motionEnabled
+            saveSensorAccess()
+            Task { await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false) }
         }
+        
+        // v3: サーバーにデータがあっても、オンボーディング強制完了はしない
+        // Mic/Notifications/AlarmKit画面を必ず通すため、isOnboardingCompleteの自動更新を廃止
+        // オンボーディング完了は markOnboardingComplete() でのみ行う
     }
     
     private func updateHabitNotifications() async {
@@ -1020,12 +1243,253 @@ final class AppState: ObservableObject {
         customHabit = nil
         CustomHabitStore.shared.save(nil)
     }
+    
+    @MainActor
+    func refreshSensorAccessAuthorizations(forceReauthIfNeeded: Bool) async {
+#if canImport(HealthKit)
+        let sleepAuthorized = HealthKitManager.shared.isSleepAuthorized()
+        let stepsAuthorized = HealthKitManager.shared.isStepsAuthorized()
+#else
+        let sleepAuthorized = false
+        let stepsAuthorized = false
+#endif
+#if canImport(FamilyControls)
+        let screenTimeAuthorized = ScreenTimeManager.shared.isAuthorized
+#else
+        let screenTimeAuthorized = false
+#endif
+
+        var next = sensorAccess
+        let wantedSleep = next.sleepEnabled
+        let wantedSteps = next.stepsEnabled
+        let wantedScreen = next.screenTimeEnabled
+
+        var resolvedSleepAuthorized = sleepAuthorized
+        var resolvedStepsAuthorized = stepsAuthorized
+        var resolvedScreenAuthorized = screenTimeAuthorized
+
+        if wantedSleep && !resolvedSleepAuthorized && forceReauthIfNeeded {
+            resolvedSleepAuthorized = await HealthKitManager.shared.requestSleepAuthorization()
+        }
+        if wantedSteps && !resolvedStepsAuthorized && forceReauthIfNeeded {
+            resolvedStepsAuthorized = await HealthKitManager.shared.requestStepsAuthorization()
+        }
+#if canImport(FamilyControls)
+        if wantedScreen && !resolvedScreenAuthorized && forceReauthIfNeeded {
+            resolvedScreenAuthorized = await ScreenTimeManager.shared.requestAuthorization()
+        }
+#endif
+
+        next.sleepAuthorized = resolvedSleepAuthorized
+        next.stepsAuthorized = resolvedStepsAuthorized
+        next.screenTimeAuthorized = resolvedScreenAuthorized
+        next.healthKit = (resolvedSleepAuthorized || resolvedStepsAuthorized) ? .authorized : .denied
+        next.screenTime = resolvedScreenAuthorized ? .authorized : .denied
+
+        // keep user intent; data収集は *Enabled && *Authorized でゲート
+        next.sleepEnabled = wantedSleep
+        next.stepsEnabled = wantedSteps
+        next.screenTimeEnabled = wantedScreen
+
+        if next != sensorAccess {
+            sensorAccess = next
+            saveSensorAccess()
+            scheduleSensorAccessSync(next)
+        }
+
+        let needsRefresh = (next.sleepEnabled && next.sleepAuthorized)
+            || (next.stepsEnabled && next.stepsAuthorized)
+            || (next.screenTimeEnabled && next.screenTimeAuthorized)
+        if needsRefresh {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+    }
+
+    // MARK: - Phase-7: Sensor Access State
+    
+    private static func loadSensorAccess(from defaults: UserDefaults, key: String, userId: String?) -> SensorAccessState {
+        if let userId,
+           let data = defaults.data(forKey: "\(key).\(userId)"),
+           let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) {
+            return decoded
+        }
+        if let data = defaults.data(forKey: key),
+           let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) {
+            return decoded
+        }
+        return .default
+    }
+    
+    private func saveSensorAccess(for userId: String? = nil) {
+        let key = sensorAccessStorageKey(for: userId ?? currentUserId)
+        if let data = try? JSONEncoder().encode(sensorAccess) {
+            defaults.set(data, forKey: key)
+        }
+    }
+
+    func mergeRemoteSensorAccess(sleep: Bool, steps: Bool, screenTime: Bool, motion: Bool) {
+        var next = sensorAccess
+        next.sleepEnabled = sleep
+        next.stepsEnabled = steps
+        next.screenTimeEnabled = screenTime
+        next.motionEnabled = motion
+        sensorAccess = next
+        saveSensorAccess()
+        Task {
+            await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
+            await scheduleSensorRepairIfNeeded(source: .remoteSync)
+        }
+    }
+
+    private func sensorAccessStorageKey(for userId: String?) -> String {
+        guard let userId, !userId.isEmpty else { return sensorAccessBaseKey }
+        return "\(sensorAccessBaseKey).\(userId)"
+    }
+
+    private var currentUserId: String? {
+        authStatus.userId
+    }
+    
+    // MARK: - Phase-7: integration toggles entry points (quiet fallback)
+    
+    func setScreenTimeEnabled(_ enabled: Bool) {
+        sensorAccess.screenTimeEnabled = enabled
+        saveSensorAccess()
+        Task {
+            await ProfileSyncService.shared.enqueue(profile: userProfile, sensorAccess: sensorAccessForSync())
+        }
+        scheduleSensorAccessSync(sensorAccess)
+    }
+    
+    func setSleepEnabled(_ enabled: Bool) {
+        sensorAccess.sleepEnabled = enabled
+        saveSensorAccess()
+        scheduleSensorAccessSync(sensorAccess)
+        Task {
+            await recoverHealthKitAccessIfNeeded(allowDuringOnboarding: true)
+        }
+    }
+    
+    func setStepsEnabled(_ enabled: Bool) {
+        sensorAccess.stepsEnabled = enabled
+        saveSensorAccess()
+        scheduleSensorAccessSync(sensorAccess)
+        Task {
+            await recoverHealthKitAccessIfNeeded(allowDuringOnboarding: true)
+        }
+    }
+    
+    func setMotionEnabled(_ enabled: Bool) {
+        sensorAccess.motionEnabled = enabled
+        saveSensorAccess()
+        scheduleSensorAccessSync(sensorAccess)
+    }
+    
+    func updateScreenTimePermission(_ status: SensorPermissionStatus) {
+        sensorAccess.screenTime = status
+        if status != .authorized { sensorAccess.screenTimeEnabled = false }
+        saveSensorAccess()
+    }
+    
+    func updateHealthKitPermission(_ status: SensorPermissionStatus) {
+        sensorAccess.healthKit = status
+        // 権限を失ってもトグル意図は保持する
+        saveSensorAccess()
+    }
+    
+    func updateMotionPermission(_ status: SensorPermissionStatus) {
+        sensorAccess.motion = status
+        if status != .authorized { sensorAccess.motionEnabled = false }
+        saveSensorAccess()
+    }
+    
+    private func scheduleSensorAccessSync(_ access: SensorAccessState) {
+        Task.detached(priority: .utility) { [access] in
+            await SensorAccessSyncService.shared.sync(access: access)
+        }
+    }
+    
+    func updateSensorAccess(_ access: SensorAccessState) {
+        sensorAccess = access
+        saveSensorAccess()
+        scheduleSensorAccessSync(access)
+    }
+    
+    func recoverHealthKitAccessIfNeeded(allowDuringOnboarding: Bool = false) async {
+#if canImport(HealthKit)
+        guard sensorAccess.sleepEnabled || sensorAccess.stepsEnabled else { return }
+        guard allowDuringOnboarding || isOnboardingComplete else {
+            persistSensorRepairPending()
+            return
+        }
+        var updated = sensorAccess
+        var changed = false
+
+        if updated.sleepEnabled && !updated.sleepAuthorized {
+            var granted = HealthKitManager.shared.isSleepAuthorized()
+            if !granted {
+                granted = await HealthKitManager.shared.requestSleepAuthorization()
+            }
+            updated.sleepAuthorized = granted
+            changed = changed || granted != sensorAccess.sleepAuthorized
+        }
+
+        if updated.stepsEnabled && !updated.stepsAuthorized {
+            var granted = HealthKitManager.shared.isStepsAuthorized()
+            if !granted {
+                granted = await HealthKitManager.shared.requestStepsAuthorization()
+            }
+            updated.stepsAuthorized = granted
+            changed = changed || granted != sensorAccess.stepsAuthorized
+        }
+
+        guard changed else { return }
+        sensorAccess = updated
+        saveSensorAccess()
+        scheduleSensorAccessSync(updated)
+        if (updated.sleepEnabled && updated.sleepAuthorized) || (updated.stepsEnabled && updated.stepsAuthorized) {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+        clearSensorRepairPending()
+#endif
+    }
+    
+    private func scheduleSensorRepairIfNeeded(source: SensorRepairSource) async {
+        let needsRepairNow = (sensorAccess.sleepEnabled && !sensorAccess.sleepAuthorized)
+            || (sensorAccess.stepsEnabled && !sensorAccess.stepsAuthorized)
+        guard needsRepairNow else {
+            clearSensorRepairPending()
+            return
+        }
+        if isOnboardingComplete {
+            clearSensorRepairPending()
+            await recoverHealthKitAccessIfNeeded()
+        } else {
+            persistSensorRepairPending()
+        }
+    }
+    
+    private func persistSensorRepairPending(_ value: Bool = true) {
+        needsSensorRepairAfterOnboarding = value
+        defaults.set(value, forKey: sensorRepairPendingKey)
+    }
+    
+    private func clearSensorRepairPending() {
+        persistSensorRepairPending(false)
+    }
 }
 
 extension AuthStatus {
     var accessToken: String? {
         switch self {
         case .signedIn(let c): return c.jwtAccessToken
+        default: return nil
+        }
+    }
+
+    var userId: String? {
+        switch self {
+        case .signedIn(let c): return c.userId
         default: return nil
         }
     }

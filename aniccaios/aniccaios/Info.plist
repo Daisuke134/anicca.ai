@@ -2,8 +2,12 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>ANICCA_PROXY_BASE_URL</key>
+	<string>$(INFOPLIST_KEY_ANICCA_PROXY_BASE_URL)</string>
 	<key>CFBundleDevelopmentRegion</key>
 	<string>$(DEVELOPMENT_LANGUAGE)</string>
+	<key>CFBundleDisplayName</key>
+	<string>Anicca</string>
 	<key>CFBundleExecutable</key>
 	<string>$(EXECUTABLE_NAME)</string>
 	<key>CFBundleIdentifier</key>
@@ -12,8 +16,6 @@
 	<string>6.0</string>
 	<key>CFBundleName</key>
 	<string>$(PRODUCT_NAME)</string>
-	<key>CFBundleDisplayName</key>
-	<string>Anicca</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -22,40 +24,49 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>UIRequiresFullScreen</key>
-	<true/>
-	<key>ANICCA_PROXY_BASE_URL</key>
-	<string>$(INFOPLIST_KEY_ANICCA_PROXY_BASE_URL)</string>
-	<key>REVENUECAT_API_KEY</key>
-	<string>$(INFOPLIST_KEY_REVENUECAT_API_KEY)</string>
-	<key>REVENUECAT_ENTITLEMENT_ID</key>
-	<string>$(INFOPLIST_KEY_REVENUECAT_ENTITLEMENT_ID)</string>
-	<key>REVENUECAT_PAYWALL_ID</key>
-	<string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
-	<key>REVENUECAT_CUSTOMER_CENTER_ID</key>
-	<string>$(INFOPLIST_KEY_REVENUECAT_CUSTOMER_CENTER_ID)</string>
-	<key>RESET_ON_LAUNCH</key>
-	<string>$(INFOPLIST_KEY_RESET_ON_LAUNCH)</string>
-	<key>NSUserNotificationsUsageDescription</key>
-	<string>$(INFOPLIST_KEY_NSUserNotificationsUsageDescription)</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>$(INFOPLIST_KEY_NSMicrophoneUsageDescription)</string>
-	<key>NSCameraUsageDescription</key>
-	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
 	<key>NSAlarmKitUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSAlarmKitUsageDescription)</string>
+	<key>NSCameraUsageDescription</key>
+	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>$(INFOPLIST_KEY_NSMicrophoneUsageDescription)</string>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Anicca reads sleep and step data from Health to generate insights and timely nudges.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Anicca can write limited data to Health only when you explicitly choose to share it.</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Anicca uses motion data to detect inactivity and send gentle reminders.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
 	<false/>
+	<key>NSUserNotificationsUsageDescription</key>
+	<string>$(INFOPLIST_KEY_NSUserNotificationsUsageDescription)</string>
+	<key>RESET_ON_LAUNCH</key>
+	<string>$(INFOPLIST_KEY_RESET_ON_LAUNCH)</string>
+	<key>REVENUECAT_API_KEY</key>
+	<string>$(INFOPLIST_KEY_REVENUECAT_API_KEY)</string>
+	<key>REVENUECAT_CUSTOMER_CENTER_ID</key>
+	<string>$(INFOPLIST_KEY_REVENUECAT_CUSTOMER_CENTER_ID)</string>
+	<key>REVENUECAT_ENTITLEMENT_ID</key>
+	<string>$(INFOPLIST_KEY_REVENUECAT_ENTITLEMENT_ID)</string>
+	<key>REVENUECAT_PAYWALL_ID</key>
+	<string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>com.anicca.metrics.daily</string>
+	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>
 		<string>remote-notification</string>
+		<string>processing</string>
 	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
+	<key>UIRequiresFullScreen</key>
+	<true/>
 </dict>
 </plist>

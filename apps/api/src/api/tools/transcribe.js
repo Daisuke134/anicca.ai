@@ -1,6 +1,7 @@
 // Whisper APIを使った音声文字起こしエンドポイント
 
 import FormData from 'form-data';
+import busboy from 'busboy';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -66,8 +67,6 @@ export default async function handler(req, res) {
 
 // FormDataパーサー（簡易版）
 async function parseFormData(req) {
-  const busboy = require('busboy');
-  
   return new Promise((resolve, reject) => {
     const result = {};
     const bb = busboy({ headers: req.headers });

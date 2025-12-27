@@ -1,26 +1,65 @@
 import SwiftUI
+import UIKit
+import Combine
 
 struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
+    @State private var habitSessionActive = false
+    @State private var pendingHabit: HabitType?
     
     var body: some View {
-        TabView(selection: $appState.selectedRootTab) {
-            TalkTabView()
-                .tabItem {
-                    Label(String(localized: "tab_talk"), systemImage: "message")
-                }
-                .tag(AppState.RootTab.talk)
-            
-            HabitsTabView()
-                .tabItem {
-                    Label(String(localized: "tab_habits"), systemImage: "list.bullet")
-                }
-                .tag(AppState.RootTab.habits)
+        // コンテンツエリア
+        Group {
+            switch appState.selectedRootTab {
+            case .talk:
+                TalkView()
+            case .habits:
+                HabitsTabView()
+                    .environmentObject(appState)
+            case .behavior:
+                BehaviorView()
+            case .profile:
+                ProfileView()
+                    .environmentObject(appState)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .fullScreenCover(isPresented: $habitSessionActive, onDismiss: {
+            pendingHabit = nil
+            appState.clearPendingHabitTrigger()
+        }) {
+            HabitSessionView(habit: pendingHabit ?? .wake)
+                .environmentObject(appState)
+        }
+        .onAppear { checkPendingHabitTrigger(force: true) }
+        .onChange(of: appState.pendingHabitTrigger) { _ in checkPendingHabitTrigger() }
+        .onChange(of: appState.shouldStartSessionImmediately) { should in
+            // ★ shouldStartSessionImmediatelyがtrueになった時もチェック
+            // prepareForImmediateSessionでshouldStartSessionImmediatelyとpendingHabitTriggerが
+            // 同時に設定されるため、両方の変更を監視する必要がある
+            if should { checkPendingHabitTrigger() }
+        }
+        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
+            // ★ アプリがアクティブになった時もチェック（バックグラウンドからの復帰時）
+            // 通知タップでアプリが開く時は必ずこのNotificationが発火する
+            checkPendingHabitTrigger()
+        }
+        .safeAreaInset(edge: .bottom) {
+            // Figmaデザイン準拠のカスタムタブバー
+            FigmaTabBar(selectedTab: $appState.selectedRootTab)
         }
         .background(AppBackground())
+        .ignoresSafeArea(.keyboard, edges: .bottom)
+    }
+    
+    private func checkPendingHabitTrigger(force: Bool = false) {
+        guard let trigger = appState.pendingHabitTrigger else { return }
+        guard appState.shouldStartSessionImmediately || force else { return }
+        pendingHabit = trigger.habit
+        if !habitSessionActive {
+            habitSessionActive = true
+        }
+        appState.clearShouldStartSessionImmediately()
     }
 }
-
-// SessionViewをTalkTabViewにリネーム
-typealias TalkTabView = SessionView
 

@@ -17,7 +17,7 @@ router.get('/', async (req, res) => {
     return res.json({ entitlement: normalizePlanForResponse(state) });
   } catch (error) {
     logger.error('Failed to get entitlement', error);
-    return res.status(500).json({ error: 'failed_to_get_entitlement' });
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to get entitlement' } });
   }
 });
 

@@ -1248,15 +1248,39 @@ final class AppState: ObservableObject {
 #endif
 
         var next = sensorAccess
+        let userPreviouslyEnabledSleep = next.sleepEnabled
+        let userPreviouslyEnabledSteps = next.stepsEnabled
+        let userPreviouslyEnabledScreenTime = next.screenTimeEnabled
+
         next.sleepAuthorized = sleepAuthorized
         next.stepsAuthorized = stepsAuthorized
         next.screenTimeAuthorized = screenTimeAuthorized
         next.healthKit = (sleepAuthorized || stepsAuthorized) ? .authorized : .denied
         next.screenTime = screenTimeAuthorized ? .authorized : .denied
 
-        if next.sleepEnabled && !sleepAuthorized { next.sleepEnabled = false }
-        if next.stepsEnabled && !stepsAuthorized { next.stepsEnabled = false }
-        if next.screenTimeEnabled && !screenTimeAuthorized { next.screenTimeEnabled = false }
+        if sleepAuthorized {
+            if !userPreviouslyEnabledSleep {
+                next.sleepEnabled = true
+            }
+        } else {
+            next.sleepEnabled = false
+        }
+
+        if stepsAuthorized {
+            if !userPreviouslyEnabledSteps {
+                next.stepsEnabled = true
+            }
+        } else {
+            next.stepsEnabled = false
+        }
+
+        if screenTimeAuthorized {
+            if !userPreviouslyEnabledScreenTime {
+                next.screenTimeEnabled = true
+            }
+        } else {
+            next.screenTimeEnabled = false
+        }
 
         if next != sensorAccess {
             sensorAccess = next

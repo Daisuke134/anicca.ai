@@ -78,10 +78,10 @@ struct TotalActivityReport: DeviceActivityReportScene {
                 totalMinutes += minutes
                 if isLateNight { lateNightMinutes += minutes }
                 
-                let primaryCategory = segment.categories.first?.key.rawValue ?? "unknown"
-                if primaryCategory.localizedCaseInsensitiveContains("social") {
-                    socialMinutes += minutes
-                }
+                // 現行SDKでは CategoryActivitySegment のカテゴリ詳細を公開していないため、
+                // 区別せず総スクリーン時間を social として扱う（UI表示目的の暫定措置）
+                let primaryCategory = "screen"
+                socialMinutes += minutes
                 
                 snsSessionsPayload.append([
                     "startAt": ISO8601DateFormatter().string(from: segment.dateInterval.start),

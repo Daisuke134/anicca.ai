@@ -315,30 +315,33 @@ struct HabitsSectionView: View {
             Toggle("", isOn: Binding(
                 get: { activeHabits.contains(habit) },
                 set: { isOn in
-                    if isOn {
-                        if let date = date {
-                            // ★ 起床の場合、AlarmKit許可をリクエスト
-                            if habit == .wake {
-                                Task {
-                                    await requestAlarmKitPermissionIfNeeded()
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        if isOn {
+                            if let date = date {
+                                // ★ 起床の場合、AlarmKit許可をリクエスト
+                                if habit == .wake {
+                                    Task {
+                                        await requestAlarmKitPermissionIfNeeded()
+                                    }
                                 }
+                                activeHabits.insert(habit)
+                                habitTimes[habit] = date
+                            } else {
+                                sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
+                                activeSheet = .habit(habit)
                             }
-                            activeHabits.insert(habit)
-                            habitTimes[habit] = date
                         } else {
-                            sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
-                            activeSheet = .habit(habit)
+                            // トグルOFF時はAppStateからも削除して永続化
+                            activeHabits.remove(habit)
+                            habitTimes.removeValue(forKey: habit)
+                            appState.removeHabitSchedule(habit)
                         }
-                    } else {
-                        // トグルOFF時はAppStateからも削除して永続化
-                        activeHabits.remove(habit)
-                        habitTimes.removeValue(forKey: habit)
-                        appState.removeHabitSchedule(habit)
                     }
                 }
             ))
             .labelsHidden()
             .tint(AppTheme.Colors.accent)
+            .animation(.easeInOut(duration: 0.18), value: activeHabits)
         }
     }
     
@@ -375,24 +378,27 @@ struct HabitsSectionView: View {
             Toggle("", isOn: Binding(
                 get: { activeCustomHabits.contains(id) },
                 set: { isOn in
-                    if isOn {
-                        if let date = date {
-                            activeCustomHabits.insert(id)
-                            customHabitTimes[id] = date
+                    withAnimation(.easeInOut(duration: 0.18)) {
+                        if isOn {
+                            if let date = date {
+                                activeCustomHabits.insert(id)
+                                customHabitTimes[id] = date
+                            } else {
+                                sheetTime = Date()
+                                activeSheet = .custom(id)
+                            }
                         } else {
-                            sheetTime = Date()
-                            activeSheet = .custom(id)
+                            // トグルOFF時はAppStateからも削除して永続化
+                            activeCustomHabits.remove(id)
+                            customHabitTimes.removeValue(forKey: id)
+                            appState.updateCustomHabitSchedule(id: id, time: nil)
                         }
-                    } else {
-                        // トグルOFF時はAppStateからも削除して永続化
-                        activeCustomHabits.remove(id)
-                        customHabitTimes.removeValue(forKey: id)
-                        appState.updateCustomHabitSchedule(id: id, time: nil)
                     }
                 }
             ))
             .labelsHidden()
             .tint(AppTheme.Colors.accent)
+            .animation(.easeInOut(duration: 0.18), value: activeCustomHabits)
         }
     }
     
@@ -921,6 +927,10 @@ private func alarmKitPermissionBinding(appState: AppState, keyPath: WritableKeyP
                     var profile = appState.userProfile
                     profile[keyPath: keyPath] = granted
                     appState.updateUserProfile(profile, sync: true)
+                    if !granted {
+                        // ユーザーが再度拒否 → 即座にトグルを戻す
+                        appState.objectWillChange.send()
+                    }
                 }
             } else {
                 var profile = appState.userProfile

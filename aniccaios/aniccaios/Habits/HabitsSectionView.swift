@@ -331,17 +331,26 @@ struct HabitsSectionView: View {
                                 activeSheet = .habit(habit)
                             }
                         } else {
-                            // トグルOFF時はAppStateからも削除して永続化
+                            // 1) まずトグル状態だけをアニメーション（行の移動/セクション移動は起こさない）
                             activeHabits.remove(habit)
-                            habitTimes.removeValue(forKey: habit)
-                            appState.removeHabitSchedule(habit)
+
+                            // 2) 少し遅延して、構造変化（schedule削除＝セクション移動）をアニメ無しで実行
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 220_000_000)
+                                var t = Transaction()
+                                t.disablesAnimations = true
+                                withTransaction(t) {
+                                    habitTimes.removeValue(forKey: habit)
+                                    appState.removeHabitSchedule(habit)
+                                }
+                            }
                         }
                     }
                 }
             ))
             .labelsHidden()
             .tint(AppTheme.Colors.accent)
-            .animation(.easeInOut(duration: 0.18), value: activeHabits)
+            // NOTE: withAnimation側で制御する（ここでList構造変化まで巻き込むと崩れやすい）
         }
     }
     
@@ -388,17 +397,23 @@ struct HabitsSectionView: View {
                                 activeSheet = .custom(id)
                             }
                         } else {
-                            // トグルOFF時はAppStateからも削除して永続化
                             activeCustomHabits.remove(id)
-                            customHabitTimes.removeValue(forKey: id)
-                            appState.updateCustomHabitSchedule(id: id, time: nil)
+
+                            Task { @MainActor in
+                                try? await Task.sleep(nanoseconds: 220_000_000)
+                                var t = Transaction()
+                                t.disablesAnimations = true
+                                withTransaction(t) {
+                                    customHabitTimes.removeValue(forKey: id)
+                                    appState.updateCustomHabitSchedule(id: id, time: nil)
+                                }
+                            }
                         }
                     }
                 }
             ))
             .labelsHidden()
             .tint(AppTheme.Colors.accent)
-            .animation(.easeInOut(duration: 0.18), value: activeCustomHabits)
         }
     }
     
@@ -541,7 +556,7 @@ struct HabitEditSheet: View {
     @State private var wakeRoutines: [RoutineItem] = []
     @State private var sleepRoutines: [RoutineItem] = []
     @Environment(\.dismiss) private var dismiss
-    
+
     init(habit: HabitType, onSave: (() -> Void)? = nil) {
         self.habit = habit
         self.onSave = onSave
@@ -914,7 +929,10 @@ struct CustomHabitEditSheet: View {
 
 #if canImport(AlarmKit)
 @available(iOS 26.0, *)
-private func alarmKitPermissionBinding(appState: AppState, keyPath: WritableKeyPath<UserProfile, Bool>) -> Binding<Bool> {
+private func alarmKitPermissionBinding(
+    appState: AppState,
+    keyPath: WritableKeyPath<UserProfile, Bool>
+) -> Binding<Bool> {
     Binding(
         get: { appState.userProfile[keyPath: keyPath] },
         set: { newValue in
@@ -927,10 +945,6 @@ private func alarmKitPermissionBinding(appState: AppState, keyPath: WritableKeyP
                     var profile = appState.userProfile
                     profile[keyPath: keyPath] = granted
                     appState.updateUserProfile(profile, sync: true)
-                    if !granted {
-                        // ユーザーが再度拒否 → 即座にトグルを戻す
-                        appState.objectWillChange.send()
-                    }
                 }
             } else {
                 var profile = appState.userProfile

@@ -200,7 +200,7 @@ final class AlarmKitHabitCoordinator {
                 return true
             }
             
-            // iOS 18+: requestAuthorization() を再度呼ぶとダイアログを再提示できる
+            // ユーザー操作起点（オンボーディング/設定トグル）で呼ばれる前提で、常にリクエストする
             let state = try await manager.requestAuthorization()
             logger.info("AlarmKit authorization result: \(String(describing: state), privacy: .public)")
             return state == .authorized

@@ -20,8 +20,6 @@ Distribution：オーガニック動画（→Tiktok広告）＋　ASO ＋　Appl
 
 ーーーー
 ・PayWallをSuperwallで改善する。
-
-・ジャーナルクラブ　スライド作成
 ・コロキアム出席
 ・修論の作成
 

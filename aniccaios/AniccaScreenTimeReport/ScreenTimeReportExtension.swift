@@ -7,18 +7,19 @@ import os.log
 
 @main
 struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
-    // iOS 18.2以降で必須のextensionPointプロパティ
-    @AppExtensionPoint.Bind
-    var extensionPoint: AppExtensionPoint {
-        // DeviceActivityReportExtension用の拡張ポイント識別子
-        // hostパラメータにAppleのDeviceActivityUIのバンドルIDを指定
-        AppExtensionPoint.Identifier(host: "com.apple.deviceactivityui", name: "report-extension")
-    }
-    
     var body: some DeviceActivityReportScene {
         TotalActivityReport { activityReport in
             TotalActivityView(report: activityReport)
         }
+    }
+}
+
+// iOS 26+ でのみ利用可能な AppExtensionPoint を隔離（Deployment target が 26 未満でもコンパイルを通す）
+@available(iOS 26.0, *)
+extension AniccaScreenTimeReportExtension {
+    @AppExtensionPoint.Bind
+    var extensionPoint: AppExtensionPoint {
+        AppExtensionPoint.Identifier(host: "com.apple.deviceactivityui", name: "report-extension")
     }
 }
 

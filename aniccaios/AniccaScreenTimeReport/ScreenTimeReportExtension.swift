@@ -1,7 +1,4 @@
 import DeviceActivity
-import ExtensionFoundation  // AppExtensionプロトコル用
-import ExtensionKit  // ExtensionKit拡張用（プロジェクト設定でExtensionKit拡張として設定されているため）
-import ManagedSettings  // bundleIdentifier 用に必要
 import SwiftUI
 import os.log
 
@@ -14,15 +11,6 @@ struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
     }
 }
 
-// iOS 26+ でのみ利用可能な AppExtensionPoint を隔離（Deployment target が 26 未満でもコンパイルを通す）
-@available(iOS 26.0, *)
-extension AniccaScreenTimeReportExtension {
-    @AppExtensionPoint.Bind
-    var extensionPoint: AppExtensionPoint {
-        AppExtensionPoint.Identifier(host: "com.apple.deviceactivityui", name: "report-extension")
-    }
-}
-
 // MARK: - Report Context
 
 extension DeviceActivityReport.Context {
@@ -31,11 +19,11 @@ extension DeviceActivityReport.Context {
 
 // MARK: - Report Scene
 
+@MainActor
 struct TotalActivityReport: DeviceActivityReportScene {
     let context: DeviceActivityReport.Context = .totalActivity
     let content: (ActivityReport) -> TotalActivityView
     
-    // Main actor分離の問題を解決するため、nonisolatedで実行
     nonisolated func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityReport {
         let logger = Logger(subsystem: "ai.anicca.app.ios.screentime-report", category: "Report")
         let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")

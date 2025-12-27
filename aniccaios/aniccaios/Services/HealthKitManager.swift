@@ -132,10 +132,18 @@ final class HealthKitManager {
                     HKCategoryValueSleepAnalysis.asleepREM.rawValue,
                     HKCategoryValueSleepAnalysis.asleepUnspecified.rawValue
                 ]
+                let inBedValue = HKCategoryValueSleepAnalysis.inBed.rawValue
                 
                 // ★ 今日の起床時刻（=今日の日付で終了したサンプル）のみを対象にフィルタリング
-                let todayAsleepSamples = samples.filter { sample in
+                var todayAsleepSamples = samples.filter { sample in
                     asleepValues.contains(sample.value) && sample.endDate >= startOfDay
+                }
+                
+                // フォールバック: asleep が無い端末は inBed を使う
+                if todayAsleepSamples.isEmpty {
+                    todayAsleepSamples = samples.filter { sample in
+                        sample.value == inBedValue && sample.endDate >= startOfDay
+                    }
                 }
                 
                 let totalSleepSeconds = todayAsleepSamples

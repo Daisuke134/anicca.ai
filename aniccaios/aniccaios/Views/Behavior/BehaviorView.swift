@@ -112,23 +112,25 @@ struct BehaviorView: View {
         logger.info("BehaviorView: screenTimeEnabled=\(appState.sensorAccess.screenTimeEnabled), sleepEnabled=\(appState.sensorAccess.sleepEnabled), stepsEnabled=\(appState.sensorAccess.stepsEnabled)")
         
         // v3.1: Screen Time データを更新するために DeviceActivityReport を表示
+        var shouldForceUpload = false
         if appState.sensorAccess.screenTimeEnabled {
             showScreenTimeReport = true
             logger.info("BehaviorView: Waiting for DeviceActivityReport...")
             // extensionがAppGroupへ書き込む lastUpdate を"短時間だけ"待つ（最大5秒→短縮）
             let startTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
-            for _ in 0..<3 { // 最大0.6秒（0.2s * 3）
+            for _ in 0..<25 { // 最大5秒（0.2s * 25）
                 try? await Task.sleep(nanoseconds: 200_000_000)
                 let nowTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
-                if nowTs > startTs { break }
+                if nowTs > startTs {
+                    shouldForceUpload = true
+                    break
+                }
             }
             showScreenTimeReport = false
         }
         
-        // v3.1: ここで毎回force送信すると日中のタブ再訪問で上書き＆空データ保存を誘発する。
-        // 当日未送信なら送信、送信済みなら何もしない（= runUploadIfDueの通常動作）にする。
-        logger.info("BehaviorView: Running MetricsUploader...")
-        await MetricsUploader.shared.runUploadIfDue(force: false)
+        logger.info("BehaviorView: Running MetricsUploader... force=\(shouldForceUpload)")
+        await MetricsUploader.shared.runUploadIfDue(force: shouldForceUpload)
         
         do {
             logger.info("BehaviorView: Fetching summary from backend...")

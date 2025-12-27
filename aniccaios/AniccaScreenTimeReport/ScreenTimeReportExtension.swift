@@ -45,61 +45,24 @@ struct TotalActivityReport: DeviceActivityReportScene {
         let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
         
         var totalMinutes: Double = 0
-        var socialMinutes: Double = 0
         var lateNightMinutes: Double = 0
-        var snsSessions: [[String: Any]] = []
+        var receivedAny = false
         
         let calendar = Calendar.current
-        
-        // SNS アプリの Bundle ID リスト
-        let snsBundleIds = [
-            "com.twitter", "com.atebits.tweetie2",  // Twitter/X
-            "com.burbn.instagram",                   // Instagram
-            "com.zhiliaoapp.musically",              // TikTok
-            "com.facebook.Facebook",                 // Facebook
-            "com.toyopagroup.picaboo",               // Snapchat
-            "com.pinterest",                         // Pinterest
-            "com.reddit.Reddit",                     // Reddit
-            "net.whatsapp.WhatsApp",                 // WhatsApp
-            "jp.naver.line",                         // LINE
-            "com.facebook.Messenger",                // Messenger
-            "com.google.ios.youtube"                 // YouTube
-        ]
         
         // ★ DeviceActivityResults は AsyncSequence なので、すべて for await を使用
         for await dataItem in data {
             for await segment in dataItem.activitySegments {
                 let segmentStart = segment.dateInterval.start
-                let segmentEnd = segment.dateInterval.end
                 let hour = calendar.component(.hour, from: segmentStart)
                 let isLateNight = hour >= 23 || hour < 6
                 
-                // ★ segment.categories を経由して applications を取得
-                for await category in segment.categories {
-                    for await app in category.applications {
-                        let minutes = app.totalActivityDuration / 60.0
-                        totalMinutes += minutes
-                        
-                        // SNS かどうか判定
-                        let bundleId = app.application.bundleIdentifier ?? ""
-                        let isSns = snsBundleIds.contains { bundleId.hasPrefix($0) }
-                        
-                        if isSns {
-                            socialMinutes += minutes
-                            if isLateNight {
-                                lateNightMinutes += minutes
-                            }
-                            
-                            // snsSessions に追加
-                            snsSessions.append([
-                                "bundleId": bundleId,
-                                "startAt": ISO8601DateFormatter().string(from: segmentStart),
-                                "endAt": ISO8601DateFormatter().string(from: segmentEnd),
-                                "totalMinutes": Int(minutes)
-                            ])
-                        }
-                    }
-                }
+                // LaunchServices DB に触れないため、bundleIdentifier 依存をやめる。
+                // まずは「総スクリーン時間」と「夜間スクリーン時間」を安定して出す。
+                let minutes = segment.totalActivityDuration / 60.0
+                if minutes > 0 { receivedAny = true }
+                totalMinutes += minutes
+                if isLateNight { lateNightMinutes += minutes }
             }
         }
         
@@ -107,23 +70,21 @@ struct TotalActivityReport: DeviceActivityReportScene {
         let today = ISO8601DateFormatter().string(from: Date()).prefix(10)
         let todayKey = String(today)
         
-        appGroupDefaults?.set(Int(totalMinutes), forKey: "screenTime_totalMinutes_\(todayKey)")
-        appGroupDefaults?.set(Int(socialMinutes), forKey: "screenTime_socialMinutes_\(todayKey)")
-        appGroupDefaults?.set(Int(lateNightMinutes), forKey: "screenTime_lateNightMinutes_\(todayKey)")
-        
-        // v3.1: snsSessions を JSON として保存
-        if let sessionsData = try? JSONSerialization.data(withJSONObject: snsSessions),
-           let sessionsJSON = String(data: sessionsData, encoding: .utf8) {
-            appGroupDefaults?.set(sessionsJSON, forKey: "screenTime_snsSessions_\(todayKey)")
+        // 重要: データが返ってこないケース（未承認/未生成）で 0 を書いて上書きしない
+        if receivedAny {
+            appGroupDefaults?.set(Int(totalMinutes), forKey: "screenTime_totalMinutes_\(todayKey)")
+            // 互換: 既存パイプラインが snsMinutesTotal を参照するため、暫定で total を入れる
+            appGroupDefaults?.set(Int(totalMinutes), forKey: "screenTime_socialMinutes_\(todayKey)")
+            appGroupDefaults?.set(Int(lateNightMinutes), forKey: "screenTime_lateNightMinutes_\(todayKey)")
+            appGroupDefaults?.set(Date().timeIntervalSince1970, forKey: "screenTime_lastUpdate")
+            logger.info("Saved screen time: total=\(Int(totalMinutes))m, lateNight=\(Int(lateNightMinutes))m")
+        } else {
+            logger.info("No device activity data received; skipping App Group write")
         }
-        
-        appGroupDefaults?.set(Date().timeIntervalSince1970, forKey: "screenTime_lastUpdate")
-        
-        logger.info("Saved screen time: total=\(Int(totalMinutes))m, social=\(Int(socialMinutes))m, lateNight=\(Int(lateNightMinutes))m, sessions=\(snsSessions.count)")
         
         return ActivityReport(
             totalMinutes: Int(totalMinutes),
-            socialMinutes: Int(socialMinutes),
+            socialMinutes: Int(totalMinutes),
             lateNightMinutes: Int(lateNightMinutes)
         )
     }

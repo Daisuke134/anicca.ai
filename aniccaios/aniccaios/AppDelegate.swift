@@ -63,7 +63,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             await consumePendingHabitLaunch(retry: true)
             await SensorAccessSyncService.shared.fetchLatest()
             await AppState.shared.refreshSensorAccessAuthorizations(forceReauthIfNeeded: true)
-            await AppState.shared.recoverHealthKitAccessIfNeeded()
+            if AppState.shared.isOnboardingComplete {
+                await AppState.shared.recoverHealthKitAccessIfNeeded()
+            }
 
             // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
             await NotificationScheduler.shared.refreshPreRemindersIfNeeded()

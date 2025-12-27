@@ -39,6 +39,13 @@ final class AppState: ObservableObject {
     
     // Phase-7: sensor permissions + integration toggles
     @Published private(set) var sensorAccess: SensorAccessState
+    private var needsSensorRepairAfterOnboarding: Bool = false
+    
+    enum SensorRepairSource {
+        case remoteSync
+        case onboardingCompleted
+        case explicitUserAction
+    }
     
     enum RootTab: Int, Hashable {
         case talk = 0
@@ -73,6 +80,7 @@ final class AppState: ObservableObject {
     private let customHabitsKey = "com.anicca.customHabits"
     private let customHabitSchedulesKey = "com.anicca.customHabitSchedules"
     private let sensorAccessBaseKey = "com.anicca.sensorAccessState"
+    private let sensorRepairPendingKey = "com.anicca.sensorRepairPending"
     private let hasSeenWakeSilentTipKey = "com.anicca.hasSeenWakeSilentTip"
 
     private let scheduler = NotificationScheduler.shared
@@ -110,6 +118,7 @@ final class AppState: ObservableObject {
         self.userProfile = loadUserProfile()
         self.subscriptionInfo = loadSubscriptionInfo()
         self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
+        self.needsSensorRepairAfterOnboarding = defaults.bool(forKey: sensorRepairPendingKey)
         self.customHabit = CustomHabitStore.shared.load()
         
         // カスタム習慣の読み込み
@@ -330,6 +339,7 @@ final class AppState: ObservableObject {
             // 初回ログイン直後に即座に当日分の指標をアップロードして挙動タブを埋める
             await MetricsUploader.shared.runUploadIfDue(force: true)
             MetricsUploader.shared.scheduleNextIfPossible()
+            await scheduleSensorRepairIfNeeded(source: .onboardingCompleted)
         }
     }
 
@@ -1325,7 +1335,10 @@ final class AppState: ObservableObject {
         next.motionEnabled = motion
         sensorAccess = next
         saveSensorAccess()
-        Task { await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false) }
+        Task {
+            await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
+            await scheduleSensorRepairIfNeeded(source: .remoteSync)
+        }
     }
 
     private func sensorAccessStorageKey(for userId: String?) -> String {
@@ -1352,12 +1365,18 @@ final class AppState: ObservableObject {
         sensorAccess.sleepEnabled = enabled
         saveSensorAccess()
         scheduleSensorAccessSync(sensorAccess)
+        Task {
+            await recoverHealthKitAccessIfNeeded(allowDuringOnboarding: true)
+        }
     }
     
     func setStepsEnabled(_ enabled: Bool) {
         sensorAccess.stepsEnabled = enabled
         saveSensorAccess()
         scheduleSensorAccessSync(sensorAccess)
+        Task {
+            await recoverHealthKitAccessIfNeeded(allowDuringOnboarding: true)
+        }
     }
     
     func setMotionEnabled(_ enabled: Bool) {
@@ -1396,9 +1415,13 @@ final class AppState: ObservableObject {
         scheduleSensorAccessSync(access)
     }
     
-    func recoverHealthKitAccessIfNeeded() async {
+    func recoverHealthKitAccessIfNeeded(allowDuringOnboarding: Bool = false) async {
 #if canImport(HealthKit)
         guard sensorAccess.sleepEnabled || sensorAccess.stepsEnabled else { return }
+        guard allowDuringOnboarding || isOnboardingComplete else {
+            persistSensorRepairPending()
+            return
+        }
         var updated = sensorAccess
         var changed = false
 
@@ -1427,7 +1450,32 @@ final class AppState: ObservableObject {
         if (updated.sleepEnabled && updated.sleepAuthorized) || (updated.stepsEnabled && updated.stepsAuthorized) {
             await MetricsUploader.shared.runUploadIfDue(force: true)
         }
+        clearSensorRepairPending()
 #endif
+    }
+    
+    private func scheduleSensorRepairIfNeeded(source: SensorRepairSource) async {
+        let needsRepairNow = (sensorAccess.sleepEnabled && !sensorAccess.sleepAuthorized)
+            || (sensorAccess.stepsEnabled && !sensorAccess.stepsAuthorized)
+        guard needsRepairNow else {
+            clearSensorRepairPending()
+            return
+        }
+        if isOnboardingComplete {
+            clearSensorRepairPending()
+            await recoverHealthKitAccessIfNeeded()
+        } else {
+            persistSensorRepairPending()
+        }
+    }
+    
+    private func persistSensorRepairPending(_ value: Bool = true) {
+        needsSensorRepairAfterOnboarding = value
+        defaults.set(value, forKey: sensorRepairPendingKey)
+    }
+    
+    private func clearSensorRepairPending() {
+        persistSensorRepairPending(false)
     }
 }
 

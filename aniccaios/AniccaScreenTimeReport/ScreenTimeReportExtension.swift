@@ -58,7 +58,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
         var totalMinutes: Double = 0
         var lateNightMinutes: Double = 0
         var socialMinutes: Double = 0
-        var receivedAny = false
+        let receivedAny = false
         var snsSessionsPayload: [[String: Any]] = []
         
         let calendar = Calendar.current

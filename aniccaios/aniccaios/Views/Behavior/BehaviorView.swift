@@ -121,7 +121,7 @@ struct BehaviorView: View {
         logger.info("BehaviorView: screenTimeEnabled=\(appState.sensorAccess.screenTimeEnabled), sleepEnabled=\(appState.sensorAccess.sleepEnabled), stepsEnabled=\(appState.sensorAccess.stepsEnabled)")
         
         // v3.1: Screen Time データを更新するために DeviceActivityReport を表示
-        var shouldForceUpload = true
+        let shouldForceUpload = true
         if appState.sensorAccess.screenTimeEnabled {
             allowDeviceActivityReport = ScreenTimeManager.shared.isAuthorized
             if allowDeviceActivityReport {

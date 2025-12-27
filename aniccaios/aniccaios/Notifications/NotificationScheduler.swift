@@ -366,7 +366,7 @@ final class NotificationScheduler {
             return formattedLocalized("notification_bedtime_followup_\(rotationIndex)", userName)
         case .custom:
             let habitName = customHabitDisplayName()
-            return formattedLocalized("notification_custom_followup_\(rotationIndex)", habitName)
+            return String(format: localizedString("notification_custom_followup_\(rotationIndex)"), habitName)
         }
     }
 

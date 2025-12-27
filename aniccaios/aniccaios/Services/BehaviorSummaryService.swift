@@ -1,4 +1,5 @@
 import Foundation
+import OSLog
 
 /// v0.3: Behavior Summary 取得（UIは v3-ui.md、JSON形は migration-patch-v3.md 6.1）
 @MainActor
@@ -33,8 +34,8 @@ final class BehaviorSummaryService {
         do {
             return try JSONDecoder().decode(BehaviorSummary.self, from: data)
         } catch {
-            Logger(subsystem: "com.anicca.ios", category: "BehaviorSummaryService")
-                .error("Decode failure: \(error.localizedDescription, privacy: .public)")
+            let logger = Logger(subsystem: "com.anicca.ios", category: "BehaviorSummaryService")
+            logger.error("Decode failure: \(error.localizedDescription)")
             throw ServiceError.decodeError
         }
     }

@@ -1276,9 +1276,10 @@ final class AppState: ObservableObject {
         next.healthKit = (resolvedSleepAuthorized || resolvedStepsAuthorized) ? .authorized : .denied
         next.screenTime = resolvedScreenAuthorized ? .authorized : .denied
 
-        next.sleepEnabled = wantedSleep && resolvedSleepAuthorized
-        next.stepsEnabled = wantedSteps && resolvedStepsAuthorized
-        next.screenTimeEnabled = wantedScreen && resolvedScreenAuthorized
+        // keep user intent; data収集は *Enabled && *Authorized でゲート
+        next.sleepEnabled = wantedSleep
+        next.stepsEnabled = wantedSteps
+        next.screenTimeEnabled = wantedScreen
 
         if next != sensorAccess {
             sensorAccess = next
@@ -1373,10 +1374,7 @@ final class AppState: ObservableObject {
     
     func updateHealthKitPermission(_ status: SensorPermissionStatus) {
         sensorAccess.healthKit = status
-        if status != .authorized {
-            sensorAccess.sleepEnabled = false
-            sensorAccess.stepsEnabled = false
-        }
+        // 権限を失ってもトグル意図は保持する
         saveSensorAccess()
     }
     
@@ -1392,6 +1390,36 @@ final class AppState: ObservableObject {
         Task {
             await SensorAccessSyncService.shared.sync(access: access)
         }
+    }
+    
+    func recoverHealthKitAccessIfNeeded() async {
+#if canImport(HealthKit)
+        guard sensorAccess.sleepEnabled || sensorAccess.stepsEnabled else { return }
+        var updated = sensorAccess
+        var changed = false
+
+        if updated.sleepEnabled && !updated.sleepAuthorized {
+            let alreadyGranted = HealthKitManager.shared.isSleepAuthorized()
+            let granted = alreadyGranted || await HealthKitManager.shared.requestSleepAuthorization()
+            updated.sleepAuthorized = granted
+            changed = changed || granted != sensorAccess.sleepAuthorized
+        }
+
+        if updated.stepsEnabled && !updated.stepsAuthorized {
+            let alreadyGranted = HealthKitManager.shared.isStepsAuthorized()
+            let granted = alreadyGranted || await HealthKitManager.shared.requestStepsAuthorization()
+            updated.stepsAuthorized = granted
+            changed = changed || granted != sensorAccess.stepsAuthorized
+        }
+
+        guard changed else { return }
+        sensorAccess = updated
+        saveSensorAccess()
+        Task { await SensorAccessSyncService.shared.sync(access: updated) }
+        if (updated.sleepEnabled && updated.sleepAuthorized) || (updated.stepsEnabled && updated.stepsAuthorized) {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+#endif
     }
 }
 

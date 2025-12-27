@@ -103,6 +103,13 @@
 			);
 			target = 84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */;
 		};
+		84CC804E2F004B52005078AE /* Exceptions for "aniccaios" folder in "AniccaScreenTimeReport" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Shared/ScreenTimeSharedStore.swift,
+			);
+			target = 84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */;
+		};
 		84F1C0DE2F0D111100C0FFEE /* Exceptions for "AniccaWidget" folder in "AniccaWidgetExtension" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
@@ -125,6 +132,7 @@
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
 				8471AF782EB7B8AF002CECAA /* Exceptions for "aniccaios" folder in "aniccaios" target */,
+				84CC804E2F004B52005078AE /* Exceptions for "aniccaios" folder in "AniccaScreenTimeReport" target */,
 			);
 			path = aniccaios;
 			sourceTree = "<group>";

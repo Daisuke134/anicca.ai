@@ -1,5 +1,6 @@
 import SwiftUI
 import AVFoundation
+import RevenueCatUI
 
 struct HabitSessionView: View {
     @EnvironmentObject private var appState: AppState
@@ -9,6 +10,9 @@ struct HabitSessionView: View {
     let habit: HabitType
 
     @State private var showMicAlert = false
+    @State private var showUsageLimitModal = false
+    @State private var showPaywall = false
+    @State private var showManageSubscription = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -75,6 +79,46 @@ struct HabitSessionView: View {
             }
         } message: {
             Text(String(localized: "session_mic_permission_message"))
+        }
+        .sheet(isPresented: $showUsageLimitModal) {
+            UsageLimitModalView(
+                plan: appState.subscriptionHoldPlan ?? appState.subscriptionInfo.plan,
+                reason: appState.quotaHoldReason ?? .quotaExceeded,
+                onClose: { showUsageLimitModal = false },
+                onUpgrade: {
+                    showUsageLimitModal = false
+                    showPaywall = true
+                },
+                onManage: {
+                    showUsageLimitModal = false
+                    showManageSubscription = true
+                }
+            )
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallContainerView(
+                forcePresent: true,
+                onPurchaseCompleted: { showPaywall = false },
+                onDismissRequested: { showPaywall = false }
+            )
+            .environmentObject(appState)
+        }
+        .sheet(isPresented: $showManageSubscription) {
+            RevenueCatUI.CustomerCenterView()
+                .onCustomerCenterRestoreCompleted { info in
+                    Task {
+                        let subscription = SubscriptionInfo(info: info)
+                        await MainActor.run { appState.updateSubscriptionInfo(subscription) }
+                        await SubscriptionManager.shared.syncNow()
+                    }
+                }
+        }
+        .onAppear { handleQuotaHoldVisibility() }
+        .onChange(of: appState.subscriptionHold) { _ in handleQuotaHoldVisibility() }
+        .onChange(of: appState.subscriptionHoldPlan) { _ in
+            if appState.subscriptionHold {
+                showUsageLimitModal = true
+            }
         }
     }
 
@@ -163,6 +207,16 @@ struct HabitSessionView: View {
             default:
                 showMicAlert = true
             }
+        }
+    }
+
+    private func handleQuotaHoldVisibility() {
+        if appState.subscriptionHold {
+            showUsageLimitModal = true
+        } else {
+            showUsageLimitModal = false
+            showPaywall = false
+            showManageSubscription = false
         }
     }
 }

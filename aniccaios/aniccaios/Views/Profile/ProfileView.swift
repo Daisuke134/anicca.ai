@@ -7,6 +7,7 @@ import ComponentsKit
 /// v0.3 Profile タブ（v3-ui.md 準拠）
 struct ProfileView: View {
     @EnvironmentObject private var appState: AppState
+    private let showsScreenTimeToggle = false
 
     @State private var showingManageSubscription = false
     @State private var isShowingDeleteAlert = false
@@ -304,16 +305,18 @@ struct ProfileView: View {
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {
-                    dataToggleRow(
-                        title: String(localized: "profile_toggle_screen_time"),
-                        isOn: Binding(
-                            get: { appState.sensorAccess.screenTimeEnabled },
-                            set: { _ in }
-                        ),
-                        onEnable: { Task { await requestScreenTimeAndUpdateToggle() } },
-                        onDisable: { appState.setScreenTimeEnabled(false) }
-                    )
-                    divider
+                    if showsScreenTimeToggle {
+                        dataToggleRow(
+                            title: String(localized: "profile_toggle_screen_time"),
+                            isOn: Binding(
+                                get: { appState.sensorAccess.screenTimeEnabled },
+                                set: { _ in }
+                            ),
+                            onEnable: { Task { await requestScreenTimeAndUpdateToggle() } },
+                            onDisable: { appState.setScreenTimeEnabled(false) }
+                        )
+                        divider
+                    }
                     dataToggleRow(
                         title: String(localized: "profile_toggle_sleep"),
                         isOn: Binding(

@@ -145,6 +145,10 @@ final class AppState: ObservableObject {
         // Load followup counts (with defaults)
         loadFollowupCounts()
         
+        Task { [weak self] in
+            await self?.refreshSensorAccessAuthorizations()
+        }
+        
         // AlarmKit/Intent 経由の起動要求は、UI初期表示より前に回収して「白画面ラグ」を避ける
         consumePendingHabitLaunchIfAny()
         
@@ -482,6 +486,10 @@ final class AppState: ObservableObject {
         appGroupDefaults.set(AppConfig.proxyBaseURL.absoluteString, forKey: "ANICCA_PROXY_BASE_URL")
 
         sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: credentials.userId)
+        
+        Task { [weak self] in
+            await self?.refreshSensorAccessAuthorizations()
+        }
         
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty or "User" (user will set it in profile step)
@@ -1224,6 +1232,46 @@ final class AppState: ObservableObject {
         CustomHabitStore.shared.save(nil)
     }
     
+    @MainActor
+    func refreshSensorAccessAuthorizations() async {
+#if canImport(HealthKit)
+        let sleepAuthorized = HealthKitManager.shared.isSleepAuthorized()
+        let stepsAuthorized = HealthKitManager.shared.isStepsAuthorized()
+#else
+        let sleepAuthorized = false
+        let stepsAuthorized = false
+#endif
+#if canImport(FamilyControls)
+        let screenTimeAuthorized = ScreenTimeManager.shared.isAuthorized
+#else
+        let screenTimeAuthorized = false
+#endif
+
+        var next = sensorAccess
+        next.sleepAuthorized = sleepAuthorized
+        next.stepsAuthorized = stepsAuthorized
+        next.screenTimeAuthorized = screenTimeAuthorized
+        next.healthKit = (sleepAuthorized || stepsAuthorized) ? .authorized : .denied
+        next.screenTime = screenTimeAuthorized ? .authorized : .denied
+
+        if next.sleepEnabled && !sleepAuthorized { next.sleepEnabled = false }
+        if next.stepsEnabled && !stepsAuthorized { next.stepsEnabled = false }
+        if next.screenTimeEnabled && !screenTimeAuthorized { next.screenTimeEnabled = false }
+
+        if next != sensorAccess {
+            sensorAccess = next
+            saveSensorAccess()
+            Task { await SensorAccessSyncService.shared.sync(access: next) }
+        }
+
+        let needsRefresh = (next.sleepEnabled && sleepAuthorized)
+            || (next.stepsEnabled && stepsAuthorized)
+            || (next.screenTimeEnabled && screenTimeAuthorized)
+        if needsRefresh {
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+        }
+    }
+
     // MARK: - Phase-7: Sensor Access State
     
     private static func loadSensorAccess(from defaults: UserDefaults, key: String, userId: String?) -> SensorAccessState {

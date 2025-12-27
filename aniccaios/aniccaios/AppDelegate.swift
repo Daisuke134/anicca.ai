@@ -61,6 +61,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             // AlarmKit / LiveActivityIntent からの「起動して会話開始」要求を回収
             // （IntentプロセスでAppStateを書いてもアプリ本体に反映されないケースがあるため）
             await consumePendingHabitLaunch(retry: true)
+            await AppState.shared.refreshSensorAccessAuthorizations()
 
             // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
             await NotificationScheduler.shared.refreshPreRemindersIfNeeded()

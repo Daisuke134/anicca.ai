@@ -50,14 +50,12 @@ final class HealthKitManager {
         return await requestAuthorizationFor(types: [sleepType])
     }
     
-    // v3: Stepsのみ許可リクエスト（workoutも一緒にリクエスト）
+    // v3: Stepsのみ許可リクエスト
     func requestStepsAuthorization() async -> Bool {
         guard let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else {
             return false
         }
-        var types: Set<HKObjectType> = [stepsType]
-        types.insert(HKObjectType.workoutType())
-        return await requestAuthorizationFor(types: types)
+        return await requestAuthorizationFor(types: [stepsType])
     }
     
     private func requestAuthorizationFor(types: Set<HKObjectType>) async -> Bool {

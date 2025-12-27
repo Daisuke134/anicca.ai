@@ -146,7 +146,7 @@ final class AppState: ObservableObject {
         loadFollowupCounts()
         
         Task { [weak self] in
-            await self?.refreshSensorAccessAuthorizations()
+            await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
         }
         
         // AlarmKit/Intent 経由の起動要求は、UI初期表示より前に回収して「白画面ラグ」を避ける
@@ -488,7 +488,7 @@ final class AppState: ObservableObject {
         sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: credentials.userId)
         
         Task { [weak self] in
-            await self?.refreshSensorAccessAuthorizations()
+            await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: true)
         }
         
         // Update displayName in profile if empty and Apple provided a name
@@ -1207,6 +1207,7 @@ final class AppState: ObservableObject {
             sensorAccess.stepsEnabled = sensor["stepsEnabled"] ?? sensorAccess.stepsEnabled
             sensorAccess.motionEnabled = sensor["motionEnabled"] ?? sensorAccess.motionEnabled
             saveSensorAccess()
+            Task { await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false) }
         }
         
         // v3: サーバーにデータがあっても、オンボーディング強制完了はしない
@@ -1233,7 +1234,7 @@ final class AppState: ObservableObject {
     }
     
     @MainActor
-    func refreshSensorAccessAuthorizations() async {
+    func refreshSensorAccessAuthorizations(forceReauthIfNeeded: Bool) async {
 #if canImport(HealthKit)
         let sleepAuthorized = HealthKitManager.shared.isSleepAuthorized()
         let stepsAuthorized = HealthKitManager.shared.isStepsAuthorized()
@@ -1248,39 +1249,35 @@ final class AppState: ObservableObject {
 #endif
 
         var next = sensorAccess
-        let userPreviouslyEnabledSleep = next.sleepEnabled
-        let userPreviouslyEnabledSteps = next.stepsEnabled
-        let userPreviouslyEnabledScreenTime = next.screenTimeEnabled
+        let wantedSleep = next.sleepEnabled
+        let wantedSteps = next.stepsEnabled
+        let wantedScreen = next.screenTimeEnabled
 
-        next.sleepAuthorized = sleepAuthorized
-        next.stepsAuthorized = stepsAuthorized
-        next.screenTimeAuthorized = screenTimeAuthorized
-        next.healthKit = (sleepAuthorized || stepsAuthorized) ? .authorized : .denied
-        next.screenTime = screenTimeAuthorized ? .authorized : .denied
+        var resolvedSleepAuthorized = sleepAuthorized
+        var resolvedStepsAuthorized = stepsAuthorized
+        var resolvedScreenAuthorized = screenTimeAuthorized
 
-        if sleepAuthorized {
-            if !userPreviouslyEnabledSleep {
-                next.sleepEnabled = true
-            }
-        } else {
-            next.sleepEnabled = false
+        if wantedSleep && !resolvedSleepAuthorized && forceReauthIfNeeded {
+            resolvedSleepAuthorized = await HealthKitManager.shared.requestSleepAuthorization()
         }
-
-        if stepsAuthorized {
-            if !userPreviouslyEnabledSteps {
-                next.stepsEnabled = true
-            }
-        } else {
-            next.stepsEnabled = false
+        if wantedSteps && !resolvedStepsAuthorized && forceReauthIfNeeded {
+            resolvedStepsAuthorized = await HealthKitManager.shared.requestStepsAuthorization()
         }
-
-        if screenTimeAuthorized {
-            if !userPreviouslyEnabledScreenTime {
-                next.screenTimeEnabled = true
-            }
-        } else {
-            next.screenTimeEnabled = false
+#if canImport(FamilyControls)
+        if wantedScreen && !resolvedScreenAuthorized && forceReauthIfNeeded {
+            resolvedScreenAuthorized = await ScreenTimeManager.shared.requestAuthorization()
         }
+#endif
+
+        next.sleepAuthorized = resolvedSleepAuthorized
+        next.stepsAuthorized = resolvedStepsAuthorized
+        next.screenTimeAuthorized = resolvedScreenAuthorized
+        next.healthKit = (resolvedSleepAuthorized || resolvedStepsAuthorized) ? .authorized : .denied
+        next.screenTime = resolvedScreenAuthorized ? .authorized : .denied
+
+        next.sleepEnabled = wantedSleep && resolvedSleepAuthorized
+        next.stepsEnabled = wantedSteps && resolvedStepsAuthorized
+        next.screenTimeEnabled = wantedScreen && resolvedScreenAuthorized
 
         if next != sensorAccess {
             sensorAccess = next
@@ -1288,9 +1285,9 @@ final class AppState: ObservableObject {
             Task { await SensorAccessSyncService.shared.sync(access: next) }
         }
 
-        let needsRefresh = (next.sleepEnabled && sleepAuthorized)
-            || (next.stepsEnabled && stepsAuthorized)
-            || (next.screenTimeEnabled && screenTimeAuthorized)
+        let needsRefresh = (next.sleepEnabled && next.sleepAuthorized)
+            || (next.stepsEnabled && next.stepsAuthorized)
+            || (next.screenTimeEnabled && next.screenTimeAuthorized)
         if needsRefresh {
             await MetricsUploader.shared.runUploadIfDue(force: true)
         }
@@ -1332,22 +1329,28 @@ final class AppState: ObservableObject {
     func setScreenTimeEnabled(_ enabled: Bool) {
         sensorAccess.screenTimeEnabled = enabled
         saveSensorAccess()
-        Task { await ProfileSyncService.shared.enqueue(profile: userProfile, sensorAccess: sensorAccessForSync()) }
+        Task {
+            await ProfileSyncService.shared.enqueue(profile: userProfile, sensorAccess: sensorAccessForSync())
+            await SensorAccessSyncService.shared.sync(access: sensorAccess)
+        }
     }
     
     func setSleepEnabled(_ enabled: Bool) {
         sensorAccess.sleepEnabled = enabled
         saveSensorAccess()
+        Task { await SensorAccessSyncService.shared.sync(access: sensorAccess) }
     }
     
     func setStepsEnabled(_ enabled: Bool) {
         sensorAccess.stepsEnabled = enabled
         saveSensorAccess()
+        Task { await SensorAccessSyncService.shared.sync(access: sensorAccess) }
     }
     
     func setMotionEnabled(_ enabled: Bool) {
         sensorAccess.motionEnabled = enabled
         saveSensorAccess()
+        Task { await SensorAccessSyncService.shared.sync(access: sensorAccess) }
     }
     
     func updateScreenTimePermission(_ status: SensorPermissionStatus) {

@@ -302,6 +302,7 @@ struct ProfileView: View {
             Text(String(localized: "profile_data_integration_hint"))
                 .font(AppTheme.Typography.caption1Dynamic)
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .opacity(showsScreenTimeToggle ? 1 : 0) // メッセージは保持しつつスクリーンタイム非表示時は目立たせない
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {

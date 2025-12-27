@@ -81,6 +81,10 @@ final class AppState: ObservableObject {
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
     private var pendingConsultPrompt: String?
     private var pendingAutoResponse: Bool = false
+    
+    // AlarmKit / LiveActivityIntent → App 本体の起動要求（AppGroup 経由）
+    private let pendingHabitLaunchHabitKey = "pending_habit_launch_habit"
+    private let pendingHabitLaunchTsKey = "pending_habit_launch_ts"
 
     private init() {
         // Initialize all properties first
@@ -139,9 +143,39 @@ final class AppState: ObservableObject {
         // Load followup counts (with defaults)
         loadFollowupCounts()
         
+        // AlarmKit/Intent 経由の起動要求は、UI初期表示より前に回収して「白画面ラグ」を避ける
+        consumePendingHabitLaunchIfAny()
+        
         // Sync scheduled alarms on app launch
         Task { await scheduler.applySchedules(habitSchedules) }
         Task { await applyCustomSchedulesToScheduler() }
+    }
+
+    /// Intentプロセス（AlarmKit / LiveActivityIntent）からの「会話開始」要求をAppGroupから回収する。
+    /// - NOTE: この処理は UI を即表示するため、なるべく早いタイミング（init内）で実行する。
+    private func consumePendingHabitLaunchIfAny() {
+        // オンボーディング前にセッション画面へ飛ぶのはUX的に破綻するため抑止
+        guard isOnboardingComplete else { return }
+        
+        let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
+        let rawHabit = appGroupDefaults?.string(forKey: pendingHabitLaunchHabitKey)
+        let ts = appGroupDefaults?.double(forKey: pendingHabitLaunchTsKey) ?? 0
+        
+        defer {
+            // 連打/再起動でも同じ要求を繰り返さない
+            appGroupDefaults?.removeObject(forKey: pendingHabitLaunchHabitKey)
+            appGroupDefaults?.removeObject(forKey: pendingHabitLaunchTsKey)
+        }
+        
+        guard let rawHabit,
+              let habit = HabitType(rawValue: rawHabit),
+              ts > 0,
+              Date().timeIntervalSince1970 - ts < 300 else {
+            return
+        }
+        
+        // ここで prepareForImmediateSession まで行い、TalkView の初回 onAppear で即 fullScreenCover を出す
+        prepareForImmediateSession(habit: habit)
     }
 
     // Legacy method for backward compatibility

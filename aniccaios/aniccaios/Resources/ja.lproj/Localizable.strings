@@ -272,9 +272,19 @@
 "profile_section_data_integration" = "データ連携";
 "profile_data_integration_hint" = "任意。データを連携すると、Aniccaがより適切に促せます。すべてOFFでも主要機能は利用できます。";
 "profile_toggle_screen_time" = "スクリーンタイム";
-"profile_toggle_sleep" = "睡眠（HealthKit）";
-"profile_toggle_steps" = "歩数（HealthKit）";
+"profile_toggle_sleep" = "就寝";
+"profile_toggle_steps" = "歩数";
 "profile_toggle_movement" = "移動";
+
+/* AlarmKit full-screen alarm actions */
+"alarmkit_action_wake_open" = "起きる";
+"alarmkit_action_wake_stop" = "二度寝する";
+"alarmkit_action_training_open" = "今トレーニングする";
+"alarmkit_action_training_stop" = "後回しにする";
+"alarmkit_action_bedtime_open" = "今寝る";
+"alarmkit_action_bedtime_stop" = "夜更かしを続ける";
+"alarmkit_action_custom_open" = "今やる";
+"alarmkit_action_custom_stop" = "後回しにする";
 
 /* v3 Traits Detail */
 "traits_title" = "ビッグファイブ特性";

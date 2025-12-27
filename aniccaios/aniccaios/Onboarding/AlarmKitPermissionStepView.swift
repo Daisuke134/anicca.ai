@@ -12,7 +12,6 @@ struct AlarmKitPermissionStepView: View {
     @State private var hasAttemptedPermission = false
     @State private var permissionGranted = false
     @State private var permissionDenied = false
-    @State private var showSettingsAlert = false
 
     var body: some View {
         VStack(spacing: 24) {
@@ -47,24 +46,9 @@ struct AlarmKitPermissionStepView: View {
                     requestAlarmKit()
                 }
             }
-
-            // iOS 26未満の場合は設定への誘導を表示
-            if permissionDenied {
-                Button(String(localized: "common_open_settings")) {
-                    openSettings()
-                }
-                .font(.subheadline)
-                .foregroundStyle(AppTheme.Colors.accent)
-            }
         }
         .padding(24)
         .background(AppBackground())
-        .alert(String(localized: "onboarding_alarmkit_settings_needed"), isPresented: $showSettingsAlert) {
-            Button(String(localized: "common_open_settings")) { openSettings() }
-            Button(String(localized: "common_continue"), role: .cancel) { next() }
-        } message: {
-            Text(String(localized: "onboarding_alarmkit_settings_message"))
-        }
         .onAppear {
             checkCurrentPermission()
         }
@@ -82,8 +66,10 @@ struct AlarmKitPermissionStepView: View {
                 permissionDenied = !granted
                 hasAttemptedPermission = true
                 isRequesting = false
-                
-                // 拒否/失敗時も自動アラートは出さず、画面内の「設定を開く」で明示的に誘導する
+                // 許可できた場合は二度押し不要で次へ進む（UX改善）
+                if granted {
+                    next()
+                }
                 return
             }
             #endif
@@ -120,11 +106,6 @@ struct AlarmKitPermissionStepView: View {
             permissionGranted = settings.authorizationStatus == .authorized
                 && settings.timeSensitiveSetting != .disabled
         }
-    }
-    
-    private func openSettings() {
-        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
-        UIApplication.shared.open(url)
     }
 }
 

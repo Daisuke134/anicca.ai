@@ -10,17 +10,35 @@ import UIKit
 // MARK: - AlarmButton Extension
 @available(iOS 26.0, *)
 extension AlarmButton {
-    static var stopButton: AlarmButton {
-        AlarmButton(
-            text: LocalizedStringResource("Stop"),
+    /// 画面下部の「スワイプで停止」側の文言（ユーザーの意図が分かる表現にする）
+    static func stopButton(for habit: HabitType) -> AlarmButton {
+        let key: String = {
+            switch habit {
+            case .wake: return "alarmkit_action_wake_stop"          // 二度寝する
+            case .training: return "alarmkit_action_training_stop"  // 後回しにする
+            case .bedtime: return "alarmkit_action_bedtime_stop"    // 夜更かしを続ける
+            case .custom: return "alarmkit_action_custom_stop"      // 後回しにする
+            }
+        }()
+        return AlarmButton(
+            text: LocalizedStringResource(key),
             textColor: .red,
             systemImageName: "stop.circle"
         )
     }
     
-    static var openAppButton: AlarmButton {
-        AlarmButton(
-            text: LocalizedStringResource("Open"),
+    /// 画面上部の「Open」側の文言（ユーザーの意図が分かる表現にする）
+    static func openAppButton(for habit: HabitType) -> AlarmButton {
+        let key: String = {
+            switch habit {
+            case .wake: return "alarmkit_action_wake_open"          // 起きる
+            case .training: return "alarmkit_action_training_open"  // 今トレーニングする
+            case .bedtime: return "alarmkit_action_bedtime_open"    // 今寝る
+            case .custom: return "alarmkit_action_custom_open"      // 今やる
+            }
+        }()
+        return AlarmButton(
+            text: LocalizedStringResource(key),
             textColor: .white,
             systemImageName: "arrow.up.forward.app"
         )
@@ -203,7 +221,10 @@ final class AlarmKitHabitCoordinator {
     ///   - followupCount: Total number of alarms (1 = single, 5 = 5 alarms at 1-minute intervals)
     func scheduleHabit(_ habit: HabitType, hour: Int, minute: Int, followupCount: Int) async -> Bool {
         do {
-            guard await requestAuthorizationIfNeeded() else {
+            // 重要: ここで requestAuthorization() を呼ぶと、ログイン直後/バックグラウンド処理等で
+            // 予期せず許可ダイアログが出る。許可リクエストはオンボーディング画面のボタン起点に限定する。
+            guard manager.authorizationState == .authorized else {
+                logger.info("AlarmKit not authorized; skipping schedule for \(habit.rawValue, privacy: .public)")
                 return false
             }
             await cancelHabitAlarms(habit)
@@ -221,12 +242,10 @@ final class AlarmKitHabitCoordinator {
                     repeats: .weekly(Locale.Weekday.allWeekdays)
                 ))
                 
-                // 全てのアラームで同じUI: 「アプリを開く」+「スワイプで停止」
-                // 「スワイプで停止」はその回のみ停止、次の1分後のアラームは独立して鳴る
                 let alert = AlarmPresentation.Alert(
                     title: localizedTitle(for: habit),
-                    stopButton: .stopButton,
-                    secondaryButton: .openAppButton,
+                    stopButton: .stopButton(for: habit),
+                    secondaryButton: .openAppButton(for: habit),
                     secondaryButtonBehavior: .custom
                 )
                 
@@ -270,7 +289,9 @@ final class AlarmKitHabitCoordinator {
     ///   - followupCount: Total number of alarms
     func scheduleCustomHabit(_ id: UUID, name: String, hour: Int, minute: Int, followupCount: Int) async -> Bool {
         do {
-            guard await requestAuthorizationIfNeeded() else {
+            // 許可リクエストはここでは行わない（オンボーディングでのみ）
+            guard manager.authorizationState == .authorized else {
+                logger.info("AlarmKit not authorized; skipping schedule for custom habit \(id.uuidString, privacy: .public)")
                 return false
             }
             await cancelCustomHabitAlarms(id)
@@ -288,8 +309,8 @@ final class AlarmKitHabitCoordinator {
                 
                 let alert = AlarmPresentation.Alert(
                     title: LocalizedStringResource(stringLiteral: name),
-                    stopButton: .stopButton,
-                    secondaryButton: .openAppButton,
+                    stopButton: .stopButton(for: .custom),
+                    secondaryButton: .openAppButton(for: .custom),
                     secondaryButtonBehavior: .custom
                 )
                 

@@ -247,7 +247,7 @@ struct SettingsView: View {
                 ))
 
                 SectionRow.text(label: "HealthKit", text: "\(appState.sensorAccess.healthKit)")
-                Toggle("Enable Sleep", isOn: Binding(
+                Toggle(String(localized: "profile_toggle_sleep"), isOn: Binding(
                     get: { appState.sensorAccess.sleepEnabled },
                     set: { enabled in
                         Task { @MainActor in
@@ -262,7 +262,7 @@ struct SettingsView: View {
                         }
                     }
                 ))
-                Toggle("Enable Steps", isOn: Binding(
+                Toggle(String(localized: "profile_toggle_steps"), isOn: Binding(
                     get: { appState.sensorAccess.stepsEnabled },
                     set: { enabled in
                         Task { @MainActor in

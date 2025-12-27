@@ -314,9 +314,8 @@ struct ProfileView: View {
                         onDisable: { appState.setScreenTimeEnabled(false) }
                     )
                     divider
-                    // v3: 文言変更 Sleep (HealthKit) → Sleep
                     dataToggleRow(
-                        title: "Sleep",
+                        title: String(localized: "profile_toggle_sleep"),
                         isOn: Binding(
                             get: { appState.sensorAccess.sleepEnabled },
                             set: { _ in }
@@ -325,9 +324,8 @@ struct ProfileView: View {
                         onDisable: { appState.setSleepEnabled(false) }
                     )
                     divider
-                    // v3: 文言変更 Steps (HealthKit) → Steps
                     dataToggleRow(
-                        title: "Steps",
+                        title: String(localized: "profile_toggle_steps"),
                         isOn: Binding(
                             get: { appState.sensorAccess.stepsEnabled },
                             set: { _ in }

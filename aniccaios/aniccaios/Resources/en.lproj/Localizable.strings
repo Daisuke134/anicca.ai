@@ -282,9 +282,19 @@
 "profile_section_data_integration" = "Data Integration";
 "profile_data_integration_hint" = "Optional. Link your data so Anicca can nudge you more precisely. All core features work even if everything is OFF.";
 "profile_toggle_screen_time" = "Screen Time";
-"profile_toggle_sleep" = "Sleep (HealthKit)";
-"profile_toggle_steps" = "Steps (HealthKit)";
+"profile_toggle_sleep" = "Sleep";
+"profile_toggle_steps" = "Steps";
 "profile_toggle_movement" = "Movement";
+
+/* AlarmKit full-screen alarm actions */
+"alarmkit_action_wake_open" = "Wake up";
+"alarmkit_action_wake_stop" = "Go back to sleep";
+"alarmkit_action_training_open" = "Train now";
+"alarmkit_action_training_stop" = "Do it later";
+"alarmkit_action_bedtime_open" = "Go to sleep now";
+"alarmkit_action_bedtime_stop" = "Stay up";
+"alarmkit_action_custom_open" = "Do it now";
+"alarmkit_action_custom_stop" = "Do it later";
 
 /* v3 Traits Detail */
 "traits_title" = "Big Five Traits";

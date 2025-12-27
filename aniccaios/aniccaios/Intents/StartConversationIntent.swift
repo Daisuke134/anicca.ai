@@ -13,17 +13,12 @@ struct StartConversationIntent: LiveActivityIntent {
     
     @MainActor
     func perform() async throws -> some IntentResult {
-        // Intentプロセスからアプリ本体へ渡すため、AppGroupに起動要求を永続化
+        // Intentプロセスからアプリ本体へ渡すため、AppGroupに起動要求を永続化。
+        // 重要: ここで重い処理（音声セッション構成/画面遷移等）を行うと、起動ラグの原因になる。
+        // アプリ本体側（AppState/AppDelegate）が起動直後にこのフラグを回収してUIを即表示する。
         let appGroupDefaults = UserDefaults(suiteName: "group.ai.anicca.app.ios")
         appGroupDefaults?.set(habitType.rawValue, forKey: "pending_habit_launch_habit")
         appGroupDefaults?.set(Date().timeIntervalSince1970, forKey: "pending_habit_launch_ts")
-
-        // Configure audio session
-        try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
-        
-        // Prepare for immediate session
-        AppState.shared.selectedRootTab = .talk
-        AppState.shared.prepareForImmediateSession(habit: habitType)
         
         return .result()
     }

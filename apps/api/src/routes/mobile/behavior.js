@@ -50,7 +50,12 @@ router.get('/summary', async (req, res) => {
       }
     }
 
-    const highlights = buildHighlights({ todayStats: today, timezone: tz, language: lang });  // ★ language 追加
+    const highlights = buildHighlights({
+      todayStats: today,
+      timezone: tz,
+      language: lang,
+      habitSchedules: snapshot?.traits?.habitSchedules
+    });
     const timeline = buildTimeline({ todayStats: today, timezone: tz });
     const futureScenario = await generateFutureScenario({
       language: lang,

@@ -30,7 +30,7 @@ struct MainTabView: View {
                     .environmentObject(appState)
             }
         }
-        .onAppear { checkPendingHabitTrigger() }
+        .onAppear { checkPendingHabitTrigger(force: true) }
         .onChange(of: appState.pendingHabitTrigger) { _ in checkPendingHabitTrigger() }
         .onChange(of: appState.shouldStartSessionImmediately) { should in
             // ★ shouldStartSessionImmediatelyがtrueになった時もチェック
@@ -51,9 +51,9 @@ struct MainTabView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
     
-    private func checkPendingHabitTrigger() {
+    private func checkPendingHabitTrigger(force: Bool = false) {
         guard let trigger = appState.pendingHabitTrigger,
-              appState.shouldStartSessionImmediately else { return }
+              (appState.shouldStartSessionImmediately || force) else { return }
         pendingHabit = trigger.habit
         habitSessionActive = true
         appState.clearShouldStartSessionImmediately()

@@ -157,14 +157,114 @@
 "notification_action_start_conversation" = "Start Conversation Now";
 "notification_action_dismiss" = "Dismiss";
 
-"notification_wake_body" = "Anicca is here to wake you up.";
-"notification_training_body" = "It's time for training. Let's start together.";
-"notification_bedtime_body" = "Let's start preparing for bed. We'll create deep sleep.";
+/* ========== Main Notifications (10 variants, rotating) ========== */
+
+/* Wake - Main */
+"notification_wake_main_1" = "Good morning, %@. A new day begins.";
+"notification_wake_main_2" = "Time to wake up. Just open your eyes first.";
+"notification_wake_main_3" = "%@, it's morning. Let's start together.";
+"notification_wake_main_4" = "Today is waiting for you. Let's wake up.";
+"notification_wake_main_5" = "Morning light is here. Open your eyes.";
+"notification_wake_main_6" = "You're ready. Time to get up.";
+"notification_wake_main_7" = "A fresh morning. What kind of day will it be?";
+"notification_wake_main_8" = "%@, time to wake. Start with a deep breath.";
+"notification_wake_main_9" = "I'm here with you today. Let's wake up.";
+"notification_wake_main_10" = "Morning is here. Try stretching first.";
+
+/* Training - Main */
+"notification_training_main_1" = "Training time. Let's move your body.";
+"notification_training_main_2" = "%@, time to work out. Ready?";
+"notification_training_main_3" = "Your body wants to move. Let's start.";
+"notification_training_main_4" = "Today's training. Start with 1 minute.";
+"notification_training_main_5" = "Time to exercise. Where do you start?";
+"notification_training_main_6" = "%@, let's train together.";
+"notification_training_main_7" = "Time to move. You'll feel great.";
+"notification_training_main_8" = "Time to start your training.";
+"notification_training_main_9" = "Let's strengthen your body today. Ready?";
+"notification_training_main_10" = "Exercise time. Start with a warm-up.";
+
+/* Bedtime - Main */
+"notification_bedtime_main_1" = "Time for bed. You did well today.";
+"notification_bedtime_main_2" = "%@, time to get into bed.";
+"notification_bedtime_main_3" = "You've done enough today. Time to rest.";
+"notification_bedtime_main_4" = "Let's prepare for sleep.";
+"notification_bedtime_main_5" = "Time to close the day. Get ready for sleep.";
+"notification_bedtime_main_6" = "Your body needs rest. Head to bed.";
+"notification_bedtime_main_7" = "%@, let's rest well tonight.";
+"notification_bedtime_main_8" = "Sleep tonight for a better tomorrow.";
+"notification_bedtime_main_9" = "Close your screens. Rest your eyes.";
+"notification_bedtime_main_10" = "End of the day. Sleep peacefully.";
+
+/* Custom - Main (%@ = habit name) */
+"notification_custom_main_1" = "Time for %@. Let's begin.";
+"notification_custom_main_2" = "Time for %@. Ready?";
+"notification_custom_main_3" = "Time to start %@.";
+"notification_custom_main_4" = "Now's the time for %@. Go.";
+"notification_custom_main_5" = "%@. Try just 1 minute first.";
+"notification_custom_main_6" = "Let's do %@. Together.";
+"notification_custom_main_7" = "%@ time has come.";
+"notification_custom_main_8" = "Today's %@. Where do you start?";
+"notification_custom_main_9" = "Starting %@ will shift your mood.";
+"notification_custom_main_10" = "Time for %@. Start small.";
+
+/* ========== Follow-up Notifications (10 variants, rotating) ========== */
 
 "notification_wake_followup_title" = "Wake Up (reminder)";
 "notification_training_followup_title" = "Training (reminder)";
 "notification_bedtime_followup_title" = "Bedtime (reminder)";
 
+/* Wake - Follow-up */
+"notification_wake_followup_1" = "Still in bed? Try opening your eyes.";
+"notification_wake_followup_2" = "%@, wake up. I'm waiting.";
+"notification_wake_followup_3" = "It's morning. Try stretching first.";
+"notification_wake_followup_4" = "Time to wake. Take a deep breath.";
+"notification_wake_followup_5" = "Almost there. You can do it.";
+"notification_wake_followup_6" = "The day is starting. Get out of bed.";
+"notification_wake_followup_7" = "%@, let's start the morning together.";
+"notification_wake_followup_8" = "Your body is ready to wake up.";
+"notification_wake_followup_9" = "Morning light awaits. Wake up.";
+"notification_wake_followup_10" = "Wake now for a great day ahead.";
+
+/* Training - Follow-up */
+"notification_training_followup_1" = "Training not done? Just 1 minute.";
+"notification_training_followup_2" = "%@, let's exercise. I'm waiting.";
+"notification_training_followup_3" = "Time to move your body. Let's go.";
+"notification_training_followup_4" = "Still time. Start moving.";
+"notification_training_followup_5" = "Training. Even 1 set is OK.";
+"notification_training_followup_6" = "Exercise feels good. Let's start.";
+"notification_training_followup_7" = "%@, let's train together.";
+"notification_training_followup_8" = "Your body awaits exercise. Move.";
+"notification_training_followup_9" = "Today's training. You can still do it.";
+"notification_training_followup_10" = "Starting small is fine. Just move.";
+
+/* Bedtime - Follow-up */
+"notification_bedtime_followup_1" = "Still awake? Get into bed.";
+"notification_bedtime_followup_2" = "%@, time to sleep.";
+"notification_bedtime_followup_3" = "Enough for today. Close your eyes.";
+"notification_bedtime_followup_4" = "Put down the screen. Rest.";
+"notification_bedtime_followup_5" = "Your body needs sleep.";
+"notification_bedtime_followup_6" = "Sleep tonight for tomorrow.";
+"notification_bedtime_followup_7" = "%@, your bed is waiting.";
+"notification_bedtime_followup_8" = "Sleep peacefully tonight.";
+"notification_bedtime_followup_9" = "Let yourself drift to sleep. Goodnight.";
+"notification_bedtime_followup_10" = "It's late. Time to rest.";
+
+/* Custom - Follow-up (%@ = habit name) */
+"notification_custom_followup_1" = "%@ not done? Still time.";
+"notification_custom_followup_2" = "Let's do %@. I'm waiting.";
+"notification_custom_followup_3" = "%@. Just 1 minute is fine. Start.";
+"notification_custom_followup_4" = "Start %@ now. You'll make it.";
+"notification_custom_followup_5" = "Starting %@ will shift your mood.";
+"notification_custom_followup_6" = "Still time for %@.";
+"notification_custom_followup_7" = "%@. Start small.";
+"notification_custom_followup_8" = "Today's %@. Start here.";
+"notification_custom_followup_9" = "Not doing %@? Let's do it together.";
+"notification_custom_followup_10" = "%@. Do it now and you're done.";
+
+/* Legacy keys (backward compatibility) */
+"notification_wake_body" = "Anicca is here to wake you up.";
+"notification_training_body" = "It's time for training. Let's start together.";
+"notification_bedtime_body" = "Let's start preparing for bed. We'll create deep sleep.";
 "notification_wake_followup_body" = "It's time to wake up. Let's start with deep breathing.";
 "notification_training_followup_body" = "You're ready to move your body. Let's be mindful of your form.";
 "notification_bedtime_followup_body" = "Let's release the fatigue of the day. Relax and drift into sleep.";

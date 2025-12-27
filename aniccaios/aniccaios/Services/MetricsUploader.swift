@@ -134,6 +134,7 @@ final class MetricsUploader {
             // v3.1: snsSessions を activity_summary に追加
             if let snsSessions = screenData.snsSessions, !snsSessions.isEmpty {
                 activitySummary["snsSessions"] = snsSessions
+                payload["sns_sessions"] = snsSessions
             }
         }
         

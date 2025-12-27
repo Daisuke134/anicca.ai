@@ -1,5 +1,7 @@
 import AppIntents
 import Foundation
+import UIKit
+import UserNotifications
 
 @available(iOS 26.0, *)
 struct StartConversationIntent: LiveActivityIntent {
@@ -19,6 +21,10 @@ struct StartConversationIntent: LiveActivityIntent {
         let appGroupDefaults = AppGroup.userDefaults
         appGroupDefaults.set(habitType.rawValue, forKey: "pending_habit_launch_habit")
         appGroupDefaults.set(Date().timeIntervalSince1970, forKey: "pending_habit_launch_ts")
+        
+        if UIApplication.shared.applicationState == .background {
+            await UNUserNotificationCenter.current().postLaunchShortcut(habit: habitType)
+        }
         
         return .result()
     }

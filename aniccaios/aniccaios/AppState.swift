@@ -101,15 +101,15 @@ final class AppState: ObservableObject {
             self.onboardingStep = .welcome
         }
         
-        let initialAuthStatus = loadUserCredentials()
+        let initialAuthStatus = AuthStatus.signedOut
         self.authStatus = initialAuthStatus
-        
-        // Phase-7: load sensor access state (must be before any instance method calls)
-        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: initialAuthStatus.userId)
-        
-        // Load user credentials and profile
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: nil)
+        self.userProfile = UserProfile()
+        self.subscriptionInfo = .free
+        self.authStatus = loadUserCredentials()
         self.userProfile = loadUserProfile()
         self.subscriptionInfo = loadSubscriptionInfo()
+        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
         self.customHabit = CustomHabitStore.shared.load()
         
         // カスタム習慣の読み込み
@@ -178,6 +178,7 @@ final class AppState: ObservableObject {
         
         // ここで prepareForImmediateSession まで行い、TalkView の初回 onAppear で即 fullScreenCover を出す
         prepareForImmediateSession(habit: habit)
+        shouldStartSessionImmediately = true
     }
 
     // Legacy method for backward compatibility
@@ -667,8 +668,18 @@ final class AppState: ObservableObject {
         payload["customHabits"] = customHabits.map { ["id": $0.id.uuidString, "name": $0.name, "updatedAt": $0.updatedAt.timeIntervalSince1970] }
         payload["customHabitSchedules"] = serializedCustomHabitSchedulesForSync()
         payload["customHabitFollowupCounts"] = customHabitFollowupCounts.mapKeys { $0.uuidString }
+        payload["sensorAccess"] = sensorAccessForSync()
         
         return payload
+    }
+    
+    func sensorAccessForSync() -> [String: Bool] {
+        return [
+            "screenTimeEnabled": sensorAccess.screenTimeEnabled,
+            "sleepEnabled": sensorAccess.sleepEnabled,
+            "stepsEnabled": sensorAccess.stepsEnabled,
+            "motionEnabled": sensorAccess.motionEnabled
+        ]
     }
     
     func bootstrapProfileFromServerIfAvailable() async {
@@ -1176,6 +1187,14 @@ final class AppState: ObservableObject {
             Task { await applyCustomSchedulesToScheduler() }
         }
         
+        if let sensor = payload["sensorAccess"] as? [String: Bool] {
+            sensorAccess.screenTimeEnabled = sensor["screenTimeEnabled"] ?? sensorAccess.screenTimeEnabled
+            sensorAccess.sleepEnabled = sensor["sleepEnabled"] ?? sensorAccess.sleepEnabled
+            sensorAccess.stepsEnabled = sensor["stepsEnabled"] ?? sensorAccess.stepsEnabled
+            sensorAccess.motionEnabled = sensor["motionEnabled"] ?? sensorAccess.motionEnabled
+            saveSensorAccess()
+        }
+        
         // v3: サーバーにデータがあっても、オンボーディング強制完了はしない
         // Mic/Notifications/AlarmKit画面を必ず通すため、isOnboardingCompleteの自動更新を廃止
         // オンボーディング完了は markOnboardingComplete() でのみ行う
@@ -1235,6 +1254,7 @@ final class AppState: ObservableObject {
     func setScreenTimeEnabled(_ enabled: Bool) {
         sensorAccess.screenTimeEnabled = enabled
         saveSensorAccess()
+        Task { await ProfileSyncService.shared.enqueue(profile: userProfile, sensorAccess: sensorAccessForSync()) }
     }
     
     func setSleepEnabled(_ enabled: Bool) {

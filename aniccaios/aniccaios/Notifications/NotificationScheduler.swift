@@ -24,8 +24,8 @@ final class NotificationScheduler {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NotificationScheduler")
     
     private enum AlarmLoop {
-        /// 8秒サウンド + 2秒休止 = 10秒ごとに再通知
-        static let intervalSeconds = 10
+        /// 30秒ごとに再通知
+        static let intervalSeconds = 30
     }
     
     private func repeatCount(for habit: HabitType) -> Int {
@@ -125,6 +125,11 @@ final class NotificationScheduler {
     // MARK: Scheduling
     func applySchedules(_ schedules: [HabitType: DateComponents]) async {
         await removePending(withPrefix: "HABIT_")
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *), AlarmKitHabitCoordinator.shared.hasPendingSessions {
+            await AlarmKitHabitCoordinator.shared.flushPendingStops()
+        }
+#endif
         await cancelAllPreReminders()  // 追加: 事前通知もクリア
         for (habit, components) in schedules {
             guard let hour = components.hour, let minute = components.minute else { continue }
@@ -222,19 +227,12 @@ final class NotificationScheduler {
 
     // MARK: Private helpers
     private func scheduleMain(habit: HabitType, hour: Int, minute: Int) async {
-        // ★ サーバーからパーソナライズメッセージを取得（メイン通知用）
-        let scheduledTimeStr = String(format: "%02d:%02d", hour, minute)
-        let personalizedBody = await fetchMainNotificationMessage(
-            habitType: habit,
-            scheduledTime: scheduledTimeStr
-        )
-        
         let triggerComponents = DateComponents(hour: hour, minute: minute, second: 0)
         let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: true)
         
         let content = UNMutableNotificationContent()
         content.title = habit.title
-        content.body = personalizedBody ?? primaryBody(for: habit)  // パーソナライズ優先、失敗時はフォールバック
+        content.body = primaryBody(for: habit)  // 固定フレーズ（日付ベースローテーション）
         content.categoryIdentifier = Category.habitAlarm.rawValue
         content.interruptionLevel = .timeSensitive
         content.sound = wakeSound()
@@ -253,7 +251,7 @@ final class NotificationScheduler {
         }
     }
 
-    /// メイン通知の 0 秒起点から 10 秒間隔で AppState 設定回数ぶんのフォローアップを登録
+    /// メイン通知の 0 秒起点から 30 秒間隔で AppState 設定回数ぶんのフォローアップを登録
     private func scheduleFollowupLoop(for habit: HabitType, baseComponents: DateComponents) {
         Task {
             await removePending(withPrefix: followPrefix(for: habit))
@@ -276,7 +274,7 @@ final class NotificationScheduler {
                 let trigger = UNCalendarNotificationTrigger(dateMatching: triggerComponents, repeats: false)
                 let request = UNNotificationRequest(
                     identifier: keyFollow(for: habit, timestamp: Int(fireDate.timeIntervalSince1970)),
-                    content: baseContent(for: habit, isFollowup: true),
+                    content: baseContent(for: habit, isFollowup: true, followupIndex: index),
                     trigger: trigger
                 )
 
@@ -289,13 +287,13 @@ final class NotificationScheduler {
         }
     }
 
-    private func baseContent(for habit: HabitType, isFollowup: Bool) -> UNMutableNotificationContent {
+    private func baseContent(for habit: HabitType, isFollowup: Bool, followupIndex: Int = 1) -> UNMutableNotificationContent {
         let content = UNMutableNotificationContent()
         content.title = isFollowup ? followupTitle(for: habit) : habit.title
-        content.body = isFollowup ? followupBody(for: habit) : primaryBody(for: habit)
+        content.body = isFollowup ? followupBody(for: habit, index: followupIndex) : primaryBody(for: habit)
         content.categoryIdentifier = Category.habitAlarm.rawValue
         content.interruptionLevel = .timeSensitive
-        content.sound = wakeSound()  // フォローアップでも必ず 8 秒サウンド
+        content.sound = wakeSound()
         return content
     }
 
@@ -313,16 +311,25 @@ final class NotificationScheduler {
     }
 
     private func primaryBody(for habit: HabitType) -> String {
+        // 日付ベースでローテーション（1〜10）
+        let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+        let index = ((dayOfYear - 1) % 10) + 1
+        let userName = AppState.shared.userProfile.displayName ?? localizedString("common_user_fallback")
+        
         switch habit {
         case .wake:
-            return localizedString("notification_wake_body")
+            let key = "notification_wake_main_\(index)"
+            return String(format: localizedString(key), userName)
         case .training:
-            return localizedString("notification_training_body")
+            let key = "notification_training_main_\(index)"
+            return String(format: localizedString(key), userName)
         case .bedtime:
-            return localizedString("notification_bedtime_body")
+            let key = "notification_bedtime_main_\(index)"
+            return String(format: localizedString(key), userName)
         case .custom:
-            let name = customHabitDisplayName()
-            return String(format: localizedString("notification_custom_body_format"), name)
+            let habitName = customHabitDisplayName()
+            let key = "notification_custom_main_\(index)"
+            return String(format: localizedString(key), habitName)
         }
     }
 
@@ -340,17 +347,25 @@ final class NotificationScheduler {
         }
     }
 
-    private func followupBody(for habit: HabitType) -> String {
+    private func followupBody(for habit: HabitType, index: Int = 1) -> String {
+        // インデックスベースでローテーション（1〜10）
+        let rotationIndex = ((index - 1) % 10) + 1
+        let userName = AppState.shared.userProfile.displayName ?? localizedString("common_user_fallback")
+        
         switch habit {
         case .wake:
-            return localizedString("notification_wake_followup_body")
+            let key = "notification_wake_followup_\(rotationIndex)"
+            return String(format: localizedString(key), userName)
         case .training:
-            return localizedString("notification_training_followup_body")
+            let key = "notification_training_followup_\(rotationIndex)"
+            return String(format: localizedString(key), userName)
         case .bedtime:
-            return localizedString("notification_bedtime_followup_body")
+            let key = "notification_bedtime_followup_\(rotationIndex)"
+            return String(format: localizedString(key), userName)
         case .custom:
-            let name = customHabitDisplayName()
-            return String(format: localizedString("notification_custom_followup_body_format"), name)
+            let habitName = customHabitDisplayName()
+            let key = "notification_custom_followup_\(rotationIndex)"
+            return String(format: localizedString(key), habitName)
         }
     }
 
@@ -528,7 +543,7 @@ final class NotificationScheduler {
                 let trig = UNCalendarNotificationTrigger(dateMatching: comps, repeats: false)
                 let req = UNNotificationRequest(
                     identifier: keyCustomFollow(id: id, ts: Int(fireDate.timeIntervalSince1970)),
-                    content: customBaseContent(name: name, isFollowup: true),
+                    content: customBaseContent(name: name, isFollowup: true, followupIndex: index),
                     trigger: trig
                 )
                 try? await center.add(req)
@@ -536,10 +551,23 @@ final class NotificationScheduler {
         }
     }
     
-    private func customBaseContent(name: String, isFollowup: Bool) -> UNMutableNotificationContent {
+    private func customBaseContent(name: String, isFollowup: Bool, followupIndex: Int = 1) -> UNMutableNotificationContent {
         let c = UNMutableNotificationContent()
         c.title = isFollowup ? String(format: localizedString("notification_custom_followup_title_format"), name) : name
-        c.body  = isFollowup ? String(format: localizedString("notification_custom_followup_body_format"), name) : String(format: localizedString("notification_custom_body_format"), name)
+        
+        if isFollowup {
+            // インデックスベースでローテーション（1〜10）
+            let rotationIndex = ((followupIndex - 1) % 10) + 1
+            let key = "notification_custom_followup_\(rotationIndex)"
+            c.body = String(format: localizedString(key), name)
+        } else {
+            // 日付ベースでローテーション（1〜10）
+            let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: Date()) ?? 1
+            let index = ((dayOfYear - 1) % 10) + 1
+            let key = "notification_custom_main_\(index)"
+            c.body = String(format: localizedString(key), name)
+        }
+        
         c.categoryIdentifier = Category.habitAlarm.rawValue
         c.interruptionLevel = .timeSensitive
         c.sound = wakeSound()
@@ -606,60 +634,6 @@ final class NotificationScheduler {
     // MARK: - Pre-Reminder Scheduling (Personalized)
     
     // MARK: - Pre-Reminder Message Fetching
-    
-    /// サーバーからパーソナライズされたメイン通知メッセージを取得
-    private func fetchMainNotificationMessage(
-        habitType: HabitType,
-        scheduledTime: String,
-        habitName: String? = nil
-    ) async -> String? {
-        let baseURL = AppConfig.proxyBaseURL
-        let url = baseURL.appendingPathComponent("mobile/nudge/pre-reminder")
-        
-        var request = URLRequest(url: url)
-        request.httpMethod = "POST"
-        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        
-        // 認証ヘッダーを追加
-        if let deviceId = UIDevice.current.identifierForVendor?.uuidString {
-            request.setValue(deviceId, forHTTPHeaderField: "device-id")
-        }
-        if case .signedIn(let credentials) = AppState.shared.authStatus {
-            request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
-        }
-        
-        request.timeoutInterval = 10
-        
-        var body: [String: Any] = [
-            "habitType": habitType.rawValue,
-            "scheduledTime": scheduledTime,
-            "notificationType": "main"  // メイン通知であることを示す
-        ]
-        if let habitName = habitName {
-            body["habitName"] = habitName
-        }
-        
-        do {
-            request.httpBody = try JSONSerialization.data(withJSONObject: body)
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            guard let httpResponse = response as? HTTPURLResponse,
-                  httpResponse.statusCode == 200 else {
-                logger.warning("fetchMainNotificationMessage: server returned non-200")
-                return nil
-            }
-            
-            if let json = try JSONSerialization.jsonObject(with: data) as? [String: Any],
-               let message = json["message"] as? String {
-                logger.info("Received personalized main notification: \(message.prefix(30), privacy: .public)...")
-                return message
-            }
-        } catch {
-            logger.warning("fetchMainNotificationMessage failed: \(error.localizedDescription, privacy: .public)")
-        }
-        
-        return nil
-    }
     
     /// サーバーからパーソナライズされた事前通知メッセージを取得
     private func fetchPreReminderMessage(

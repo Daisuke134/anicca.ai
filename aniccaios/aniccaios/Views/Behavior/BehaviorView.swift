@@ -62,7 +62,7 @@ struct BehaviorView: View {
                 .padding(.vertical, AppTheme.Spacing.md)
             }
             .background(AppBackground())
-            .task { await load() }
+            .task { await bootstrapAndLoad() }
             // v3.1: Hidden DeviceActivityReport を表示してデータ収集をトリガー
             .background {
                 if showScreenTimeReport && appState.sensorAccess.screenTimeEnabled {
@@ -102,6 +102,13 @@ struct BehaviorView: View {
         }
     }
 
+    private func bootstrapAndLoad() async {
+        if let cached = BehaviorSummaryCache.shared.latest {
+            summary = cached
+        }
+        await load()
+    }
+    
     private func load() async {
         guard !isLoading else { return }
         isLoading = true
@@ -141,6 +148,7 @@ struct BehaviorView: View {
             logger.info("BehaviorView: Highlights - wake: \(data.highlights.wake.label), screen: \(data.highlights.screen.label), workout: \(data.highlights.workout.label), rumination: \(data.highlights.rumination.label)")
             
             summary = data
+            BehaviorSummaryCache.shared.update(data)
         } catch {
             logger.error("BehaviorView: Failed to load summary - \(error.localizedDescription)")
             errorText = String(localized: "behavior_error_failed_load")

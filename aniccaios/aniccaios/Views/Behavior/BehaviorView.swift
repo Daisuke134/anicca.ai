@@ -2,6 +2,7 @@ import SwiftUI
 import DeviceActivity
 import os
 import Foundation
+import FamilyControls
 
 /// v0.3 Behavior タブ: Today's Insights / 24h Timeline / Highlights / 10 Years From Now
 struct BehaviorView: View {
@@ -10,6 +11,7 @@ struct BehaviorView: View {
     @State private var summary: BehaviorSummary?
     @State private var errorText: String?
     @State private var showScreenTimeReport = false
+    @State private var allowDeviceActivityReport = ScreenTimeManager.shared.isAuthorized
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "BehaviorView")
     private let appGroupDefaults = AppGroup.userDefaults
@@ -65,7 +67,7 @@ struct BehaviorView: View {
             .task { await bootstrapAndLoad() }
             // v3.1: Hidden DeviceActivityReport を表示してデータ収集をトリガー
             .background {
-                if showScreenTimeReport && appState.sensorAccess.screenTimeEnabled {
+                if showScreenTimeReport && appState.sensorAccess.screenTimeEnabled && allowDeviceActivityReport {
                     DeviceActivityReport(
                         .init(rawValue: "TotalActivity"),
                         filter: DeviceActivityFilter(
@@ -119,21 +121,27 @@ struct BehaviorView: View {
         logger.info("BehaviorView: screenTimeEnabled=\(appState.sensorAccess.screenTimeEnabled), sleepEnabled=\(appState.sensorAccess.sleepEnabled), stepsEnabled=\(appState.sensorAccess.stepsEnabled)")
         
         // v3.1: Screen Time データを更新するために DeviceActivityReport を表示
-        var shouldForceUpload = false
+        var shouldForceUpload = true
         if appState.sensorAccess.screenTimeEnabled {
-            showScreenTimeReport = true
-            logger.info("BehaviorView: Waiting for DeviceActivityReport...")
-            // extensionがAppGroupへ書き込む lastUpdate を"短時間だけ"待つ（最大5秒→短縮）
-            let startTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
-            for _ in 0..<25 { // 最大5秒（0.2s * 25）
-                try? await Task.sleep(nanoseconds: 200_000_000)
-                let nowTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
-                if nowTs > startTs {
-                    shouldForceUpload = true
-                    break
+            allowDeviceActivityReport = ScreenTimeManager.shared.isAuthorized
+            if allowDeviceActivityReport {
+                showScreenTimeReport = true
+                logger.info("BehaviorView: Waiting for DeviceActivityReport...")
+                let startTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
+                for _ in 0..<25 {
+                    try? await Task.sleep(nanoseconds: 200_000_000)
+                    let nowTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
+                    if nowTs > startTs {
+                        break
+                    }
                 }
+                showScreenTimeReport = false
+            } else {
+                logger.info("BehaviorView: ScreenTime authorization unavailable, skipping DeviceActivityReport")
+                showScreenTimeReport = false
             }
-            showScreenTimeReport = false
+        } else {
+            allowDeviceActivityReport = false
         }
         
         logger.info("BehaviorView: Running MetricsUploader... force=\(shouldForceUpload)")

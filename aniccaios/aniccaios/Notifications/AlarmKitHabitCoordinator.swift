@@ -70,7 +70,6 @@ final class AlarmKitHabitCoordinator {
     private let manager = AlarmManager.shared
     private var audioPlayer: AVAudioPlayer?
     private var alarmMonitorTask: Task<Void, Never>?
-    private var lastScheduledSnapshot: [HabitType: ScheduledSet] = [:]
     private let reporterRateLimiter = RateLimiter(eventsPerSecond: 28)
     @MainActor private var currentAlertingHabit: HabitType?
     
@@ -223,10 +222,6 @@ final class AlarmKitHabitCoordinator {
     ///   - minute: Alarm minute
     ///   - followupCount: Total number of alarms (1 = single, 5 = 5 alarms at 1-minute intervals)
     func scheduleHabit(_ habit: HabitType, hour: Int, minute: Int, followupCount: Int) async -> Bool {
-        guard shouldReschedule(habit: habit, hour: hour, minute: minute, followup: followupCount) else {
-            logger.info("AlarmKit skip: no diff for \(habit.rawValue, privacy: .public)")
-            return true
-        }
         do {
             // 重要: ここで requestAuthorization() を呼ぶと、ログイン直後/バックグラウンド処理等で
             // 予期せず許可ダイアログが出る。許可リクエストはオンボーディング画面のボタン起点に限定する。
@@ -278,7 +273,6 @@ final class AlarmKitHabitCoordinator {
                 scheduledIds.append(identifier)
             }
             
-            lastScheduledSnapshot[habit] = ScheduledSet(hour: hour, minute: minute, followup: repeatCount, ids: scheduledIds)
             persist(ids: scheduledIds, for: habit)
             logger.info("Scheduled \(repeatCount) AlarmKit alarms for \(habit.rawValue) starting at \(hour):\(minute)")
             return true
@@ -482,12 +476,6 @@ final class AlarmKitHabitCoordinator {
     private func tintColor(for habit: HabitType) -> Color {
         // すべての習慣で統一のオレンジ色を使用
         return .orange
-    }
-    
-    /// Check if rescheduling is needed by comparing with last snapshot
-    private func shouldReschedule(habit: HabitType, hour: Int, minute: Int, followup: Int) -> Bool {
-        guard let last = lastScheduledSnapshot[habit] else { return true }
-        return last.hour != hour || last.minute != minute || last.followup != followup
     }
     
     /// Check if there are pending alarm sessions

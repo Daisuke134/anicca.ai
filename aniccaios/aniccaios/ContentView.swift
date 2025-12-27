@@ -11,8 +11,8 @@ struct ContentRouterView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        // プロファイル取得中は何も表示しない（フラッシュ防止）
-        if appState.isBootstrappingProfile {
+        // プロファイル取得中のProgressは、オンボーディング完了後のみ（オンボーディング中の遷移を邪魔しない）
+        if appState.isBootstrappingProfile && appState.isOnboardingComplete {
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(AppBackground())

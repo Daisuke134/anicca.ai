@@ -115,9 +115,9 @@ struct BehaviorView: View {
         if appState.sensorAccess.screenTimeEnabled {
             showScreenTimeReport = true
             logger.info("BehaviorView: Waiting for DeviceActivityReport...")
-            // 固定sleepではなく、extensionがAppGroupへ書き込む lastUpdate を短時間待つ
+            // extensionがAppGroupへ書き込む lastUpdate を"短時間だけ"待つ（最大5秒→短縮）
             let startTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
-            for _ in 0..<25 { // 最大5秒（0.2s * 25）
+            for _ in 0..<3 { // 最大0.6秒（0.2s * 3）
                 try? await Task.sleep(nanoseconds: 200_000_000)
                 let nowTs = appGroupDefaults?.double(forKey: "screenTime_lastUpdate") ?? 0
                 if nowTs > startTs { break }

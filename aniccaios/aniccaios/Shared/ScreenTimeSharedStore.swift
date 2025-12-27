@@ -19,10 +19,17 @@ struct ScreenTimeSharedPayload: Codable {
 
 enum ScreenTimeSharedStore {
     private static let logger = Logger(subsystem: "com.anicca.ios", category: "ScreenTimeSharedStore")
+    private static let suiteCandidates = [
+        "group.ai.anicca.app.ios",
+        "group.ai.anicca.app"
+    ]
     private static let directory: URL? = {
-        FileManager.default
-            .containerURL(forSecurityApplicationGroupIdentifier: AppGroup.suiteName)?
-            .appendingPathComponent("screentime", isDirectory: true)
+        for identifier in suiteCandidates {
+            if let base = FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: identifier) {
+                return base.appendingPathComponent("screentime", isDirectory: true)
+            }
+        }
+        return nil
     }()
 
     private static func url(for dateKey: String) -> URL? {
@@ -34,7 +41,7 @@ enum ScreenTimeSharedStore {
         do {
             try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
             let data = try JSONEncoder().encode(payload)
-            try data.write(to: url, options: .atomic)
+            try data.write(to: url, options: [.atomic])
             logger.debug("Saved ScreenTime payload \(payload.dateKey)")
         } catch {
             logger.error("Failed to save ScreenTime payload: \(error.localizedDescription)")

@@ -172,7 +172,10 @@ final class AppState: ObservableObject {
             consumed.append(entry)
             break
         }
-        queue.removeAll(where: { consumed.contains(where: { $0["ts"] as? TimeInterval == ($1["ts"] as? TimeInterval) }) })
+        queue.removeAll { candidate in
+            guard let ts = candidate["ts"] as? TimeInterval else { return false }
+            return consumed.contains(where: { ($0["ts"] as? TimeInterval) == ts })
+        }
         defaults.set(queue, forKey: "pending_habit_launch_queue")
     }
 

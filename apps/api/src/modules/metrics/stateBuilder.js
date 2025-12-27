@@ -5,7 +5,7 @@ import { calculateRuminationProxy } from '../nudge/features/stateBuilder.js';  /
  * Build Behavior tab payload pieces from daily_metrics row.
  * This is a thin, deterministic mapper; richer insights may be generated upstream and stored into daily_metrics.insights.
  */
-export function buildHighlights({ todayStats, timezone, language = 'en' }) {
+export function buildHighlights({ todayStats, timezone, language = 'en', habitSchedules }) {
   const wakeAt = todayStats?.wakeAt ? new Date(todayStats.wakeAt) : null;
   const snsMinutesTotal = Number(todayStats?.snsMinutesTotal ?? 0);
   const steps = Number(todayStats?.steps ?? 0);
@@ -25,10 +25,21 @@ export function buildHighlights({ todayStats, timezone, language = 'en' }) {
   const isJa = language === 'ja';
   
   // ★ ラベルをローカライズ（データがない場合は--:--と睡眠時間を表示）
-  const wakeLabel = wakeAt 
-    ? (isJa ? `起床 ${toLocalTimeHHMM(wakeAt, timezone)}` : `Wake ${toLocalTimeHHMM(wakeAt, timezone)}`)
+  const wakeLocalHM = wakeAt ? toLocalTimeHHMM(wakeAt, timezone) : null;
+  const wakeLabel = wakeLocalHM
+    ? (isJa ? `起床 ${wakeLocalHM}` : `Wake ${wakeLocalHM}`)
     : (isJa ? `起床 --:--（睡眠 ${sleepMinutes}分）` : `Wake --:-- (Sleep ${sleepMinutes}m)`);
-  const wakeStatus = wakeAt ? 'on_track' : 'warning';
+  
+  // ★ 起床チェック: 目標時刻との差分で判定（ローカルタイムで比較）
+  const wakeTarget = habitSchedules?.wake || { hour: 7, minute: 0 };
+  const targetMinutes = (Number(wakeTarget.hour ?? 7) * 60) + Number(wakeTarget.minute ?? 0);
+  const wakeMinutesLocal = wakeLocalHM ? wakeLocalHM.split(':').map((part) => Number.parseInt(part, 10)) : null;
+  const wakeDelta = Array.isArray(wakeMinutesLocal) && wakeMinutesLocal.length === 2
+    ? Math.abs((wakeMinutesLocal[0] * 60 + wakeMinutesLocal[1]) - targetMinutes)
+    : null;
+  const wakeStatus = wakeAt
+    ? (wakeDelta <= 10 ? 'on_track' : wakeDelta <= 60 ? 'warning' : 'missed')
+    : 'warning';
 
   // Minimal heuristics (v0.3): thresholds are placeholders until insights pipeline fills daily_metrics.insights.highlights
   // ★ スクリーンタイム全体を使用（totalScreenTime優先）

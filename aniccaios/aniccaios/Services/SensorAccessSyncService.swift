@@ -14,7 +14,7 @@ actor SensorAccessSyncService {
 
     func sync(access: SensorAccessState) async {
         guard case .signedIn(let creds) = await AppState.shared.authStatus else { return }
-        let baseURL = AppConfig.proxyBaseURL
+        let baseURL = await MainActor.run { AppConfig.proxyBaseURL }
         var request = URLRequest(url: baseURL.appendingPathComponent("mobile/sensors/state"))
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -42,7 +42,7 @@ actor SensorAccessSyncService {
 
     func fetchLatest() async {
         guard case .signedIn(let creds) = await AppState.shared.authStatus else { return }
-        let baseURL = AppConfig.proxyBaseURL
+        let baseURL = await MainActor.run { AppConfig.proxyBaseURL }
         var request = URLRequest(url: baseURL.appendingPathComponent("mobile/sensors/state"))
         request.httpMethod = "GET"
         request.setValue(await AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")

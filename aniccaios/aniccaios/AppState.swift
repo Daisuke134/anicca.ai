@@ -1387,8 +1387,9 @@ final class AppState: ObservableObject {
     func updateSensorAccess(_ access: SensorAccessState) {
         sensorAccess = access
         saveSensorAccess()
+        let syncAccess = sensorAccess
         Task {
-            await SensorAccessSyncService.shared.sync(access: access)
+            await SensorAccessSyncService.shared.sync(access: syncAccess)
         }
     }
     
@@ -1415,7 +1416,10 @@ final class AppState: ObservableObject {
         guard changed else { return }
         sensorAccess = updated
         saveSensorAccess()
-        Task { await SensorAccessSyncService.shared.sync(access: updated) }
+        let updatedAccess = updated
+        Task {
+            await SensorAccessSyncService.shared.sync(access: updatedAccess)
+        }
         if (updated.sleepEnabled && updated.sleepAuthorized) || (updated.stepsEnabled && updated.stepsAuthorized) {
             await MetricsUploader.shared.runUploadIfDue(force: true)
         }

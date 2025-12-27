@@ -1284,7 +1284,7 @@ final class AppState: ObservableObject {
         if next != sensorAccess {
             sensorAccess = next
             saveSensorAccess()
-            Task { await SensorAccessSyncService.shared.sync(access: next) }
+            scheduleSensorAccessSync(next)
         }
 
         let needsRefresh = (next.sleepEnabled && next.sleepAuthorized)
@@ -1344,26 +1344,26 @@ final class AppState: ObservableObject {
         saveSensorAccess()
         Task {
             await ProfileSyncService.shared.enqueue(profile: userProfile, sensorAccess: sensorAccessForSync())
-            await SensorAccessSyncService.shared.sync(access: sensorAccess)
         }
+        scheduleSensorAccessSync(sensorAccess)
     }
     
     func setSleepEnabled(_ enabled: Bool) {
         sensorAccess.sleepEnabled = enabled
         saveSensorAccess()
-        Task { await SensorAccessSyncService.shared.sync(access: sensorAccess) }
+        scheduleSensorAccessSync(sensorAccess)
     }
     
     func setStepsEnabled(_ enabled: Bool) {
         sensorAccess.stepsEnabled = enabled
         saveSensorAccess()
-        Task { await SensorAccessSyncService.shared.sync(access: sensorAccess) }
+        scheduleSensorAccessSync(sensorAccess)
     }
     
     func setMotionEnabled(_ enabled: Bool) {
         sensorAccess.motionEnabled = enabled
         saveSensorAccess()
-        Task { await SensorAccessSyncService.shared.sync(access: sensorAccess) }
+        scheduleSensorAccessSync(sensorAccess)
     }
     
     func updateScreenTimePermission(_ status: SensorPermissionStatus) {
@@ -1384,13 +1384,16 @@ final class AppState: ObservableObject {
         saveSensorAccess()
     }
     
+    private func scheduleSensorAccessSync(_ access: SensorAccessState) {
+        Task.detached(priority: .utility) { [access] in
+            await SensorAccessSyncService.shared.sync(access: access)
+        }
+    }
+    
     func updateSensorAccess(_ access: SensorAccessState) {
         sensorAccess = access
         saveSensorAccess()
-        let syncAccess = sensorAccess
-        Task {
-            await SensorAccessSyncService.shared.sync(access: syncAccess)
-        }
+        scheduleSensorAccessSync(access)
     }
     
     func recoverHealthKitAccessIfNeeded() async {
@@ -1416,10 +1419,7 @@ final class AppState: ObservableObject {
         guard changed else { return }
         sensorAccess = updated
         saveSensorAccess()
-        let updatedAccess = updated
-        Task {
-            await SensorAccessSyncService.shared.sync(access: updatedAccess)
-        }
+        scheduleSensorAccessSync(updated)
         if (updated.sleepEnabled && updated.sleepAuthorized) || (updated.stepsEnabled && updated.stepsAuthorized) {
             await MetricsUploader.shared.runUploadIfDue(force: true)
         }

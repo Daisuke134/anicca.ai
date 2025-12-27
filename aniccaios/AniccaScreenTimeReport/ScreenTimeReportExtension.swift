@@ -58,7 +58,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
         var totalMinutes: Double = 0
         var lateNightMinutes: Double = 0
         var socialMinutes: Double = 0
-        let receivedAny = false
+        var receivedAny = false
         var snsSessionsPayload: [[String: Any]] = []
         
         let calendar = Calendar.current
@@ -76,6 +76,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
                 guard minutes > 0 else { continue }
                 
                 totalMinutes += minutes
+                receivedAny = true
                 if isLateNight { lateNightMinutes += minutes }
                 
                 // 現行SDKでは CategoryActivitySegment のカテゴリ詳細を公開していないため、

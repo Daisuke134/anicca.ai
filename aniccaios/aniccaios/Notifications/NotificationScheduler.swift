@@ -323,7 +323,8 @@ final class NotificationScheduler {
     private func primaryBody(for habit: HabitType, at date: Date = Date()) -> String {
         let dayOfYear = Calendar.current.ordinality(of: .day, in: .year, for: date) ?? 1
         let index = ((dayOfYear - 1) % 10) + 1
-        let userName = AppState.shared.userProfile.displayName ?? localizedString("common_user_fallback")
+        let rawName = AppState.shared.userProfile.displayName
+        let userName = rawName.isEmpty ? localizedString("common_user_fallback") : rawName
         
         switch habit {
         case .wake:
@@ -347,15 +348,16 @@ final class NotificationScheduler {
         case .bedtime:
             return localizedString("notification_bedtime_followup_title")
         case .custom:
-            let name = customHabitDisplayName()
-            return String(format: localizedString("notification_custom_followup_title_format"), name)
+            let habitName = customHabitDisplayName()
+            return String(format: localizedString("notification_custom_followup_title_format"), habitName)
         }
     }
 
     private func followupBody(for habit: HabitType, index: Int = 1) -> String {
         // インデックスベースでローテーション（1〜10）
         let rotationIndex = ((index - 1) % 10) + 1
-        let userName = AppState.shared.userProfile.displayName ?? localizedString("common_user_fallback")
+        let rawName = AppState.shared.userProfile.displayName
+        let userName = rawName.isEmpty ? localizedString("common_user_fallback") : rawName
         
         switch habit {
         case .wake:

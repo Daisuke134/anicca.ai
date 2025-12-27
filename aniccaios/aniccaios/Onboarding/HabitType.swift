@@ -87,26 +87,26 @@ enum HabitType: String, Codable, CaseIterable, Sendable {
 @available(iOS 16.0, *)
 extension HabitType: AppEnum {
     nonisolated static var typeDisplayRepresentation: TypeDisplayRepresentation {
-        .init(name: "Habit Type")
+        .init(name: LocalizedStringResource("Habit Type"))
     }
 
     nonisolated static var caseDisplayRepresentations: [HabitType: DisplayRepresentation] {
         [
             .wake: .init(
-                title: "habit_title_wake",
-                subtitle: "habit_detail_wake"
+                title: LocalizedStringResource("habit_title_wake"),
+                subtitle: LocalizedStringResource("habit_detail_wake")
             ),
             .training: .init(
-                title: "habit_title_training",
-                subtitle: "habit_detail_training"
+                title: LocalizedStringResource("habit_title_training"),
+                subtitle: LocalizedStringResource("habit_detail_training")
             ),
             .bedtime: .init(
-                title: "habit_title_bedtime",
-                subtitle: "habit_detail_bedtime"
+                title: LocalizedStringResource("habit_title_bedtime"),
+                subtitle: LocalizedStringResource("habit_detail_bedtime")
             ),
             .custom: .init(
-                title: "habit_title_custom_fallback",
-                subtitle: "habit_detail_custom"
+                title: LocalizedStringResource("habit_title_custom_fallback"),
+                subtitle: LocalizedStringResource("habit_detail_custom")
             )
         ]
     }

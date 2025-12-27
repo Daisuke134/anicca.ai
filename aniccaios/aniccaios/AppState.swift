@@ -1403,15 +1403,19 @@ final class AppState: ObservableObject {
         var changed = false
 
         if updated.sleepEnabled && !updated.sleepAuthorized {
-            let alreadyGranted = HealthKitManager.shared.isSleepAuthorized()
-            let granted = alreadyGranted || await HealthKitManager.shared.requestSleepAuthorization()
+            var granted = HealthKitManager.shared.isSleepAuthorized()
+            if !granted {
+                granted = await HealthKitManager.shared.requestSleepAuthorization()
+            }
             updated.sleepAuthorized = granted
             changed = changed || granted != sensorAccess.sleepAuthorized
         }
 
         if updated.stepsEnabled && !updated.stepsAuthorized {
-            let alreadyGranted = HealthKitManager.shared.isStepsAuthorized()
-            let granted = alreadyGranted || await HealthKitManager.shared.requestStepsAuthorization()
+            var granted = HealthKitManager.shared.isStepsAuthorized()
+            if !granted {
+                granted = await HealthKitManager.shared.requestStepsAuthorization()
+            }
             updated.stepsAuthorized = granted
             changed = changed || granted != sensorAccess.stepsAuthorized
         }

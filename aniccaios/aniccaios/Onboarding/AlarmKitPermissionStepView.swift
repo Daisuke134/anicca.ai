@@ -66,10 +66,8 @@ struct AlarmKitPermissionStepView: View {
                 permissionDenied = !granted
                 hasAttemptedPermission = true
                 isRequesting = false
-                // 許可できた場合は二度押し不要で次へ進む（UX改善）
-                if granted {
-                    next()
-                }
+                // 許可・非許可ともに同じ遷移にする
+                next()
                 return
             }
             #endif
@@ -87,6 +85,7 @@ struct AlarmKitPermissionStepView: View {
 
             hasAttemptedPermission = true
             isRequesting = false
+            next()
         }
     }
     

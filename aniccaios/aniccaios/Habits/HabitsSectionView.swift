@@ -313,7 +313,7 @@ struct HabitsSectionView: View {
             }
 
             Toggle("", isOn: Binding(
-                get: { isActive },
+                get: { activeHabits.contains(habit) },
                 set: { isOn in
                     if isOn {
                         if let date = date {
@@ -373,7 +373,7 @@ struct HabitsSectionView: View {
             }
 
             Toggle("", isOn: Binding(
-                get: { isActive },
+                get: { activeCustomHabits.contains(id) },
                 set: { isOn in
                     if isOn {
                         if let date = date {
@@ -632,41 +632,25 @@ struct HabitEditSheet: View {
     private var alarmKitToggle: some View {
         switch habit {
         case .wake:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForWake },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForWake = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForWake)
+            )
         case .training:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForTraining },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForTraining = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForTraining)
+            )
         case .bedtime:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForBedtime },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForBedtime = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForBedtime)
+            )
         case .custom:
-            Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                get: { appState.userProfile.useAlarmKitForCustom },
-                set: { newValue in
-                    var profile = appState.userProfile
-                    profile.useAlarmKitForCustom = newValue
-                    appState.updateUserProfile(profile, sync: true)
-                }
-            ))
+            Toggle(
+                String(localized: "settings_alarmkit_toggle"),
+                isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForCustom)
+            )
         }
     }
 #endif
@@ -873,14 +857,10 @@ struct CustomHabitEditSheet: View {
 #if canImport(AlarmKit)
                 if #available(iOS 26.0, *) {
                     Section(String(localized: "settings_alarmkit_section_title")) {
-                        Toggle(String(localized: "settings_alarmkit_toggle"), isOn: Binding(
-                            get: { appState.userProfile.useAlarmKitForCustom },
-                            set: { newValue in
-                                var profile = appState.userProfile
-                                profile.useAlarmKitForCustom = newValue
-                                appState.updateUserProfile(profile, sync: true)
-                            }
-                        ))
+                        Toggle(
+                            String(localized: "settings_alarmkit_toggle"),
+                            isOn: alarmKitPermissionBinding(appState: appState, keyPath: \.useAlarmKitForCustom)
+                        )
                         Text(String(localized: "settings_alarmkit_description"))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
@@ -925,4 +905,30 @@ struct CustomHabitEditSheet: View {
         }
     }
 }
+
+#if canImport(AlarmKit)
+@available(iOS 26.0, *)
+private func alarmKitPermissionBinding(appState: AppState, keyPath: WritableKeyPath<UserProfile, Bool>) -> Binding<Bool> {
+    Binding(
+        get: { appState.userProfile[keyPath: keyPath] },
+        set: { newValue in
+            let currentValue = appState.userProfile[keyPath: keyPath]
+            guard currentValue != newValue else { return }
+
+            if newValue {
+                Task { @MainActor in
+                    let granted = await AlarmKitHabitCoordinator.shared.requestAuthorizationIfNeeded()
+                    var profile = appState.userProfile
+                    profile[keyPath: keyPath] = granted
+                    appState.updateUserProfile(profile, sync: true)
+                }
+            } else {
+                var profile = appState.userProfile
+                profile[keyPath: keyPath] = false
+                appState.updateUserProfile(profile, sync: true)
+            }
+        }
+    )
+}
+#endif
 

@@ -4,6 +4,66 @@ import os.log
 import ExtensionKit
 import ExtensionFoundation
 import ManagedSettings
+import Foundation
+
+// MARK: - ScreenTime Shared Store (Extension内で定義)
+
+struct ScreenTimeSharedPayload: Codable {
+    struct Session: Codable {
+        let startAt: Date
+        let endAt: Date
+        let category: String
+        let totalMinutes: Double
+    }
+
+    let dateKey: String
+    let totalMinutes: Int
+    let socialMinutes: Int
+    let lateNightMinutes: Int
+    let sessions: [Session]
+    let updatedAt: TimeInterval
+}
+
+enum ScreenTimeSharedStore {
+    private static let logger = Logger(subsystem: "com.anicca.ios", category: "ScreenTimeSharedStore")
+    private static let suiteName: String = {
+        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.ai.anicca.app.ios") != nil {
+            return "group.ai.anicca.app.ios"
+        }
+        if FileManager.default.containerURL(forSecurityApplicationGroupIdentifier: "group.ai.anicca.app") != nil {
+            return "group.ai.anicca.app"
+        }
+        return "group.ai.anicca.app.ios"
+    }()
+    
+    private static let directory: URL? = {
+        FileManager.default
+            .containerURL(forSecurityApplicationGroupIdentifier: suiteName)?
+            .appendingPathComponent("screentime", isDirectory: true)
+    }()
+
+    private static func url(for dateKey: String) -> URL? {
+        directory?.appendingPathComponent("payload-\(dateKey).json", isDirectory: false)
+    }
+
+    static func save(_ payload: ScreenTimeSharedPayload) {
+        guard let url = url(for: payload.dateKey) else { return }
+        do {
+            try FileManager.default.createDirectory(at: url.deletingLastPathComponent(), withIntermediateDirectories: true)
+            let data = try JSONEncoder().encode(payload)
+            try data.write(to: url, options: .atomic)
+            logger.debug("Saved ScreenTime payload \(payload.dateKey)")
+        } catch {
+            logger.error("Failed to save ScreenTime payload: \(error.localizedDescription)")
+        }
+    }
+
+    static func load(for dateKey: String) -> ScreenTimeSharedPayload? {
+        guard let url = url(for: dateKey),
+              let data = try? Data(contentsOf: url) else { return nil }
+        return try? JSONDecoder().decode(ScreenTimeSharedPayload.self, from: data)
+    }
+}
 
 @main
 struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
@@ -59,7 +119,7 @@ struct TotalActivityReport: DeviceActivityReportScene {
         var lateNightMinutes: Double = 0
         var socialMinutes: Double = 0
         var receivedAny = false
-        var snsSessionsPayload: [[String: Any]] = []
+        var sessionPayload: [ScreenTimeSharedPayload.Session] = []
         
         let calendar = Calendar.current
         
@@ -84,12 +144,14 @@ struct TotalActivityReport: DeviceActivityReportScene {
                 let primaryCategory = "screen"
                 socialMinutes += minutes
                 
-                snsSessionsPayload.append([
-                    "startAt": ISO8601DateFormatter().string(from: segment.dateInterval.start),
-                    "endAt": ISO8601DateFormatter().string(from: segment.dateInterval.end),
-                    "category": primaryCategory,
-                    "totalMinutes": minutes
-                ])
+                sessionPayload.append(
+                    .init(
+                        startAt: segment.dateInterval.start,
+                        endAt: segment.dateInterval.end,
+                        category: primaryCategory,
+                        totalMinutes: minutes
+                    )
+                )
             }
         }
         
@@ -99,16 +161,16 @@ struct TotalActivityReport: DeviceActivityReportScene {
         
         // 重要: データが返ってこないケース（未承認/未生成）で 0 を書いて上書きしない
         if receivedAny {
-            appGroupDefaults.set(Int(totalMinutes), forKey: "screenTime_totalMinutes_\(todayKey)")
-            // socialMinutes が未取得の場合は total をフォールバック
-            let socialValue = socialMinutes > 0 ? socialMinutes : totalMinutes
-            appGroupDefaults.set(Int(socialValue), forKey: "screenTime_socialMinutes_\(todayKey)")
-            appGroupDefaults.set(Int(lateNightMinutes), forKey: "screenTime_lateNightMinutes_\(todayKey)")
-            if let json = try? JSONSerialization.data(withJSONObject: snsSessionsPayload) {
-                appGroupDefaults.set(String(data: json, encoding: .utf8), forKey: "screenTime_snsSessions_\(todayKey)")
-            }
-            appGroupDefaults.set(Date().timeIntervalSince1970, forKey: "screenTime_lastUpdate")
-            logger.info("Saved screen time: total=\(Int(totalMinutes))m, lateNight=\(Int(lateNightMinutes))m, sessions=\(snsSessionsPayload.count)")
+            let payload = ScreenTimeSharedPayload(
+                dateKey: todayKey,
+                totalMinutes: Int(totalMinutes),
+                socialMinutes: Int(socialMinutes),
+                lateNightMinutes: Int(lateNightMinutes),
+                sessions: sessionPayload,
+                updatedAt: Date().timeIntervalSince1970
+            )
+            ScreenTimeSharedStore.save(payload)
+            logger.info("Saved screen time payload \(todayKey): sessions=\(sessionPayload.count)")
         } else {
             logger.info("No device activity data received; skipping App Group write")
         }

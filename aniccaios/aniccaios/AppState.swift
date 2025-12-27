@@ -324,6 +324,11 @@ final class AppState: ObservableObject {
         defaults.set(true, forKey: onboardingKey)
         // v3: 完了後はステップ情報を持たない（Habit/All set等の誤表示を根絶）
         defaults.removeObject(forKey: onboardingStepKey)
+        Task {
+            // 初回ログイン直後に即座に当日分の指標をアップロードして挙動タブを埋める
+            await MetricsUploader.shared.runUploadIfDue(force: true)
+            MetricsUploader.shared.scheduleNextIfPossible()
+        }
     }
 
     // Legacy methods for backward compatibility

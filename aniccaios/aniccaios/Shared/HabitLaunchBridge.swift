@@ -39,7 +39,8 @@ enum HabitLaunchBridge {
     }
 
     private static func handleNotification() {
-        handler?()
+        guard let handler else { return }
+        Task { @MainActor in handler() }
     }
 }
 

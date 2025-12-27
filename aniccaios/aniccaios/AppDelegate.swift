@@ -77,6 +77,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
               Date().timeIntervalSince1970 - ts < 300 else {
             return
         }
+        do {
+            try AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
+        } catch {
+            habitLaunchLogger.error("Audio session configure failed: \(error.localizedDescription, privacy: .public)")
+        }
         await MainActor.run {
             AppState.shared.prepareForImmediateSession(habit: habit)
         }

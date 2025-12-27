@@ -353,8 +353,12 @@ final class AlarmKitHabitCoordinator {
             do {
                 try manager.cancel(id: alarmId)
                 logger.info("Cancelled AlarmKit alarm \(alarmId.uuidString, privacy: .public) for custom habit \(id.uuidString, privacy: .public)")
-            } catch {
-                logger.error("Failed to cancel AlarmKit alarm: \(error.localizedDescription, privacy: .public)")
+            } catch let nsError as NSError {
+                if nsError.domain == "com.apple.AlarmKit.Alarm" && nsError.code == 0 {
+                    logger.debug("Alarm already gone for \(alarmId.uuidString, privacy: .public)")
+                } else {
+                    logger.error("Failed to cancel AlarmKit alarm: \(nsError.localizedDescription, privacy: .public)")
+                }
             }
         }
         
@@ -372,8 +376,12 @@ final class AlarmKitHabitCoordinator {
             do {
                 try manager.cancel(id: id)
                 logger.info("Cancelled AlarmKit alarm \(id.uuidString, privacy: .public) for \(habit.rawValue, privacy: .public)")
-            } catch {
-                logger.error("Failed to cancel AlarmKit alarm \(id.uuidString, privacy: .public): \(error.localizedDescription, privacy: .public)")
+            } catch let nsError as NSError {
+                if nsError.domain == "com.apple.AlarmKit.Alarm" && nsError.code == 0 {
+                    logger.debug("Alarm already gone for \(id.uuidString, privacy: .public)")
+                } else {
+                    logger.error("Failed to cancel AlarmKit alarm \(id.uuidString, privacy: .public): \(nsError.localizedDescription, privacy: .public)")
+                }
             }
         }
         

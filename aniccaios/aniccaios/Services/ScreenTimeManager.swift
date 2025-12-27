@@ -8,7 +8,11 @@ final class ScreenTimeManager {
     private init() {}
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "ScreenTimeManager")
-    private let appGroupDefaults = AppGroup.userDefaults
+    private let dateFormatter: ISO8601DateFormatter = {
+        let f = ISO8601DateFormatter()
+        f.formatOptions = [.withFullDate]
+        return f
+    }()
     
     struct DailySummary {
         var totalMinutes: Int?
@@ -59,35 +63,26 @@ final class ScreenTimeManager {
     
     func fetchDailySummary() async -> DailySummary {
         // v3.1: DeviceActivityReportExtension が App Groups に保存したデータを読み取り
-        let today = ISO8601DateFormatter().string(from: Date()).prefix(10)
-        let todayKey = String(today)
-        
-        // ★ object(forKey:)を使ってnilと0を区別（integer(forKey:)は未設定でも0を返す）
-        let totalMinutes = appGroupDefaults.object(forKey: "screenTime_totalMinutes_\(todayKey)") as? Int
-        let socialMinutes = appGroupDefaults.object(forKey: "screenTime_socialMinutes_\(todayKey)") as? Int
-        let lateNightMinutes = appGroupDefaults.object(forKey: "screenTime_lateNightMinutes_\(todayKey)") as? Int
-        
-        // v3.1: snsSessions を読み取り
-        var snsSessions: [[String: Any]]? = nil
-        if let sessionsJSON = appGroupDefaults.string(forKey: "screenTime_snsSessions_\(todayKey)"),
-           let sessionsData = sessionsJSON.data(using: .utf8),
-           let sessions = try? JSONSerialization.jsonObject(with: sessionsData) as? [[String: Any]] {
-            snsSessions = sessions
+        let key = dateFormatter.string(from: Date())
+        if let payload = ScreenTimeSharedStore.load(for: key) {
+            logger.info("Loaded ScreenTime payload for \(key)")
+            let sessionDicts = payload.sessions.map { session in
+                [
+                    "startAt": ISO8601DateFormatter().string(from: session.startAt),
+                    "endAt": ISO8601DateFormatter().string(from: session.endAt),
+                    "category": session.category,
+                    "totalMinutes": session.totalMinutes
+                ]
+            }
+            return DailySummary(
+                totalMinutes: payload.totalMinutes,
+                socialMinutes: payload.socialMinutes,
+                lateNightMinutes: payload.lateNightMinutes,
+                snsSessions: sessionDicts
+            )
         }
-        
-        // データが存在しない場合（Extension がまだ実行されていない）
-        if totalMinutes == nil {
-            logger.info("No screen time data in App Groups yet")
-            return DailySummary(totalMinutes: nil, socialMinutes: nil, lateNightMinutes: nil, snsSessions: nil)
-        }
-        
-        logger.info("Fetched screen time from App Groups: total=\(totalMinutes ?? 0), social=\(socialMinutes ?? 0), lateNight=\(lateNightMinutes ?? 0), sessions=\(snsSessions?.count ?? 0)")
-        
-        return DailySummary(
-            totalMinutes: totalMinutes,
-            socialMinutes: socialMinutes,
-            lateNightMinutes: lateNightMinutes,
-            snsSessions: snsSessions
-        )
+
+        logger.info("No ScreenTime payload yet")
+        return DailySummary(totalMinutes: nil, socialMinutes: nil, lateNightMinutes: nil, snsSessions: nil)
     }
 }

@@ -29,16 +29,6 @@ struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
         }
     }
 }
-private func resolvedAppGroupDefaults() -> UserDefaults {
-    if let defaults = UserDefaults(suiteName: "group.ai.anicca.app.ios") {
-        return defaults
-    }
-    if let defaults = UserDefaults(suiteName: "group.ai.anicca.app") {
-        return defaults
-    }
-    return .standard
-}
-
 
 // MARK: - Report Context
 
@@ -54,7 +44,6 @@ struct TotalActivityReport: DeviceActivityReportScene {
     
     nonisolated func makeConfiguration(representing data: DeviceActivityResults<DeviceActivityData>) async -> ActivityReport {
         let logger = Logger(subsystem: "ai.anicca.app.ios.screentime-report", category: "Report")
-        let appGroupDefaults = resolvedAppGroupDefaults()
         
         var totalMinutes: Double = 0
         var lateNightMinutes: Double = 0

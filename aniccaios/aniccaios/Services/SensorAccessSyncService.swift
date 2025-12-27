@@ -6,13 +6,20 @@ actor SensorAccessSyncService {
     private let logger = Logger(subsystem: "com.anicca.ios", category: "SensorAccessSync")
 
     func sync(access: SensorAccessState) async {
-        guard case .signedIn(let creds) = AppState.shared.authStatus else { return }
-        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/sensors/state"))
+        guard case .signedIn(let creds) = await AppState.shared.authStatus else { return }
+        let baseURL = await AppConfig.proxyBaseURL
+        var request = URLRequest(url: baseURL.appendingPathComponent("mobile/sensors/state"))
         request.httpMethod = "PUT"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+        let deviceId = await AppState.shared.resolveDeviceId()
+        request.setValue(deviceId, forHTTPHeaderField: "device-id")
         request.setValue(creds.userId, forHTTPHeaderField: "user-id")
-        request.httpBody = try? JSONEncoder().encode(access)
+
+        let encoder = JSONEncoder()
+        if let body = try? encoder.encode(access) {
+            request.httpBody = body
+        }
+
         do {
             let (_, response) = try await URLSession.shared.data(for: request)
             guard let http = response as? HTTPURLResponse, http.statusCode == 200 else {

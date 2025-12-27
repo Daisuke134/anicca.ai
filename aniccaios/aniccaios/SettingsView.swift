@@ -485,7 +485,7 @@ struct SettingsView: View {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            appState.signOutAndWipe()
+            appState.signOutPreservingSensorAccess()
             dismiss()
         }
         .accessibilityAddTraits(.isButton)

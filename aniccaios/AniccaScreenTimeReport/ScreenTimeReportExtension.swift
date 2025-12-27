@@ -1,9 +1,26 @@
-import DeviceActivity
+@preconcurrency import DeviceActivity
 import SwiftUI
 import os.log
+import ExtensionKit
+import ExtensionFoundation
+import ManagedSettings
 
 @main
 struct AniccaScreenTimeReportExtension: DeviceActivityReportExtension {
+    // Xcode 26 / iOS 26 SDK では DeviceActivityReportExtension が AppExtension を継承するため
+    // AppExtension 要件（extensionPoint）を満たす必要がある。
+    // iOS 16–25 ではこのAPI自体が unavailable なので、runtime では参照されない。
+    @MainActor
+    @available(iOS 26.2, *)
+    var extensionPoint: AppExtensionPoint {
+        do {
+            // DeviceActivityReport のドキュメントに明記されている extension point identifier
+            return try AppExtensionPoint(identifier: "com.apple.deviceactivityui.report-extension")
+        } catch {
+            fatalError("Failed to create AppExtensionPoint: \(error)")
+        }
+    }
+
     var body: some DeviceActivityReportScene {
         TotalActivityReport { activityReport in
             TotalActivityView(report: activityReport)
@@ -19,7 +36,6 @@ extension DeviceActivityReport.Context {
 
 // MARK: - Report Scene
 
-@MainActor
 struct TotalActivityReport: DeviceActivityReportScene {
     let context: DeviceActivityReport.Context = .totalActivity
     let content: (ActivityReport) -> TotalActivityView

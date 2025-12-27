@@ -9,30 +9,33 @@ export function buildHighlights({ todayStats, timezone, language = 'en' }) {
   const wakeAt = todayStats?.wakeAt ? new Date(todayStats.wakeAt) : null;
   const snsMinutesTotal = Number(todayStats?.snsMinutesTotal ?? 0);
   const steps = Number(todayStats?.steps ?? 0);
+  const sleepMinutes = Number(todayStats?.sleepDurationMin ?? 0);
   
   // 修正: 計算式を直接使用
   const activity = todayStats?.activitySummary || {};
+  const totalScreenTime = Number(activity?.totalScreenTime ?? snsMinutesTotal ?? 0);
   const ruminationProxy = calculateRuminationProxy({
     lateNightSnsMinutes: Number(activity?.lateNightSnsMinutes ?? 0),
     snsMinutes: snsMinutesTotal,
-    totalScreenTime: Number(activity?.totalScreenTime ?? snsMinutesTotal),
+    totalScreenTime: totalScreenTime,
     sleepWindowPhoneMinutes: Number(activity?.sleepWindowPhoneMinutes ?? 0),
     longestNoUseHours: Number(activity?.longestNoUseHours ?? 0)
   });
 
   const isJa = language === 'ja';
   
-  // ★ ラベルをローカライズ
+  // ★ ラベルをローカライズ（データがない場合は--:--と睡眠時間を表示）
   const wakeLabel = wakeAt 
     ? (isJa ? `起床 ${toLocalTimeHHMM(wakeAt, timezone)}` : `Wake ${toLocalTimeHHMM(wakeAt, timezone)}`)
-    : (isJa ? '起床' : 'Wake');
+    : (isJa ? `起床 --:--（睡眠 ${sleepMinutes}分）` : `Wake --:-- (Sleep ${sleepMinutes}m)`);
   const wakeStatus = wakeAt ? 'on_track' : 'warning';
 
   // Minimal heuristics (v0.3): thresholds are placeholders until insights pipeline fills daily_metrics.insights.highlights
-  const screenStatus = snsMinutesTotal >= 180 ? 'warning' : snsMinutesTotal >= 120 ? 'warning' : 'on_track';
-  const screenLabel = snsMinutesTotal > 0 
-    ? (isJa ? `SNS ${snsMinutesTotal}分` : `SNS ${snsMinutesTotal}m`) 
-    : 'SNS';
+  // ★ スクリーンタイム全体を使用（totalScreenTime優先）
+  const screenStatus = totalScreenTime >= 180 ? 'warning' : totalScreenTime >= 120 ? 'ok' : 'on_track';
+  const screenLabel = isJa 
+    ? `スクリーン ${totalScreenTime}分`
+    : `Screen ${totalScreenTime}m`;
 
   const workoutStatus = steps >= 8000 ? 'on_track' : steps >= 3000 ? 'warning' : 'missed';
   const workoutLabel = steps > 0 

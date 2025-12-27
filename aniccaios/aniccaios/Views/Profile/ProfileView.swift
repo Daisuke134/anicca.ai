@@ -433,7 +433,7 @@ struct ProfileView: View {
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {
                     Button {
-                        appState.signOutAndWipe()
+                        appState.signOutPreservingSensorAccess()
                     } label: {
                         HStack {
                             Text(String(localized: "common_sign_out"))

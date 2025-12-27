@@ -8,6 +8,8 @@
 import WidgetKit
 import SwiftUI
 
+// iOS 17+ 用のプロバイダー
+@available(iOS 17.0, *)
 struct Provider: AppIntentTimelineProvider {
     func placeholder(in context: Context) -> SimpleEntry {
         SimpleEntry(date: Date(), configuration: ConfigurationAppIntent())
@@ -36,12 +38,39 @@ struct Provider: AppIntentTimelineProvider {
 //    }
 }
 
+// iOS 16 用のプロバイダー
+struct LegacyProvider: TimelineProvider {
+    func placeholder(in context: Context) -> LegacyEntry {
+        LegacyEntry(date: Date())
+    }
+
+    func getSnapshot(in context: Context, completion: @escaping (LegacyEntry) -> Void) {
+        completion(LegacyEntry(date: Date()))
+    }
+    
+    func getTimeline(in context: Context, completion: @escaping (Timeline<LegacyEntry>) -> Void) {
+        var entries: [LegacyEntry] = []
+        let currentDate = Date()
+        for hourOffset in 0 ..< 5 {
+            let entryDate = Calendar.current.date(byAdding: .hour, value: hourOffset, to: currentDate)!
+            entries.append(LegacyEntry(date: entryDate))
+        }
+        completion(Timeline(entries: entries, policy: .atEnd))
+    }
+}
+
+@available(iOS 17.0, *)
 struct SimpleEntry: TimelineEntry {
     let date: Date
     let configuration: ConfigurationAppIntent
 }
 
-struct AniccaWidgetEntryView : View {
+struct LegacyEntry: TimelineEntry {
+    let date: Date
+}
+
+@available(iOS 17.0, *)
+struct AniccaWidgetEntryView: View {
     var entry: Provider.Entry
 
     var body: some View {
@@ -55,7 +84,19 @@ struct AniccaWidgetEntryView : View {
     }
 }
 
-struct AniccaWidget: Widget {
+struct LegacyWidgetEntryView: View {
+    var entry: LegacyEntry
+
+    var body: some View {
+        VStack {
+            Text("Time:")
+            Text(entry.date, style: .time)
+        }
+    }
+}
+
+@available(iOS 17.0, *)
+struct AniccaWidgetModern: Widget {
     let kind: String = "AniccaWidget"
 
     var body: some WidgetConfiguration {
@@ -66,6 +107,32 @@ struct AniccaWidget: Widget {
     }
 }
 
+struct AniccaWidgetLegacy: Widget {
+    let kind: String = "AniccaWidget"
+
+    var body: some WidgetConfiguration {
+        StaticConfiguration(kind: kind, provider: LegacyProvider()) { entry in
+            LegacyWidgetEntryView(entry: entry)
+        }
+        .configurationDisplayName("Anicca")
+        .description("Anicca Widget")
+    }
+}
+
+// WidgetBundle で分岐するため、単一の Widget 型を公開
+struct AniccaWidget: Widget {
+    let kind: String = "AniccaWidget"
+    
+    var body: some WidgetConfiguration {
+        if #available(iOS 17.0, *) {
+            return AniccaWidgetModern().body
+        } else {
+            return AniccaWidgetLegacy().body
+        }
+    }
+}
+
+@available(iOS 17.0, *)
 extension ConfigurationAppIntent {
     fileprivate static var smiley: ConfigurationAppIntent {
         let intent = ConfigurationAppIntent()
@@ -80,9 +147,13 @@ extension ConfigurationAppIntent {
     }
 }
 
+// Preview を iOS 17+ に制限
+#if swift(>=5.9)
+@available(iOS 17.0, *)
 #Preview(as: .systemSmall) {
-    AniccaWidget()
+    AniccaWidgetModern()
 } timeline: {
     SimpleEntry(date: .now, configuration: .smiley)
     SimpleEntry(date: .now, configuration: .starEyes)
 }
+#endif

@@ -62,9 +62,10 @@ final class ScreenTimeManager {
         let today = ISO8601DateFormatter().string(from: Date()).prefix(10)
         let todayKey = String(today)
         
-        let totalMinutes = appGroupDefaults?.integer(forKey: "screenTime_totalMinutes_\(todayKey)")
-        let socialMinutes = appGroupDefaults?.integer(forKey: "screenTime_socialMinutes_\(todayKey)")
-        let lateNightMinutes = appGroupDefaults?.integer(forKey: "screenTime_lateNightMinutes_\(todayKey)")
+        // ★ object(forKey:)を使ってnilと0を区別（integer(forKey:)は未設定でも0を返す）
+        let totalMinutes = appGroupDefaults?.object(forKey: "screenTime_totalMinutes_\(todayKey)") as? Int
+        let socialMinutes = appGroupDefaults?.object(forKey: "screenTime_socialMinutes_\(todayKey)") as? Int
+        let lateNightMinutes = appGroupDefaults?.object(forKey: "screenTime_lateNightMinutes_\(todayKey)") as? Int
         
         // v3.1: snsSessions を読み取り
         var snsSessions: [[String: Any]]? = nil
@@ -75,7 +76,7 @@ final class ScreenTimeManager {
         }
         
         // データが存在しない場合（Extension がまだ実行されていない）
-        if totalMinutes == nil || totalMinutes == 0 {
+        if totalMinutes == nil {
             logger.info("No screen time data in App Groups yet")
             return DailySummary(totalMinutes: nil, socialMinutes: nil, lateNightMinutes: nil, snsSessions: nil)
         }

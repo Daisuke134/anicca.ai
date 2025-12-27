@@ -50,12 +50,14 @@ final class HealthKitManager {
         return await requestAuthorizationFor(types: [sleepType])
     }
     
-    // v3: Stepsのみ許可リクエスト
+    // v3: Stepsのみ許可リクエスト（workoutも一緒にリクエスト）
     func requestStepsAuthorization() async -> Bool {
         guard let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else {
             return false
         }
-        return await requestAuthorizationFor(types: [stepsType])
+        var types: Set<HKObjectType> = [stepsType]
+        types.insert(HKObjectType.workoutType())
+        return await requestAuthorizationFor(types: types)
     }
     
     private func requestAuthorizationFor(types: Set<HKObjectType>) async -> Bool {
@@ -88,6 +90,13 @@ final class HealthKitManager {
         guard HKHealthStore.isHealthDataAvailable() else { return false }
         guard let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else { return false }
         return healthStore.authorizationStatus(for: stepsType) == .sharingAuthorized
+    }
+    
+    /// ワークアウトデータが既に認可されているかチェック
+    func isWorkoutAuthorized() -> Bool {
+        guard HKHealthStore.isHealthDataAvailable() else { return false }
+        let workoutType = HKObjectType.workoutType()
+        return healthStore.authorizationStatus(for: workoutType) == .sharingAuthorized
     }
     
     func fetchDailySummary() async -> DailySummary {
@@ -165,7 +174,10 @@ final class HealthKitManager {
             }
         }
         
-        // v3.1: Fetch workouts (walk/run sessions)
+        // v3.1: Fetch workouts (only if authorized)
+        guard isWorkoutAuthorized() else {
+            return summary
+        }
         let workoutType = HKObjectType.workoutType()
         let workoutPredicate = HKQuery.predicateForSamples(withStart: startOfDay, end: endOfDay, options: .strictStartDate)
         

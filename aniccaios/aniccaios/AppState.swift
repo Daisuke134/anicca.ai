@@ -504,6 +504,44 @@ final class AppState: ObservableObject {
         Task { await SubscriptionManager.shared.handleLogout() }
     }
     
+    /// 通常ログアウト: デバイス権限/連携トグルは維持する（Account deletionとは別）
+    func signOutPreservingSensorAccess() {
+        authStatus = .signedOut
+        userProfile = UserProfile()
+        subscriptionInfo = .free
+        habitSchedules = [:]
+        customHabits = []
+        customHabitSchedules = [:]
+        pendingHabitTrigger = nil
+        pendingHabitPrompt = nil
+        pendingConsultPrompt = nil
+        cachedOffering = nil
+        
+        // オンボーディングはサインアウト時に戻す
+        isOnboardingComplete = false
+        defaults.removeObject(forKey: onboardingKey)
+        setOnboardingStep(.welcome)
+        
+        // UserDefaultsからユーザーデータを削除（sensorAccessKeyは削除しない）
+        defaults.removeObject(forKey: userCredentialsKey)
+        defaults.removeObject(forKey: userProfileKey)
+        defaults.removeObject(forKey: subscriptionKey)
+        defaults.removeObject(forKey: habitSchedulesKey)
+        defaults.removeObject(forKey: customHabitsKey)
+        defaults.removeObject(forKey: customHabitSchedulesKey)
+        // ★ sensorAccessKey は削除しない - デバイス権限はユーザーアカウントではなくデバイスに紐づく
+        
+        // 通知をすべてキャンセル
+        Task {
+            await scheduler.cancelAll()
+        }
+        
+        // RevenueCatからログアウト
+        Task {
+            await SubscriptionManager.shared.handleLogout()
+        }
+    }
+    
     // Guideline 5.1.1(v)対応: アカウント削除時の完全な状態リセット
     func signOutAndWipe() {
         authStatus = .signedOut

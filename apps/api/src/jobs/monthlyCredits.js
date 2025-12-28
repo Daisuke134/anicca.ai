@@ -32,19 +32,29 @@ export async function runMonthlyCredits(now = new Date()) {
        )`,
     [monthISO]
   );
+  let freeGrantedCount = 0;
 
   for (const row of freeTargets.rows) {
-    await grantMinutes({
-      appUserId: row.user_id,
-      minutes: FREE_MIN,
-      currency: VC_CURRENCY_CODE,
-      context: { month: monthISO, reason: 'free' }
-    });
-    await query(
-      `insert into monthly_vc_grants(user_id, grant_month, reason, minutes)
-       values ($1,$2,'free',$3)`,
-      [row.user_id, monthISO, FREE_MIN]
-    );
+    try {
+      await grantMinutes({
+        appUserId: row.user_id,
+        minutes: FREE_MIN,
+        currency: VC_CURRENCY_CODE,
+        context: { month: monthISO, reason: 'free' }
+      });
+      await query(
+        `insert into monthly_vc_grants(user_id, grant_month, reason, minutes)
+         values ($1,$2,'free',$3)`,
+        [row.user_id, monthISO, FREE_MIN]
+      );
+      freeGrantedCount += 1;
+    } catch (error) {
+      logger.error('Monthly credits grant failed', {
+        userId: row.user_id,
+        reason: 'free',
+        error: error.message
+      });
+    }
   }
 
   // 2) 年額アクティブ付与（製品IDでannualを判定。RC payloadに含まれる）
@@ -62,24 +72,34 @@ export async function runMonthlyCredits(now = new Date()) {
        )`,
     [monthISO]
   );
+  let annualGrantedCount = 0;
 
   for (const row of annualTargets.rows) {
-    await grantMinutes({
-      appUserId: row.user_id,
-      minutes: PRO_MIN,
-      currency: VC_CURRENCY_CODE,
-      context: { month: monthISO, reason: 'annual' }
-    });
-    await query(
-      `insert into monthly_vc_grants(user_id, grant_month, reason, minutes)
-       values ($1,$2,'annual',$3)`,
-      [row.user_id, monthISO, PRO_MIN]
-    );
+    try {
+      await grantMinutes({
+        appUserId: row.user_id,
+        minutes: PRO_MIN,
+        currency: VC_CURRENCY_CODE,
+        context: { month: monthISO, reason: 'annual' }
+      });
+      await query(
+        `insert into monthly_vc_grants(user_id, grant_month, reason, minutes)
+         values ($1,$2,'annual',$3)`,
+        [row.user_id, monthISO, PRO_MIN]
+      );
+      annualGrantedCount += 1;
+    } catch (error) {
+      logger.error('Monthly credits grant failed', {
+        userId: row.user_id,
+        reason: 'annual',
+        error: error.message
+      });
+    }
   }
 
   logger.info('Monthly credits done', {
-    freeGranted: freeTargets.rowCount,
-    annualGranted: annualTargets.rowCount,
+    freeGranted: freeGrantedCount,
+    annualGranted: annualGrantedCount,
     monthISO
   });
 }

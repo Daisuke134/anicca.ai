@@ -3,6 +3,7 @@ import Combine
 import UIKit
 import SwiftUI
 import RevenueCat
+import OSLog
 
 @MainActor
 final class AppState: ObservableObject {
@@ -39,12 +40,13 @@ final class AppState: ObservableObject {
     
     // Phase-7: sensor permissions + integration toggles
     @Published private(set) var sensorAccess: SensorAccessState
-    private var needsSensorRepairAfterOnboarding: Bool = false
+    private(set) var needsSensorRepairAfterOnboarding: Bool = false
     
     enum SensorRepairSource {
         case remoteSync
         case onboardingCompleted
         case explicitUserAction
+        case foreground
     }
     
     enum RootTab: Int, Hashable {
@@ -85,6 +87,7 @@ final class AppState: ObservableObject {
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
+    private let sensorLogger = Logger(subsystem: "com.anicca.ios", category: "SensorAccess")
     
     private var pendingHabitPrompt: (habit: HabitType, prompt: String)?
     private var pendingConsultPrompt: String?
@@ -115,7 +118,14 @@ final class AppState: ObservableObject {
         self.userProfile = UserProfile()
         self.subscriptionInfo = .free
         self.authStatus = loadUserCredentials()
+        if case .signedOut = self.authStatus {
+            self.isOnboardingComplete = false
+            defaults.set(false, forKey: onboardingKey)
+            defaults.removeObject(forKey: onboardingStepKey)
+            self.onboardingStep = .welcome
+        }
         self.userProfile = loadUserProfile()
+        syncPreferredLanguageWithSystem()
         self.subscriptionInfo = loadSubscriptionInfo()
         self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
         self.needsSensorRepairAfterOnboarding = defaults.bool(forKey: sensorRepairPendingKey)
@@ -822,6 +832,18 @@ final class AppState: ObservableObject {
     
     // MARK: - Language Detection
     
+    var effectiveLanguage: LanguagePreference {
+        userProfile.preferredLanguage
+    }
+    
+    private func syncPreferredLanguageWithSystem() {
+        let systemLanguage = LanguagePreference.detectDefault()
+        guard userProfile.preferredLanguage != systemLanguage else { return }
+        userProfile.preferredLanguage = systemLanguage
+        saveUserProfile()
+        sensorLogger.info("AppState: preferredLanguage synced to \(systemLanguage.rawValue)")
+    }
+    
     private func loadUserProfile() -> UserProfile {
         guard let data = defaults.data(forKey: userProfileKey),
               let profile = try? JSONDecoder().decode(UserProfile.self, from: data) else {
@@ -1245,7 +1267,7 @@ final class AppState: ObservableObject {
     }
     
     @MainActor
-    func refreshSensorAccessAuthorizations(forceReauthIfNeeded: Bool) async {
+    func refreshSensorAccessAuthorizations(forceReauthIfNeeded _: Bool) async {
 #if canImport(HealthKit)
         let sleepAuthorized = HealthKitManager.shared.isSleepAuthorized()
         let stepsAuthorized = HealthKitManager.shared.isStepsAuthorized()
@@ -1264,27 +1286,11 @@ final class AppState: ObservableObject {
         let wantedSteps = next.stepsEnabled
         let wantedScreen = next.screenTimeEnabled
 
-        var resolvedSleepAuthorized = sleepAuthorized
-        var resolvedStepsAuthorized = stepsAuthorized
-        var resolvedScreenAuthorized = screenTimeAuthorized
-
-        if wantedSleep && !resolvedSleepAuthorized && forceReauthIfNeeded {
-            resolvedSleepAuthorized = await HealthKitManager.shared.requestSleepAuthorization()
-        }
-        if wantedSteps && !resolvedStepsAuthorized && forceReauthIfNeeded {
-            resolvedStepsAuthorized = await HealthKitManager.shared.requestStepsAuthorization()
-        }
-#if canImport(FamilyControls)
-        if wantedScreen && !resolvedScreenAuthorized && forceReauthIfNeeded {
-            resolvedScreenAuthorized = await ScreenTimeManager.shared.requestAuthorization()
-        }
-#endif
-
-        next.sleepAuthorized = resolvedSleepAuthorized
-        next.stepsAuthorized = resolvedStepsAuthorized
-        next.screenTimeAuthorized = resolvedScreenAuthorized
-        next.healthKit = (resolvedSleepAuthorized || resolvedStepsAuthorized) ? .authorized : .denied
-        next.screenTime = resolvedScreenAuthorized ? .authorized : .denied
+        next.sleepAuthorized = sleepAuthorized
+        next.stepsAuthorized = stepsAuthorized
+        next.screenTimeAuthorized = screenTimeAuthorized
+        next.healthKit = (sleepAuthorized || stepsAuthorized) ? .authorized : .denied
+        next.screenTime = screenTimeAuthorized ? .authorized : .denied
 
         // keep user intent; data収集は *Enabled && *Authorized でゲート
         next.sleepEnabled = wantedSleep
@@ -1365,18 +1371,24 @@ final class AppState: ObservableObject {
         sensorAccess.sleepEnabled = enabled
         saveSensorAccess()
         scheduleSensorAccessSync(sensorAccess)
-        Task {
-            await recoverHealthKitAccessIfNeeded(allowDuringOnboarding: true)
-        }
     }
     
     func setStepsEnabled(_ enabled: Bool) {
         sensorAccess.stepsEnabled = enabled
         saveSensorAccess()
         scheduleSensorAccessSync(sensorAccess)
-        Task {
-            await recoverHealthKitAccessIfNeeded(allowDuringOnboarding: true)
-        }
+    }
+    
+    func updateSleepAuthorizationStatus(_ authorized: Bool) {
+        sensorAccess.sleepAuthorized = authorized
+        saveSensorAccess()
+        scheduleSensorAccessSync(sensorAccess)
+    }
+    
+    func updateStepsAuthorizationStatus(_ authorized: Bool) {
+        sensorAccess.stepsAuthorized = authorized
+        saveSensorAccess()
+        scheduleSensorAccessSync(sensorAccess)
     }
     
     func setMotionEnabled(_ enabled: Bool) {
@@ -1415,57 +1427,14 @@ final class AppState: ObservableObject {
         scheduleSensorAccessSync(access)
     }
     
-    func recoverHealthKitAccessIfNeeded(allowDuringOnboarding: Bool = false) async {
-#if canImport(HealthKit)
-        guard sensorAccess.sleepEnabled || sensorAccess.stepsEnabled else { return }
-        guard allowDuringOnboarding || isOnboardingComplete else {
-            persistSensorRepairPending()
-            return
-        }
-        var updated = sensorAccess
-        var changed = false
-
-        if updated.sleepEnabled && !updated.sleepAuthorized {
-            var granted = HealthKitManager.shared.isSleepAuthorized()
-            if !granted {
-                granted = await HealthKitManager.shared.requestSleepAuthorization()
-            }
-            updated.sleepAuthorized = granted
-            changed = changed || granted != sensorAccess.sleepAuthorized
-        }
-
-        if updated.stepsEnabled && !updated.stepsAuthorized {
-            var granted = HealthKitManager.shared.isStepsAuthorized()
-            if !granted {
-                granted = await HealthKitManager.shared.requestStepsAuthorization()
-            }
-            updated.stepsAuthorized = granted
-            changed = changed || granted != sensorAccess.stepsAuthorized
-        }
-
-        guard changed else { return }
-        sensorAccess = updated
-        saveSensorAccess()
-        scheduleSensorAccessSync(updated)
-        if (updated.sleepEnabled && updated.sleepAuthorized) || (updated.stepsEnabled && updated.stepsAuthorized) {
-            await MetricsUploader.shared.runUploadIfDue(force: true)
-        }
-        clearSensorRepairPending()
-#endif
-    }
-    
-    private func scheduleSensorRepairIfNeeded(source: SensorRepairSource) async {
+    func scheduleSensorRepairIfNeeded(source: SensorRepairSource) async {
         let needsRepairNow = (sensorAccess.sleepEnabled && !sensorAccess.sleepAuthorized)
             || (sensorAccess.stepsEnabled && !sensorAccess.stepsAuthorized)
-        guard needsRepairNow else {
-            clearSensorRepairPending()
-            return
-        }
-        if isOnboardingComplete {
-            clearSensorRepairPending()
-            await recoverHealthKitAccessIfNeeded()
-        } else {
+        if needsRepairNow {
             persistSensorRepairPending()
+            sensorLogger.info("HealthKit authorization missing while enabled (source=\(String(describing: source)))")
+        } else {
+            clearSensorRepairPending()
         }
     }
     

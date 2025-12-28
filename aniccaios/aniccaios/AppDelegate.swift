@@ -62,10 +62,10 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             // （IntentプロセスでAppStateを書いてもアプリ本体に反映されないケースがあるため）
             await consumePendingHabitLaunch(retry: true)
             await SensorAccessSyncService.shared.fetchLatest()
-            await AppState.shared.refreshSensorAccessAuthorizations(forceReauthIfNeeded: true)
-            if AppState.shared.isOnboardingComplete {
-                await AppState.shared.recoverHealthKitAccessIfNeeded()
-            }
+            await AppState.shared.refreshSensorAccessAuthorizations(
+                forceReauthIfNeeded: AppState.shared.isOnboardingComplete
+            )
+            await AppState.shared.scheduleSensorRepairIfNeeded(source: .foreground)
 
             // ★ 事前通知のパーソナライズメッセージを更新（24時間ごと）
             await NotificationScheduler.shared.refreshPreRemindersIfNeeded()

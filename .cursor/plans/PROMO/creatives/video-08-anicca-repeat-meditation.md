@@ -146,3 +146,4 @@ Static camera shot. The Aniicha logo centered on a peaceful gradient background 
 - **ブランド名の刷り込み**: 「Aniicha」を繰り返し発声することで記憶に残る
 - **瞑想コンテンツ**: プラットフォームで「meditation」「ASMR」タグを使用
 
+

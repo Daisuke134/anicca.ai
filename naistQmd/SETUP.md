@@ -186,3 +186,4 @@ fc-list | grep -i "noto\|hiragino"
 
 
 
+

@@ -137,3 +137,4 @@ Static camera shot. The Aniicha logo centered on a gradient background transitio
 - 対比型: 2つの未来の明確な違いを示す
 - 質問型: 視聴者に選択を促す
 
+

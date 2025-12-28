@@ -321,7 +321,10 @@ struct ProfileView: View {
                     dataToggleRow(
                         title: String(localized: "profile_toggle_sleep"),
                         isOn: Binding(
-                            get: { appState.sensorAccess.sleepEnabled },
+                            get: {
+                                appState.sensorAccess.sleepEnabled
+                                && appState.sensorAccess.sleepAuthorized
+                            },
                             set: { _ in }
                         ),
                         onEnable: { Task { await requestSleepOnly() } },
@@ -331,7 +334,10 @@ struct ProfileView: View {
                     dataToggleRow(
                         title: String(localized: "profile_toggle_steps"),
                         isOn: Binding(
-                            get: { appState.sensorAccess.stepsEnabled },
+                            get: {
+                                appState.sensorAccess.stepsEnabled
+                                && appState.sensorAccess.stepsAuthorized
+                            },
                             set: { _ in }
                         ),
                         onEnable: { Task { await requestStepsOnly() } },
@@ -503,16 +509,16 @@ struct ProfileView: View {
     
     // v3: SleepとStepsを完全に独立
     private func requestSleepOnly() async {
-        // ★ 既にauthorizedの場合はトグルをONにするだけ
-        if HealthKitManager.shared.isSleepAuthorized() {
-            await MainActor.run { appState.setSleepEnabled(true) }
-            await MetricsUploader.shared.runUploadIfDue(force: true)
-            return
-        }
-        let granted = await HealthKitManager.shared.requestSleepAuthorization()
+        let granted = await MainActor.run { HealthKitManager.shared.isSleepAuthorized() }
+            ? true
+            : await HealthKitManager.shared.requestSleepAuthorization()
         await MainActor.run {
             if granted {
                 appState.setSleepEnabled(true)
+                appState.updateSleepAuthorizationStatus(true)
+            } else {
+                appState.setSleepEnabled(false)
+                appState.updateSleepAuthorizationStatus(false)
             }
         }
         if granted {
@@ -521,16 +527,16 @@ struct ProfileView: View {
     }
     
     private func requestStepsOnly() async {
-        // ★ 既にauthorizedの場合はトグルをONにするだけ
-        if HealthKitManager.shared.isStepsAuthorized() {
-            await MainActor.run { appState.setStepsEnabled(true) }
-            await MetricsUploader.shared.runUploadIfDue(force: true)
-            return
-        }
-        let granted = await HealthKitManager.shared.requestStepsAuthorization()
+        let granted = await MainActor.run { HealthKitManager.shared.isStepsAuthorized() }
+            ? true
+            : await HealthKitManager.shared.requestStepsAuthorization()
         await MainActor.run {
             if granted {
                 appState.setStepsEnabled(true)
+                appState.updateStepsAuthorizationStatus(true)
+            } else {
+                appState.setStepsEnabled(false)
+                appState.updateStepsAuthorizationStatus(false)
             }
         }
         if granted {

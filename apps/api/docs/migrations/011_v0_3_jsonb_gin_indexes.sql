@@ -18,3 +18,4 @@ create index if not exists idx_daily_metrics_insights_gin
 
 
 
+

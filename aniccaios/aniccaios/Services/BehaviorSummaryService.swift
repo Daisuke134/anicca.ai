@@ -19,10 +19,14 @@ final class BehaviorSummaryService {
             throw ServiceError.notAuthenticated
         }
 
-        var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/behavior/summary"))
+        var components = URLComponents(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/behavior/summary"), resolvingAgainstBaseURL: false)!
+        let language = AppState.shared.effectiveLanguage.rawValue
+        components.queryItems = (components.queryItems ?? []) + [URLQueryItem(name: "lang", value: language)]
+        var request = URLRequest(url: components.url!)
         request.httpMethod = "GET"
         request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
         request.setValue(creds.userId, forHTTPHeaderField: "user-id")
+        request.setValue(language, forHTTPHeaderField: "Accept-Language")
 
         // JWT/Bearer があれば付与（存在しない場合でも既存ヘッダ方式で通る前提）
         try? await NetworkSessionManager.shared.setAuthHeaders(for: &request)

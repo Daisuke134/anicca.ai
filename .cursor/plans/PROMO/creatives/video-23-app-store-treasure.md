@@ -463,3 +463,4 @@ Static camera shot. A young Asian person holds up their phone toward the camera 
 - 何が改善できるか:
 - 次回への学び:
 
+

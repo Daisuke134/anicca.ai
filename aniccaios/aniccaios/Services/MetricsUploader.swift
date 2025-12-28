@@ -81,9 +81,13 @@ final class MetricsUploader {
         // v3.1: activity_summary を構築
         var activitySummary: [String: Any] = [:]
         
+        let sensorAccess = AppState.shared.sensorAccess
+        let shouldCollectSleep = sensorAccess.sleepEnabled && sensorAccess.sleepAuthorized
+        let shouldCollectSteps = sensorAccess.stepsEnabled && sensorAccess.stepsAuthorized
+        
         // v3: source of truth is AppState.sensorAccess (persisted as com.anicca.sensorAccessState)
         var healthData: HealthKitManager.DailySummary?
-        if AppState.shared.sensorAccess.sleepEnabled || AppState.shared.sensorAccess.stepsEnabled {
+        if shouldCollectSleep || shouldCollectSteps {
             healthData = await HealthKitManager.shared.fetchDailySummary()
             if let sleep = healthData?.sleepMinutes {
                 payload["sleep_minutes"] = sleep
@@ -114,7 +118,7 @@ final class MetricsUploader {
         }
         
         // Screen Time (if enabled)
-        if AppState.shared.sensorAccess.screenTimeEnabled {
+        if sensorAccess.screenTimeEnabled && sensorAccess.screenTimeAuthorized {
             let screenData = await ScreenTimeManager.shared.fetchDailySummary()
             if let minutes = screenData.totalMinutes {
                 payload["screen_time_minutes"] = minutes
@@ -139,7 +143,7 @@ final class MetricsUploader {
         }
         
         // Movement/Sedentary (if enabled)
-        if AppState.shared.sensorAccess.motionEnabled {
+        if sensorAccess.motionEnabled && sensorAccess.motionAuthorized {
             let motionData = await MotionManager.shared.fetchDailySummary()
             if let sedentary = motionData.sedentaryMinutes {
                 payload["sedentary_minutes"] = sedentary

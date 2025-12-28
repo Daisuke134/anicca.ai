@@ -2,6 +2,7 @@ import SwiftUI
 import Combine
 
 struct HighlightsCard: View {
+    @EnvironmentObject private var appState: AppState
     let highlights: BehaviorSummary.Highlights
     let streaks: BehaviorSummary.Streaks
 
@@ -43,7 +44,7 @@ struct HighlightsCard: View {
                     }
 
                     // ★ 変更: ステータスラベルを削除し、値を同じサイズで表示
-                    Text(valueLabel.isEmpty ? "-" : valueLabel)
+                    Text(localizedValueLabel(valueLabel))
                         .font(.system(size: 12))
                         .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 }
@@ -75,6 +76,22 @@ struct HighlightsCard: View {
         default:
             return ("→", AppTheme.Colors.secondaryLabel, String(localized: "behavior_status_stable"))
         }
+    }
+    
+    private func localizedValueLabel(_ raw: String) -> String {
+        guard appState.effectiveLanguage == .en else { return raw.isEmpty ? "-" : raw }
+        let replacements: [(ja: String, en: String)] = [
+            ("起床", "Wake"),
+            ("スクリーン", "Screen"),
+            ("歩数", "Steps"),
+            ("反芻", "Rumination"),
+            ("分", "min")
+        ]
+        var result = raw.isEmpty ? "-" : raw
+        for pair in replacements {
+            result = result.replacingOccurrences(of: pair.ja, with: pair.en)
+        }
+        return result
     }
 }
 

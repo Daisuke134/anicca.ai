@@ -16,6 +16,25 @@ function rcHeaders() {
   };
 }
 
+async function ensureCustomerExists(appUserId) {
+  const url = `https://api.revenuecat.com/v2/projects/${PROJECT_ID}/customers`;
+  const body = JSON.stringify({ id: appUserId });
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: rcHeaders(),
+    body
+  });
+
+  if (res.status === 409) {
+    return true;
+  }
+  if (!res.ok) {
+    const detail = await res.text().catch(() => '');
+    throw new Error(`RC create customer failed: ${res.status} ${detail}`);
+  }
+  return true;
+}
+
 /**
  * Get virtual currency balance for a user
  * @param {string} appUserId - RevenueCat app user ID
@@ -44,7 +63,7 @@ export async function getBalance(appUserId, currency = VC_CURRENCY_CODE) {
  * @param {number} params.minutes - Positive for grant, negative for debit
  * @param {string} params.currency
  */
-async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE }) {
+async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE }, retryOnMissingCustomer = true) {
   const uid = encodeURIComponent(appUserId);
   const url = `https://api.revenuecat.com/v2/projects/${PROJECT_ID}/customers/${uid}/virtual_currencies/transactions`;
   
@@ -61,6 +80,10 @@ async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE }
   });
   
   if (!res.ok) {
+    if (res.status === 404 && retryOnMissingCustomer) {
+      await ensureCustomerExists(appUserId);
+      return adjustMinutes({ appUserId, minutes, currency }, false);
+    }
     const detail = await res.text().catch(() => '');
     throw new Error(`RC adjust failed: ${res.status} ${detail}`);
   }
@@ -74,14 +97,16 @@ async function adjustMinutes({ appUserId, minutes, currency = VC_CURRENCY_CODE }
  * @param {string} params.appUserId
  * @param {number} params.minutes
  * @param {string} params.currency
+ * @param {Object} [params.context]
  */
-export async function grantMinutes({ appUserId, minutes, currency }) {
+export async function grantMinutes({ appUserId, minutes, currency, context }) {
   if (minutes <= 0) return true;
   
   logger.info('RC grant', {
     appUserId,
     minutes,
-    currency: currency || VC_CURRENCY_CODE
+    currency: currency || VC_CURRENCY_CODE,
+    context
   });
   
   return adjustMinutes({
@@ -97,14 +122,16 @@ export async function grantMinutes({ appUserId, minutes, currency }) {
  * @param {string} params.appUserId
  * @param {number} params.minutes
  * @param {string} params.currency
+ * @param {Object} [params.context]
  */
-export async function debitMinutes({ appUserId, minutes, currency }) {
+export async function debitMinutes({ appUserId, minutes, currency, context }) {
   if (minutes <= 0) return true;
   
   logger.info('RC debit', {
     appUserId,
     minutes,
-    currency: currency || VC_CURRENCY_CODE
+    currency: currency || VC_CURRENCY_CODE,
+    context
   });
   
   return adjustMinutes({

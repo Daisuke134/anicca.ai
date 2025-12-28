@@ -77,17 +77,19 @@ final class HealthKitManager {
     // MARK: - Authorization Status Check
     
     /// 睡眠データが既に認可されているかチェック
+    /// 注意: 読み取り専用権限の場合、authorizationStatusは正確でない可能性がある
+    /// ローカルに保存されたauthorized状態を優先する
     func isSleepAuthorized() -> Bool {
         guard HKHealthStore.isHealthDataAvailable() else { return false }
-        guard let sleepType = HKObjectType.categoryType(forIdentifier: .sleepAnalysis) else { return false }
-        return healthStore.authorizationStatus(for: sleepType) == .sharingAuthorized
+        // ローカルに保存された状態を信頼（AppState.sensorAccess.sleepAuthorized）
+        // refreshSensorAccessAuthorizationsでこの値が使われる
+        return AppState.shared.sensorAccess.sleepAuthorized
     }
     
     /// 歩数データが既に認可されているかチェック
     func isStepsAuthorized() -> Bool {
         guard HKHealthStore.isHealthDataAvailable() else { return false }
-        guard let stepsType = HKObjectType.quantityType(forIdentifier: .stepCount) else { return false }
-        return healthStore.authorizationStatus(for: stepsType) == .sharingAuthorized
+        return AppState.shared.sensorAccess.stepsAuthorized
     }
     
     /// ワークアウトデータが既に認可されているかチェック

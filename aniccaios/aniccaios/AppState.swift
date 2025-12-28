@@ -1458,9 +1458,14 @@ final class AppState: ObservableObject {
     
     @MainActor
     func refreshSensorAccessAuthorizations(forceReauthIfNeeded _: Bool) async {
+        // HealthKitの書き込み権限ステータスを確認（参考値として）
 #if canImport(HealthKit)
-        let sleepAuthorized = HealthKitManager.shared.isSleepAuthorized()
-        let stepsAuthorized = HealthKitManager.shared.isStepsAuthorized()
+        // 読み取り権限は正確に判定できないため、ローカルに保存された状態を維持
+        // ユーザーがシステム設定から明示的に権限を取り消した場合のみfalseにする
+        // しかし、HealthKitはこれを検出する手段を提供していないため、
+        // 一度許可された状態は維持する
+        let sleepAuthorized = sensorAccess.sleepAuthorized  // ← 既存のローカル状態を使用
+        let stepsAuthorized = sensorAccess.stepsAuthorized  // ← 既存のローカル状態を使用
 #else
         let sleepAuthorized = false
         let stepsAuthorized = false

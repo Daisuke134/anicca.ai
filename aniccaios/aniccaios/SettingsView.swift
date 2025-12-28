@@ -254,7 +254,6 @@ struct SettingsView: View {
                 Toggle(String(localized: "profile_toggle_sleep"), isOn: Binding(
                     get: {
                         appState.sensorAccess.sleepEnabled
-                        && appState.sensorAccess.sleepAuthorized
                     },
                     set: { enabled in
                         Task { @MainActor in
@@ -272,7 +271,6 @@ struct SettingsView: View {
                 Toggle(String(localized: "profile_toggle_steps"), isOn: Binding(
                     get: {
                         appState.sensorAccess.stepsEnabled
-                        && appState.sensorAccess.stepsAuthorized
                     },
                     set: { enabled in
                         Task { @MainActor in

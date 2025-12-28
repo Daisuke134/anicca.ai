@@ -1335,10 +1335,10 @@ final class AppState: ObservableObject {
 
     func mergeRemoteSensorAccess(sleep: Bool, steps: Bool, screenTime: Bool, motion: Bool) {
         var next = sensorAccess
-        next.sleepEnabled = sleep
-        next.stepsEnabled = steps
-        next.screenTimeEnabled = screenTime
-        next.motionEnabled = motion
+        if sleep { next.sleepEnabled = true }
+        if steps { next.stepsEnabled = true }
+        if screenTime { next.screenTimeEnabled = true }
+        if motion { next.motionEnabled = true }
         sensorAccess = next
         saveSensorAccess()
         Task {

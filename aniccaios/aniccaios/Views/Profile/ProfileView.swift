@@ -321,7 +321,10 @@ struct ProfileView: View {
                     dataToggleRow(
                         title: String(localized: "profile_toggle_sleep"),
                         isOn: Binding(
-                            get: { appState.sensorAccess.sleepEnabled },
+                            get: {
+                                appState.sensorAccess.sleepEnabled
+                                && appState.sensorAccess.sleepAuthorized
+                            },
                             set: { _ in }
                         ),
                         onEnable: { Task { await requestSleepOnly() } },
@@ -331,7 +334,10 @@ struct ProfileView: View {
                     dataToggleRow(
                         title: String(localized: "profile_toggle_steps"),
                         isOn: Binding(
-                            get: { appState.sensorAccess.stepsEnabled },
+                            get: {
+                                appState.sensorAccess.stepsEnabled
+                                && appState.sensorAccess.stepsAuthorized
+                            },
                             set: { _ in }
                         ),
                         onEnable: { Task { await requestStepsOnly() } },

@@ -254,6 +254,40 @@ struct HabitsSectionView: View {
         }
     }
     
+    // MARK: - Checkbox Component
+    @ViewBuilder
+    private func checkBox(isCompleted: Bool, onTap: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                onTap()
+            }
+            // iOS16対応: UINotificationFeedbackGeneratorを使用
+            if !isCompleted {
+                let generator = UINotificationFeedbackGenerator()
+                generator.notificationOccurred(.success)
+            }
+        } label: {
+            ZStack {
+                RoundedRectangle(cornerRadius: 6)
+                    .stroke(isCompleted ? Color.clear : AppTheme.Colors.border, lineWidth: 1.5)
+                    .background(
+                        RoundedRectangle(cornerRadius: 6)
+                            .fill(isCompleted ? AppTheme.Colors.accent : Color.clear)
+                    )
+                    .frame(width: 24, height: 24)
+                
+                if isCompleted {
+                    Image(systemName: "checkmark")
+                        .font(.system(size: 14, weight: .bold))
+                        .foregroundColor(.white)
+                        .scaleEffect(isCompleted ? 1.0 : 0.5)
+                }
+            }
+            .scaleEffect(isCompleted ? 1.0 : 0.95)
+        }
+        .buttonStyle(.plain)
+    }
+    
     private func loadHabitTimes() {
         let calendar = Calendar.current
         let schedules = appState.habitSchedules
@@ -286,12 +320,32 @@ struct HabitsSectionView: View {
     private func habitRow(for habit: HabitType, time: DateComponents?) -> some View {
         let isActive = activeHabits.contains(habit)
         let date = time.flatMap { Calendar.current.date(from: $0) }
+        let habitId = habit.rawValue
+        let isCompleted = appState.isDailyCompleted(for: habitId)
+        let streak = appState.currentStreak(for: habitId)
 
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 12) {
+            // チェックボックス
+            checkBox(isCompleted: isCompleted) {
+                if isCompleted {
+                    appState.unmarkDailyCompleted(for: habitId)
+                } else {
+                    appState.markDailyCompleted(for: habitId)
+                }
+            }
+            
+            // 習慣名 + ストリーク（縦に並べる）
+            VStack(alignment: .leading, spacing: 4) {
                 Text(habit.title)
                     .font(AppTheme.Typography.headlineDynamic)
                     .foregroundStyle(AppTheme.Colors.label)
+                
+                // ストリークバッジ（1以上のみ表示）
+                if streak > 0 {
+                    Text("🔥\(streak)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.orange)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -304,14 +358,14 @@ struct HabitsSectionView: View {
                 }
             }
 
-            Spacer()
-
+            // 時刻表示
             if isActive, let date = date {
                 Text(date.formatted(.dateTime.hour().minute()))
                     .font(AppTheme.Typography.subheadlineDynamic)
                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
 
+            // トグル
             Toggle("", isOn: Binding(
                 get: { activeHabits.contains(habit) },
                 set: { isOn in
@@ -350,7 +404,6 @@ struct HabitsSectionView: View {
             ))
             .labelsHidden()
             .tint(AppTheme.Colors.accent)
-            // NOTE: withAnimation側で制御する（ここでList構造変化まで巻き込むと崩れやすい）
         }
     }
     
@@ -358,12 +411,32 @@ struct HabitsSectionView: View {
     private func customHabitRow(id: UUID, name: String, time: DateComponents?) -> some View {
         let isActive = activeCustomHabits.contains(id)
         let date = time.flatMap { Calendar.current.date(from: $0) }
+        let habitId = id.uuidString
+        let isCompleted = appState.isDailyCompleted(for: habitId)
+        let streak = appState.currentStreak(for: habitId)
 
-        HStack {
-            VStack(alignment: .leading, spacing: 8) {
+        HStack(spacing: 12) {
+            // チェックボックス
+            checkBox(isCompleted: isCompleted) {
+                if isCompleted {
+                    appState.unmarkDailyCompleted(for: habitId)
+                } else {
+                    appState.markDailyCompleted(for: habitId)
+                }
+            }
+            
+            // 習慣名 + ストリーク（縦に並べる）
+            VStack(alignment: .leading, spacing: 4) {
                 Text(name)
                     .font(AppTheme.Typography.headlineDynamic)
                     .foregroundStyle(AppTheme.Colors.label)
+                
+                // ストリークバッジ（1以上のみ表示）
+                if streak > 0 {
+                    Text("🔥\(streak)")
+                        .font(.system(size: 12, weight: .medium))
+                        .foregroundStyle(Color.orange)
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
@@ -376,14 +449,14 @@ struct HabitsSectionView: View {
                 }
             }
 
-            Spacer()
-
+            // 時刻表示
             if isActive, let date = date {
                 Text(date.formatted(.dateTime.hour().minute()))
                     .font(AppTheme.Typography.subheadlineDynamic)
                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
 
+            // トグル
             Toggle("", isOn: Binding(
                 get: { activeCustomHabits.contains(id) },
                 set: { isOn in

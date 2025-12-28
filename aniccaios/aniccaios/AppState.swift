@@ -5,6 +5,17 @@ import SwiftUI
 import RevenueCat
 import OSLog
 
+// MARK: - HabitStreakData
+struct HabitStreakData: Codable {
+    var lastCompletedDate: Date?
+    var currentStreak: Int
+    
+    init() {
+        self.lastCompletedDate = nil
+        self.currentStreak = 0
+    }
+}
+
 @MainActor
 final class AppState: ObservableObject {
     static let shared = AppState()
@@ -37,6 +48,9 @@ final class AppState: ObservableObject {
     @Published private(set) var customHabitSchedules: [UUID: DateComponents] = [:]
     private(set) var shouldStartSessionImmediately = false
     @Published private(set) var hasSeenWakeSilentTip: Bool = false
+    
+    // MARK: - Habit Streaks
+    @Published private(set) var habitStreaks: [String: HabitStreakData] = [:]
     
     // Phase-7: sensor permissions + integration toggles
     @Published private(set) var sensorAccess: SensorAccessState
@@ -84,6 +98,7 @@ final class AppState: ObservableObject {
     private let sensorAccessBaseKey = "com.anicca.sensorAccessState"
     private let sensorRepairPendingKey = "com.anicca.sensorRepairPending"
     private let hasSeenWakeSilentTipKey = "com.anicca.hasSeenWakeSilentTip"
+    private let habitStreaksKey = "com.anicca.habitStreaks"
 
     private let scheduler = NotificationScheduler.shared
     private let promptBuilder = HabitPromptBuilder()
@@ -163,6 +178,9 @@ final class AppState: ObservableObject {
         
         // Load followup counts (with defaults)
         loadFollowupCounts()
+        
+        // Load habit streaks
+        loadHabitStreaks()
         
         Task { [weak self] in
             await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
@@ -277,6 +295,113 @@ final class AppState: ObservableObject {
         if let data = try? JSONEncoder().encode(enc) {
             defaults.set(data, forKey: customFollowupCountsKey)
         }
+    }
+    
+    // MARK: - Habit Streaks
+    
+    /// 今日完了済みかを判定
+    func isDailyCompleted(for habitId: String) -> Bool {
+        guard let data = habitStreaks[habitId],
+              let lastDate = data.lastCompletedDate else {
+            return false
+        }
+        return Calendar.current.isDateInToday(lastDate)
+    }
+    
+    /// 現在のストリークを取得（日付変更時の自動更新含む）
+    func currentStreak(for habitId: String) -> Int {
+        updateStreaksIfNeeded()
+        return habitStreaks[habitId]?.currentStreak ?? 0
+    }
+    
+    /// 完了をマーク（ストリーク+1）
+    func markDailyCompleted(for habitId: String) {
+        updateStreaksIfNeeded()
+        
+        var data = habitStreaks[habitId] ?? HabitStreakData()
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        // 既に今日完了済みなら何もしない
+        if let lastDate = data.lastCompletedDate,
+           Calendar.current.isDate(lastDate, inSameDayAs: today) {
+            return
+        }
+        
+        // ストリーク計算
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+        
+        if let lastDate = data.lastCompletedDate,
+           Calendar.current.isDate(lastDate, inSameDayAs: yesterday) {
+            // 昨日完了していた → ストリーク継続
+            data.currentStreak += 1
+        } else {
+            // それ以外 → リセットして1から
+            data.currentStreak = 1
+        }
+        
+        data.lastCompletedDate = today
+        habitStreaks[habitId] = data
+        saveHabitStreaks()
+    }
+    
+    /// 完了を解除（ストリーク-1）
+    func unmarkDailyCompleted(for habitId: String) {
+        guard var data = habitStreaks[habitId],
+              let lastDate = data.lastCompletedDate,
+              Calendar.current.isDateInToday(lastDate) else {
+            return
+        }
+        
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: Calendar.current.startOfDay(for: Date()))!
+        
+        if data.currentStreak > 1 {
+            data.currentStreak -= 1
+            data.lastCompletedDate = yesterday
+        } else {
+            data.currentStreak = 0
+            data.lastCompletedDate = nil
+        }
+        
+        habitStreaks[habitId] = data
+        saveHabitStreaks()
+    }
+    
+    /// 日付変更時にストリークを更新（昨日も今日も完了していない場合は0にリセット）
+    private func updateStreaksIfNeeded() {
+        let today = Calendar.current.startOfDay(for: Date())
+        let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+        var updated = false
+        
+        for (habitId, var data) in habitStreaks {
+            guard let lastDate = data.lastCompletedDate else { continue }
+            
+            // 今日でも昨日でもなければストリークをリセット
+            if !Calendar.current.isDate(lastDate, inSameDayAs: today) &&
+               !Calendar.current.isDate(lastDate, inSameDayAs: yesterday) {
+                data.currentStreak = 0
+                data.lastCompletedDate = nil
+                habitStreaks[habitId] = data
+                updated = true
+            }
+        }
+        
+        if updated {
+            saveHabitStreaks()
+        }
+    }
+    
+    private func saveHabitStreaks() {
+        if let data = try? JSONEncoder().encode(habitStreaks) {
+            defaults.set(data, forKey: habitStreaksKey)
+        }
+    }
+    
+    private func loadHabitStreaks() {
+        guard let data = defaults.data(forKey: habitStreaksKey),
+              let decoded = try? JSONDecoder().decode([String: HabitStreakData].self, from: data) else {
+            return
+        }
+        habitStreaks = decoded
     }
     
     private func applyCustomSchedulesToScheduler() async {

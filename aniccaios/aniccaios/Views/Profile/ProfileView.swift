@@ -32,6 +32,10 @@ struct ProfileView: View {
                     nudgeStrengthSection
                     stickyModeSection
                     accountManagementSection
+                    
+                    #if DEBUG
+                    recordingSection
+                    #endif
 
                     LegalLinksView()
                 }
@@ -589,6 +593,49 @@ struct ProfileView: View {
                 }
         }
     }
+    
+    // MARK: - Recording Section (DEBUG only)
+    #if DEBUG
+    private var recordingSection: some View {
+        VStack(spacing: 10) {
+            Text("📹 撮影用")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            CardView {
+                VStack(spacing: 12) {
+                    Button("1️⃣ バラバラストリーク") {
+                        appState.setupRecording(pattern: 1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("2️⃣ チェック動作用（29→30）") {
+                        appState.setupRecording(pattern: 2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("4️⃣ 7→8用") {
+                        appState.setupRecording(pattern: 4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("5️⃣ 全部🔥30") {
+                        appState.setupRecording(pattern: 5)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+    #endif
 }
 
 /// v0.3: pill 風のチップ群 - バックエンドと連携

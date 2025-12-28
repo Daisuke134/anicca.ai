@@ -334,36 +334,32 @@ struct HabitsSectionView: View {
                 }
             }
             
-            // 習慣名 + ストリーク（縦に並べる）
-            VStack(alignment: .leading, spacing: 4) {
-                Text(habit.title)
-                    .font(AppTheme.Typography.headlineDynamic)
-                    .foregroundStyle(AppTheme.Colors.label)
-                
-                // ストリークバッジ（1以上のみ表示）
-                if streak > 0 {
-                    Text("🔥\(streak)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.orange)
+            // 習慣名
+            Text(habit.title)
+                .font(AppTheme.Typography.headlineDynamic)
+                .foregroundStyle(AppTheme.Colors.label)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if isActive {
+                        activeSheet = .editor(habit)
+                    } else {
+                        sheetTime = date ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
+                        activeSheet = .habit(habit)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if isActive {
-                    activeSheet = .editor(habit)
-                } else {
-                    sheetTime = date ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
-                    activeSheet = .habit(habit)
-                }
-            }
 
-            // 時刻表示
-            if isActive, let date = date {
-                Text(date.formatted(.dateTime.hour().minute()))
-                    .font(AppTheme.Typography.subheadlineDynamic)
-                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
-            }
+            // ストリークバッジ（固定幅で位置を揃える）
+            Text(streak > 0 ? "🔥\(streak)" : "")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.orange)
+                .frame(width: 40, alignment: .trailing)
+
+            // 時刻表示（固定幅で位置を揃える）
+            Text(isActive && date != nil ? date!.formatted(.dateTime.hour().minute()) : "")
+                .font(AppTheme.Typography.subheadlineDynamic)
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(width: 50, alignment: .trailing)
 
             // トグル
             Toggle("", isOn: Binding(
@@ -425,36 +421,32 @@ struct HabitsSectionView: View {
                 }
             }
             
-            // 習慣名 + ストリーク（縦に並べる）
-            VStack(alignment: .leading, spacing: 4) {
-                Text(name)
-                    .font(AppTheme.Typography.headlineDynamic)
-                    .foregroundStyle(AppTheme.Colors.label)
-                
-                // ストリークバッジ（1以上のみ表示）
-                if streak > 0 {
-                    Text("🔥\(streak)")
-                        .font(.system(size: 12, weight: .medium))
-                        .foregroundStyle(Color.orange)
+            // 習慣名
+            Text(name)
+                .font(AppTheme.Typography.headlineDynamic)
+                .foregroundStyle(AppTheme.Colors.label)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
+                .onTapGesture {
+                    if isActive {
+                        activeSheet = .customEditor(id)
+                    } else {
+                        sheetTime = date ?? Date()
+                        activeSheet = .custom(id)
+                    }
                 }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-            .onTapGesture {
-                if isActive {
-                    activeSheet = .customEditor(id)
-                } else {
-                    sheetTime = date ?? Date()
-                    activeSheet = .custom(id)
-                }
-            }
 
-            // 時刻表示
-            if isActive, let date = date {
-                Text(date.formatted(.dateTime.hour().minute()))
-                    .font(AppTheme.Typography.subheadlineDynamic)
-                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
-            }
+            // ストリークバッジ（固定幅で位置を揃える）
+            Text(streak > 0 ? "🔥\(streak)" : "")
+                .font(.system(size: 12, weight: .medium))
+                .foregroundStyle(Color.orange)
+                .frame(width: 40, alignment: .trailing)
+
+            // 時刻表示（固定幅で位置を揃える）
+            Text(isActive && date != nil ? date!.formatted(.dateTime.hour().minute()) : "")
+                .font(AppTheme.Typography.subheadlineDynamic)
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(width: 50, alignment: .trailing)
 
             // トグル
             Toggle("", isOn: Binding(

@@ -46,6 +46,9 @@ struct SettingsView: View {
                     idealTraitsSection
                     signOutSection
                     deleteAccountSection
+                    #if DEBUG
+                    recordingSection
+                    #endif
                 }
                 .padding(.horizontal, AppTheme.Spacing.lg)
                 .padding(.vertical, AppTheme.Spacing.md)
@@ -518,6 +521,48 @@ struct SettingsView: View {
         }
         .accessibilityAddTraits(.isButton)
     }
+    
+    // MARK: - Recording Section (DEBUG only)
+    #if DEBUG
+    private var recordingSection: some View {
+        VStack(spacing: AppTheme.Spacing.sm) {
+            Text("📹 撮影用セットアップ")
+                .font(AppTheme.Typography.subheadlineDynamic)
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            CardView {
+                VStack(spacing: AppTheme.Spacing.sm) {
+                    Button("1️⃣ バラバラストリーク（全チェック済み）") {
+                        appState.setupRecording(pattern: 1)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("2️⃣ チェック動作用（全未完了、29→30）") {
+                        appState.setupRecording(pattern: 2)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("4️⃣ 7→8用（トレーニングだけ未完了）") {
+                        appState.setupRecording(pattern: 4)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("5️⃣ 全部🔥30") {
+                        appState.setupRecording(pattern: 5)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
+        }
+    }
+    #endif
     
     // MARK: - Toolbar Content
     @ToolbarContentBuilder

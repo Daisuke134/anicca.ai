@@ -404,6 +404,71 @@ final class AppState: ObservableObject {
         habitStreaks = decoded
     }
     
+    // MARK: - Debug Methods for Recording
+    #if DEBUG
+    /// 撮影用: 指定したストリーク値を強制設定
+    func setStreakForRecording(habitId: String, streak: Int, completed: Bool) {
+        var data = habitStreaks[habitId] ?? HabitStreakData()
+        let today = Calendar.current.startOfDay(for: Date())
+        
+        if completed {
+            data.lastCompletedDate = today
+            data.currentStreak = streak
+        } else {
+            // 未完了だがストリークは表示（昨日まで継続していた状態）
+            let yesterday = Calendar.current.date(byAdding: .day, value: -1, to: today)!
+            data.lastCompletedDate = yesterday
+            data.currentStreak = streak
+        }
+        
+        habitStreaks[habitId] = data
+        saveHabitStreaks()
+    }
+    
+    /// 撮影用パターン設定
+    func setupRecording(pattern: Int) {
+        let customStreaksCompleted = [14, 21, 10, 5]
+        let customStreaksUncompleted = [13, 20, 9, 4]
+        
+        switch pattern {
+        case 1: // リスト全体（バラバラ、全チェック済み）
+            setStreakForRecording(habitId: "wake", streak: 30, completed: true)
+            setStreakForRecording(habitId: "training", streak: 7, completed: true)
+            setStreakForRecording(habitId: "bedtime", streak: 30, completed: true)
+            for (index, config) in customHabits.enumerated() {
+                setStreakForRecording(habitId: config.id.uuidString, streak: customStreaksCompleted[index % 4], completed: true)
+            }
+            
+        case 2: // チェック動作用（全部未完了、タップで+1）
+            setStreakForRecording(habitId: "wake", streak: 29, completed: false)
+            setStreakForRecording(habitId: "training", streak: 6, completed: false)
+            setStreakForRecording(habitId: "bedtime", streak: 29, completed: false)
+            for (index, config) in customHabits.enumerated() {
+                setStreakForRecording(habitId: config.id.uuidString, streak: customStreaksUncompleted[index % 4], completed: false)
+            }
+            
+        case 4: // 7→8用（トレーニングだけ未完了）
+            setStreakForRecording(habitId: "wake", streak: 30, completed: true)
+            setStreakForRecording(habitId: "training", streak: 7, completed: false)
+            setStreakForRecording(habitId: "bedtime", streak: 30, completed: true)
+            for (index, config) in customHabits.enumerated() {
+                setStreakForRecording(habitId: config.id.uuidString, streak: customStreaksCompleted[index % 4], completed: true)
+            }
+            
+        case 5: // 全部30日
+            setStreakForRecording(habitId: "wake", streak: 30, completed: true)
+            setStreakForRecording(habitId: "training", streak: 30, completed: true)
+            setStreakForRecording(habitId: "bedtime", streak: 30, completed: true)
+            for config in customHabits {
+                setStreakForRecording(habitId: config.id.uuidString, streak: 30, completed: true)
+            }
+            
+        default:
+            break
+        }
+    }
+    #endif
+    
     private func applyCustomSchedulesToScheduler() async {
         var payload: [UUID: (String, DateComponents)] = [:]
         for h in customHabits {

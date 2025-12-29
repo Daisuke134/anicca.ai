@@ -181,16 +181,16 @@ struct HabitsSectionView: View {
             CardView(cornerRadius: 37, noPadding: true) {
                 Button(action: { activeSheet = .addCustom }) {
                     HStack(spacing: 12) {
-                        // 1枚目スクショに合わせてコンパクト化
+                        // Figma仕様: 40x40アイコン、背景0.2、ボーダー2px
                         ZStack {
                             Circle()
                                 .fill(AppTheme.Colors.habitAccent.opacity(0.2))
-                                .frame(width: 32, height: 32)
+                                .frame(width: 40, height: 40)
                             Circle()
-                                .stroke(AppTheme.Colors.habitAccent, lineWidth: 1.5)
-                                .frame(width: 32, height: 32)
+                                .stroke(AppTheme.Colors.habitAccent, lineWidth: 2)
+                                .frame(width: 40, height: 40)
                             Image(systemName: "plus")
-                                .font(.system(size: 16, weight: .medium))
+                                .font(.system(size: 20, weight: .medium))
                                 .foregroundStyle(AppTheme.Colors.habitAccent)
                         }
                         Text(String(localized: "habit_add_custom"))
@@ -201,7 +201,7 @@ struct HabitsSectionView: View {
                     .padding(.horizontal, 20)
                 }
             }
-            .frame(height: 60)
+            .frame(height: 80)
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))

@@ -446,7 +446,7 @@ struct HabitsSectionView: View {
                         .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
                 )
                 .padding(.top, 8)
-                .padding(.trailing, 11) // Figma: right: 11px
+                .padding(.trailing, 20) // トグルの右端と揃える
             }
         }
     }
@@ -545,7 +545,7 @@ struct HabitsSectionView: View {
                         .fill(AppTheme.Colors.habitAccent.opacity(0.1))
                 )
                 .padding(.top, 8)
-                .padding(.trailing, 11) // Figma: right: 11px
+                .padding(.trailing, 20) // トグルの右端と揃える
             }
         }
     }

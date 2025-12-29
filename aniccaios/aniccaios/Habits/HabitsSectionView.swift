@@ -181,16 +181,16 @@ struct HabitsSectionView: View {
             CardView(cornerRadius: 37, noPadding: true) {
                 Button(action: { activeSheet = .addCustom }) {
                     HStack(spacing: 12) {
-                        // Figma: 40x40アイコン、左20px、背景rgba(201,179,130,0.2)、ボーダー#C9B382
+                        // 1枚目スクショに合わせてコンパクト化
                         ZStack {
                             Circle()
                                 .fill(AppTheme.Colors.habitAccent.opacity(0.2))
-                                .frame(width: 40, height: 40)
+                                .frame(width: 32, height: 32)
                             Circle()
-                                .stroke(AppTheme.Colors.habitAccent, lineWidth: 2)
-                                .frame(width: 40, height: 40)
+                                .stroke(AppTheme.Colors.habitAccent, lineWidth: 1.5)
+                                .frame(width: 32, height: 32)
                             Image(systemName: "plus")
-                                .font(.system(size: 20, weight: .medium))
+                                .font(.system(size: 16, weight: .medium))
                                 .foregroundStyle(AppTheme.Colors.habitAccent)
                         }
                         Text(String(localized: "habit_add_custom"))
@@ -201,7 +201,7 @@ struct HabitsSectionView: View {
                     .padding(.horizontal, 20)
                 }
             }
-            .frame(height: 80)
+            .frame(height: 60)
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
             .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
@@ -426,8 +426,8 @@ struct HabitsSectionView: View {
                 .tint(AppTheme.Colors.habitAccent)
             }
             .padding(.horizontal, 20)
-            .frame(height: 90) // Figma: カード高さ90px
-            .offset(y: 10)     // コンテンツをさらに下にずらす
+            .frame(height: 80)
+            .offset(y: 6)      // 高さが狭まったのでオフセットも調整
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {
@@ -525,8 +525,8 @@ struct HabitsSectionView: View {
                 .tint(AppTheme.Colors.habitAccent)
             }
             .padding(.horizontal, 20)
-            .frame(height: 90) // Figma: カード高さ90px
-            .offset(y: 10)     // コンテンツをさらに下にずらす
+            .frame(height: 80)
+            .offset(y: 6)      // 高さが狭まったのでオフセットも調整
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {

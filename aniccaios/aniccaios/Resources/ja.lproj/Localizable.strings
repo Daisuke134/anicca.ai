@@ -554,4 +554,14 @@
 /* Streak Milestone */
 "milestone_subtitle_format" = "%@を%lld日間続けています";
 "milestone_continue" = "続けていく";
+"milestone_7_title" = "1週間、続けられました";
+"milestone_14_title" = "2週間、続けられました";
+"milestone_21_title" = "3週間、続けられました";
+"milestone_30_title" = "1ヶ月、続けられました";
+"milestone_60_title" = "2ヶ月、続けられました";
+"milestone_90_title" = "3ヶ月、続けられました";
+"milestone_100_title" = "100日、続けられました";
+"milestone_365_title" = "1年、続けられました";
+"milestone_generic_title" = "素晴らしい継続です";
+"milestone_days_unit" = "日";
 

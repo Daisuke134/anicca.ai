@@ -127,14 +127,14 @@ struct HabitsSectionView: View {
             // 全習慣を時系列順に表示（時刻設定済み）
             ForEach(sortedAllHabits, id: \.id) { item in
                 if let habit = item.habit {
-                    CardView {
+                    CardView(cornerRadius: 37) {
                         habitRow(for: habit, time: item.time)
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
                     .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
                 } else if let customId = item.customId {
-                    CardView {
+                    CardView(cornerRadius: 37) {
                         customHabitRow(id: customId, name: item.name, time: item.time)
                     }
                     .listRowBackground(Color.clear)
@@ -152,7 +152,7 @@ struct HabitsSectionView: View {
 
             // 時間未設定のデフォルト習慣
             ForEach(inactiveDefaultHabits, id: \.self) { habit in
-                CardView {
+                CardView(cornerRadius: 37) {
                     habitRow(for: habit, time: nil)
                 }
                 .listRowBackground(Color.clear)
@@ -162,7 +162,7 @@ struct HabitsSectionView: View {
 
             // 時間未設定のカスタム習慣
             ForEach(inactiveCustomHabits, id: \.id) { habit in
-                CardView {
+                CardView(cornerRadius: 37) {
                     customHabitRow(id: habit.id, name: habit.name, time: nil)
                 }
                 .listRowBackground(Color.clear)
@@ -178,7 +178,7 @@ struct HabitsSectionView: View {
             }
 
             // 「習慣を追加」ボタン
-            CardView {
+            CardView(cornerRadius: 37) {
                 Button(action: { activeSheet = .addCustom }) {
                     HStack {
                         Image(systemName: "plus.circle.fill")
@@ -430,7 +430,7 @@ struct HabitsSectionView: View {
                         .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
                 )
                 .padding(.top, 8)
-                .padding(.trailing, 12)
+                .padding(.trailing, 11) // Figma: right: 11px
             }
         }
     }
@@ -528,7 +528,7 @@ struct HabitsSectionView: View {
                         .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
                 )
                 .padding(.top, 8)
-                .padding(.trailing, 12)
+                .padding(.trailing, 11) // Figma: right: 11px
             }
         }
     }

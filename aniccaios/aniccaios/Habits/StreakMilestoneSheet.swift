@@ -62,7 +62,7 @@ struct StreakMilestoneSheet: View {
                         .font(.system(size: 72, weight: .bold, design: .rounded))
                         .foregroundStyle(Color(red: 0.83, green: 0.65, blue: 0.46))
                     
-                    Text("日")
+                    Text(String(localized: "milestone_days_unit", defaultValue: "日"))
                         .font(.system(size: 24, weight: .medium))
                         .foregroundStyle(Color(red: 0.83, green: 0.65, blue: 0.46))
                         .padding(.bottom, 12)

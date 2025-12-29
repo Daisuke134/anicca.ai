@@ -554,4 +554,14 @@
 /* Streak Milestone */
 "milestone_subtitle_format" = "You've been doing %@ for %lld days";
 "milestone_continue" = "Continue";
+"milestone_7_title" = "1 Week Streak!";
+"milestone_14_title" = "2 Weeks Streak!";
+"milestone_21_title" = "3 Weeks Streak!";
+"milestone_30_title" = "1 Month Streak!";
+"milestone_60_title" = "2 Months Streak!";
+"milestone_90_title" = "3 Months Streak!";
+"milestone_100_title" = "100 Days Streak!";
+"milestone_365_title" = "1 Year Streak!";
+"milestone_generic_title" = "Amazing Streak!";
+"milestone_days_unit" = "days";
 

@@ -430,11 +430,11 @@ struct HabitsSectionView: View {
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     Text("🪷")
-                        .font(.system(size: 12))
+                        .font(.system(size: 14))
                     Text("\(streak)")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(Color(red: 0.79, green: 0.70, blue: 0.51))
                 }
                 .padding(.horizontal, 6)
@@ -443,7 +443,7 @@ struct HabitsSectionView: View {
                     Capsule()
                         .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
                 )
-                .padding(.top, 6)
+                .padding(.top, 8)
                 .padding(.trailing, 11) // Figma: right: 11px
             }
         }
@@ -528,11 +528,11 @@ struct HabitsSectionView: View {
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {
-                HStack(spacing: 3) {
+                HStack(spacing: 4) {
                     Text("🪷")
-                        .font(.system(size: 12))
+                        .font(.system(size: 14))
                     Text("\(streak)")
-                        .font(.system(size: 9, weight: .semibold))
+                        .font(.system(size: 10, weight: .semibold))
                         .foregroundStyle(AppTheme.Colors.habitAccent)
                 }
                 .padding(.horizontal, 6)
@@ -541,7 +541,7 @@ struct HabitsSectionView: View {
                     Capsule()
                         .fill(AppTheme.Colors.habitAccent.opacity(0.1))
                 )
-                .padding(.top, 6)
+                .padding(.top, 8)
                 .padding(.trailing, 11) // Figma: right: 11px
             }
         }

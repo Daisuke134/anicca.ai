@@ -198,6 +198,7 @@ struct HabitsSectionView: View {
                             .foregroundStyle(AppTheme.Colors.figmaTextPrimary)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: 80)  // HStackに高さ指定を追加
                     .padding(.horizontal, 20)
                 }
             }

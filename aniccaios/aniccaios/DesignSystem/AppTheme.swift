@@ -91,6 +91,31 @@ enum AppTheme {
                   dark: Color(red: 80/255, green: 80/255, blue: 78/255, opacity: 0.3))
         }
         
+        // MARK: - Figma準拠カラー (Habits UI)
+        
+        /// Figma背景色
+        static var figmaBackground: Color {
+            Color(hex: "#F5F3ED")
+        }
+        
+        /// Figmaカード背景色
+        static var figmaCardBackground: Color {
+            Color(hex: "#FDFCFA")
+        }
+        
+        /// Figmaアクセントカラー（ゴールド）
+        static let habitAccent = Color(red: 0.79, green: 0.70, blue: 0.51) // #C9B382
+        
+        /// Figmaテキスト色（プライマリ）
+        static var figmaTextPrimary: Color {
+            Color(hex: "#3A3A3A")
+        }
+        
+        /// Figmaテキスト色（セカンダリ）
+        static var figmaTextSecondary: Color {
+            Color(hex: "#8A8A82")
+        }
+        
         // MARK: - Legacy (iOS 14以下のフォールバック用)
         // これらはiOS 15+でadaptiveカラーを使用できない場合のフォールバック
         

@@ -127,19 +127,19 @@ struct HabitsSectionView: View {
             // 全習慣を時系列順に表示（時刻設定済み）
             ForEach(sortedAllHabits, id: \.id) { item in
                 if let habit = item.habit {
-                    CardView(cornerRadius: 37) {
+                    CardView(cornerRadius: 37, noPadding: true) {
                         habitRow(for: habit, time: item.time)
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 } else if let customId = item.customId {
-                    CardView(cornerRadius: 37) {
+                    CardView(cornerRadius: 37, noPadding: true) {
                         customHabitRow(id: customId, name: item.name, time: item.time)
                     }
                     .listRowBackground(Color.clear)
                     .listRowSeparator(.hidden)
-                    .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                    .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) {
                             appState.removeCustomHabit(id: customId)
@@ -152,22 +152,22 @@ struct HabitsSectionView: View {
 
             // 時間未設定のデフォルト習慣
             ForEach(inactiveDefaultHabits, id: \.self) { habit in
-                CardView(cornerRadius: 37) {
+                CardView(cornerRadius: 37, noPadding: true) {
                     habitRow(for: habit, time: nil)
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
             }
 
             // 時間未設定のカスタム習慣
             ForEach(inactiveCustomHabits, id: \.id) { habit in
-                CardView(cornerRadius: 37) {
+                CardView(cornerRadius: 37, noPadding: true) {
                     customHabitRow(id: habit.id, name: habit.name, time: nil)
                 }
                 .listRowBackground(Color.clear)
                 .listRowSeparator(.hidden)
-                .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+                .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                     Button(role: .destructive) {
                         appState.removeCustomHabit(id: habit.id)
@@ -178,19 +178,33 @@ struct HabitsSectionView: View {
             }
 
             // 「習慣を追加」ボタン
-            CardView(cornerRadius: 37) {
+            CardView(cornerRadius: 37, noPadding: true) {
                 Button(action: { activeSheet = .addCustom }) {
-                    HStack {
-                        Image(systemName: "plus.circle.fill")
+                    HStack(spacing: 12) {
+                        // Figma: 40x40アイコン、左20px、背景rgba(201,179,130,0.2)、ボーダー#C9B382
+                        ZStack {
+                            Circle()
+                                .fill(AppTheme.Colors.habitAccent.opacity(0.2))
+                                .frame(width: 40, height: 40)
+                            Circle()
+                                .stroke(AppTheme.Colors.habitAccent, lineWidth: 2)
+                                .frame(width: 40, height: 40)
+                            Image(systemName: "plus")
+                                .font(.system(size: 20, weight: .medium))
+                                .foregroundStyle(AppTheme.Colors.habitAccent)
+                        }
                         Text(String(localized: "habit_add_custom"))
+                            .font(.system(size: 16, weight: .medium))
+                            .foregroundStyle(AppTheme.Colors.figmaTextPrimary)
                     }
-                    .foregroundStyle(AppTheme.Colors.accent)
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
                 }
             }
+            .frame(height: 80)
             .listRowBackground(Color.clear)
             .listRowSeparator(.hidden)
-            .listRowInsets(EdgeInsets(top: AppTheme.Spacing.sm, leading: AppTheme.Spacing.lg, bottom: AppTheme.Spacing.sm, trailing: AppTheme.Spacing.lg))
+            .listRowInsets(EdgeInsets(top: 6, leading: 16, bottom: 6, trailing: 16))
         }
         .listStyle(.plain)
         .scrollContentBackground(.hidden)
@@ -280,10 +294,10 @@ struct HabitsSectionView: View {
         } label: {
             ZStack {
                 Circle()
-                    .stroke(isCompleted ? Color.clear : Color(red: 0.79, green: 0.70, blue: 0.51), lineWidth: 2.5)
+                    .stroke(isCompleted ? Color.clear : AppTheme.Colors.habitAccent, lineWidth: 2.5)
                     .background(
                         Circle()
-                            .fill(isCompleted ? Color(red: 0.79, green: 0.70, blue: 0.51) : Color.clear)
+                            .fill(isCompleted ? AppTheme.Colors.habitAccent : Color.clear)
                     )
                     .frame(width: 32, height: 32)
                 
@@ -352,7 +366,7 @@ struct HabitsSectionView: View {
                 // 習慣名
                 Text(habit.title)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color(red: 0.23, green: 0.23, blue: 0.23))
+                    .foregroundStyle(AppTheme.Colors.figmaTextPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -368,7 +382,7 @@ struct HabitsSectionView: View {
                 if isActive, let date = date {
                     Text(date.formatted(.dateTime.hour().minute()))
                         .font(.system(size: 14))
-                        .foregroundStyle(Color(red: 0.54, green: 0.54, blue: 0.51))
+                        .foregroundStyle(AppTheme.Colors.figmaTextSecondary)
                 }
                 
                 // トグル
@@ -409,27 +423,27 @@ struct HabitsSectionView: View {
                     }
                 ))
                 .labelsHidden()
-                .tint(Color(red: 0.79, green: 0.70, blue: 0.51))
+                .tint(AppTheme.Colors.habitAccent)
             }
             .padding(.horizontal, 20)
             .frame(height: 90) // Figma: カード高さ90px
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Text("🪷")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12))
                     Text("\(streak)")
-                        .font(.system(size: 10, weight: .semibold))
+                        .font(.system(size: 9, weight: .semibold))
                         .foregroundStyle(Color(red: 0.79, green: 0.70, blue: 0.51))
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(
                     Capsule()
                         .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
                 )
-                .padding(.top, 8)
+                .padding(.top, 6)
                 .padding(.trailing, 11) // Figma: right: 11px
             }
         }
@@ -458,7 +472,7 @@ struct HabitsSectionView: View {
                 // 習慣名
                 Text(name)
                     .font(.system(size: 16, weight: .medium))
-                    .foregroundStyle(Color(red: 0.23, green: 0.23, blue: 0.23))
+                    .foregroundStyle(AppTheme.Colors.figmaTextPrimary)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
                     .onTapGesture {
@@ -474,7 +488,7 @@ struct HabitsSectionView: View {
                 if isActive, let date = date {
                     Text(date.formatted(.dateTime.hour().minute()))
                         .font(.system(size: 14))
-                        .foregroundStyle(Color(red: 0.54, green: 0.54, blue: 0.51))
+                        .foregroundStyle(AppTheme.Colors.figmaTextSecondary)
                 }
                 
                 // トグル
@@ -507,27 +521,27 @@ struct HabitsSectionView: View {
                     }
                 ))
                 .labelsHidden()
-                .tint(Color(red: 0.79, green: 0.70, blue: 0.51))
+                .tint(AppTheme.Colors.habitAccent)
             }
             .padding(.horizontal, 20)
             .frame(height: 90) // Figma: カード高さ90px
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {
-                HStack(spacing: 4) {
+                HStack(spacing: 3) {
                     Text("🪷")
-                        .font(.system(size: 14))
+                        .font(.system(size: 12))
                     Text("\(streak)")
-                        .font(.system(size: 10, weight: .semibold))
-                        .foregroundStyle(Color(red: 0.79, green: 0.70, blue: 0.51))
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(AppTheme.Colors.habitAccent)
                 }
-                .padding(.horizontal, 8)
-                .padding(.vertical, 4)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 2)
                 .background(
                     Capsule()
-                        .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
+                        .fill(AppTheme.Colors.habitAccent.opacity(0.1))
                 )
-                .padding(.top, 8)
+                .padding(.top, 6)
                 .padding(.trailing, 11) // Figma: right: 11px
             }
         }

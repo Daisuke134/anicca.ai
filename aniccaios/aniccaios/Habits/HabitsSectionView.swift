@@ -427,7 +427,7 @@ struct HabitsSectionView: View {
             }
             .padding(.horizontal, 20)
             .frame(height: 90) // Figma: カード高さ90px
-            .offset(y: 6)      // コンテンツを少し下にずらす
+            .offset(y: 10)     // コンテンツをさらに下にずらす
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {
@@ -526,7 +526,7 @@ struct HabitsSectionView: View {
             }
             .padding(.horizontal, 20)
             .frame(height: 90) // Figma: カード高さ90px
-            .offset(y: 6)      // コンテンツを少し下にずらす
+            .offset(y: 10)     // コンテンツをさらに下にずらす
             
             // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
             if streak > 0 {

@@ -551,3 +551,7 @@
 /* v3: Account Management */
 "profile_account_management" = "アカウント管理";
 
+/* Streak Milestone */
+"milestone_subtitle_format" = "%@を%lld日間続けています";
+"milestone_continue" = "続けていく";
+

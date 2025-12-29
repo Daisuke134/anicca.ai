@@ -551,3 +551,7 @@
 /* v3: Account Management */
 "profile_account_management" = "Account Management";
 
+/* Streak Milestone */
+"milestone_subtitle_format" = "You've been doing %@ for %lld days";
+"milestone_continue" = "Continue";
+

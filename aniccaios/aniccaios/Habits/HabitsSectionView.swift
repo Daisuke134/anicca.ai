@@ -252,6 +252,17 @@ struct HabitsSectionView: View {
             // AppStateのcustomHabitSchedulesが変更されたときに再読み込み
             loadHabitTimes()
         }
+        .overlay {
+            if let milestone = appState.pendingMilestone {
+                StreakMilestoneSheet(
+                    habitName: milestone.habitName,
+                    streak: milestone.streak
+                ) {
+                    appState.pendingMilestone = nil
+                }
+                .ignoresSafeArea()
+            }
+        }
     }
     
     // MARK: - Checkbox Component
@@ -268,17 +279,17 @@ struct HabitsSectionView: View {
             }
         } label: {
             ZStack {
-                RoundedRectangle(cornerRadius: 6)
-                    .stroke(isCompleted ? Color.clear : AppTheme.Colors.border, lineWidth: 1.5)
+                Circle()
+                    .stroke(isCompleted ? Color.clear : Color(red: 0.79, green: 0.70, blue: 0.51), lineWidth: 2.5)
                     .background(
-                        RoundedRectangle(cornerRadius: 6)
-                            .fill(isCompleted ? AppTheme.Colors.accent : Color.clear)
+                        Circle()
+                            .fill(isCompleted ? Color(red: 0.79, green: 0.70, blue: 0.51) : Color.clear)
                     )
-                    .frame(width: 24, height: 24)
+                    .frame(width: 32, height: 32)
                 
                 if isCompleted {
                     Image(systemName: "checkmark")
-                        .font(.system(size: 14, weight: .bold))
+                        .font(.system(size: 16, weight: .bold))
                         .foregroundColor(.white)
                         .scaleEffect(isCompleted ? 1.0 : 0.5)
                 }
@@ -286,6 +297,8 @@ struct HabitsSectionView: View {
             .scaleEffect(isCompleted ? 1.0 : 0.95)
         }
         .buttonStyle(.plain)
+        .frame(width: 44, height: 44)
+        .contentShape(Rectangle())
     }
     
     private func loadHabitTimes() {
@@ -323,83 +336,102 @@ struct HabitsSectionView: View {
         let habitId = habit.rawValue
         let isCompleted = appState.isDailyCompleted(for: habitId)
         let streak = appState.currentStreak(for: habitId)
-
-        HStack(spacing: 12) {
-            // チェックボックス
-            checkBox(isCompleted: isCompleted) {
-                if isCompleted {
-                    appState.unmarkDailyCompleted(for: habitId)
-                } else {
-                    appState.markDailyCompleted(for: habitId)
-                }
-            }
-            
-            // 習慣名
-            Text(habit.title)
-                .font(AppTheme.Typography.headlineDynamic)
-                .foregroundStyle(AppTheme.Colors.label)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if isActive {
-                        activeSheet = .editor(habit)
+        
+        ZStack(alignment: .topTrailing) {
+            // メインコンテンツ
+            HStack(spacing: 16) {
+                // チェックボックス
+                checkBox(isCompleted: isCompleted) {
+                    if isCompleted {
+                        appState.unmarkDailyCompleted(for: habitId)
                     } else {
-                        sheetTime = date ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
-                        activeSheet = .habit(habit)
+                        appState.markDailyCompleted(for: habitId)
                     }
                 }
-
-            // ストリークバッジ（固定幅で位置を揃える）
-            Text(streak > 0 ? "🔥\(streak)" : "")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.orange)
-                .frame(width: 40, alignment: .trailing)
-
-            // 時刻表示（固定幅で位置を揃える）
-            Text(isActive && date != nil ? date!.formatted(.dateTime.hour().minute()) : "")
-                .font(AppTheme.Typography.subheadlineDynamic)
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .frame(width: 50, alignment: .trailing)
-
-            // トグル
-            Toggle("", isOn: Binding(
-                get: { activeHabits.contains(habit) },
-                set: { isOn in
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        if isOn {
-                            if let date = date {
-                                // ★ 起床の場合、AlarmKit許可をリクエスト
-                                if habit == .wake {
-                                    Task {
-                                        await requestAlarmKitPermissionIfNeeded()
-                                    }
-                                }
-                                activeHabits.insert(habit)
-                                habitTimes[habit] = date
-                            } else {
-                                sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
-                                activeSheet = .habit(habit)
-                            }
+                
+                // 習慣名
+                Text(habit.title)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color(red: 0.23, green: 0.23, blue: 0.23))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if isActive {
+                            activeSheet = .editor(habit)
                         } else {
-                            // 1) まずトグル状態だけをアニメーション（行の移動/セクション移動は起こさない）
-                            activeHabits.remove(habit)
+                            sheetTime = date ?? Calendar.current.date(from: habit.defaultTime) ?? Date()
+                            activeSheet = .habit(habit)
+                        }
+                    }
+                
+                // 時刻表示
+                if isActive, let date = date {
+                    Text(date.formatted(.dateTime.hour().minute()))
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color(red: 0.54, green: 0.54, blue: 0.51))
+                }
+                
+                // トグル
+                Toggle("", isOn: Binding(
+                    get: { activeHabits.contains(habit) },
+                    set: { isOn in
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            if isOn {
+                                if let date = date {
+                                    // ★ 起床の場合、AlarmKit許可をリクエスト
+                                    if habit == .wake {
+                                        Task {
+                                            await requestAlarmKitPermissionIfNeeded()
+                                        }
+                                    }
+                                    activeHabits.insert(habit)
+                                    habitTimes[habit] = date
+                                } else {
+                                    sheetTime = Calendar.current.date(from: habit.defaultTime) ?? Date()
+                                    activeSheet = .habit(habit)
+                                }
+                            } else {
+                                // 1) まずトグル状態だけをアニメーション（行の移動/セクション移動は起こさない）
+                                activeHabits.remove(habit)
 
-                            // 2) 少し遅延して、構造変化（schedule削除＝セクション移動）をアニメ無しで実行
-                            Task { @MainActor in
-                                try? await Task.sleep(nanoseconds: 220_000_000)
-                                var t = Transaction()
-                                t.disablesAnimations = true
-                                withTransaction(t) {
-                                    habitTimes.removeValue(forKey: habit)
-                                    appState.removeHabitSchedule(habit)
+                                // 2) 少し遅延して、構造変化（schedule削除＝セクション移動）をアニメ無しで実行
+                                Task { @MainActor in
+                                    try? await Task.sleep(nanoseconds: 220_000_000)
+                                    var t = Transaction()
+                                    t.disablesAnimations = true
+                                    withTransaction(t) {
+                                        habitTimes.removeValue(forKey: habit)
+                                        appState.removeHabitSchedule(habit)
+                                    }
                                 }
                             }
                         }
                     }
+                ))
+                .labelsHidden()
+                .tint(Color(red: 0.79, green: 0.70, blue: 0.51))
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 90) // Figma: カード高さ90px
+            
+            // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
+            if streak > 0 {
+                HStack(spacing: 4) {
+                    Text("🪷")
+                        .font(.system(size: 14))
+                    Text("\(streak)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color(red: 0.79, green: 0.70, blue: 0.51))
                 }
-            ))
-            .labelsHidden()
-            .tint(AppTheme.Colors.accent)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
+                )
+                .padding(.top, 8)
+                .padding(.trailing, 12)
+            }
         }
     }
     
@@ -410,75 +442,94 @@ struct HabitsSectionView: View {
         let habitId = id.uuidString
         let isCompleted = appState.isDailyCompleted(for: habitId)
         let streak = appState.currentStreak(for: habitId)
-
-        HStack(spacing: 12) {
-            // チェックボックス
-            checkBox(isCompleted: isCompleted) {
-                if isCompleted {
-                    appState.unmarkDailyCompleted(for: habitId)
-                } else {
-                    appState.markDailyCompleted(for: habitId)
-                }
-            }
-            
-            // 習慣名
-            Text(name)
-                .font(AppTheme.Typography.headlineDynamic)
-                .foregroundStyle(AppTheme.Colors.label)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
-                .onTapGesture {
-                    if isActive {
-                        activeSheet = .customEditor(id)
+        
+        ZStack(alignment: .topTrailing) {
+            // メインコンテンツ
+            HStack(spacing: 16) {
+                // チェックボックス
+                checkBox(isCompleted: isCompleted) {
+                    if isCompleted {
+                        appState.unmarkDailyCompleted(for: habitId)
                     } else {
-                        sheetTime = date ?? Date()
-                        activeSheet = .custom(id)
+                        appState.markDailyCompleted(for: habitId)
                     }
                 }
-
-            // ストリークバッジ（固定幅で位置を揃える）
-            Text(streak > 0 ? "🔥\(streak)" : "")
-                .font(.system(size: 12, weight: .medium))
-                .foregroundStyle(Color.orange)
-                .frame(width: 40, alignment: .trailing)
-
-            // 時刻表示（固定幅で位置を揃える）
-            Text(isActive && date != nil ? date!.formatted(.dateTime.hour().minute()) : "")
-                .font(AppTheme.Typography.subheadlineDynamic)
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .frame(width: 50, alignment: .trailing)
-
-            // トグル
-            Toggle("", isOn: Binding(
-                get: { activeCustomHabits.contains(id) },
-                set: { isOn in
-                    withAnimation(.easeInOut(duration: 0.18)) {
-                        if isOn {
-                            if let date = date {
-                                activeCustomHabits.insert(id)
-                                customHabitTimes[id] = date
-                            } else {
-                                sheetTime = Date()
-                                activeSheet = .custom(id)
-                            }
+                
+                // 習慣名
+                Text(name)
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(Color(red: 0.23, green: 0.23, blue: 0.23))
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .contentShape(Rectangle())
+                    .onTapGesture {
+                        if isActive {
+                            activeSheet = .customEditor(id)
                         } else {
-                            activeCustomHabits.remove(id)
+                            sheetTime = date ?? Date()
+                            activeSheet = .custom(id)
+                        }
+                    }
+                
+                // 時刻表示
+                if isActive, let date = date {
+                    Text(date.formatted(.dateTime.hour().minute()))
+                        .font(.system(size: 14))
+                        .foregroundStyle(Color(red: 0.54, green: 0.54, blue: 0.51))
+                }
+                
+                // トグル
+                Toggle("", isOn: Binding(
+                    get: { activeCustomHabits.contains(id) },
+                    set: { isOn in
+                        withAnimation(.easeInOut(duration: 0.18)) {
+                            if isOn {
+                                if let date = date {
+                                    activeCustomHabits.insert(id)
+                                    customHabitTimes[id] = date
+                                } else {
+                                    sheetTime = Date()
+                                    activeSheet = .custom(id)
+                                }
+                            } else {
+                                activeCustomHabits.remove(id)
 
-                            Task { @MainActor in
-                                try? await Task.sleep(nanoseconds: 220_000_000)
-                                var t = Transaction()
-                                t.disablesAnimations = true
-                                withTransaction(t) {
-                                    customHabitTimes.removeValue(forKey: id)
-                                    appState.updateCustomHabitSchedule(id: id, time: nil)
+                                Task { @MainActor in
+                                    try? await Task.sleep(nanoseconds: 220_000_000)
+                                    var t = Transaction()
+                                    t.disablesAnimations = true
+                                    withTransaction(t) {
+                                        customHabitTimes.removeValue(forKey: id)
+                                        appState.updateCustomHabitSchedule(id: id, time: nil)
+                                    }
                                 }
                             }
                         }
                     }
+                ))
+                .labelsHidden()
+                .tint(Color(red: 0.79, green: 0.70, blue: 0.51))
+            }
+            .padding(.horizontal, 20)
+            .frame(height: 90) // Figma: カード高さ90px
+            
+            // ストリークバッジ（右上角に配置、Figma: right: 11px, top: 8px）
+            if streak > 0 {
+                HStack(spacing: 4) {
+                    Text("🪷")
+                        .font(.system(size: 14))
+                    Text("\(streak)")
+                        .font(.system(size: 10, weight: .semibold))
+                        .foregroundStyle(Color(red: 0.79, green: 0.70, blue: 0.51))
                 }
-            ))
-            .labelsHidden()
-            .tint(AppTheme.Colors.accent)
+                .padding(.horizontal, 8)
+                .padding(.vertical, 4)
+                .background(
+                    Capsule()
+                        .fill(Color(red: 0.79, green: 0.70, blue: 0.51).opacity(0.1))
+                )
+                .padding(.top, 8)
+                .padding(.trailing, 12)
+            }
         }
     }
     

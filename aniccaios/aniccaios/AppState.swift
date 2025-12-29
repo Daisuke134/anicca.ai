@@ -51,6 +51,8 @@ final class AppState: ObservableObject {
     
     // MARK: - Habit Streaks
     @Published private(set) var habitStreaks: [String: HabitStreakData] = [:]
+    @Published var pendingMilestone: (habitName: String, streak: Int)? = nil
+    private let milestones: Set<Int> = [7, 14, 21, 30, 60, 90, 100, 365]
     
     // Phase-7: sensor permissions + integration toggles
     @Published private(set) var sensorAccess: SensorAccessState
@@ -342,6 +344,12 @@ final class AppState: ObservableObject {
         data.lastCompletedDate = today
         habitStreaks[habitId] = data
         saveHabitStreaks()
+        
+        // マイルストーン達成チェック
+        if milestones.contains(data.currentStreak) {
+            let habitName = getHabitDisplayName(for: habitId)
+            pendingMilestone = (habitName: habitName, streak: data.currentStreak)
+        }
     }
     
     /// 完了を解除（ストリーク-1）
@@ -404,6 +412,16 @@ final class AppState: ObservableObject {
         habitStreaks = decoded
     }
     
+    private func getHabitDisplayName(for habitId: String) -> String {
+        if let habitType = HabitType(rawValue: habitId) {
+            return habitType.title
+        }
+        if let customConfig = customHabits.first(where: { $0.id.uuidString == habitId }) {
+            return customConfig.name
+        }
+        return habitId
+    }
+    
     // MARK: - Debug Methods for Recording
     #if DEBUG
     /// 撮影用: 指定したストリーク値を強制設定
@@ -447,9 +465,9 @@ final class AppState: ObservableObject {
                 setStreakForRecording(habitId: config.id.uuidString, streak: customStreaksUncompleted[index % 4], completed: false)
             }
             
-        case 4: // 7→8用（トレーニングだけ未完了）
+        case 4: // 6→7用（7日達成ダイアログ撮影用）
             setStreakForRecording(habitId: "wake", streak: 30, completed: true)
-            setStreakForRecording(habitId: "training", streak: 7, completed: false)
+            setStreakForRecording(habitId: "training", streak: 6, completed: false)
             setStreakForRecording(habitId: "bedtime", streak: 30, completed: true)
             for (index, config) in customHabits.enumerated() {
                 setStreakForRecording(habitId: config.id.uuidString, streak: customStreaksCompleted[index % 4], completed: true)

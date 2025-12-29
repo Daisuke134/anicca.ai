@@ -547,14 +547,14 @@ struct SettingsView: View {
                     
                     Divider()
                     
-                    Button("4️⃣ 7→8用（トレーニングだけ未完了）") {
+                    Button("4️⃣ 6→7用（7日達成）") {
                         appState.setupRecording(pattern: 4)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     
                     Divider()
                     
-                    Button("5️⃣ 全部🔥30") {
+                    Button("5️⃣ 全部🪷30") {
                         appState.setupRecording(pattern: 5)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)

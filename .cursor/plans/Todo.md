@@ -13,7 +13,6 @@ Distribution：オーガニック動画（→Tiktok広告）＋　ASO ＋　Appl
 ・Ver 0.4をリリースする（悩み相談・事前の通知）
 ・ダークモード対応。
 ・StickyをもっとStickyに→確実に僕を起こせるようにする。
-・習慣タブのトグルオフのアニメーションを直す。
 ・仏教的なテイスト（慈悲の瞑想や瞑想導入をボタンを押すだけで読み上げてやってくれる新しいタブ　読み上げを用意する）→説法タブ
 ・PayWallをSuperwallで改善する。
 ーーーー
@@ -76,8 +75,3 @@ Distribution：オーガニック動画（→Tiktok広告）＋　ASO ＋　Appl
 
 ---
 
-### 今週の制作（制作物タスク）
-
-- [ ] **動画03（自己嫌悪のループ）制作→結果共有**
-  - [ ] `/Users/cbns03/Downloads/anicca-project/.cursor/plans/PROMO/creatives/video-03-self-hatred-loop.md` に基づいて制作
-  - [ ] 完成動画（または各シーン画像/編集方針）を共有→改善ループ

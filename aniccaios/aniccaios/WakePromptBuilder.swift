@@ -143,7 +143,10 @@ struct HabitPromptBuilder {
             if !profile.trainingGoal.isEmpty {
                 replacements["TRAINING_GOAL"] = profile.trainingGoal
             } else {
-                replacements["TRAINING_GOAL"] = "15回"
+                // デフォルト: 腕立て伏せ10回（言語に応じて）
+                replacements["TRAINING_GOAL"] = profile.preferredLanguage == .ja
+                    ? "腕立て伏せ10回"
+                    : "10 push-ups"
             }
             
         case .custom:

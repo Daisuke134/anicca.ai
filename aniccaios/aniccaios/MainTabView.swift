@@ -4,8 +4,7 @@ import Combine
 
 struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
-    @State private var habitSessionActive = false
-    @State private var pendingHabit: HabitType?
+    @State private var activeHabitSession: ActiveHabitSession?
     
     var body: some View {
         // コンテンツエリア
@@ -24,11 +23,10 @@ struct MainTabView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .fullScreenCover(isPresented: $habitSessionActive, onDismiss: {
-            pendingHabit = nil
+        .fullScreenCover(item: $activeHabitSession, onDismiss: {
             appState.clearPendingHabitTrigger()
-        }) {
-            HabitSessionView(habit: pendingHabit ?? .wake)
+        }) { session in
+            HabitSessionView(habit: session.habit, customHabitName: session.customHabitName)
                 .environmentObject(appState)
         }
         .onAppear { checkPendingHabitTrigger(force: true) }
@@ -55,11 +53,21 @@ struct MainTabView: View {
     private func checkPendingHabitTrigger(force: Bool = false) {
         guard let trigger = appState.pendingHabitTrigger else { return }
         guard appState.shouldStartSessionImmediately || force else { return }
-        pendingHabit = trigger.habit
-        if !habitSessionActive {
-            habitSessionActive = true
+        // item ベースの fullScreenCover を使うことで、表示時に必ず正しい値が渡される
+        if activeHabitSession == nil {
+            activeHabitSession = ActiveHabitSession(
+                habit: trigger.habit,
+                customHabitName: trigger.customHabitName
+            )
         }
         appState.clearShouldStartSessionImmediately()
     }
+}
+
+/// セッション表示用の Identifiable ラッパー
+struct ActiveHabitSession: Identifiable {
+    let id = UUID()
+    let habit: HabitType
+    let customHabitName: String?
 }
 

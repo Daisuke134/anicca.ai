@@ -210,7 +210,9 @@ final class AppState: ObservableObject {
                   let habit = HabitType(rawValue: raw),
                   let ts = entry["ts"] as? TimeInterval,
                   Date().timeIntervalSince1970 - ts < 300 else { continue }
-            prepareForImmediateSession(habit: habit)
+            // ★ カスタム習慣IDを取得
+            let customHabitId = (entry["customHabitId"] as? String).flatMap { UUID(uuidString: $0) }
+            prepareForImmediateSession(habit: habit, customHabitId: customHabitId)
             shouldStartSessionImmediately = true
             consumed.append(entry)
             break
@@ -249,7 +251,7 @@ final class AppState: ObservableObject {
     }
     
     func customFollowupCount(for id: UUID) -> Int {
-        return bounded(customHabitFollowupCounts[id] ?? 2)
+        return bounded(customHabitFollowupCounts[id] ?? 1)
     }
     
     func updateFollowupCount(for habit: HabitType, count: Int) {
@@ -265,7 +267,7 @@ final class AppState: ObservableObject {
     }
     
     private func defaultFollowupCount(for habit: HabitType) -> Int {
-        return 2  // すべての習慣で再通知回数を2に統一
+        return 1  // すべての習慣で再通知回数を1に統一
     }
     
     private func bounded(_ n: Int) -> Int {
@@ -592,7 +594,12 @@ final class AppState: ObservableObject {
             customHabitName: customHabitName
         )
         pendingHabitPrompt = (habit: habit, prompt: prompt)
-        pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
+        pendingHabitTrigger = PendingHabitTrigger(
+            id: UUID(),
+            habit: habit,
+            customHabitId: customHabitId,
+            customHabitName: customHabitName
+        )
         shouldStartSessionImmediately = true
         selectedRootTab = .talk
     }
@@ -610,7 +617,12 @@ final class AppState: ObservableObject {
             customHabitName: customHabitName
         )
         pendingHabitPrompt = (habit: habit, prompt: prompt)
-        pendingHabitTrigger = PendingHabitTrigger(id: UUID(), habit: habit)
+        pendingHabitTrigger = PendingHabitTrigger(
+            id: UUID(),
+            habit: habit,
+            customHabitId: customHabitId,
+            customHabitName: customHabitName
+        )
     }
     
     func prepareConsultSessionPrompt() {
@@ -1163,6 +1175,22 @@ final class AppState: ObservableObject {
         
         // 通知を更新
         Task { await applyCustomSchedulesToScheduler() }
+    }
+    
+    func updateCustomHabitName(id: UUID, name: String) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard let index = customHabits.firstIndex(where: { $0.id == id }) else { return }
+        
+        let current = customHabits[index]
+        guard current.name != trimmed else { return }
+        
+        let updated = CustomHabitConfiguration(id: current.id, name: trimmed, updatedAt: .now)
+        customHabits[index] = updated
+        CustomHabitStore.shared.saveAll(customHabits)
+        
+        // サーバー同期（payloadにcustomHabitsが含まれる）
+        Task { await ProfileSyncService.shared.enqueue(profile: userProfile) }
     }
     
     // MARK: - UserProfile Update Methods

@@ -78,6 +78,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
               let rawHabit = entry["habit"] as? String,
               let habit = HabitType(rawValue: rawHabit) else { return }
         
+        // ★ カスタム習慣IDを取得
+        let customHabitId = (entry["customHabitId"] as? String).flatMap { UUID(uuidString: $0) }
+        
         var queue = appGroupDefaults.array(forKey: "pending_habit_launch_queue") as? [[String: Any]] ?? []
         queue.removeFirst()
         appGroupDefaults.set(queue, forKey: "pending_habit_launch_queue")
@@ -88,7 +91,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             habitLaunchLogger.error("Audio session configure failed: \(error.localizedDescription, privacy: .public)")
         }
         await MainActor.run {
-            AppState.shared.prepareForImmediateSession(habit: habit)
+            // ★ customHabitId を渡す
+            AppState.shared.prepareForImmediateSession(habit: habit, customHabitId: customHabitId)
         }
         
         if retry && !queue.isEmpty {

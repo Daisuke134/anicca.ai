@@ -317,6 +317,7 @@ final class AlarmKitHabitCoordinator {
                 
                 let secondary = StartConversationIntent()
                 secondary.habitType = .custom
+                secondary.customHabitId = id.uuidString
                 
                 let identifier = UUID()
                 let configuration = AlarmManager.AlarmConfiguration(

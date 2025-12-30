@@ -11,6 +11,9 @@ struct StartConversationIntent: LiveActivityIntent {
     @Parameter(title: "Habit Type")
     var habitType: HabitType
     
+    @Parameter(title: "Custom Habit ID")
+    var customHabitId: String?
+    
     static var openAppWhenRun: Bool = true
     
     @MainActor
@@ -18,7 +21,10 @@ struct StartConversationIntent: LiveActivityIntent {
         // Intentプロセスからアプリ本体へ渡すため、AppGroupに起動要求を永続化。
         // 重要: ここで重い処理（音声セッション構成/画面遷移等）を行うと、起動ラグの原因になる。
         // アプリ本体側（AppState/AppDelegate）が起動直後にこのフラグを回収してUIを即表示する。
-        HabitLaunchBridge.postFromExtension(habitRawValue: habitType.rawValue)
+        HabitLaunchBridge.postFromExtension(
+            habitRawValue: habitType.rawValue,
+            customHabitId: customHabitId
+        )
         
         if UIApplication.shared.applicationState == .background {
             await UNUserNotificationCenter.current().postLaunchShortcut(habit: habitType)

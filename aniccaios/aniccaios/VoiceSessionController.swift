@@ -126,9 +126,11 @@ final class VoiceSessionController: NSObject, ObservableObject {
         activeFeelingSessionId = nil
         activeFeelingOpeningScript = nil
         currentHabitType = nil
-        stickyActive = AppState.shared.userProfile.stickyModeEnabled
+        // Feelingセッションでは傾聴が最優先のため、スティッキーを無効化
+        stickyActive = false
         stickyUserReplyCount = 0
         stickyReady = false
+        logger.info("Sticky disabled: Feeling session prioritizes listening")
         Task { [weak self] in
             await self?.beginFeelingSession(topic: topic)
             await self?.establishSession(resumeImmediately: false)
@@ -305,10 +307,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
             sendSessionUpdate()
         } catch VoiceSessionError.quotaExceeded {
             // 402エラー時はPaywallを表示してセッションを終了
+            // 注意: markQuotaHoldはobtainClientSecret内で既に設定されているため、ここでリセットしない
             logger.warning("Quota exceeded, showing paywall")
-            await MainActor.run {
-                AppState.shared.markQuotaHold(plan: nil)
-            }
             setStatus(.disconnected)
         } catch {
             logger.error("Failed to establish session: \(error.localizedDescription, privacy: .public)")
@@ -345,9 +345,8 @@ final class VoiceSessionController: NSObject, ObservableObject {
                 plan = .free
             }
             await MainActor.run {
-                // 毎回表示するために一度リセットしてから設定
-                AppState.shared.markQuotaHold(plan: nil) // リセット
-                AppState.shared.markQuotaHold(plan: plan) // 再設定
+                // 402エラー時はホールドを設定（リセットしない）
+                AppState.shared.markQuotaHold(plan: plan, reason: .quotaExceeded)
             }
             throw VoiceSessionError.quotaExceeded
         }

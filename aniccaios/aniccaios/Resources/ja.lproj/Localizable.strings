@@ -96,6 +96,8 @@
 "habit_detail_custom" = "自由に設定した習慣を毎日リマインドします";
 "habit_custom_card_description" = "名前と時刻を設定するとリマインドされます。";
 "habit_custom_name_placeholder" = "習慣名を入力";
+"habit_custom_name_section" = "習慣名";
+"habit_edit_title" = "習慣を編集";
 "habit_custom_name_required" = "習慣名を入力してください。";
 
 "next_schedule_message" = "%@に%@をお知らせします";
@@ -326,11 +328,11 @@
 "language_preference_en" = "English";
 "settings_usage_this_month_format" = "今月: %d / %d 回";
 "settings_subscription_canceled_until" = "キャンセル済 — %@で終了";
-"quota_exceeded_title_free" = "月の使用上限に達しました（Free 30/30）";
-"quota_exceeded_title_pro" = "月の使用上限に達しました（Pro 300/300）";
-"quota_exceeded_title_grace" = "月の使用上限に達しました";
-"quota_exceeded_message_free" = "Proにアップグレードすると今すぐ続けられます。";
-"quota_exceeded_message_pro" = "Maxプランは近日公開です。必要な方はサポートへご連絡ください。";
+"quota_exceeded_title_free" = "月間利用上限に達しました";
+"quota_exceeded_title_pro" = "月間利用上限に達しました";
+"quota_exceeded_title_grace" = "月間利用上限に達しました";
+"quota_exceeded_message_free" = "今月の30分を使い切りました。Proにアップグレードすると300分使えます。";
+"quota_exceeded_message_pro" = "今月の300分を使い切りました。来月リセットされます。";
 "quota_exceeded_message_grace" = "お支払いの更新をご確認ください。";
 "quota_exceeded_close" = "戻る";
 "quota_exceeded_upgrade" = "アップグレード";

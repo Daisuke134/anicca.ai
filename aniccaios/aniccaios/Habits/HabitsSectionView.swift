@@ -32,6 +32,7 @@ struct HabitsSectionView: View {
     @State private var activeSheet: SheetRoute?
     @State private var newCustomHabitName = ""
     @State private var isAdding = false
+    @Environment(\.scenePhase) private var scenePhase
     // 削除確認を廃止（即時削除）
     
     // 時系列順にソートされた全習慣（デフォルト習慣とカスタム習慣を統合）
@@ -278,6 +279,12 @@ struct HabitsSectionView: View {
                 .ignoresSafeArea()
             }
         }
+        .onChange(of: scenePhase) { newPhase in
+            if newPhase == .active {
+                // フォアグラウンドに戻った時に強制リフレッシュ
+                appState.triggerDailyRefresh()
+            }
+        }
     }
     
     // MARK: - Checkbox Component
@@ -349,6 +356,8 @@ struct HabitsSectionView: View {
         let isActive = activeHabits.contains(habit)
         let date = time.flatMap { Calendar.current.date(from: $0) }
         let habitId = habit.rawValue
+        // dailyRefreshTriggerを参照して日付変更時の再描画を保証
+        let _ = appState.dailyRefreshTrigger
         let isCompleted = appState.isDailyCompleted(for: habitId)
         let streak = appState.currentStreak(for: habitId)
         
@@ -456,6 +465,8 @@ struct HabitsSectionView: View {
         let isActive = activeCustomHabits.contains(id)
         let date = time.flatMap { Calendar.current.date(from: $0) }
         let habitId = id.uuidString
+        // dailyRefreshTriggerを参照して日付変更時の再描画を保証
+        let _ = appState.dailyRefreshTrigger
         let isCompleted = appState.isDailyCompleted(for: habitId)
         let streak = appState.currentStreak(for: habitId)
         
@@ -683,7 +694,7 @@ struct HabitEditSheet: View {
     let habit: HabitType
     let onSave: (() -> Void)?
     @State private var time = Date()
-    @State private var followups: Int = 2
+    @State private var followups: Int = 1
     @State private var wakeLocation: String = ""
     @State private var sleepLocation: String = ""
     @State private var wakeRoutines: [RoutineItem] = []
@@ -1016,12 +1027,18 @@ struct CustomHabitEditSheet: View {
     let customId: UUID
     let onSave: () -> Void
     @State private var time = Date()
-    @State private var followups: Int = 2
+    @State private var followups: Int = 1
     @State private var showAlarmKitDeniedAlert = false
+    @State private var habitName: String = ""
     
     var body: some View {
         NavigationView {
             Form {
+                Section {
+                    TextField(String(localized: "habit_custom_name_placeholder"), text: $habitName)
+                } header: {
+                    Text(String(localized: "habit_custom_name_section"))
+                }
                 Section {
                     DatePicker(String(localized: "common_time"), selection: $time, displayedComponents: [.hourAndMinute])
                 }
@@ -1056,7 +1073,7 @@ struct CustomHabitEditSheet: View {
             .scrollContentBackground(.hidden)
             .background(AppBackground())
             .tint(AppTheme.Colors.accent)
-            .navigationTitle(appState.customHabits.first(where: { $0.id == customId })?.name ?? String(localized: "habit_title_custom_fallback"))
+            .navigationTitle(String(localized: "habit_edit_title"))
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button(String(localized: "common_cancel")) {
@@ -1071,6 +1088,7 @@ struct CustomHabitEditSheet: View {
             }
         }
         .onAppear {
+            habitName = appState.customHabits.first(where: { $0.id == customId })?.name ?? ""
             if let comps = appState.customHabitSchedules[customId],
                let d = Calendar.current.date(from: comps) {
                 time = d
@@ -1091,6 +1109,7 @@ struct CustomHabitEditSheet: View {
     private func save() {
         appState.updateCustomHabitSchedule(id: customId, time: Calendar.current.dateComponents([.hour, .minute], from: time))
         appState.updateCustomFollowupCount(id: customId, count: followups)
+        appState.updateCustomHabitName(id: customId, name: habitName)
         Task {
             await MainActor.run {
                 onSave()

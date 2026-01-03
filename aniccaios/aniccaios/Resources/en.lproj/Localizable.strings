@@ -96,6 +96,8 @@
 "habit_detail_custom" = "We'll remind you once you set a name and time.";
 "habit_custom_card_description" = "Give it a name and set the reminder time.";
 "habit_custom_name_placeholder" = "Add your habit";
+"habit_custom_name_section" = "Habit Name";
+"habit_edit_title" = "Edit Habit";
 "habit_custom_name_required" = "Please enter a habit name.";
 
 "next_schedule_message" = "I'll nudge you for %2$@ at %1$@";
@@ -326,11 +328,11 @@
 "language_preference_en" = "English";
 "settings_usage_this_month_format" = "This month: %d / %d";
 "settings_subscription_canceled_until" = "Canceled — ends on %@";
-"quota_exceeded_title_free" = "Monthly usage limit reached (Free 30/30)";
-"quota_exceeded_title_pro" = "Monthly usage limit reached (Pro 300/300)";
-"quota_exceeded_title_grace" = "Monthly usage limit reached";
-"quota_exceeded_message_free" = "Upgrade to Pro to continue right away.";
-"quota_exceeded_message_pro" = "Max plan coming soon. Please contact support if needed.";
+"quota_exceeded_title_free" = "Monthly limit reached";
+"quota_exceeded_title_pro" = "Monthly limit reached";
+"quota_exceeded_title_grace" = "Monthly limit reached";
+"quota_exceeded_message_free" = "You've used all 30 minutes this month. Upgrade to Pro to get 300 minutes.";
+"quota_exceeded_message_pro" = "You've used all 300 minutes this month. Your limit will reset next month.";
 "quota_exceeded_message_grace" = "Please check your payment renewal.";
 "quota_exceeded_close" = "Close";
 "quota_exceeded_upgrade" = "Upgrade";

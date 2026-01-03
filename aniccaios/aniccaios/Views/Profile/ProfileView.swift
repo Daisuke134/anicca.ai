@@ -83,7 +83,7 @@ struct ProfileView: View {
                 Button {
                     showingManageSubscription = true
                 } label: {
-                    row(label: String(localized: "profile_row_plan"), value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
+                    row(label: String(localized: "profile_row_plan"), value: planDisplayWithUsage, showsChevron: true)
                 }
                 .buttonStyle(.plain)
             }
@@ -143,6 +143,15 @@ struct ProfileView: View {
             appState.updateUserProfile(profile, sync: true)
         }
         isEditingName = false
+    }
+    
+    private var planDisplayWithUsage: String {
+        let base = appState.subscriptionInfo.displayPlanName
+        if let used = appState.subscriptionInfo.monthlyUsageCount,
+           let limit = appState.subscriptionInfo.monthlyUsageLimit {
+            return "\(base) (\(used)/\(limit))"
+        }
+        return base
     }
 
     private var traitsCard: some View {

@@ -667,6 +667,29 @@ TikTokでバズるフック/アプリ系動画を調べる。
 3. 「ストリークが途切れたくなくて続けてしまう」
 4. 「習慣が"見える"から続く」
 5. 「1日1チェック、それだけで変わる」
+1. 「チェック音が癖になる習慣リスト」
+2. 「全部チェックしたくなる習慣リスト」
+3. 「チェックを入れたくなる習慣リスト」
+4. 「1日のやること、全部ここに並んでる」
+5. 「習慣が"見える"から続く」
+
+| # | フック |
+|---|--------|
+| 1 | POV: 習慣が続かなくて自己嫌悪してたのに、これ見てから変わった |
+| 2 | 三日坊主だった僕が、7日連続でチェック入れてる |
+| 3 | ストリークが途切れるのが嫌で、続けてしまう |
+| 4 | 習慣が続かない人、これ見て |
+| 5 | 「やった」が目に見えるだけで、こんなに続くとは思わなかった |
+
+### 英語
+
+| # | フック |
+|---|--------|
+| 1 | POV: you finally found something that makes habits stick |
+| 2 | I couldn't stick to anything until I started seeing my streaks |
+| 3 | You keep going because you don't want to break it |
+| 4 | If you can't stick to habits, watch this |
+| 5 | I didn't expect "just checking a box" to change everything |
 
 
 | # | フック | パターン |

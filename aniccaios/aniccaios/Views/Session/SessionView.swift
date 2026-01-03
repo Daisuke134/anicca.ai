@@ -1,6 +1,7 @@
 import SwiftUI
 import AVFoundation
 import Combine
+import RevenueCatUI
 
 struct SessionView: View {
     @EnvironmentObject private var appState: AppState
@@ -12,6 +13,9 @@ struct SessionView: View {
     @State private var showMicAlert = false
     @State private var isShowingEMA = false
     @State private var pendingDismissAfterEMA = false
+    @State private var showUsageLimitModal = false
+    @State private var showPaywall = false
+    @State private var showManageSubscription = false
 
     var body: some View {
         VStack(spacing: 0) {
@@ -60,6 +64,16 @@ struct SessionView: View {
         }
         .background(Color(hex: "#F8F5ED")) // session.md: background
         .onAppear {
+            // 既にホールド or 残量0が分かっている場合は、開始せずシート表示
+            if appState.subscriptionHold {
+                showUsageLimitModal = true
+                return
+            }
+            if let remaining = appState.subscriptionInfo.monthlyUsageRemaining, remaining <= 0 {
+                appState.markQuotaHold(plan: appState.subscriptionInfo.plan, reason: .quotaExceeded)
+                showUsageLimitModal = true
+                return
+            }
             ensureMicrophonePermissionAndStart()
         }
         .onDisappear {
@@ -86,6 +100,48 @@ struct SessionView: View {
             Button(String(localized: "common_cancel"), role: .cancel) {}
         } message: {
             Text(String(localized: "session_mic_permission_message"))
+        }
+        .sheet(isPresented: $showUsageLimitModal) {
+            UsageLimitModalView(
+                plan: appState.subscriptionHoldPlan ?? appState.subscriptionInfo.plan,
+                reason: appState.quotaHoldReason ?? .quotaExceeded,
+                onClose: { showUsageLimitModal = false },
+                onUpgrade: {
+                    showUsageLimitModal = false
+                    showPaywall = true
+                },
+                onManage: {
+                    showUsageLimitModal = false
+                    showManageSubscription = true
+                }
+            )
+        }
+        .sheet(isPresented: $showPaywall) {
+            PaywallContainerView(
+                forcePresent: true,
+                onPurchaseCompleted: { showPaywall = false },
+                onDismissRequested: { showPaywall = false }
+            )
+            .environmentObject(appState)
+        }
+        .sheet(isPresented: $showManageSubscription) {
+            RevenueCatUI.CustomerCenterView()
+                .onCustomerCenterRestoreCompleted { info in
+                    Task {
+                        let subscription = SubscriptionInfo(info: info)
+                        await MainActor.run { appState.updateSubscriptionInfo(subscription) }
+                        await SubscriptionManager.shared.syncNow()
+                    }
+                }
+        }
+        .onChange(of: appState.subscriptionHold) { hold in
+            if hold {
+                showUsageLimitModal = true
+            } else {
+                showUsageLimitModal = false
+                showPaywall = false
+                showManageSubscription = false
+            }
         }
     }
 

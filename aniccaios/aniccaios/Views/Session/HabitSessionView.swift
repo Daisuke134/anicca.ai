@@ -8,6 +8,15 @@ struct HabitSessionView: View {
     @ObservedObject private var controller = VoiceSessionController.shared
 
     let habit: HabitType
+    var customHabitName: String? = nil
+
+    /// 表示用のタイトル（カスタム習慣の場合は渡された名前を優先）
+    private var displayTitle: String {
+        if habit == .custom, let name = customHabitName, !name.isEmpty {
+            return name
+        }
+        return habit.title
+    }
 
     @State private var showMicAlert = false
     @State private var showUsageLimitModal = false
@@ -123,7 +132,7 @@ struct HabitSessionView: View {
     }
 
     private var habitPill: some View {
-        Text(habit.title)
+        Text(displayTitle)
             .font(.system(size: 20, weight: .medium))
             .foregroundStyle(AppTheme.Colors.secondaryLabel)
             .padding(.horizontal, 31)

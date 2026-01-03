@@ -79,17 +79,19 @@ struct HighlightsCard: View {
     }
     
     private func localizedValueLabel(_ raw: String) -> String {
-        guard appState.effectiveLanguage == .en else { return raw.isEmpty ? "-" : raw }
-        let replacements: [(ja: String, en: String)] = [
+        guard !raw.isEmpty else { return "-" }
+        let pairs: [(ja: String, en: String)] = [
             ("起床", "Wake"),
             ("スクリーン", "Screen"),
             ("歩数", "Steps"),
             ("反芻", "Rumination"),
             ("分", "min")
         ]
-        var result = raw.isEmpty ? "-" : raw
-        for pair in replacements {
-            result = result.replacingOccurrences(of: pair.ja, with: pair.en)
+        var result = raw
+        if appState.effectiveLanguage == .en {
+            for p in pairs { result = result.replacingOccurrences(of: p.ja, with: p.en) }
+        } else {
+            for p in pairs { result = result.replacingOccurrences(of: p.en, with: p.ja) }
         }
         return result
     }

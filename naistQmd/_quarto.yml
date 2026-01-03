@@ -1,18 +1,15 @@
 project:
   type: default
-  # output-dir: _output  # 削除：シンプルにするため（PDFがルートディレクトリに生成される）
 
-# レンダリング後に自動的にYAML変数を展開
-# quarto render/preview/UI Knitボタンのすべてで実行される
-post-render: scripts/post-render.sh
+# Quarto設定
+execute:
+  enabled: false  # Rを使わない場合
 
-# Rエンジンを有効化（Rを使う場合）
-# Rを使わない場合は、execute: enabled: false を設定してください
-# execute:
-#   enabled: false
+# 言語設定
+lang: ja
 
-# Quarto Previewの設定
-# preview:
-#   timeout: 10  # 10秒後に自動停止（アクティブなクライアントがない場合）
-#   no-watch-inputs: true  # 入力ファイルの変更監視を無効化
-
+# 出力形式のデフォルト設定
+format:
+  apaquarto-docx:
+    toc: false
+    number-sections: true

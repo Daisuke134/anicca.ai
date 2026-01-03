@@ -48,6 +48,7 @@ struct SettingsView: View {
                     deleteAccountSection
                     #if DEBUG
                     recordingSection
+                    debugSection
                     #endif
                 }
                 .padding(.horizontal, AppTheme.Spacing.lg)
@@ -522,8 +523,52 @@ struct SettingsView: View {
         .accessibilityAddTraits(.isButton)
     }
     
-    // MARK: - Recording Section (DEBUG only)
+    // MARK: - Debug Section (DEBUG only)
     #if DEBUG
+    @ViewBuilder
+    private var debugSection: some View {
+        CardView {
+            VStack(alignment: .leading, spacing: AppTheme.Spacing.sm) {
+                Text("デバッグ")
+                    .font(AppTheme.Typography.headlineDynamic)
+                    .foregroundStyle(AppTheme.Colors.label)
+                    .padding(.bottom, AppTheme.Spacing.xs)
+                
+                Button("1日前をシミュレート（ストリーク維持）") {
+                    // 全アクティブ習慣のlastCompletedDateを1日前に設定
+                    for habit in [HabitType.wake, .training, .bedtime] {
+                        appState.simulateDayChange(habitId: habit.rawValue, daysAgo: 1)
+                    }
+                    for customHabit in appState.customHabits {
+                        appState.simulateDayChange(habitId: customHabit.id.uuidString, daysAgo: 1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Divider()
+                
+                Button("2日前をシミュレート（ストリーク0にリセット）") {
+                    // 全アクティブ習慣のlastCompletedDateを2日前に設定
+                    for habit in [HabitType.wake, .training, .bedtime] {
+                        appState.simulateDayChange(habitId: habit.rawValue, daysAgo: 2)
+                    }
+                    for customHabit in appState.customHabits {
+                        appState.simulateDayChange(habitId: customHabit.id.uuidString, daysAgo: 2)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                
+                Divider()
+                
+                Button("ストリーク状態をログ出力") {
+                    appState.printStreakDebugInfo()
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+    
+    // MARK: - Recording Section (DEBUG only)
     private var recordingSection: some View {
         VStack(spacing: AppTheme.Spacing.sm) {
             Text("📹 撮影用セットアップ")

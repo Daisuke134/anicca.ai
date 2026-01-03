@@ -54,6 +54,15 @@ final class AppState: ObservableObject {
     @Published var pendingMilestone: (habitName: String, streak: Int)? = nil
     private let milestones: Set<Int> = [7, 14, 21, 30, 60, 90, 100, 365]
     
+    // 日付変更時のリフレッシュ用（Viewの強制再描画トリガー）
+    @Published private(set) var dailyRefreshTrigger: UUID = UUID()
+    
+    /// アプリがフォアグラウンドに戻った時に呼び出し、習慣チェック状態を再評価させる
+    func triggerDailyRefresh() {
+        updateStreaksIfNeeded()  // ストリークのリセット判定を実行
+        dailyRefreshTrigger = UUID()  // Viewの再描画をトリガー
+    }
+    
     // Phase-7: sensor permissions + integration toggles
     @Published private(set) var sensorAccess: SensorAccessState
     private(set) var needsSensorRepairAfterOnboarding: Bool = false
@@ -444,6 +453,33 @@ final class AppState: ObservableObject {
         habitStreaks[habitId] = data
         saveHabitStreaks()
     }
+    
+    #if DEBUG
+    /// デバッグ用: 指定した習慣のlastCompletedDateを過去に設定して日付変更をシミュレート
+    func simulateDayChange(habitId: String, daysAgo: Int) {
+        guard var data = habitStreaks[habitId] else {
+            print("[DEBUG] habitStreaks[\(habitId)] not found")
+            return
+        }
+        let pastDate = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date())!
+        data.lastCompletedDate = Calendar.current.startOfDay(for: pastDate)
+        habitStreaks[habitId] = data
+        saveHabitStreaks()
+        print("[DEBUG] Set \(habitId) lastCompletedDate to \(daysAgo) days ago")
+        triggerDailyRefresh()
+    }
+    
+    /// デバッグ用: 全習慣のストリーク状態を表示
+    func printStreakDebugInfo() {
+        print("[DEBUG] === Habit Streaks ===")
+        for (habitId, data) in habitStreaks {
+            let dateStr = data.lastCompletedDate?.formatted() ?? "nil"
+            let isToday = data.lastCompletedDate.map { Calendar.current.isDateInToday($0) } ?? false
+            print("[DEBUG] \(habitId): streak=\(data.currentStreak), lastCompleted=\(dateStr), isToday=\(isToday)")
+        }
+        print("[DEBUG] =======================")
+    }
+    #endif
     
     /// 撮影用パターン設定
     func setupRecording(pattern: Int) {

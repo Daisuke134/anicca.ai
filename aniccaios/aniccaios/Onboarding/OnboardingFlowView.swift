@@ -57,7 +57,7 @@ struct OnboardingFlowView: View {
 
     private func advance() {
         // Mixpanel: 現在のステップ完了を記録
-        AnalyticsManager.shared.trackOnboardingStep(step.rawValue)
+        AnalyticsManager.shared.trackOnboardingStep(String(describing: step))
         
         switch step {
         case .welcome:

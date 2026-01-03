@@ -18,10 +18,8 @@ final class AnalyticsManager {
         // trackAutomaticEvents: false (公式推奨 - クライアントサイドの自動イベントは信頼性が低い)
         Mixpanel.initialize(token: token, trackAutomaticEvents: false)
         
-        // デバッグログを有効化（開発中のみ）
-        #if DEBUG
+        // ログを常時有効化（Debug/Release両方でイベント送信を確認可能）
         Mixpanel.mainInstance().loggingEnabled = true
-        #endif
         
         logger.info("Mixpanel initialized")
     }

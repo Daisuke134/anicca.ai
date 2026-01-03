@@ -1,3 +1,9 @@
+// ⚠️ DEPRECATED: このファイルは現在使用されていません。
+// 設定機能は ProfileView.swift（プロファイルタブ）に統合されています。
+// LegacyTalkRootView（SessionView.swift）からのみ参照されていますが、
+// LegacyTalkRootView自体も使用されていません。
+// 将来的に削除予定。
+
 import ComponentsKit
 import RevenueCat
 import RevenueCatUI

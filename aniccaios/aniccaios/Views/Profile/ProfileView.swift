@@ -35,6 +35,7 @@ struct ProfileView: View {
                     
                     #if DEBUG
                     recordingSection
+                    debugSection
                     #endif
 
                     LegalLinksView()
@@ -637,6 +638,50 @@ struct ProfileView: View {
                     
                     Button("5️⃣ 全部🪷30") {
                         appState.setupRecording(pattern: 5)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+    
+    @ViewBuilder
+    private var debugSection: some View {
+        VStack(spacing: 10) {
+            Text("デバッグ")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            
+            CardView {
+                VStack(alignment: .leading, spacing: 12) {
+                    Button("1日前をシミュレート（チェックリセット）") {
+                        for habit in [HabitType.wake, .training, .bedtime] {
+                            appState.simulateDayChange(habitId: habit.rawValue, daysAgo: 1)
+                        }
+                        for customHabit in appState.customHabits {
+                            appState.simulateDayChange(habitId: customHabit.id.uuidString, daysAgo: 1)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("2日前をシミュレート（ストリーク0）") {
+                        for habit in [HabitType.wake, .training, .bedtime] {
+                            appState.simulateDayChange(habitId: habit.rawValue, daysAgo: 2)
+                        }
+                        for customHabit in appState.customHabits {
+                            appState.simulateDayChange(habitId: customHabit.id.uuidString, daysAgo: 2)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("ストリーク状態をログ出力") {
+                        appState.printStreakDebugInfo()
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                 }

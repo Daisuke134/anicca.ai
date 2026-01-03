@@ -1,6 +1,10 @@
 import SwiftUI
 import AVFoundation
 
+// ⚠️ DEPRECATED: LegacyTalkRootView は現在使用されていません。
+// TalkView.swift（Views/Talk/TalkView.swift）が現在のTalkタブの実装です。
+// 将来的に削除予定。
+
 /// v0.2/現行の「Talkタブ相当」画面（フェーズ5以降は TalkView に置き換え）
 struct LegacyTalkRootView: View {
     @EnvironmentObject private var appState: AppState

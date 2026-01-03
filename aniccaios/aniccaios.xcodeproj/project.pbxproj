@@ -16,6 +16,7 @@
 		840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3B12EC77325005CDB8D /* WebRTC */; };
 		84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		84CC79322EFAAB95005078AE /* AniccaScreenTimeReport.appex in Embed ExtensionKit Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79262EFAAB95005078AE /* AniccaScreenTimeReport.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = 84DE437E2F090BDA00198F6C /* Mixpanel */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -170,6 +171,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */,
+				84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */,
 				840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */,
 				840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */,
 				840BA3AA2EC772EA005CDB8D /* RevenueCat in Frameworks */,
@@ -288,6 +290,7 @@
 				840BA3AB2EC772EA005CDB8D /* RevenueCatUI */,
 				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
 				840BA3B12EC77325005CDB8D /* WebRTC */,
+				84DE437E2F090BDA00198F6C /* Mixpanel */,
 			);
 			productName = aniccaios;
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
@@ -1463,6 +1466,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
+		};
+		84DE437E2F090BDA00198F6C /* Mixpanel */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */;
+			productName = Mixpanel;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

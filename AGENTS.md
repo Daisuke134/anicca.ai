@@ -500,7 +500,11 @@ RevenueCat購入 → Webhook受信 (/api/billing/webhook/revenuecat)
 
 #### 設定
 - `Config.swift`: 設定値の読み込み
-- `SettingsView.swift`: 設定画面
+- `Views/Profile/ProfileView.swift`: プロファイルタブ（設定機能を含む）
+
+#### 非推奨（DEPRECATED）
+- `SettingsView.swift`: ⚠️ 使用されていません。ProfileView.swiftに統合済み。
+- `SessionView.swift`内の`LegacyTalkRootView`: ⚠️ 使用されていません。TalkView.swiftが現在の実装。
 
 ### バックエンドAPI
 
@@ -616,6 +620,71 @@ A:
 **許可事項:**
 - 決定後、ユーザーが異議を唱えた場合は再検討する
 - 本当に情報が不足している場合のみ、具体的な情報を求める質問をする
+
+---
+
+## E2Eテスト自動化（Maestro）
+
+### テストファイルの場所
+
+```
+maestro/
+├── 01-onboarding.yaml      # オンボーディングフロー
+├── 02-paywall.yaml         # ペイウォール表示
+├── 03-session-start.yaml   # 音声セッション開始
+└── 04-session-completion.yaml  # セッション終了フロー（新規追加）
+```
+
+### テスト実行コマンド
+
+```bash
+# 全テスト実行
+maestro test maestro/
+
+# 個別テスト実行
+maestro test maestro/01-onboarding.yaml
+
+# デバッグモード
+maestro test --debug maestro/01-onboarding.yaml
+```
+
+### テスト作成時のルール
+
+1. **ファイル命名**: `NN-description.yaml`（NN = 連番）
+2. **テキストベース**: `id:` より `text:` を優先（accessibilityIdentifier不要）
+3. **optional: true**: 権限ダイアログなど不確実な要素に使用
+
+### テストシナリオ作成例
+
+```yaml
+appId: com.anicca.ios
+---
+- launchApp
+- tapOn: "セッションを開始"
+- assertVisible: "接続中"
+- sleep: 3000
+- tapOn: "終了"
+- assertVisible: "セッションが終了しました"
+```
+
+### エージェントへの指示例
+
+- 「オンボーディングのテストを実行して」
+- 「セッション終了フローのテストを作成して」
+- 「maestro/01-onboarding.yaml を修正して」
+
+### CI連携
+
+- PR作成時に自動実行（`.github/workflows/maestro-e2e.yml`）
+- シミュレーター: iPhone 16
+- 失敗時はPRにコメント
+
+### Maestro Studioの使い方
+
+1. シミュレーター起動 + アプリインストール
+2. `maestro studio` でGUI起動
+3. 画面をクリックしてテストコマンドを自動生成
+4. 「Run」で実行確認、「Export」でYAML保存
 
 ---
 

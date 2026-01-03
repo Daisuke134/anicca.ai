@@ -57,6 +57,12 @@ final class VoiceSessionController: NSObject, ObservableObject {
         // 現在の習慣タイプを設定（pendingHabitTriggerから取得）
         currentHabitType = AppState.shared.pendingHabitTrigger?.habit
         
+        // Mixpanel: セッション開始イベント
+        AnalyticsManager.shared.trackSessionStarted(
+            habitType: currentHabitType?.rawValue ?? "talk",
+            customHabitId: AppState.shared.pendingHabitTrigger?.customHabitId?.uuidString
+        )
+        
         // ★★★ セッション開始時に残りのアラームをすべてキャンセル ★★★
         if let habit = currentHabitType {
             cancelRemainingAlarmsForHabit(habit)
@@ -139,6 +145,16 @@ final class VoiceSessionController: NSObject, ObservableObject {
 
     func stop() {
         logger.debug("Stopping realtime session")
+        
+        // Mixpanel: セッション完了イベント（sessionStartTimeをnilにする前に計算）
+        if let startTime = sessionStartTime {
+            let durationSeconds = Int(Date().timeIntervalSince(startTime))
+            AnalyticsManager.shared.trackSessionCompleted(
+                habitType: currentHabitType?.rawValue ?? "talk",
+                durationSeconds: durationSeconds
+            )
+        }
+        
         currentHabitType = nil
         stickyActive = false
         stickyUserReplyCount = 0

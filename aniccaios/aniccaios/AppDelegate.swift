@@ -26,6 +26,8 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         UNUserNotificationCenter.current().delegate = self
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
+        AnalyticsManager.shared.configure()
+        AnalyticsManager.shared.track(.appOpened)
         
         // Phase-7: register BGTask handlers (must complete before launch ends).
         // See Apple docs: BGTaskScheduler.register(...) must finish before end of launch.

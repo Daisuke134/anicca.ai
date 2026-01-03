@@ -52,6 +52,8 @@
 	<string>$(INFOPLIST_KEY_REVENUECAT_ENTITLEMENT_ID)</string>
 	<key>REVENUECAT_PAYWALL_ID</key>
 	<string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
+	<key>MIXPANEL_TOKEN</key>
+	<string>$(INFOPLIST_KEY_MIXPANEL_TOKEN)</string>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>

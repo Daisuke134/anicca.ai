@@ -42,6 +42,12 @@ struct OnboardingFlowView: View {
             } else {
                 step = appState.onboardingStep
             }
+            
+            // Mixpanel: オンボーディング開始イベント（.welcomeから開始した場合のみ）
+            if step == .welcome {
+                AnalyticsManager.shared.track(.onboardingStarted)
+            }
+            
             // Prefetch Paywall offering for faster display
             Task {
                 await SubscriptionManager.shared.refreshOfferings()
@@ -50,6 +56,9 @@ struct OnboardingFlowView: View {
     }
 
     private func advance() {
+        // Mixpanel: 現在のステップ完了を記録
+        AnalyticsManager.shared.trackOnboardingStep(step.rawValue)
+        
         switch step {
         case .welcome:
             step = .value
@@ -67,15 +76,18 @@ struct OnboardingFlowView: View {
             if #available(iOS 26.0, *) {
                 step = .alarmkit
             } else {
+                AnalyticsManager.shared.track(.onboardingCompleted)
                 appState.markOnboardingComplete()
                 return
             }
             #else
+            AnalyticsManager.shared.track(.onboardingCompleted)
             appState.markOnboardingComplete()
             return
             #endif
         case .alarmkit:
             // 最終ステップ: オンボーディング完了
+            AnalyticsManager.shared.track(.onboardingCompleted)
             appState.markOnboardingComplete()
             return
         }

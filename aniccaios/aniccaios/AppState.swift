@@ -776,6 +776,9 @@ final class AppState: ObservableObject {
         }
         Task { await SubscriptionManager.shared.handleLogin(appUserId: credentials.userId) }
         
+        // Mixpanel: ユーザー識別
+        AnalyticsManager.shared.identify(userId: credentials.userId)
+        
         // v3: サインイン直後の無条件PUTは既存ユーザー上書き事故がありうるため、
         // 「オンボーディング中 かつ ローカルに入力済みがある」場合のみ同期する
         if !isOnboardingComplete && (!userProfile.ideals.isEmpty || !userProfile.struggles.isEmpty || !userProfile.displayName.isEmpty) {
@@ -812,6 +815,9 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         pendingConsultPrompt = nil
         cachedOffering = nil
+        
+        // Mixpanel: リセット
+        AnalyticsManager.shared.reset()
         
         // オンボーディングはサインアウト時に戻す
         isOnboardingComplete = false
@@ -850,6 +856,9 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         pendingConsultPrompt = nil
         cachedOffering = nil
+        
+        // Mixpanel: リセット
+        AnalyticsManager.shared.reset()
         
         // オンボーディング状態をリセット
         isOnboardingComplete = false

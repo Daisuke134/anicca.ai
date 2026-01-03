@@ -60,8 +60,8 @@ struct PaywallContainerView: View {
                             print("[Paywall] Purchase completed: \(customerInfo)")
                             // 購入完了イベント
                             if let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId],
-                               entitlement.isActive,
-                               let productId = entitlement.productIdentifier {
+                               entitlement.isActive {
+                                let productId = entitlement.productIdentifier
                                 AnalyticsManager.shared.trackPurchaseCompleted(
                                     productId: productId,
                                     revenue: 0 // RevenueCatはクライアント側で価格を取得できないため、サーバー側で追跡

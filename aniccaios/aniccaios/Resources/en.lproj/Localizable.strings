@@ -419,6 +419,7 @@
 "profile_title" = "Profile";
 "profile_row_name" = "Name";
 "profile_row_plan" = "Plan";
+"profile_usage_unit" = " min";
 "profile_row_language" = "Language";
 "profile_section_traits" = "Your Traits";
 "profile_traits_summary_placeholder" = "You're highly agreeable and open to new experiences, balancing structure with flexibility.";

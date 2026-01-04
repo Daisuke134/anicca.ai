@@ -87,11 +87,23 @@ struct ProfileView: View {
                         showingManageSubscription = true
                     }
                 } label: {
-                    row(label: String(localized: "profile_row_plan"), value: appState.subscriptionInfo.displayPlanName, showsChevron: true)
+                    row(label: String(localized: "profile_row_plan"), value: planDisplayValue, showsChevron: true)
                 }
                 .buttonStyle(.plain)
             }
         }
+    }
+    
+    private var planDisplayValue: String {
+        let info = appState.subscriptionInfo
+        let planName = info.displayPlanName
+        
+        if let used = info.monthlyUsageCount, let limit = info.monthlyUsageLimit {
+            let unit = String(localized: "profile_usage_unit")
+            return "\(planName) (\(used)/\(limit)\(unit))"
+        }
+        
+        return planName
     }
     
     @ViewBuilder

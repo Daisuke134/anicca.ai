@@ -13,19 +13,17 @@ name: Onboarding flow
 - launchApp
 
 # Step 1: Welcome screen
-- assertVisible:
-    text: "Anicca"
+- extendedWaitUntil:
+    visible: "Anicca"
     timeout: 10000
 
-- assertVisible:
-    text: "Get started"
+- assertVisible: "Get started"
 
-- tapOn:
-    text: "Get started"
+- tapOn: "Get started"
 
 # Step 2: Ideals - "Who do you want to become?"
-- assertVisible:
-    text: "Who do you want to become?"
+- extendedWaitUntil:
+    visible: "Who do you want to become?"
     timeout: 5000
 
 # Select a trait (optional) and tap Next
@@ -38,8 +36,8 @@ name: Onboarding flow
     optional: true
 
 # Step 3: Struggles - "What are you struggling with right now?"
-- assertVisible:
-    text: "What are you struggling with"
+- extendedWaitUntil:
+    visible: "What are you struggling with"
     timeout: 5000
 
 - tapOn:
@@ -51,70 +49,59 @@ name: Onboarding flow
     optional: true
 
 # Step 4: Value - "What Anicca can do for you"
-- assertVisible:
-    text: "What Anicca can do for you"
+- extendedWaitUntil:
+    visible: "What Anicca can do for you"
     timeout: 5000
 
-- tapOn:
-    text: "Continue"
+- tapOn: "Continue"
 
 # Step 5: Account - Sign in with Apple
-# Note: In CI/testing, we may need to skip this or use a test account
-- assertVisible:
-    text: "Sign in with Apple"
+- extendedWaitUntil:
+    visible: "Sign in with Apple"
     timeout: 5000
 
 # For E2E testing, we'll tap the Sign in with Apple button
-# The system will show the Apple sign-in dialog
-- tapOn:
-    text: "Sign in with Apple"
+- tapOn: "Sign in with Apple"
 
 # Handle Apple Sign In dialog (simulator may show different UI)
 - tapOn:
     text: "Continue"
     optional: true
-    timeout: 3000
 
 # Step 6: Microphone permission
-- assertVisible:
-    text: "Microphone"
+- extendedWaitUntil:
+    visible: "Microphone"
     timeout: 10000
 
-- tapOn:
-    text: "Allow microphone"
+- tapOn: "Allow microphone"
 
 # Handle iOS permission dialog
 - tapOn:
     text: "Allow"
     optional: true
-    timeout: 3000
 
 - tapOn:
     text: "OK"
     optional: true
-    timeout: 3000
 
 # Step 7: Notifications permission
-- assertVisible:
-    text: "Notifications"
+- extendedWaitUntil:
+    visible: "Notifications"
     timeout: 5000
 
-- tapOn:
-    text: "Allow notifications"
+- tapOn: "Allow notifications"
 
 # Handle iOS permission dialog
 - tapOn:
     text: "Allow"
     optional: true
-    timeout: 3000
 
 # After notifications, onboarding should be complete
 # Main screen should show the Talk tab
-- assertVisible:
-    text: "Talk"
+- extendedWaitUntil:
+    visible: "Talk"
     timeout: 10000
 
 - assertVisible:
     text: "Consult Anicca"
     optional: true
-

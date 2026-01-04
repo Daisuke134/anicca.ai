@@ -78,17 +78,20 @@ struct OnboardingFlowView: View {
             } else {
                 AnalyticsManager.shared.track(.onboardingCompleted)
                 appState.markOnboardingComplete()
+                SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
                 return
             }
             #else
             AnalyticsManager.shared.track(.onboardingCompleted)
             appState.markOnboardingComplete()
+            SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
             return
             #endif
         case .alarmkit:
             // 最終ステップ: オンボーディング完了
             AnalyticsManager.shared.track(.onboardingCompleted)
             appState.markOnboardingComplete()
+            SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
             return
         }
         appState.setOnboardingStep(step)

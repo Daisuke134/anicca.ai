@@ -464,3 +464,4 @@ Static camera shot. A young Asian person holds up their phone toward the camera 
 - 次回への学び:
 
 
+

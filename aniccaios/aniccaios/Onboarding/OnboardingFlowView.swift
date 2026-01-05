@@ -67,35 +67,44 @@ struct OnboardingFlowView: View {
     }
 
     private func advance() {
-        // Mixpanel: 現在のステップ完了を記録
-        AnalyticsManager.shared.trackOnboardingStep(String(describing: step))
-        
+        // Mixpanel: 各ステップ完了時に個別イベントを送信（Funnel分析用）
         switch step {
         case .welcome:
+            AnalyticsManager.shared.track(.onboardingWelcomeCompleted)
             step = .account
         case .account:
+            AnalyticsManager.shared.track(.onboardingAccountCompleted)
             step = .value
         case .value:
+            AnalyticsManager.shared.track(.onboardingValueCompleted)
             step = .source
         case .source:
+            AnalyticsManager.shared.track(.onboardingSourceCompleted)
             step = .name
         case .name:
+            AnalyticsManager.shared.track(.onboardingNameCompleted)
             step = .gender
         case .gender:
+            AnalyticsManager.shared.track(.onboardingGenderCompleted)
             step = .age
         case .age:
+            AnalyticsManager.shared.track(.onboardingAgeCompleted)
             step = .ideals
         case .ideals:
+            AnalyticsManager.shared.track(.onboardingIdealsCompleted)
             step = .struggles
         case .struggles:
+            AnalyticsManager.shared.track(.onboardingStrugglesCompleted)
             step = .habitSetup
         case .habitSetup:
+            AnalyticsManager.shared.track(.onboardingHabitsetupCompleted)
             // 評価リクエストを表示（システムダイアログ）
             if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
                 SKStoreReviewController.requestReview(in: scene)
             }
             step = .notifications
         case .notifications:
+            AnalyticsManager.shared.track(.onboardingNotificationsCompleted)
             // AlarmKitは iOS 26+ のみ。非対応ならここで完了にする（通知権限と混同しない）
             #if canImport(AlarmKit)
             if #available(iOS 26.0, *) {
@@ -109,6 +118,7 @@ struct OnboardingFlowView: View {
             return
             #endif
         case .alarmkit:
+            AnalyticsManager.shared.track(.onboardingAlarmkitCompleted)
             completeOnboarding()
             return
         }

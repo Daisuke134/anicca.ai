@@ -135,8 +135,22 @@ enum AnalyticsEvent: String {
     // Onboarding
     case appOpened = "app_opened"
     case onboardingStarted = "onboarding_started"
-    case onboardingStepCompleted = "onboarding_step_completed"
+    case onboardingStepCompleted = "onboarding_step_completed" // 互換性のため残す
     case onboardingCompleted = "onboarding_completed"
+    
+    // Individual onboarding step events (for clearer Funnel analysis)
+    case onboardingWelcomeCompleted = "onboarding_welcome_completed"
+    case onboardingAccountCompleted = "onboarding_account_completed"
+    case onboardingValueCompleted = "onboarding_value_completed"
+    case onboardingSourceCompleted = "onboarding_source_completed"
+    case onboardingNameCompleted = "onboarding_name_completed"
+    case onboardingGenderCompleted = "onboarding_gender_completed"
+    case onboardingAgeCompleted = "onboarding_age_completed"
+    case onboardingIdealsCompleted = "onboarding_ideals_completed"
+    case onboardingStrugglesCompleted = "onboarding_struggles_completed"
+    case onboardingHabitsetupCompleted = "onboarding_habitsetup_completed"
+    case onboardingNotificationsCompleted = "onboarding_notifications_completed"
+    case onboardingAlarmkitCompleted = "onboarding_alarmkit_completed"
     
     // Paywall (CRITICAL - Jake Mor #1)
     case paywallViewed = "paywall_viewed"

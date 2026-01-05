@@ -52,10 +52,28 @@
 /* Not used anymore; keep for backward compat if referenced */
 "onboarding_habit_time_title_format" = "Set Time";
 
-"onboarding_profile_title" = "Tell us your name";
+"onboarding_profile_title" = "Pick the name that suits you best";
 "onboarding_profile_description" = "We'll use your name when Anicca speaks to you.";
 "onboarding_profile_continue" = "Continue";
 "onboarding_profile_placeholder" = "John";
+
+"onboarding_source_title" = "Where did you hear about us?";
+"source_instagram" = "Instagram";
+"source_tiktok" = "TikTok";
+"source_youtube" = "YouTube";
+"source_twitter" = "Twitter / X";
+"source_facebook" = "Facebook";
+"source_friends" = "Friends";
+"source_app_store" = "App Store Search";
+"source_other" = "Other";
+
+"onboarding_gender_title" = "What's your gender?";
+"gender_male" = "Male";
+"gender_female" = "Female";
+"gender_other" = "Other";
+"gender_prefer_not_to_say" = "Prefer not to answer";
+
+"onboarding_age_title" = "How old are you?";
 
 "onboarding_habit_wake_location_title" = "Where do you usually wake up?";
 "onboarding_habit_wake_location_description" = "This helps Anicca personalize your wake-up experience.";

@@ -52,10 +52,28 @@
 /* 表示は統一で"時刻を設定" */
 "onboarding_habit_time_title_format" = "時刻を設定";
 
-"onboarding_profile_title" = "お名前を教えてください";
+"onboarding_profile_title" = "あなたに合った名前を選んでください";
 "onboarding_profile_description" = "Aniccaが呼びかける際に使用します。";
 "onboarding_profile_continue" = "続ける";
 "onboarding_profile_placeholder" = "太郎";
+
+"onboarding_source_title" = "どこでAniccaを知りましたか？";
+"source_instagram" = "Instagram";
+"source_tiktok" = "TikTok";
+"source_youtube" = "YouTube";
+"source_twitter" = "Twitter / X";
+"source_facebook" = "Facebook";
+"source_friends" = "友人から";
+"source_app_store" = "App Storeで検索";
+"source_other" = "その他";
+
+"onboarding_gender_title" = "あなたの性別は？";
+"gender_male" = "男性";
+"gender_female" = "女性";
+"gender_other" = "その他";
+"gender_prefer_not_to_say" = "回答しない";
+
+"onboarding_age_title" = "あなたの年齢は？";
 
 "onboarding_habit_wake_location_title" = "普段どこで目覚めますか？";
 "onboarding_habit_wake_location_description" = "起床体験をパーソナライズするために使います。";

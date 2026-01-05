@@ -1,4 +1,5 @@
 import SwiftUI
+import StoreKit
 
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
@@ -11,14 +12,24 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .welcome:
                     WelcomeStepView(next: advance)
-                case .value:
-                    ValueStepView(next: advance)
                 case .account:
                     AuthenticationStepView(next: advance)
+                case .value:
+                    ValueStepView(next: advance)
+                case .source:
+                    SourceStepView(next: advance)
+                case .name:
+                    ProfileInfoStepView(next: advance)
+                case .gender:
+                    GenderStepView(next: advance)
+                case .age:
+                    AgeStepView(next: advance)
                 case .ideals:
                     IdealsStepView(next: advance)
                 case .struggles:
                     StrugglesStepView(next: advance)
+                case .habitSetup:
+                    HabitSetupStepView(next: advance)
                 case .notifications:
                     NotificationPermissionStepView(next: advance)
                 case .alarmkit:
@@ -61,14 +72,28 @@ struct OnboardingFlowView: View {
         
         switch step {
         case .welcome:
-            step = .value
-        case .value:
             step = .account
         case .account:
+            step = .value
+        case .value:
+            step = .source
+        case .source:
+            step = .name
+        case .name:
+            step = .gender
+        case .gender:
+            step = .age
+        case .age:
             step = .ideals
         case .ideals:
             step = .struggles
         case .struggles:
+            step = .habitSetup
+        case .habitSetup:
+            // 評価リクエストを表示（システムダイアログ）
+            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                SKStoreReviewController.requestReview(in: scene)
+            }
             step = .notifications
         case .notifications:
             // AlarmKitは iOS 26+ のみ。非対応ならここで完了にする（通知権限と混同しない）
@@ -76,24 +101,23 @@ struct OnboardingFlowView: View {
             if #available(iOS 26.0, *) {
                 step = .alarmkit
             } else {
-                AnalyticsManager.shared.track(.onboardingCompleted)
-                appState.markOnboardingComplete()
-                SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
+                completeOnboarding()
                 return
             }
             #else
-            AnalyticsManager.shared.track(.onboardingCompleted)
-            appState.markOnboardingComplete()
-            SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
+            completeOnboarding()
             return
             #endif
         case .alarmkit:
-            // 最終ステップ: オンボーディング完了
-            AnalyticsManager.shared.track(.onboardingCompleted)
-            appState.markOnboardingComplete()
-            SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
+            completeOnboarding()
             return
         }
         appState.setOnboardingStep(step)
+    }
+    
+    private func completeOnboarding() {
+        AnalyticsManager.shared.track(.onboardingCompleted)
+        appState.markOnboardingComplete()
+        SuperwallManager.shared.register(placement: SuperwallPlacement.onboardingComplete.rawValue)
     }
 }

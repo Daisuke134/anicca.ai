@@ -35,6 +35,15 @@ final class AnalyticsManager {
         Mixpanel.mainInstance().people.set(properties: properties)
     }
     
+    /// 単一のユーザープロパティを設定
+    /// - Parameters:
+    ///   - key: プロパティキー（例: "acquisition_source", "gender"）
+    ///   - value: プロパティ値
+    func setUserProperty(_ key: String, value: MixpanelType) {
+        Mixpanel.mainInstance().people.set(properties: [key: value])
+        logger.debug("Set user property: \(key, privacy: .public)")
+    }
+    
     /// ログアウト時にリセット
     func reset() {
         Mixpanel.mainInstance().reset()

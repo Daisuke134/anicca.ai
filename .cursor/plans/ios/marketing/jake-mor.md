@@ -606,3 +606,269 @@ Colgateは歯磨き粉を売らない。**完璧な笑顔と自信**を売る。
 ---
 
 これがJake Morの100のヒントの完全解説です。Aniccaの成長戦略にどの部分を優先的に適用するか、ご質問があればお知らせください。
+
+ーーー
+
+プランドキュメントを確認して、UX実現のためのパッチをレビューします。まずドキュメントを読み込みます。
+
+[1 tool called]
+
+プランドキュメントを確認しました。パッチが正しく適用できるか、現在のコードベースとの整合性を確認します。
+
+[4 tools called]
+
+追加ファイルを確認します。`ProfileInfoStepView`と`HabitSetupStepView`が存在するかチェックします。
+
+[3 tools called]
+
+さらに確認します。
+
+[3 tools called]
+
+プランドキュメントを詳細にレビューしました。以下に問題点と修正パッチを示します。
+
+---
+
+## レビュー結果
+
+### 問題点1: セクション6.1のOnboardingStep enumに`name`ステップが抜けている
+
+セクション6.1のTO-BEでは`name`ステップが含まれていませんが、セクション3（完全なTO-BE順番）とセクション3の完全なパッチでは正しく含まれています。
+
+**セクション6.1の誤ったコード（589-624行）:**
+
+```swift
+enum OnboardingStep: Int {
+    case welcome       // 0
+    case account       // 1. Sign in with Apple
+    case value         // 2. What Anicca Can Do
+    case source        // 3. 流入元
+    case gender        // 4. 性別        // ← nameが抜けている！
+    case age           // 5. 年齢
+    // ...
+}
+```
+
+**修正:**
+セクション6.1のコードはセクション3のコード（177-203行）を使用するべきです。
+
+---
+
+### 問題点2: UserProfile.swiftの新規プロパティにCodingKeysが必要
+
+セクション6.4でUserProfileに`acquisitionSource`, `gender`, `ageRange`を追加していますが、カスタムデコーディング/エンコーディングを使用しているため、CodingKeysにも追加が必要です。
+
+**修正パッチ（UserProfile.swift）:**
+
+```diff
+--- a/aniccaios/aniccaios/Models/UserProfile.swift
++++ b/aniccaios/aniccaios/Models/UserProfile.swift
+@@ -53,6 +53,12 @@ struct UserProfile: Codable {
+ 
+ struct UserProfile: Codable {
+     var displayName: String
++    
++    // デモグラフィック情報（新規）
++    var acquisitionSource: String?
++    var gender: String?
++    var ageRange: String?
++    
+     var preferredLanguage: LanguagePreference
+     var sleepLocation: String
+     var trainingFocus: [String]
+@@ -139,6 +145,9 @@ struct UserProfile: Codable {
+     
+     // 既存データとの互換性のためのカスタムデコーディング
+     enum CodingKeys: String, CodingKey {
+         case displayName, preferredLanguage, sleepLocation, trainingFocus
++        // 新規デモグラフィック
++        case acquisitionSource, gender, ageRange
++        
+         case wakeLocation, wakeRoutines, sleepRoutines, trainingGoal
+         
+         // v0.3
+@@ -157,6 +166,11 @@ struct UserProfile: Codable {
+     init(from decoder: Decoder) throws {
+         let container = try decoder.container(keyedBy: CodingKeys.self)
+         displayName = try container.decodeIfPresent(String.self, forKey: .displayName) ?? ""
++        
++        // 新規デモグラフィック
++        acquisitionSource = try container.decodeIfPresent(String.self, forKey: .acquisitionSource)
++        gender = try container.decodeIfPresent(String.self, forKey: .gender)
++        ageRange = try container.decodeIfPresent(String.self, forKey: .ageRange)
++
+         preferredLanguage = try container.decodeIfPresent(LanguagePreference.self, forKey: .preferredLanguage) ?? LanguagePreference.detectDefault()
+         // ... (既存のデコードロジック)
+     }
+@@ -205,6 +219,11 @@ struct UserProfile: Codable {
+     func encode(to encoder: Encoder) throws {
+         var container = encoder.container(keyedBy: CodingKeys.self)
+         try container.encode(displayName, forKey: .displayName)
++        
++        // 新規デモグラフィック
++        try container.encodeIfPresent(acquisitionSource, forKey: .acquisitionSource)
++        try container.encodeIfPresent(gender, forKey: .gender)
++        try container.encodeIfPresent(ageRange, forKey: .ageRange)
++
+         try container.encode(preferredLanguage, forKey: .preferredLanguage)
+         // ... (既存のエンコードロジック)
+     }
+```
+
+---
+
+### 問題点3: AppState.profileSyncPayloadにデモグラフィック情報を追加
+
+サーバー同期用のペイロードに新規プロパティを追加する必要があります。
+
+**修正パッチ（AppState.swift）:**
+
+```diff
+--- a/aniccaios/aniccaios/AppState.swift
++++ b/aniccaios/aniccaios/AppState.swift
+@@ -940,6 +957,11 @@ final class AppState: ObservableObject {
+     func profileSyncPayload(for profile: UserProfile) -> [String: Any] {
+         var payload: [String: Any] = [
+             "displayName": profile.displayName,
++            // 新規デモグラフィック
++            "acquisitionSource": profile.acquisitionSource as Any,
++            "gender": profile.gender as Any,
++            "ageRange": profile.ageRange as Any,
++            
+             "preferredLanguage": profile.preferredLanguage.rawValue,
+             "sleepLocation": profile.sleepLocation,
+             // ... (既存のペイロード)
+```
+
+---
+
+### 問題点4: AppState.applyRemoteProfilePayloadにデモグラフィック情報を追加
+
+サーバーからの同期を受け取るロジックに新規プロパティを追加する必要があります。
+
+**修正パッチ（AppState.swift）:**
+
+```diff
+--- a/aniccaios/aniccaios/AppState.swift
++++ b/aniccaios/aniccaios/AppState.swift
+@@ -1386,6 +1403,15 @@ final class AppState: ObservableObject {
+     private func applyRemoteProfilePayload(_ payload: [String: Any]) {
+         var profile = userProfile
+         if let name = payload["displayName"] as? String {
+             profile.displayName = name
+         }
++        
++        // 新規デモグラフィック
++        if let acquisitionSource = payload["acquisitionSource"] as? String {
++            profile.acquisitionSource = acquisitionSource
++        }
++        if let gender = payload["gender"] as? String {
++            profile.gender = gender
++        }
++        if let ageRange = payload["ageRange"] as? String {
++            profile.ageRange = ageRange
++        }
++
+         if let preferredLanguage = payload["preferredLanguage"] as? String,
+```
+
+---
+
+### 問題点5: OnboardingStep.migratedFromLegacyRawValueの更新
+
+rawValueが大幅に変わるため、マイグレーションロジックを更新する必要があります。
+
+**修正パッチ（OnboardingStep.swift）:**
+
+```diff
+--- a/aniccaios/aniccaios/Onboarding/OnboardingStep.swift
++++ b/aniccaios/aniccaios/Onboarding/OnboardingStep.swift
+@@ -13,19 +13,28 @@ extension OnboardingStep {
+     /// 旧RawValue（v0.2系など）から v0.4 の enum へマップする。
+     static func migratedFromLegacyRawValue(_ rawValue: Int) -> OnboardingStep {
+         // 既に新enumの値が入っているケースはそのまま解釈
+         if let step = OnboardingStep(rawValue: rawValue) {
+             return step
+         }
+         
+-        // v0.2系→v3へのマイグレーション
++        // v0.3系→v0.4へのマイグレーション
++        // v0.3の順番: 0=welcome, 1=value, 2=account, 3=ideals, 4=struggles, 5=notifications, 6=alarmkit
++        // v0.4の順番: 0=welcome, 1=account, 2=value, 3=source, 4=name, 5=gender, 6=age, 
++        //            7=ideals, 8=struggles, 9=habitSetup, 10=notifications, 11=alarmkit
+         switch rawValue {
+         case 0: return .welcome
+-        case 1: return .welcome  // microphone は削除されたので welcome にマップ
+-        case 2: return .notifications
+-        case 3: return .account
+-        case 4, 5, 6, 7, 8, 9: return .welcome
++        case 1: return .value       // v0.3のvalue
++        case 2: return .account     // v0.3のaccount
++        case 3: return .ideals      // v0.3のideals
++        case 4: return .struggles   // v0.3のstruggles
++        case 5: return .notifications // v0.3のnotifications
++        case 6: return .alarmkit    // v0.3のalarmkit
+         default:
+             return .welcome
+         }
+     }
+ }
+```
+
+---
+
+### 問題点6: UserProfile.initにデモグラフィック情報のデフォルト値を追加
+
+```diff
+--- a/aniccaios/aniccaios/Models/UserProfile.swift
++++ b/aniccaios/aniccaios/Models/UserProfile.swift
+@@ -97,6 +97,9 @@ struct UserProfile: Codable {
+     
+     init(
+         displayName: String = "",
++        acquisitionSource: String? = nil,
++        gender: String? = nil,
++        ageRange: String? = nil,
+         preferredLanguage: LanguagePreference = LanguagePreference.detectDefault(),
+         sleepLocation: String = "",
+         trainingFocus: [String] = [],
+@@ -117,6 +120,9 @@ struct UserProfile: Codable {
+         useAlarmKitForCustom: Bool = false
+     ) {
+         self.displayName = displayName
++        self.acquisitionSource = acquisitionSource
++        self.gender = gender
++        self.ageRange = ageRange
+         self.preferredLanguage = preferredLanguage
+         // ... (既存の初期化)
+     }
+```
+
+---
+
+### 問題点7: AnalyticsManager.setUserPropertyメソッドの存在確認
+
+プランドキュメントでは`AnalyticsManager.shared.setUserProperty("acquisition_source", value: selected)`を使用していますが、このメソッドが存在するか確認が必要です。存在しない場合は追加が必要です。
+
+---
+
+## 完全なパッチ適用可否
+
+上記の問題点を修正すれば、このプランで今回のUXを実現できます。主要ファイルの確認結果：
+
+| ファイル | 状態 | 必要な修正 |
+|---------|------|-----------|
+| `OnboardingStep.swift` | 既存 | enumの更新 + マイグレーション更新 |
+| `OnboardingFlowView.swift` | 既存 | switch文とadvance()の更新 |
+| `ProfileInfoStepView.swift` | 既存 | 変更不要（nameステップで再利用） |
+| `HabitSetupStepView.swift` | 既存 | 変更不要（habitSetupステップで再利用） |
+| `UserProfile.swift` | 既存 | デモグラフィックプロパティ追加 |
+| `AppState.swift` | 既存 | 新規メソッド追加 + sync更新 |
+| `SourceStepView.swift` | **新規作成** | プランのコード使用 |
+| `GenderStepView.swift` | **新規作成** | プランのコード使用 |
+| `AgeStepView.swift` | **新規作成** | プランのコード使用 |
+| `Localizable.strings` | 既存 | ローカライズ追加 |
+
+---
+
+実装を進める前に、これらの修正をプランドキュメントに反映しますか？

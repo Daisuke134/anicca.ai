@@ -61,6 +61,10 @@ struct ProfileInfoStepView: View {
             var profile = appState.userProfile
             profile.displayName = trimmed
             appState.updateUserProfile(profile, sync: true)
+            
+            // Mixpanelにも保存
+            AnalyticsManager.shared.setUserProperty("display_name", value: trimmed)
+            
             await MainActor.run {
                 isSaving = false
                 next()

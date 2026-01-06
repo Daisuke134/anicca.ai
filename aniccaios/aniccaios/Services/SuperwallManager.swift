@@ -84,7 +84,7 @@ extension SuperwallManager: SuperwallDelegate {
     /// Superwallの全イベントを受け取る（購入完了検知用）
     nonisolated func handleSuperwallEvent(withInfo eventInfo: SuperwallEventInfo) {
         switch eventInfo.event {
-        case .transactionComplete(_, _, _):
+        case .transactionComplete(_, _, _, _):
             // 購入完了
             Task { @MainActor in
                 if isOnboardingPaywall {

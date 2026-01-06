@@ -156,6 +156,11 @@ enum AnalyticsEvent: String {
     case paywallViewed = "paywall_viewed"
     case paywallDismissed = "paywall_dismissed"
     
+    // Onboarding Paywall (Jake Mor #1 - Most Important Metric)
+    case onboardingPaywallViewed = "onboarding_paywall_viewed"
+    case onboardingPaywallDismissed = "onboarding_paywall_dismissed"
+    case onboardingPaywallPurchased = "onboarding_paywall_purchased"
+    
     // Subscription
     case trialStarted = "trial_started"
     case trialCancelled = "trial_cancelled"

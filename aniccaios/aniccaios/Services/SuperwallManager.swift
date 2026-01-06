@@ -12,11 +12,17 @@ enum SuperwallPlacement: String {
 }
 
 /// Superwall統合マネージャー
-final class SuperwallManager {
+@MainActor
+final class SuperwallManager: NSObject {
     static let shared = SuperwallManager()
     private var purchaseController: RCPurchaseController?
     
-    private init() {}
+    /// オンボーディング直後のPaywallかどうかを判定するフラグ
+    private var isOnboardingPaywall = false
+    
+    private override init() {
+        super.init()
+    }
     
     /// Superwallを初期化（RevenueCat設定後に呼び出すこと）
     func configure() {
@@ -27,6 +33,9 @@ final class SuperwallManager {
             apiKey: AppConfig.superwallAPIKey,
             purchaseController: controller
         )
+        
+        // Delegateを設定
+        Superwall.shared.delegate = self
         
         // RevenueCatのサブスクリプション状態をSuperwallに同期
         controller.syncSubscriptionStatus()
@@ -44,7 +53,48 @@ final class SuperwallManager {
     
     /// Placementを登録してPaywallを表示
     func register(placement: String) {
+        // オンボーディング完了後のPaywallかどうかをフラグで記録
+        isOnboardingPaywall = (placement == SuperwallPlacement.onboardingComplete.rawValue)
         Superwall.shared.register(placement: placement)
+    }
+}
+
+// MARK: - SuperwallDelegate
+extension SuperwallManager: SuperwallDelegate {
+    
+    /// Paywall表示後に呼ばれる
+    nonisolated func didPresentPaywall(withInfo paywallInfo: PaywallInfo) {
+        Task { @MainActor in
+            if isOnboardingPaywall {
+                AnalyticsManager.shared.track(.onboardingPaywallViewed)
+            }
+        }
+    }
+    
+    /// Paywall閉じた後に呼ばれる
+    nonisolated func didDismissPaywall(withInfo paywallInfo: PaywallInfo) {
+        Task { @MainActor in
+            if isOnboardingPaywall {
+                AnalyticsManager.shared.track(.onboardingPaywallDismissed)
+                isOnboardingPaywall = false  // フラグをリセット
+            }
+        }
+    }
+    
+    /// Superwallの全イベントを受け取る（購入完了検知用）
+    nonisolated func handleSuperwallEvent(withInfo eventInfo: SuperwallEventInfo) {
+        switch eventInfo.event {
+        case .transactionComplete(_, _, _):
+            // 購入完了
+            Task { @MainActor in
+                if isOnboardingPaywall {
+                    AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                    isOnboardingPaywall = false  // フラグをリセット
+                }
+            }
+        default:
+            break
+        }
     }
 }
 

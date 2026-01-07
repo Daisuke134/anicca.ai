@@ -183,14 +183,13 @@ extension SubscriptionManager: PurchasesDelegate {
         print("[RevenueCat] Delegate received update. Active entitlements: \(customerInfo.entitlements.active.keys)")
         
         Task { @MainActor in
-            var subscription = SubscriptionInfo(info: customerInfo)
+            let subscription = SubscriptionInfo(info: customerInfo)
             
             // 1. まずRevenueCatの情報だけで即座に更新（待機なし）
             AppState.shared.updateSubscriptionInfo(subscription)
             
-            // 2. その後、サーバー同期を試みて詳細情報を追加
-            await syncUsageInfo(&subscription)
-            AppState.shared.updateSubscriptionInfo(subscription)
+            // 2. サーバーDBを同期してからlimit情報を取得（POSTでDB更新→GET）
+            await syncNow()
         }
     }
     

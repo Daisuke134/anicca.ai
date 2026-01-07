@@ -53,6 +53,12 @@ struct Big5Scores: Codable, Equatable {
 
 struct UserProfile: Codable {
     var displayName: String
+    
+    // Demographics (onboarding)
+    var acquisitionSource: String?
+    var gender: String?
+    var ageRange: String?
+    
     var preferredLanguage: LanguagePreference
     var sleepLocation: String
     var trainingFocus: [String]
@@ -96,6 +102,9 @@ struct UserProfile: Codable {
     
     init(
         displayName: String = "",
+        acquisitionSource: String? = nil,
+        gender: String? = nil,
+        ageRange: String? = nil,
         preferredLanguage: LanguagePreference = LanguagePreference.detectDefault(),
         sleepLocation: String = "",
         trainingFocus: [String] = [],
@@ -116,6 +125,9 @@ struct UserProfile: Codable {
         useAlarmKitForCustom: Bool = false
     ) {
         self.displayName = displayName
+        self.acquisitionSource = acquisitionSource
+        self.gender = gender
+        self.ageRange = ageRange
         self.preferredLanguage = preferredLanguage
         self.sleepLocation = sleepLocation
         self.trainingFocus = trainingFocus
@@ -139,6 +151,10 @@ struct UserProfile: Codable {
     // 既存データとの互換性のためのカスタムデコーディング
     enum CodingKeys: String, CodingKey {
         case displayName, preferredLanguage, sleepLocation, trainingFocus
+        
+        // Demographics (onboarding)
+        case acquisitionSource, gender, ageRange
+        
         case wakeLocation, wakeRoutines, sleepRoutines, trainingGoal
         
         // v0.3
@@ -156,6 +172,12 @@ struct UserProfile: Codable {
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         displayName = try container.decodeIfPresent(String.self, forKey: .displayName) ?? ""
+        
+        // Demographics (onboarding)
+        acquisitionSource = try container.decodeIfPresent(String.self, forKey: .acquisitionSource)
+        gender = try container.decodeIfPresent(String.self, forKey: .gender)
+        ageRange = try container.decodeIfPresent(String.self, forKey: .ageRange)
+        
         preferredLanguage = try container.decodeIfPresent(LanguagePreference.self, forKey: .preferredLanguage) ?? LanguagePreference.detectDefault()
         sleepLocation = try container.decodeIfPresent(String.self, forKey: .sleepLocation) ?? ""
         trainingFocus = try container.decodeIfPresent([String].self, forKey: .trainingFocus) ?? []
@@ -204,6 +226,12 @@ struct UserProfile: Codable {
     func encode(to encoder: Encoder) throws {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(displayName, forKey: .displayName)
+        
+        // Demographics (onboarding)
+        try container.encodeIfPresent(acquisitionSource, forKey: .acquisitionSource)
+        try container.encodeIfPresent(gender, forKey: .gender)
+        try container.encodeIfPresent(ageRange, forKey: .ageRange)
+        
         try container.encode(preferredLanguage, forKey: .preferredLanguage)
         try container.encode(sleepLocation, forKey: .sleepLocation)
         try container.encode(trainingFocus, forKey: .trainingFocus)

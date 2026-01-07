@@ -81,13 +81,29 @@ struct ProfileView: View {
                 nameRow
                 divider
                 Button {
-                    showingManageSubscription = true
+                    if appState.subscriptionInfo.plan == .free {
+                        SuperwallManager.shared.register(placement: SuperwallPlacement.profilePlanTap.rawValue)
+                    } else {
+                        showingManageSubscription = true
+                    }
                 } label: {
-                    row(label: String(localized: "profile_row_plan"), value: planDisplayWithUsage, showsChevron: true)
+                    row(label: String(localized: "profile_row_plan"), value: planDisplayValue, showsChevron: true)
                 }
                 .buttonStyle(.plain)
             }
         }
+    }
+    
+    private var planDisplayValue: String {
+        let info = appState.subscriptionInfo
+        let planName = info.displayPlanName
+        
+        if let used = info.monthlyUsageCount, let limit = info.monthlyUsageLimit {
+            let unit = String(localized: "profile_usage_unit")
+            return "\(planName) (\(used)/\(limit)\(unit))"
+        }
+        
+        return planName
     }
     
     @ViewBuilder
@@ -143,15 +159,6 @@ struct ProfileView: View {
             appState.updateUserProfile(profile, sync: true)
         }
         isEditingName = false
-    }
-    
-    private var planDisplayWithUsage: String {
-        let base = appState.subscriptionInfo.displayPlanName
-        if let used = appState.subscriptionInfo.monthlyUsageCount,
-           let limit = appState.subscriptionInfo.monthlyUsageLimit {
-            return "\(base) (\(used)/\(limit))"
-        }
-        return base
     }
 
     private var traitsCard: some View {

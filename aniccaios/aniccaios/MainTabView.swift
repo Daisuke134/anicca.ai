@@ -41,6 +41,7 @@ struct MainTabView: View {
             // ★ アプリがアクティブになった時もチェック（バックグラウンドからの復帰時）
             // 通知タップでアプリが開く時は必ずこのNotificationが発火する
             checkPendingHabitTrigger()
+            handleAppOpenPaywall()
         }
         .safeAreaInset(edge: .bottom) {
             // Figmaデザイン準拠のカスタムタブバー
@@ -61,6 +62,29 @@ struct MainTabView: View {
             )
         }
         appState.clearShouldStartSessionImmediately()
+    }
+    
+    private func handleAppOpenPaywall() {
+        // オンボーディング未完了 or 有料ユーザーはスキップ
+        guard appState.isOnboardingComplete,
+              appState.subscriptionInfo.plan == .free else { return }
+        
+        // 頻度制限: 3日に1回、最大3回まで
+        let key = "lastAppLaunchPaywallDate"
+        let countKey = "appLaunchPaywallCount"
+        let defaults = UserDefaults.standard
+        
+        let count = defaults.integer(forKey: countKey)
+        if count >= 3 { return }
+        
+        if let lastDate = defaults.object(forKey: key) as? Date,
+           Calendar.current.dateComponents([.day], from: lastDate, to: Date()).day ?? 0 < 3 {
+            return
+        }
+        
+        defaults.set(Date(), forKey: key)
+        defaults.set(count + 1, forKey: countKey)
+        SuperwallManager.shared.register(placement: SuperwallPlacement.campaignAppLaunch.rawValue)
     }
 }
 

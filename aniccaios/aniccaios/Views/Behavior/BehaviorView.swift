@@ -1,8 +1,12 @@
 import SwiftUI
+#if canImport(DeviceActivity)
 import DeviceActivity
+#endif
 import os
 import Foundation
+#if canImport(FamilyControls)
 import FamilyControls
+#endif
 
 /// v0.3 Behavior タブ: Today's Insights / 24h Timeline / Highlights / 10 Years From Now
 struct BehaviorView: View {
@@ -66,6 +70,7 @@ struct BehaviorView: View {
             .background(AppBackground())
             .task { await bootstrapAndLoad() }
             // v3.1: Hidden DeviceActivityReport を表示してデータ収集をトリガー
+            #if canImport(DeviceActivity)
             .background {
                 if showScreenTimeReport && appState.sensorAccess.screenTimeEnabled && allowDeviceActivityReport {
                     DeviceActivityReport(
@@ -81,6 +86,7 @@ struct BehaviorView: View {
                     .opacity(0.01)
                 }
             }
+            #endif
         }
     }
 
@@ -122,6 +128,7 @@ struct BehaviorView: View {
         
         // v3.1: Screen Time データを更新するために DeviceActivityReport を表示
         let shouldForceUpload = true
+        #if canImport(DeviceActivity)
         if appState.sensorAccess.screenTimeEnabled {
             allowDeviceActivityReport = ScreenTimeManager.shared.isAuthorized
             if allowDeviceActivityReport {
@@ -143,6 +150,10 @@ struct BehaviorView: View {
         } else {
             allowDeviceActivityReport = false
         }
+        #else
+        allowDeviceActivityReport = false
+        showScreenTimeReport = false
+        #endif
         
         logger.info("BehaviorView: Running MetricsUploader... force=\(shouldForceUpload)")
         await MetricsUploader.shared.runUploadIfDue(force: shouldForceUpload)

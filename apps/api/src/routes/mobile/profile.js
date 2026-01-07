@@ -16,6 +16,10 @@ const timeComponentSchema = z.object({
 const profileSchema = z.object({
   displayName: z.string().optional(),
   preferredLanguage: z.enum(['ja', 'en']).optional(),
+  // Demographics (onboarding)
+  acquisitionSource: z.string().optional(),
+  gender: z.string().optional(),
+  ageRange: z.string().optional(),
   sleepLocation: z.string().optional(),
   trainingFocus: z.array(z.string()).optional(),
   wakeLocation: z.string().optional(),
@@ -116,6 +120,10 @@ router.get('/', async (req, res) => {
     return res.json({
       displayName: profile.displayName || '',
       preferredLanguage,
+      // Demographics
+      acquisitionSource: profile.acquisitionSource || null,
+      gender: profile.gender || null,
+      ageRange: profile.ageRange || null,
       sleepLocation: profile.sleepLocation || '',
       trainingFocus: profile.trainingFocus || [],
       wakeLocation: profile.wakeLocation || '',

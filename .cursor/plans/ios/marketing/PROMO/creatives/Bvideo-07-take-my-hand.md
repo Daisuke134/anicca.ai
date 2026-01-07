@@ -1015,3 +1015,4 @@ NEGATIVE: Thin line. Brush tool visible. Right-first motion. Thick chunky stroke
 - 次回への学び:
 
 
+

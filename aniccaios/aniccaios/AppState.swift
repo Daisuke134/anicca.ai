@@ -776,6 +776,12 @@ final class AppState: ObservableObject {
         }
         Task { await SubscriptionManager.shared.handleLogin(appUserId: credentials.userId) }
         
+        // Mixpanel: ユーザー識別
+        AnalyticsManager.shared.identify(userId: credentials.userId)
+        
+        // Superwall: ユーザー識別
+        SuperwallManager.shared.identify(userId: credentials.userId)
+        
         // v3: サインイン直後の無条件PUTは既存ユーザー上書き事故がありうるため、
         // 「オンボーディング中 かつ ローカルに入力済みがある」場合のみ同期する
         if !isOnboardingComplete && (!userProfile.ideals.isEmpty || !userProfile.struggles.isEmpty || !userProfile.displayName.isEmpty) {
@@ -812,6 +818,12 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         pendingConsultPrompt = nil
         cachedOffering = nil
+        
+        // Mixpanel: リセット
+        AnalyticsManager.shared.reset()
+        
+        // Superwall: リセット
+        SuperwallManager.shared.reset()
         
         // オンボーディングはサインアウト時に戻す
         isOnboardingComplete = false
@@ -850,6 +862,12 @@ final class AppState: ObservableObject {
         pendingHabitPrompt = nil
         pendingConsultPrompt = nil
         cachedOffering = nil
+        
+        // Mixpanel: リセット
+        AnalyticsManager.shared.reset()
+        
+        // Superwall: リセット
+        SuperwallManager.shared.reset()
         
         // オンボーディング状態をリセット
         isOnboardingComplete = false
@@ -922,6 +940,10 @@ final class AppState: ObservableObject {
     func profileSyncPayload(for profile: UserProfile) -> [String: Any] {
         var payload: [String: Any] = [
             "displayName": profile.displayName,
+            // Demographics (onboarding)
+            "acquisitionSource": profile.acquisitionSource ?? "",
+            "gender": profile.gender ?? "",
+            "ageRange": profile.ageRange ?? "",
             "preferredLanguage": profile.preferredLanguage.rawValue,
             "sleepLocation": profile.sleepLocation,
             "trainingFocus": profile.trainingFocus,
@@ -1231,6 +1253,26 @@ final class AppState: ObservableObject {
     
     // MARK: - UserProfile Update Methods
     
+    // MARK: - Demographics (onboarding)
+    
+    func updateAcquisitionSource(_ source: String) {
+        var profile = userProfile
+        profile.acquisitionSource = source
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateGender(_ gender: String) {
+        var profile = userProfile
+        profile.gender = gender
+        updateUserProfile(profile, sync: true)
+    }
+    
+    func updateAgeRange(_ ageRange: String) {
+        var profile = userProfile
+        profile.ageRange = ageRange
+        updateUserProfile(profile, sync: true)
+    }
+    
     func updateWakeLocation(_ location: String) {
         var profile = userProfile
         profile.wakeLocation = location
@@ -1370,6 +1412,18 @@ final class AppState: ObservableObject {
         if let name = payload["displayName"] as? String {
             profile.displayName = name
         }
+        
+        // Demographics (onboarding)
+        if let acquisitionSource = payload["acquisitionSource"] as? String {
+            profile.acquisitionSource = acquisitionSource.isEmpty ? nil : acquisitionSource
+        }
+        if let gender = payload["gender"] as? String {
+            profile.gender = gender.isEmpty ? nil : gender
+        }
+        if let ageRange = payload["ageRange"] as? String {
+            profile.ageRange = ageRange.isEmpty ? nil : ageRange
+        }
+        
         if let preferredLanguage = payload["preferredLanguage"] as? String,
            let language = LanguagePreference(rawValue: preferredLanguage) {
             // デバイスの言語設定を優先: サーバーの言語とデバイスの言語が一致する場合のみ適用

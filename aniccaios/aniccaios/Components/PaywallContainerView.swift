@@ -37,7 +37,18 @@ struct PaywallContainerView: View {
                     
                     // RevenueCatUIのPaywallViewを使用
                     PaywallView(offering: offeringToDisplay)
+                        .onAppear {
+                            // Paywall表示イベント（最重要メトリクス）
+                            AnalyticsManager.shared.trackPaywallViewed(
+                                paywallId: AppConfig.revenueCatPaywallId,
+                                trigger: forcePresent ? "manual" : "onboarding"
+                            )
+                        }
                         .onRequestedDismissal {
+                            // Paywall閉じるイベント
+                            AnalyticsManager.shared.trackPaywallDismissed(
+                                paywallId: AppConfig.revenueCatPaywallId
+                            )
                             // 購入エラー中でも閉じられる（ユーザーの意思を尊重）
                             // ただし、エラー状態をクリア
                             if purchaseError != nil {
@@ -47,6 +58,15 @@ struct PaywallContainerView: View {
                         }
                         .onPurchaseCompleted { customerInfo in
                             print("[Paywall] Purchase completed: \(customerInfo)")
+                            // 購入完了イベント
+                            if let entitlement = customerInfo.entitlements[AppConfig.revenueCatEntitlementId],
+                               entitlement.isActive {
+                                let productId = entitlement.productIdentifier
+                                AnalyticsManager.shared.trackPurchaseCompleted(
+                                    productId: productId,
+                                    revenue: 0 // RevenueCatはクライアント側で価格を取得できないため、サーバー側で追跡
+                                )
+                            }
                             Task {
                                 await handlePurchaseResult(customerInfo)
                             }

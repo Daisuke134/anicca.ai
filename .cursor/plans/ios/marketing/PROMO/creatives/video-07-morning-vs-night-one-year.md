@@ -138,3 +138,4 @@ Static camera shot. The Aniicha logo centered on a gradient background transitio
 - 質問型: 視聴者に選択を促す
 
 
+

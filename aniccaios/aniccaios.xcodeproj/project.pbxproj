@@ -35,13 +35,6 @@
 			remoteGlobalIDString = 84CC79122EFAA90F005078AE;
 			remoteInfo = AniccaNotificationService;
 		};
-		84CC79302EFAAB95005078AE /* PBXContainerItemProxy */ = {
-			isa = PBXContainerItemProxy;
-			containerPortal = 8471AE732EB783E1002CECAA /* Project object */;
-			proxyType = 1;
-			remoteGlobalIDString = 84CC79252EFAAB95005078AE;
-			remoteInfo = AniccaScreenTimeReport;
-		};
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -63,7 +56,6 @@
 			dstPath = "$(EXTENSIONS_FOLDER_PATH)";
 			dstSubfolderSpec = 16;
 			files = (
-				84CC79322EFAAB95005078AE /* AniccaScreenTimeReport.appex in Embed ExtensionKit Extensions */,
 			);
 			name = "Embed ExtensionKit Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
@@ -281,7 +273,6 @@
 			dependencies = (
 				840034622EE52C5400A2F44C /* PBXTargetDependency */,
 				84CC79192EFAA90F005078AE /* PBXTargetDependency */,
-				84CC79312EFAAB95005078AE /* PBXTargetDependency */,
 			);
 			fileSystemSynchronizedGroups = (
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
@@ -392,7 +383,6 @@
 				8471AE7A2EB783E1002CECAA /* aniccaios */,
 				8400344C2EE52C5100A2F44C /* AniccaWidgetExtension */,
 				84CC79122EFAA90F005078AE /* AniccaNotificationService */,
-				84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */,
 			);
 		};
 /* End PBXProject section */
@@ -491,11 +481,6 @@
 			isa = PBXTargetDependency;
 			target = 84CC79122EFAA90F005078AE /* AniccaNotificationService */;
 			targetProxy = 84CC79182EFAA90F005078AE /* PBXContainerItemProxy */;
-		};
-		84CC79312EFAAB95005078AE /* PBXTargetDependency */ = {
-			isa = PBXTargetDependency;
-			target = 84CC79252EFAAB95005078AE /* AniccaScreenTimeReport */;
-			targetProxy = 84CC79302EFAAB95005078AE /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 

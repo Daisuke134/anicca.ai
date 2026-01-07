@@ -98,10 +98,7 @@ struct OnboardingFlowView: View {
             step = .habitSetup
         case .habitSetup:
             AnalyticsManager.shared.track(.onboardingHabitsetupCompleted)
-            // 評価リクエストを表示（システムダイアログ）
-            if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
-                SKStoreReviewController.requestReview(in: scene)
-            }
+            // レビュー要求は3回目のセッション完了後に移動（VoiceSessionController.stop()で実行）
             step = .notifications
         case .notifications:
             AnalyticsManager.shared.track(.onboardingNotificationsCompleted)

@@ -1,6 +1,7 @@
 import AVFoundation
 import Combine
 import OSLog
+import StoreKit
 import WebRTC
 
 @MainActor
@@ -153,6 +154,30 @@ final class VoiceSessionController: NSObject, ObservableObject {
                 habitType: currentHabitType?.rawValue ?? "talk",
                 durationSeconds: durationSeconds
             )
+            
+            // セッション完了回数をカウント
+            let sessionCountKey = "completed_session_count"
+            let sessionCount = UserDefaults.standard.integer(forKey: sessionCountKey) + 1
+            UserDefaults.standard.set(sessionCount, forKey: sessionCountKey)
+            logger.debug("Session completed: #\(sessionCount)")
+            
+            // 3回目のセッション完了後
+            if sessionCount == 3 {
+                Task { @MainActor in
+                    // レビュー要求
+                    if let scene = UIApplication.shared.connectedScenes.first as? UIWindowScene {
+                        SKStoreReviewController.requestReview(in: scene)
+                    }
+                    
+                    // 少し遅延させてレビューダイアログと競合しないように
+                    try? await Task.sleep(for: .seconds(1))
+                    
+                    // 無料ユーザーのみPaywall表示
+                    if AppState.shared.subscriptionInfo.plan == .free {
+                        SuperwallManager.shared.register(placement: SuperwallPlacement.sessionComplete3.rawValue)
+                    }
+                }
+            }
         }
         
         currentHabitType = nil

@@ -1,12 +1,6 @@
 import SwiftUI
-#if canImport(DeviceActivity)
-import DeviceActivity
-#endif
 import os
 import Foundation
-#if canImport(FamilyControls)
-import FamilyControls
-#endif
 
 /// v0.3 Behavior タブ: Today's Insights / 24h Timeline / Highlights / 10 Years From Now
 struct BehaviorView: View {
@@ -14,8 +8,6 @@ struct BehaviorView: View {
     @State private var isLoading = false
     @State private var summary: BehaviorSummary?
     @State private var errorText: String?
-    @State private var showScreenTimeReport = false
-    @State private var allowDeviceActivityReport = ScreenTimeManager.shared.isAuthorized
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "BehaviorView")
     private let appGroupDefaults = AppGroup.userDefaults
@@ -69,24 +61,6 @@ struct BehaviorView: View {
             }
             .background(AppBackground())
             .task { await bootstrapAndLoad() }
-            // v3.1: Hidden DeviceActivityReport を表示してデータ収集をトリガー
-            #if canImport(DeviceActivity)
-            .background {
-                if showScreenTimeReport && appState.sensorAccess.screenTimeEnabled && allowDeviceActivityReport {
-                    DeviceActivityReport(
-                        .init(rawValue: "TotalActivity"),
-                        filter: DeviceActivityFilter(
-                            segment: .daily(during: DateInterval(
-                                start: Calendar.current.startOfDay(for: Date()),
-                                end: Date()
-                            ))
-                        )
-                    )
-                    .frame(width: 1, height: 1)
-                    .opacity(0.01)
-                }
-            }
-            #endif
         }
     }
 
@@ -124,37 +98,9 @@ struct BehaviorView: View {
         
         // ★ デバッグログ追加
         logger.info("BehaviorView: Starting data load")
-        logger.info("BehaviorView: screenTimeEnabled=\(appState.sensorAccess.screenTimeEnabled), sleepEnabled=\(appState.sensorAccess.sleepEnabled), stepsEnabled=\(appState.sensorAccess.stepsEnabled)")
+        logger.info("BehaviorView: sleepEnabled=\(appState.sensorAccess.sleepEnabled), stepsEnabled=\(appState.sensorAccess.stepsEnabled)")
         
-        // v3.1: Screen Time データを更新するために DeviceActivityReport を表示
         let shouldForceUpload = true
-        #if canImport(DeviceActivity)
-        if appState.sensorAccess.screenTimeEnabled {
-            allowDeviceActivityReport = ScreenTimeManager.shared.isAuthorized
-            if allowDeviceActivityReport {
-                showScreenTimeReport = true
-                logger.info("BehaviorView: Waiting for DeviceActivityReport...")
-                let startTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
-                for _ in 0..<25 {
-                    try? await Task.sleep(nanoseconds: 200_000_000)
-                    let nowTs = appGroupDefaults.double(forKey: "screenTime_lastUpdate")
-                    if nowTs > startTs {
-                        break
-                    }
-                }
-                showScreenTimeReport = false
-            } else {
-                logger.info("BehaviorView: ScreenTime authorization unavailable, skipping DeviceActivityReport")
-                showScreenTimeReport = false
-            }
-        } else {
-            allowDeviceActivityReport = false
-        }
-        #else
-        allowDeviceActivityReport = false
-        showScreenTimeReport = false
-        #endif
-        
         logger.info("BehaviorView: Running MetricsUploader... force=\(shouldForceUpload)")
         await MetricsUploader.shared.runUploadIfDue(force: shouldForceUpload)
         

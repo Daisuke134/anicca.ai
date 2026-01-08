@@ -117,30 +117,7 @@ final class MetricsUploader {
             }
         }
         
-        // Screen Time (if enabled)
-        if sensorAccess.screenTimeEnabled && sensorAccess.screenTimeAuthorized {
-            let screenData = await ScreenTimeManager.shared.fetchDailySummary()
-            if let minutes = screenData.totalMinutes {
-                payload["screen_time_minutes"] = minutes
-            }
-            // v3.1: SNS 使用時間と夜間使用時間を追加送信
-            if let socialMinutes = screenData.socialMinutes {
-                payload["sns_minutes_total"] = socialMinutes
-            }
-            if let lateNightMinutes = screenData.lateNightMinutes {
-                payload["sns_minutes_night"] = lateNightMinutes
-            }
-            
-            // v3.1: Screen Time データを activity_summary に追加
-            activitySummary["totalScreenTime"] = screenData.totalMinutes ?? 0
-            activitySummary["lateNightSnsMinutes"] = screenData.lateNightMinutes ?? 0
-            
-            // v3.1: snsSessions を activity_summary に追加
-            if let snsSessions = screenData.snsSessions, !snsSessions.isEmpty {
-                activitySummary["snsSessions"] = snsSessions
-                payload["sns_sessions"] = snsSessions
-            }
-        }
+        // ScreenTime API removed for App Store compliance
         
         // Movement/Sedentary (if enabled)
         if sensorAccess.motionEnabled && sensorAccess.motionAuthorized {

@@ -1606,11 +1606,8 @@ final class AppState: ObservableObject {
         let sleepAuthorized = false
         let stepsAuthorized = false
 #endif
-#if canImport(FamilyControls)
-        let screenTimeAuthorized = ScreenTimeManager.shared.isAuthorized
-#else
+        // ScreenTime API removed for App Store compliance
         let screenTimeAuthorized = false
-#endif
 
         var next = sensorAccess
         let wantedSleep = next.sleepEnabled

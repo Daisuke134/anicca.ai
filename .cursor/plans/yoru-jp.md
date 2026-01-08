@@ -119,3 +119,106 @@
 ---
 
 これで完全な構成とアセットリスト。通知とTalk画面のセリフは「あと何度自分との約束を破り続けるの？」系統で統一。
+トップ10系のやつはこんな感じかな。
+個人的 Aniccaからの起床前アラーム Top 10
+個人的に刺さったアニッチャからの就寝前通知 top 10
+僕の夜更かしをやめさせてくれたアニッチャからの通知 top 10
+僕の夜更かしをやめさせてくれたアニッチャからのアラーム top 10
+top 10 notifications that stopped me from staying up late
+top 10 notifications that stopped me from doomscrolling
+
+他の系は起床・就寝、そしてトレーニングの3つでいこうか。まず一旦はね
+起床
+自分だと起きれないので、AIに起こしてもらうことにした
+
+POV: voice AI is your new Alarm
+POV: chatgpt is your new alarm
+just made an alarm that actually wake me up
+my AI is harsh, but this is the only thing that works
+my AI is harsh, but this is the only thing that can wake me up
+僕のAIは厳しいけど、ちゃんと起こしてくれるんだよな。。。
+目覚ましは音だけ。こいつは声掛けしてくれる。
+俺は目覚ましはこいつに決めた. みんなは？？
+私は目覚ましはこいつに決めた. みんなは？？
+pov: your alarm just got a soul
+目覚ましが魂を持った。。。
+習慣記録アプリでは続かなかったけど、これは。。。。
+もうこいつの声がないと起きられない。。
+if your sleep schedule is a mess, try this app.
+遅刻癖のある人、このアプリ試してみて。
+起床時間バラバラの人、このアプリ試してみて。
+just trust me bro... just let AI wake you up bro..
+目覚ましでは起きられないから、AIに起こしてもらってます。。
+こいつの一言で目が覚めたわ。。。
+pov: AI is preaching you about why you should wake up
+こいつ、俺が起きるまで声掛けをやめないんだが、、、
+what if chatgpt woke you up? thats anicca. 
+アニッチャが絶対に起こしてくれるから、朝も問題ない。
+スヌーズ地獄からアニッチャが解放してくれた。
+this alarm freaking talks.... 
+三日坊主のあなた、説教AIはいかがですか？？
+１０回アラームセットしても起きれないあなたへ。
+アラームでは起きられない人へ　アニッチャが待ってます〜
+まじで寝坊しすぎる自分でも起きられるAI作った
+朝起きないと、アニッチャが説教してくる。。
+朝起きないと、AIに叱られます。。。
+AIに叱られたくないので、今日も早く起きました。
+Breaking News: Chatgpt just became an alarm
+this is my alarm,whats yours?
+You don't need something to support you, you need something that leads you. 
+If your sleep schedule is a mess, try this app. 
+AI Voice Alarm for Wake Up. What do you think? 
+P.O.V. You have your own habit coach. 
+POV, you have your own Apollo from Rocky. 
+POV David Goggins Basey Up. 
+War is over, we have a better alarm. 
+POV, your alarm just got us all. 
+CatGPTがあなたの目覚ましに
+目覚ましは音だけ、こいつは声をかけてくれる。
+僕のAIは厳しいけどちゃんと動いてくれるんだよね。
+俺は目覚ましをこいつに決めた。みんなは? 
+私は目覚ましはこいつに決めた、みんなは。
+マジで寝坊しすぎる自分でも起きられるAI作った
+
+
+説法系
+仏教徒のあなた、説法AIはいかがですか？？
+
+人物系（クローンで生成ー＞需要に応じてクローン声を実装。厳しめ・優しめ・標準モードも）
+pov: apollo from rocky wakes you up.
+pov: david goggins is waking you up　　
+David Goggins just turned into AI. it wakes you up. 
+pov; david goggins is stopping you from staying up late
+→こういうのはモチベーションビデオとかでもいけるかもね。
+
+個人開発
+im literally using my app to keep building my app
+自分の習慣化アプリで個人開発を習慣化してる
+
+トレーニング
+pov; david goggins is making you train
+
+夜更かし・スクロール
+僕のAIは厳しいけど、夜更かしやめさせてくれるんだよな。。
+僕のAIは厳しいけど、頼りになるんだよな。。。
+POV: AI stops you from staying up late
+POV: AI preaches you to stop doomscrolling
+nothing could stop me from staying up late, so i made one myself.
+i made AI put me to sleep, cuz i keep staying up late
+i was doomscrolling on 3 AM, so I made AI stop me
+i couldnt stop staying up late, so i let AI put me to sleep
+POV you are doomscrolling on 3 AM again..
+夜更かしやめたい人は試してみて。
+こいつの声掛けが夜更かし防止に効きすぎる。。。
+my AI preaching me at 3 AM to stop me from doomscrolling
+POV: AI is preaching you to stop scrolling at 3 am
+my AI is hitting me with deep wisdom at 3 am.
+finally made an app that can actually stop my doomscrolling
+POV: habit trackers dont work for you
+try this if habit trackers dont work for u
+im telling you bro.. just let AI lead you bro.
+when you cant lead yourself just let AI lead you
+こいつ、3時にめちゃくちゃ真理を語りよる
+AIが夜更かしやめるように説教してくれるから毎日早く寝れてるけん。
+習慣記録アプリでは習慣続かなかったけど、これは。。。
+俺の睡眠導入剤。それは音声AI。

@@ -8,9 +8,6 @@ import ComponentsKit
 import RevenueCat
 import RevenueCatUI
 import SwiftUI
-#if canImport(FamilyControls)
-import FamilyControls
-#endif
 #if canImport(HealthKit)
 import HealthKit
 #endif
@@ -334,26 +331,11 @@ struct SettingsView: View {
     }
 
     private func handleToggleScreenTime(_ enabled: Bool) async {
-        if !enabled {
-            screenTimeEnabled = false
-            return
-        }
-
-        #if canImport(FamilyControls)
-        do {
-            try await AuthorizationCenter.shared.requestAuthorization(for: .individual)
-            screenTimeEnabled = (AuthorizationCenter.shared.authorizationStatus == .approved)
-            if !screenTimeEnabled {
-                showPermissionAlert("Screen Time permission was not granted. Please enable it in Settings.")
-            }
-        } catch {
-            screenTimeEnabled = false
-            showPermissionAlert("Screen Time permission was not granted. Please enable it in Settings.")
-        }
-        #else
+        // ScreenTime API removed for App Store compliance
         screenTimeEnabled = false
-        showPermissionAlert("Screen Time integration is not available on this build.")
-        #endif
+        if enabled {
+            showPermissionAlert("Screen Time integration is not available on this build.")
+        }
     }
 
     private func handleToggleHealthKitSleep(_ enabled: Bool) async {

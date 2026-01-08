@@ -564,17 +564,9 @@ struct ProfileView: View {
         }
     }
     
-    /// ScreenTime許可をリクエストし、結果に応じてトグルを更新する
+    /// ScreenTime API removed for App Store compliance
     private func requestScreenTimeAndUpdateToggle() async {
-        let granted = await ScreenTimeManager.shared.requestAuthorization()
-        await MainActor.run {
-            if granted {
-                appState.setScreenTimeEnabled(true)
-            }
-        }
-        if granted {
-            await MetricsUploader.shared.runUploadIfDue(force: true)
-        }
+        // ScreenTime API removed for App Store compliance
     }
     
     /// Motion許可をリクエストし、結果に応じてトグルを更新する

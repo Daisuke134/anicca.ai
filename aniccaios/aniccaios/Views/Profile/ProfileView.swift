@@ -32,7 +32,10 @@ struct ProfileView: View {
                     strugglesSection
                     nudgeStrengthSection
                     stickyModeSection
-                    accountManagementSection
+                    // v0.5: 未サインイン時はアカウント管理セクションを非表示
+                    if case .signedIn = appState.authStatus {
+                        accountManagementSection
+                    }
                     
                     #if DEBUG
                     recordingSection
@@ -454,13 +457,9 @@ struct ProfileView: View {
             .padding(.horizontal, 2)
     }
 
+    // v0.5: サインイン済みユーザー専用（呼び出し側で条件判定）
     private var accountManagementSection: some View {
-        let isSignedIn: Bool = {
-            if case .signedIn = appState.authStatus { return true }
-            return false
-        }()
-        
-        return VStack(alignment: .leading, spacing: 10) {
+        VStack(alignment: .leading, spacing: 10) {
             Text(String(localized: "profile_account_management"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
@@ -468,52 +467,31 @@ struct ProfileView: View {
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {
-                    if isSignedIn {
-                        // サインイン済み: サインアウト・削除ボタンを表示
-                        Button {
-                            appState.signOutPreservingSensorAccess()
-                        } label: {
-                            HStack {
-                                Text(String(localized: "common_sign_out"))
-                                    .foregroundStyle(.red)
-                                Spacer()
-                            }
-                            .padding(.vertical, 16)
+                    Button {
+                        appState.signOutPreservingSensorAccess()
+                    } label: {
+                        HStack {
+                            Text(String(localized: "common_sign_out"))
+                                .foregroundStyle(.red)
+                            Spacer()
                         }
-                        .buttonStyle(.plain)
-
-                        divider
-
-                        Button {
-                            isShowingDeleteAlert = true
-                        } label: {
-                            HStack {
-                                Text(String(localized: "settings_delete_account"))
-                                    .foregroundStyle(.red)
-                                Spacer()
-                            }
-                            .padding(.vertical, 16)
-                        }
-                        .buttonStyle(.plain)
-                    } else {
-                        // v0.4: 未サインイン: Apple Sign Inボタンを表示
-                        VStack(spacing: 12) {
-                            Text(String(localized: "profile_sign_in_description"))
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
-                                .multilineTextAlignment(.center)
-                                .padding(.vertical, 8)
-                            
-                            SignInWithAppleButton(.signIn) { request in
-                                AuthCoordinator.shared.configure(request)
-                            } onCompletion: { result in
-                                AuthCoordinator.shared.completeSignIn(result: result)
-                            }
-                            .signInWithAppleButtonStyle(.black)
-                            .frame(height: 50)
-                            .padding(.bottom, 8)
-                        }
+                        .padding(.vertical, 16)
                     }
+                    .buttonStyle(.plain)
+
+                    divider
+
+                    Button {
+                        isShowingDeleteAlert = true
+                    } label: {
+                        HStack {
+                            Text(String(localized: "settings_delete_account"))
+                                .foregroundStyle(.red)
+                            Spacer()
+                        }
+                        .padding(.vertical, 16)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
         }

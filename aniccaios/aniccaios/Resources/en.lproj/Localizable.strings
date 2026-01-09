@@ -24,6 +24,7 @@
 "onboarding_welcome_subtitle_line1" = "Anicca is your voice coach guiding";
 "onboarding_welcome_subtitle_line2" = "your actions and mind.";
 "onboarding_welcome_cta" = "Get Started";
+"onboarding_welcome_restore_description" = "Already have an account?";
 
 "onboarding_account_title" = "Save Your Progress";
 "onboarding_account_description" = "Sign in to sync your data across devices.";
@@ -571,6 +572,7 @@
 
 /* v3: Account Management */
 "profile_account_management" = "Account Management";
+"profile_sign_in_description" = "Sign in to restore your habit settings on new devices or after reinstalling";
 
 /* Streak Milestone */
 "milestone_subtitle_format" = "You've been doing %@ for %lld days";

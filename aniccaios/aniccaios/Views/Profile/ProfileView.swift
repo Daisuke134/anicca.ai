@@ -3,6 +3,7 @@ import Combine
 import Foundation
 import RevenueCatUI
 import ComponentsKit
+import AuthenticationServices
 
 /// v0.3 Profile タブ（v3-ui.md 準拠）
 struct ProfileView: View {
@@ -454,7 +455,12 @@ struct ProfileView: View {
     }
 
     private var accountManagementSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+        let isSignedIn: Bool = {
+            if case .signedIn = appState.authStatus { return true }
+            return false
+        }()
+        
+        return VStack(alignment: .leading, spacing: 10) {
             Text(String(localized: "profile_account_management"))
                 .font(.system(size: 18, weight: .bold))
                 .foregroundStyle(AppTheme.Colors.label)
@@ -462,31 +468,52 @@ struct ProfileView: View {
 
             CardView(cornerRadius: 28) {
                 VStack(spacing: 0) {
-                    Button {
-                        appState.signOutPreservingSensorAccess()
-                    } label: {
-                        HStack {
-                            Text(String(localized: "common_sign_out"))
-                                .foregroundStyle(.red)
-                            Spacer()
+                    if isSignedIn {
+                        // サインイン済み: サインアウト・削除ボタンを表示
+                        Button {
+                            appState.signOutPreservingSensorAccess()
+                        } label: {
+                            HStack {
+                                Text(String(localized: "common_sign_out"))
+                                    .foregroundStyle(.red)
+                                Spacer()
+                            }
+                            .padding(.vertical, 16)
                         }
-                        .padding(.vertical, 16)
-                    }
-                    .buttonStyle(.plain)
+                        .buttonStyle(.plain)
 
-                    divider
+                        divider
 
-                    Button {
-                        isShowingDeleteAlert = true
-                    } label: {
-                        HStack {
-                            Text(String(localized: "settings_delete_account"))
-                                .foregroundStyle(.red)
-                            Spacer()
+                        Button {
+                            isShowingDeleteAlert = true
+                        } label: {
+                            HStack {
+                                Text(String(localized: "settings_delete_account"))
+                                    .foregroundStyle(.red)
+                                Spacer()
+                            }
+                            .padding(.vertical, 16)
                         }
-                        .padding(.vertical, 16)
+                        .buttonStyle(.plain)
+                    } else {
+                        // v0.4: 未サインイン: Apple Sign Inボタンを表示
+                        VStack(spacing: 12) {
+                            Text(String(localized: "profile_sign_in_description"))
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                                .multilineTextAlignment(.center)
+                                .padding(.vertical, 8)
+                            
+                            SignInWithAppleButton(.signIn) { request in
+                                AuthCoordinator.shared.configure(request)
+                            } onCompletion: { result in
+                                AuthCoordinator.shared.completeSignIn(result: result)
+                            }
+                            .signInWithAppleButtonStyle(.black)
+                            .frame(height: 50)
+                            .padding(.bottom, 8)
+                        }
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }

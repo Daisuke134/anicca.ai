@@ -402,12 +402,7 @@ struct HabitsSectionView: View {
                         withAnimation(.easeInOut(duration: 0.18)) {
                             if isOn {
                                 if let date = date {
-                                    // ★ 起床の場合、AlarmKit許可をリクエスト
-                                    if habit == .wake {
-                                        Task {
-                                            await requestAlarmKitPermissionIfNeeded()
-                                        }
-                                    }
+                                    // v0.4: AlarmKitは習慣詳細画面のトグルで明示的に有効化
                                     activeHabits.insert(habit)
                                     habitTimes[habit] = date
                                 } else {
@@ -662,30 +657,8 @@ struct HabitsSectionView: View {
         activeSheet = nil
     }
     
-    private func requestAlarmKitPermissionIfNeeded() async {
-#if canImport(AlarmKit)
-        if #available(iOS 26.0, *) {
-            let manager = AlarmManager.shared
-            let status = manager.authorizationState
-            switch status {
-            case .notDetermined:
-                do {
-                    _ = try await manager.requestAuthorization()
-                    // 許可された場合、プロファイルのAlarmKit設定をON
-                    await MainActor.run {
-                        var profile = appState.userProfile
-                        profile.useAlarmKitForWake = true
-                        appState.updateUserProfile(profile, sync: true)
-                    }
-                } catch {
-                    // 拒否された場合は何もしない（通常の通知を使用）
-                }
-            default:
-                break
-            }
-        }
-#endif
-    }
+    // v0.4: requestAlarmKitPermissionIfNeeded を削除
+    // AlarmKitは習慣詳細画面のトグルで明示的に有効化する
 }
 
 // 統合エディタ（時刻＋フォローアップ）

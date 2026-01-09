@@ -71,24 +71,11 @@ struct OnboardingFlowView: View {
         switch step {
         case .welcome:
             AnalyticsManager.shared.track(.onboardingWelcomeCompleted)
-            step = .account
-        case .account:
-            AnalyticsManager.shared.track(.onboardingAccountCompleted)
+            // v0.4: Account (Sign in with Apple) をスキップ
             step = .value
         case .value:
             AnalyticsManager.shared.track(.onboardingValueCompleted)
-            step = .source
-        case .source:
-            AnalyticsManager.shared.track(.onboardingSourceCompleted)
-            step = .name
-        case .name:
-            AnalyticsManager.shared.track(.onboardingNameCompleted)
-            step = .gender
-        case .gender:
-            AnalyticsManager.shared.track(.onboardingGenderCompleted)
-            step = .age
-        case .age:
-            AnalyticsManager.shared.track(.onboardingAgeCompleted)
+            // v0.4: Source, Name, Gender, Age をスキップ
             step = .ideals
         case .ideals:
             AnalyticsManager.shared.track(.onboardingIdealsCompleted)
@@ -98,24 +85,15 @@ struct OnboardingFlowView: View {
             step = .habitSetup
         case .habitSetup:
             AnalyticsManager.shared.track(.onboardingHabitsetupCompleted)
-            // レビュー要求は3回目のセッション完了後に移動（VoiceSessionController.stop()で実行）
             step = .notifications
         case .notifications:
             AnalyticsManager.shared.track(.onboardingNotificationsCompleted)
-            // AlarmKitは iOS 26+ のみ。非対応ならここで完了にする（通知権限と混同しない）
-            #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
-                step = .alarmkit
-            } else {
-                completeOnboarding()
-                return
-            }
-            #else
+            // v0.4: AlarmKitステップを削除（習慣詳細画面でオンデマンド許可に変更）
             completeOnboarding()
             return
-            #endif
-        case .alarmkit:
-            AnalyticsManager.shared.track(.onboardingAlarmkitCompleted)
+        // v0.4: 以下のステップはスキップされるが、コードは残す（将来の再利用のため）
+        case .account, .source, .name, .gender, .age, .alarmkit:
+            // これらのcaseに到達することはない
             completeOnboarding()
             return
         }

@@ -203,6 +203,9 @@ final class AppState: ObservableObject {
         // Sync scheduled alarms on app launch
         Task { await scheduler.applySchedules(habitSchedules) }
         Task { await applyCustomSchedulesToScheduler() }
+        
+        // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元
+        Task { await bootstrapProfileFromServerIfAvailable() }
     }
 
     /// Intentプロセス（AlarmKit / LiveActivityIntent）からの「会話開始」要求をAppGroupから回収する。
@@ -996,7 +999,13 @@ final class AppState: ObservableObject {
     }
     
     func bootstrapProfileFromServerIfAvailable() async {
-        guard case .signedIn(let credentials) = authStatus else { return }
+        // v0.4: 匿名ユーザーでもdevice_idでプロフィールを復元
+        let userId: String
+        if case .signedIn(let credentials) = authStatus {
+            userId = credentials.userId
+        } else {
+            userId = resolveDeviceId()
+        }
         
         isBootstrappingProfile = true
         defer { isBootstrappingProfile = false }
@@ -1004,7 +1013,7 @@ final class AppState: ObservableObject {
         var request = URLRequest(url: AppConfig.profileSyncURL)
         request.httpMethod = "GET"
         request.setValue(resolveDeviceId(), forHTTPHeaderField: "device-id")
-        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        request.setValue(userId, forHTTPHeaderField: "user-id")
         
         do {
             let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)

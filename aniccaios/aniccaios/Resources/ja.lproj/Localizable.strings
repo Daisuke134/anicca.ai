@@ -24,6 +24,7 @@
 "onboarding_welcome_subtitle_line1" = "Aniccaはあなたの声のコーチです。";
 "onboarding_welcome_subtitle_line2" = "行動と心を導きます。";
 "onboarding_welcome_cta" = "はじめる";
+"onboarding_welcome_restore_description" = "以前使っていた方はこちら";
 
 "onboarding_account_title" = "進捗を保存";
 "onboarding_account_description" = "デバイス間で習慣や設定を同期するためにサインインしてください。";
@@ -571,6 +572,7 @@
 
 /* v3: Account Management */
 "profile_account_management" = "アカウント管理";
+"profile_sign_in_description" = "サインインすると、端末変更やアプリ削除後も習慣設定を復元できます";
 
 /* Streak Milestone */
 "milestone_subtitle_format" = "%@を%lld日間続けています";

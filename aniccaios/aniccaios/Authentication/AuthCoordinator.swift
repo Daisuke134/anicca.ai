@@ -9,6 +9,8 @@ final class AuthCoordinator {
     
     private let logger = Logger(subsystem: "com.anicca.ios", category: "AuthCoordinator")
     private var currentNonce: String?
+    // v0.4: 復元フロー用のcompletionハンドラ
+    private var signInCompletion: ((Bool) -> Void)?
     
     private init() {}
     
@@ -53,16 +55,25 @@ final class AuthCoordinator {
     }
     
     func completeSignIn(result: Result<ASAuthorization, Error>) {
+        completeSignIn(result: result, completion: nil)
+    }
+    
+    // v0.4: completionハンドラ付きバージョン（復元フロー用）
+    func completeSignIn(result: Result<ASAuthorization, Error>, completion: ((Bool) -> Void)?) {
+        signInCompletion = completion
+        
         switch result {
         case .success(let authorization):
             handleAuthorization(authorization)
         case .failure(let error):
             // 既にサインイン済みなら無視（AuthorizationError 1000 などの後着エラー対策）
             if case .signedIn = AppState.shared.authStatus {
+                signInCompletion?(true)
                 return
             }
             logger.error("Apple sign in failed: \(error.localizedDescription, privacy: .public)")
             AppState.shared.setAuthStatus(.signedOut)
+            signInCompletion?(false)
         }
     }
     
@@ -168,17 +179,20 @@ final class AuthCoordinator {
                 await AppState.shared.bootstrapProfileFromServerIfAvailable()
                 
                 logger.info("Sign in successful for user: \(backendUserId, privacy: .public)")
+                signInCompletion?(true)
             } else {
                 logger.error("Invalid backend response format")
                 await MainActor.run {
                     AppState.shared.setAuthStatus(.signedOut)
                 }
+                signInCompletion?(false)
             }
         } catch {
             logger.error("Failed to verify with backend: \(error.localizedDescription, privacy: .public)")
             await MainActor.run {
                 AppState.shared.setAuthStatus(.signedOut)
             }
+            signInCompletion?(false)
         }
     }
     

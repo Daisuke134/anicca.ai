@@ -11,11 +11,7 @@ actor ProfileSyncService {
     private init() {}
     
     func enqueue(profile: UserProfile, sensorAccess: [String: Bool]? = nil) async {
-        let authStatus = await MainActor.run { AppState.shared.authStatus }
-        guard case .signedIn = authStatus else {
-            logger.debug("Not signed in, skipping profile sync")
-            return
-        }
+        // v0.4: 匿名ユーザーでもdevice_idで同期する（Apple Sign In不要）
         
         pendingSync = profile
         
@@ -35,20 +31,21 @@ actor ProfileSyncService {
         
         isSyncing = true
         
+        // v0.4: user_idがあれば使う、なければdevice_idをuser_idとして使う
         let authStatus = await MainActor.run { AppState.shared.authStatus }
-        guard case .signedIn(let credentials) = authStatus else {
-            logger.warning("Lost authentication during sync")
-            isSyncing = false
-            pendingSync = nil
-            return
-        }
-        
         let deviceId = await MainActor.run { AppState.shared.resolveDeviceId() }
+        
+        let userId: String
+        if case .signedIn(let credentials) = authStatus {
+            userId = credentials.userId
+        } else {
+            userId = deviceId
+        }
         
         do {
             try await syncProfile(
                 deviceId: deviceId,
-                userId: credentials.userId,
+                userId: userId,
                 profile: profile
             )
             
@@ -109,4 +106,3 @@ enum ProfileSyncError: Error {
     case invalidResponse
     case httpError(Int)
 }
-

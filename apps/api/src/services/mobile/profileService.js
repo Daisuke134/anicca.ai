@@ -62,29 +62,57 @@ export async function upsertProfile({ deviceId, userId, profile, language }) {
       [deviceId, userId, JSON.stringify(profile), language]
     );
     
+    // v0.4: Check if this is an anonymous user (userId === deviceId)
+    const isAnonymous = userId.toLowerCase() === deviceId.toLowerCase();
+    
     // Update user_settings.language if preferredLanguage is provided
-    if (language && (language === 'ja' || language === 'en')) {
-      await query(
-        `INSERT INTO user_settings (user_id, language, updated_at)
-         VALUES ($1::uuid, $2, NOW())
-         ON CONFLICT (user_id)
-         DO UPDATE SET
-           language = EXCLUDED.language,
-           updated_at = NOW()`,
-        [userId, language]
-      );
+    // v0.4: Skip if anonymous user (would cause foreign key violation)
+    if (language && (language === 'ja' || language === 'en') && isUuid(userId) && !isAnonymous) {
+      try {
+        // Check if profiles record exists first to avoid foreign key violation
+        const profileExists = await query(
+          `SELECT 1 FROM profiles WHERE id = $1::uuid LIMIT 1`,
+          [userId]
+        );
+        
+        if (profileExists.rows.length > 0) {
+          await query(
+            `INSERT INTO user_settings (user_id, language, updated_at)
+             VALUES ($1::uuid, $2, NOW())
+             ON CONFLICT (user_id)
+             DO UPDATE SET
+               language = EXCLUDED.language,
+               updated_at = NOW()`,
+            [userId, language]
+          );
+        } else {
+          logger.info('Skipping user_settings upsert: userId not found in profiles', { userId, deviceId });
+        }
+      } catch (err) {
+        // 23503 = foreign key violation (safety net)
+        if (err.code === '23503') {
+          logger.info('Skipping user_settings upsert: foreign key violation', { userId, deviceId });
+        } else {
+          throw err;
+        }
+      }
     }
     
     logger.info(`Profile upserted for device: ${deviceId}, language: ${language}`);
 
     // v0.3: traits/big5/nudge settings are authoritative in user_traits (uuid key).
+    // v0.4: Skip for anonymous users to avoid foreign key violation
     // We accept both legacy keys (idealTraits/problems/stickyModeEnabled) and new keys (ideals/struggles/big5/nudgeIntensity/stickyMode).
-    const profileId = await resolveProfileId(userId);
-    if (profileId) {
-      await upsertUserTraitsFromProfilePayload(profileId, profile);
+    if (!isAnonymous) {
+      const profileId = await resolveProfileId(userId);
+      if (profileId) {
+        await upsertUserTraitsFromProfilePayload(profileId, profile);
+      } else {
+        // Non-uuid user_id can happen during migration; don't hard-fail profile upsert.
+        logger.warn('Could not resolve profileId; user_traits sync skipped', { userId });
+      }
     } else {
-      // Non-uuid user_id can happen during migration; don't hard-fail profile upsert.
-      logger.warn('Could not resolve profileId; user_traits sync skipped', { userId });
+      logger.info('Skipping user_traits sync for anonymous user', { userId, deviceId });
     }
   } catch (error) {
     logger.error('Failed to upsert profile', error);

@@ -304,44 +304,6 @@ Chris Raroque: 最低1週間かけてアプリ紹介ページを作成。
 
 ---
 
-# 📌 週別スケジュール
-
-| 週 | フォーカス | 主要アクション |
-|----|-----------|---------------|
-| **Week 1** | 計測基盤 | Mixpanel導入、Superwall導入、イベント設計 |
-| **Week 2** | Paywall | 表示タイミング追加、Superwall設定、シンプルPaywall作成 |
-| **Week 3** | リテンション | Canny導入、Loops導入、メールシーケンス構築 |
-| **Week 4** | ASO | キーワードリスト、ASA設定、タイトル/サブタイトル最適化 |
-| **Week 5** | コンテンツ+LP | 動画制作開始、ランディングページ更新 |
-| **Week 6+** | スケール | 広告テスト、A/Bテスト継続 |
-
-## 4. Anicca用Paywallの具体案
-
-**Jake Mor #31に従ったシンプル版:**
-
-```
-【ヘッドライン】
-Your AI Coach, Always Ready
-
-【短い段落】
-Get personalized voice coaching to build habits that stick.
-
-【機能チェックリスト】
-✓ Unlimited voice sessions
-✓ Morning wake-up coaching
-✓ Bedtime wind-down support
-✓ Training motivation
-✓ Progress tracking
-
-【価格】
-Annual: $79.99/yr (Save 33%)
-Monthly: $9.99/mo
-
-【ボタン】
-Start Free Trial
-```
-
-
 
 ## Jake Morの教えに基づくPaywall施策 - 完全Todoリスト
 

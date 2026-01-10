@@ -14,7 +14,6 @@ struct SessionView: View {
     @State private var isShowingEMA = false
     @State private var pendingDismissAfterEMA = false
     @State private var showUsageLimitModal = false
-    @State private var showPaywall = false
     @State private var showManageSubscription = false
 
     var body: some View {
@@ -108,21 +107,13 @@ struct SessionView: View {
                 onClose: { showUsageLimitModal = false },
                 onUpgrade: {
                     showUsageLimitModal = false
-                    showPaywall = true
+                    SuperwallManager.shared.register(placement: SuperwallPlacement.quotaExceeded.rawValue)
                 },
                 onManage: {
                     showUsageLimitModal = false
                     showManageSubscription = true
                 }
             )
-        }
-        .sheet(isPresented: $showPaywall) {
-            PaywallContainerView(
-                forcePresent: true,
-                onPurchaseCompleted: { showPaywall = false },
-                onDismissRequested: { showPaywall = false }
-            )
-            .environmentObject(appState)
         }
         .sheet(isPresented: $showManageSubscription) {
             RevenueCatUI.CustomerCenterView()
@@ -139,7 +130,6 @@ struct SessionView: View {
                 showUsageLimitModal = true
             } else {
                 showUsageLimitModal = false
-                showPaywall = false
                 showManageSubscription = false
             }
         }

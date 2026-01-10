@@ -589,22 +589,15 @@ struct ProfileView: View {
     
     @ViewBuilder
     private var subscriptionSheetContent: some View {
-        if appState.subscriptionInfo.plan == .free {
-            PaywallContainerView(
-                forcePresent: true,
-                onDismissRequested: { showingManageSubscription = false }
-            )
-            .task { await SubscriptionManager.shared.refreshOfferings() }
-        } else {
-            RevenueCatUI.CustomerCenterView()
-                .onCustomerCenterRestoreCompleted { customerInfo in
-                    Task {
-                        let subscription = SubscriptionInfo(info: customerInfo)
-                        await MainActor.run { appState.updateSubscriptionInfo(subscription) }
-                        await SubscriptionManager.shared.syncNow()
-                    }
+        // freeユーザーはSuperwallで表示するため、ここはPROユーザーのCustomerCenterのみ
+        RevenueCatUI.CustomerCenterView()
+            .onCustomerCenterRestoreCompleted { customerInfo in
+                Task {
+                    let subscription = SubscriptionInfo(info: customerInfo)
+                    await MainActor.run { appState.updateSubscriptionInfo(subscription) }
+                    await SubscriptionManager.shared.syncNow()
                 }
-        }
+            }
     }
     
     // MARK: - Recording Section (DEBUG only)

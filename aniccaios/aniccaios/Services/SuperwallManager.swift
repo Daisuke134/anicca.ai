@@ -9,6 +9,7 @@ enum SuperwallPlacement: String {
     case sessionComplete3 = "session_complete_3"
     case campaignAppLaunch = "campaign_app_launch"
     case profilePlanTap = "profile_plan_tap"
+    case quotaExceeded = "quota_exceeded"
 }
 
 /// Superwall統合マネージャー

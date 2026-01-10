@@ -68,12 +68,19 @@ final class SubscriptionManager: NSObject {
     }
     
     private func syncUsageInfo(_ subscription: inout SubscriptionInfo) async {
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        // v0.5.1: 匿名ユーザーでも利用量情報を同期
+        let deviceId = AppState.shared.resolveDeviceId()
+        let userId: String
+        if case .signedIn(let credentials) = AppState.shared.authStatus {
+            userId = credentials.userId
+        } else {
+            userId = deviceId
+        }
         
         var request = URLRequest(url: AppConfig.entitlementSyncURL)
         request.httpMethod = "GET"
-        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        request.setValue(deviceId, forHTTPHeaderField: "device-id")
+        request.setValue(userId, forHTTPHeaderField: "user-id")
         
         do {
             let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)

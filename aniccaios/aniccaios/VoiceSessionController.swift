@@ -237,12 +237,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
     /// v3: Feeling開始（migration-patch-v3.md 6.2 /api/mobile/feeling/start）
     /// - feeling_sessions の sessionId を取得して保持する（Realtimeの session_id と混同しない）
     private func beginFeelingSession(topic: FeelingTopic) async {
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
+        // v0.5.1: 匿名ユーザーでもFeelingセッションを許可
+        let deviceId = AppState.shared.resolveDeviceId()
+        let userId: String
+        if case .signedIn(let credentials) = AppState.shared.authStatus {
+            userId = credentials.userId
+        } else {
+            userId = deviceId
+        }
+        
         var req = URLRequest(url: AppConfig.feelingStartURL)
         req.httpMethod = "POST"
         req.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        req.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-        req.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        req.setValue(deviceId, forHTTPHeaderField: "device-id")
+        req.setValue(userId, forHTTPHeaderField: "user-id")
 
         let body: [String: Any] = [
             "feelingId": topic.rawValue
@@ -363,17 +371,20 @@ final class VoiceSessionController: NSObject, ObservableObject {
             return cached
         }
 
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else {
-            throw VoiceSessionError.missingAuthentication
+        // v0.5.1: 匿名ユーザーでもセッション開始を許可（deviceIdをuserIdとして使用）
+        let deviceId = AppState.shared.resolveDeviceId()
+        let userId: String
+        if case .signedIn(let credentials) = AppState.shared.authStatus {
+            userId = credentials.userId
+        } else {
+            userId = deviceId
         }
 
         var request = URLRequest(url: AppConfig.realtimeSessionURL)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Accept")
-        request.setValue(AppState.shared.resolveDeviceId(),
-                         forHTTPHeaderField: "device-id")
-        request.setValue(credentials.userId,
-                         forHTTPHeaderField: "user-id")
+        request.setValue(deviceId, forHTTPHeaderField: "device-id")
+        request.setValue(userId, forHTTPHeaderField: "user-id")
 
         let (data, response) = try await NetworkSessionManager.shared.session.data(for: request)
         if let http = response as? HTTPURLResponse, http.statusCode == 402 {
@@ -1055,15 +1066,21 @@ private enum RealtimeTools {
 private enum RealtimeToolRouter {
     @MainActor
     static func callTool(name: String, argumentsJSON: String) async -> String {
-        guard case .signedIn(let credentials) = AppState.shared.authStatus else {
-            return "{\"error\":{\"code\":\"UNAUTHORIZED\",\"message\":\"Not signed in\"}}"
+        // v0.5.1: 匿名ユーザーでもツール呼び出しを許可
+        let deviceId = AppState.shared.resolveDeviceId()
+        let userId: String
+        if case .signedIn(let credentials) = AppState.shared.authStatus {
+            userId = credentials.userId
+        } else {
+            userId = deviceId
         }
+        
         // v0.3 (Node/Express): tools は mobile/realtime 配下に集約
         var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/realtime/tools/\(name)"))
         request.httpMethod = "POST"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
-        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        request.setValue(deviceId, forHTTPHeaderField: "device-id")
+        request.setValue(userId, forHTTPHeaderField: "user-id")
         request.httpBody = argumentsJSON.data(using: .utf8)
 
         do {

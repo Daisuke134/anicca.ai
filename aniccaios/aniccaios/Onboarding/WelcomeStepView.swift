@@ -56,16 +56,25 @@ struct WelcomeStepView: View {
                             if success {
                                 Task {
                                     await appState.bootstrapProfileFromServerIfAvailable()
-                                    // プロフィールが復元されたらオンボーディングをスキップ
+                                    // v0.5: 認証成功後の遷移を確実に
                                     await MainActor.run {
-                                        if !appState.userProfile.displayName.isEmpty ||
-                                           !appState.habitSchedules.isEmpty {
+                                        let hasProfile = !appState.userProfile.displayName.isEmpty
+                                        let hasHabits = !appState.habitSchedules.isEmpty
+                                        let hasCustomHabits = !appState.customHabits.isEmpty
+                                        
+                                        if hasProfile || hasHabits || hasCustomHabits {
+                                            // 既存ユーザー: オンボーディングをスキップしてメイン画面へ
                                             appState.markOnboardingComplete()
+                                        } else {
+                                            // 新規ユーザー: オンボーディングを続行
+                                            next()
                                         }
+                                        isRestoring = false
                                     }
                                 }
+                            } else {
+                                isRestoring = false
                             }
-                            isRestoring = false
                         }
                     }
                     .signInWithAppleButtonStyle(.whiteOutline)

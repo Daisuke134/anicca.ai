@@ -144,12 +144,8 @@ final class AppState: ObservableObject {
         self.userProfile = UserProfile()
         self.subscriptionInfo = .free
         self.authStatus = loadUserCredentials()
-        if case .signedOut = self.authStatus {
-            self.isOnboardingComplete = false
-            defaults.set(false, forKey: onboardingKey)
-            defaults.removeObject(forKey: onboardingStepKey)
-            self.onboardingStep = .welcome
-        }
+        // v0.5: 匿名ユーザーでもオンボーディング完了状態を維持
+        // signedOut時の強制リセットを削除し、ローカル保存された状態を尊重
         self.userProfile = loadUserProfile()
         syncPreferredLanguageWithSystem()
         self.subscriptionInfo = loadSubscriptionInfo()
@@ -242,7 +238,8 @@ final class AppState: ObservableObject {
     }
 
     func updateHabit(_ habit: HabitType, time: Date) async {
-        guard case .signedIn = authStatus else { return }
+        // v0.5: 匿名ユーザーでもハビットスケジュールを保存可能に
+        // signedInガードを削除し、ローカル保存を常に許可
         
         let calendar = Calendar.current
         var components = DateComponents()
@@ -539,7 +536,8 @@ final class AppState: ObservableObject {
     }
 
     func updateHabits(_ schedules: [HabitType: Date]) async {
-        guard case .signedIn = authStatus else { return }
+        // v0.5: 匿名ユーザーでもハビットスケジュールを保存可能に
+        // signedInガードを削除し、ローカル保存を常に許可
         
         var componentsMap: [HabitType: DateComponents] = [:]
         let calendar = Calendar.current

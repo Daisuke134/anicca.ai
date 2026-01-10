@@ -1519,16 +1519,24 @@ final class AppState: ObservableObject {
         updateUserProfile(profile, sync: false)
         
         if let schedules = payload["habitSchedules"] as? [String: [String: Int]] {
-            habitSchedules = decodeHabitSchedules(from: schedules)
-            saveHabitSchedules()
-            Task { await scheduler.applySchedules(habitSchedules) }
+            // v0.5.1: ローカルにデータがなければサーバーのデータを適用（ローカル優先）
+            let decoded = decodeHabitSchedules(from: schedules)
+            if habitSchedules.isEmpty {
+                habitSchedules = decoded
+                saveHabitSchedules()
+                Task { await scheduler.applySchedules(habitSchedules) }
+            }
         }
         
         if let followups = payload["habitFollowupCounts"] as? [String: Int] {
-            habitFollowupCounts = followups.compactMapKeys { HabitType(rawValue: $0) }
+            // v0.5.1: ローカルにデータがなければサーバーのデータを適用（ローカル優先）
+            let decoded = followups.compactMapKeys { HabitType(rawValue: $0) }
                 .mapValues { bounded($0) }
-            saveFollowupCounts()
-            Task { await scheduler.applySchedules(habitSchedules) }
+            if habitFollowupCounts.isEmpty {
+                habitFollowupCounts = decoded
+                saveFollowupCounts()
+                Task { await scheduler.applySchedules(habitSchedules) }
+            }
         }
         
         if let customHabitsPayload = payload["customHabits"] as? [[String: Any]] {
@@ -1546,7 +1554,8 @@ final class AppState: ObservableObject {
                 }
                 return CustomHabitConfiguration(id: uuid, name: name, updatedAt: updatedAt)
             }
-            if !configs.isEmpty {
+            // v0.5.1: ローカルにデータがなければサーバーのデータを適用（ローカル優先）
+            if customHabits.isEmpty && !configs.isEmpty {
                 customHabits = configs
                 CustomHabitStore.shared.saveAll(configs)
                 customHabit = configs.first
@@ -1554,17 +1563,25 @@ final class AppState: ObservableObject {
         }
         
         if let customSchedulesPayload = payload["customHabitSchedules"] as? [String: [String: Int]] {
-            customHabitSchedules = customSchedulesPayload.compactMapKeys { UUID(uuidString: $0) }
+            // v0.5.1: ローカルにデータがなければサーバーのデータを適用（ローカル優先）
+            let decoded = customSchedulesPayload.compactMapKeys { UUID(uuidString: $0) }
                 .mapValues { decodeComponents(from: $0) }
-            saveCustomHabitSchedules()
-            Task { await applyCustomSchedulesToScheduler() }
+            if customHabitSchedules.isEmpty {
+                customHabitSchedules = decoded
+                saveCustomHabitSchedules()
+                Task { await applyCustomSchedulesToScheduler() }
+            }
         }
         
         if let customFollowups = payload["customHabitFollowupCounts"] as? [String: Int] {
-            customHabitFollowupCounts = customFollowups.compactMapKeys { UUID(uuidString: $0) }
+            // v0.5.1: ローカルにデータがなければサーバーのデータを適用（ローカル優先）
+            let decoded = customFollowups.compactMapKeys { UUID(uuidString: $0) }
                 .mapValues { bounded($0) }
-            saveCustomFollowupCounts()
-            Task { await applyCustomSchedulesToScheduler() }
+            if customHabitFollowupCounts.isEmpty {
+                customHabitFollowupCounts = decoded
+                saveCustomFollowupCounts()
+                Task { await applyCustomSchedulesToScheduler() }
+            }
         }
         
         if let sensor = payload["sensorAccess"] as? [String: Bool] {

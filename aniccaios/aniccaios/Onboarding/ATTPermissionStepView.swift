@@ -47,12 +47,11 @@ struct ATTPermissionStepView: View {
                     // ATT許可後にデバイス識別子を再収集（IDFAを含める）
                     Purchases.shared.attribution.collectDeviceIdentifiers()
                     
-                    #if DEBUG
+                    // Release設定でもログを出力（StagingスキームRelease設定でのテスト用）
                     print("[ATT] Authorization status: \(status.rawValue)")
                     if let idfa = SingularManager.shared.idfa {
                         print("[ATT] IDFA: \(idfa)")
                     }
-                    #endif
                     
                     next()
                 }

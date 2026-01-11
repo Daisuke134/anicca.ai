@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 import AdSupport
 import AppTrackingTransparency
 import OSLog

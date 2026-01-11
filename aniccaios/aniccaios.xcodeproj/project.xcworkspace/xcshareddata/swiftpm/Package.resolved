@@ -1,5 +1,5 @@
 {
-  "originHash" : "d44f9f9f105648506c3d47ec4ffaa70c39d4edb50274414c07d0ab2511a4f7b9",
+  "originHash" : "5e09ac25aadad6e5b042cf11b07eb0ac910dbceefba1a8ed2e13881f937a30d4",
   "pins" : [
     {
       "identity" : "autolayout",
@@ -35,6 +35,15 @@
       "state" : {
         "revision" : "517162f2045989b43f691327aeb1b5847c9a5a6d",
         "version" : "5.47.1"
+      }
+    },
+    {
+      "identity" : "singular-ios-sdk",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/singular-labs/Singular-iOS-SDK",
+      "state" : {
+        "revision" : "f8b2d5ba562ad23795ac597d24482ef55fecc762",
+        "version" : "12.10.0"
       }
     },
     {

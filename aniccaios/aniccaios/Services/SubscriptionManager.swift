@@ -1,5 +1,6 @@
 import RevenueCat
 import Foundation
+import Singular
 
 @MainActor
 final class SubscriptionManager: NSObject {
@@ -199,7 +200,25 @@ extension SubscriptionManager: PurchasesDelegate {
             // 1. まずRevenueCatの情報だけで即座に更新（待機なし）
             AppState.shared.updateSubscriptionInfo(subscription)
             
-            // 2. サーバーDBを同期してからlimit情報を取得（POSTでDB更新→GET）
+            // 2. Singularへ購入イベント送信（新規購入の場合のみ）
+            if subscription.plan == .pro,
+               let productId = subscription.productIdentifier {
+                // 価格を取得（RevenueCatから）
+                let price: Double
+                let currency: String
+                if let offering = AppState.shared.cachedOffering,
+                   let package = offering.availablePackages.first(where: { $0.storeProduct.productIdentifier == productId }) {
+                    price = package.storeProduct.price as? Double ?? (productId.contains("annual") ? 49.99 : 9.99)
+                    currency = package.storeProduct.currencyCode ?? "USD"
+                } else {
+                    // フォールバック価格
+                    price = productId.contains("annual") ? 49.99 : 9.99
+                    currency = "USD"
+                }
+                SingularManager.shared.trackPurchase(productId: productId, price: price, currency: currency)
+            }
+            
+            // 3. サーバーDBを同期してからlimit情報を取得（POSTでDB更新→GET）
             await syncNow()
         }
     }

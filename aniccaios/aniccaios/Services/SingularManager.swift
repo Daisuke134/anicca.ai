@@ -70,5 +70,57 @@ final class SingularManager {
         }
         logger.debug("Tracked event: \(eventName)")
     }
+    
+    // MARK: - TikTok SAN対応イベント
+    
+    /// アプリ初回起動イベント（1回だけ送信）
+    func trackAppLaunch() {
+        let key = "singular_launch_tracked"
+        guard !UserDefaults.standard.bool(forKey: key) else {
+            logger.debug("LaunchAPP already tracked, skipping")
+            return
+        }
+        Singular.event("LaunchAPP")
+        UserDefaults.standard.set(true, forKey: key)
+        logger.info("Tracked LaunchAPP event")
+        
+        // Testing Console用にIDFVをログ出力
+        if let deviceId = idfv {
+            logger.info("Device IDFV for Singular Testing Console: \(deviceId, privacy: .public)")
+            print("📱 [Singular] IDFV for Testing Console: \(deviceId)")
+        }
+    }
+    
+    /// 新規登録イベント（Sign in with Apple完了時）
+    func trackRegistration() {
+        Singular.event("Registration")
+        logger.info("Tracked Registration event")
+    }
+    
+    /// サブスクリプション購入イベント
+    /// - Parameters:
+    ///   - productId: プロダクトID（例: ai.anicca.app.ios.annual）
+    ///   - price: 価格
+    ///   - currency: 通貨コード（デフォルト: USD）
+    func trackPurchase(productId: String, price: Double, currency: String = "USD") {
+        // Revenue tracking
+        Singular.revenue(currency, amount: price)
+        
+        // Subscribe event
+        Singular.event("Subscribe", withArgs: [
+            "product_id": productId,
+            "price": price,
+            "currency": currency
+        ])
+        
+        // Purchase event
+        Singular.event("Purchase", withArgs: [
+            "product_id": productId,
+            "price": price,
+            "currency": currency
+        ])
+        
+        logger.info("Tracked Purchase/Subscribe/Revenue: \(productId) \(currency) \(price)")
+    }
 }
 

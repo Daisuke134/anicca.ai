@@ -3,6 +3,7 @@ import UIKit
 import AdSupport
 import AppTrackingTransparency
 import OSLog
+import Singular
 
 @MainActor
 final class SingularManager {

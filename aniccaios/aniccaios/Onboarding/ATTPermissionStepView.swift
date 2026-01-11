@@ -14,11 +14,11 @@ struct ATTPermissionStepView: View {
                 .font(.system(size: 64))
                 .foregroundColor(AppTheme.Colors.accent)
             
-            Text("Keep Anicca Free & Personalized")
+            Text(String(localized: "onboarding_att_title"))
                 .font(AppTheme.Typography.onboardingTitle)
                 .foregroundColor(AppTheme.Colors.label)
             
-            Text("This helps us show you more relevant content and continue improving your experience at no extra cost.")
+            Text(String(localized: "onboarding_att_description"))
                 .font(AppTheme.Typography.bodyDynamic)
                 .foregroundColor(AppTheme.Colors.secondaryLabel)
                 .multilineTextAlignment(.center)
@@ -26,7 +26,7 @@ struct ATTPermissionStepView: View {
             
             Spacer()
             
-            PrimaryButton(title: "Continue", style: .primary) {
+            PrimaryButton(title: String(localized: "common_continue"), style: .primary) {
                 requestATT()
             }
             .disabled(isRequesting)

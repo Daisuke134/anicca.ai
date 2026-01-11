@@ -588,3 +588,7 @@
 "milestone_generic_title" = "Amazing Streak!";
 "milestone_days_unit" = "days";
 
+/* ATT Permission */
+"onboarding_att_title" = "Personalize Your Experience";
+"onboarding_att_description" = "This helps us understand how you use Anicca and make it better for you.";
+

@@ -588,3 +588,7 @@
 "milestone_generic_title" = "素晴らしい継続です";
 "milestone_days_unit" = "日";
 
+/* ATT Permission */
+"onboarding_att_title" = "体験をパーソナライズ";
+"onboarding_att_description" = "Aniccaの使い方を理解し、あなたに合った体験を提供するために使用します。";
+

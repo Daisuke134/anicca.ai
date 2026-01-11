@@ -60,8 +60,22 @@ platform :ios do
         ipa: lane_context[SharedValues::IPA_OUTPUT_PATH]
       )
       
-      # アプリを起動（TikTok見てても自動遷移）
-      sh("ios-deploy --bundle_id #{BUNDLE_ID} --justlaunch --noinstall || true")
+      # アプリを起動（TikTok見てても自動遷移、デバイスロック解除必須）
+      begin
+        json_output = sh("xcrun devicectl list devices --json-output /dev/stdout 2>/dev/null", log: false)
+        require 'json'
+        devices_data = JSON.parse(json_output)
+        connected_devices = devices_data.dig("result", "devices")&.select { |d| d.dig("connectionProperties", "tunnelState") == "connected" }
+        if connected_devices && !connected_devices.empty?
+          device_id = connected_devices.first["identifier"]
+          UI.message("📱 Launching app on device: #{device_id}")
+          sh("xcrun devicectl device process launch --device '#{device_id}' #{BUNDLE_ID} || true")
+        else
+          UI.message("⚠️ No connected device found for auto-launch. Please open the app manually.")
+        end
+      rescue => e
+        UI.message("⚠️ Could not auto-launch app: #{e.message}")
+      end
       
       UI.success("✅ Build completed, installed, and launched on device!")
       

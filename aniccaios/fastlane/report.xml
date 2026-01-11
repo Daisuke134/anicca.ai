@@ -5,27 +5,27 @@
     
     
       
-      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.00033">
+      <testcase classname="fastlane.lanes" name="0: default_platform" time="0.000282">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="1: build_app" time="164.770206">
+      <testcase classname="fastlane.lanes" name="1: build_app" time="185.328076">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="2: install_on_device" time="7.701247">
+      <testcase classname="fastlane.lanes" name="2: install_on_device" time="6.646099">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="3: shell command" time="0.100176">
+      <testcase classname="fastlane.lanes" name="3: shell command" time="0.106745">
         
       </testcase>
     
       
-      <testcase classname="fastlane.lanes" name="4: notification" time="0.252857">
+      <testcase classname="fastlane.lanes" name="4: notification" time="0.266816">
         
       </testcase>
     

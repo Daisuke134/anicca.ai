@@ -9,6 +9,8 @@ enum AppConfig {
     private static let revenueCatCustomerCenterKey = "REVENUECAT_CUSTOMER_CENTER_ID"
     private static let mixpanelTokenKey = "MIXPANEL_TOKEN"
     private static let superwallAPIKeyKey = "SUPERWALL_API_KEY"
+    private static let singularSDKKeyKey = "SINGULAR_SDK_KEY"
+    private static let singularSDKSecretKey = "SINGULAR_SDK_SECRET"
     private static let logger = Logger(subsystem: "com.anicca.ios", category: "AppConfig")
 
     private static func infoValue(for key: String) -> String {
@@ -61,6 +63,8 @@ enum AppConfig {
     static var revenueCatCustomerCenterId: String { infoValue(for: revenueCatCustomerCenterKey) }
     static var mixpanelToken: String { infoValue(for: mixpanelTokenKey) }
     static var superwallAPIKey: String { infoValue(for: superwallAPIKeyKey) }
+    static var singularSDKKey: String { infoValue(for: singularSDKKeyKey) }
+    static var singularSDKSecret: String { infoValue(for: singularSDKSecretKey) }
     static var entitlementSyncURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/entitlement")
     }

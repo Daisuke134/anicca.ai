@@ -12,7 +12,8 @@ enum OnboardingStep: Int {
     case struggles     // 8. Current Struggles選択
     case habitSetup    // 9. 習慣設定
     case notifications // 10. 通知許可
-    case alarmkit      // 11. アラーム許可（最終ステップ）
+    case att           // 11. ATT許可
+    case alarmkit      // 12. アラーム許可（最終ステップ）
 }
 
 extension OnboardingStep {

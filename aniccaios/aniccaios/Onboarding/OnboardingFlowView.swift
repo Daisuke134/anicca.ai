@@ -32,6 +32,8 @@ struct OnboardingFlowView: View {
                     HabitSetupStepView(next: advance)
                 case .notifications:
                     NotificationPermissionStepView(next: advance)
+                case .att:
+                    ATTPermissionStepView(next: advance)
                 case .alarmkit:
                     AlarmKitPermissionStepView(next: advance)
                 }
@@ -88,7 +90,9 @@ struct OnboardingFlowView: View {
             step = .notifications
         case .notifications:
             AnalyticsManager.shared.track(.onboardingNotificationsCompleted)
-            // v0.4: AlarmKitステップを削除（習慣詳細画面でオンデマンド許可に変更）
+            step = .att
+        case .att:
+            AnalyticsManager.shared.track(.onboardingATTCompleted)
             completeOnboarding()
             return
         // v0.4: 以下のステップはスキップされるが、コードは残す（将来の再利用のため）

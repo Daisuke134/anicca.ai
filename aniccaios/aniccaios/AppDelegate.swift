@@ -29,6 +29,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         AnalyticsManager.shared.configure()
         AnalyticsManager.shared.track(.appOpened)
         SuperwallManager.shared.configure()
+        SingularManager.shared.configure(launchOptions: launchOptions)
         
         // Phase-7: register BGTask handlers (must complete before launch ends).
         // See Apple docs: BGTaskScheduler.register(...) must finish before end of launch.

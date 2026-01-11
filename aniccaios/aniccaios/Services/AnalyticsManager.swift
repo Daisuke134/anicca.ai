@@ -150,6 +150,7 @@ enum AnalyticsEvent: String {
     case onboardingStrugglesCompleted = "onboarding_struggles_completed"
     case onboardingHabitsetupCompleted = "onboarding_habitsetup_completed"
     case onboardingNotificationsCompleted = "onboarding_notifications_completed"
+    case onboardingATTCompleted = "onboarding_att_completed"
     case onboardingAlarmkitCompleted = "onboarding_alarmkit_completed"
     
     // Paywall (CRITICAL - Jake Mor #1)

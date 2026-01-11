@@ -403,22 +403,8 @@
 "problem_night_scrolling" = "夜のスクロール";
 "problem_cant_wake_up" = "起きられない";
 
-/* v3 Behavior */
 "common_loading" = "読み込み中…";
 "common_retry" = "再試行";
-"behavior_title_today_insights" = "今日のインサイト";
-"behavior_error_failed_load" = "今日のインサイトを取得できませんでした。";
-"behavior_title_today_highlights" = "今日のハイライト";
-"behavior_title_timeline" = "24時間タイムライン";
-"behavior_title_future" = "10年後の未来";
-"behavior_not_enough_data" = "データが不足しています";
-"behavior_highlight_wake" = "起床";
-"behavior_highlight_screen" = "スクリーン";
-"behavior_highlight_workout" = "運動";
-"behavior_highlight_rumination" = "反芻";
-"behavior_status_moving_forward" = "前進中";
-"behavior_status_needs_attention" = "要注意";
-"behavior_status_stable" = "安定";
 "timeline_label_sleep" = "睡眠";
 "timeline_label_focus" = "集中";
 "timeline_label_scroll" = "スクロール";
@@ -481,7 +467,7 @@
 "problem_work_life_balance" = "ワークライフバランス";
 "settings_personalization" = "パーソナライズ";
 "settings_data_optional_title" = "データ連携（任意）";
-"settings_data_optional_description" = "睡眠・歩数・スクリーンタイム・動作データの連携は任意です。未許可でもTalkはいつでも使えます。連携するとBehaviorのインサイト精度が向上します。";
+"settings_data_optional_description" = "睡眠・歩数・スクリーンタイム・動作データの連携は任意です。未許可でもTalkはいつでも使えます。";
 "habit_add_custom" = "習慣を追加";
 "habit_add_routine" = "ルーティンを追加";
 "habit_routine_placeholder" = "ルーティン";
@@ -525,7 +511,6 @@
 "ema_no" = "いいえ";
 "ema_skip" = "スキップ";
 "tab_habits" = "習慣";
-"tab_behavior" = "行動";
 "tab_profile" = "プロファイル";
 
 // Pre-Reminder (v3.1)

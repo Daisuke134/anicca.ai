@@ -76,9 +76,8 @@ final class AppState: ObservableObject {
     
     enum RootTab: Int, Hashable {
         case talk = 0
-        case habits = 1      // 新規追加
-        case behavior = 2    // 1 → 2
-        case profile = 3     // 2 → 3
+        case habits = 1
+        case profile = 2
     }
     @Published var selectedRootTab: RootTab = .talk
 

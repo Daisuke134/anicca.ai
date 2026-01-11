@@ -11,7 +11,7 @@ struct FigmaTabBar: View {
     // Figmaより: タブバー高さ76px（ボーダー1px + コンテンツ75px）
     private let tabBarHeight: CGFloat = 76
     private let tabButtonHeight: CGFloat = 59
-    // Figma指定: 4タブ均等配置（水平中央揃え）
+    // Figma指定: 3タブ均等配置（水平中央揃え）
     private let tabCornerRadius: CGFloat = 24
     
     var body: some View {
@@ -21,7 +21,7 @@ struct FigmaTabBar: View {
                 .fill(AppTheme.Colors.tabBarBorder)
                 .frame(height: 1)
             
-            // タブコンテナ（4タブ均等配置）
+            // タブコンテナ（3タブ均等配置）
             HStack(spacing: 0) {
                 tabButton(
                     tab: .talk,
@@ -32,11 +32,6 @@ struct FigmaTabBar: View {
                     tab: .habits,
                     icon: "clock.arrow.circlepath",
                     title: String(localized: "tab_habits")
-                )
-                tabButton(
-                    tab: .behavior,
-                    icon: "chart.bar",
-                    title: String(localized: "tab_behavior")
                 )
                 tabButton(
                     tab: .profile,

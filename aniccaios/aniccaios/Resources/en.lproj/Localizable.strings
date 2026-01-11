@@ -413,22 +413,8 @@
 "problem_energy" = "Energy";
 "problem_work_life_balance" = "Work-Life Balance";
 
-/* v3 Behavior */
 "common_loading" = "Loading…";
 "common_retry" = "Retry";
-"behavior_title_today_insights" = "Today's Insights";
-"behavior_error_failed_load" = "Failed to load today's insights.";
-"behavior_title_today_highlights" = "Today's Highlights";
-"behavior_title_timeline" = "24-Hour Timeline";
-"behavior_title_future" = "10 Years From Now";
-"behavior_not_enough_data" = "Not enough data";
-"behavior_highlight_wake" = "Wake";
-"behavior_highlight_screen" = "Screen";
-"behavior_highlight_workout" = "Workout";
-"behavior_highlight_rumination" = "Rumination";
-"behavior_status_moving_forward" = "Moving Forward";
-"behavior_status_needs_attention" = "Needs Attention";
-"behavior_status_stable" = "Stable";
 "timeline_label_sleep" = "Sleep";
 "timeline_label_focus" = "Focus";
 "timeline_label_scroll" = "Scroll";
@@ -481,7 +467,7 @@
 "problem_self_criticism" = "Self-criticism";
 "settings_personalization" = "Personalization";
 "settings_data_optional_title" = "Data Integration (Optional)";
-"settings_data_optional_description" = "Sleep, Steps, Screen Time, and Motion are optional. Even if you keep them OFF, you can always use Talk. Behavior insights may be limited until you connect data.";
+"settings_data_optional_description" = "Sleep, Steps, Screen Time, and Motion are optional. Even if you keep them OFF, you can always use Talk.";
 "habit_add_custom" = "Add Habit";
 "habit_add_routine" = "Add Routine";
 "habit_routine_placeholder" = "Routine";
@@ -500,7 +486,6 @@
 "common_wake_location_fallback" = "Bed";
 "settings_contact_support" = "Contact support";
 "tab_talk" = "Talk";
-"tab_behavior" = "Behavior";
 "tab_profile" = "Profile";
 "talk_nav_title" = "How are you feeling now?";
 "talk_feeling_self_loathing_title" = "Self-Loathing";

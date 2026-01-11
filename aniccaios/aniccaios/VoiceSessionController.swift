@@ -1043,20 +1043,6 @@ private enum RealtimeTools {
                     ],
                     "required": ["userId", "templateId", "channel"]
                 ]
-            ],
-            [
-                "type": "function",
-                "name": "get_behavior_summary",
-                "description": "Get today's behavior summary for the Behavior tab",
-                "parameters": [
-                    "type": "object",
-                    "strict": true,
-                    "additionalProperties": false,
-                    "properties": [
-                        "userId": ["type": "string"]
-                    ],
-                    "required": ["userId"]
-                ]
             ]
         ]
     }

@@ -15,8 +15,6 @@ struct MainTabView: View {
             case .habits:
                 HabitsTabView()
                     .environmentObject(appState)
-            case .behavior:
-                BehaviorView()
             case .profile:
                 ProfileView()
                     .environmentObject(appState)

@@ -10,15 +10,15 @@ struct ATTPermissionStepView: View {
         VStack(spacing: AppTheme.Spacing.xl) {
             Spacer()
             
-            Image(systemName: "chart.bar.xaxis")
+            Image(systemName: "sparkles")
                 .font(.system(size: 64))
                 .foregroundColor(AppTheme.Colors.accent)
             
-            Text("Help Us Improve")
+            Text("Keep Anicca Free & Personalized")
                 .font(AppTheme.Typography.onboardingTitle)
                 .foregroundColor(AppTheme.Colors.label)
             
-            Text("Allow tracking to help us measure the effectiveness of our marketing and provide you with a better experience.")
+            Text("This helps us show you more relevant content and continue improving your experience at no extra cost.")
                 .font(AppTheme.Typography.bodyDynamic)
                 .foregroundColor(AppTheme.Colors.secondaryLabel)
                 .multilineTextAlignment(.center)

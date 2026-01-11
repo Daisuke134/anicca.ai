@@ -60,7 +60,17 @@ platform :ios do
         ipa: lane_context[SharedValues::IPA_OUTPUT_PATH]
       )
       
-      UI.success("✅ Build completed and installed on device!")
+      # アプリを起動（TikTok見てても自動遷移）
+      sh("ios-deploy --bundle_id #{BUNDLE_ID} --justlaunch --noinstall || true")
+      
+      UI.success("✅ Build completed, installed, and launched on device!")
+      
+      # macOS通知
+      notification(
+        title: "Anicca iOS",
+        message: "Build installed and launched!",
+        sound: "default"
+      )
       
     rescue => ex
       UI.error("❌ Build failed: #{ex.message}")

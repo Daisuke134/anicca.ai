@@ -655,6 +655,54 @@ A:
 
 ---
 
+## ビルド・リリース自動化（fastlane）
+
+### 実機ビルド・テスト（最重要）
+
+実装完了後は必ず実機ビルドを実行すること。
+
+```bash
+# 実機ビルド → インストール → アプリ起動 → macOS通知
+cd aniccaios && fastlane build_for_device
+```
+
+- 所要時間: 約3分
+- ビルド完了後、実機でアプリが自動起動
+- macOS通知で完了を通知
+- エラー時は自動解析して修正案を提示
+
+### コマンド一覧
+
+| コマンド | 機能 | 所要時間 |
+|---|---|---|
+| `fastlane build_for_device` | 実機ビルド・インストール・起動 | 約3分 |
+| `fastlane build` | App Store用ビルド | 約5分 |
+| `fastlane upload` | App Store Connectにアップロード | 約2分 |
+| `fastlane release` | ビルド + アップロード | 約7分 |
+| `fastlane full_release` | 審査提出まで完全自動 | 約20-30分 |
+
+### 開発ワークフロー
+
+```
+1. コード修正
+2. fastlane build_for_device 実行
+3. 🔔 macOS通知 + アプリ自動起動
+4. スマホで動作確認
+5. 問題あれば1に戻る
+6. OKなら fastlane full_release でリリース
+```
+
+### エラー時の対応
+
+ビルドエラー発生時、fastlaneが自動解析:
+- インポート不足 → `import X` を追加
+- スコープ不足 → アクセシビリティ確認
+- 構文エラー → 該当箇所の確認
+
+AIがエラーログを確認し、修正して再ビルドする。
+
+---
+
 ## E2Eテスト自動化（Maestro）
 
 ### テストファイルの場所

@@ -58,7 +58,8 @@ struct ATTPermissionStepView: View {
                 }
             }
         } else {
-            // iOS 14.5未満はそのまま次へ
+            // iOS 14.5未満はATTプロンプトなしでデバイス識別子を収集（IDFVのみ）
+            Purchases.shared.attribution.collectDeviceIdentifiers()
             next()
         }
     }

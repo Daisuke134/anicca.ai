@@ -26,9 +26,9 @@ final class SubscriptionManager: NSObject {
         
         Purchases.shared.delegate = self
         
-        // Singular連携用: デバイス識別子を収集
-        // ATT許可前はIDFVのみ、許可後はIDFAも送信される
-        Purchases.shared.attribution.collectDeviceIdentifiers()
+        // デバイス識別子の収集はATT許可後に行う（ATTPermissionStepViewで実行）
+        // 理由: ATT許可前にcollectDeviceIdentifiers()を呼ぶとゼロIDFAが
+        // RevenueCatに送信され、後から実際のIDFAで上書きできなくなるため
         
         // 起動直後にSDKキャッシュのOfferingをAppStateへプリロード
         if let cached = Purchases.shared.cachedOfferings,

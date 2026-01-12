@@ -179,7 +179,7 @@ final class AuthCoordinator {
                 await AppState.shared.bootstrapProfileFromServerIfAvailable()
                 
                 logger.info("Sign in successful for user: \(backendUserId, privacy: .public)")
-                SingularManager.shared.trackRegistration()
+                SingularManager.shared.trackLogin()
                 signInCompletion?(true)
             } else {
                 logger.error("Invalid backend response format")

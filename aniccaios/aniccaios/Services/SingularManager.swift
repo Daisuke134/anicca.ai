@@ -91,10 +91,10 @@ final class SingularManager {
         }
     }
     
-    /// 新規登録イベント（Sign in with Apple完了時）
-    func trackRegistration() {
-        Singular.event("Registration")
-        logger.info("Tracked Registration event")
+    /// 既存ユーザー復元イベント（Sign in with Apple完了時）
+    func trackLogin() {
+        Singular.event("Login")
+        logger.info("Tracked Login event")
     }
     
     /// サブスクリプション購入イベント
@@ -113,14 +113,7 @@ final class SingularManager {
             "currency": currency
         ])
         
-        // Purchase event
-        Singular.event("Purchase", withArgs: [
-            "product_id": productId,
-            "price": price,
-            "currency": currency
-        ])
-        
-        logger.info("Tracked Purchase/Subscribe/Revenue: \(productId) \(currency) \(price)")
+        logger.info("Tracked Subscribe/Revenue: \(productId) \(currency) \(price)")
     }
 }
 

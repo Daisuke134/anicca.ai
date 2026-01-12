@@ -111,3 +111,257 @@
 
 ーーーーー
 
+[1 tool called]
+
+## カテゴリ別フック＆画像アイデア（英語メイン）
+
+---
+
+# 1. 就寝 / Doomscrolling
+
+## Top10系フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| top 10 notifications that stopped me from doomscrolling | アラーム画面（テキスト差し替え） |
+| top 10 things my AI said to make me put my phone down | 同上 |
+| top 10 brutal wake-up calls from my AI at 3am | 同上 |
+| ranking the notifications that actually made me sleep | 同上 |
+
+## 通常フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| i keep doomscrolling till 3AM so I let AI put me to sleep | 暗い部屋でスマホ見てる（AI生成/UGC） |
+| my AI is hitting me with deep wisdom at 3 am | 驚いてる女性のリアクション（UGC） |
+| this app just told me to put my phone down | スクリーンタイム画面（7時間表示） |
+| POV: AI preaches you to stop scrolling | 通知画面 or Talk画面 |
+| when you cant lead yourself just let AI lead you | テキストオンリー（黒背景） |
+
+---
+
+# 2. 起床 / Wake Up
+
+## Top10系フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| top 10 things my AI said to wake me up | アラーム画面（テキスト差し替え） |
+| ranking the alarms that actually woke me up | 同上 |
+| top 10 brutal morning wake-up calls from AI | 同上 |
+
+## 通常フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| just made an alarm that actually talks | Talk画面 or 通知画面 |
+| this alarm wont stop until I get up | ベッドでスマホ見てる人（UGC） |
+| pov: your alarm just got a soul | アプリ画面 |
+| my AI is harsh but this is the only thing that wakes me up | 驚いてるリアクション（UGC） |
+| snooze 10 times? not with this one | スヌーズボタン連打の画面 |
+
+---
+
+# 3. トレーニング / Workout
+
+## Top10系フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| top 10 things my AI said to get me to the gym | アラーム画面（テキスト差し替え） |
+| ranking the notifications that made me actually work out | 同上 |
+
+## 通常フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| i skipped the gym 47 times so I let AI coach me | ジム/トレーニング映像（UGC） |
+| this app wont let me skip leg day | トレーニング中の映像 |
+| pov: david goggins turned into an app | 通知画面 |
+| my AI is making sure I dont skip today | Talk画面 |
+
+---
+
+# 4. ダイエット / Diet
+
+## Top10系フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| top 10 things my AI said about my eating habits | アラーム画面（テキスト差し替え） |
+| ranking the notifications that stopped me from snacking | 同上 |
+
+## 通常フック
+
+| Hook Text | Background Image |
+|-----------|-----------------|
+| i let AI control my diet because I have no willpower | 食べ物の映像（UGC） |
+| this app calls me out every time I order uber eats | 通知画面 |
+| POV: AI is judging your late night snack | Talk画面 |
+
+---
+
+# 背景画像タイプ（共通で使えるもの）
+
+| タイプ | 内容 | 入手方法 |
+|--------|------|---------|
+| **アラーム画面** | Aniccaのアラーム画面（テキスト差し替え） | Nano Bananaで編集 |
+| **Talk画面** | Aniccaの会話画面 | スクショ録画 |
+| **通知画面** | Aniccaの通知 | スクショ |
+| **UGCリアクション** | 驚いてる女性/男性 | Envato Elements / Pexels |
+| **スクリーンタイム** | 「7時間」とか表示 | iPhone画面キャプチャ |
+| **テキストオンリー** | 黒背景＋白文字 | Canva |
+| **AI生成** | 暗い部屋でスマホ見てる人 | 既存Kling動画を再利用 |
+
+---
+
+# カルーセル用アイデア
+
+## Top10系カルーセル
+
+```
+スライド1: top 10 notifications that stopped me from doomscrolling
+スライド2-10: 各通知のスクショ（テキスト入り）
+スライド11: (CTAなし、コメントで聞かせる)
+```
+
+## Before/After系カルーセル
+
+```
+スライド1: me at 3am before vs after this app
+スライド2: Before - スクリーンタイム7時間
+スライド3: After - スクリーンタイム2時間
+スライド4-8: 通知のスクショ
+```
+
+---
+
+# 優先順位
+
+1. **Top10 就寝系**（通知スクショあるからすぐ作れる）
+2. **Top10 起床系**（同上）
+3. **通常フック 就寝系**（UGC背景でバリエーション）
+4. **トレーニング/ダイエット系**（横展開）
+
+---
+
+**まずTop10就寝系から？Nano Bananaでアラーム画面のテキスト差し替えて10枚作る？**ごめん、今これそれぞれでさ、あのなんだっけ、アラーム画面と通知画面だよね。それぞれでさ、ナノバナナにここの、通知のところはそのタイトル、「スリープ」ってタイトルと、「End of the day, Sleep, Peace today」っていうサブタイトルというか、本文のところを、それぞれのところに、それぞれの文言に変えるようにいうプロンプトを作りたい。
+
+
+アラームは短いテキスト（オレンジ部分）が必要です。以下を追加します。
+
+---
+
+## アラーム（Alarm）- 短いテキスト
+
+### 起床（Wake Up）
+
+#### 厳しい系 Top 10
+
+| 順位 | 日本語 | English |
+|------|--------|---------|
+| 1位 | 起きろ | Get up |
+| 2位 | もう寝るな | No more sleep |
+| 3位 | 二度寝禁止 | No snoozing |
+| 4位 | 今すぐ起きて | Wake up now |
+| 5位 | 約束を守れ | Keep your promise |
+| 6位 | 時間だ | It's time |
+| 7位 | 今日を始めろ | Start today |
+| 8位 | 布団から出ろ | Get out of bed |
+| 9位 | 自分を裏切るな | Don't betray yourself |
+| 10位 | 動け | Move |
+
+#### 優しい系 Top 10
+
+| 順位 | 日本語 | English |
+|------|--------|---------|
+| 1位 | おはよう | Good morning |
+| 2位 | 一緒に起きよう | Let's wake up together |
+| 3位 | ゆっくりでいいよ | Take your time |
+| 4位 | 深呼吸して | Take a deep breath |
+| 5位 | 今日も始めよう | Let's start today |
+| 6位 | 準備はできてる | You're ready |
+| 7位 | 一歩ずつ | One step at a time |
+| 8位 | あなたらしく | Be yourself |
+| 9位 | 今日も一緒に | Together today |
+| 10位 | 大丈夫だよ | You've got this |
+
+---
+
+### 就寝（Bedtime）
+
+#### 厳しい系 Top 10
+
+| 順位 | 日本語 | English |
+|------|--------|---------|
+| 1位 | もう寝ろ | Go to sleep |
+| 2位 | スマホを置け | Put your phone down |
+| 3位 | 夜更かし禁止 | No more staying up |
+| 4位 | 今すぐ寝て | Sleep now |
+| 5位 | スクロールやめろ | Stop scrolling |
+| 6位 | 目を閉じろ | Close your eyes |
+| 7位 | 約束を守れ | Keep your promise |
+| 8位 | 明日のために | For tomorrow |
+| 9位 | もう終わり | It's over |
+| 10位 | 寝る時間だ | Bedtime |
+
+#### 優しい系 Top 10
+
+| 順位 | 日本語 | English |
+|------|--------|---------|
+| 1位 | おやすみ | Good night |
+| 2位 | ゆっくり休んで | Rest well |
+| 3位 | 今日もお疲れさま | You did great today |
+| 4位 | 目を閉じよう | Let's close your eyes |
+| 5位 | 明日も一緒に | See you tomorrow |
+| 6位 | 今日は十分だった | Today was enough |
+| 7位 | 深く眠って | Sleep deeply |
+| 8位 | あなたの時間 | Your time to rest |
+| 9位 | 安心して | Rest easy |
+| 10位 | ゆっくりと | Slowly |
+
+---
+
+## ハズレ系（効果が薄い例）
+
+### 通知 - ハズレ系 3つ
+
+#### 起床
+
+| 日本語 | English |
+|--------|---------|
+| おはようございます。本日もよろしくお願いいたします。 | Good morning. Have a nice day today. |
+| アラームが鳴りました。お時間ですのでお起きください。 | The alarm has rung. It's time to wake up. |
+| 起床時刻になりました。本日も一日頑張りましょう。 | It's your wake-up time. Let's do our best today. |
+
+#### 就寝
+
+| 日本語 | English |
+|--------|---------|
+| 就寝時刻になりました。おやすみなさい。 | It's bedtime. Good night. |
+| 本日もお疲れ様でした。ゆっくりお休みください。 | Thank you for your hard work today. Please rest well. |
+| 睡眠時間を確保するため、そろそろお休みになることをお勧めします。 | We recommend going to bed soon to ensure adequate sleep. |
+
+---
+
+### アラーム - ハズレ系 3つ
+
+#### 起床
+
+| 日本語 | English |
+|--------|---------|
+| おはようございます | Good morning |
+| 起床時刻です | Wake-up time |
+| お時間になりました | It's time |
+
+#### 就寝
+
+| 日本語 | English |
+|--------|---------|
+| おやすみなさい | Good night |
+| 就寝時刻です | Bedtime |
+| お休みください | Please rest |
+
+---
+
+以上です。アラームは短いテキスト、ハズレ系も追加しました。必要に応じて調整します。

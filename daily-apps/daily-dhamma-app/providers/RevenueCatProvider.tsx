@@ -73,7 +73,7 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
     },
     onSuccess: (customerInfo) => {
       console.log('[RevenueCat] Purchase successful');
-      queryClient.setQueryData(['revenuecat-customer-info'], customerInfo);
+      queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     },
     onError: (error: Error) => {
       console.error('[RevenueCat] Purchase error:', error.message);
@@ -88,7 +88,7 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
     },
     onSuccess: (customerInfo) => {
       console.log('[RevenueCat] Restore successful');
-      queryClient.setQueryData(['revenuecat-customer-info'], customerInfo);
+      queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     },
     onError: (error: Error) => {
       console.error('[RevenueCat] Restore error:', error.message);
@@ -100,7 +100,7 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
 
     const listener = (customerInfo: CustomerInfo) => {
       console.log('[RevenueCat] Customer info updated');
-      queryClient.setQueryData(['revenuecat-customer-info'], customerInfo);
+      queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     };
 
     Purchases.addCustomerInfoUpdateListener(listener);

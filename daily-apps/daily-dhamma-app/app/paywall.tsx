@@ -12,7 +12,7 @@ const features = [
   {
     icon: Sparkles,
     title: 'Premium Verses',
-    description: 'Unlock 22 additional Dhammapada teachings',
+    description: 'Unlock many more Dhammapada teachings',
   },
   {
     icon: Bell,
@@ -43,10 +43,10 @@ export default function PaywallScreen() {
   } = useRevenueCat();
 
   const monthlyPackage = currentOffering?.availablePackages.find(
-    pkg => pkg.identifier === 'daily_dharma_monthly' || pkg.identifier === '$rc_monthly'
+    pkg => pkg.identifier === 'monthly' || pkg.identifier === '$rc_monthly'
   );
   const yearlyPackage = currentOffering?.availablePackages.find(
-    pkg => pkg.identifier === 'daily_dharma_yearly' || pkg.identifier === '$rc_annual'
+    pkg => pkg.identifier === 'annual' || pkg.identifier === '$rc_annual'
   );
 
   const handlePurchase = async () => {

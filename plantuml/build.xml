@@ -1,0 +1,102 @@
+<!--
+    ========================================================================
+                                PlantUML Build File
+    ========================================================================
+    Product:       PlantUML - A free UML diagram generator
+    Project Info:  https://plantuml.com
+
+    Copyright Information:
+    (C) Copyright 2009-2023, Arnaud Roques
+
+    Contributors:
+    - Original Author:  Arnaud Roques
+    - Script Author: Ilya V. Paramonov
+
+    ============================== Description ==============================
+
+    This build file offers an alternative method to build PlantUML.
+
+    While PlantUML is typically built using Gradle, this Ant build script
+    provides a fallback option for those who prefer or only have access to
+    Ant.
+
+    Usage:
+    To build using this file, navigate to the directory containing this
+    build.xml and run "ant" in the command line. For more detailed build
+    instructions and requirements, refer to:
+    https://github.com/plantuml/plantuml/blob/master/BUILDING.md
+    ========================================================================
+-->
+<project name="PlantUML" default="dist" basedir=".">
+    <description>
+        PlantUML Build File
+    </description>
+
+    <!-- Compile source code and copy necessary files -->
+    <target name="compile">
+        <!-- Prepare the build directory -->
+        <delete dir="build" />
+        <mkdir dir="build" />
+
+        <!-- Compile Java sources -->
+        <javac target="1.8" source="1.8" srcdir="src" destdir="build" debug="on" encoding="UTF-8">
+            <exclude name="test/**" />
+        </javac>
+
+        <!-- Copy resources. Grouped by type and directory for better clarity -->
+        <copy todir="build/net/sourceforge/plantuml/version">
+            <fileset dir="src/main/java/net/sourceforge/plantuml/version">
+                <include name="*.png" />
+            </fileset>
+        </copy>
+
+        <copy todir="build">
+            <fileset dir="src/main/resources"/>
+        </copy>
+    </target>
+
+
+    <!-- Create distribution JAR and clean up -->
+    <target name="dist" depends="compile">
+        <!-- Prepare the distribution directory -->
+        <delete dir="dist" />
+        <mkdir dir="dist" />
+
+        <!-- Create JAR with required attributes in the manifest -->
+        <jar jarfile="plantuml.jar" basedir="build">
+            <manifest>
+                <attribute name="Automatic-Module-Name" value="net.sourceforge.plantuml" />
+                <attribute name="Main-Class" value="net.sourceforge.plantuml.Run" />
+            </manifest>
+        </jar>
+    	
+        <!-- === Verification of required JAR entries === -->
+        <!-- Count how many required entries are present -->
+        <resourcecount property="present.count">
+            <resources>
+                <zipentry zipfile="plantuml.jar" name="net/sourceforge/plantuml/Run.class"/>
+                <zipentry zipfile="plantuml.jar" name="sprites/archimate/access.png"/>
+                <zipentry zipfile="plantuml.jar" name="skin/plantuml.skin"/>
+            </resources>
+        </resourcecount>
+
+        <!-- Expected number of entries (must match the list above) -->
+        <property name="expected.count" value="3"/>
+
+        <condition property="all.present">
+            <equals arg1="${present.count}" arg2="${expected.count}"/>
+        </condition>
+
+        <!-- Fail the build if entries are missing -->
+        <fail unless="all.present"
+              message="Missing entries in plantuml.jar (expected ${expected.count}, found ${present.count})."/>
+
+        <echo>OK: all required entries are present in plantuml.jar.</echo>
+        <!-- === End of verification === -->
+
+        <!-- Clean up the build and distribution directories -->
+        <delete dir="build" />
+        <delete dir="dist" />
+    </target>
+
+</project>

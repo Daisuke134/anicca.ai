@@ -32,6 +32,7 @@ if (apiKey) {
 export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
   const queryClient = useQueryClient();
   const [isConfigured] = useState(!!apiKey);
+  const [isPremium, setIsPremium] = useState(false);
 
   const customerInfoQuery = useQuery({
     queryKey: ['revenuecat-customer-info', isConfigured],
@@ -42,7 +43,9 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
       }
       console.log('[RevenueCat] Fetching customer info');
       const info = await Purchases.getCustomerInfo();
-      console.log('[RevenueCat] Customer info:', info.entitlements.active);
+      const hasAccess = typeof info.entitlements.active['premium'] !== 'undefined';
+      setIsPremium(hasAccess);
+      console.log('[RevenueCat] Customer info, isPremium:', hasAccess);
       return info;
     },
     enabled: isConfigured,
@@ -72,7 +75,9 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
       return customerInfo;
     },
     onSuccess: (customerInfo) => {
-      console.log('[RevenueCat] Purchase successful');
+      const hasAccess = typeof customerInfo.entitlements.active['premium'] !== 'undefined';
+      setIsPremium(hasAccess);
+      console.log('[RevenueCat] Purchase successful, isPremium:', hasAccess);
       queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     },
     onError: (error: Error) => {
@@ -87,7 +92,9 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
       return customerInfo;
     },
     onSuccess: (customerInfo) => {
-      console.log('[RevenueCat] Restore successful');
+      const hasAccess = typeof customerInfo.entitlements.active['premium'] !== 'undefined';
+      setIsPremium(hasAccess);
+      console.log('[RevenueCat] Restore successful, isPremium:', hasAccess);
       queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     },
     onError: (error: Error) => {
@@ -99,7 +106,9 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
     if (!isConfigured) return;
 
     const listener = (customerInfo: CustomerInfo) => {
-      console.log('[RevenueCat] Customer info updated');
+      const hasAccess = typeof customerInfo.entitlements.active['premium'] !== 'undefined';
+      setIsPremium(hasAccess);
+      console.log('[RevenueCat] Customer info updated, isPremium:', hasAccess);
       queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     };
 
@@ -108,8 +117,6 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
       Purchases.removeCustomerInfoUpdateListener(listener);
     };
   }, [isConfigured, queryClient]);
-
-  const isPremium = customerInfoQuery.data?.entitlements.active['premium'] !== undefined;
 
   const currentOffering = offeringsQuery.data?.current ?? null;
 

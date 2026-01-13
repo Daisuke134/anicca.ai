@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import Purchases, { 
+import Purchases, {
   PurchasesPackage,
   CustomerInfo,
-  LOG_LEVEL
+  LOG_LEVEL,
+  PURCHASES_ERROR_CODE
 } from 'react-native-purchases';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import createContextHook from '@nkzw/create-context-hook';
@@ -80,8 +81,14 @@ export const [RevenueCatProvider, useRevenueCat] = createContextHook(() => {
       console.log('[RevenueCat] Purchase successful, isPremium:', hasAccess);
       queryClient.setQueryData(['revenuecat-customer-info', isConfigured], customerInfo);
     },
-    onError: (error: Error) => {
-      console.error('[RevenueCat] Purchase error:', error.message);
+    onError: (error: Error & { code?: string }) => {
+      // キャンセルは正常な操作なのでエラーとして扱わない
+      if (error.code === PURCHASES_ERROR_CODE.PURCHASE_CANCELLED_ERROR) {
+        console.log('[RevenueCat] Purchase cancelled by user');
+        return;
+      }
+      // その他のエラーのみログ出力
+      console.warn('[RevenueCat] Purchase error:', error.message);
     },
   });
 

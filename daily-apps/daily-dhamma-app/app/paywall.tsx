@@ -84,15 +84,17 @@ export default function PaywallScreen() {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
     try {
-      await restorePurchases();
-      if (isPremium) {
+      const customerInfo = await restorePurchases();
+      // restorePurchasesの戻り値から直接entitlementsをチェック（stale closure回避）
+      const hasAccess = typeof customerInfo?.entitlements?.active['premium'] !== 'undefined';
+      if (hasAccess) {
         Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         Alert.alert('Restored', 'Your premium access has been restored.');
         router.replace('/');
       } else {
         Alert.alert('No Purchases', 'No previous purchases found.');
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error('[Paywall] Restore error:', error);
       Alert.alert('Restore Failed', 'Please try again later.');
     }

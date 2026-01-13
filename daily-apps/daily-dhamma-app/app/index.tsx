@@ -23,7 +23,7 @@ const { width, height } = Dimensions.get('window');
 export default function MainScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { settings, isLoading, toggleBookmark, isBookmarked } = useApp();
+  const { settings, isLoading, toggleBookmark, isBookmarked, isPremium } = useApp();
   const colorScheme = useColorScheme();
   const isDark = settings.darkMode || colorScheme === 'dark';
   const colors = isDark ? Colors.dark : Colors.light;
@@ -32,7 +32,7 @@ export default function MainScreen() {
   const flatListRef = useRef<FlatList>(null);
   const scrollY = useRef(new Animated.Value(0)).current;
 
-  const availableVerses = settings.isPremium ? getAllVerses() : getFreeVerses();
+  const availableVerses = isPremium ? getAllVerses() : getFreeVerses();
 
   useEffect(() => {
     if (!isLoading && !settings.hasCompletedOnboarding) {
@@ -42,13 +42,13 @@ export default function MainScreen() {
   }, [isLoading, settings.hasCompletedOnboarding, router]);
 
   const handleBookmark = useCallback((verseId: number) => {
-    if (!settings.isPremium) {
+    if (!isPremium) {
       router.push('/paywall');
       return;
     }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     toggleBookmark(verseId);
-  }, [settings.isPremium, toggleBookmark, router]);
+  }, [isPremium, toggleBookmark, router]);
 
   const renderVerse = ({ item, index }: { item: Verse; index: number }) => {
     const inputRange = [

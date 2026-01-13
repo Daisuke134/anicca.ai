@@ -9,7 +9,7 @@ import { useApp } from '@/providers/AppProvider';
 export default function SettingsScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
-  const { settings, updateSettings } = useApp();
+  const { settings, updateSettings, isPremium } = useApp();
   const colors = settings.darkMode ? Colors.dark : Colors.light;
 
   const handleFrequencyChange = (frequency: 3 | 5 | 7 | 10) => {
@@ -70,7 +70,7 @@ export default function SettingsScreen() {
         contentContainerStyle={[styles.content, { paddingBottom: insets.bottom + 24 }]}
         showsVerticalScrollIndicator={false}
       >
-        {!settings.isPremium && (
+        {!isPremium && (
           <TouchableOpacity
             style={[styles.premiumBanner, { backgroundColor: colors.gold }]}
             onPress={() => router.push('/paywall')}
@@ -115,7 +115,7 @@ export default function SettingsScreen() {
             <Text style={[styles.settingDescription, { color: colors.textMuted }]}>
               How many mindfulness reminders per day
             </Text>
-            {settings.isPremium ? (
+            {isPremium ? (
               <View style={styles.frequencyButtons}>
                 <FrequencyButton value={3} label="3x" />
                 <FrequencyButton value={5} label="5x" />

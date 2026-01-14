@@ -1,7 +1,9 @@
 # Mixpanel ASA連携 仕様書
 
 **作成日**: 2025-01-14
+**最終更新**: 2025-01-14
 **目的**: Jake Mor #51「どのキーワードが課金ユーザーを連れてくるか追跡」
+**ステータス**: ✅ 実装完了
 
 ---
 
@@ -11,7 +13,7 @@ Apple Search Ads (ASA) からのインストールを追跡し、どのキーワ
 
 ---
 
-## As Is（現状）
+## As Is（実装前）
 
 ### iOSアプリ (`aniccaios/`)
 
@@ -22,28 +24,16 @@ Apple Search Ads (ASA) からのインストールを追跡し、どのキーワ
 | ASA Attribution取得 | ❌ 未実装 |
 | キーワード追跡 | ❌ 未実装 |
 
-### 現在のAnalyticsManager.swift
-
-```swift
-// 既存の機能
-- configure() // Mixpanel初期化
-- identify(userId:) // ユーザー識別
-- setUserProperties(_:) // ユーザープロパティ設定
-- track(_:properties:) // イベント追跡
-- trackTrialStarted(productId:) // トライアル開始追跡
-- trackPurchaseCompleted(productId:revenue:) // 購入完了追跡
-```
-
 ---
 
-## To Be（目標）
+## To Be（実装後）✅ 完了
 
 ### iOSアプリ (`aniccaios/`)
 
 | 項目 | 状態 |
 |------|------|
 | Mixpanel SDK | ✅ 導入済み |
-| AdServices Framework | ✅ 追加 |
+| AdServices Framework | ✅ 追加済み |
 | ASA Attribution取得 | ✅ アプリ初回起動時に取得 |
 | キーワード追跡 | ✅ Mixpanelユーザープロパティに設定 |
 
@@ -60,26 +50,20 @@ Mixpanelユーザープロパティとして以下を設定：
 | `asa_country` | `US` | 国/地域 |
 | `asa_conversion_type` | `Download` | コンバージョンタイプ |
 | `asa_claim_type` | `Click`/`Impression` | クリック or 表示 |
+| `asa_ad_id` | `12345678` | 広告ID |
 
 ---
 
-## 実装詳細
+## 実装ファイル
 
-### 1. AdServicesフレームワーク追加
+### 1. 新規ファイル: `ASAAttributionManager.swift` ✅
 
-**ファイル**: `aniccaios/aniccaios.xcodeproj/project.pbxproj`
-
-Xcodeで以下を実行：
-1. プロジェクト設定 → General → Frameworks, Libraries, and Embedded Content
-2. 「+」ボタン → 「AdServices.framework」を追加
-
-### 2. 新規ファイル作成
-
-**ファイル**: `aniccaios/aniccaios/Services/ASAAttributionManager.swift`
+**パス**: `aniccaios/aniccaios/Services/ASAAttributionManager.swift`
 
 ```swift
 import Foundation
 import AdServices
+import Mixpanel
 import OSLog
 
 /// Apple Search Ads Attribution Manager
@@ -94,41 +78,31 @@ final class ASAAttributionManager {
     private init() {}
 
     /// 初回起動時にASAアトリビューションを取得してMixpanelに送信
-    /// AppDelegate.didFinishLaunchingWithOptionsから呼び出す
     func fetchAttributionIfNeeded() async {
-        // 既にチェック済みなら何もしない（初回のみ実行）
         guard !UserDefaults.standard.bool(forKey: hasCheckedKey) else {
             logger.debug("ASA attribution already checked, skipping")
             return
         }
 
-        // チェック済みフラグを立てる（次回以降スキップ）
         UserDefaults.standard.set(true, forKey: hasCheckedKey)
 
         do {
-            // Step 1: AdServicesからトークンを取得
             let token = try AAAttribution.attributionToken()
             logger.info("ASA attribution token obtained")
 
-            // Step 2: AppleのAPIにトークンを送信してattribution情報を取得
             let attribution = try await fetchAttributionData(token: token)
-
-            // Step 3: Mixpanelにユーザープロパティとして設定
-            await setMixpanelProperties(attribution: attribution)
+            setMixpanelProperties(attribution: attribution)
 
         } catch {
-            // ASA経由でないインストール（Organic）の場合はエラーになる
-            // これは正常な挙動なのでdebugログのみ
             logger.debug("ASA attribution not available: \(error.localizedDescription)")
-
-            // Organicインストールとしてマーク
-            await AnalyticsManager.shared.setUserProperty("asa_attribution", value: false)
+            AnalyticsManager.shared.setUserProperty("asa_attribution", value: false)
         }
     }
 
-    /// AppleのAttribution APIにトークンを送信
     private func fetchAttributionData(token: String) async throws -> ASAAttributionData {
-        let url = URL(string: "https://api-adservices.apple.com/api/v1/")!
+        guard let url = URL(string: "https://api-adservices.apple.com/api/v1/") else {
+            throw ASAError.invalidURL
+        }
 
         var request = URLRequest(url: url)
         request.httpMethod = "POST"
@@ -142,14 +116,10 @@ final class ASAAttributionManager {
             throw ASAError.invalidResponse
         }
 
-        let attribution = try JSONDecoder().decode(ASAAttributionData.self, from: data)
-        logger.info("ASA attribution data received: campaign=\(attribution.campaignId ?? 0), keyword=\(attribution.keywordId ?? 0)")
-
-        return attribution
+        return try JSONDecoder().decode(ASAAttributionData.self, from: data)
     }
 
-    /// Mixpanelにattributionデータを設定
-    private func setMixpanelProperties(attribution: ASAAttributionData) async {
+    private func setMixpanelProperties(attribution: ASAAttributionData) {
         var properties: [String: MixpanelType] = [
             "asa_attribution": attribution.attribution
         ]
@@ -181,8 +151,6 @@ final class ASAAttributionManager {
     }
 }
 
-// MARK: - Data Models
-
 struct ASAAttributionData: Codable {
     let attribution: Bool
     let orgId: Int?
@@ -198,86 +166,41 @@ struct ASAAttributionData: Codable {
 }
 
 enum ASAError: Error {
+    case invalidURL
     case invalidResponse
     case decodingFailed
 }
 ```
 
-### 3. AppDelegate.swift 修正
+### 2. 変更ファイル: `AppDelegate.swift` ✅
 
-**ファイル**: `aniccaios/aniccaios/AppDelegate.swift`
-
-```diff
- func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
-     // ... 既存コード ...
-
-     AnalyticsManager.shared.configure()
-     AnalyticsManager.shared.track(.appOpened)
-+
-+    // ASA Attribution取得（初回起動時のみ）
-+    Task {
-+        await ASAAttributionManager.shared.fetchAttributionIfNeeded()
-+    }
-
-     SuperwallManager.shared.configure()
-
-     // ... 既存コード ...
- }
-```
-
-### 4. AnalyticsManager.swift にimport追加
-
-**ファイル**: `aniccaios/aniccaios/Services/AnalyticsManager.swift`
-
-変更不要。既存の `setUserProperties` メソッドをそのまま使用。
-
----
-
-## 完全なパッチ（差分）
-
-### パッチ1: 新規ファイル作成
-
-```bash
-# ファイル作成
-touch aniccaios/aniccaios/Services/ASAAttributionManager.swift
-```
-
-**内容**: 上記「2. 新規ファイル作成」のコード全体
-
-### パッチ2: AppDelegate.swift
+**パス**: `aniccaios/aniccaios/AppDelegate.swift`
 
 ```diff
---- a/aniccaios/aniccaios/AppDelegate.swift
-+++ b/aniccaios/aniccaios/AppDelegate.swift
-@@ -27,6 +27,11 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
-         SubscriptionManager.shared.configure()
-         AnalyticsManager.shared.configure()
-         AnalyticsManager.shared.track(.appOpened)
+ SubscriptionManager.shared.configure()
+ AnalyticsManager.shared.configure()
+-AnalyticsManager.shared.track(.appOpened)
+ SuperwallManager.shared.configure()
+ SingularManager.shared.configure(launchOptions: launchOptions)
+ SingularManager.shared.trackAppLaunch()
 +
-+        // ASA Attribution取得（初回起動時のみ）
-+        Task {
-+            await ASAAttributionManager.shared.fetchAttributionIfNeeded()
-+        }
-         SuperwallManager.shared.configure()
-
-         // Phase-7: register BGTask handlers (must complete before launch ends).
++// ASA Attribution取得 → app_opened トラック（この順序が重要）
++// Jake Mor #51: キーワード別の課金率を追跡するため、attributionを先に取得
++Task {
++    await ASAAttributionManager.shared.fetchAttributionIfNeeded()
++    AnalyticsManager.shared.track(.appOpened)
++}
 ```
 
-### パッチ3: Xcodeプロジェクト設定（手動）
+### 3. Xcode設定 ✅
 
-```
-1. Xcode でプロジェクトを開く
-2. ターゲット「aniccaios」を選択
-3. General → Frameworks, Libraries, and Embedded Content
-4. 「+」→「AdServices.framework」を追加
-5. 新規ファイル「ASAAttributionManager.swift」をプロジェクトに追加
-```
+- ✅ `AdServices.framework` を追加済み（手動）
 
 ---
 
 ## Mixpanelでの分析方法
 
-### ファネル分析
+### ファネル分析（14日後に作成）
 
 1. Mixpanel → Funnels
 2. 以下のイベントでファネル作成：
@@ -301,30 +224,32 @@ touch aniccaios/aniccaios/Services/ASAAttributionManager.swift
 
 ---
 
-## お前がやること（GUI設定）
-
-### 必須
-1. **Xcodeでプロジェクトを開く**
-2. **AdServices.frameworkを追加**
-   - ターゲット → General → Frameworks → 「+」 → AdServices
-3. **新規ファイルをプロジェクトに追加**
-   - `ASAAttributionManager.swift` を作成後、Xcodeのプロジェクトナビゲーターにドラッグ
-
-### 確認事項
-- Mixpanelのプロジェクトトークンは既に `Config.swift` にある → 追加設定不要
-
----
-
 ## テスト方法
 
 ### 開発中のテスト
 
 1. アプリをアンインストール
-2. TestFlightまたはデバイスにインストール
-3. `UserDefaults.standard.bool(forKey: "asa_attribution_checked")` を確認
-4. Mixpanelのユーザープロファイルで `asa_attribution` プロパティを確認
+2. Xcodeからビルド＆実行
+3. コンソールで以下を確認:
 
-### 本番テスト
+**期待するログ（Organic/開発中）:**
+```
+[ASAAttribution] ASA attribution not available: ...
+[Analytics] Tracked event: app_opened
+```
+
+**2回目以降:**
+```
+[ASAAttribution] ASA attribution already checked, skipping
+```
+
+### Mixpanelで確認
+
+1. Mixpanel → Users → Explore
+2. 自分のユーザーを検索
+3. User Properties に `asa_attribution: false` があることを確認
+
+### 本番テスト（ASA広告経由）
 
 1. ASAキャンペーンが審査通過後
 2. App Storeで広告からインストール

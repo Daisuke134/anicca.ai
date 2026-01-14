@@ -27,10 +27,16 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
         AnalyticsManager.shared.configure()
-        AnalyticsManager.shared.track(.appOpened)
         SuperwallManager.shared.configure()
         SingularManager.shared.configure(launchOptions: launchOptions)
         SingularManager.shared.trackAppLaunch()
+
+        // ASA Attribution取得 → app_opened トラック（この順序が重要）
+        // Jake Mor #51: キーワード別の課金率を追跡するため、attributionを先に取得
+        Task {
+            await ASAAttributionManager.shared.fetchAttributionIfNeeded()
+            AnalyticsManager.shared.track(.appOpened)
+        }
         
         // Phase-7: register BGTask handlers (must complete before launch ends).
         // See Apple docs: BGTaskScheduler.register(...) must finish before end of launch.

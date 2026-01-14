@@ -132,7 +132,7 @@ export default function MainScreen() {
       <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
         <View style={styles.headerLeft}>
           <Text style={[styles.headerTitle, { color: colors.textMuted }]}>
-            Daily Dharma
+            Daily Dhamma
           </Text>
         </View>
         <TouchableOpacity

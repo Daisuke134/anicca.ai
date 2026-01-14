@@ -28,7 +28,7 @@
       "env": {
         "NPM_CONFIG_LEGACY_PEER_DEPS": "true",
         "EXPO_PUBLIC_REVENUECAT_IOS_API_KEY": "appl_fHvAqxkeyCBSFIslMvNRuCDjndy",
-        "EXPO_PUBLIC_APP_NAME": "Daily Dharma",
+        "EXPO_PUBLIC_APP_NAME": "Daily Dhamma",
         "EXPO_PUBLIC_PRIVACY_POLICY_URL": "https://aniccaai.com/dailydharma/privacy",
         "EXPO_PUBLIC_TERMS_URL": "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/"
       }

@@ -9,7 +9,6 @@ function getStayPresentMessage(dayOffset: number, index: number): string {
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
-    shouldShowAlert: true,
     shouldPlaySound: false,
     shouldSetBadge: false,
     shouldShowBanner: true,
@@ -55,7 +54,7 @@ export async function scheduleMorningVerseNotification(time: string, isPremium: 
     await Notifications.scheduleNotificationAsync({
       identifier: `morning-verse-${day}`,
       content: {
-        title: 'Daily Dharma',
+        title: 'Daily Dhamma',
         body: verse.text,
         data: { verseId: verse.id },
       },
@@ -118,7 +117,7 @@ export async function scheduleStayPresentNotifications(frequency: number, isPrem
       await Notifications.scheduleNotificationAsync({
         identifier: `stay-present-${day}-${i}`,
         content: {
-          title: 'Daily Dharma',
+          title: 'Daily Dhamma',
           body: message,
         },
         trigger: {

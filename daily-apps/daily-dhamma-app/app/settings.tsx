@@ -209,7 +209,7 @@ export default function SettingsScreen() {
 
                 await Notifications.scheduleNotificationAsync({
                   content: {
-                    title: 'Daily Dharma ☀️',
+                    title: 'Daily Dhamma ☀️',
                     body: body,
                     data: { verseId: verse.id },
                   },
@@ -235,7 +235,7 @@ export default function SettingsScreen() {
 
                 await Notifications.scheduleNotificationAsync({
                   content: {
-                    title: 'Daily Dharma 🧘',
+                    title: 'Daily Dhamma 🧘',
                     body: message,
                   },
                   trigger: null,
@@ -292,7 +292,7 @@ export default function SettingsScreen() {
         )}
 
         <Text style={[styles.versionText, { color: colors.textMuted }]}>
-          Daily Dharma v1.0.0
+          Daily Dhamma v1.0.0
         </Text>
       </ScrollView>
     </View>

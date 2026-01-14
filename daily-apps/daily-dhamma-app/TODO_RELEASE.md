@@ -2,25 +2,41 @@
 
 ## 現在の状態
 - **ビルド**: ✅ 完了 (v1.0.0, Build 2)
-- **TestFlight提出**: 🔄 進行中
+- **TestFlight**: ✅ 提出済み
+- **MCP設定**: ✅ 完了
+- **メタデータ入力**: ✅ MCP経由で完了
 - **アプリパス**: `/Users/cbns03/Downloads/anicca-project/daily-apps/daily-dhamma-app`
 
 ---
 
-## 役割分担
+## 完了済みタスク ✅
+
+### MCPで入力済み
+- ✅ Description（アプリ説明文）
+- ✅ Keywords（検索キーワード）
+- ✅ Promotional Text（プロモーションテキスト）
+- ✅ Support URL → `https://aniccaai.com/dailydharma/support`
+- ✅ Marketing URL → `https://aniccaai.com/dailydharma`
+
+### ランディングページ（存在確認済み）
+- ✅ `/dailydharma/privacy` - Privacy Policy
+- ✅ `/dailydharma/support` - Support Page
+
+---
+
+## 残りのタスク
 
 ### Claude（エージェント）がやること
-1. ✅ TestFlight提出（進行中）
-2. ⬜ WidgetKit実装
-3. ⬜ 修正後の再ビルド・再TestFlight提出
-4. ⬜ Landingデプロイ（Privacy Policy）
+1. ⬜ `/dailydharma` トップページ作成（Marketing URL用）
+2. ⬜ WidgetKit実装（後日）
+3. ⬜ mainにpush → Netlify自動デプロイ
 
-### ユーザーがやること
-1. ⬜ 実機テスト確認（TestFlightアプリで）
-2. ⬜ App Store Connect MCP設定（下記参照）
-3. ⬜ Sleekでスクショ作成（下記プロンプト参照）
-4. ⬜ App Store Connectメタデータ入力（下記参照）
-5. ⬜ App Store審査提出ボタン押す
+### ユーザーがやること（App Store Connect手動）
+1. ⬜ **ビルド選択** - TestFlightビルドをv1.0に紐付け
+2. ⬜ **Privacy Policy URL設定** - `https://aniccaai.com/dailydharma/privacy`（アプリ情報で設定）
+3. ⬜ **年齢制限設定** - 質問に回答（4+推奨）
+4. ⬜ **スクリーンショット** - Sleekで作成してアップロード
+5. ⬜ **審査提出ボタン** - 全て揃ったら押す
 6. ⬜ TikTok動画撮影・投稿
 
 ---
@@ -223,11 +239,11 @@ May these ancient teachings bring peace to your day.
 ```
 
 ### URLs
-| 用途 | URL |
-|------|-----|
-| Privacy Policy | https://aniccaai.com/dailydharma/privacy |
-| Support | https://aniccaai.com/dailydharma/support |
-| Marketing (任意) | https://aniccaai.com/dailydharma |
+| 用途 | URL | 状態 |
+|------|-----|------|
+| Privacy Policy | https://aniccaai.com/dailydharma/privacy | ✅ ページ存在 |
+| Support | https://aniccaai.com/dailydharma/support | ✅ ページ存在・MCP設定済 |
+| Marketing (任意) | https://aniccaai.com/dailydharma | ⬜ ページ作成必要 |
 
 ### Review Notes（Apple審査員向け）
 ```
@@ -314,4 +330,4 @@ App Store Connect MCPをClaude Codeに追加する
 
 ---
 
-最終更新: 2026-01-13
+最終更新: 2026-01-14

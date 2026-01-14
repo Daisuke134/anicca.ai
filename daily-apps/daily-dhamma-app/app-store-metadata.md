@@ -73,7 +73,7 @@ May these ancient teachings bring peace to your day.
 
 ## Support URL
 ```
-https://aniccaai.com/support
+https://aniccaai.com/dailydharma/support
 ```
 
 ## Privacy Policy URL

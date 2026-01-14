@@ -49,8 +49,8 @@ export async function scheduleMorningVerseNotification(time: string, isPremium: 
       continue;
     }
 
-    // 日付に基づいてverseを取得（getDailyVerseは日付で決まる）
-    const verse = getDailyVerse(isPremium);
+    // 日付に基づいてverseを取得（未来の日付を渡して毎日異なるverseに）
+    const verse = getDailyVerse(isPremium, triggerDate);
 
     await Notifications.scheduleNotificationAsync({
       identifier: `morning-verse-${day}`,

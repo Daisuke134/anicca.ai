@@ -266,11 +266,10 @@ export const stayPresentMessages = [
 export const getFreeVerses = (): Verse[] => verses.filter(v => !v.isPremium);
 export const getAllVerses = (): Verse[] => verses;
 
-export const getDailyVerse = (isPremium: boolean = false): Verse => {
+export const getDailyVerse = (isPremium: boolean = false, date: Date = new Date()): Verse => {
   const availableVerses = isPremium ? verses : getFreeVerses();
-  const today = new Date();
   const dayOfYear = Math.floor(
-    (today.getTime() - new Date(today.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
+    (date.getTime() - new Date(date.getFullYear(), 0, 0).getTime()) / (1000 * 60 * 60 * 24)
   );
   return availableVerses[dayOfYear % availableVerses.length];
 };

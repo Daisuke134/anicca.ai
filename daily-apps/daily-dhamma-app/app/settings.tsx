@@ -200,10 +200,13 @@ export default function SettingsScreen() {
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
 
-                // 即座に通知を表示
-                await Notifications.presentNotificationAsync({
-                  title: 'Daily Dharma',
-                  body: 'Are you present right now? 🧘',
+                // 即座に通知を表示（trigger: null で即時発火）
+                await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: 'Daily Dharma',
+                    body: 'Are you present right now? 🧘',
+                  },
+                  trigger: null,
                 });
 
                 // スケジュールされた通知を確認

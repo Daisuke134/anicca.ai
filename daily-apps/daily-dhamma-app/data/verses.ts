@@ -10,7 +10,7 @@ export interface Verse {
 export const verses: Verse[] = [
   {
     id: 1,
-    text: "Hatreds never cease through hatred in this world; through love alone they cease. This is an eternal law.",
+    text: "Hatred never ceases by hatred; by love alone is it healed.",
     source: "Dhammapada",
     chapter: "Chapter 1 (Yamaka Vagga)",
     verseNumber: "Verse 5",
@@ -18,7 +18,7 @@ export const verses: Verse[] = [
   },
   {
     id: 2,
-    text: "All conditioned things are impermanent — when one sees this with wisdom, one turns away from suffering.",
+    text: "All things are impermanent. Work out your salvation with diligence.",
     source: "Dhammapada",
     chapter: "Chapter 20 (Magga Vagga)",
     verseNumber: "Verse 277",
@@ -50,7 +50,7 @@ export const verses: Verse[] = [
   },
   {
     id: 6,
-    text: "Let go of the past. Let go of the future. Let go of the present. Crossing beyond, with a mind released, do not again undergo birth and decay.",
+    text: "Let go of the past, let go of the future. Live fully in the present.",
     source: "Dhammapada",
     chapter: "Chapter 24 (Tanha Vagga)",
     verseNumber: "Verse 348",
@@ -90,7 +90,7 @@ export const verses: Verse[] = [
   },
   {
     id: 11,
-    text: "Just as a solid rock is not shaken by the storm, even so the wise are not affected by praise or blame.",
+    text: "As a solid rock is unshaken by wind, so are the wise unmoved by praise or blame.",
     source: "Dhammapada",
     chapter: "Chapter 6 (Pandita Vagga)",
     verseNumber: "Verse 81",
@@ -98,7 +98,7 @@ export const verses: Verse[] = [
   },
   {
     id: 12,
-    text: "Irrigators channel waters; fletchers straighten arrows; carpenters bend wood; the wise master themselves.",
+    text: "The wise control their body, speech, and mind. They are truly well-governed.",
     source: "Dhammapada",
     chapter: "Chapter 6 (Pandita Vagga)",
     verseNumber: "Verse 80",
@@ -122,7 +122,7 @@ export const verses: Verse[] = [
   },
   {
     id: 15,
-    text: "An idea that is developed and put into action is more important than an idea that exists only as an idea.",
+    text: "Action speaks louder than thought. Put your wisdom into practice today.",
     source: "Buddha",
     chapter: "Traditional Teaching",
     verseNumber: "",
@@ -138,7 +138,7 @@ export const verses: Verse[] = [
   },
   {
     id: 17,
-    text: "To keep the body in good health is a duty... otherwise we shall not be able to keep the mind strong and clear.",
+    text: "A healthy body supports a healthy mind. Cherish both.",
     source: "Buddha",
     chapter: "Traditional Teaching",
     verseNumber: "",
@@ -146,7 +146,7 @@ export const verses: Verse[] = [
   },
   {
     id: 18,
-    text: "In the end, only three things matter: how much you loved, how gently you lived, and how gracefully you let go.",
+    text: "What matters most: how you loved, lived, and let go.",
     source: "Buddha",
     chapter: "Traditional Teaching",
     verseNumber: "",
@@ -154,7 +154,7 @@ export const verses: Verse[] = [
   },
   {
     id: 19,
-    text: "If you knew what I know about the power of giving, you would not let a single meal pass without sharing it.",
+    text: "Giving brings the giver the greatest joy.",
     source: "Buddha",
     chapter: "Traditional Teaching",
     verseNumber: "",
@@ -162,7 +162,7 @@ export const verses: Verse[] = [
   },
   {
     id: 20,
-    text: "Thousands of candles can be lighted from a single candle, and the life of the candle will not be shortened.",
+    text: "Share your light freely. It diminishes not by giving.",
     source: "Dhammapada",
     chapter: "Chapter 1",
     verseNumber: "Verse 1",
@@ -186,7 +186,7 @@ export const verses: Verse[] = [
   },
   {
     id: 23,
-    text: "Drop by drop is the water pot filled. Likewise, the wise man, gathering it little by little, fills himself with good.",
+    text: "Little by little, drop by drop, the wise fill themselves with good.",
     source: "Dhammapada",
     chapter: "Chapter 9 (Papa Vagga)",
     verseNumber: "Verse 122",
@@ -194,7 +194,7 @@ export const verses: Verse[] = [
   },
   {
     id: 24,
-    text: "Overcome the angry by non-anger; overcome the wicked by goodness; overcome the miser by generosity; overcome the liar by truth.",
+    text: "Conquer anger with kindness, evil with good, greed with generosity.",
     source: "Dhammapada",
     chapter: "Chapter 17 (Kodha Vagga)",
     verseNumber: "Verse 223",
@@ -202,7 +202,7 @@ export const verses: Verse[] = [
   },
   {
     id: 25,
-    text: "If a man speaks or acts with a pure thought, happiness follows him like a shadow that never leaves him.",
+    text: "Pure thoughts bring happiness that follows like an ever-present shadow.",
     source: "Dhammapada",
     chapter: "Chapter 1 (Yamaka Vagga)",
     verseNumber: "Verse 2",
@@ -218,7 +218,7 @@ export const verses: Verse[] = [
   },
   {
     id: 27,
-    text: "Few among men are those who cross to the further shore. The rest of mankind only run about on the bank.",
+    text: "Few cross to the other shore. Most wander on this side.",
     source: "Dhammapada",
     chapter: "Chapter 6 (Pandita Vagga)",
     verseNumber: "Verse 85",
@@ -234,7 +234,7 @@ export const verses: Verse[] = [
   },
   {
     id: 29,
-    text: "What we are today comes from our thoughts of yesterday, and our present thoughts build our life of tomorrow.",
+    text: "Our thoughts today shape who we become tomorrow.",
     source: "Dhammapada",
     chapter: "Chapter 1",
     verseNumber: "Verse 1-2",
@@ -242,7 +242,7 @@ export const verses: Verse[] = [
   },
   {
     id: 30,
-    text: "Holding on to anger is like grasping a hot coal with the intent of throwing it at someone else; you are the one who gets burned.",
+    text: "Holding anger is like holding a hot coal. You burn yourself.",
     source: "Buddha",
     chapter: "Traditional Teaching",
     verseNumber: "",

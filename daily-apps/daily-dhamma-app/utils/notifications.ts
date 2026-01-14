@@ -1,6 +1,11 @@
 import * as Notifications from 'expo-notifications';
 import { Platform } from 'react-native';
-import { getRandomStayPresentMessage, getDailyVerse } from '@/data/verses';
+import { getDailyVerse, stayPresentMessages } from '@/data/verses';
+
+// 日付とインデックスに基づいてメッセージを選択（毎日変わる）
+function getStayPresentMessage(dayOffset: number, index: number): string {
+  return stayPresentMessages[(dayOffset + index) % stayPresentMessages.length];
+}
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -19,27 +24,46 @@ export async function scheduleMorningVerseNotification(time: string, isPremium: 
   }
 
   console.log('[Notifications] Scheduling morning verse notification for:', time);
-  
-  await Notifications.cancelScheduledNotificationAsync('morning-verse');
-  
+
+  // 既存のmorning-verse通知をすべてキャンセル
+  const existingNotifications = await Notifications.getAllScheduledNotificationsAsync();
+  const morningVerseIds = existingNotifications
+    .filter(n => n.identifier.startsWith('morning-verse'))
+    .map(n => n.identifier);
+
+  for (const id of morningVerseIds) {
+    await Notifications.cancelScheduledNotificationAsync(id);
+  }
+
   const [hours, minutes] = time.split(':').map(Number);
-  const verse = getDailyVerse(isPremium);
-  
-  await Notifications.scheduleNotificationAsync({
-    identifier: 'morning-verse',
-    content: {
-      title: 'Daily Dharma',
-      body: verse.text.length > 100 ? verse.text.substring(0, 100) + '...' : verse.text,
-      data: { verseId: verse.id },
-    },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DAILY,
-      hour: hours,
-      minute: minutes,
-    },
-  });
-  
-  console.log('[Notifications] Morning verse notification scheduled');
+  const daysToSchedule = 7; // 7日分をスケジュール
+
+  for (let day = 0; day < daysToSchedule; day++) {
+    // 通知日時を計算
+    const triggerDate = new Date();
+    triggerDate.setDate(triggerDate.getDate() + day);
+    triggerDate.setHours(hours, minutes, 0, 0);
+
+    // 過去の時刻はスキップ
+    if (triggerDate <= new Date()) {
+      continue;
+    }
+
+    // 日付に基づいてverseを取得（getDailyVerseは日付で決まる）
+    const verse = getDailyVerse(isPremium);
+
+    await Notifications.scheduleNotificationAsync({
+      identifier: `morning-verse-${day}`,
+      content: {
+        title: 'Daily Dharma',
+        body: verse.text,
+        data: { verseId: verse.id },
+      },
+      trigger: triggerDate,
+    });
+  }
+
+  console.log('[Notifications] Morning verse notifications scheduled for', daysToSchedule, 'days');
 }
 
 export async function scheduleStayPresentNotifications(frequency: number, isPremium: boolean) {
@@ -49,13 +73,16 @@ export async function scheduleStayPresentNotifications(frequency: number, isPrem
   }
 
   const actualFrequency = isPremium ? frequency : Math.min(frequency, 3);
-  console.log('[Notifications] Scheduling', actualFrequency, 'stay present notifications');
+  const daysToSchedule = 7; // 7日分をスケジュール
 
+  console.log('[Notifications] Scheduling', actualFrequency, 'stay present notifications for', daysToSchedule, 'days');
+
+  // 既存のstay-present通知をすべてキャンセル
   const existingNotifications = await Notifications.getAllScheduledNotificationsAsync();
   const stayPresentIds = existingNotifications
     .filter(n => n.identifier.startsWith('stay-present-'))
     .map(n => n.identifier);
-  
+
   for (const id of stayPresentIds) {
     await Notifications.cancelScheduledNotificationAsync(id);
   }
@@ -65,40 +92,50 @@ export async function scheduleStayPresentNotifications(frequency: number, isPrem
   const availableHours = sleepHour - wakeHour;
   const interval = availableHours / actualFrequency;
 
-  for (let i = 0; i < actualFrequency; i++) {
-    const baseHour = wakeHour + (interval * i) + (interval / 2);
-    const hour = Math.floor(baseHour);
-    const minute = Math.floor((baseHour - hour) * 60) + Math.floor(Math.random() * 30);
-    
-    const message = getRandomStayPresentMessage();
-    
-    await Notifications.scheduleNotificationAsync({
-      identifier: `stay-present-${i}`,
-      content: {
-        title: 'Daily Dharma',
-        body: message,
-      },
-      trigger: {
-        type: Notifications.SchedulableTriggerInputTypes.DAILY,
-        hour: hour,
-        minute: Math.min(minute, 59),
-      },
-    });
+  // 7日分の通知をスケジュール
+  for (let day = 0; day < daysToSchedule; day++) {
+    for (let i = 0; i < actualFrequency; i++) {
+      const baseHour = wakeHour + (interval * i) + (interval / 2);
+      const hour = Math.floor(baseHour);
+      const minute = Math.floor((baseHour - hour) * 60) + Math.floor(Math.random() * 30);
+
+      // 日付とインデックスに基づいてメッセージを選択（毎日変わる）
+      const message = getStayPresentMessage(day, i);
+
+      // 通知日時を計算
+      const triggerDate = new Date();
+      triggerDate.setDate(triggerDate.getDate() + day);
+      triggerDate.setHours(hour, Math.min(minute, 59), 0, 0);
+
+      // 過去の時刻はスキップ
+      if (triggerDate <= new Date()) {
+        continue;
+      }
+
+      await Notifications.scheduleNotificationAsync({
+        identifier: `stay-present-${day}-${i}`,
+        content: {
+          title: 'Daily Dharma',
+          body: message,
+        },
+        trigger: triggerDate,
+      });
+    }
   }
-  
+
   console.log('[Notifications] Stay present notifications scheduled');
 }
 
 export async function cancelAllNotifications() {
   if (Platform.OS === 'web') return;
-  
+
   console.log('[Notifications] Cancelling all notifications');
   await Notifications.cancelAllScheduledNotificationsAsync();
 }
 
 export async function getNotificationPermissionStatus() {
   if (Platform.OS === 'web') return 'granted';
-  
+
   const { status } = await Notifications.getPermissionsAsync();
   return status;
 }

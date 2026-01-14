@@ -1,11 +1,12 @@
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Linking, Alert } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Bell, Sun, Moon, Clock, ExternalLink, Crown, Info, Shield, FileText, FlaskConical } from 'lucide-react-native';
+import { ChevronLeft, Bell, Sun, Moon, Clock, ExternalLink, Crown, Info, Shield, FileText, FlaskConical, Sunrise } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import Colors from '@/constants/colors';
 import { useApp } from '@/providers/AppProvider';
+import { getDailyVerse, getRandomStayPresentMessage } from '@/data/verses';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -195,22 +196,68 @@ export default function SettingsScreen() {
         {__DEV__ && (
           <View style={styles.section}>
             <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>DEVELOPER</Text>
+
+            {/* Test Morning Verse */}
             <TouchableOpacity
-              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 8 }]}
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                const verse = getDailyVerse(isPremium);
+                const body = verse.text.length > 100
+                  ? verse.text.substring(0, 100) + '...'
+                  : verse.text;
 
-                // 即座に通知を表示（trigger: null で即時発火）
                 await Notifications.scheduleNotificationAsync({
                   content: {
-                    title: 'Daily Dharma',
-                    body: 'Are you present right now? 🧘',
+                    title: 'Daily Dharma ☀️',
+                    body: body,
+                    data: { verseId: verse.id },
                   },
                   trigger: null,
                 });
 
-                // スケジュールされた通知を確認
+                Alert.alert('Morning Verse Test', `✅ Sent!\n\n"${body}"`);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingLeft}>
+                <Sunrise size={20} color={colors.gold} />
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Test Morning Verse</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Test Stay Present */}
+            <TouchableOpacity
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 8 }]}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+                const message = getRandomStayPresentMessage();
+
+                await Notifications.scheduleNotificationAsync({
+                  content: {
+                    title: 'Daily Dharma 🧘',
+                    body: message,
+                  },
+                  trigger: null,
+                });
+
+                Alert.alert('Stay Present Test', `✅ Sent!\n\n"${message}"`);
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingLeft}>
+                <Bell size={20} color={colors.gold} />
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Test Stay Present</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Show Scheduled Notifications */}
+            <TouchableOpacity
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+
                 console.log('[Test] Scheduled notifications count:', scheduled.length);
                 scheduled.forEach((n, i) => {
                   console.log(`[Test] Notification ${i + 1}:`, {
@@ -221,16 +268,24 @@ export default function SettingsScreen() {
                   });
                 });
 
+                const summary = scheduled.map(n => {
+                  const trigger = n.trigger as { dateComponents?: { hour?: number; minute?: number } };
+                  const time = trigger.dateComponents
+                    ? `${trigger.dateComponents.hour}:${String(trigger.dateComponents.minute).padStart(2, '0')}`
+                    : 'unknown';
+                  return `• ${time} - ${n.identifier}`;
+                }).join('\n');
+
                 Alert.alert(
-                  'Notification Test',
-                  `✅ Test notification sent!\n\n📋 Scheduled: ${scheduled.length} notifications\n\nCheck console for details.`
+                  'Scheduled Notifications',
+                  `📋 ${scheduled.length} notifications\n\n${summary}\n\nCheck console for details.`
                 );
               }}
               activeOpacity={0.7}
             >
               <View style={styles.settingLeft}>
                 <FlaskConical size={20} color={colors.gold} />
-                <Text style={[styles.settingLabel, { color: colors.text }]}>Test Notification</Text>
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Show Scheduled</Text>
               </View>
             </TouchableOpacity>
           </View>

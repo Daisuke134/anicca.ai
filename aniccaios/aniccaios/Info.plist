@@ -125,6 +125,17 @@
 		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>com.anicca.ios</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>anicca</string>
+			</array>
+		</dict>
+	</array>
 	<key>UILaunchScreen</key>
 	<dict/>
 	<key>UIRequiresFullScreen</key>

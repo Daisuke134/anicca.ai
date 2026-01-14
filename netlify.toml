@@ -25,3 +25,13 @@
   from = "/privacy"
   to = "/privacy/en"
   status = 301
+
+[[redirects]]
+  from = "/app"
+  to = "https://apps.apple.com/app/id6755129214"
+  status = 302
+
+[[redirects]]
+  from = "/challenge"
+  to = "https://apps.apple.com/app/id6755129214"
+  status = 302

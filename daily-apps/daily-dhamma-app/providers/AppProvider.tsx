@@ -1,8 +1,13 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import createContextHook from '@nkzw/create-context-hook';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRevenueCat } from './RevenueCatProvider';
+import {
+  scheduleMorningVerseNotification,
+  scheduleStayPresentNotifications,
+  getNotificationPermissionStatus,
+} from '@/utils/notifications';
 
 interface AppSettings {
   hasCompletedOnboarding: boolean;
@@ -85,6 +90,39 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [updateSettings]);
 
   const isPremium = rcIsPremium || settings.isPremium;
+
+  // 通知スケジュール: 設定またはisPremiumが変更されたらリスケジュール
+  const hasScheduledRef = useRef(false);
+  useEffect(() => {
+    const scheduleNotifications = async () => {
+      const permissionStatus = await getNotificationPermissionStatus();
+      if (permissionStatus !== 'granted') {
+        console.log('[AppProvider] Notification permission not granted, skipping schedule');
+        return;
+      }
+
+      console.log('[AppProvider] Scheduling notifications:', {
+        isPremium,
+        frequency: settings.notificationFrequency,
+        morningTime: settings.morningNotificationTime,
+      });
+
+      await scheduleMorningVerseNotification(settings.morningNotificationTime, isPremium);
+      await scheduleStayPresentNotifications(settings.notificationFrequency, isPremium);
+      hasScheduledRef.current = true;
+    };
+
+    // onboarding完了後のみ通知をスケジュール
+    if (settings.hasCompletedOnboarding && !settingsQuery.isLoading) {
+      scheduleNotifications();
+    }
+  }, [
+    settings.hasCompletedOnboarding,
+    settings.morningNotificationTime,
+    settings.notificationFrequency,
+    isPremium,
+    settingsQuery.isLoading,
+  ]);
 
   const toggleBookmark = useCallback((verseId: number) => {
     const bookmarks = settings.bookmarkedVerses.includes(verseId)

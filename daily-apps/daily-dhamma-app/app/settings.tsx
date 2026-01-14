@@ -1,8 +1,9 @@
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Linking, Alert } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Bell, Sun, Moon, Clock, ExternalLink, Crown, Info, Shield, FileText } from 'lucide-react-native';
+import { ChevronLeft, Bell, Sun, Moon, Clock, ExternalLink, Crown, Info, Shield, FileText, FlaskConical } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
+import * as Notifications from 'expo-notifications';
 import Colors from '@/constants/colors';
 import { useApp } from '@/providers/AppProvider';
 
@@ -190,6 +191,47 @@ export default function SettingsScreen() {
             <ExternalLink size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
+
+        {__DEV__ && (
+          <View style={styles.section}>
+            <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>DEVELOPER</Text>
+            <TouchableOpacity
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={async () => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+                // 即座に通知を表示
+                await Notifications.presentNotificationAsync({
+                  title: 'Daily Dharma',
+                  body: 'Are you present right now? 🧘',
+                });
+
+                // スケジュールされた通知を確認
+                const scheduled = await Notifications.getAllScheduledNotificationsAsync();
+                console.log('[Test] Scheduled notifications count:', scheduled.length);
+                scheduled.forEach((n, i) => {
+                  console.log(`[Test] Notification ${i + 1}:`, {
+                    id: n.identifier,
+                    title: n.content.title,
+                    body: n.content.body,
+                    trigger: n.trigger,
+                  });
+                });
+
+                Alert.alert(
+                  'Notification Test',
+                  `✅ Test notification sent!\n\n📋 Scheduled: ${scheduled.length} notifications\n\nCheck console for details.`
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingLeft}>
+                <FlaskConical size={20} color={colors.gold} />
+                <Text style={[styles.settingLabel, { color: colors.text }]}>Test Notification</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        )}
 
         <Text style={[styles.versionText, { color: colors.textMuted }]}>
           Daily Dharma v1.0.0

@@ -59,7 +59,10 @@ export async function scheduleMorningVerseNotification(time: string, isPremium: 
         body: verse.text,
         data: { verseId: verse.id },
       },
-      trigger: triggerDate,
+      trigger: {
+        type: 'date',
+        date: triggerDate,
+      },
     });
   }
 
@@ -118,7 +121,10 @@ export async function scheduleStayPresentNotifications(frequency: number, isPrem
           title: 'Daily Dharma',
           body: message,
         },
-        trigger: triggerDate,
+        trigger: {
+          type: 'date',
+          date: triggerDate,
+        },
       });
     }
   }

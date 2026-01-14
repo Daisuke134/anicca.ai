@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Daily Dharma",
+    "name": "Daily Dhamma",
     "slug": "daily-dharma",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,9 +9,9 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
-      "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "image": "./assets/images/splash-screen.png",
+      "resizeMode": "cover",
+      "backgroundColor": "#F5F0E8"
     },
     "ios": {
       "supportsTablet": false,

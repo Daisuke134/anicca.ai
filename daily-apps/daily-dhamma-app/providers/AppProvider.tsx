@@ -136,9 +136,9 @@ export const [AppProvider, useApp] = createContextHook(() => {
   }, [settings.bookmarkedVerses]);
 
   return {
-    settings,
+    settings: settingsQuery.data ?? settings,
     isPremium,
-    isLoading: settingsQuery.isLoading,
+    isLoading: settingsQuery.isLoading || !settingsQuery.data,
     updateSettings,
     completeOnboarding,
     setPremium,

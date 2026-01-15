@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Alert, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { X, Check, Flower2, Sparkles, Bell } from 'lucide-react-native';
@@ -7,6 +7,9 @@ import * as Haptics from 'expo-haptics';
 import Colors from '@/constants/colors';
 import { useRevenueCat } from '@/providers/RevenueCatProvider';
 import { PurchasesPackage } from 'react-native-purchases';
+
+const PRIVACY_POLICY_URL = 'https://aniccaai.com/dailydharma/privacy';
+const TERMS_URL = 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/';
 
 const features = [
   {
@@ -263,6 +266,20 @@ export default function PaywallScreen() {
         <Text style={[styles.termsText, { color: colors.textMuted }]}>
           Cancel anytime • Auto-renews unless cancelled
         </Text>
+
+        <View style={styles.legalLinks}>
+          <TouchableOpacity onPress={() => Linking.openURL(TERMS_URL)}>
+            <Text style={[styles.legalLinkText, { color: colors.textMuted }]}>
+              Terms of Use
+            </Text>
+          </TouchableOpacity>
+          <Text style={[styles.legalSeparator, { color: colors.textMuted }]}> • </Text>
+          <TouchableOpacity onPress={() => Linking.openURL(PRIVACY_POLICY_URL)}>
+            <Text style={[styles.legalLinkText, { color: colors.textMuted }]}>
+              Privacy Policy
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
     </View>
   );
@@ -428,5 +445,19 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 8,
+  },
+  legalLinks: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 8,
+  },
+  legalLinkText: {
+    fontSize: 12,
+    textDecorationLine: 'underline',
+  },
+  legalSeparator: {
+    fontSize: 12,
   },
 });

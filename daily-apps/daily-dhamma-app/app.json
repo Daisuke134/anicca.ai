@@ -17,9 +17,6 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.dailydhamma.app",
       "appleTeamId": "S5U8UH3JLJ",
-      "entitlements": {
-        "com.apple.security.application-groups": ["group.com.dailydhamma.app"]
-      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -55,8 +52,7 @@
           "defaultChannel": "default",
           "enableBackgroundRemoteNotifications": false
         }
-      ],
-      "@bacons/apple-targets"
+      ]
     ],
     "experiments": {
       "typedRoutes": true

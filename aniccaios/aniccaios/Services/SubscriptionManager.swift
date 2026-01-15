@@ -216,6 +216,7 @@ extension SubscriptionManager: PurchasesDelegate {
                     currency = "USD"
                 }
                 SingularManager.shared.trackPurchase(productId: productId, price: price, currency: currency)
+                AnalyticsManager.shared.trackPurchaseCompleted(productId: productId, revenue: price)
             }
             
             // 3. サーバーDBを同期してからlimit情報を取得（POSTでDB更新→GET）

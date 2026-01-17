@@ -82,7 +82,7 @@ final class AppState: ObservableObject {
         case habits = 1
         case profile = 2
     }
-    @Published var selectedRootTab: RootTab = .talk
+    @Published var selectedRootTab: RootTab = .habits
 
     // Legacy support: computed property for backward compatibility
     var wakeTime: DateComponents? {
@@ -149,6 +149,8 @@ final class AppState: ObservableObject {
         // v0.5: 匿名ユーザーでもオンボーディング完了状態を維持
         // signedOut時の強制リセットを削除し、ローカル保存された状態を尊重
         self.userProfile = loadUserProfile()
+        // Phase 3: Migrate old struggle keys to new problem types
+        migrateStruggles()
         syncPreferredLanguageWithSystem()
         self.subscriptionInfo = loadSubscriptionInfo()
         self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
@@ -661,7 +663,7 @@ final class AppState: ObservableObject {
             customHabitName: customHabitName
         )
         shouldStartSessionImmediately = true
-        selectedRootTab = .talk
+        selectedRootTab = .habits
     }
 
     func handleHabitTrigger(_ habit: HabitType, customHabitId: UUID? = nil) {
@@ -1171,6 +1173,48 @@ final class AppState: ObservableObject {
             loadedProfile.preferredLanguage = LanguagePreference.detectDefault()
         }
         return loadedProfile
+    }
+    
+    // MARK: - Phase 3: Struggle Migration
+    
+    /// 古いstruggleキーを新しい問題タイプにマイグレーション
+    private static let migrationMapping: [String: String] = [
+        "poor_sleep": "staying_up_late",
+        "stress": "", // 削除（広すぎる）
+        "self_doubt": "self_loathing",
+        "motivation": "procrastination",
+        "focus": "procrastination",
+        "time_management": "", // 削除
+        "burnout": "", // 削除
+        "relationships": "loneliness",
+        "energy": "", // 削除
+        "work_life_balance": "" // 削除
+    ]
+    
+    /// 古いstruggleキーを新しい問題タイプにマイグレーション
+    private func migrateStruggles() {
+        var newStruggles: [String] = []
+        for struggle in userProfile.struggles {
+            if let newKey = Self.migrationMapping[struggle] {
+                if !newKey.isEmpty && !newStruggles.contains(newKey) {
+                    newStruggles.append(newKey)
+                }
+            } else if ProblemType(rawValue: struggle) != nil {
+                // 既に新しいキーの場合はそのまま
+                if !newStruggles.contains(struggle) {
+                    newStruggles.append(struggle)
+                }
+            }
+            // マッピングにない場合は削除
+        }
+        
+        if newStruggles != userProfile.struggles {
+            var profile = userProfile
+            profile.struggles = newStruggles
+            profile.problems = newStruggles // problemsはstrugglesのalias
+            userProfile = profile
+            saveUserProfile()
+        }
     }
     
     // MARK: - Subscription Info

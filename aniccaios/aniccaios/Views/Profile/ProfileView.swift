@@ -27,11 +27,12 @@ struct ProfileView: View {
 
                     accountCard
                     dataIntegrationSection  // v3: Plan の直下に移動
-                    traitsCard
-                    idealsSection
-                    strugglesSection
+                    // Phase 3: 以下のセクションは非表示（My Pathで管理）
+                    // traitsCard
+                    // idealsSection
+                    // strugglesSection
+                    // stickyModeSection
                     nudgeStrengthSection
-                    stickyModeSection
                     // v0.5: 未サインイン時はアカウント管理セクションを非表示
                     if case .signedIn = appState.authStatus {
                         accountManagementSection
@@ -636,6 +637,46 @@ struct ProfileView: View {
                         appState.setupRecording(pattern: 5)
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.vertical, 4)
+            }
+            
+            Text("🔔 Nudge/通知テスト")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 16)
+            
+            CardView {
+                VStack(spacing: 12) {
+                    Button("🔔 Nudge通知テスト（夜更かし）") {
+                        Task {
+                            await ProblemNotificationScheduler.shared.testNotification(for: .stayingUpLate)
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    Button("📱 1枚画面テスト（夜更かし）") {
+                        let content = NudgeContent.contentForToday(for: .stayingUpLate)
+                        appState.showNudgeCard(content)
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    Divider()
+                    
+                    ForEach(ProblemType.allCases, id: \.self) { problem in
+                        Button("📱 \(problem.displayName)") {
+                            let content = NudgeContent.contentForToday(for: problem)
+                            appState.showNudgeCard(content)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        
+                        if problem != ProblemType.allCases.last {
+                            Divider()
+                        }
+                    }
                 }
                 .padding(.vertical, 4)
             }

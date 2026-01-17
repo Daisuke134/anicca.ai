@@ -78,63 +78,13 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
 
     /// ポジティブボタンのテキスト（左側）
     var positiveButtonText: String {
-        switch self {
-        case .stayingUpLate:
-            return "明日を守る 💪"
-        case .cantWakeUp:
-            return "今日を始める ☀️"
-        case .selfLoathing:
-            return "自分を許す 🤍"
-        case .rumination:
-            return "今に戻る 🧘"
-        case .procrastination:
-            return "5分やる ⚡"
-        case .anxiety:
-            return "深呼吸する 🌬️"
-        case .lying:
-            return "誠実でいる 🤝"
-        case .badMouthing:
-            return "善い言葉を使う 💬"
-        case .pornAddiction:
-            return "誘惑に勝つ 💪"
-        case .alcoholDependency:
-            return "今夜は飲まない 🍵"
-        case .anger:
-            return "手放す 🕊️"
-        case .obsessive:
-            return "手放す 🌿"
-        case .loneliness:
-            return "誰かに連絡する 📱"
-        }
+        String(localized: "problem_\(self.rawValue)_positive_button")
     }
 
     /// ネガティブボタンのテキスト（右側）- hasSingleButton がtrueの場合はnil
     var negativeButtonText: String? {
         guard !hasSingleButton else { return nil }
-        switch self {
-        case .stayingUpLate:
-            return "傷つける"
-        case .cantWakeUp:
-            return "逃げる"
-        case .rumination:
-            return "考え続ける"
-        case .procrastination:
-            return "後回し"
-        case .lying:
-            return "嘘をつく"
-        case .badMouthing:
-            return "悪口を言う"
-        case .pornAddiction:
-            return "負ける"
-        case .alcoholDependency:
-            return "飲む"
-        case .anger:
-            return "怒り続ける"
-        case .obsessive:
-            return "考え続ける"
-        default:
-            return nil
-        }
+        return String(localized: "problem_\(self.rawValue)_negative_button")
     }
 
     /// アイコン
@@ -191,33 +141,6 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
 extension ProblemType {
     /// 通知タイトル（問題に関連）
     var notificationTitle: String {
-        switch self {
-        case .stayingUpLate:
-            return "就寝"
-        case .cantWakeUp:
-            return "起床"
-        case .selfLoathing:
-            return "Self-Compassion"
-        case .rumination:
-            return "今ここに"
-        case .procrastination:
-            return "今すぐ"
-        case .anxiety:
-            return "安心"
-        case .lying:
-            return "誠実"
-        case .badMouthing:
-            return "善い言葉"
-        case .pornAddiction:
-            return "克服"
-        case .alcoholDependency:
-            return "禁酒"
-        case .anger:
-            return "平静"
-        case .obsessive:
-            return "解放"
-        case .loneliness:
-            return "つながり"
-        }
+        String(localized: "problem_\(self.rawValue)_notification_title")
     }
 }

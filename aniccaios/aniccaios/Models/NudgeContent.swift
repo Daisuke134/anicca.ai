@@ -38,74 +38,74 @@ extension NudgeContent {
         switch problem {
         case .stayingUpLate:
             return [
-                "スクロールより、呼吸。",
-                "その「あと5分だけ」で、何年失ってきた？",
-                "明日の自分、泣くよ。"
+                String(localized: "nudge_staying_up_late_notification_1"),
+                String(localized: "nudge_staying_up_late_notification_2"),
+                String(localized: "nudge_staying_up_late_notification_3")
             ]
         case .cantWakeUp:
             return [
-                "起きないと、今日が始まらん。",
-                "あと5分の君、信用ゼロ。",
-                "Stay Mediocre"
+                String(localized: "nudge_cant_wake_up_notification_1"),
+                String(localized: "nudge_cant_wake_up_notification_2"),
+                String(localized: "nudge_cant_wake_up_notification_3")
             ]
         case .selfLoathing:
             return [
-                "今日も生きてる。それだけで十分。",
-                "自分を責めるのは、もうやめていい。",
-                "あなたは思ってるより、ずっといい人だよ。"
+                String(localized: "nudge_self_loathing_notification_1"),
+                String(localized: "nudge_self_loathing_notification_2"),
+                String(localized: "nudge_self_loathing_notification_3")
             ]
         case .rumination:
             return [
-                "今、何を感じてる？",
-                "Are you present right now?",
-                "朝の5分、瞑想してみない？"
+                String(localized: "nudge_rumination_notification_1"),
+                String(localized: "nudge_rumination_notification_2"),
+                String(localized: "nudge_rumination_notification_3")
             ]
         case .procrastination:
             return [
-                "5分だけ。それだけでいい。",
-                "また自分との約束、破る？",
-                "やらない理由、全部言い訳。"
+                String(localized: "nudge_procrastination_notification_1"),
+                String(localized: "nudge_procrastination_notification_2"),
+                String(localized: "nudge_procrastination_notification_3")
             ]
         case .anxiety:
             return [
-                "今この瞬間、あなたは安全。",
-                "今、何を感じてる？",
-                "深呼吸。4秒吸って、4秒止めて、4秒吐く。"
+                String(localized: "nudge_anxiety_notification_1"),
+                String(localized: "nudge_anxiety_notification_2"),
+                String(localized: "nudge_anxiety_notification_3")
             ]
         case .lying:
             return [
-                "今日は正直に生きる日。"
+                String(localized: "nudge_lying_notification_1")
             ]
         case .badMouthing:
             return [
-                "今日は誰かを傷つける言葉を使わない。",
-                "その言葉、自分に言われたらどう感じる？"
+                String(localized: "nudge_bad_mouthing_notification_1"),
+                String(localized: "nudge_bad_mouthing_notification_2")
             ]
         case .pornAddiction:
             return [
-                "誘惑に勝てば、明日の自分が変わる。",
-                "本当にそれが欲しい？それとも逃げたいだけ？"
+                String(localized: "nudge_porn_addiction_notification_1"),
+                String(localized: "nudge_porn_addiction_notification_2")
             ]
         case .alcoholDependency:
             return [
-                "今夜は飲まない。それだけで勝ち。",
-                "飲まなくても、リラックスできる。"
+                String(localized: "nudge_alcohol_dependency_notification_1"),
+                String(localized: "nudge_alcohol_dependency_notification_2")
             ]
         case .anger:
             return [
-                "怒りは自分を傷つける。深呼吸。",
-                "3秒待ってから、話そう。"
+                String(localized: "nudge_anger_notification_1"),
+                String(localized: "nudge_anger_notification_2")
             ]
         case .obsessive:
             return [
-                "完璧じゃなくていい。手放していい。",
-                "その考え、何回目？",
-                "考えすぎてない？"
+                String(localized: "nudge_obsessive_notification_1"),
+                String(localized: "nudge_obsessive_notification_2"),
+                String(localized: "nudge_obsessive_notification_3")
             ]
         case .loneliness:
             return [
-                "一人じゃない。誰かがあなたを想ってる。",
-                "大切な人に、一言送ってみない？"
+                String(localized: "nudge_loneliness_notification_1"),
+                String(localized: "nudge_loneliness_notification_2")
             ]
         }
     }
@@ -115,74 +115,74 @@ extension NudgeContent {
         switch problem {
         case .stayingUpLate:
             return [
-                "夜更かしは明日の自分を傷つける行為。今夜は画面を閉じよう。",
-                "睡眠不足の脳は酔っ払いと同じ判断力。明日の自分を守るために、今夜は休もう。",
-                "今スクロールしてる内容、明日覚えてる？でも睡眠不足は確実に残る。"
+                String(localized: "nudge_staying_up_late_detail_1"),
+                String(localized: "nudge_staying_up_late_detail_2"),
+                String(localized: "nudge_staying_up_late_detail_3")
             ]
         case .cantWakeUp:
             return [
-                "布団の中で何も変わらない。まず足を床につけよう。",
-                "「あと5分」を何回言った？今起きれば、今日の自分を好きになれる。",
-                "平凡なままでいい？今起きれば、今日は違う1日になる。"
+                String(localized: "nudge_cant_wake_up_detail_1"),
+                String(localized: "nudge_cant_wake_up_detail_2"),
+                String(localized: "nudge_cant_wake_up_detail_3")
             ]
         case .selfLoathing:
             return [
-                "自己嫌悪は、自分を良くしようとしている証拠。でもその方法は逆効果。今日できた小さなことを1つ思い出してみて。",
-                "完璧じゃなくていい。今のあなたで十分。",
-                "自分に厳しすぎる。他の人にするように、自分にも優しくしていい。"
+                String(localized: "nudge_self_loathing_detail_1"),
+                String(localized: "nudge_self_loathing_detail_2"),
+                String(localized: "nudge_self_loathing_detail_3")
             ]
         case .rumination:
             return [
-                "頭の中のループに気づいた？気づいたなら、もう半分解決してる。今この瞬間に戻ろう。",
-                "過去でも未来でもなく、今ここにいる？深呼吸して、今の身体の感覚に意識を向けてみて。",
-                "反芻を止める最も効果的な方法は瞑想。今朝5分だけ、呼吸に集中してみよう。"
+                String(localized: "nudge_rumination_detail_1"),
+                String(localized: "nudge_rumination_detail_2"),
+                String(localized: "nudge_rumination_detail_3")
             ]
         case .procrastination:
             return [
-                "完璧にやる必要はない。5分だけ始めれば、続けられる。",
-                "先延ばしは未来の自分を苦しめる。今やれば、未来の自分が感謝する。",
-                "本当にできない？それとも、やりたくないだけ？正直になろう。"
+                String(localized: "nudge_procrastination_detail_1"),
+                String(localized: "nudge_procrastination_detail_2"),
+                String(localized: "nudge_procrastination_detail_3")
             ]
         case .anxiety:
             return [
-                "不安は未来への恐れ。でも今この瞬間は、何も起きていない。深呼吸して、今に戻ろう。",
-                "不安に気づいた？気づいたなら、それを観察してみて。不安は来て、去っていく。",
-                "身体を落ち着かせれば、心も落ち着く。今すぐやってみて。"
+                String(localized: "nudge_anxiety_detail_1"),
+                String(localized: "nudge_anxiety_detail_2"),
+                String(localized: "nudge_anxiety_detail_3")
             ]
         case .lying:
             return [
-                "嘘は一時的に楽でも、長期的には自分を苦しめる。今日は誠実でいよう。"
+                String(localized: "nudge_lying_detail_1")
             ]
         case .badMouthing:
             return [
-                "悪口は言った瞬間気持ちいいかもしれない。でも後から自己嫌悪が来る。今日は善い言葉だけ。",
-                "言う前に一呼吸。相手の立場に立ってみよう。"
+                String(localized: "nudge_bad_mouthing_detail_1"),
+                String(localized: "nudge_bad_mouthing_detail_2")
             ]
         case .pornAddiction:
             return [
-                "今の衝動は一時的。5分待てば、衝動は去る。その5分を乗り越えよう。",
-                "ポルノは一時的な逃避。根本の問題は解決しない。今何から逃げようとしてる？"
+                String(localized: "nudge_porn_addiction_detail_1"),
+                String(localized: "nudge_porn_addiction_detail_2")
             ]
         case .alcoholDependency:
             return [
-                "1日だけ。今夜だけ我慢しよう。明日の朝、自分を誇れる。",
-                "お酒なしでストレス解消する方法を試してみて。散歩、深呼吸、音楽。"
+                String(localized: "nudge_alcohol_dependency_detail_1"),
+                String(localized: "nudge_alcohol_dependency_detail_2")
             ]
         case .anger:
             return [
-                "怒りを持ち続けるのは、自分が毒を飲んで相手が死ぬのを待つようなもの。手放そう。",
-                "怒りに任せて話すと後悔する。3秒だけ待とう。"
+                String(localized: "nudge_anger_detail_1"),
+                String(localized: "nudge_anger_detail_2")
             ]
         case .obsessive:
             return [
-                "その考え、本当に重要？今手放しても、何も悪いことは起きない。",
-                "同じことを考え続けても、答えは変わらない。今は手放して、後で考えよう。",
-                "考えることと、実際に行動することは違う。今は考えるのをやめて、動いてみよう。"
+                String(localized: "nudge_obsessive_detail_1"),
+                String(localized: "nudge_obsessive_detail_2"),
+                String(localized: "nudge_obsessive_detail_3")
             ]
         case .loneliness:
             return [
-                "孤独を感じても、それは真実じゃない。今日、誰かに連絡してみない？",
-                "つながりは待っていても来ない。自分から動こう。"
+                String(localized: "nudge_loneliness_detail_1"),
+                String(localized: "nudge_loneliness_detail_2")
             ]
         }
     }

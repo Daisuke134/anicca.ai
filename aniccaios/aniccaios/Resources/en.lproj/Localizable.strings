@@ -587,3 +587,340 @@
 "onboarding_att_title" = "Personalize Your Experience";
 "onboarding_att_description" = "This helps us understand how you use Anicca and make it better for you.";
 
+/* ========== Phase 3: Proactive Agent ========== */
+
+/* My Path Tab */
+"mypath_header_description" = "Anicca understands your struggles and supports you at the right moments.";
+"mypath_section_current_struggles" = "Current Struggles";
+"mypath_section_tell_anicca" = "Tell Anicca";
+"mypath_empty_title" = "Add a struggle to work on";
+"mypath_empty_action" = "Add Struggle";
+"mypath_add_problem" = "Add Struggle";
+"mypath_deepdive_save" = "Save";
+"mypath_deepdive_delete" = "Delete this struggle";
+"mypath_deepdive_delete_confirm_title" = "Delete this struggle?";
+"mypath_deepdive_delete_confirm_message" = "Related notifications will also be stopped.";
+
+/* Tell Anicca */
+"mypath_tell_struggling_with" = "I'm struggling with...";
+"mypath_tell_my_goal_is" = "My goal is...";
+"mypath_tell_remember_that" = "Remember that...";
+"mypath_tell_saved" = "Remembered";
+
+/* Add Problem Sheet */
+"mypath_add_problem_title" = "Add Struggle";
+"mypath_add_problem_custom" = "Other (custom)";
+"mypath_add_problem_action" = "Add";
+"mypath_add_problem_already_added" = "Already added";
+"add_problem_title" = "Add Problems to Face";
+"add_problem_subtitle" = "Select the problems you want to add";
+"add_problem_add_button" = "Add";
+"add_problem_all_selected" = "All problems are already selected";
+"deep_dive_delete_problem" = "Delete this problem";
+"deep_dive_delete_alert_title" = "Delete this problem?";
+"deep_dive_delete_alert_message" = "This problem will be removed from My Path";
+"deep_dive_tell_anicca_title" = "Tell Anicca";
+"deep_dive_tell_anicca_subtitle" = "Write anything you want Anicca to know about this problem";
+
+/* ProblemType Button Texts */
+"problem_staying_up_late_positive_button" = "Protect Tomorrow 💪";
+"problem_staying_up_late_negative_button" = "Hurt Myself";
+"problem_staying_up_late_notification_title" = "Bedtime";
+"problem_cant_wake_up_positive_button" = "Start Today ☀️";
+"problem_cant_wake_up_negative_button" = "Stay in bed";
+"problem_cant_wake_up_notification_title" = "Wake Up";
+"problem_self_loathing_positive_button" = "Forgive Myself 🤍";
+"problem_self_loathing_notification_title" = "Self-Compassion";
+"problem_rumination_positive_button" = "Return to Now 🧘";
+"problem_rumination_negative_button" = "Keep Thinking";
+"problem_rumination_notification_title" = "Present Moment";
+"problem_procrastination_positive_button" = "Do 5 min ⚡";
+"problem_procrastination_negative_button" = "Later";
+"problem_procrastination_notification_title" = "Procrastination";
+"problem_anxiety_positive_button" = "Deep Breath 🌬️";
+"problem_anxiety_notification_title" = "Anxiety";
+"problem_lying_positive_button" = "Be Honest 🤝";
+"problem_lying_negative_button" = "Lie";
+"problem_lying_notification_title" = "Honesty";
+"problem_bad_mouthing_positive_button" = "Kind Words 💬";
+"problem_bad_mouthing_negative_button" = "Bad-mouth";
+"problem_bad_mouthing_notification_title" = "Words";
+"problem_porn_addiction_positive_button" = "Overcome 💪";
+"problem_porn_addiction_negative_button" = "Give In";
+"problem_porn_addiction_notification_title" = "Self-Control";
+"problem_alcohol_dependency_positive_button" = "Stay Sober Tonight 🍵";
+"problem_alcohol_dependency_negative_button" = "Drink";
+"problem_alcohol_dependency_notification_title" = "Sobriety";
+"problem_anger_positive_button" = "Let Go 🕊️";
+"problem_anger_negative_button" = "Stay Angry";
+"problem_anger_notification_title" = "Calm";
+"problem_obsessive_positive_button" = "Let Go 🌿";
+"problem_obsessive_negative_button" = "Keep Thinking";
+"problem_obsessive_notification_title" = "Let Go";
+"problem_loneliness_positive_button" = "Reach Out 📱";
+"problem_loneliness_notification_title" = "Connection";
+
+/* NudgeContent - staying_up_late */
+"nudge_staying_up_late_notification_1" = "Breathe, don't scroll.";
+"nudge_staying_up_late_notification_2" = "How many years have you lost to 'just 5 more minutes'?";
+"nudge_staying_up_late_notification_3" = "Tomorrow's you will regret this.";
+"nudge_staying_up_late_detail_1" = "Staying up late hurts tomorrow's you. Close that screen tonight.";
+"nudge_staying_up_late_detail_2" = "A sleep-deprived brain has the judgment of a drunk. Rest tonight to protect tomorrow's you.";
+"nudge_staying_up_late_detail_3" = "Will you remember what you're scrolling? But the sleep deprivation will definitely stay.";
+
+/* NudgeContent - cant_wake_up */
+"nudge_cant_wake_up_notification_1" = "Your day won't start until you get up.";
+"nudge_cant_wake_up_notification_2" = "The 'just 5 more minutes' you has zero credibility.";
+"nudge_cant_wake_up_notification_3" = "Stay Mediocre";
+"nudge_cant_wake_up_detail_1" = "Nothing changes under the blanket. Put your feet on the floor first.";
+"nudge_cant_wake_up_detail_2" = "How many times have you said '5 more minutes'? Get up now, and you'll like today's you.";
+"nudge_cant_wake_up_detail_3" = "Want to stay average? Get up now, and today will be different.";
+
+/* NudgeContent - self_loathing */
+"nudge_self_loathing_notification_1" = "You're alive today. That's enough.";
+"nudge_self_loathing_notification_2" = "It's okay to stop blaming yourself.";
+"nudge_self_loathing_notification_3" = "You're a much better person than you think.";
+"nudge_self_loathing_detail_1" = "Self-loathing shows you want to improve. But it's counterproductive. Remember one small thing you did well today.";
+"nudge_self_loathing_detail_2" = "You don't have to be perfect. You're enough as you are.";
+"nudge_self_loathing_detail_3" = "You're too hard on yourself. Be kind to yourself like you would to others.";
+
+/* NudgeContent - rumination */
+"nudge_rumination_notification_1" = "What are you feeling right now?";
+"nudge_rumination_notification_2" = "Are you present right now?";
+"nudge_rumination_notification_3" = "Why not meditate for 5 minutes this morning?";
+"nudge_rumination_detail_1" = "Noticed the loop in your head? Noticing it means you're halfway there. Come back to this moment.";
+"nudge_rumination_detail_2" = "Are you here now, not in the past or future? Take a deep breath and notice how your body feels.";
+"nudge_rumination_detail_3" = "Meditation is the most effective way to stop rumination. Focus on your breath for just 5 minutes.";
+
+/* NudgeContent - procrastination */
+"nudge_procrastination_notification_1" = "Just 5 minutes. That's all you need.";
+"nudge_procrastination_notification_2" = "Breaking another promise to yourself?";
+"nudge_procrastination_notification_3" = "Every reason not to do it is an excuse.";
+"nudge_procrastination_detail_1" = "You don't have to do it perfectly. Start for 5 minutes and you can keep going.";
+"nudge_procrastination_detail_2" = "Procrastination hurts future you. Do it now and future you will thank you.";
+"nudge_procrastination_detail_3" = "Can't you really do it? Or do you just not want to? Be honest.";
+
+/* NudgeContent - anxiety */
+"nudge_anxiety_notification_1" = "In this moment, you are safe.";
+"nudge_anxiety_notification_2" = "What are you feeling right now?";
+"nudge_anxiety_notification_3" = "Deep breath. Inhale 4 seconds, hold 4, exhale 4.";
+"nudge_anxiety_detail_1" = "Anxiety is fear of the future. But nothing is happening right now. Breathe and come back to now.";
+"nudge_anxiety_detail_2" = "Noticed your anxiety? Watch it. Anxiety comes and goes.";
+"nudge_anxiety_detail_3" = "Calm your body, calm your mind. Try it now.";
+
+/* NudgeContent - lying */
+"nudge_lying_notification_1" = "Today is a day to live honestly.";
+"nudge_lying_detail_1" = "Lies may be easy short-term, but they hurt you long-term. Be truthful today.";
+
+/* NudgeContent - bad_mouthing */
+"nudge_bad_mouthing_notification_1" = "No hurtful words today.";
+"nudge_bad_mouthing_notification_2" = "How would you feel if someone said that to you?";
+"nudge_bad_mouthing_detail_1" = "Gossip feels good in the moment. But self-loathing follows. Only kind words today.";
+"nudge_bad_mouthing_detail_2" = "Take a breath before speaking. Put yourself in their shoes.";
+
+/* NudgeContent - porn_addiction */
+"nudge_porn_addiction_notification_1" = "Beat the temptation and tomorrow's you will change.";
+"nudge_porn_addiction_notification_2" = "Do you really want it? Or are you just escaping?";
+"nudge_porn_addiction_detail_1" = "This urge is temporary. Wait 5 minutes and it'll pass. Get through those 5 minutes.";
+"nudge_porn_addiction_detail_2" = "Porn is temporary escape. It doesn't solve the root problem. What are you running from?";
+
+/* NudgeContent - alcohol_dependency */
+"nudge_alcohol_dependency_notification_1" = "Don't drink tonight. That alone is a win.";
+"nudge_alcohol_dependency_notification_2" = "You can relax without drinking.";
+"nudge_alcohol_dependency_detail_1" = "Just today. Just tonight. You'll be proud tomorrow morning.";
+"nudge_alcohol_dependency_detail_2" = "Try stress relief without alcohol. A walk, deep breaths, music.";
+
+/* NudgeContent - anger */
+"nudge_anger_notification_1" = "Anger hurts you. Take a deep breath.";
+"nudge_anger_notification_2" = "Wait 3 seconds before speaking.";
+"nudge_anger_detail_1" = "Holding onto anger is like drinking poison expecting the other person to die. Let it go.";
+"nudge_anger_detail_2" = "Speaking in anger leads to regret. Wait just 3 seconds.";
+
+/* NudgeContent - obsessive */
+"nudge_obsessive_notification_1" = "It doesn't have to be perfect. You can let go.";
+"nudge_obsessive_notification_2" = "How many times have you thought that?";
+"nudge_obsessive_notification_3" = "Aren't you overthinking?";
+"nudge_obsessive_detail_1" = "Is that thought really important? Nothing bad happens if you let it go now.";
+"nudge_obsessive_detail_2" = "Thinking the same thing won't change the answer. Let go now, think later.";
+"nudge_obsessive_detail_3" = "Thinking and acting are different. Stop thinking, start moving.";
+
+/* NudgeContent - loneliness */
+"nudge_loneliness_notification_1" = "You're not alone. Someone is thinking of you.";
+"nudge_loneliness_notification_2" = "Why not send a message to someone you care about?";
+"nudge_loneliness_detail_1" = "Feeling lonely doesn't make it true. Why not reach out to someone today?";
+"nudge_loneliness_detail_2" = "Connection won't come to you. Make the first move.";
+
+/* Common Deep Dive Questions */
+"deepdive_common_duration_question" = "How long have you had this problem?";
+"deepdive_common_duration_recent" = "Recently";
+"deepdive_common_duration_months" = "A few months";
+"deepdive_common_duration_year" = "Over a year";
+"deepdive_common_duration_always" = "Always";
+
+/* Deep Dive Questions - staying_up_late */
+"deepdive_staying_up_late_q1" = "What do you usually do when staying up late?";
+"deepdive_staying_up_late_q1_opt1" = "Social media";
+"deepdive_staying_up_late_q1_opt2" = "YouTube";
+"deepdive_staying_up_late_q1_opt3" = "Games";
+"deepdive_staying_up_late_q1_opt4" = "Work";
+"deepdive_staying_up_late_q1_opt5" = "Other";
+"deepdive_staying_up_late_q2" = "Why do you stay up late?";
+"deepdive_staying_up_late_q2_opt1" = "Couldn't finish what I needed to do today";
+"deepdive_staying_up_late_q2_opt2" = "Stress relief";
+"deepdive_staying_up_late_q2_opt3" = "It's become a habit";
+"deepdive_staying_up_late_q2_opt4" = "Don't want to sleep";
+
+/* Deep Dive Questions - cant_wake_up */
+"deepdive_cant_wake_up_q1" = "How do you feel when you can't wake up?";
+"deepdive_cant_wake_up_q1_opt1" = "Self-loathing";
+"deepdive_cant_wake_up_q1_opt2" = "Panic";
+"deepdive_cant_wake_up_q1_opt3" = "Giving up";
+"deepdive_cant_wake_up_q1_opt4" = "Nothing";
+"deepdive_cant_wake_up_q2" = "Why can't you wake up?";
+"deepdive_cant_wake_up_q2_opt1" = "Lack of sleep";
+"deepdive_cant_wake_up_q2_opt2" = "No motivation";
+"deepdive_cant_wake_up_q2_opt3" = "No reason to wake up";
+"deepdive_cant_wake_up_q2_opt4" = "Health issues";
+
+/* Deep Dive Questions - self_loathing */
+"deepdive_self_loathing_q1" = "When do you feel self-loathing?";
+"deepdive_self_loathing_q1_opt1" = "After failing";
+"deepdive_self_loathing_q1_opt2" = "When comparing myself";
+"deepdive_self_loathing_q1_opt3" = "When I did nothing";
+"deepdive_self_loathing_q1_opt4" = "Always";
+"deepdive_self_loathing_q2" = "What do you blame yourself for?";
+"deepdive_self_loathing_q2_opt1" = "My abilities";
+"deepdive_self_loathing_q2_opt2" = "My appearance";
+"deepdive_self_loathing_q2_opt3" = "My personality";
+"deepdive_self_loathing_q2_opt4" = "Past actions";
+
+/* Deep Dive Questions - rumination */
+"deepdive_rumination_q1" = "What do you keep thinking about?";
+"deepdive_rumination_q1_opt1" = "Past failures";
+"deepdive_rumination_q1_opt2" = "Relationships";
+"deepdive_rumination_q1_opt3" = "Future worries";
+"deepdive_rumination_q1_opt4" = "My flaws";
+"deepdive_rumination_q2" = "When do you tend to ruminate?";
+"deepdive_rumination_q2_opt1" = "Before sleep";
+"deepdive_rumination_q2_opt2" = "When waking up";
+"deepdive_rumination_q2_opt3" = "When alone";
+"deepdive_rumination_q2_opt4" = "Always";
+
+/* Deep Dive Questions - procrastination */
+"deepdive_procrastination_q1" = "What do you tend to procrastinate on?";
+"deepdive_procrastination_q1_opt1" = "Work tasks";
+"deepdive_procrastination_q1_opt2" = "Housework";
+"deepdive_procrastination_q1_opt3" = "Appointments & paperwork";
+"deepdive_procrastination_q1_opt4" = "Contacting people";
+"deepdive_procrastination_q2" = "Why do you procrastinate?";
+"deepdive_procrastination_q2_opt1" = "Too troublesome";
+"deepdive_procrastination_q2_opt2" = "Want to do it perfectly";
+"deepdive_procrastination_q2_opt3" = "Fear of failure";
+"deepdive_procrastination_q2_opt4" = "Don't know how";
+
+/* Deep Dive Questions - anxiety */
+"deepdive_anxiety_q1" = "What makes you anxious?";
+"deepdive_anxiety_q1_opt1" = "The future";
+"deepdive_anxiety_q1_opt2" = "Relationships";
+"deepdive_anxiety_q1_opt3" = "Work";
+"deepdive_anxiety_q1_opt4" = "Health";
+"deepdive_anxiety_q2" = "When do you feel anxious?";
+"deepdive_anxiety_q2_opt1" = "Morning";
+"deepdive_anxiety_q2_opt2" = "Night";
+"deepdive_anxiety_q2_opt3" = "Before meeting people";
+"deepdive_anxiety_q2_opt4" = "Always";
+
+/* Deep Dive Questions - lying */
+"deepdive_lying_q1" = "What kind of lies do you tell?";
+"deepdive_lying_q1_opt1" = "Small lies";
+"deepdive_lying_q1_opt2" = "Excuses";
+"deepdive_lying_q1_opt3" = "To look better";
+"deepdive_lying_q1_opt4" = "To not hurt others";
+"deepdive_lying_q2" = "Who do you lie to?";
+"deepdive_lying_q2_opt1" = "Family";
+"deepdive_lying_q2_opt2" = "Friends";
+"deepdive_lying_q2_opt3" = "Coworkers";
+"deepdive_lying_q2_opt4" = "Myself";
+"deepdive_lying_q3" = "Why do you lie?";
+"deepdive_lying_q3_opt1" = "Don't want to be scolded";
+"deepdive_lying_q3_opt2" = "Don't want to be disliked";
+"deepdive_lying_q3_opt3" = "Habit";
+"deepdive_lying_q3_opt4" = "Avoiding trouble";
+
+/* Deep Dive Questions - bad_mouthing */
+"deepdive_bad_mouthing_q1" = "What kind of bad things do you say?";
+"deepdive_bad_mouthing_q1_opt1" = "Gossip";
+"deepdive_bad_mouthing_q1_opt2" = "Sarcasm";
+"deepdive_bad_mouthing_q1_opt3" = "Making fun";
+"deepdive_bad_mouthing_q1_opt4" = "Criticism";
+"deepdive_bad_mouthing_q2" = "Who do you say bad things about?";
+"deepdive_bad_mouthing_q2_opt1" = "Family";
+"deepdive_bad_mouthing_q2_opt2" = "Friends";
+"deepdive_bad_mouthing_q2_opt3" = "Coworkers";
+"deepdive_bad_mouthing_q2_opt4" = "On social media";
+"deepdive_bad_mouthing_q3" = "Why do you badmouth?";
+"deepdive_bad_mouthing_q3_opt1" = "Stress relief";
+"deepdive_bad_mouthing_q3_opt2" = "Annoyed at them";
+"deepdive_bad_mouthing_q3_opt3" = "Habit";
+"deepdive_bad_mouthing_q3_opt4" = "Want recognition";
+
+/* Deep Dive Questions - porn_addiction */
+"deepdive_porn_addiction_q1" = "When do you watch porn?";
+"deepdive_porn_addiction_q1_opt1" = "Late at night";
+"deepdive_porn_addiction_q1_opt2" = "After coming home";
+"deepdive_porn_addiction_q1_opt3" = "When stressed";
+"deepdive_porn_addiction_q1_opt4" = "When bored";
+"deepdive_porn_addiction_q2" = "Why do you watch porn?";
+"deepdive_porn_addiction_q2_opt1" = "Stress relief";
+"deepdive_porn_addiction_q2_opt2" = "Habit";
+"deepdive_porn_addiction_q2_opt3" = "Escape";
+"deepdive_porn_addiction_q2_opt4" = "Loneliness";
+
+/* Deep Dive Questions - alcohol_dependency */
+"deepdive_alcohol_dependency_q1" = "When do you want to drink?";
+"deepdive_alcohol_dependency_q1_opt1" = "After work";
+"deepdive_alcohol_dependency_q1_opt2" = "When stressed";
+"deepdive_alcohol_dependency_q1_opt3" = "When with others";
+"deepdive_alcohol_dependency_q1_opt4" = "Every day";
+"deepdive_alcohol_dependency_q2" = "Why do you drink?";
+"deepdive_alcohol_dependency_q2_opt1" = "To relax";
+"deepdive_alcohol_dependency_q2_opt2" = "Habit";
+"deepdive_alcohol_dependency_q2_opt3" = "Social pressure";
+"deepdive_alcohol_dependency_q2_opt4" = "To sleep";
+
+/* Deep Dive Questions - anger */
+"deepdive_anger_q1" = "When do you feel angry?";
+"deepdive_anger_q1_opt1" = "When things don't go my way";
+"deepdive_anger_q1_opt2" = "When treated unfairly";
+"deepdive_anger_q1_opt3" = "When ignored";
+"deepdive_anger_q1_opt4" = "When tired";
+"deepdive_anger_q2" = "How do you express anger?";
+"deepdive_anger_q2_opt1" = "Explode";
+"deepdive_anger_q2_opt2" = "Go silent";
+"deepdive_anger_q2_opt3" = "Take it out on things";
+"deepdive_anger_q2_opt4" = "Verbal attacks";
+
+/* Deep Dive Questions - obsessive */
+"deepdive_obsessive_q1" = "What do you obsess over?";
+"deepdive_obsessive_q1_opt1" = "Small mistakes";
+"deepdive_obsessive_q1_opt2" = "Did I do it perfectly?";
+"deepdive_obsessive_q1_opt3" = "What people think of me";
+"deepdive_obsessive_q1_opt4" = "Same worries";
+"deepdive_obsessive_q2" = "When do you obsess?";
+"deepdive_obsessive_q2_opt1" = "Always";
+"deepdive_obsessive_q2_opt2" = "At night";
+"deepdive_obsessive_q2_opt3" = "At work";
+"deepdive_obsessive_q2_opt4" = "After doing something";
+
+/* Deep Dive Questions - loneliness */
+"deepdive_loneliness_q1" = "When do you feel lonely?";
+"deepdive_loneliness_q1_opt1" = "When alone";
+"deepdive_loneliness_q1_opt2" = "Even with people";
+"deepdive_loneliness_q1_opt3" = "At night";
+"deepdive_loneliness_q1_opt4" = "On social media";
+"deepdive_loneliness_q2" = "Why do you feel lonely?";
+"deepdive_loneliness_q2_opt1" = "Few friends";
+"deepdive_loneliness_q2_opt2" = "Not understood";
+"deepdive_loneliness_q2_opt3" = "Live far away";
+"deepdive_loneliness_q2_opt4" = "Don't know";
+

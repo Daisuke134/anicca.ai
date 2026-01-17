@@ -4,43 +4,93 @@ import SwiftUI
 struct MyPathTabView: View {
     @EnvironmentObject private var appState: AppState
     @State private var selectedProblem: ProblemType?
+    @State private var showAddSheet = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                VStack(spacing: 16) {
+                VStack(spacing: 24) {
                     // ヘッダー説明
-                    Text("あなたが向き合いたい問題")
+                    Text(String(localized: "mypath_header_description"))
                         .font(.subheadline)
                         .foregroundStyle(AppTheme.Colors.secondaryLabel)
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal, 20)
                         .padding(.top, 8)
 
-                    // 問題カードリスト
-                    LazyVStack(spacing: 12) {
-                        ForEach(userProblems, id: \.self) { problem in
-                            ProblemCardView(
-                                problem: problem,
-                                onDeepDive: {
-                                    selectedProblem = problem
+                    // 今向き合っている課題セクション
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(String(localized: "mypath_section_current_struggles"))
+                            .font(.headline)
+                            .foregroundStyle(AppTheme.Colors.label)
+                            .padding(.horizontal, 20)
+
+                        if userProblems.isEmpty {
+                            emptyStateView
+                        } else {
+                            LazyVStack(spacing: 12) {
+                                ForEach(userProblems, id: \.self) { problem in
+                                    ProblemCardView(
+                                        problem: problem,
+                                        onTap: {
+                                            selectedProblem = problem
+                                        }
+                                    )
                                 }
-                            )
+                            }
+                            .padding(.horizontal, 16)
                         }
                     }
-                    .padding(.horizontal, 16)
 
-                    // 問題がない場合
-                    if userProblems.isEmpty {
-                        emptyStateView
+                    // Tell Anicca セクション
+                    VStack(alignment: .leading, spacing: 12) {
+                        Text(String(localized: "mypath_section_tell_anicca"))
+                            .font(.headline)
+                            .foregroundStyle(AppTheme.Colors.label)
+                            .padding(.horizontal, 20)
+
+                        VStack(spacing: 12) {
+                            TellAniccaCard(
+                                title: String(localized: "mypath_tell_struggling_with"),
+                                icon: "✏️",
+                                memoryStore: MemoryStore.shared,
+                                problemType: nil
+                            )
+                            TellAniccaCard(
+                                title: String(localized: "mypath_tell_my_goal_is"),
+                                icon: "🎯",
+                                memoryStore: MemoryStore.shared,
+                                problemType: nil
+                            )
+                            TellAniccaCard(
+                                title: String(localized: "mypath_tell_remember_that"),
+                                icon: "💭",
+                                memoryStore: MemoryStore.shared,
+                                problemType: nil
+                            )
+                        }
+                        .padding(.horizontal, 16)
                     }
                 }
                 .padding(.bottom, 100)
             }
             .navigationTitle("My Path")
             .background(AppBackground())
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { showAddSheet = true }) {
+                        Image(systemName: "plus")
+                            .foregroundStyle(AppTheme.Colors.buttonSelected)
+                    }
+                }
+            }
+            .sheet(isPresented: $showAddSheet) {
+                AddProblemSheetView()
+                    .environmentObject(appState)
+            }
             .sheet(item: $selectedProblem) { problem in
                 DeepDiveSheetView(problem: problem)
+                    .environmentObject(appState)
             }
         }
     }
@@ -55,14 +105,17 @@ struct MyPathTabView: View {
                 .font(.system(size: 48))
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)
 
-            Text("問題が選択されていません")
+            Text(String(localized: "mypath_empty_title"))
                 .font(.headline)
                 .foregroundStyle(AppTheme.Colors.label)
 
-            Text("プロフィール設定から向き合いたい問題を選択してください")
-                .font(.subheadline)
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .multilineTextAlignment(.center)
+            PrimaryButton(
+                title: String(localized: "mypath_empty_action"),
+                style: .primary
+            ) {
+                showAddSheet = true
+            }
+            .padding(.horizontal, 40)
         }
         .padding(40)
     }
@@ -71,11 +124,10 @@ struct MyPathTabView: View {
 // MARK: - ProblemCardView
 struct ProblemCardView: View {
     let problem: ProblemType
-    let onDeepDive: () -> Void
+    let onTap: () -> Void
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            // アイコンと問題名
+        Button(action: onTap) {
             HStack(spacing: 12) {
                 Text(problem.icon)
                     .font(.system(size: 32))
@@ -91,24 +143,140 @@ struct ProblemCardView: View {
                 }
 
                 Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
             }
+            .padding(16)
+            .background(AppTheme.Colors.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+    }
+}
 
-            Divider()
+// MARK: - TellAniccaCard
+struct TellAniccaCard: View {
+    let title: String
+    let icon: String
+    @ObservedObject var memoryStore: MemoryStore
+    let problemType: ProblemType?
+    @State private var showSheet = false
 
-            // Deep Dive ボタン
-            Button(action: onDeepDive) {
-                HStack {
-                    Image(systemName: "arrow.down.circle.fill")
-                        .font(.system(size: 16))
-                    Text("深掘りする")
-                        .font(.subheadline.weight(.medium))
+    var body: some View {
+        Button(action: { showSheet = true }) {
+            HStack(spacing: 12) {
+                Text(icon)
+                    .font(.system(size: 24))
+
+                Text(title)
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.Colors.label)
+                    .multilineTextAlignment(.leading)
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+            }
+            .padding(16)
+            .background(AppTheme.Colors.cardBackground)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showSheet) {
+            TellAniccaSheetView(
+                title: title,
+                icon: icon,
+                problemType: problemType
+            )
+        }
+    }
+}
+
+// MARK: - TellAniccaSheetView
+struct TellAniccaSheetView: View {
+    let title: String
+    let icon: String
+    let problemType: ProblemType?
+    @Environment(\.dismiss) private var dismiss
+    @StateObject private var memoryStore = MemoryStore.shared
+    @State private var text: String = ""
+    @State private var showSaved = false
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 24) {
+                if showSaved {
+                    savedView
+                } else {
+                    VStack(alignment: .leading, spacing: 16) {
+                        Text(title)
+                            .font(.title2.weight(.semibold))
+                            .foregroundStyle(AppTheme.Colors.label)
+
+                        TextEditor(text: $text)
+                            .frame(minHeight: 200)
+                            .padding(12)
+                            .background(AppTheme.Colors.cardBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 12)
+                                    .stroke(AppTheme.Colors.border, lineWidth: 1)
+                            )
+
+                        PrimaryButton(
+                            title: String(localized: "common_save"),
+                            style: .primary
+                        ) {
+                            saveMemory()
+                        }
+                    }
+                    .padding(20)
                 }
-                .foregroundStyle(AppTheme.Colors.primaryButton)
+            }
+            .background(AppBackground())
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .topBarTrailing) {
+                    Button(action: { dismiss() }) {
+                        Image(systemName: "xmark")
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                    }
+                }
+            }
+            .onAppear {
+                if let problemType = problemType {
+                    text = memoryStore.memory(for: problemType)?.text ?? ""
+                }
             }
         }
-        .padding(16)
-        .background(AppTheme.Colors.cardBackground)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+
+    private var savedView: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "checkmark.circle.fill")
+                .font(.system(size: 64))
+                .foregroundStyle(AppTheme.Colors.buttonSelected)
+
+            Text(String(localized: "mypath_tell_saved"))
+                .font(.title2.weight(.semibold))
+                .foregroundStyle(AppTheme.Colors.label)
+        }
+        .onAppear {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
+                dismiss()
+            }
+        }
+    }
+
+    private func saveMemory() {
+        if let problemType = problemType {
+            memoryStore.save(text: text, for: problemType)
+        }
+        showSaved = true
     }
 }
 
@@ -116,6 +284,11 @@ struct ProblemCardView: View {
 struct DeepDiveSheetView: View {
     let problem: ProblemType
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var appState: AppState
+    @StateObject private var memoryStore = MemoryStore.shared
+    @State private var selectedAnswers: [String: Set<String>] = [:]
+    @State private var memoryText: String = ""
+    @State private var showDeleteAlert = false
 
     var body: some View {
         NavigationStack {
@@ -129,10 +302,6 @@ struct DeepDiveSheetView: View {
                         Text(problem.displayName)
                             .font(.title2.weight(.semibold))
                             .foregroundStyle(AppTheme.Colors.label)
-
-                        Text("自分を深く理解するための質問")
-                            .font(.subheadline)
-                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
                     }
                     .frame(maxWidth: .infinity)
                     .padding(.top, 16)
@@ -140,25 +309,76 @@ struct DeepDiveSheetView: View {
                     Divider()
                         .padding(.horizontal, 20)
 
-                    // 質問リスト
-                    VStack(alignment: .leading, spacing: 20) {
-                        ForEach(Array(deepDiveQuestions.enumerated()), id: \.offset) { index, question in
-                            HStack(alignment: .top, spacing: 12) {
-                                Text("\(index + 1)")
-                                    .font(.caption.weight(.bold))
-                                    .foregroundStyle(.white)
-                                    .frame(width: 24, height: 24)
-                                    .background(AppTheme.Colors.primaryButton)
-                                    .clipShape(Circle())
+                    // 共通質問: どのくらい前からこの問題がある？
+                    questionSection(question: DeepDiveQuestionsData.commonDurationQuestion)
 
-                                Text(question)
-                                    .font(.body)
-                                    .foregroundStyle(AppTheme.Colors.label)
-                                    .lineSpacing(4)
+                    // 問題固有の質問
+                    ForEach(Array(DeepDiveQuestionsData.questions(for: problem).enumerated()), id: \.offset) { index, questionData in
+                        questionSection(question: questionData, questionIndex: index)
+                    }
+
+                    // Tell Anicca セクション
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack {
+                            Text(String(localized: "deep_dive_tell_anicca_title"))
+                                .font(.headline)
+                                .foregroundStyle(AppTheme.Colors.label)
+                            Spacer()
+                            if !memoryText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                                Button(action: saveMemory) {
+                                    Text(String(localized: "common_save"))
+                                        .font(.subheadline.weight(.medium))
+                                        .foregroundStyle(AppTheme.Colors.buttonSelected)
+                                }
                             }
                         }
+
+                        Text(String(localized: "deep_dive_tell_anicca_subtitle"))
+                            .font(.caption)
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+
+                        TextEditor(text: $memoryText)
+                            .frame(minHeight: 100)
+                            .padding(12)
+                            .background(AppTheme.Colors.cardBackground)
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .padding(.horizontal, 20)
+                    .padding(.top, 24)
+
+                    // 保存ボタン
+                    PrimaryButton(
+                        title: String(localized: "mypath_deepdive_save"),
+                        style: .primary
+                    ) {
+                        saveAnswers()
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 24)
+
+                    Divider()
+                        .padding(.horizontal, 20)
+                        .padding(.top, 24)
+
+                    // 削除ボタン
+                    Button(role: .destructive, action: { showDeleteAlert = true }) {
+                        HStack {
+                            Image(systemName: "trash")
+                            Text(String(localized: "mypath_deepdive_delete"))
+                        }
+                        .font(.subheadline.weight(.medium))
+                        .foregroundStyle(.red)
+                    }
+                    .padding(.horizontal, 20)
+                    .padding(.top, 16)
+                    .alert(String(localized: "mypath_deepdive_delete_confirm_title"), isPresented: $showDeleteAlert) {
+                        Button(String(localized: "common_cancel"), role: .cancel) { }
+                        Button(String(localized: "common_delete"), role: .destructive) {
+                            deleteProblem()
+                        }
+                    } message: {
+                        Text(String(localized: "mypath_deepdive_delete_confirm_message"))
+                    }
                 }
                 .padding(.bottom, 40)
             }
@@ -172,125 +392,70 @@ struct DeepDiveSheetView: View {
                 }
             }
             .background(AppBackground())
+            .onAppear {
+                memoryText = memoryStore.memory(for: problem)?.text ?? ""
+            }
         }
     }
 
-    private var deepDiveQuestions: [String] {
-        DeepDiveQuestions.questions(for: problem)
+    @ViewBuilder
+    private func questionSection(question: DeepDiveQuestion, questionIndex: Int? = nil) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text(String(localized: String.LocalizationValue(stringLiteral: question.questionKey)))
+                .font(.headline)
+                .foregroundStyle(AppTheme.Colors.label)
+
+            FlowLayout(spacing: 12) {
+                ForEach(question.optionKeys, id: \.self) { optionKey in
+                    let questionKey = question.questionKey
+                    let isSelected = selectedAnswers[questionKey]?.contains(optionKey) ?? false
+                    Button {
+                        if selectedAnswers[questionKey] == nil {
+                            selectedAnswers[questionKey] = []
+                        }
+                        if isSelected {
+                            selectedAnswers[questionKey]?.remove(optionKey)
+                        } else {
+                            selectedAnswers[questionKey]?.insert(optionKey)
+                        }
+                    } label: {
+                        Text(String(localized: String.LocalizationValue(stringLiteral: optionKey)))
+                            .font(.system(size: 16, weight: .medium))
+                            .fixedSize(horizontal: true, vertical: false)
+                            .padding(.horizontal, 20)
+                            .padding(.vertical, 14)
+                            .background(isSelected ? AppTheme.Colors.buttonSelected : AppTheme.Colors.buttonUnselected)
+                            .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
+                            .clipShape(Capsule())
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+    }
+
+    private func saveAnswers() {
+        // TODO: 回答を保存する処理（UserProfileに保存）
+        dismiss()
+    }
+
+    private func saveMemory() {
+        memoryStore.save(text: memoryText, for: problem)
+    }
+
+    private func deleteProblem() {
+        var profile = appState.userProfile
+        profile.problems.removeAll { $0 == problem.rawValue }
+        appState.updateUserProfile(profile, sync: true)
+        Task {
+            await ProblemNotificationScheduler.shared.cancelAllNotifications()
+            await ProblemNotificationScheduler.shared.scheduleNotifications(for: profile.problems)
+        }
+        dismiss()
     }
 }
 
-// MARK: - DeepDiveQuestions
-enum DeepDiveQuestions {
-    static func questions(for problem: ProblemType) -> [String] {
-        switch problem {
-        case .stayingUpLate:
-            return [
-                "夜更かしをやめられない本当の理由は何だと思う？",
-                "その時間に何をしてる？スマホ？SNS？YouTube？",
-                "理想の就寝時間は何時？なぜその時間？",
-                "夜更かしをやめたら、明日の自分はどう変わると思う？",
-                "今夜、就寝時間を守るために何ができる？"
-            ]
-        case .cantWakeUp:
-            return [
-                "理想の起床時間は何時？",
-                "起きられない朝、何を感じてる？",
-                "前日の夜、何時に寝てる？",
-                "起きた後、最初にしたいことは何？",
-                "朝が楽しみになるとしたら、何がある？"
-            ]
-        case .selfLoathing:
-            return [
-                "自分を責める時、何について責めてる？",
-                "その基準は誰が決めたもの？",
-                "友達が同じ状況だったら、何て言う？",
-                "今日、自分を許せることは1つある？",
-                "自分の良いところを3つ挙げるとしたら？"
-            ]
-        case .rumination:
-            return [
-                "同じ考えが頭の中でループする時、何について考えてる？",
-                "その考えを止められない理由は何だと思う？",
-                "考えることで何か解決してる？",
-                "今この瞬間、身体はどう感じてる？",
-                "5分間、呼吸だけに集中できる？"
-            ]
-        case .procrastination:
-            return [
-                "今、先延ばしにしていることは何？",
-                "なぜそれを避けてる？本当の理由は？",
-                "5分だけやるとしたら、何から始める？",
-                "それを終わらせた自分を想像してみて。どう感じる？",
-                "今すぐできる最小の一歩は何？"
-            ]
-        case .anxiety:
-            return [
-                "今、何について不安を感じてる？",
-                "その不安は現実に起きてる？それとも想像？",
-                "最悪のケースが起きたら、どう対処する？",
-                "今この瞬間、安全？",
-                "深呼吸を3回してみて。何か変わった？"
-            ]
-        case .lying:
-            return [
-                "最近、嘘をついたのはいつ？",
-                "なぜ嘘をつく必要があった？",
-                "本当のことを言ったらどうなってた？",
-                "誠実でいることの難しさは何？",
-                "今日、正直でいられる小さな機会は何？"
-            ]
-        case .badMouthing:
-            return [
-                "最近、誰かの悪口を言った？",
-                "なぜその人について話したくなった？",
-                "悪口を言った後、どう感じた？",
-                "その人に直接言えることはある？",
-                "今日、誰かを褒める機会は何？"
-            ]
-        case .pornAddiction:
-            return [
-                "ポルノを見たくなるのはどんな時？",
-                "その時、何から逃げようとしてる？",
-                "見た後、どう感じる？",
-                "本当に欲しいものは何？",
-                "衝動が来た時、代わりにできることは何？"
-            ]
-        case .alcoholDependency:
-            return [
-                "お酒を飲みたくなるのはどんな時？",
-                "お酒なしでリラックスする方法は何？",
-                "飲まなかった翌朝、どう感じる？",
-                "お酒がなくても楽しめる活動は何？",
-                "今週、1日だけ飲まない日を作れる？"
-            ]
-        case .anger:
-            return [
-                "最近、怒りを感じたのはいつ？",
-                "怒りの下にある感情は何？（傷つき？恐れ？）",
-                "怒りを持ち続けると誰が一番傷つく？",
-                "その怒りを手放すために何ができる？",
-                "怒りを感じた時、3秒待てる？"
-            ]
-        case .obsessive:
-            return [
-                "何について考えすぎてる？",
-                "その考えをコントロールしたい？それとも手放したい？",
-                "完璧じゃなくていいとしたら、何が変わる？",
-                "今、手放しても大丈夫なことは何？",
-                "考えることと行動すること、どちらに時間を使ってる？"
-            ]
-        case .loneliness:
-            return [
-                "孤独を感じるのはどんな時？",
-                "つながりたい人は誰？",
-                "最後に誰かに連絡したのはいつ？",
-                "一人でいることと孤独を感じることの違いは？",
-                "今日、誰かに一言メッセージを送れる？"
-            ]
-        }
-    }
-}
 
 // MARK: - ProblemType Identifiable
 extension ProblemType: Identifiable {

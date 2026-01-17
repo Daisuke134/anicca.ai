@@ -587,3 +587,340 @@
 "onboarding_att_title" = "体験をパーソナライズ";
 "onboarding_att_description" = "Aniccaの使い方を理解し、あなたに合った体験を提供するために使用します。";
 
+/* ========== Phase 3: Proactive Agent ========== */
+
+/* My Path Tab */
+"mypath_header_description" = "Aniccaはあなたの苦しみを理解し、適切なタイミングで寄り添います。";
+"mypath_section_current_struggles" = "今向き合っている課題";
+"mypath_section_tell_anicca" = "Aniccaに伝える";
+"mypath_empty_title" = "向き合いたい課題を追加してみましょう";
+"mypath_empty_action" = "課題を追加";
+"mypath_add_problem" = "課題を追加";
+"mypath_deepdive_save" = "保存";
+"mypath_deepdive_delete" = "この課題を削除";
+"mypath_deepdive_delete_confirm_title" = "この課題を削除しますか？";
+"mypath_deepdive_delete_confirm_message" = "関連する通知も停止されます。";
+
+/* Tell Anicca */
+"mypath_tell_struggling_with" = "今辛いのは...";
+"mypath_tell_my_goal_is" = "取り組んでいる目標は...";
+"mypath_tell_remember_that" = "覚えておいてほしいのは...";
+"mypath_tell_saved" = "覚えました";
+
+/* Add Problem Sheet */
+"mypath_add_problem_title" = "課題を追加";
+"mypath_add_problem_custom" = "その他（自由入力）";
+"mypath_add_problem_action" = "追加";
+"mypath_add_problem_already_added" = "追加済み";
+"add_problem_title" = "向き合いたい問題を追加";
+"add_problem_subtitle" = "追加したい問題を選択してください";
+"add_problem_add_button" = "追加する";
+"add_problem_all_selected" = "すべての問題が選択されています";
+"deep_dive_delete_problem" = "この問題を削除";
+"deep_dive_delete_alert_title" = "問題を削除しますか？";
+"deep_dive_delete_alert_message" = "この問題は My Path から削除されます";
+"deep_dive_tell_anicca_title" = "Aniccaに伝える";
+"deep_dive_tell_anicca_subtitle" = "この問題について、Aniccaに知っておいてほしいことを書いてください";
+
+/* ProblemType Button Texts */
+"problem_staying_up_late_positive_button" = "明日を守る 💪";
+"problem_staying_up_late_negative_button" = "傷つける";
+"problem_staying_up_late_notification_title" = "就寝";
+"problem_cant_wake_up_positive_button" = "今日を始める ☀️";
+"problem_cant_wake_up_negative_button" = "逃げる";
+"problem_cant_wake_up_notification_title" = "起床";
+"problem_self_loathing_positive_button" = "自分を許す 🤍";
+"problem_self_loathing_notification_title" = "Self-Compassion";
+"problem_rumination_positive_button" = "今に戻る 🧘";
+"problem_rumination_negative_button" = "考え続ける";
+"problem_rumination_notification_title" = "今ここに";
+"problem_procrastination_positive_button" = "5分やる ⚡";
+"problem_procrastination_negative_button" = "後回し";
+"problem_procrastination_notification_title" = "今すぐ";
+"problem_anxiety_positive_button" = "深呼吸する 🌬️";
+"problem_anxiety_notification_title" = "安心";
+"problem_lying_positive_button" = "誠実でいる 🤝";
+"problem_lying_negative_button" = "嘘をつく";
+"problem_lying_notification_title" = "誠実";
+"problem_bad_mouthing_positive_button" = "善い言葉を使う 💬";
+"problem_bad_mouthing_negative_button" = "悪口を言う";
+"problem_bad_mouthing_notification_title" = "善い言葉";
+"problem_porn_addiction_positive_button" = "誘惑に勝つ 💪";
+"problem_porn_addiction_negative_button" = "負ける";
+"problem_porn_addiction_notification_title" = "克服";
+"problem_alcohol_dependency_positive_button" = "今夜は飲まない 🍵";
+"problem_alcohol_dependency_negative_button" = "飲む";
+"problem_alcohol_dependency_notification_title" = "禁酒";
+"problem_anger_positive_button" = "手放す 🕊️";
+"problem_anger_negative_button" = "怒り続ける";
+"problem_anger_notification_title" = "平静";
+"problem_obsessive_positive_button" = "手放す 🌿";
+"problem_obsessive_negative_button" = "考え続ける";
+"problem_obsessive_notification_title" = "解放";
+"problem_loneliness_positive_button" = "誰かに連絡する 📱";
+"problem_loneliness_notification_title" = "つながり";
+
+/* NudgeContent - staying_up_late */
+"nudge_staying_up_late_notification_1" = "スクロールより、呼吸。";
+"nudge_staying_up_late_notification_2" = "その「あと5分だけ」で、何年失ってきた？";
+"nudge_staying_up_late_notification_3" = "明日の自分、泣くよ。";
+"nudge_staying_up_late_detail_1" = "夜更かしは明日の自分を傷つける行為。今夜は画面を閉じよう。";
+"nudge_staying_up_late_detail_2" = "睡眠不足の脳は酔っ払いと同じ判断力。明日の自分を守るために、今夜は休もう。";
+"nudge_staying_up_late_detail_3" = "今スクロールしてる内容、明日覚えてる？でも睡眠不足は確実に残る。";
+
+/* NudgeContent - cant_wake_up */
+"nudge_cant_wake_up_notification_1" = "起きないと、今日が始まらん。";
+"nudge_cant_wake_up_notification_2" = "あと5分の君、信用ゼロ。";
+"nudge_cant_wake_up_notification_3" = "Stay Mediocre";
+"nudge_cant_wake_up_detail_1" = "布団の中で何も変わらない。まず足を床につけよう。";
+"nudge_cant_wake_up_detail_2" = "「あと5分」を何回言った？今起きれば、今日の自分を好きになれる。";
+"nudge_cant_wake_up_detail_3" = "平凡なままでいい？今起きれば、今日は違う1日になる。";
+
+/* NudgeContent - self_loathing */
+"nudge_self_loathing_notification_1" = "今日も生きてる。それだけで十分。";
+"nudge_self_loathing_notification_2" = "自分を責めるのは、もうやめていい。";
+"nudge_self_loathing_notification_3" = "あなたは思ってるより、ずっといい人だよ。";
+"nudge_self_loathing_detail_1" = "自己嫌悪は、自分を良くしようとしている証拠。でもその方法は逆効果。今日できた小さなことを1つ思い出してみて。";
+"nudge_self_loathing_detail_2" = "完璧じゃなくていい。今のあなたで十分。";
+"nudge_self_loathing_detail_3" = "自分に厳しすぎる。他の人にするように、自分にも優しくしていい。";
+
+/* NudgeContent - rumination */
+"nudge_rumination_notification_1" = "今、何を感じてる？";
+"nudge_rumination_notification_2" = "Are you present right now?";
+"nudge_rumination_notification_3" = "朝の5分、瞑想してみない？";
+"nudge_rumination_detail_1" = "頭の中のループに気づいた？気づいたなら、もう半分解決してる。今この瞬間に戻ろう。";
+"nudge_rumination_detail_2" = "過去でも未来でもなく、今ここにいる？深呼吸して、今の身体の感覚に意識を向けてみて。";
+"nudge_rumination_detail_3" = "反芻を止める最も効果的な方法は瞑想。今朝5分だけ、呼吸に集中してみよう。";
+
+/* NudgeContent - procrastination */
+"nudge_procrastination_notification_1" = "5分だけ。それだけでいい。";
+"nudge_procrastination_notification_2" = "また自分との約束、破る？";
+"nudge_procrastination_notification_3" = "やらない理由、全部言い訳。";
+"nudge_procrastination_detail_1" = "完璧にやる必要はない。5分だけ始めれば、続けられる。";
+"nudge_procrastination_detail_2" = "先延ばしは未来の自分を苦しめる。今やれば、未来の自分が感謝する。";
+"nudge_procrastination_detail_3" = "本当にできない？それとも、やりたくないだけ？正直になろう。";
+
+/* NudgeContent - anxiety */
+"nudge_anxiety_notification_1" = "今この瞬間、あなたは安全。";
+"nudge_anxiety_notification_2" = "今、何を感じてる？";
+"nudge_anxiety_notification_3" = "深呼吸。4秒吸って、4秒止めて、4秒吐く。";
+"nudge_anxiety_detail_1" = "不安は未来への恐れ。でも今この瞬間は、何も起きていない。深呼吸して、今に戻ろう。";
+"nudge_anxiety_detail_2" = "不安に気づいた？気づいたなら、それを観察してみて。不安は来て、去っていく。";
+"nudge_anxiety_detail_3" = "身体を落ち着かせれば、心も落ち着く。今すぐやってみて。";
+
+/* NudgeContent - lying */
+"nudge_lying_notification_1" = "今日は正直に生きる日。";
+"nudge_lying_detail_1" = "嘘は一時的に楽でも、長期的には自分を苦しめる。今日は誠実でいよう。";
+
+/* NudgeContent - bad_mouthing */
+"nudge_bad_mouthing_notification_1" = "今日は誰かを傷つける言葉を使わない。";
+"nudge_bad_mouthing_notification_2" = "その言葉、自分に言われたらどう感じる？";
+"nudge_bad_mouthing_detail_1" = "悪口は言った瞬間気持ちいいかもしれない。でも後から自己嫌悪が来る。今日は善い言葉だけ。";
+"nudge_bad_mouthing_detail_2" = "言う前に一呼吸。相手の立場に立ってみよう。";
+
+/* NudgeContent - porn_addiction */
+"nudge_porn_addiction_notification_1" = "誘惑に勝てば、明日の自分が変わる。";
+"nudge_porn_addiction_notification_2" = "本当にそれが欲しい？それとも逃げたいだけ？";
+"nudge_porn_addiction_detail_1" = "今の衝動は一時的。5分待てば、衝動は去る。その5分を乗り越えよう。";
+"nudge_porn_addiction_detail_2" = "ポルノは一時的な逃避。根本の問題は解決しない。今何から逃げようとしてる？";
+
+/* NudgeContent - alcohol_dependency */
+"nudge_alcohol_dependency_notification_1" = "今夜は飲まない。それだけで勝ち。";
+"nudge_alcohol_dependency_notification_2" = "飲まなくても、リラックスできる。";
+"nudge_alcohol_dependency_detail_1" = "1日だけ。今夜だけ我慢しよう。明日の朝、自分を誇れる。";
+"nudge_alcohol_dependency_detail_2" = "お酒なしでストレス解消する方法を試してみて。散歩、深呼吸、音楽。";
+
+/* NudgeContent - anger */
+"nudge_anger_notification_1" = "怒りは自分を傷つける。深呼吸。";
+"nudge_anger_notification_2" = "3秒待ってから、話そう。";
+"nudge_anger_detail_1" = "怒りを持ち続けるのは、自分が毒を飲んで相手が死ぬのを待つようなもの。手放そう。";
+"nudge_anger_detail_2" = "怒りに任せて話すと後悔する。3秒だけ待とう。";
+
+/* NudgeContent - obsessive */
+"nudge_obsessive_notification_1" = "完璧じゃなくていい。手放していい。";
+"nudge_obsessive_notification_2" = "その考え、何回目？";
+"nudge_obsessive_notification_3" = "考えすぎてない？";
+"nudge_obsessive_detail_1" = "その考え、本当に重要？今手放しても、何も悪いことは起きない。";
+"nudge_obsessive_detail_2" = "同じことを考え続けても、答えは変わらない。今は手放して、後で考えよう。";
+"nudge_obsessive_detail_3" = "考えることと、実際に行動することは違う。今は考えるのをやめて、動いてみよう。";
+
+/* NudgeContent - loneliness */
+"nudge_loneliness_notification_1" = "一人じゃない。誰かがあなたを想ってる。";
+"nudge_loneliness_notification_2" = "大切な人に、一言送ってみない？";
+"nudge_loneliness_detail_1" = "孤独を感じても、それは真実じゃない。今日、誰かに連絡してみない？";
+"nudge_loneliness_detail_2" = "つながりは待っていても来ない。自分から動こう。";
+
+/* Common Deep Dive Questions */
+"deepdive_common_duration_question" = "どのくらい前からこの問題がある？";
+"deepdive_common_duration_recent" = "最近";
+"deepdive_common_duration_months" = "数ヶ月";
+"deepdive_common_duration_year" = "1年以上";
+"deepdive_common_duration_always" = "ずっと";
+
+/* Deep Dive Questions - staying_up_late */
+"deepdive_staying_up_late_q1" = "夜更かしして何をしてることが多い？";
+"deepdive_staying_up_late_q1_opt1" = "SNS";
+"deepdive_staying_up_late_q1_opt2" = "YouTube";
+"deepdive_staying_up_late_q1_opt3" = "ゲーム";
+"deepdive_staying_up_late_q1_opt4" = "仕事";
+"deepdive_staying_up_late_q1_opt5" = "その他";
+"deepdive_staying_up_late_q2" = "なぜ夜更かししてしまう？";
+"deepdive_staying_up_late_q2_opt1" = "今日やるべきことができなかった";
+"deepdive_staying_up_late_q2_opt2" = "ストレス解消";
+"deepdive_staying_up_late_q2_opt3" = "習慣になってる";
+"deepdive_staying_up_late_q2_opt4" = "寝たくない";
+
+/* Deep Dive Questions - cant_wake_up */
+"deepdive_cant_wake_up_q1" = "起きれない時、どんな気持ちになる？";
+"deepdive_cant_wake_up_q1_opt1" = "自己嫌悪";
+"deepdive_cant_wake_up_q1_opt2" = "焦り";
+"deepdive_cant_wake_up_q1_opt3" = "諦め";
+"deepdive_cant_wake_up_q1_opt4" = "何も感じない";
+"deepdive_cant_wake_up_q2" = "なぜ起きれないと思う？";
+"deepdive_cant_wake_up_q2_opt1" = "睡眠不足";
+"deepdive_cant_wake_up_q2_opt2" = "やる気がない";
+"deepdive_cant_wake_up_q2_opt3" = "起きる理由がない";
+"deepdive_cant_wake_up_q2_opt4" = "体調";
+
+/* Deep Dive Questions - self_loathing */
+"deepdive_self_loathing_q1" = "どんな時に自己嫌悪になる？";
+"deepdive_self_loathing_q1_opt1" = "失敗した時";
+"deepdive_self_loathing_q1_opt2" = "比較した時";
+"deepdive_self_loathing_q1_opt3" = "何もしなかった時";
+"deepdive_self_loathing_q1_opt4" = "常に";
+"deepdive_self_loathing_q2" = "何について自分を責める？";
+"deepdive_self_loathing_q2_opt1" = "能力";
+"deepdive_self_loathing_q2_opt2" = "外見";
+"deepdive_self_loathing_q2_opt3" = "性格";
+"deepdive_self_loathing_q2_opt4" = "過去の行動";
+
+/* Deep Dive Questions - rumination */
+"deepdive_rumination_q1" = "何について考え続けてしまう？";
+"deepdive_rumination_q1_opt1" = "過去の失敗";
+"deepdive_rumination_q1_opt2" = "人間関係";
+"deepdive_rumination_q1_opt3" = "将来の不安";
+"deepdive_rumination_q1_opt4" = "自分の欠点";
+"deepdive_rumination_q2" = "いつ反芻しやすい？";
+"deepdive_rumination_q2_opt1" = "夜寝る前";
+"deepdive_rumination_q2_opt2" = "朝起きた時";
+"deepdive_rumination_q2_opt3" = "一人の時";
+"deepdive_rumination_q2_opt4" = "常に";
+
+/* Deep Dive Questions - procrastination */
+"deepdive_procrastination_q1" = "何を先延ばしにしがち？";
+"deepdive_procrastination_q1_opt1" = "仕事のタスク";
+"deepdive_procrastination_q1_opt2" = "家事";
+"deepdive_procrastination_q1_opt3" = "予約・手続き";
+"deepdive_procrastination_q1_opt4" = "人に連絡";
+"deepdive_procrastination_q2" = "なぜ先延ばしにしてしまう？";
+"deepdive_procrastination_q2_opt1" = "面倒";
+"deepdive_procrastination_q2_opt2" = "完璧にやりたい";
+"deepdive_procrastination_q2_opt3" = "失敗が怖い";
+"deepdive_procrastination_q2_opt4" = "やり方がわからない";
+
+/* Deep Dive Questions - anxiety */
+"deepdive_anxiety_q1" = "何について不安を感じる？";
+"deepdive_anxiety_q1_opt1" = "将来";
+"deepdive_anxiety_q1_opt2" = "人間関係";
+"deepdive_anxiety_q1_opt3" = "仕事";
+"deepdive_anxiety_q1_opt4" = "健康";
+"deepdive_anxiety_q2" = "いつ不安を感じやすい？";
+"deepdive_anxiety_q2_opt1" = "朝";
+"deepdive_anxiety_q2_opt2" = "夜";
+"deepdive_anxiety_q2_opt3" = "人と会う前";
+"deepdive_anxiety_q2_opt4" = "常に";
+
+/* Deep Dive Questions - lying */
+"deepdive_lying_q1" = "どんな嘘をつくことが多い？";
+"deepdive_lying_q1_opt1" = "小さな嘘";
+"deepdive_lying_q1_opt2" = "言い訳";
+"deepdive_lying_q1_opt3" = "自分を良く見せる嘘";
+"deepdive_lying_q1_opt4" = "相手を傷つけないための嘘";
+"deepdive_lying_q2" = "誰に嘘をつくことが多い？";
+"deepdive_lying_q2_opt1" = "家族";
+"deepdive_lying_q2_opt2" = "友人";
+"deepdive_lying_q2_opt3" = "職場の人";
+"deepdive_lying_q2_opt4" = "自分";
+"deepdive_lying_q3" = "なぜ嘘をついてしまう？";
+"deepdive_lying_q3_opt1" = "怒られたくない";
+"deepdive_lying_q3_opt2" = "嫌われたくない";
+"deepdive_lying_q3_opt3" = "習慣";
+"deepdive_lying_q3_opt4" = "面倒を避けたい";
+
+/* Deep Dive Questions - bad_mouthing */
+"deepdive_bad_mouthing_q1" = "どんな悪口を言ってしまう？";
+"deepdive_bad_mouthing_q1_opt1" = "陰口";
+"deepdive_bad_mouthing_q1_opt2" = "皮肉";
+"deepdive_bad_mouthing_q1_opt3" = "バカにする";
+"deepdive_bad_mouthing_q1_opt4" = "批判";
+"deepdive_bad_mouthing_q2" = "誰に対して言ってしまう？";
+"deepdive_bad_mouthing_q2_opt1" = "家族";
+"deepdive_bad_mouthing_q2_opt2" = "友人";
+"deepdive_bad_mouthing_q2_opt3" = "職場の人";
+"deepdive_bad_mouthing_q2_opt4" = "SNSで";
+"deepdive_bad_mouthing_q3" = "なぜ悪口を言ってしまう？";
+"deepdive_bad_mouthing_q3_opt1" = "ストレス発散";
+"deepdive_bad_mouthing_q3_opt2" = "相手にイライラ";
+"deepdive_bad_mouthing_q3_opt3" = "習慣";
+"deepdive_bad_mouthing_q3_opt4" = "認めてほしい";
+
+/* Deep Dive Questions - porn_addiction */
+"deepdive_porn_addiction_q1" = "どんな時に見てしまう？";
+"deepdive_porn_addiction_q1_opt1" = "夜更かし中";
+"deepdive_porn_addiction_q1_opt2" = "帰宅後";
+"deepdive_porn_addiction_q1_opt3" = "ストレスを感じた時";
+"deepdive_porn_addiction_q1_opt4" = "暇な時";
+"deepdive_porn_addiction_q2" = "なぜ見てしまうと思う？";
+"deepdive_porn_addiction_q2_opt1" = "ストレス解消";
+"deepdive_porn_addiction_q2_opt2" = "習慣";
+"deepdive_porn_addiction_q2_opt3" = "逃避";
+"deepdive_porn_addiction_q2_opt4" = "寂しさ";
+
+/* Deep Dive Questions - alcohol_dependency */
+"deepdive_alcohol_dependency_q1" = "どんな時に飲みたくなる？";
+"deepdive_alcohol_dependency_q1_opt1" = "仕事終わり";
+"deepdive_alcohol_dependency_q1_opt2" = "ストレスを感じた時";
+"deepdive_alcohol_dependency_q1_opt3" = "人と会う時";
+"deepdive_alcohol_dependency_q1_opt4" = "毎日";
+"deepdive_alcohol_dependency_q2" = "なぜ飲んでしまう？";
+"deepdive_alcohol_dependency_q2_opt1" = "リラックスしたい";
+"deepdive_alcohol_dependency_q2_opt2" = "習慣";
+"deepdive_alcohol_dependency_q2_opt3" = "付き合い";
+"deepdive_alcohol_dependency_q2_opt4" = "寝たい";
+
+/* Deep Dive Questions - anger */
+"deepdive_anger_q1" = "どんな時に怒りを感じる？";
+"deepdive_anger_q1_opt1" = "思い通りにならない時";
+"deepdive_anger_q1_opt2" = "理不尽な時";
+"deepdive_anger_q1_opt3" = "無視された時";
+"deepdive_anger_q1_opt4" = "疲れてる時";
+"deepdive_anger_q2" = "怒りをどう表現する？";
+"deepdive_anger_q2_opt1" = "爆発する";
+"deepdive_anger_q2_opt2" = "黙り込む";
+"deepdive_anger_q2_opt3" = "物に当たる";
+"deepdive_anger_q2_opt4" = "言葉で攻撃";
+
+/* Deep Dive Questions - obsessive */
+"deepdive_obsessive_q1" = "どんなことを考え続けてしまう？";
+"deepdive_obsessive_q1_opt1" = "細かいミス";
+"deepdive_obsessive_q1_opt2" = "完璧にできたか";
+"deepdive_obsessive_q1_opt3" = "人にどう思われたか";
+"deepdive_obsessive_q1_opt4" = "同じ心配事";
+"deepdive_obsessive_q2" = "いつ考え続けてしまう？";
+"deepdive_obsessive_q2_opt1" = "常に";
+"deepdive_obsessive_q2_opt2" = "夜";
+"deepdive_obsessive_q2_opt3" = "仕事中";
+"deepdive_obsessive_q2_opt4" = "何かした後";
+
+/* Deep Dive Questions - loneliness */
+"deepdive_loneliness_q1" = "どんな時に孤独を感じる？";
+"deepdive_loneliness_q1_opt1" = "一人でいる時";
+"deepdive_loneliness_q1_opt2" = "人といても";
+"deepdive_loneliness_q1_opt3" = "夜";
+"deepdive_loneliness_q1_opt4" = "SNSを見てる時";
+"deepdive_loneliness_q2" = "なぜ孤独を感じる？";
+"deepdive_loneliness_q2_opt1" = "友人が少ない";
+"deepdive_loneliness_q2_opt2" = "理解されてない";
+"deepdive_loneliness_q2_opt3" = "遠くに住んでる";
+"deepdive_loneliness_q2_opt4" = "わからない";
+

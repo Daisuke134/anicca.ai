@@ -78,6 +78,45 @@ final class ProblemNotificationScheduler {
         await removeAllProblemNotifications()
     }
 
+    #if DEBUG
+    /// テスト用: 指定した問題の通知を5秒後に発火
+    func testNotification(for problem: ProblemType) async {
+        let content = NudgeContent.contentForToday(for: problem)
+
+        let notificationContent = UNMutableNotificationContent()
+        notificationContent.title = problem.notificationTitle
+        notificationContent.body = content.notificationText
+        notificationContent.categoryIdentifier = Category.problemNudge.rawValue
+        notificationContent.sound = .default
+
+        notificationContent.userInfo = [
+            "problemType": problem.rawValue,
+            "notificationText": content.notificationText,
+            "detailText": content.detailText,
+            "variantIndex": content.variantIndex
+        ]
+
+        if #available(iOS 15.0, *) {
+            notificationContent.interruptionLevel = .active
+        }
+
+        let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
+        let identifier = "TEST_PROBLEM_\(problem.rawValue)_\(Date().timeIntervalSince1970)"
+        let request = UNNotificationRequest(
+            identifier: identifier,
+            content: notificationContent,
+            trigger: trigger
+        )
+
+        do {
+            try await center.add(request)
+            logger.info("Test notification scheduled for \(problem.rawValue)")
+        } catch {
+            logger.error("Failed to schedule test notification: \(error.localizedDescription)")
+        }
+    }
+    #endif
+
     // MARK: - Private Methods
 
     private func scheduleNotification(for problem: ProblemType, hour: Int, minute: Int) async {

@@ -13,7 +13,8 @@ struct MainTabView: View {
             case .talk:
                 TalkView()
             case .habits:
-                HabitsTabView()
+                // Proactive Agent: HabitsTabView → MyPathTabView に置き換え
+                MyPathTabView()
                     .environmentObject(appState)
             case .profile:
                 ProfileView()
@@ -26,6 +27,26 @@ struct MainTabView: View {
         }) { session in
             HabitSessionView(habit: session.habit, customHabitName: session.customHabitName)
                 .environmentObject(appState)
+        }
+        // Proactive Agent: NudgeCard表示
+        .fullScreenCover(item: $appState.pendingNudgeCard) { content in
+            NudgeCardView(
+                content: content,
+                onPositiveAction: {
+                    // ポジティブアクション → 閉じる
+                    appState.dismissNudgeCard()
+                },
+                onNegativeAction: {
+                    // ネガティブアクション → 閉じる
+                    appState.dismissNudgeCard()
+                },
+                onFeedback: { isPositive in
+                    // TODO: フィードバックをサーバーに送信
+                },
+                onDismiss: {
+                    appState.dismissNudgeCard()
+                }
+            )
         }
         .onAppear { checkPendingHabitTrigger(force: true) }
         .onChange(of: appState.pendingHabitTrigger) { _ in checkPendingHabitTrigger() }

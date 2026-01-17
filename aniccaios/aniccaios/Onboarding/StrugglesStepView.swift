@@ -4,12 +4,13 @@ struct StrugglesStepView: View {
     let next: () -> Void
     @EnvironmentObject private var appState: AppState
 
-    // スクショ準拠: Procrastination, Anxiety, Poor Sleep, Stress, Focus, Motivation, Self-doubt, Time Management, Burnout, Relationships, Energy, Work-Life Balance
+    // Proactive Agent: 13個の問題タイプ
     private let options: [String] = [
-        "procrastination", "anxiety", "poor_sleep",
-        "stress", "focus", "motivation",
-        "self_doubt", "time_management", "burnout",
-        "relationships", "energy", "work_life_balance"
+        "staying_up_late", "cant_wake_up", "self_loathing",
+        "rumination", "procrastination", "anxiety",
+        "lying", "bad_mouthing", "porn_addiction",
+        "alcohol_dependency", "anger", "obsessive",
+        "loneliness"
     ]
 
     @State private var selected: Set<String> = []

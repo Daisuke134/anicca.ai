@@ -53,6 +53,9 @@ final class AppState: ObservableObject {
     @Published private(set) var habitStreaks: [String: HabitStreakData] = [:]
     @Published var pendingMilestone: (habitName: String, streak: Int)? = nil
     private let milestones: Set<Int> = [7, 14, 21, 30, 60, 90, 100, 365]
+
+    // MARK: - Proactive Agent: NudgeCard
+    @Published var pendingNudgeCard: NudgeContent? = nil
     
     // 日付変更時のリフレッシュ用（Viewの強制再描画トリガー）
     @Published private(set) var dailyRefreshTrigger: UUID = UUID()
@@ -591,7 +594,28 @@ final class AppState: ObservableObject {
         defaults.set(true, forKey: onboardingKey)
         // v3: 完了後はステップ情報を持たない（Habit/All set等の誤表示を根絶）
         defaults.removeObject(forKey: onboardingStepKey)
+
+        // Proactive Agent: デフォルト時刻を設定（ユーザーに聞かない）
+        // 起床: 6:00, 就寝: 23:00
+        if habitSchedules[.wake] == nil {
+            var wakeComponents = DateComponents()
+            wakeComponents.hour = 6
+            wakeComponents.minute = 0
+            habitSchedules[.wake] = wakeComponents
+        }
+        if habitSchedules[.bedtime] == nil {
+            var bedtimeComponents = DateComponents()
+            bedtimeComponents.hour = 23
+            bedtimeComponents.minute = 0
+            habitSchedules[.bedtime] = bedtimeComponents
+        }
+        saveHabitSchedules()
+
         Task {
+            // デフォルト習慣の通知をスケジュール
+            await scheduler.applySchedules(habitSchedules)
+            // Proactive Agent: 問題ベースの通知をスケジュール
+            await ProblemNotificationScheduler.shared.scheduleNotifications(for: userProfile.struggles)
             // 初回ログイン直後に即座に当日分の指標をアップロードして挙動タブを埋める
             await MetricsUploader.shared.runUploadIfDue(force: true)
             MetricsUploader.shared.scheduleNextIfPossible()
@@ -914,7 +938,7 @@ final class AppState: ObservableObject {
         let previousProfile = userProfile
         userProfile = profile
         saveUserProfile()
-        
+
         // AlarmKit設定が変更された場合、通知を再スケジュール
         if previousProfile.useAlarmKitForWake != profile.useAlarmKitForWake ||
             previousProfile.useAlarmKitForTraining != profile.useAlarmKitForTraining ||
@@ -923,7 +947,14 @@ final class AppState: ObservableObject {
             previousProfile.preferredLanguage != profile.preferredLanguage {
             Task { await scheduler.applySchedules(habitSchedules) }
         }
-        
+
+        // Proactive Agent: 問題（苦しみ）が変更された場合、問題ベースの通知をスケジュール
+        if Set(previousProfile.struggles) != Set(profile.struggles) {
+            Task {
+                await ProblemNotificationScheduler.shared.scheduleNotifications(for: profile.struggles)
+            }
+        }
+
         if sync {
             Task {
                 await ProfileSyncService.shared.enqueue(profile: profile)
@@ -1335,7 +1366,19 @@ final class AppState: ObservableObject {
         profile.stickyMode = enabled
         updateUserProfile(profile, sync: true)
     }
-    
+
+    // MARK: - Proactive Agent: NudgeCard
+
+    /// NudgeCardを表示
+    func showNudgeCard(_ content: NudgeContent) {
+        pendingNudgeCard = content
+    }
+
+    /// NudgeCardを閉じる
+    func dismissNudgeCard() {
+        pendingNudgeCard = nil
+    }
+
     // MARK: - v0.3 Quote
     
     var todayQuote: String {

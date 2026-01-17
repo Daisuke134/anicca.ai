@@ -394,14 +394,23 @@
 "ideal_trait_focused" = "集中力";
 "ideal_trait_grateful" = "感謝";
 "ideal_trait_brave" = "勇敢";
+/* Proactive Agent: 13問題タイプ */
+"problem_staying_up_late" = "夜更かし";
+"problem_cant_wake_up" = "起きれない";
 "problem_self_loathing" = "自己嫌悪";
 "problem_rumination" = "反芻";
+"problem_procrastination" = "先延ばし";
 "problem_anxiety" = "不安";
+"problem_lying" = "嘘をつく";
+"problem_bad_mouthing" = "悪口";
+"problem_porn_addiction" = "ポルノ依存";
+"problem_alcohol_dependency" = "お酒依存";
 "problem_anger" = "怒り";
-"problem_jealousy" = "嫉妬";
+"problem_obsessive" = "強迫的思考";
 "problem_loneliness" = "孤独";
+/* 以前の問題（後方互換用） */
+"problem_jealousy" = "嫉妬";
 "problem_night_scrolling" = "夜のスクロール";
-"problem_cant_wake_up" = "起きられない";
 
 "common_loading" = "読み込み中…";
 "common_retry" = "再試行";
@@ -511,6 +520,7 @@
 "ema_no" = "いいえ";
 "ema_skip" = "スキップ";
 "tab_habits" = "習慣";
+"tab_mypath" = "My Path";
 "tab_profile" = "プロファイル";
 
 // Pre-Reminder (v3.1)

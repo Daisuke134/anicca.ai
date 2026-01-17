@@ -1,71 +1,100 @@
-# Claude Code Spec-Driven Development
+# Anicca プロジェクト - 開発ガイドライン
 
-Kiro-style Spec Driven Development implementation using claude code slash commands, hooks and agents.
+## 絶対ルール
 
-## Project Context
+### 1. ブランチルール（最重要）
+- **絶対にmainブランチで作業しない**
+- **必ずdevブランチで開発する**
+- devブランチはプッシュすると自動でRailway（API）にデプロイされる
+- mainへのマージはリリース時のみ
 
-### Paths
-- Steering: `.kiro/steering/`
-- Specs: `.kiro/specs/`
-- Commands: `.claude/commands/`
+### 2. コミット・プッシュルール
+- **フェーズごとにこまめにプッシュする**
+- 大きな機能は小さなコミットに分割
+- コミットメッセージは日本語でもOK
 
-### Steering vs Specification
+### 3. 言語ルール
+- 思考は英語、回答の生成は日本語で行う
+- CLAUDE.mdやドキュメントは日本語で記述
 
-**Steering** (`.kiro/steering/`) - Guide AI with project-wide rules and context  
-**Specs** (`.kiro/specs/`) - Formalize development process for individual features
+---
 
-### Active Specifications
-- Check `.kiro/specs/` for active specifications
-- Use `/kiro:spec-status [feature-name]` to check progress
+## プロジェクト概要
 
-## Development Guidelines
-- Think in English, but generate responses in Japanese (思考は英語、回答の生成は日本語で行うように)
+### Anicca とは
+行動変容をサポートするiOSアプリ。AIを活用したプロアクティブな通知で、ユーザーの「苦しみ」に寄り添う。
 
-## Workflow
+### 技術スタック
+- **iOS**: Swift, SwiftUI, AlarmKit (iOS 26+)
+- **API**: Node.js, Railway
+- **AI**: OpenAI Realtime API
+- **決済**: RevenueCat
+- **分析**: Mixpanel, Singular
 
-### Phase 0: Steering (Optional)
-`/kiro:steering` - Create/update steering documents
-`/kiro:steering-custom` - Create custom steering for specialized contexts
+### 主要ディレクトリ
+```
+aniccaios/          - iOSアプリ本体
+apps/api/           - APIサーバー
+daily-apps/         - 関連アプリ（Daily Dhammaなど）
+.cursor/plans/      - 計画・仕様書
+.kiro/              - ステアリング・スペック
+```
 
-**Note**: Optional for new features or small additions. Can proceed directly to spec-init.
+---
 
-### Phase 1: Specification Creation
-1. `/kiro:spec-init [detailed description]` - Initialize spec with detailed project description
-2. `/kiro:spec-requirements [feature]` - Generate requirements document
-3. `/kiro:spec-design [feature]` - Interactive: "requirements.mdをレビューしましたか？ [y/N]"
-4. `/kiro:spec-tasks [feature]` - Interactive: Confirms both requirements and design review
+## 現在の開発状況
 
-### Phase 2: Progress Tracking
-`/kiro:spec-status [feature]` - Check current progress and phases
+### Proactive Agent（2025年1月実装中）
+アプリを「Proactive Behavior Change Agent」に進化させる機能。
 
-## Development Rules
-1. **Consider steering**: Run `/kiro:steering` before major development (optional for new features)
-2. **Follow 3-phase approval workflow**: Requirements → Design → Tasks → Implementation
-3. **Approval required**: Each phase requires human review (interactive prompt or manual)
-4. **No skipping phases**: Design requires approved requirements; Tasks require approved design
-5. **Update task status**: Mark tasks as completed when working on them
-6. **Keep steering current**: Run `/kiro:steering` after significant changes
-7. **Check spec compliance**: Use `/kiro:spec-status` to verify alignment
+**Phase 1-3**: 完了（mainで作業してしまった→devに移行中）
+- 13個の問題タイプ
+- 問題ベースの通知システム
+- My Pathタブ
 
-## Steering Configuration
+**Phase 4**: 未着手
+- 保存ボタン
+- Exploreタブ
+- マルチモーダルコンテンツ
 
-### Current Steering Files
-Managed by `/kiro:steering` command. Updates here reflect command changes.
+仕様書: `.cursor/plans/ios/proactive/proactive-agent-spec.md`
 
-### Active Steering Files
-- `product.md`: Always included - Product context and business objectives
-- `tech.md`: Always included - Technology stack and architectural decisions
-- `structure.md`: Always included - File organization and code patterns
+---
 
-### Custom Steering Files
-<!-- Added by /kiro:steering-custom command -->
-<!-- Format: 
-- `filename.md`: Mode - Pattern(s) - Description
-  Mode: Always|Conditional|Manual
-  Pattern: File patterns for Conditional mode
--->
+## 開発ワークフロー
 
-### Inclusion Modes
-- **Always**: Loaded in every interaction (default)
-- **Conditional**: Loaded for specific file patterns (e.g., `"*.test.js"`)
-- **Manual**: Reference with `@filename.md` syntax
+### Kiroスタイル開発（オプション）
+大規模な機能開発時に使用：
+
+1. `/kiro:steering` - ステアリング更新
+2. `/kiro:spec-init` - 仕様初期化
+3. `/kiro:spec-requirements` - 要件定義
+4. `/kiro:spec-design` - 設計
+5. `/kiro:spec-tasks` - タスク生成
+6. `/kiro:spec-status` - 進捗確認
+
+### パス
+- ステアリング: `.kiro/steering/`
+- スペック: `.kiro/specs/`
+- コマンド: `.claude/commands/`
+
+---
+
+## チェックリスト（作業開始時）
+
+- [ ] devブランチにいることを確認 (`git branch`)
+- [ ] 最新のdevをプル (`git pull origin dev`)
+- [ ] 作業完了後はこまめにプッシュ
+
+---
+
+## ユーザー情報
+
+- 日本語ネイティブ
+- iOSアプリ開発者
+- App Store提出経験あり
+- TikTokでのプロモーションを計画中
+
+---
+
+最終更新: 2025年1月17日

@@ -77,14 +77,16 @@ struct OnboardingFlowView: View {
             step = .value
         case .value:
             AnalyticsManager.shared.track(.onboardingValueCompleted)
-            // v0.4: Source, Name, Gender, Age をスキップ
-            step = .ideals
-        case .ideals:
-            AnalyticsManager.shared.track(.onboardingIdealsCompleted)
+            // Proactive Agent: Ideals, HabitSetup をスキップ → Struggles へ直接遷移
             step = .struggles
         case .struggles:
             AnalyticsManager.shared.track(.onboardingStrugglesCompleted)
-            step = .habitSetup
+            // Proactive Agent: HabitSetup をスキップ → Notifications へ直接遷移
+            step = .notifications
+        // v0.5: 以下のステップはスキップ（コードは残す）
+        case .ideals:
+            AnalyticsManager.shared.track(.onboardingIdealsCompleted)
+            step = .struggles
         case .habitSetup:
             AnalyticsManager.shared.track(.onboardingHabitsetupCompleted)
             step = .notifications

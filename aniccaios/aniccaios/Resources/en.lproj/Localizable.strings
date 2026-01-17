@@ -394,14 +394,23 @@
 "ideal_trait_grateful" = "Grateful";
 "ideal_trait_brave" = "Brave";
 "ideal_trait_patient" = "Patient";
+/* Proactive Agent: 13 problem types */
+"problem_staying_up_late" = "Staying up late";
+"problem_cant_wake_up" = "Can't wake up";
 "problem_self_loathing" = "Self-loathing";
 "problem_rumination" = "Rumination";
+"problem_procrastination" = "Procrastination";
 "problem_anxiety" = "Anxiety";
+"problem_lying" = "Lying";
+"problem_bad_mouthing" = "Bad-mouthing";
+"problem_porn_addiction" = "Porn addiction";
+"problem_alcohol_dependency" = "Alcohol dependency";
 "problem_anger" = "Anger";
-"problem_jealousy" = "Jealousy";
+"problem_obsessive" = "Obsessive thinking";
 "problem_loneliness" = "Loneliness";
+/* Legacy problems (backward compatibility) */
+"problem_jealousy" = "Jealousy";
 "problem_night_scrolling" = "Night scrolling";
-"problem_cant_wake_up" = "Can't wake up";
 "problem_poor_sleep" = "Poor Sleep";
 "problem_stress" = "Stress";
 "problem_focus" = "Focus";
@@ -512,6 +521,7 @@
 "ema_no" = "No";
 "ema_skip" = "Skip";
 "tab_habits" = "Habits";
+"tab_mypath" = "My Path";
 
 // Pre-Reminder (v3.1)
 "pre_reminder_bedtime_body" = "Time to start winding down. Put away screens and relax.";

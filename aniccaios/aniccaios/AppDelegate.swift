@@ -124,7 +124,29 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 
         let identifier = response.actionIdentifier
         let notificationIdentifier = response.notification.request.identifier
-        
+        let content = response.notification.request.content
+
+        // Proactive Agent: Problem Nudge通知のハンドリング
+        if ProblemNotificationScheduler.isProblemNudge(identifier: notificationIdentifier) {
+            switch identifier {
+            case UNNotificationDefaultActionIdentifier,
+                 NotificationScheduler.Action.startConversation.rawValue:
+                // 通知タップ → NudgeCardView表示
+                if let nudgeContent = ProblemNotificationScheduler.nudgeContent(from: content.userInfo) {
+                    Task { @MainActor in
+                        AppState.shared.showNudgeCard(nudgeContent)
+                    }
+                }
+            case NotificationScheduler.Action.dismissAll.rawValue,
+                 UNNotificationDismissActionIdentifier:
+                // 無視
+                break
+            default:
+                break
+            }
+            return
+        }
+
         // 1) Habit alarm（既存）
         if let habit = NotificationScheduler.shared.habit(fromIdentifier: notificationIdentifier) {
             let customHabitId = NotificationScheduler.shared.customHabitId(fromIdentifier: notificationIdentifier)
@@ -143,7 +165,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             return
         }
 
-        let content = response.notification.request.content
         if content.categoryIdentifier == NotificationScheduler.Category.preReminder.rawValue,
            let (habit, customHabitId) = habitContext(from: content.userInfo) {
             switch identifier {
@@ -159,7 +180,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             return
         }
 
-        // 2) Nudge（新規）
+        // 2) Nudge（既存サーバー駆動型）
         if let nudgeId = NotificationScheduler.shared.nudgeId(fromIdentifier: notificationIdentifier) {
             Task {
                 switch identifier {

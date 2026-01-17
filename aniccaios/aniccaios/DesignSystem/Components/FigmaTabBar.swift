@@ -30,8 +30,8 @@ struct FigmaTabBar: View {
                 )
                 tabButton(
                     tab: .habits,
-                    icon: "clock.arrow.circlepath",
-                    title: String(localized: "tab_habits")
+                    icon: "leaf.fill",
+                    title: String(localized: "tab_mypath")
                 )
                 tabButton(
                     tab: .profile,

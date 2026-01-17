@@ -212,7 +212,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                 habitLaunchLogger.error("Audio session configure failed: \(error.localizedDescription, privacy: .public)")
             }
             await MainActor.run {
-                AppState.shared.selectedRootTab = .talk
+                AppState.shared.selectedRootTab = .habits
                 AppState.shared.prepareForImmediateSession(habit: habit, customHabitId: customHabitId)
                 habitLaunchLogger.info("AppState prepared immediate session for habit \(habit.rawValue, privacy: .public)")
             }

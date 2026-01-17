@@ -113,7 +113,7 @@ struct NudgeCardView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(AppTheme.Colors.primaryButton)
+                .background(AppTheme.Colors.buttonSelected)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .padding(.horizontal, 40)
@@ -132,7 +132,7 @@ struct NudgeCardView: View {
                     .foregroundStyle(.white)
                     .frame(maxWidth: .infinity)
                     .padding(.vertical, 14)
-                    .background(AppTheme.Colors.primaryButton)
+                    .background(AppTheme.Colors.buttonSelected)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
             }
 

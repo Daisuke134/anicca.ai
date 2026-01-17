@@ -49,7 +49,7 @@ struct StartConversationIntentLegacy: AppIntent {
     @MainActor
     func perform() async throws -> some IntentResult {
         try? AudioSessionCoordinator.shared.configureForRealtime(reactivating: true)
-        AppState.shared.selectedRootTab = .talk
+        AppState.shared.selectedRootTab = .habits
         AppState.shared.prepareForImmediateSession(habit: habitType)
         return .result()
     }

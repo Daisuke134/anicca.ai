@@ -394,6 +394,18 @@ struct DeepDiveSheetView: View {
             .background(AppBackground())
             .onAppear {
                 memoryText = memoryStore.memory(for: problem)?.text ?? ""
+                // 既存の回答を読み込む
+                let details = appState.userProfile.problemDetails
+                // 共通質問の回答
+                if let commonAnswers = details["common_duration"] {
+                    selectedAnswers[DeepDiveQuestionsData.commonDurationQuestion.questionKey] = Set(commonAnswers)
+                }
+                // 問題固有の質問の回答
+                for questionData in DeepDiveQuestionsData.questions(for: problem) {
+                    if let answers = details[questionData.questionKey] {
+                        selectedAnswers[questionData.questionKey] = Set(answers)
+                    }
+                }
             }
         }
     }
@@ -436,7 +448,21 @@ struct DeepDiveSheetView: View {
     }
 
     private func saveAnswers() {
-        // TODO: 回答を保存する処理（UserProfileに保存）
+        var profile = appState.userProfile
+        // 選択した回答をproblemDetailsに保存
+        var details: [String: [String]] = profile.problemDetails
+        // 共通質問の回答
+        if let commonAnswers = selectedAnswers[DeepDiveQuestionsData.commonDurationQuestion.questionKey] {
+            details["common_duration"] = Array(commonAnswers)
+        }
+        // 問題固有の質問の回答
+        for questionData in DeepDiveQuestionsData.questions(for: problem) {
+            if let answers = selectedAnswers[questionData.questionKey] {
+                details[questionData.questionKey] = Array(answers)
+            }
+        }
+        profile.problemDetails = details
+        appState.updateUserProfile(profile, sync: true)
         dismiss()
     }
 

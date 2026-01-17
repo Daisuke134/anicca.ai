@@ -84,6 +84,10 @@ struct UserProfile: Codable {
     var useAlarmKitForBedtime: Bool
     var useAlarmKitForCustom: Bool
     
+    // Phase 3: Proactive Agent
+    var problemDetails: [String: [String]]  // 深掘り回答（問題ID: 選択した選択肢）
+    var customProblems: [CustomProblem]      // カスタム課題
+    
     // Backward-compatible aliases（既存UI/ロジックを壊さない）
     var idealTraits: [String] {
         get { ideals }
@@ -122,7 +126,9 @@ struct UserProfile: Codable {
         useAlarmKitForWake: Bool = false,  // デフォルトOFF、Wake習慣ON時にユーザーに許可を求める
         useAlarmKitForTraining: Bool = false,
         useAlarmKitForBedtime: Bool = false,
-        useAlarmKitForCustom: Bool = false
+        useAlarmKitForCustom: Bool = false,
+        problemDetails: [String: [String]] = [:],
+        customProblems: [CustomProblem] = []
     ) {
         self.displayName = displayName
         self.acquisitionSource = acquisitionSource
@@ -146,6 +152,8 @@ struct UserProfile: Codable {
         self.useAlarmKitForTraining = useAlarmKitForTraining
         self.useAlarmKitForBedtime = useAlarmKitForBedtime
         self.useAlarmKitForCustom = useAlarmKitForCustom
+        self.problemDetails = problemDetails
+        self.customProblems = customProblems
     }
     
     // 既存データとの互換性のためのカスタムデコーディング
@@ -159,6 +167,9 @@ struct UserProfile: Codable {
         
         // v0.3
         case ideals, struggles, big5, keywords, summary, nudgeIntensity, stickyMode
+        
+        // Phase 3: Proactive Agent
+        case problemDetails, customProblems
         
         // legacy (read-only)
         case idealTraits
@@ -221,6 +232,10 @@ struct UserProfile: Codable {
         
         // カスタム習慣のAlarmKitは常にOFFから始める（既存ユーザーも含めてリセット）
         useAlarmKitForCustom = false
+        
+        // Phase 3: Proactive Agent
+        problemDetails = try container.decodeIfPresent([String: [String]].self, forKey: .problemDetails) ?? [:]
+        customProblems = try container.decodeIfPresent([CustomProblem].self, forKey: .customProblems) ?? []
     }
     
     func encode(to encoder: Encoder) throws {
@@ -253,6 +268,10 @@ struct UserProfile: Codable {
         try container.encode(useAlarmKitForTraining, forKey: .useAlarmKitForTraining)
         try container.encode(useAlarmKitForBedtime, forKey: .useAlarmKitForBedtime)
         try container.encode(useAlarmKitForCustom, forKey: .useAlarmKitForCustom)
+        
+        // Phase 3: Proactive Agent
+        try container.encode(problemDetails, forKey: .problemDetails)
+        try container.encode(customProblems, forKey: .customProblems)
         // legacy keysはデコード互換専用なのでエンコードしない
     }
 }

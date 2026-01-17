@@ -21,13 +21,9 @@ struct FigmaTabBar: View {
                 .fill(AppTheme.Colors.tabBarBorder)
                 .frame(height: 1)
             
-            // タブコンテナ（3タブ均等配置）
+            // タブコンテナ（2タブ均等配置）
+            // Note: Talkタブは非表示（コードはMainTabViewに残す）
             HStack(spacing: 0) {
-                tabButton(
-                    tab: .talk,
-                    icon: "message.fill",
-                    title: String(localized: "tab_talk")
-                )
                 tabButton(
                     tab: .habits,
                     icon: "leaf.fill",

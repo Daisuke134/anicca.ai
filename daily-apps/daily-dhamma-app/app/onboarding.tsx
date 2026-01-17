@@ -40,8 +40,8 @@ const pages: OnboardingPage[] = [
   },
   {
     id: '3',
-    title: 'Stay present\nthroughout the day',
-    subtitle: 'Gentle reminders to bring you back\nto the present moment',
+    title: 'Stay mindful each day',
+    subtitle: 'By enabling notifications, you agree to receive daily morning wisdom verses and mindfulness reminders throughout the day.\n\nYou can disable these anytime in Settings.',
     icon: <Bell size={80} color={Colors.light.gold} strokeWidth={1.2} />,
   },
 ];
@@ -80,7 +80,7 @@ export default function OnboardingScreen() {
 
   const renderPage = ({ item, index }: { item: OnboardingPage; index: number }) => {
     const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-    
+
     const opacity = scrollX.interpolate({
       inputRange,
       outputRange: [0.3, 1, 0.3],
@@ -112,7 +112,7 @@ export default function OnboardingScreen() {
     <View style={styles.dotsContainer}>
       {pages.map((_, index) => {
         const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-        
+
         const dotWidth = scrollX.interpolate({
           inputRange,
           outputRange: [8, 24, 8],

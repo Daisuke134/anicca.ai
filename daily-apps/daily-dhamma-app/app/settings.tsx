@@ -1,10 +1,11 @@
 import { View, Text, StyleSheet, TouchableOpacity, Switch, ScrollView, Linking, Alert } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ChevronLeft, Bell, Sun, Moon, Clock, ExternalLink, Crown, Info, Shield, FileText, FlaskConical, Sunrise } from 'lucide-react-native';
+import { ChevronLeft, Bell, Sun, Moon, Clock, ExternalLink, Crown, Info, Shield, FileText, FlaskConical, Sunrise, RotateCcw } from 'lucide-react-native';
 import * as Haptics from 'expo-haptics';
 import * as Notifications from 'expo-notifications';
 import Colors from '@/constants/colors';
+import { cancelAllNotifications } from '@/utils/notifications';
 import { useApp } from '@/providers/AppProvider';
 import { getDailyVerse, getRandomStayPresentMessage } from '@/data/verses';
 
@@ -22,6 +23,24 @@ export default function SettingsScreen() {
   const handleDarkModeToggle = (value: boolean) => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     updateSettings({ darkMode: value });
+  };
+
+  const handleNotificationsToggle = async (value: boolean) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+
+    if (value) {
+      // 通知を有効化 - 権限がない場合はリクエスト
+      const { status } = await Notifications.getPermissionsAsync();
+      if (status !== 'granted') {
+        const { status: newStatus } = await Notifications.requestPermissionsAsync();
+        if (newStatus !== 'granted') {
+          // 権限が拒否された場合は設定を変更しない
+          return;
+        }
+      }
+    }
+
+    updateSettings({ notificationsEnabled: value });
   };
 
   const FrequencyButton = ({ value, label }: { value: 3 | 5 | 7 | 10; label: string }) => {
@@ -108,6 +127,26 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
+          <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>NOTIFICATIONS</Text>
+          <View style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <View style={styles.settingLeft}>
+              <Bell size={20} color={colors.textSecondary} />
+              <Text style={[styles.settingLabel, { color: colors.text }]}>Enable Notifications</Text>
+            </View>
+            <Switch
+              value={settings.notificationsEnabled}
+              onValueChange={handleNotificationsToggle}
+              trackColor={{ false: colors.border, true: colors.gold }}
+              thumbColor={Colors.light.background}
+            />
+          </View>
+          <Text style={[styles.notificationHint, { color: colors.textMuted }]}>
+            Receive morning wisdom verses and mindfulness reminders
+          </Text>
+        </View>
+
+        {settings.notificationsEnabled && (
+        <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>STAY PRESENT REMINDERS</Text>
           <View style={[styles.settingCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
             <View style={styles.settingCardHeader}>
@@ -138,7 +177,9 @@ export default function SettingsScreen() {
             )}
           </View>
         </View>
+        )}
 
+        {settings.notificationsEnabled && (
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>MORNING VERSE</Text>
           <View style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}>
@@ -151,6 +192,7 @@ export default function SettingsScreen() {
             </Text>
           </View>
         </View>
+        )}
 
         <View style={styles.section}>
           <Text style={[styles.sectionTitle, { color: colors.textMuted }]}>ABOUT</Text>
@@ -253,7 +295,7 @@ export default function SettingsScreen() {
 
             {/* Show Scheduled Notifications */}
             <TouchableOpacity
-              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border, marginBottom: 8 }]}
               onPress={async () => {
                 Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
                 const scheduled = await Notifications.getAllScheduledNotificationsAsync();
@@ -286,6 +328,35 @@ export default function SettingsScreen() {
               <View style={styles.settingLeft}>
                 <FlaskConical size={20} color={colors.gold} />
                 <Text style={[styles.settingLabel, { color: colors.text }]}>Show Scheduled</Text>
+              </View>
+            </TouchableOpacity>
+
+            {/* Reset Onboarding */}
+            <TouchableOpacity
+              style={[styles.settingRow, { backgroundColor: colors.card, borderColor: colors.border }]}
+              onPress={() => {
+                Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+                Alert.alert(
+                  'Reset Onboarding',
+                  'This will reset the app to show onboarding again. The app will close.',
+                  [
+                    { text: 'Cancel', style: 'cancel' },
+                    {
+                      text: 'Reset',
+                      style: 'destructive',
+                      onPress: () => {
+                        updateSettings({ hasCompletedOnboarding: false });
+                        Alert.alert('Done', 'Restart the app to see onboarding.');
+                      },
+                    },
+                  ]
+                );
+              }}
+              activeOpacity={0.7}
+            >
+              <View style={styles.settingLeft}>
+                <RotateCcw size={20} color="#FF6B6B" />
+                <Text style={[styles.settingLabel, { color: '#FF6B6B' }]}>Reset Onboarding</Text>
               </View>
             </TouchableOpacity>
           </View>
@@ -377,6 +448,11 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginBottom: 16,
     marginLeft: 32,
+  },
+  notificationHint: {
+    fontSize: 13,
+    marginTop: 8,
+    marginLeft: 4,
   },
   frequencyButtons: {
     flexDirection: 'row',

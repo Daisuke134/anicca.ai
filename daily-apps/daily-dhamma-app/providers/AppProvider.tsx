@@ -7,11 +7,13 @@ import {
   scheduleMorningVerseNotification,
   scheduleStayPresentNotifications,
   getNotificationPermissionStatus,
+  cancelAllNotifications,
 } from '@/utils/notifications';
 
 interface AppSettings {
   hasCompletedOnboarding: boolean;
   isPremium: boolean;
+  notificationsEnabled: boolean;
   notificationFrequency: 3 | 5 | 7 | 10;
   morningNotificationTime: string;
   darkMode: boolean;
@@ -21,6 +23,7 @@ interface AppSettings {
 const defaultSettings: AppSettings = {
   hasCompletedOnboarding: false,
   isPremium: false,
+  notificationsEnabled: true,
   notificationFrequency: 3,
   morningNotificationTime: '07:00',
   darkMode: false,
@@ -101,6 +104,13 @@ export const [AppProvider, useApp] = createContextHook(() => {
         return;
       }
 
+      // 通知が無効の場合はすべてキャンセル
+      if (!settings.notificationsEnabled) {
+        console.log('[AppProvider] Notifications disabled by user, cancelling all');
+        await cancelAllNotifications();
+        return;
+      }
+
       console.log('[AppProvider] Scheduling notifications:', {
         isPremium,
         frequency: settings.notificationFrequency,
@@ -118,6 +128,7 @@ export const [AppProvider, useApp] = createContextHook(() => {
     }
   }, [
     settings.hasCompletedOnboarding,
+    settings.notificationsEnabled,
     settings.morningNotificationTime,
     settings.notificationFrequency,
     isPremium,

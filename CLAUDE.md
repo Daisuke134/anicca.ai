@@ -38,6 +38,23 @@ Hooksで実装する。」
 - 思考は英語、回答の生成は日本語で行う
 - CLAUDE.mdやドキュメントは日本語で記述
 
+### 4. リファクタリング方針（未使用コードの扱い）
+
+**原則: 容赦なく削除する（例外なし）**
+
+根拠: [Avanderlee - Refactoring Swift Best Practices](https://www.avanderlee.com/optimization/refactoring-swift-best-practices/)
+> 「シンプルだが非常に価値のあるアクションは、未使用コードを容赦なく削除すること」
+
+**ルール:**
+1. **今使っていないコード** → 完全削除
+2. **将来使うかもしれないコード** → 削除（git historyから復元可能）
+3. **`// UNUSED`コメント付きで残す** → 禁止（レガシーコードの混乱を招く）
+4. **UIパターンとして参考になる** → MDファイルに記録してから削除
+
+**記録先:**
+- `.cursor/plans/future/` - 将来実装予定の機能パターン
+- `.cursor/plans/ui-patterns/` - 再利用可能なUIパターン
+
 ---
 
 ## プロジェクト概要
@@ -192,4 +209,4 @@ daily-apps/         - 関連アプリ（Daily Dhammaなど）
 
 ---
 
-最終更新: 2025年1月17日
+最終更新: 2025年1月18日

@@ -141,31 +141,19 @@ final class NotificationScheduler {
 
     // MARK: Scheduling
     func applySchedules(_ schedules: [HabitType: DateComponents]) async {
+        // すべてのHabitType通知を完全にクリア（既存ユーザー対応）
         await removePending(withPrefix: "HABIT_")
+        await removeDelivered(withPrefix: "HABIT_")
+        await removePending(withPrefix: "PRE_REMINDER_")
+
 #if canImport(AlarmKit)
-        if #available(iOS 26.0, *), AlarmKitHabitCoordinator.shared.hasPendingSessions {
-            await AlarmKitHabitCoordinator.shared.flushPendingStops()
+        if #available(iOS 26.0, *) {
+            await AlarmKitHabitCoordinator.shared.cancelAllAlarms()
         }
 #endif
-        await cancelAllPreReminders()  // 追加: 事前通知もクリア
-        for (habit, components) in schedules {
-            guard let hour = components.hour, let minute = components.minute else { continue }
-            
-            // AlarmKitをスケジュール（iOS 26+ かつユーザーがONにしている場合）
-            let alarmKitScheduled = await scheduleWithAlarmKitIfNeeded(habit: habit, hour: hour, minute: minute)
-            
-            // AlarmKitがOFFの場合のみ、通常のTime Sensitive通知をスケジュール
-            // AlarmKitがONの場合、画面操作中でもDynamic Island/バナーでアラーム通知が表示される
-            if !alarmKitScheduled {
-                await scheduleMain(habit: habit, hour: hour, minute: minute)
-                scheduleFollowupLoop(for: habit, baseComponents: components)
-            }
-            
-            // 事前通知をスケジュール（bedtime, training, customのみ）
-            await schedulePreReminder(habit: habit, hour: hour, minute: minute)
-            
-            logger.info("Scheduled \(habit.rawValue, privacy: .public): AlarmKit=\(alarmKitScheduled, privacy: .public)")
-        }
+
+        // HabitTypeの通知は一切スケジュールしない（ProblemType通知のみ使用）
+        logger.info("HabitType notifications disabled - using ProblemType only")
     }
 
     func cancelHabit(_ habit: HabitType) {
@@ -489,34 +477,23 @@ final class NotificationScheduler {
     
     // MARK: - Custom Habit (UUID) support
     func applyCustomSchedules(_ schedules: [UUID: (name: String, time: DateComponents)]) async {
-        // いったん全カスタムの pending/delivered を掃除（簡易実装）
+        // すべてのカスタム習慣通知を完全にクリア（既存ユーザー対応）
         await removePending(withPrefix: "HABIT_CUSTOM_MAIN_")
         await removePending(withPrefix: "HABIT_CUSTOM_FOLLOW_")
         await removePending(withPrefix: "PRE_REMINDER_CUSTOM_")
+        await removeDelivered(withPrefix: "HABIT_CUSTOM_MAIN_")
         await removeDelivered(withPrefix: "HABIT_CUSTOM_FOLLOW_")
-        
-        for (id, entry) in schedules {
-            guard let hour = entry.time.hour, let minute = entry.time.minute else { continue }
-            
-            // v3.1: カスタム習慣の事前通知をスケジュール（15分前）
-            await scheduleCustomPreReminder(id: id, name: entry.name, hour: hour, minute: minute)
-            
-            // AlarmKitをスケジュール（iOS 26+ かつユーザーがONにしている場合）
-            let alarmKitScheduled = await scheduleCustomWithAlarmKitIfNeeded(
-                id: id,
-                name: entry.name,
-                hour: hour,
-                minute: minute
-            )
-            
-            // AlarmKitがOFFの場合のみ、通常通知をスケジュール
-            if !alarmKitScheduled {
-                await scheduleCustomMain(id: id, name: entry.name, time: entry.time)
-                scheduleCustomFollowups(id: id, name: entry.name, baseComponents: entry.time)
+
+#if canImport(AlarmKit)
+        if #available(iOS 26.0, *) {
+            for (id, _) in schedules {
+                await AlarmKitHabitCoordinator.shared.cancelCustomHabitAlarms(id)
             }
-            
-            logger.info("Scheduled custom habit \(id.uuidString, privacy: .public): AlarmKit=\(alarmKitScheduled, privacy: .public)")
         }
+#endif
+
+        // カスタム習慣の通知は一切スケジュールしない（ProblemType通知のみ使用）
+        logger.info("Custom habit notifications disabled - using ProblemType only")
     }
     
     private func scheduleCustomWithAlarmKitIfNeeded(id: UUID, name: String, hour: Int, minute: Int) async -> Bool {

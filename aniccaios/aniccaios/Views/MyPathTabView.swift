@@ -132,15 +132,9 @@ struct ProblemCardView: View {
                 Text(problem.icon)
                     .font(.system(size: 32))
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(problem.displayName)
-                        .font(.headline)
-                        .foregroundStyle(AppTheme.Colors.label)
-
-                    Text(problem.notificationTitle)
-                        .font(.caption)
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                }
+                Text(problem.displayName)
+                    .font(.headline)
+                    .foregroundStyle(AppTheme.Colors.label)
 
                 Spacer()
 
@@ -257,6 +251,7 @@ struct TellAniccaSheetView: View {
 
     private var savedView: some View {
         VStack(spacing: 16) {
+            Spacer()
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 64))
                 .foregroundStyle(AppTheme.Colors.buttonSelected)
@@ -264,7 +259,9 @@ struct TellAniccaSheetView: View {
             Text(String(localized: "mypath_tell_saved"))
                 .font(.title2.weight(.semibold))
                 .foregroundStyle(AppTheme.Colors.label)
+            Spacer()
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .onAppear {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.8) {
                 dismiss()
@@ -425,10 +422,16 @@ struct DeepDiveSheetView: View {
                         if selectedAnswers[questionKey] == nil {
                             selectedAnswers[questionKey] = []
                         }
-                        if isSelected {
-                            selectedAnswers[questionKey]?.remove(optionKey)
+                        // Duration質問（共通質問）は単一選択
+                        let isDurationQuestion = question.questionKey == DeepDiveQuestionsData.commonDurationQuestion.questionKey
+                        if isDurationQuestion {
+                            selectedAnswers[questionKey] = [optionKey]
                         } else {
-                            selectedAnswers[questionKey]?.insert(optionKey)
+                            if isSelected {
+                                selectedAnswers[questionKey]?.remove(optionKey)
+                            } else {
+                                selectedAnswers[questionKey]?.insert(optionKey)
+                            }
                         }
                     } label: {
                         Text(String(localized: String.LocalizationValue(stringLiteral: optionKey)))
@@ -474,6 +477,7 @@ struct DeepDiveSheetView: View {
         var profile = appState.userProfile
         profile.problems.removeAll { $0 == problem.rawValue }
         appState.updateUserProfile(profile, sync: true)
+
         Task {
             await ProblemNotificationScheduler.shared.cancelAllNotifications()
             await ProblemNotificationScheduler.shared.scheduleNotifications(for: profile.problems)

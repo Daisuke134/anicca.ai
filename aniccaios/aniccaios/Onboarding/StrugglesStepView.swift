@@ -34,16 +34,19 @@ struct StrugglesStepView: View {
                 .padding(.horizontal, 24)
 
             ScrollView {
-                FlowLayout(spacing: 12) {
+                LazyVGrid(columns: [
+                    GridItem(.flexible(), spacing: 12),
+                    GridItem(.flexible(), spacing: 12)
+                ], spacing: 12) {
                     ForEach(options, id: \.self) { key in
                         chipButton(kind: "problem", key: key)
                     }
                 }
                 .padding(.horizontal, 24)
                 .padding(.top, 8)
+                .padding(.bottom, 16)
             }
-
-            Spacer()
+            .scrollIndicators(.visible)
 
             VStack(spacing: 12) {
                 PrimaryButton(
@@ -83,13 +86,16 @@ struct StrugglesStepView: View {
             }
         } label: {
             Text(NSLocalizedString("\(kind)_\(key)", comment: ""))
-                .font(.system(size: 16, weight: .medium))
-                .fixedSize(horizontal: true, vertical: false)
-                .padding(.horizontal, 20)
-                .padding(.vertical, 14)
+                .font(.system(size: 14, weight: .medium))
+                .lineLimit(2)
+                .minimumScaleFactor(0.8)
+                .multilineTextAlignment(.center)
+                .frame(maxWidth: .infinity, minHeight: 56)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
                 .background(isSelected ? AppTheme.Colors.buttonSelected : AppTheme.Colors.buttonUnselected)
                 .foregroundStyle(isSelected ? AppTheme.Colors.buttonTextSelected : AppTheme.Colors.label)
-                .clipShape(Capsule())
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }

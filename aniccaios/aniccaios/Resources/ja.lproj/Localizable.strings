@@ -462,7 +462,6 @@
 "trait_extraversion" = "外向性";
 "trait_description_placeholder" = "調和を大切にし、周囲への配慮が自然にできる傾向があります。";
 "problem_no_motivation" = "やる気が出ない";
-"problem_procrastination" = "先延ばし";
 "problem_self_criticism" = "自己批判";
 "problem_poor_sleep" = "睡眠不足";
 "problem_stress" = "ストレス";
@@ -668,10 +667,16 @@
 "nudge_staying_up_late_detail_2" = "睡眠不足の脳は酔っ払いと同じ判断力。明日の自分を守るために、今夜は休もう。";
 "nudge_staying_up_late_detail_3" = "今スクロールしてる内容、明日覚えてる？でも睡眠不足は確実に残る。";
 
+/* NudgeContent - 夜更かし（深夜 - 強いメッセージ） */
+"nudge_staying_up_late_notification_4" = "深夜0時を過ぎました。今すぐ休んでください。";
+"nudge_staying_up_late_notification_5" = "深夜1時です。起きている1分が明日を蝕みます。";
+"nudge_staying_up_late_detail_4" = "睡眠不足は蓄積します。起きている時間が長いほど、明日はもっと辛くなります。スマホを置いて、目を閉じてください。";
+"nudge_staying_up_late_detail_5" = "これが最後の警告です。今やっていることより、あなたの健康の方が大事です。今すぐ寝てください。";
+
 /* NudgeContent - cant_wake_up */
 "nudge_cant_wake_up_notification_1" = "起きないと、今日が始まらん。";
 "nudge_cant_wake_up_notification_2" = "あと5分の君、信用ゼロ。";
-"nudge_cant_wake_up_notification_3" = "Stay Mediocre";
+"nudge_cant_wake_up_notification_3" = "平凡なままでいい？";
 "nudge_cant_wake_up_detail_1" = "布団の中で何も変わらない。まず足を床につけよう。";
 "nudge_cant_wake_up_detail_2" = "「あと5分」を何回言った？今起きれば、今日の自分を好きになれる。";
 "nudge_cant_wake_up_detail_3" = "平凡なままでいい？今起きれば、今日は違う1日になる。";
@@ -686,7 +691,7 @@
 
 /* NudgeContent - rumination */
 "nudge_rumination_notification_1" = "今、何を感じてる？";
-"nudge_rumination_notification_2" = "Are you present right now?";
+"nudge_rumination_notification_2" = "今、ここにいる？";
 "nudge_rumination_notification_3" = "朝の5分、瞑想してみない？";
 "nudge_rumination_detail_1" = "頭の中のループに気づいた？気づいたなら、もう半分解決してる。今この瞬間に戻ろう。";
 "nudge_rumination_detail_2" = "過去でも未来でもなく、今ここにいる？深呼吸して、今の身体の感覚に意識を向けてみて。";

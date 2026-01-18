@@ -50,3 +50,4 @@ v0.3 で新設するテーブル（`user_traits`, `daily_metrics`, `nudge_*`, `f
 
 
 
+

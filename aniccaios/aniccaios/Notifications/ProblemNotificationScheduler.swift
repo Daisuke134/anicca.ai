@@ -33,9 +33,6 @@ final class ProblemNotificationScheduler {
         for problemRaw in problems {
             guard let problem = ProblemType(rawValue: problemRaw) else { continue }
 
-            // cant_wake_up はアラームとして別途処理されるのでスキップ
-            if problem == .cantWakeUp { continue }
-
             for time in problem.notificationSchedule {
                 allSchedules.append((time: time, problem: problem))
             }
@@ -44,26 +41,29 @@ final class ProblemNotificationScheduler {
         // 時刻でソート
         allSchedules.sort { $0.time.hour * 60 + $0.time.minute < $1.time.hour * 60 + $1.time.minute }
 
-        // 30分以上間隔を空けてスケジュール
+        // 30分以内に被る場合は15分ずらしてスケジュール
         var lastScheduledMinutes: Int?
         var scheduledCount = 0
 
         for schedule in allSchedules {
-            let currentMinutes = schedule.time.hour * 60 + schedule.time.minute
+            var hour = schedule.time.hour
+            var minute = schedule.time.minute
+            var currentMinutes = hour * 60 + minute
 
-            // 30分以上間隔が空いているか確認
             if let last = lastScheduledMinutes {
-                let diff = currentMinutes - last
-                if diff < minimumIntervalMinutes && diff >= 0 {
-                    logger.info("Skipping \(schedule.problem.rawValue) at \(schedule.time.hour):\(schedule.time.minute) (too close to previous)")
-                    continue
+                // 前回スケジュール時刻 + 最小間隔より前なら、15分ずらす
+                if currentMinutes < last + minimumIntervalMinutes {
+                    currentMinutes = last + 15
+                    hour = (currentMinutes / 60) % 24
+                    minute = currentMinutes % 60
+                    logger.info("Shifted \(schedule.problem.rawValue) to \(hour):\(minute)")
                 }
             }
 
             await scheduleNotification(
                 for: schedule.problem,
-                hour: schedule.time.hour,
-                minute: schedule.time.minute
+                hour: hour,
+                minute: minute
             )
 
             lastScheduledMinutes = currentMinutes

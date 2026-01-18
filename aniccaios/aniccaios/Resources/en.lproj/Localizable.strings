@@ -472,7 +472,6 @@
 "trait_extraversion" = "Extraversion";
 "trait_description_placeholder" = "Highly cooperative; you value harmony and tend to be considerate of others.";
 "problem_no_motivation" = "No motivation";
-"problem_procrastination" = "Procrastination";
 "problem_self_criticism" = "Self-criticism";
 "settings_personalization" = "Personalization";
 "settings_data_optional_title" = "Data Integration (Optional)";
@@ -623,13 +622,13 @@
 "deep_dive_tell_anicca_subtitle" = "Write anything you want Anicca to know about this problem";
 
 /* ProblemType Button Texts */
-"problem_staying_up_late_positive_button" = "Protect Tomorrow 💪";
+"problem_staying_up_late_positive_button" = "Protect Tomorrow";
 "problem_staying_up_late_negative_button" = "Hurt Myself";
 "problem_staying_up_late_notification_title" = "Bedtime";
 "problem_cant_wake_up_positive_button" = "Start Today ☀️";
 "problem_cant_wake_up_negative_button" = "Stay in bed";
 "problem_cant_wake_up_notification_title" = "Wake Up";
-"problem_self_loathing_positive_button" = "Forgive Myself 🤍";
+"problem_self_loathing_positive_button" = "Forgive Myself";
 "problem_self_loathing_notification_title" = "Self-Compassion";
 "problem_rumination_positive_button" = "Return to Now 🧘";
 "problem_rumination_negative_button" = "Keep Thinking";
@@ -648,7 +647,7 @@
 "problem_porn_addiction_positive_button" = "Overcome 💪";
 "problem_porn_addiction_negative_button" = "Give In";
 "problem_porn_addiction_notification_title" = "Self-Control";
-"problem_alcohol_dependency_positive_button" = "Stay Sober Tonight 🍵";
+"problem_alcohol_dependency_positive_button" = "Stay Sober";
 "problem_alcohol_dependency_negative_button" = "Drink";
 "problem_alcohol_dependency_notification_title" = "Sobriety";
 "problem_anger_positive_button" = "Let Go 🕊️";
@@ -667,6 +666,12 @@
 "nudge_staying_up_late_detail_1" = "Staying up late hurts tomorrow's you. Close that screen tonight.";
 "nudge_staying_up_late_detail_2" = "A sleep-deprived brain has the judgment of a drunk. Rest tonight to protect tomorrow's you.";
 "nudge_staying_up_late_detail_3" = "Will you remember what you're scrolling? But the sleep deprivation will definitely stay.";
+
+/* NudgeContent - staying_up_late (Midnight - Strong Messages) */
+"nudge_staying_up_late_notification_4" = "It's past midnight. Your body needs rest now.";
+"nudge_staying_up_late_notification_5" = "It's 1 AM. Every minute awake costs you tomorrow.";
+"nudge_staying_up_late_detail_4" = "Sleep deprivation compounds. The longer you stay up, the harder tomorrow becomes. Put down the phone. Close your eyes.";
+"nudge_staying_up_late_detail_5" = "This is your final call. Nothing you're doing right now is more important than your health. Go to sleep now.";
 
 /* NudgeContent - cant_wake_up */
 "nudge_cant_wake_up_notification_1" = "Your day won't start until you get up.";

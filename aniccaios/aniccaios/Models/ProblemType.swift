@@ -18,7 +18,7 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
 
     /// ローカライズされた表示名
     var displayName: String {
-        String(localized: "problem_\(self.rawValue)")
+        NSLocalizedString("problem_\(self.rawValue)", comment: "")
     }
 
     /// この問題が対応するHabitType（関連する場合）
@@ -37,10 +37,10 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
     var notificationSchedule: [(hour: Int, minute: Int)] {
         switch self {
         case .stayingUpLate:
-            return [(21, 0), (22, 30)]
+            return [(21, 0), (22, 30), (0, 0), (1, 0)]
         case .cantWakeUp:
-            // アラームとして6:00に設定（デフォルト時刻と連動）
-            return [(6, 0)]
+            // 6:00と6:05の2回（起床支援）
+            return [(6, 0), (6, 5)]
         case .selfLoathing:
             return [(7, 0), (12, 30), (21, 30)]
         case .rumination:
@@ -78,13 +78,13 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
 
     /// ポジティブボタンのテキスト（左側）
     var positiveButtonText: String {
-        String(localized: "problem_\(self.rawValue)_positive_button")
+        NSLocalizedString("problem_\(self.rawValue)_positive_button", comment: "")
     }
 
     /// ネガティブボタンのテキスト（右側）- hasSingleButton がtrueの場合はnil
     var negativeButtonText: String? {
         guard !hasSingleButton else { return nil }
-        return String(localized: "problem_\(self.rawValue)_negative_button")
+        return NSLocalizedString("problem_\(self.rawValue)_negative_button", comment: "")
     }
 
     /// アイコン
@@ -141,6 +141,6 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
 extension ProblemType {
     /// 通知タイトル（問題に関連）
     var notificationTitle: String {
-        String(localized: "problem_\(self.rawValue)_notification_title")
+        NSLocalizedString("problem_\(self.rawValue)_notification_title", comment: "")
     }
 }

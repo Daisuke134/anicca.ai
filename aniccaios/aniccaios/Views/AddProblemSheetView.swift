@@ -109,12 +109,12 @@ struct AddProblemSheetView: View {
         var profile = appState.userProfile
         profile.problems.append(contentsOf: selected)
         appState.updateUserProfile(profile, sync: true)
-        
+
         // 通知をスケジュール
         Task {
             await ProblemNotificationScheduler.shared.scheduleNotifications(for: profile.problems)
         }
-        
+
         dismiss()
     }
 }

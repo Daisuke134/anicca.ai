@@ -1,4 +1,5 @@
 import Foundation
+import Combine
 
 /// ユーザーが各問題について Anicca に伝えたいこと
 struct Memory: Codable, Identifiable {
@@ -69,4 +70,5 @@ final class MemoryStore: ObservableObject {
         memories = Dictionary(uniqueKeysWithValues: decoded.map { ($0.problemType, $0) })
     }
 }
+
 

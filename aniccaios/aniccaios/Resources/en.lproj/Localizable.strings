@@ -433,7 +433,6 @@
 "profile_title" = "Profile";
 "profile_row_name" = "Name";
 "profile_row_plan" = "Plan";
-"profile_usage_unit" = " min";
 "profile_row_language" = "Language";
 "profile_section_traits" = "Your Traits";
 "profile_traits_summary_placeholder" = "You're highly agreeable and open to new experiences, balancing structure with flexibility.";
@@ -624,136 +623,136 @@
 /* ProblemType Button Texts */
 "problem_staying_up_late_positive_button" = "Protect Tomorrow";
 "problem_staying_up_late_negative_button" = "Hurt Myself";
-"problem_staying_up_late_notification_title" = "Bedtime";
+"problem_staying_up_late_notification_title" = "Put the Phone Down";
 "problem_cant_wake_up_positive_button" = "Start Today ☀️";
 "problem_cant_wake_up_negative_button" = "Stay in bed";
-"problem_cant_wake_up_notification_title" = "Wake Up";
+"problem_cant_wake_up_notification_title" = "Get Up Now";
 "problem_self_loathing_positive_button" = "Forgive Myself";
-"problem_self_loathing_notification_title" = "Self-Compassion";
+"problem_self_loathing_notification_title" = "Forgive Yourself";
 "problem_rumination_positive_button" = "Return to Now 🧘";
 "problem_rumination_negative_button" = "Keep Thinking";
-"problem_rumination_notification_title" = "Present Moment";
+"problem_rumination_notification_title" = "Return to Now";
 "problem_procrastination_positive_button" = "Do 5 min ⚡";
 "problem_procrastination_negative_button" = "Later";
-"problem_procrastination_notification_title" = "Procrastination";
+"problem_procrastination_notification_title" = "Do It Now";
 "problem_anxiety_positive_button" = "Deep Breath 🌬️";
-"problem_anxiety_notification_title" = "Anxiety";
+"problem_anxiety_notification_title" = "You're Safe";
 "problem_lying_positive_button" = "Be Honest 🤝";
 "problem_lying_negative_button" = "Lie";
-"problem_lying_notification_title" = "Honesty";
+"problem_lying_notification_title" = "Be Honest";
 "problem_bad_mouthing_positive_button" = "Kind Words 💬";
 "problem_bad_mouthing_negative_button" = "Bad-mouth";
-"problem_bad_mouthing_notification_title" = "Words";
+"problem_bad_mouthing_notification_title" = "Kind Words";
 "problem_porn_addiction_positive_button" = "Overcome 💪";
 "problem_porn_addiction_negative_button" = "Give In";
-"problem_porn_addiction_notification_title" = "Self-Control";
+"problem_porn_addiction_notification_title" = "Beat the Urge";
 "problem_alcohol_dependency_positive_button" = "Stay Sober";
 "problem_alcohol_dependency_negative_button" = "Drink";
-"problem_alcohol_dependency_notification_title" = "Sobriety";
+"problem_alcohol_dependency_notification_title" = "Don't Drink Tonight";
 "problem_anger_positive_button" = "Let Go 🕊️";
 "problem_anger_negative_button" = "Stay Angry";
-"problem_anger_notification_title" = "Calm";
+"problem_anger_notification_title" = "Let Go of Anger";
 "problem_obsessive_positive_button" = "Let Go 🌿";
 "problem_obsessive_negative_button" = "Keep Thinking";
-"problem_obsessive_notification_title" = "Let Go";
+"problem_obsessive_notification_title" = "Stop Overthinking";
 "problem_loneliness_positive_button" = "Reach Out 📱";
-"problem_loneliness_notification_title" = "Connection";
+"problem_loneliness_notification_title" = "Reach Out";
 
 /* NudgeContent - staying_up_late */
 "nudge_staying_up_late_notification_1" = "Breathe, don't scroll.";
 "nudge_staying_up_late_notification_2" = "How many years have you lost to 'just 5 more minutes'?";
 "nudge_staying_up_late_notification_3" = "Tomorrow's you will regret this.";
-"nudge_staying_up_late_detail_1" = "Staying up late hurts tomorrow's you. Close that screen tonight.";
-"nudge_staying_up_late_detail_2" = "A sleep-deprived brain has the judgment of a drunk. Rest tonight to protect tomorrow's you.";
-"nudge_staying_up_late_detail_3" = "Will you remember what you're scrolling? But the sleep deprivation will definitely stay.";
+"nudge_staying_up_late_detail_1" = "Move your phone 30cm from your face. Turn brightness to minimum. Take 5 deep breaths. Your brain will switch to 'sleep prep' mode.";
+"nudge_staying_up_late_detail_2" = "A sleep-deprived brain has the same judgment as 0.1% blood alcohol. 17 hours awake = legally drunk. Protect tomorrow's decisions by sleeping tonight.";
+"nudge_staying_up_late_detail_3" = "Will you remember this content tomorrow at noon? But sleep deprivation will definitely hurt your focus, judgment, and immunity. Which matters more?";
 
 /* NudgeContent - staying_up_late (Midnight - Strong Messages) */
 "nudge_staying_up_late_notification_4" = "It's past midnight. Your body needs rest now.";
 "nudge_staying_up_late_notification_5" = "It's 1 AM. Every minute awake costs you tomorrow.";
-"nudge_staying_up_late_detail_4" = "Sleep deprivation compounds. The longer you stay up, the harder tomorrow becomes. Put down the phone. Close your eyes.";
-"nudge_staying_up_late_detail_5" = "This is your final call. Nothing you're doing right now is more important than your health. Go to sleep now.";
+"nudge_staying_up_late_detail_4" = "Sleep deprivation compounds like debt. Tonight's lost hour will steal next week's focus and judgment. Move your phone away from bed. Close your eyes.";
+"nudge_staying_up_late_detail_5" = "Staying awake past 1 AM causes measurable damage to your brain and heart. What you're doing is 100x less important than sleep. Go to bed now.";
 
 /* NudgeContent - cant_wake_up */
 "nudge_cant_wake_up_notification_1" = "Your day won't start until you get up.";
 "nudge_cant_wake_up_notification_2" = "The 'just 5 more minutes' you has zero credibility.";
 "nudge_cant_wake_up_notification_3" = "Stay Mediocre";
-"nudge_cant_wake_up_detail_1" = "Nothing changes under the blanket. Put your feet on the floor first.";
-"nudge_cant_wake_up_detail_2" = "How many times have you said '5 more minutes'? Get up now, and you'll like today's you.";
-"nudge_cant_wake_up_detail_3" = "Want to stay average? Get up now, and today will be different.";
+"nudge_cant_wake_up_detail_1" = "Count 5, 4, 3, 2, 1 and put your feet on the floor. Move before you think. Get up before your brain makes excuses. Nothing changes under the blanket.";
+"nudge_cant_wake_up_detail_2" = "How many times have you trusted the '5 more minutes' you? How many times were you betrayed? Getting up now keeps a promise to yourself. You'll like today's you.";
+"nudge_cant_wake_up_detail_3" = "Start today sloppy again? Or change starting now? Your action in the next 5 seconds decides. Stand up.";
 
 /* NudgeContent - self_loathing */
 "nudge_self_loathing_notification_1" = "You're alive today. That's enough.";
 "nudge_self_loathing_notification_2" = "It's okay to stop blaming yourself.";
 "nudge_self_loathing_notification_3" = "You're a much better person than you think.";
-"nudge_self_loathing_detail_1" = "Self-loathing shows you want to improve. But it's counterproductive. Remember one small thing you did well today.";
-"nudge_self_loathing_detail_2" = "You don't have to be perfect. You're enough as you are.";
-"nudge_self_loathing_detail_3" = "You're too hard on yourself. Be kind to yourself like you would to others.";
+"nudge_self_loathing_detail_1" = "Self-loathing proves you want to be better. But self-criticism doesn't lead to growth—it backfires. You woke up today. That's enough.";
+"nudge_self_loathing_detail_2" = "If your best friend was in your situation, what would you say? You wouldn't say 'You're worthless.' Give yourself the same kindness.";
+"nudge_self_loathing_detail_3" = "Is what you're blaming yourself for truly 'irreparable'? Most things are smaller than they feel. Take a deep breath and look objectively.";
 
 /* NudgeContent - rumination */
 "nudge_rumination_notification_1" = "What are you feeling right now?";
 "nudge_rumination_notification_2" = "Are you present right now?";
 "nudge_rumination_notification_3" = "Why not meditate for 5 minutes this morning?";
-"nudge_rumination_detail_1" = "Noticed the loop in your head? Noticing it means you're halfway there. Come back to this moment.";
-"nudge_rumination_detail_2" = "Are you here now, not in the past or future? Take a deep breath and notice how your body feels.";
-"nudge_rumination_detail_3" = "Meditation is the most effective way to stop rumination. Focus on your breath for just 5 minutes.";
+"nudge_rumination_detail_1" = "Once you notice the loop, you're halfway done. Now: focus on the soles of your feet. The floor's hardness, temperature. Just 30 seconds.";
+"nudge_rumination_detail_2" = "Name 5 things you see, 4 you hear, 3 you're touching, 2 you smell, 1 you taste. This forces you back to 'now.'";
+"nudge_rumination_detail_3" = "The most effective way to stop rumination is meditation. For 2 minutes now, focus only on breathing. Inhale 4 sec, hold 4 sec, exhale 4 sec.";
 
 /* NudgeContent - procrastination */
 "nudge_procrastination_notification_1" = "Just 5 minutes. That's all you need.";
 "nudge_procrastination_notification_2" = "Breaking another promise to yourself?";
 "nudge_procrastination_notification_3" = "Every reason not to do it is an excuse.";
-"nudge_procrastination_detail_1" = "You don't have to do it perfectly. Start for 5 minutes and you can keep going.";
-"nudge_procrastination_detail_2" = "Procrastination hurts future you. Do it now and future you will thank you.";
-"nudge_procrastination_detail_3" = "Can't you really do it? Or do you just not want to? Be honest.";
+"nudge_procrastination_detail_1" = "If it takes under 2 minutes, do it now. If it takes longer, just do the first 2 minutes. Once you start, your brain wants to continue. That's science.";
+"nudge_procrastination_detail_2" = "Imagine yourself a week from now. 'I wish I'd done it then...' Regretting? Do it now and that regret disappears.";
+"nudge_procrastination_detail_3" = "'Can't do it' and 'don't want to' are different. Which is it right now? If you don't want to, why? Find the real reason.";
 
 /* NudgeContent - anxiety */
 "nudge_anxiety_notification_1" = "In this moment, you are safe.";
 "nudge_anxiety_notification_2" = "What are you feeling right now?";
 "nudge_anxiety_notification_3" = "Deep breath. Inhale 4 seconds, hold 4, exhale 4.";
-"nudge_anxiety_detail_1" = "Anxiety is fear of the future. But nothing is happening right now. Breathe and come back to now.";
-"nudge_anxiety_detail_2" = "Noticed your anxiety? Watch it. Anxiety comes and goes.";
-"nudge_anxiety_detail_3" = "Calm your body, calm your mind. Try it now.";
+"nudge_anxiety_detail_1" = "Anxiety is fear of what hasn't happened yet. Right now, what's actually happening in front of you? Nothing dangerous is occurring.";
+"nudge_anxiety_detail_2" = "Not 'I am anxious' but 'I am feeling anxiety.' Anxiety is like weather. It comes, and it goes.";
+"nudge_anxiety_detail_3" = "Inhale 4 sec → hold 4 sec → exhale 4 sec → hold 4 sec. Repeat 3 times. When your body calms, your mind follows. Do it now.";
 
 /* NudgeContent - lying */
 "nudge_lying_notification_1" = "Today is a day to live honestly.";
-"nudge_lying_detail_1" = "Lies may be easy short-term, but they hurt you long-term. Be truthful today.";
+"nudge_lying_detail_1" = "Small lies lead to big lies. One lie requires another lie to protect it. Being honest today makes tomorrow simpler.";
 
 /* NudgeContent - bad_mouthing */
 "nudge_bad_mouthing_notification_1" = "No hurtful words today.";
 "nudge_bad_mouthing_notification_2" = "How would you feel if someone said that to you?";
-"nudge_bad_mouthing_detail_1" = "Gossip feels good in the moment. But self-loathing follows. Only kind words today.";
-"nudge_bad_mouthing_detail_2" = "Take a breath before speaking. Put yourself in their shoes.";
+"nudge_bad_mouthing_detail_1" = "Talking badly feels good for a moment. But 5 minutes later, self-loathing arrives. Plus, listeners think 'they'll talk about me too.'";
+"nudge_bad_mouthing_detail_2" = "When you want to say something negative, wait 10 seconds. Ask yourself: 'Could I say this to their face?' If not, don't say it.";
 
 /* NudgeContent - porn_addiction */
 "nudge_porn_addiction_notification_1" = "Beat the temptation and tomorrow's you will change.";
 "nudge_porn_addiction_notification_2" = "Do you really want it? Or are you just escaping?";
-"nudge_porn_addiction_detail_1" = "This urge is temporary. Wait 5 minutes and it'll pass. Get through those 5 minutes.";
-"nudge_porn_addiction_detail_2" = "Porn is temporary escape. It doesn't solve the root problem. What are you running from?";
+"nudge_porn_addiction_detail_1" = "The urge is like a wave—it peaks and falls. Do something else for 10 minutes. Walk, push-ups, splash cold water on your face.";
+"nudge_porn_addiction_detail_2" = "When you want to escape to porn, what are you really running from? Stress? Loneliness? Boredom? Find the root cause.";
 
 /* NudgeContent - alcohol_dependency */
 "nudge_alcohol_dependency_notification_1" = "Don't drink tonight. That alone is a win.";
 "nudge_alcohol_dependency_notification_2" = "You can relax without drinking.";
-"nudge_alcohol_dependency_detail_1" = "Just today. Just tonight. You'll be proud tomorrow morning.";
-"nudge_alcohol_dependency_detail_2" = "Try stress relief without alcohol. A walk, deep breaths, music.";
+"nudge_alcohol_dependency_detail_1" = "Don't think about tomorrow. Just don't drink tonight. Imagine waking up tomorrow with no hangover. Feel that relief.";
+"nudge_alcohol_dependency_detail_2" = "When you want to drink: have sparkling water, take a 10-minute walk, or take a hot shower. Stress doesn't disappear, but you can cope without drinking.";
 
 /* NudgeContent - anger */
 "nudge_anger_notification_1" = "Anger hurts you. Take a deep breath.";
 "nudge_anger_notification_2" = "Wait 3 seconds before speaking.";
-"nudge_anger_detail_1" = "Holding onto anger is like drinking poison expecting the other person to die. Let it go.";
-"nudge_anger_detail_2" = "Speaking in anger leads to regret. Wait just 3 seconds.";
+"nudge_anger_detail_1" = "Holding onto anger is like drinking poison expecting the other person to die. They don't feel your anger. Only you suffer.";
+"nudge_anger_detail_2" = "Anger peaks at 6 seconds. Count to 6 before acting. 1, 2, 3, 4, 5, 6. Deep breath during this. After 6 seconds, check if you still want to say it.";
 
 /* NudgeContent - obsessive */
 "nudge_obsessive_notification_1" = "It doesn't have to be perfect. You can let go.";
 "nudge_obsessive_notification_2" = "How many times have you thought that?";
 "nudge_obsessive_notification_3" = "Aren't you overthinking?";
-"nudge_obsessive_detail_1" = "Is that thought really important? Nothing bad happens if you let it go now.";
-"nudge_obsessive_detail_2" = "Thinking the same thing won't change the answer. Let go now, think later.";
-"nudge_obsessive_detail_3" = "Thinking and acting are different. Stop thinking, start moving.";
+"nudge_obsessive_detail_1" = "Will this thought matter in a year? Usually no. Nothing bad happens if you let it go now. Try it.";
+"nudge_obsessive_detail_2" = "Tell yourself 'I'll think about this at 5 PM.' When you give your brain a schedule, you can let go now. By 5 PM, you'll usually forget.";
+"nudge_obsessive_detail_3" = "Overthinking often comes from not moving. Stand up right now and march in place for 30 seconds. Moving your body changes your head.";
 
 /* NudgeContent - loneliness */
 "nudge_loneliness_notification_1" = "You're not alone. Someone is thinking of you.";
 "nudge_loneliness_notification_2" = "Why not send a message to someone you care about?";
-"nudge_loneliness_detail_1" = "Feeling lonely doesn't make it true. Why not reach out to someone today?";
-"nudge_loneliness_detail_2" = "Connection won't come to you. Make the first move.";
+"nudge_loneliness_detail_1" = "When you feel lonely, you think 'nobody cares about me.' But that's a lie. There's at least one person who'd be happy to hear from you. Who?";
+"nudge_loneliness_detail_2" = "Connection won't come to you. 'They might find it annoying' is a lie. Send someone 'Hey, how are you?' right now. That's all it takes.";
 
 /* Common Deep Dive Questions */
 "deepdive_common_duration_question" = "How long have you had this problem?";
@@ -928,4 +927,12 @@
 "deepdive_loneliness_q2_opt2" = "Not understood";
 "deepdive_loneliness_q2_opt3" = "Live far away";
 "deepdive_loneliness_q2_opt4" = "Don't know";
+
+/* ========== AlarmKit: cantWakeUp Wake Alarm ========== */
+"profile_section_wake_alarm" = "Wake Alarm";
+"profile_wake_alarm_toggle" = "Full-screen Alarm";
+"profile_wake_alarm_description" = "When ON, a full-screen alarm will wake you at 6:00 and 6:05 every morning (iOS 26+)";
+"alarmkit_permission_needed_title" = "Alarm Permission Needed";
+"alarmkit_permission_needed_message" = "Please enable alarm permission for Anicca in the Settings app.";
+"problem_cant_wake_up_alarm_title" = "Wake Up";
 

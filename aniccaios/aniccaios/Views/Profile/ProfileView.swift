@@ -4,6 +4,9 @@ import Foundation
 import RevenueCatUI
 import ComponentsKit
 import AuthenticationServices
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 /// v0.3 Profile タブ（v3-ui.md 準拠）
 struct ProfileView: View {
@@ -19,6 +22,12 @@ struct ProfileView: View {
     @FocusState private var nameFieldFocused: Bool
     @State private var previousNameFieldFocused: Bool = false
 
+    // AlarmKit設定用
+    @State private var isShowingAlarmKitSettingsAlert = false
+    #if DEBUG
+    @State private var debugAlarmTime = Date()
+    #endif
+
     var body: some View {
         NavigationStack {
             ScrollView {
@@ -33,13 +42,22 @@ struct ProfileView: View {
                     // strugglesSection
                     // stickyModeSection
                     nudgeStrengthSection
+
+                    // 起床アラームセクション（cantWakeUp選択者 + iOS 26+のみ）
+                    if #available(iOS 26.0, *) {
+                        if appState.userProfile.problems.contains("cant_wake_up") {
+                            wakeUpAlarmSection
+                        }
+                    }
+
                     // v0.5: 未サインイン時はアカウント管理セクションを非表示
                     if case .signedIn = appState.authStatus {
                         accountManagementSection
                     }
-                    
+
                     #if DEBUG
                     recordingSection
+                    alarmTestSection
                     #endif
 
                     LegalLinksView()
@@ -100,15 +118,7 @@ struct ProfileView: View {
     }
     
     private var planDisplayValue: String {
-        let info = appState.subscriptionInfo
-        let planName = info.displayPlanName
-        
-        if let used = info.monthlyUsageCount, let limit = info.monthlyUsageLimit {
-            let unit = String(localized: "profile_usage_unit")
-            return "\(planName) (\(used)/\(limit)\(unit))"
-        }
-        
-        return planName
+        appState.subscriptionInfo.displayPlanName
     }
     
     @ViewBuilder
@@ -605,42 +615,6 @@ struct ProfileView: View {
     #if DEBUG
     private var recordingSection: some View {
         VStack(spacing: 10) {
-            Text("📹 撮影用")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            CardView {
-                VStack(spacing: 12) {
-                    Button("1️⃣ バラバラストリーク") {
-                        appState.setupRecording(pattern: 1)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Divider()
-                    
-                    Button("2️⃣ チェック動作用（29→30）") {
-                        appState.setupRecording(pattern: 2)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Divider()
-                    
-                    Button("4️⃣ 6→7用（7日達成）") {
-                        appState.setupRecording(pattern: 4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Divider()
-                    
-                    Button("5️⃣ 全部🪷30") {
-                        appState.setupRecording(pattern: 5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.vertical, 4)
-            }
-            
             Text("🔔 Nudge/通知テスト")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)
@@ -682,7 +656,142 @@ struct ProfileView: View {
             }
         }
     }
+
+    // MARK: - Alarm Test Section (DEBUG only)
+    private var alarmTestSection: some View {
+        VStack(spacing: 10) {
+            Text("⏰ アラームテスト")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 16)
+
+            CardView {
+                VStack(spacing: 12) {
+                    if #available(iOS 26.0, *) {
+                        DatePicker(
+                            "時間を選択",
+                            selection: $debugAlarmTime,
+                            displayedComponents: .hourAndMinute
+                        )
+
+                        Divider()
+
+                        Button("⏰ 選択した時間でアラーム設定") {
+                            let components = Calendar.current.dateComponents([.hour, .minute], from: debugAlarmTime)
+                            Task {
+                                await ProblemAlarmKitScheduler.shared.scheduleTestAlarm(
+                                    hour: components.hour!,
+                                    minute: components.minute!
+                                )
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                        Divider()
+
+                        Button("⏰ 1分後にアラーム") {
+                            let future = Calendar.current.date(byAdding: .minute, value: 1, to: Date())!
+                            let components = Calendar.current.dateComponents([.hour, .minute], from: future)
+                            Task {
+                                await ProblemAlarmKitScheduler.shared.scheduleTestAlarm(
+                                    hour: components.hour!,
+                                    minute: components.minute!
+                                )
+                            }
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    } else {
+                        Text("AlarmKitはiOS 26+のみ対応")
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
     #endif
+
+    // MARK: - Wake-up Alarm Section (iOS 26+ only)
+    @available(iOS 26.0, *)
+    private var wakeUpAlarmSection: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            Text(String(localized: "profile_section_wake_alarm"))
+                .font(.system(size: 18, weight: .bold))
+                .foregroundStyle(AppTheme.Colors.label)
+                .padding(.horizontal, 2)
+
+            CardView(cornerRadius: 28) {
+                VStack(alignment: .leading, spacing: 8) {
+                    Toggle(
+                        String(localized: "profile_wake_alarm_toggle"),
+                        isOn: alarmKitToggleBinding
+                    )
+                    .tint(AppTheme.Colors.accent)
+
+                    Text(String(localized: "profile_wake_alarm_description"))
+                        .font(AppTheme.Typography.caption1Dynamic)
+                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                }
+            }
+        }
+        .alert(String(localized: "alarmkit_permission_needed_title"), isPresented: $isShowingAlarmKitSettingsAlert) {
+            Button(String(localized: "common_open_settings")) { openSystemSettings() }
+            Button(String(localized: "common_cancel"), role: .cancel) {}
+        } message: {
+            Text(String(localized: "alarmkit_permission_needed_message"))
+        }
+    }
+
+    @available(iOS 26.0, *)
+    private var alarmKitToggleBinding: Binding<Bool> {
+        Binding(
+            get: { appState.userProfile.useAlarmKitForCantWakeUp },
+            set: { newValue in
+                if newValue {
+                    Task { @MainActor in
+                        let manager = AlarmManager.shared
+
+                        // 拒否済みの場合は設定誘導
+                        if manager.authorizationState == .denied {
+                            isShowingAlarmKitSettingsAlert = true
+                            return
+                        }
+
+                        // 許可リクエスト
+                        let granted = await ProblemAlarmKitScheduler.shared.requestAuthorizationIfNeeded()
+
+                        var profile = appState.userProfile
+                        profile.useAlarmKitForCantWakeUp = granted
+                        appState.updateUserProfile(profile, sync: true)
+
+                        // 許可されたらアラームをスケジュール
+                        if granted {
+                            await ProblemAlarmKitScheduler.shared.scheduleCantWakeUp(hour: 6, minute: 0)
+                        }
+                    }
+                } else {
+                    // OFFにした場合
+                    var profile = appState.userProfile
+                    profile.useAlarmKitForCantWakeUp = false
+                    appState.updateUserProfile(profile, sync: true)
+
+                    Task {
+                        await ProblemAlarmKitScheduler.shared.cancelCantWakeUp()
+                        // 通常通知を再スケジュール
+                        await ProblemNotificationScheduler.shared.scheduleNotifications(
+                            for: appState.userProfile.problems
+                        )
+                    }
+                }
+            }
+        )
+    }
+
+    private func openSystemSettings() {
+        guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
+        UIApplication.shared.open(url)
+    }
 }
 
 /// v0.3: pill 風のチップ群 - バックエンドと連携

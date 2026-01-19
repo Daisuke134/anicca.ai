@@ -21,18 +21,6 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
         NSLocalizedString("problem_\(self.rawValue)", comment: "")
     }
 
-    /// この問題が対応するHabitType（関連する場合）
-    var relatedHabitType: HabitType? {
-        switch self {
-        case .stayingUpLate:
-            return .bedtime
-        case .cantWakeUp:
-            return .wake
-        default:
-            return nil
-        }
-    }
-
     /// 通知タイミング（時刻の配列）
     var notificationSchedule: [(hour: Int, minute: Int)] {
         switch self {
@@ -64,6 +52,27 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
         case .loneliness:
             return [(12, 0), (20, 0)]
         }
+    }
+
+    /// 有効な通知時間帯（時間帯制限がある問題のみ）
+    /// - Returns: (startHour, startMinute, endHour, endMinute) or nil if no restriction
+    var validTimeRange: (startHour: Int, startMinute: Int, endHour: Int, endMinute: Int)? {
+        switch self {
+        case .cantWakeUp:
+            // 6:00-9:00のみ（朝の起床時間帯）
+            return (6, 0, 9, 0)
+        default:
+            return nil
+        }
+    }
+
+    /// 指定時刻がこの問題の有効時間帯内かどうか
+    func isValidTime(hour: Int, minute: Int) -> Bool {
+        guard let range = validTimeRange else { return true }
+        let timeMinutes = hour * 60 + minute
+        let startMinutes = range.startHour * 60 + range.startMinute
+        let endMinutes = range.endHour * 60 + range.endMinute
+        return timeMinutes >= startMinutes && timeMinutes < endMinutes
     }
 
     /// 1択ボタンか2択ボタンか

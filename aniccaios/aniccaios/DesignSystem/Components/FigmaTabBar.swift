@@ -25,7 +25,7 @@ struct FigmaTabBar: View {
             // Note: Talkタブは非表示（コードはMainTabViewに残す）
             HStack(spacing: 0) {
                 tabButton(
-                    tab: .habits,
+                    tab: .myPath,
                     icon: "leaf.fill",
                     title: String(localized: "tab_mypath")
                 )

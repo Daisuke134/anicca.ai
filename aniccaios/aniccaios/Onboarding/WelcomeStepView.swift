@@ -59,10 +59,9 @@ struct WelcomeStepView: View {
                                     // v0.5: 認証成功後の遷移を確実に
                                     await MainActor.run {
                                         let hasProfile = !appState.userProfile.displayName.isEmpty
-                                        let hasHabits = !appState.habitSchedules.isEmpty
-                                        let hasCustomHabits = !appState.customHabits.isEmpty
-                                        
-                                        if hasProfile || hasHabits || hasCustomHabits {
+                                        let hasProblems = !appState.userProfile.struggles.isEmpty
+
+                                        if hasProfile || hasProblems {
                                             // 既存ユーザー: オンボーディングをスキップしてメイン画面へ
                                             appState.markOnboardingComplete()
                                         } else {

@@ -21,18 +21,6 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
         NSLocalizedString("problem_\(self.rawValue)", comment: "")
     }
 
-    /// この問題が対応するHabitType（関連する場合）
-    var relatedHabitType: HabitType? {
-        switch self {
-        case .stayingUpLate:
-            return .bedtime
-        case .cantWakeUp:
-            return .wake
-        default:
-            return nil
-        }
-    }
-
     /// 通知タイミング（時刻の配列）
     var notificationSchedule: [(hour: Int, minute: Int)] {
         switch self {

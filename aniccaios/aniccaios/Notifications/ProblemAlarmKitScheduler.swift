@@ -41,6 +41,27 @@ final class ProblemAlarmKitScheduler {
 
     private init() {}
 
+    // MARK: - Authorization
+
+    /// AlarmKit許可をリクエスト
+    func requestAuthorizationIfNeeded() async -> Bool {
+        do {
+            let currentState = manager.authorizationState
+            logger.info("Current AlarmKit authorization state: \(String(describing: currentState), privacy: .public)")
+
+            if currentState == .authorized {
+                return true
+            }
+
+            let state = try await manager.requestAuthorization()
+            logger.info("AlarmKit authorization result: \(String(describing: state), privacy: .public)")
+            return state == .authorized
+        } catch {
+            logger.error("AlarmKit authorization failed: \(error.localizedDescription, privacy: .public)")
+            return false
+        }
+    }
+
     // MARK: - Public API
 
     /// cantWakeUp用の2段階AlarmKitアラームをスケジュール（6:00と6:05）

@@ -89,8 +89,6 @@ daily-apps/         - 関連アプリ（Daily Dhammaなど）
 | My Path | `MyPathTabView` | ユーザーの問題一覧、Tell Anicca、DeepDive |
 | Profile | `ProfileView` | Name, Plan, Data Integration, Nudge Strength |
 
-**注意**: Talkタブは非表示（コード残存、リファクタリング予定）
-
 ### オンボーディングフロー
 
 ```
@@ -105,9 +103,6 @@ welcome → value → struggles → notifications → att → complete
 | notifications | `NotificationPermissionStepView` | 通知許可 |
 | att | `ATTPermissionStepView` | ATT許可 |
 
-**スキップされているステップ**（コード残存）:
-- account, source, name, gender, age, ideals, habitSetup, alarmkit
-
 ### 13個の問題タイプ（ProblemType）
 
 ```swift
@@ -120,27 +115,17 @@ alcohol_dependency, anger, obsessive, loneliness
 
 | 機能 | Scheduler | 画面 |
 |------|-----------|------|
-| **Problem Nudge**（アクティブ） | `ProblemNotificationScheduler` | `NudgeCardView` |
-| Habit Alarm（レガシー） | `NotificationScheduler` | `HabitSessionView` |
+| Problem Nudge | `ProblemNotificationScheduler` | `NudgeCardView` |
+| cantWakeUp Alarm | `ProblemAlarmKitScheduler` | AlarmKit (iOS 26+) |
+| Server Nudge | `NotificationScheduler` | - |
 
 **NudgeCardView**: 通知タップで1枚カード表示。問題に応じて1択or2択ボタン、👍👎フィードバック。
 
-### レガシーコード（リファクタリング予定）
-
-以下のコードは**非アクティブだが残存**している：
-- `TalkView` - Talkタブ（非表示）
-- `VoiceSessionController` - 音声セッション制御
-- `HabitSessionView` - 習慣音声セッション
-- `HabitType` - 旧習慣enum（wake, training, bedtime, custom）
-- `NotificationScheduler.habitAlarm` - 習慣通知
-
-詳細: `.cursor/plans/ios/proactive/refactoring-plan.md`
-
 ### 重要な注意事項
 
-1. **HabitType vs ProblemType**: 現在は**ProblemType**がメイン。HabitTypeはレガシー。
-2. **音声機能**: OpenAI Realtime APIは**非アクティブ**。NudgeCardViewに置き換え済み。
-3. **オンボーディング**: 習慣設定（HabitSetupStepView）は**スキップ**されている。
+1. **ProblemTypeベース**: 全ての通知は`ProblemType`に基づく。HabitTypeシステムは完全削除済み。
+2. **音声機能**: 削除済み（OpenAI Realtime API、VoiceSessionController等）。
+3. **NotificationScheduler**: 認可とサーバーNudgeのみ担当（約140行）。
 
 ---
 
@@ -276,4 +261,4 @@ alcohol_dependency, anger, obsessive, loneliness
 
 ---
 
-最終更新: 2026年1月19日
+最終更新: 2026年1月20日

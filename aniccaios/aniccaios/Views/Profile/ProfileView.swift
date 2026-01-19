@@ -118,15 +118,7 @@ struct ProfileView: View {
     }
     
     private var planDisplayValue: String {
-        let info = appState.subscriptionInfo
-        let planName = info.displayPlanName
-        
-        if let used = info.monthlyUsageCount, let limit = info.monthlyUsageLimit {
-            let unit = String(localized: "profile_usage_unit")
-            return "\(planName) (\(used)/\(limit)\(unit))"
-        }
-        
-        return planName
+        appState.subscriptionInfo.displayPlanName
     }
     
     @ViewBuilder
@@ -623,42 +615,6 @@ struct ProfileView: View {
     #if DEBUG
     private var recordingSection: some View {
         VStack(spacing: 10) {
-            Text("📹 撮影用")
-                .font(.system(size: 14, weight: .medium))
-                .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                .frame(maxWidth: .infinity, alignment: .leading)
-            
-            CardView {
-                VStack(spacing: 12) {
-                    Button("1️⃣ バラバラストリーク") {
-                        appState.setupRecording(pattern: 1)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Divider()
-                    
-                    Button("2️⃣ チェック動作用（29→30）") {
-                        appState.setupRecording(pattern: 2)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Divider()
-                    
-                    Button("4️⃣ 6→7用（7日達成）") {
-                        appState.setupRecording(pattern: 4)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    
-                    Divider()
-                    
-                    Button("5️⃣ 全部🪷30") {
-                        appState.setupRecording(pattern: 5)
-                    }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .padding(.vertical, 4)
-            }
-            
             Text("🔔 Nudge/通知テスト")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)

@@ -62,11 +62,11 @@ Hooksで実装する。」
 ### Anicca とは
 行動変容をサポートするiOSアプリ。AIを活用したプロアクティブな通知で、ユーザーの「苦しみ」に寄り添う。
 
-### 技術スタック
-- **iOS**: Swift, SwiftUI, AlarmKit (iOS 26+)
+### 技術スタック（アクティブ）
+- **iOS**: Swift, SwiftUI
+- **通知**: ProblemType-based Nudge System（ルールベース）
 - **API**: Node.js, Railway
-- **AI**: OpenAI Realtime API
-- **決済**: RevenueCat
+- **決済**: RevenueCat, Superwall
 - **分析**: Mixpanel, Singular
 
 ### 主要ディレクトリ
@@ -80,22 +80,67 @@ daily-apps/         - 関連アプリ（Daily Dhammaなど）
 
 ---
 
-## 現在の開発状況
+## iOSアプリ現在の実装状況（2026年1月時点）
 
-### Proactive Agent（2025年1月実装中）
-アプリを「Proactive Behavior Change Agent」に進化させる機能。
+### タブ構成（2タブ）
 
-**Phase 1-3**: 完了（mainで作業してしまった→devに移行中）
-- 13個の問題タイプ
-- 問題ベースの通知システム
-- My Pathタブ
+| タブ | View | 内容 |
+|------|------|------|
+| My Path | `MyPathTabView` | ユーザーの問題一覧、Tell Anicca、DeepDive |
+| Profile | `ProfileView` | Name, Plan, Data Integration, Nudge Strength |
 
-**Phase 4**: 未着手
-- 保存ボタン
-- Exploreタブ
-- マルチモーダルコンテンツ
+**注意**: Talkタブは非表示（コード残存、リファクタリング予定）
 
-仕様書: `.cursor/plans/ios/proactive/proactive-agent-spec.md`
+### オンボーディングフロー
+
+```
+welcome → value → struggles → notifications → att → complete
+```
+
+| ステップ | View | 説明 |
+|---------|------|------|
+| welcome | `WelcomeStepView` | アプリ紹介 |
+| value | `ValueStepView` | アプリの価値説明 |
+| struggles | `StrugglesStepView` | 13個の問題から選択 |
+| notifications | `NotificationPermissionStepView` | 通知許可 |
+| att | `ATTPermissionStepView` | ATT許可 |
+
+**スキップされているステップ**（コード残存）:
+- account, source, name, gender, age, ideals, habitSetup, alarmkit
+
+### 13個の問題タイプ（ProblemType）
+
+```swift
+staying_up_late, cant_wake_up, self_loathing, rumination,
+procrastination, anxiety, lying, bad_mouthing, porn_addiction,
+alcohol_dependency, anger, obsessive, loneliness
+```
+
+### 通知システム
+
+| 機能 | Scheduler | 画面 |
+|------|-----------|------|
+| **Problem Nudge**（アクティブ） | `ProblemNotificationScheduler` | `NudgeCardView` |
+| Habit Alarm（レガシー） | `NotificationScheduler` | `HabitSessionView` |
+
+**NudgeCardView**: 通知タップで1枚カード表示。問題に応じて1択or2択ボタン、👍👎フィードバック。
+
+### レガシーコード（リファクタリング予定）
+
+以下のコードは**非アクティブだが残存**している：
+- `TalkView` - Talkタブ（非表示）
+- `VoiceSessionController` - 音声セッション制御
+- `HabitSessionView` - 習慣音声セッション
+- `HabitType` - 旧習慣enum（wake, training, bedtime, custom）
+- `NotificationScheduler.habitAlarm` - 習慣通知
+
+詳細: `.cursor/plans/ios/proactive/refactoring-plan.md`
+
+### 重要な注意事項
+
+1. **HabitType vs ProblemType**: 現在は**ProblemType**がメイン。HabitTypeはレガシー。
+2. **音声機能**: OpenAI Realtime APIは**非アクティブ**。NudgeCardViewに置き換え済み。
+3. **オンボーディング**: 習慣設定（HabitSetupStepView）は**スキップ**されている。
 
 ---
 
@@ -209,4 +254,26 @@ daily-apps/         - 関連アプリ（Daily Dhammaなど）
 
 ---
 
-最終更新: 2025年1月18日
+## 実装完了時の必須アクション
+
+**CLAUDE.mdを常に最新に保つこと！**
+
+実装が完了したら、以下を更新：
+
+1. **iOSアプリ現在の実装状況** セクション
+   - タブ構成の変更
+   - オンボーディングフローの変更
+   - 新機能の追加
+   - レガシーコードの削除状況
+
+2. **技術スタック** セクション
+   - 新しいライブラリ/フレームワークの追加
+   - 削除されたもの
+
+3. **最終更新日** を必ず更新
+
+**理由**: AIエージェントの混乱を防ぎ、常に正確なコードベース理解を維持するため。
+
+---
+
+最終更新: 2026年1月19日

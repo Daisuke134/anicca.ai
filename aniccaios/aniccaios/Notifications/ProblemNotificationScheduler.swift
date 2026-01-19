@@ -1,6 +1,9 @@
 import Foundation
 import UserNotifications
 import OSLog
+#if canImport(AlarmKit)
+import AlarmKit
+#endif
 
 /// 問題ベースの通知スケジューラ
 /// ユーザーが選択した問題に基づいて通知をスケジュール
@@ -58,6 +61,12 @@ final class ProblemNotificationScheduler {
                     minute = currentMinutes % 60
                     logger.info("Shifted \(schedule.problem.rawValue) to \(hour):\(minute)")
                 }
+            }
+
+            // 有効時間帯のチェック（時間帯制限がある問題のみ）
+            guard schedule.problem.isValidTime(hour: hour, minute: minute) else {
+                logger.info("Skipped \(schedule.problem.rawValue) at \(hour):\(minute) - outside valid time range")
+                continue
             }
 
             await scheduleNotification(
@@ -120,6 +129,26 @@ final class ProblemNotificationScheduler {
     // MARK: - Private Methods
 
     private func scheduleNotification(for problem: ProblemType, hour: Int, minute: Int) async {
+        // cantWakeUp + AlarmKit許可済み + トグルON → AlarmKitに委譲
+        if problem == .cantWakeUp {
+            #if canImport(AlarmKit)
+            if #available(iOS 26.0, *) {
+                let manager = AlarmManager.shared
+                if manager.authorizationState == .authorized,
+                   AppState.shared.userProfile.useAlarmKitForCantWakeUp {
+                    // 6:00の呼び出し時のみAlarmKitに委譲
+                    // AlarmKit側で6:00と6:05の両方をスケジュールする
+                    if hour == 6 && minute == 0 {
+                        await ProblemAlarmKitScheduler.shared.scheduleCantWakeUp(hour: hour, minute: minute)
+                    }
+                    // 6:05の呼び出しは無視（AlarmKit側で既にスケジュール済み）
+                    // 通常通知はスケジュールしない
+                    return
+                }
+            }
+            #endif
+        }
+
         let content = NudgeContent.contentForToday(for: problem)
 
         let notificationContent = UNMutableNotificationContent()

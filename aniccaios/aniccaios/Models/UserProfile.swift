@@ -83,6 +83,9 @@ struct UserProfile: Codable {
     var useAlarmKitForTraining: Bool
     var useAlarmKitForBedtime: Bool
     var useAlarmKitForCustom: Bool
+
+    // AlarmKit設定（ProblemType: cantWakeUp用）
+    var useAlarmKitForCantWakeUp: Bool
     
     // Phase 3: Proactive Agent
     var problemDetails: [String: [String]]  // 深掘り回答（問題ID: 選択した選択肢）
@@ -127,6 +130,7 @@ struct UserProfile: Codable {
         useAlarmKitForTraining: Bool = false,
         useAlarmKitForBedtime: Bool = false,
         useAlarmKitForCustom: Bool = false,
+        useAlarmKitForCantWakeUp: Bool = false,  // デフォルトOFF、Profile画面でユーザーが有効化
         problemDetails: [String: [String]] = [:],
         customProblems: [CustomProblem] = []
     ) {
@@ -152,6 +156,7 @@ struct UserProfile: Codable {
         self.useAlarmKitForTraining = useAlarmKitForTraining
         self.useAlarmKitForBedtime = useAlarmKitForBedtime
         self.useAlarmKitForCustom = useAlarmKitForCustom
+        self.useAlarmKitForCantWakeUp = useAlarmKitForCantWakeUp
         self.problemDetails = problemDetails
         self.customProblems = customProblems
     }
@@ -177,7 +182,7 @@ struct UserProfile: Codable {
         case stickyModeEnabled
         case wakeStickyModeEnabled
         
-        case useAlarmKitForWake, useAlarmKitForTraining, useAlarmKitForBedtime, useAlarmKitForCustom
+        case useAlarmKitForWake, useAlarmKitForTraining, useAlarmKitForBedtime, useAlarmKitForCustom, useAlarmKitForCantWakeUp
     }
     
     init(from decoder: Decoder) throws {
@@ -232,6 +237,9 @@ struct UserProfile: Codable {
         
         // カスタム習慣のAlarmKitは常にOFFから始める（既存ユーザーも含めてリセット）
         useAlarmKitForCustom = false
+
+        // ProblemType: cantWakeUp用AlarmKit設定
+        useAlarmKitForCantWakeUp = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCantWakeUp) ?? false
         
         // Phase 3: Proactive Agent
         problemDetails = try container.decodeIfPresent([String: [String]].self, forKey: .problemDetails) ?? [:]
@@ -268,7 +276,8 @@ struct UserProfile: Codable {
         try container.encode(useAlarmKitForTraining, forKey: .useAlarmKitForTraining)
         try container.encode(useAlarmKitForBedtime, forKey: .useAlarmKitForBedtime)
         try container.encode(useAlarmKitForCustom, forKey: .useAlarmKitForCustom)
-        
+        try container.encode(useAlarmKitForCantWakeUp, forKey: .useAlarmKitForCantWakeUp)
+
         // Phase 3: Proactive Agent
         try container.encode(problemDetails, forKey: .problemDetails)
         try container.encode(customProblems, forKey: .customProblems)

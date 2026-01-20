@@ -110,6 +110,42 @@ class FalAIClient:
         print(f"🔊 Generating audio: {prompt[:50]}...")
         return self._queue_request("fal-ai/mmaudio-v2/text-to-audio", payload)
 
+    # =========================================================================
+    # Kling 2.5 Pro (高品質動画)
+    # =========================================================================
+    def generate_video_kling(
+        self,
+        prompt: str,
+        aspect_ratio: str = "9:16",
+        duration: str = "5",
+    ) -> Dict[str, Any]:
+        """Generate video using Kling 2.5 Turbo Pro"""
+        payload = {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "duration": duration,
+        }
+        print(f"🎬 Generating Kling video: {prompt[:50]}...")
+        return self._queue_request("fal-ai/kling-video/v2.5-turbo/pro/text-to-video", payload)
+
+    # =========================================================================
+    # Ideogram v3 (テキスト入り画像生成)
+    # =========================================================================
+    def generate_image_ideogram(
+        self,
+        prompt: str,
+        aspect_ratio: str = "9:16",
+        style_type: str = "general",
+    ) -> Dict[str, Any]:
+        """Generate image with text using Ideogram v3 (best for text in images)"""
+        payload = {
+            "prompt": prompt,
+            "aspect_ratio": aspect_ratio,
+            "style_type": style_type,
+        }
+        print(f"🖼️ Generating Ideogram image: {prompt[:50]}...")
+        return self._queue_request("fal-ai/ideogram/v3", payload)
+
 
 # =============================================================================
 # Quick Access Functions

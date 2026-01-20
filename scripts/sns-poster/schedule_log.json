@@ -1,63 +1,41 @@
 {
-  "scheduled_posts": [
+  "posted": [],
+  "scheduled": [
     {
       "date": "2026-01-21",
-      "time_jst": "12:30",
-      "platforms": {
-        "x_xg2grb": "Day 17 Build in Public (EN video)",
-        "youtube_en": "Day 17 Build in Public (EN video)",
-        "tiktok": "Day 17 Build in Public (EN video)",
-        "instagram": "Day 17 Build in Public (EN video)",
-        "youtube_jp": "開発日記 Day 17 (JP video)",
-        "x_nudges": "開発日記 Day 17 (JP text)"
-      }
+      "time_jst": "14:30",
+      "account": "x_xg2grb",
+      "content": "Day 18 EN カルーセル",
+      "postSubmissionId": "cbd20685-5fcb-4dca-b9eb-4547b578fc51",
+      "assets": {
+        "slide1_hook": "https://v3b.fal.media/files/b/0a8b2b92/rLmrvzA8o3y9b09JC8Nrd_image.png",
+        "slide2_todo": "https://v3b.fal.media/files/b/0a8b2c41/dcnYHyn-pvrZv_jrWitVd_image.png",
+        "slide3_appstore": "https://drive.google.com/uc?export=download&id=1mNeEmPvnpHio4PyxafmfiK9W2hSkH5UO"
+      },
+      "caption": "2026/1/20: Day 18 of building Anicca 🧘\nStill $18 MRR → targeting 1k MRR\n\nToday:\n✅ Posted content on Anicca\n✅ Improved proactive features\n✅ Meditated 20 minutes\n\n#buildinpublic #indiehacker #iosdev",
+      "status": "予約済み"
     },
     {
       "date": "2026-01-21",
-      "time_jst": "19:00",
-      "platforms": {
-        "x_nudges": "Anicca カルーセル (JP, 4 images)"
-      }
-    },
-    {
-      "date": "2026-01-22",
-      "time_jst": "12:30",
-      "platforms": {
-        "instagram": "Anicca カルーセル (7 images)"
-      }
-    },
-    {
-      "date": "2026-01-23",
-      "time_jst": "12:30",
-      "platforms": {
-        "instagram": "Anicca カルーセル Hook 2 (7 images)"
-      }
-    },
-    {
-      "date": "2026-01-24",
-      "time_jst": "12:30",
-      "platforms": {
-        "instagram": "Anicca カルーセル Hook 3 (7 images)"
-      }
-    },
-    {
-      "date": "2026-01-25",
-      "time_jst": "12:30",
-      "platforms": {
-        "instagram": "Anicca カルーセル Hook 4 (7 images)"
-      }
+      "time_jst": "16:30",
+      "account": "x_xg2grb",
+      "content": "Day 18 JP カルーセル",
+      "postSubmissionId": "f1fa86a3-150e-43bf-836c-d3beffeda32c",
+      "assets": {
+        "slide1_hook": "https://v3b.fal.media/files/b/0a8b2b93/8R7eObSZ76sF5n6XJBg5i_image.png",
+        "slide2_todo": "https://drive.google.com/uc?export=download&id=1PuRaFqytvq-SCy02VXaD7twZFM6GhAuS",
+        "slide3_appstore": "https://drive.google.com/uc?export=download&id=1mNeEmPvnpHio4PyxafmfiK9W2hSkH5UO"
+      },
+      "caption": "2026/1/20: アニッチャ開発 18日目 🧘\nMRR $18 → 1k MRR 目指して継続中\n\n今日:\n✅ Aniccaコンテンツ投稿\n✅ 機能改善\n✅ 瞑想20分\n\n#buildinpublic #indiehacker #iosdev #個人開発",
+      "status": "予約済み"
     }
   ],
-  "time_slots_jst": [
-    "08:00",
-    "12:30",
-    "19:00",
-    "21:00"
-  ],
-  "notes": {
-    "instagram": "1回/日のみ",
-    "x_xg2grb": "Build in Public のみ",
-    "x_nudges": "マーケティング全般 (JP/EN)",
-    "youtube": "日本語OK"
-  }
+  "urls": {
+    "en_hook": "https://v3b.fal.media/files/b/0a8b2b92/rLmrvzA8o3y9b09JC8Nrd_image.png",
+    "en_todo": "https://v3b.fal.media/files/b/0a8b2c41/dcnYHyn-pvrZv_jrWitVd_image.png",
+    "jp_hook": "https://v3b.fal.media/files/b/0a8b2b93/8R7eObSZ76sF5n6XJBg5i_image.png",
+    "jp_todo_user": "https://drive.google.com/uc?export=download&id=1PuRaFqytvq-SCy02VXaD7twZFM6GhAuS",
+    "appstore": "https://drive.google.com/uc?export=download&id=1mNeEmPvnpHio4PyxafmfiK9W2hSkH5UO"
+  },
+  "time_slots_jst": ["07:00", "08:00", "09:00", "11:00", "12:30", "14:30", "16:30", "18:30", "20:00", "21:30", "23:00"]
 }

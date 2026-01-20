@@ -1,0 +1,63 @@
+{
+  "scheduled_posts": [
+    {
+      "date": "2026-01-21",
+      "time_jst": "12:30",
+      "platforms": {
+        "x_xg2grb": "Day 17 Build in Public (EN video)",
+        "youtube_en": "Day 17 Build in Public (EN video)",
+        "tiktok": "Day 17 Build in Public (EN video)",
+        "instagram": "Day 17 Build in Public (EN video)",
+        "youtube_jp": "開発日記 Day 17 (JP video)",
+        "x_nudges": "開発日記 Day 17 (JP text)"
+      }
+    },
+    {
+      "date": "2026-01-21",
+      "time_jst": "19:00",
+      "platforms": {
+        "x_nudges": "Anicca カルーセル (JP, 4 images)"
+      }
+    },
+    {
+      "date": "2026-01-22",
+      "time_jst": "12:30",
+      "platforms": {
+        "instagram": "Anicca カルーセル (7 images)"
+      }
+    },
+    {
+      "date": "2026-01-23",
+      "time_jst": "12:30",
+      "platforms": {
+        "instagram": "Anicca カルーセル Hook 2 (7 images)"
+      }
+    },
+    {
+      "date": "2026-01-24",
+      "time_jst": "12:30",
+      "platforms": {
+        "instagram": "Anicca カルーセル Hook 3 (7 images)"
+      }
+    },
+    {
+      "date": "2026-01-25",
+      "time_jst": "12:30",
+      "platforms": {
+        "instagram": "Anicca カルーセル Hook 4 (7 images)"
+      }
+    }
+  ],
+  "time_slots_jst": [
+    "08:00",
+    "12:30",
+    "19:00",
+    "21:00"
+  ],
+  "notes": {
+    "instagram": "1回/日のみ",
+    "x_xg2grb": "Build in Public のみ",
+    "x_nudges": "マーケティング全般 (JP/EN)",
+    "youtube": "日本語OK"
+  }
+}

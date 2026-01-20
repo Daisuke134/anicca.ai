@@ -30,6 +30,17 @@ final class AppState: ObservableObject {
 
     // MARK: - Proactive Agent: NudgeCard
     @Published var pendingNudgeCard: NudgeContent? = nil
+
+    // MARK: - Nudge Card / Paywall / Review (Phase 4)
+
+    /// NudgeCard完了回数（累計、レビュー・Paywall表示判定用）
+    @Published private(set) var nudgeCardCompletedCount: Int = 0
+
+    /// 月間NudgeCard完了回数（通知制限用、月初リセット）
+    @Published private(set) var monthlyNudgeCount: Int = 0
+
+    /// レビューリクエスト済みフラグ
+    @Published private(set) var hasRequestedReview: Bool = false
     
     // 日付変更時のリフレッシュ用（Viewの強制再描画トリガー）
     @Published private(set) var dailyRefreshTrigger: UUID = UUID()
@@ -64,6 +75,13 @@ final class AppState: ObservableObject {
     private let subscriptionKey = "com.anicca.subscription"
     private let sensorAccessBaseKey = "com.anicca.sensorAccessState"
     private let sensorRepairPendingKey = "com.anicca.sensorRepairPending"
+    
+    // Nudge Card / Paywall / Review keys
+    private let nudgeCardCompletedCountKey = "com.anicca.nudgeCardCompletedCount"
+    private let monthlyNudgeCountKey = "com.anicca.monthlyNudgeCount"
+    private let hasRequestedReviewKey = "com.anicca.hasRequestedReview"
+    private let lastNudgeResetMonthKey = "com.anicca.lastNudgeResetMonth"
+    private let lastNudgeResetYearKey = "com.anicca.lastNudgeResetYear"
 
     private let sensorLogger = Logger(subsystem: "com.anicca.ios", category: "SensorAccess")
 
@@ -90,6 +108,19 @@ final class AppState: ObservableObject {
         self.subscriptionInfo = loadSubscriptionInfo()
         self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
         self.needsSensorRepairAfterOnboarding = defaults.bool(forKey: sensorRepairPendingKey)
+
+        // Phase 4: Nudge Card / Paywall / Review
+        self.nudgeCardCompletedCount = defaults.integer(forKey: nudgeCardCompletedCountKey)
+        self.monthlyNudgeCount = defaults.integer(forKey: monthlyNudgeCountKey)
+        self.hasRequestedReview = defaults.bool(forKey: hasRequestedReviewKey)
+
+        // 月初リセットチェック
+        checkAndResetMonthlyNudgeCountIfNeeded()
+
+        // アプリ起動時にignored判定を実行
+        Task {
+            await NudgeStatsManager.shared.checkAndRecordIgnored()
+        }
 
         Task { [weak self] in
             await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
@@ -618,6 +649,60 @@ final class AppState: ObservableObject {
     /// NudgeCardを閉じる
     func dismissNudgeCard() {
         pendingNudgeCard = nil
+    }
+
+    // MARK: - Nudge Card / Paywall / Review Methods
+
+    /// NudgeCard完了回数をインクリメント
+    func incrementNudgeCardCompletedCount() {
+        nudgeCardCompletedCount += 1
+        defaults.set(nudgeCardCompletedCount, forKey: nudgeCardCompletedCountKey)
+    }
+
+    /// 月間NudgeCard完了回数をインクリメント
+    func incrementMonthlyNudgeCount() {
+        monthlyNudgeCount += 1
+        defaults.set(monthlyNudgeCount, forKey: monthlyNudgeCountKey)
+    }
+
+    /// レビューリクエスト済みとしてマーク
+    func markReviewRequested() {
+        hasRequestedReview = true
+        defaults.set(true, forKey: hasRequestedReviewKey)
+    }
+
+    /// 月間NudgeCard完了回数をリセット
+    func resetMonthlyNudgeCount() {
+        monthlyNudgeCount = 0
+        defaults.set(0, forKey: monthlyNudgeCountKey)
+    }
+
+    /// Nudge受信可能かどうか
+    var canReceiveNudge: Bool {
+        if subscriptionInfo.plan == .pro { return true }
+        return monthlyNudgeCount < 10
+    }
+
+    /// 月初リセットチェック（アプリ起動時に呼び出す）
+    func checkAndResetMonthlyNudgeCountIfNeeded() {
+        let calendar = Calendar.current
+        let now = Date()
+        let currentMonth = calendar.component(.month, from: now)
+        let currentYear = calendar.component(.year, from: now)
+
+        let lastMonth = defaults.integer(forKey: lastNudgeResetMonthKey)
+        let lastYear = defaults.integer(forKey: lastNudgeResetYearKey)
+
+        if currentYear != lastYear || currentMonth != lastMonth {
+            resetMonthlyNudgeCount()
+            defaults.set(currentMonth, forKey: lastNudgeResetMonthKey)
+            defaults.set(currentYear, forKey: lastNudgeResetYearKey)
+
+            // 月が変わったら通知を再スケジュール
+            Task {
+                await ProblemNotificationScheduler.shared.scheduleNotifications(for: userProfile.struggles)
+            }
+        }
     }
 
     // MARK: - v0.3 Quote

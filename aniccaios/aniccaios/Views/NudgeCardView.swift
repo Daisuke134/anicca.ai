@@ -55,7 +55,7 @@ struct NudgeCardView: View {
                     Divider()
                         .padding(.horizontal, 40)
 
-                    Text("「\(content.notificationText)」")
+                    Text(content.notificationText)
                         .font(.system(size: 22, weight: .semibold))
                         .multilineTextAlignment(.center)
                         .foregroundStyle(AppTheme.Colors.label)

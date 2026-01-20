@@ -76,9 +76,25 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             switch identifier {
             case UNNotificationDefaultActionIdentifier,
                  NotificationScheduler.Action.startConversation.rawValue:
-                // 通知タップ → NudgeCardView表示
                 if let nudgeContent = ProblemNotificationScheduler.nudgeContent(from: content.userInfo) {
+                    // nudge_tapped を記録
+                    let scheduledHour = content.userInfo["scheduledHour"] as? Int ?? 0
                     Task { @MainActor in
+                        // NudgeStats に記録
+                        NudgeStatsManager.shared.recordTapped(
+                            problemType: nudgeContent.problemType.rawValue,
+                            variantIndex: nudgeContent.variantIndex,
+                            scheduledHour: scheduledHour
+                        )
+
+                        // Mixpanel に送信
+                        AnalyticsManager.shared.track(.nudgeTapped, properties: [
+                            "problem_type": nudgeContent.problemType.rawValue,
+                            "variant_index": nudgeContent.variantIndex,
+                            "scheduled_hour": scheduledHour
+                        ])
+
+                        // NudgeCard を表示
                         AppState.shared.showNudgeCard(nudgeContent)
                     }
                 }

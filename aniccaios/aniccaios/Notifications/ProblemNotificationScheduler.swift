@@ -27,24 +27,48 @@ final class ProblemNotificationScheduler {
 
     /// ユーザーの選択した問題に基づいて通知をスケジュール
     func scheduleNotifications(for problems: [String]) async {
-        // 既存の問題通知をクリア
         await removeAllProblemNotifications()
 
-        // 各問題の通知時刻を収集
+        // ★ 重要: Free プランかつ月間上限到達済みの場合はスケジュールしない
+        let canSchedule = await MainActor.run { AppState.shared.canReceiveNudge }
+
+        if !canSchedule {
+            logger.info("Monthly nudge limit reached (Free plan). No notifications scheduled.")
+            return
+        }
+
         var allSchedules: [(time: (hour: Int, minute: Int), problem: ProblemType)] = []
 
         for problemRaw in problems {
             guard let problem = ProblemType(rawValue: problemRaw) else { continue }
 
             for time in problem.notificationSchedule {
-                allSchedules.append((time: time, problem: problem))
+                var adjustedHour = time.hour
+                var adjustedMinute = time.minute
+
+                // タイミング最適化: 2日連続ignoredならシフト
+                let consecutiveIgnored = await MainActor.run {
+                    NudgeStatsManager.shared.getConsecutiveIgnoredDays(problemType: problemRaw, hour: time.hour)
+                }
+
+                if consecutiveIgnored >= 2 {
+                    // 30分後ろにシフト
+                    adjustedMinute += 30
+                    if adjustedMinute >= 60 {
+                        adjustedMinute -= 60
+                        adjustedHour = (adjustedHour + 1) % 24
+                    }
+                    logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) due to \(consecutiveIgnored) consecutive ignored days")
+                }
+
+                allSchedules.append((time: (adjustedHour, adjustedMinute), problem: problem))
             }
         }
 
         // 時刻でソート
         allSchedules.sort { $0.time.hour * 60 + $0.time.minute < $1.time.hour * 60 + $1.time.minute }
 
-        // 30分以内に被る場合は15分ずらしてスケジュール
+        // 30分以内に被る場合は15分ずらしてスケジュール（既存ロジック）
         var lastScheduledMinutes: Int?
         var scheduledCount = 0
 
@@ -54,16 +78,14 @@ final class ProblemNotificationScheduler {
             var currentMinutes = hour * 60 + minute
 
             if let last = lastScheduledMinutes {
-                // 前回スケジュール時刻 + 最小間隔より前なら、15分ずらす
                 if currentMinutes < last + minimumIntervalMinutes {
                     currentMinutes = last + 15
                     hour = (currentMinutes / 60) % 24
                     minute = currentMinutes % 60
-                    logger.info("Shifted \(schedule.problem.rawValue) to \(hour):\(minute)")
+                    logger.info("Shifted \(schedule.problem.rawValue) to \(hour):\(minute) to avoid collision")
                 }
             }
 
-            // 有効時間帯のチェック（時間帯制限がある問題のみ）
             guard schedule.problem.isValidTime(hour: hour, minute: minute) else {
                 logger.info("Skipped \(schedule.problem.rawValue) at \(hour):\(minute) - outside valid time range")
                 continue
@@ -136,40 +158,46 @@ final class ProblemNotificationScheduler {
                 let manager = AlarmManager.shared
                 if manager.authorizationState == .authorized,
                    AppState.shared.userProfile.useAlarmKitForCantWakeUp {
-                    // 6:00の呼び出し時のみAlarmKitに委譲
-                    // AlarmKit側で6:00と6:05の両方をスケジュールする
                     if hour == 6 && minute == 0 {
                         await ProblemAlarmKitScheduler.shared.scheduleCantWakeUp(hour: hour, minute: minute)
                     }
-                    // 6:05の呼び出しは無視（AlarmKit側で既にスケジュール済み）
-                    // 通常通知はスケジュールしない
                     return
                 }
             }
             #endif
         }
 
-        let content = NudgeContent.contentForToday(for: problem)
+        // NudgeContentSelectorでバリアント選択（Task 7で実装）
+        let variantIndex = await MainActor.run {
+            NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)
+        }
+
+        // キーを生成（文字列ではなくキーを保存）
+        let notificationTextKey = "nudge_\(problem.rawValue)_notification_\(variantIndex + 1)"
+        let detailTextKey = "nudge_\(problem.rawValue)_detail_\(variantIndex + 1)"
+        let titleKey = "problem_\(problem.rawValue)_notification_title"
 
         let notificationContent = UNMutableNotificationContent()
-        notificationContent.title = problem.notificationTitle
-        notificationContent.body = content.notificationText
+        // 通知のtitle/bodyはスケジュール時に解決（iOS通知センターに表示されるため）
+        notificationContent.title = NSLocalizedString(titleKey, comment: "")
+        notificationContent.body = NSLocalizedString(notificationTextKey, comment: "")
         notificationContent.categoryIdentifier = Category.problemNudge.rawValue
         notificationContent.sound = .default
 
-        // userInfo に問題タイプと表示用データを保存
+        // userInfo にキーを保存（表示時に再解決）
         notificationContent.userInfo = [
             "problemType": problem.rawValue,
-            "notificationText": content.notificationText,
-            "detailText": content.detailText,
-            "variantIndex": content.variantIndex
+            "notificationTextKey": notificationTextKey,
+            "detailTextKey": detailTextKey,
+            "variantIndex": variantIndex,
+            "scheduledHour": hour,
+            "scheduledMinute": minute
         ]
 
         if #available(iOS 15.0, *) {
             notificationContent.interruptionLevel = .active
         }
 
-        // 毎日繰り返し
         var dateComponents = DateComponents()
         dateComponents.hour = hour
         dateComponents.minute = minute
@@ -184,7 +212,16 @@ final class ProblemNotificationScheduler {
 
         do {
             try await center.add(request)
-            logger.info("Scheduled problem notification: \(problem.rawValue) at \(hour):\(minute)")
+            logger.info("Scheduled problem notification: \(problem.rawValue) at \(hour):\(minute) variant:\(variantIndex)")
+
+            // スケジュール成功時にNudgeStatsに記録（Task 6で実装）
+            await MainActor.run {
+                NudgeStatsManager.shared.recordScheduled(
+                    problemType: problem.rawValue,
+                    variantIndex: variantIndex,
+                    scheduledHour: hour
+                )
+            }
         } catch {
             logger.error("Failed to schedule problem notification: \(error.localizedDescription)")
         }
@@ -210,18 +247,36 @@ final class ProblemNotificationScheduler {
     static func nudgeContent(from userInfo: [AnyHashable: Any]) -> NudgeContent? {
         guard let problemRaw = userInfo["problemType"] as? String,
               let problem = ProblemType(rawValue: problemRaw),
-              let notificationText = userInfo["notificationText"] as? String,
-              let detailText = userInfo["detailText"] as? String,
               let variantIndex = userInfo["variantIndex"] as? Int else {
             return nil
         }
 
-        return NudgeContent(
-            problemType: problem,
-            notificationText: notificationText,
-            detailText: detailText,
-            variantIndex: variantIndex
-        )
+        // 新形式: キーから解決
+        if let notificationTextKey = userInfo["notificationTextKey"] as? String,
+           let detailTextKey = userInfo["detailTextKey"] as? String {
+            let notificationText = NSLocalizedString(notificationTextKey, comment: "")
+            let detailText = NSLocalizedString(detailTextKey, comment: "")
+
+            return NudgeContent(
+                problemType: problem,
+                notificationText: notificationText,
+                detailText: detailText,
+                variantIndex: variantIndex
+            )
+        }
+
+        // 後方互換: 古い形式（文字列直接保存）
+        if let notificationText = userInfo["notificationText"] as? String,
+           let detailText = userInfo["detailText"] as? String {
+            return NudgeContent(
+                problemType: problem,
+                notificationText: notificationText,
+                detailText: detailText,
+                variantIndex: variantIndex
+            )
+        }
+
+        return nil
     }
 
     /// 通知がProblem Nudgeかどうか判定

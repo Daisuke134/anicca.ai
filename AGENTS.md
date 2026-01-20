@@ -497,6 +497,49 @@ RevenueCat購入 → Webhook受信 (/api/billing/webhook/revenuecat)
 - `-resetOnLaunch`引数でUserDefaultsをクリア
 - `AppDelegate.application(_:didFinishLaunchingWithOptions:)`で処理
 
+### Xcodeビルドエラー対応（重要）
+
+#### errno=28 (No space left on device) が発生した場合
+
+**問題の本質:**
+- ビルドコマンドの問題ではなく、**ディスク容量不足**が原因
+- 手動ビルドでもエージェントビルドでも、ディスクが満杯なら同じエラーが発生
+
+**診断手順:**
+1. `df -h /` でディスク容量を確認
+2. 空きが10GB未満なら容量確保が必要
+
+**削除の優先順位（この順番を厳守）:**
+
+| 優先度 | 対象 | コマンド | 想定削減 | 注意事項 |
+|--------|------|----------|----------|----------|
+| 1 | Homebrewキャッシュ | `brew cleanup --prune=all` | 5-10GB | 安全に削除可能 |
+| 2 | pipキャッシュ | `rm -rf ~/Library/Caches/pip` | 1-2GB | 安全に削除可能 |
+| 3 | Playwrightキャッシュ | `rm -rf ~/Library/Caches/ms-playwright` | 2GB | 安全に削除可能 |
+| 4 | Electronキャッシュ | `rm -rf ~/Library/Caches/electron` | 1GB | 安全に削除可能 |
+| 5 | 古いiOS DeviceSupport | 手動で古いバージョン削除 | 5-15GB | 使用中のバージョンは残す |
+| 6 | DerivedData | `rm -rf ~/Library/Developer/Xcode/DerivedData` | 5-15GB | 最後の手段。再ビルドに時間がかかる |
+
+**絶対に削除禁止:**
+- `~/Library/Caches/org.swift.swiftpm` — **SPMパッケージキャッシュ**
+  - 削除すると全パッケージの再ダウンロードが必要になり、**30分以上かかる**
+  - パッケージ解決が非常に遅くなる
+  - **絶対に触らないこと**
+
+**ビルド前の容量チェック（推奨）:**
+```bash
+AVAIL=$(df -h / | awk 'NR==2 {print $4}' | tr -d 'Gi')
+if (( $(echo "$AVAIL < 10" | bc -l) )); then
+  echo "⚠️ ディスク空き容量が10GB未満です。クリーンアップを実行してください。"
+fi
+```
+
+**エージェントの行動ルール:**
+1. errno=28エラー発生時、まずディスク容量を確認
+2. SPMキャッシュは絶対に削除しない
+3. 優先順位に従って安全なキャッシュから削除
+4. DerivedDataは最後の手段としてのみ削除
+
 ---
 
 ## 主要ファイルの役割

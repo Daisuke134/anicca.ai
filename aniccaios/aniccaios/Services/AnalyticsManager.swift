@@ -182,5 +182,10 @@ enum AnalyticsEvent: String {
     // Engagement
     case talkTabOpened = "talk_tab_opened"
     case settingsOpened = "settings_opened"
+
+    // Nudge (Phase 4)
+    case nudgeTapped = "nudge_tapped"
+    case nudgeIgnored = "nudge_ignored"
+    case nudgeFeedback = "nudge_feedback"
 }
 

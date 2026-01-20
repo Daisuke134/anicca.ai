@@ -1,6 +1,7 @@
 import SwiftUI
 import UIKit
 import Combine
+import StoreKit
 
 struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
@@ -22,21 +23,28 @@ struct MainTabView: View {
             NudgeCardView(
                 content: content,
                 onPositiveAction: {
-                    appState.dismissNudgeCard()
+                    handleNudgeCardCompletion(content: content)
                 },
                 onNegativeAction: {
-                    appState.dismissNudgeCard()
+                    handleNudgeCardCompletion(content: content)
                 },
                 onFeedback: { isPositive in
-                    // TODO: フィードバックをサーバーに送信
+                    if isPositive {
+                        NudgeStatsManager.shared.recordThumbsUp(
+                            problemType: content.problemType.rawValue,
+                            variantIndex: content.variantIndex
+                        )
+                    } else {
+                        NudgeStatsManager.shared.recordThumbsDown(
+                            problemType: content.problemType.rawValue,
+                            variantIndex: content.variantIndex
+                        )
+                    }
                 },
                 onDismiss: {
                     appState.dismissNudgeCard()
                 }
             )
-        }
-        .onReceive(NotificationCenter.default.publisher(for: UIApplication.didBecomeActiveNotification)) { _ in
-            handleAppOpenPaywall()
         }
         .safeAreaInset(edge: .bottom) {
             FigmaTabBar(selectedTab: $appState.selectedRootTab)
@@ -45,24 +53,55 @@ struct MainTabView: View {
         .ignoresSafeArea(.keyboard, edges: .bottom)
     }
 
-    private func handleAppOpenPaywall() {
-        guard appState.isOnboardingComplete,
-              appState.subscriptionInfo.plan == .free else { return }
+    // MARK: - NudgeCard Completion Handler
 
-        let key = "lastAppLaunchPaywallDate"
-        let countKey = "appLaunchPaywallCount"
-        let defaults = UserDefaults.standard
+    private func handleNudgeCardCompletion(content: NudgeContent) {
+        // カウンターをインクリメント
+        appState.incrementNudgeCardCompletedCount()
 
-        let count = defaults.integer(forKey: countKey)
-        if count >= 3 { return }
+        // Freeプランの場合、月間カウントもインクリメント
+        if appState.subscriptionInfo.plan != .pro {
+            appState.incrementMonthlyNudgeCount()
+        }
 
-        if let lastDate = defaults.object(forKey: key) as? Date,
-           Calendar.current.dateComponents([.day], from: lastDate, to: Date()).day ?? 0 < 3 {
+        let count = appState.nudgeCardCompletedCount
+        let monthlyCount = appState.monthlyNudgeCount
+        let plan = appState.subscriptionInfo.plan
+
+        // NudgeCardを閉じる
+        appState.dismissNudgeCard()
+
+        // 3回目: レビューリクエスト
+        if count == 3 && !appState.hasRequestedReview {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                if let scene = UIApplication.shared.connectedScenes
+                    .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                    SKStoreReviewController.requestReview(in: scene)
+                }
+            }
+            appState.markReviewRequested()
             return
         }
 
-        defaults.set(Date(), forKey: key)
-        defaults.set(count + 1, forKey: countKey)
-        SuperwallManager.shared.register(placement: SuperwallPlacement.campaignAppLaunch.rawValue)
+        // 5回目: Paywall
+        if count == 5 && plan != .pro {
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                SuperwallManager.shared.register(placement: SuperwallPlacement.nudgeCardComplete5.rawValue)
+            }
+            return
+        }
+
+        // 10回目（月間）: Paywall + 通知キャンセル
+        if monthlyCount >= 10 && plan != .pro {
+            // 全通知をキャンセル
+            Task {
+                await ProblemNotificationScheduler.shared.cancelAllNotifications()
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+                SuperwallManager.shared.register(placement: SuperwallPlacement.nudgeCardComplete10.rawValue)
+            }
+            return
+        }
     }
 }

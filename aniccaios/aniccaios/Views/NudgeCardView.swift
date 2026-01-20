@@ -61,6 +61,12 @@ struct NudgeCardView: View {
                         .foregroundStyle(AppTheme.Colors.label)
                         .padding(.horizontal, 32)
 
+                    #if DEBUG
+                    Text("DEBUG: variant \(content.variantIndex)")
+                        .font(.caption)
+                        .foregroundStyle(.gray)
+                    #endif
+
                     Divider()
                         .padding(.horizontal, 40)
                 }

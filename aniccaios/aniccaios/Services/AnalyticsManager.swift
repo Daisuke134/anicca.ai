@@ -186,6 +186,7 @@ enum AnalyticsEvent: String {
     // Nudge (Phase 4)
     case nudgeTapped = "nudge_tapped"
     case nudgeIgnored = "nudge_ignored"
-    case nudgeFeedback = "nudge_feedback"
+    case nudgePositiveFeedback = "nudge_positive_feedback"
+    case nudgeNegativeFeedback = "nudge_negative_feedback"
 }
 

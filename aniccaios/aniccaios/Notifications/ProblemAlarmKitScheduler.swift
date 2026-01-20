@@ -207,6 +207,10 @@ final class ProblemAlarmKitScheduler {
 @available(iOS 26.0, *)
 struct OpenProblemOneScreenIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Open Problem OneScreen"
+    static var description = IntentDescription("Opens the Anicca app to show the nudge card")
+    
+    // アプリをフォアグラウンドで開く（WWDC2025 AlarmKit API準拠）
+    static var openAppWhenRun: Bool = true
 
     @Parameter(title: "Problem Type")
     var problemType: String
@@ -223,12 +227,14 @@ struct OpenProblemOneScreenIntent: LiveActivityIntent {
         // フォローアップアラームをキャンセルして再スケジュール（明日用）
         await ProblemAlarmKitScheduler.shared.cancelFollowupAndReschedule()
 
-        // One Screen表示を通知
-        NotificationCenter.default.post(
-            name: Notification.Name("OpenProblemOneScreen"),
-            object: nil,
-            userInfo: ["problemType": problemType]
-        )
+        // One Screen表示を通知（MainActorから実行）
+        await MainActor.run {
+            NotificationCenter.default.post(
+                name: Notification.Name("OpenProblemOneScreen"),
+                object: nil,
+                userInfo: ["problemType": problemType]
+            )
+        }
         return .result()
     }
 }

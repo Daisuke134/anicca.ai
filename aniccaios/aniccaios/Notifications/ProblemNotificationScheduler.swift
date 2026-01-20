@@ -112,19 +112,37 @@ final class ProblemNotificationScheduler {
     #if DEBUG
     /// テスト用: 指定した問題の通知を5秒後に発火
     func testNotification(for problem: ProblemType) async {
-        let content = NudgeContent.contentForToday(for: problem)
+        await testNotification(for: problem, scheduledHour: nil)
+    }
+
+    /// テスト用: 指定した問題・時刻の通知を5秒後に発火
+    func testNotification(for problem: ProblemType, scheduledHour: Int?) async {
+        // scheduledHour が指定されていれば、その時刻用のバリアントを選択
+        let variantIndex: Int
+        if let hour = scheduledHour {
+            variantIndex = await MainActor.run {
+                NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)
+            }
+        } else {
+            variantIndex = NudgeContent.contentForToday(for: problem).variantIndex
+        }
+
+        let notificationTextKey = "nudge_\(problem.rawValue)_notification_\(variantIndex + 1)"
+        let detailTextKey = "nudge_\(problem.rawValue)_detail_\(variantIndex + 1)"
 
         let notificationContent = UNMutableNotificationContent()
         notificationContent.title = problem.notificationTitle
-        notificationContent.body = content.notificationText
+        notificationContent.body = NSLocalizedString(notificationTextKey, comment: "")
         notificationContent.categoryIdentifier = Category.problemNudge.rawValue
         notificationContent.sound = .default
 
         notificationContent.userInfo = [
             "problemType": problem.rawValue,
-            "notificationText": content.notificationText,
-            "detailText": content.detailText,
-            "variantIndex": content.variantIndex
+            "notificationTextKey": notificationTextKey,
+            "detailTextKey": detailTextKey,
+            "variantIndex": variantIndex,
+            "scheduledHour": scheduledHour ?? 0,
+            "scheduledMinute": 0
         ]
 
         if #available(iOS 15.0, *) {
@@ -133,15 +151,11 @@ final class ProblemNotificationScheduler {
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 5, repeats: false)
         let identifier = "TEST_PROBLEM_\(problem.rawValue)_\(Date().timeIntervalSince1970)"
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: notificationContent,
-            trigger: trigger
-        )
+        let request = UNNotificationRequest(identifier: identifier, content: notificationContent, trigger: trigger)
 
         do {
             try await center.add(request)
-            logger.info("Test notification scheduled for \(problem.rawValue)")
+            logger.info("Test notification scheduled for \(problem.rawValue) variant:\(variantIndex) hour:\(scheduledHour ?? -1)")
         } catch {
             logger.error("Failed to schedule test notification: \(error.localizedDescription)")
         }
@@ -281,6 +295,6 @@ final class ProblemNotificationScheduler {
 
     /// 通知がProblem Nudgeかどうか判定
     static func isProblemNudge(identifier: String) -> Bool {
-        return identifier.hasPrefix("PROBLEM_")
+        return identifier.hasPrefix("PROBLEM_") || identifier.hasPrefix("TEST_PROBLEM_")
     }
 }

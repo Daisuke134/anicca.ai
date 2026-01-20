@@ -74,7 +74,7 @@ struct MyPathTabView: View {
                 }
                 .padding(.bottom, 100)
             }
-            .navigationTitle("My Path")
+            .navigationTitle(String(localized: "tab_mypath"))
             .background(AppBackground())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

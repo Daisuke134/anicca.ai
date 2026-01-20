@@ -169,10 +169,9 @@ final class NudgeStatsManager {
         }
         saveToStorage()
 
-        AnalyticsManager.shared.track(.nudgeFeedback, properties: [
+        AnalyticsManager.shared.track(.nudgePositiveFeedback, properties: [
             "problem_type": problemType,
-            "variant_index": variantIndex,
-            "is_positive": true
+            "variant_index": variantIndex
         ])
     }
 
@@ -186,10 +185,9 @@ final class NudgeStatsManager {
         }
         saveToStorage()
 
-        AnalyticsManager.shared.track(.nudgeFeedback, properties: [
+        AnalyticsManager.shared.track(.nudgeNegativeFeedback, properties: [
             "problem_type": problemType,
-            "variant_index": variantIndex,
-            "is_positive": false
+            "variant_index": variantIndex
         ])
     }
 
@@ -248,6 +246,22 @@ final class NudgeStatsManager {
         scheduledNudges = [:]
         saveToStorage()
         logger.info("All stats reset")
+    }
+
+    /// DEBUG用: 指定回数のignoredを強制記録
+    func debugRecordIgnored(problemType: String, variantIndex: Int, scheduledHour: Int, count: Int) {
+        let key = "\(problemType)_\(variantIndex)_\(scheduledHour)"
+
+        var stat = stats[key] ?? NudgeStats(problemType: problemType, variantIndex: variantIndex, scheduledHour: scheduledHour)
+
+        for _ in 0..<count {
+            stat.ignoredCount += 1
+            stat.consecutiveIgnoredDays += 1
+        }
+
+        stats[key] = stat
+        saveToStorage()
+        logger.info("DEBUG: Recorded \(count) ignored for \(problemType), consecutiveIgnoredDays: \(stat.consecutiveIgnoredDays)")
     }
     #endif
 }

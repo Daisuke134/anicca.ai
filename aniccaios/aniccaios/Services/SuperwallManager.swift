@@ -27,17 +27,22 @@ final class SuperwallManager: NSObject {
     func configure() {
         let controller = RCPurchaseController()
         purchaseController = controller
-        
+
         Superwall.configure(
             apiKey: AppConfig.superwallAPIKey,
             purchaseController: controller
         )
-        
+
         // Delegateを設定
         Superwall.shared.delegate = self
-        
+
         // RevenueCatのサブスクリプション状態をSuperwallに同期
         controller.syncSubscriptionStatus()
+
+        // 最新のペイウォールをプリロード
+        Task {
+            await Superwall.shared.preloadAllPaywalls()
+        }
     }
     
     /// ユーザーを識別

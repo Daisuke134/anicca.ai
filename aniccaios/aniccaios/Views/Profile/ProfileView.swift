@@ -58,6 +58,7 @@ struct ProfileView: View {
                     #if DEBUG
                     recordingSection
                     alarmTestSection
+                    phase4DebugSection
                     #endif
 
                     LegalLinksView()
@@ -704,6 +705,101 @@ struct ProfileView: View {
                     } else {
                         Text("AlarmKitはiOS 26+のみ対応")
                             .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
+        }
+    }
+
+    // MARK: - Phase 4 Debug Section
+    private var phase4DebugSection: some View {
+        VStack(spacing: 10) {
+            Text("🧪 Phase 4 デバッグ")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 16)
+
+            CardView {
+                VStack(spacing: 12) {
+                    // 時刻指定Nudgeテスト
+                    Text("時刻指定Nudgeテスト (stayingUpLate)")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        Button("21時") {
+                            Task {
+                                await ProblemNotificationScheduler.shared.testNotification(for: .stayingUpLate, scheduledHour: 21)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("0時") {
+                            Task {
+                                await ProblemNotificationScheduler.shared.testNotification(for: .stayingUpLate, scheduledHour: 0)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("1時") {
+                            Task {
+                                await ProblemNotificationScheduler.shared.testNotification(for: .stayingUpLate, scheduledHour: 1)
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Divider()
+
+                    // ignored強制記録
+                    Text("ignored強制記録 (stayingUpLate, 21時)")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        Button("1回") {
+                            NudgeStatsManager.shared.debugRecordIgnored(problemType: "staying_up_late", variantIndex: 0, scheduledHour: 21, count: 1)
+                        }
+                        .buttonStyle(.bordered)
+
+                        Button("2回") {
+                            NudgeStatsManager.shared.debugRecordIgnored(problemType: "staying_up_late", variantIndex: 0, scheduledHour: 21, count: 2)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+
+                    Divider()
+
+                    // NudgeCard完了回数設定
+                    Text("NudgeCard完了回数: \(appState.nudgeCardCompletedCount)")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        Button("2回") { appState.debugSetNudgeCardCompletedCount(2) }
+                            .buttonStyle(.bordered)
+                        Button("4回") { appState.debugSetNudgeCardCompletedCount(4) }
+                            .buttonStyle(.bordered)
+                        Button("9回") { appState.debugSetNudgeCardCompletedCount(9) }
+                            .buttonStyle(.bordered)
+                        Button("0") { appState.debugSetNudgeCardCompletedCount(0) }
+                            .buttonStyle(.bordered)
+                    }
+
+                    Divider()
+
+                    // 月間カウント
+                    Text("月間NudgeCard完了: \(appState.monthlyNudgeCount)")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        Button("9回") { appState.debugSetMonthlyNudgeCount(9) }
+                            .buttonStyle(.bordered)
+                        Button("月変わり") { appState.debugSimulateMonthChange() }
+                            .buttonStyle(.bordered)
                     }
                 }
                 .padding(.vertical, 4)

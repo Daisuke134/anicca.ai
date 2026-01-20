@@ -1016,6 +1016,30 @@ final class AppState: ObservableObject {
     private func clearSensorRepairPending() {
         persistSensorRepairPending(false)
     }
+
+    // MARK: - DEBUG Methods
+
+    #if DEBUG
+    /// DEBUG用: NudgeCard完了回数を設定
+    func debugSetNudgeCardCompletedCount(_ count: Int) {
+        nudgeCardCompletedCount = count
+        defaults.set(count, forKey: nudgeCardCompletedCountKey)
+    }
+
+    /// DEBUG用: 月間NudgeCard完了回数を設定
+    func debugSetMonthlyNudgeCount(_ count: Int) {
+        monthlyNudgeCount = count
+        defaults.set(count, forKey: monthlyNudgeCountKey)
+    }
+
+    /// DEBUG用: 月変わりをシミュレート
+    func debugSimulateMonthChange() {
+        resetMonthlyNudgeCount()
+        Task {
+            await ProblemNotificationScheduler.shared.scheduleNotifications(for: userProfile.struggles)
+        }
+    }
+    #endif
 }
 
 extension AuthStatus {

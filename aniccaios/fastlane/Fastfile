@@ -237,12 +237,7 @@ platform :ios do
       export_options: {
         method: "app-store",
         teamID: TEAM_ID,
-        signingStyle: "manual",
-        signingCertificate: "Apple Distribution",
-        provisioningProfiles: {
-          BUNDLE_ID => "anicca-appstore",
-          "#{BUNDLE_ID}.AniccaWidget" => "anicca-widget-appstore"
-        },
+        signingStyle: "automatic",
         uploadBitcode: false,
         uploadSymbols: true,
         stripSwiftSymbols: true,

@@ -712,10 +712,10 @@ struct ProfileView: View {
         }
     }
 
-    // MARK: - Phase 4 Debug Section
+    // MARK: - Phase 4/5 Debug Section
     private var phase4DebugSection: some View {
         VStack(spacing: 10) {
-            Text("🧪 Phase 4 デバッグ")
+            Text("🧪 Phase 4/5 デバッグ")
                 .font(.system(size: 14, weight: .medium))
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -804,7 +804,145 @@ struct ProfileView: View {
                 }
                 .padding(.vertical, 4)
             }
+
+            // MARK: Phase 5 Debug Extensions
+            CardView {
+                VStack(spacing: 12) {
+                    Text("🎲 Phase 5: Thompson Sampling")
+                        .font(.subheadline.weight(.bold))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    // 全バリアント無反応テスト
+                    Text("全バリアント無反応テスト (stayingUpLate)")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    HStack(spacing: 8) {
+                        Button("10回 x 8バリアント") {
+                            for variant in 0..<10 {
+                                NudgeStatsManager.shared.debugRecordIgnored(
+                                    problemType: "staying_up_late",
+                                    variantIndex: variant,
+                                    scheduledHour: 21,
+                                    count: 10
+                                )
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                        .font(.caption)
+                    }
+
+                    Divider()
+
+                    // Thompson Sampling 可視化
+                    Text("Thompson Sampling 統計")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    thompsonSamplingStatsView
+
+                    Divider()
+
+                    // タイミングシフト確認
+                    Text("タイミングシフト状態")
+                        .font(.subheadline.weight(.medium))
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    timingShiftStatusView
+
+                    Divider()
+
+                    // 全統計リセット
+                    HStack(spacing: 8) {
+                        Button("全Stats Reset") {
+                            NudgeStatsManager.shared.resetAllStats()
+                        }
+                        .buttonStyle(.borderedProminent)
+                        .tint(.red)
+
+                        Button("通知再スケジュール") {
+                            Task {
+                                await ProblemNotificationScheduler.shared.scheduleNotifications(
+                                    for: appState.userProfile.problems
+                                )
+                            }
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                }
+                .padding(.vertical, 4)
+            }
         }
+    }
+
+    /// Thompson Sampling の α/β/推定タップ率を表示
+    private var thompsonSamplingStatsView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            ForEach(0..<5, id: \.self) { variantIndex in
+                if let stats = NudgeStatsManager.shared.getStats(
+                    problemType: "staying_up_late",
+                    variantIndex: variantIndex,
+                    hour: 21
+                ) {
+                    let alpha = Double(stats.tappedCount) + 1.0
+                    let beta = Double(stats.ignoredCount) + 1.0
+                    let tapRate = alpha / (alpha + beta)
+                    HStack {
+                        Text("V\(variantIndex)")
+                            .font(.caption.monospaced())
+                            .frame(width: 30, alignment: .leading)
+                        Text("α:\(Int(alpha)) β:\(Int(beta))")
+                            .font(.caption.monospaced())
+                            .frame(width: 80, alignment: .leading)
+                        ProgressView(value: tapRate)
+                            .frame(width: 60)
+                        Text(String(format: "%.0f%%", tapRate * 100))
+                            .font(.caption.monospaced())
+                            .foregroundStyle(tapRate > 0.5 ? .green : (tapRate < 0.2 ? .red : .secondary))
+                    }
+                } else {
+                    HStack {
+                        Text("V\(variantIndex)")
+                            .font(.caption.monospaced())
+                            .frame(width: 30, alignment: .leading)
+                        Text("データなし")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    /// タイミングシフト状態を表示
+    private var timingShiftStatusView: some View {
+        VStack(alignment: .leading, spacing: 4) {
+            let defaults = UserDefaults.standard
+            let shiftKey = "com.anicca.nudgeShiftRecord_staying_up_late_21"
+            let currentShift = defaults.integer(forKey: shiftKey)
+            let maxShift = 120
+
+            HStack {
+                Text("stayingUpLate 21時:")
+                    .font(.caption)
+                Spacer()
+                Text("\(currentShift)/\(maxShift)分")
+                    .font(.caption.monospaced())
+                    .foregroundStyle(currentShift >= maxShift ? .red : .primary)
+            }
+
+            ProgressView(value: Double(currentShift), total: Double(maxShift))
+
+            if currentShift > 0 {
+                Button("シフトリセット") {
+                    defaults.removeObject(forKey: shiftKey)
+                }
+                .buttonStyle(.bordered)
+                .font(.caption)
+            }
+        }
+        .padding(.vertical, 4)
     }
     #endif
 

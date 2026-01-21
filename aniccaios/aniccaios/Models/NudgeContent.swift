@@ -42,72 +42,144 @@ extension NudgeContent {
                 NSLocalizedString("nudge_staying_up_late_notification_2", comment: ""),
                 NSLocalizedString("nudge_staying_up_late_notification_3", comment: ""),
                 NSLocalizedString("nudge_staying_up_late_notification_4", comment: ""),
-                NSLocalizedString("nudge_staying_up_late_notification_5", comment: "")
+                NSLocalizedString("nudge_staying_up_late_notification_5", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_notification_6", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_notification_7", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_notification_8", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_notification_9", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_notification_10", comment: "")
             ]
         case .cantWakeUp:
             return [
                 NSLocalizedString("nudge_cant_wake_up_notification_1", comment: ""),
                 NSLocalizedString("nudge_cant_wake_up_notification_2", comment: ""),
-                NSLocalizedString("nudge_cant_wake_up_notification_3", comment: "")
+                NSLocalizedString("nudge_cant_wake_up_notification_3", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_notification_4", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_notification_5", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_notification_6", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_notification_7", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_notification_8", comment: "")
             ]
         case .selfLoathing:
             return [
                 NSLocalizedString("nudge_self_loathing_notification_1", comment: ""),
                 NSLocalizedString("nudge_self_loathing_notification_2", comment: ""),
-                NSLocalizedString("nudge_self_loathing_notification_3", comment: "")
+                NSLocalizedString("nudge_self_loathing_notification_3", comment: ""),
+                NSLocalizedString("nudge_self_loathing_notification_4", comment: ""),
+                NSLocalizedString("nudge_self_loathing_notification_5", comment: ""),
+                NSLocalizedString("nudge_self_loathing_notification_6", comment: ""),
+                NSLocalizedString("nudge_self_loathing_notification_7", comment: ""),
+                NSLocalizedString("nudge_self_loathing_notification_8", comment: "")
             ]
         case .rumination:
             return [
                 NSLocalizedString("nudge_rumination_notification_1", comment: ""),
                 NSLocalizedString("nudge_rumination_notification_2", comment: ""),
-                NSLocalizedString("nudge_rumination_notification_3", comment: "")
+                NSLocalizedString("nudge_rumination_notification_3", comment: ""),
+                NSLocalizedString("nudge_rumination_notification_4", comment: ""),
+                NSLocalizedString("nudge_rumination_notification_5", comment: ""),
+                NSLocalizedString("nudge_rumination_notification_6", comment: ""),
+                NSLocalizedString("nudge_rumination_notification_7", comment: ""),
+                NSLocalizedString("nudge_rumination_notification_8", comment: "")
             ]
         case .procrastination:
             return [
                 NSLocalizedString("nudge_procrastination_notification_1", comment: ""),
                 NSLocalizedString("nudge_procrastination_notification_2", comment: ""),
-                NSLocalizedString("nudge_procrastination_notification_3", comment: "")
+                NSLocalizedString("nudge_procrastination_notification_3", comment: ""),
+                NSLocalizedString("nudge_procrastination_notification_4", comment: ""),
+                NSLocalizedString("nudge_procrastination_notification_5", comment: ""),
+                NSLocalizedString("nudge_procrastination_notification_6", comment: ""),
+                NSLocalizedString("nudge_procrastination_notification_7", comment: ""),
+                NSLocalizedString("nudge_procrastination_notification_8", comment: "")
             ]
         case .anxiety:
             return [
                 NSLocalizedString("nudge_anxiety_notification_1", comment: ""),
                 NSLocalizedString("nudge_anxiety_notification_2", comment: ""),
-                NSLocalizedString("nudge_anxiety_notification_3", comment: "")
+                NSLocalizedString("nudge_anxiety_notification_3", comment: ""),
+                NSLocalizedString("nudge_anxiety_notification_4", comment: ""),
+                NSLocalizedString("nudge_anxiety_notification_5", comment: ""),
+                NSLocalizedString("nudge_anxiety_notification_6", comment: ""),
+                NSLocalizedString("nudge_anxiety_notification_7", comment: ""),
+                NSLocalizedString("nudge_anxiety_notification_8", comment: "")
             ]
         case .lying:
             return [
-                NSLocalizedString("nudge_lying_notification_1", comment: "")
+                NSLocalizedString("nudge_lying_notification_1", comment: ""),
+                NSLocalizedString("nudge_lying_notification_2", comment: ""),
+                NSLocalizedString("nudge_lying_notification_3", comment: ""),
+                NSLocalizedString("nudge_lying_notification_4", comment: ""),
+                NSLocalizedString("nudge_lying_notification_5", comment: ""),
+                NSLocalizedString("nudge_lying_notification_6", comment: ""),
+                NSLocalizedString("nudge_lying_notification_7", comment: ""),
+                NSLocalizedString("nudge_lying_notification_8", comment: "")
             ]
         case .badMouthing:
             return [
                 NSLocalizedString("nudge_bad_mouthing_notification_1", comment: ""),
-                NSLocalizedString("nudge_bad_mouthing_notification_2", comment: "")
+                NSLocalizedString("nudge_bad_mouthing_notification_2", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_notification_3", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_notification_4", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_notification_5", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_notification_6", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_notification_7", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_notification_8", comment: "")
             ]
         case .pornAddiction:
             return [
                 NSLocalizedString("nudge_porn_addiction_notification_1", comment: ""),
-                NSLocalizedString("nudge_porn_addiction_notification_2", comment: "")
+                NSLocalizedString("nudge_porn_addiction_notification_2", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_notification_3", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_notification_4", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_notification_5", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_notification_6", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_notification_7", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_notification_8", comment: "")
             ]
         case .alcoholDependency:
             return [
                 NSLocalizedString("nudge_alcohol_dependency_notification_1", comment: ""),
-                NSLocalizedString("nudge_alcohol_dependency_notification_2", comment: "")
+                NSLocalizedString("nudge_alcohol_dependency_notification_2", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_notification_3", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_notification_4", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_notification_5", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_notification_6", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_notification_7", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_notification_8", comment: "")
             ]
         case .anger:
             return [
                 NSLocalizedString("nudge_anger_notification_1", comment: ""),
-                NSLocalizedString("nudge_anger_notification_2", comment: "")
+                NSLocalizedString("nudge_anger_notification_2", comment: ""),
+                NSLocalizedString("nudge_anger_notification_3", comment: ""),
+                NSLocalizedString("nudge_anger_notification_4", comment: ""),
+                NSLocalizedString("nudge_anger_notification_5", comment: ""),
+                NSLocalizedString("nudge_anger_notification_6", comment: ""),
+                NSLocalizedString("nudge_anger_notification_7", comment: ""),
+                NSLocalizedString("nudge_anger_notification_8", comment: "")
             ]
         case .obsessive:
             return [
                 NSLocalizedString("nudge_obsessive_notification_1", comment: ""),
                 NSLocalizedString("nudge_obsessive_notification_2", comment: ""),
-                NSLocalizedString("nudge_obsessive_notification_3", comment: "")
+                NSLocalizedString("nudge_obsessive_notification_3", comment: ""),
+                NSLocalizedString("nudge_obsessive_notification_4", comment: ""),
+                NSLocalizedString("nudge_obsessive_notification_5", comment: ""),
+                NSLocalizedString("nudge_obsessive_notification_6", comment: ""),
+                NSLocalizedString("nudge_obsessive_notification_7", comment: ""),
+                NSLocalizedString("nudge_obsessive_notification_8", comment: "")
             ]
         case .loneliness:
             return [
                 NSLocalizedString("nudge_loneliness_notification_1", comment: ""),
-                NSLocalizedString("nudge_loneliness_notification_2", comment: "")
+                NSLocalizedString("nudge_loneliness_notification_2", comment: ""),
+                NSLocalizedString("nudge_loneliness_notification_3", comment: ""),
+                NSLocalizedString("nudge_loneliness_notification_4", comment: ""),
+                NSLocalizedString("nudge_loneliness_notification_5", comment: ""),
+                NSLocalizedString("nudge_loneliness_notification_6", comment: ""),
+                NSLocalizedString("nudge_loneliness_notification_7", comment: ""),
+                NSLocalizedString("nudge_loneliness_notification_8", comment: "")
             ]
         }
     }
@@ -121,72 +193,144 @@ extension NudgeContent {
                 NSLocalizedString("nudge_staying_up_late_detail_2", comment: ""),
                 NSLocalizedString("nudge_staying_up_late_detail_3", comment: ""),
                 NSLocalizedString("nudge_staying_up_late_detail_4", comment: ""),
-                NSLocalizedString("nudge_staying_up_late_detail_5", comment: "")
+                NSLocalizedString("nudge_staying_up_late_detail_5", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_detail_6", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_detail_7", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_detail_8", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_detail_9", comment: ""),
+                NSLocalizedString("nudge_staying_up_late_detail_10", comment: "")
             ]
         case .cantWakeUp:
             return [
                 NSLocalizedString("nudge_cant_wake_up_detail_1", comment: ""),
                 NSLocalizedString("nudge_cant_wake_up_detail_2", comment: ""),
-                NSLocalizedString("nudge_cant_wake_up_detail_3", comment: "")
+                NSLocalizedString("nudge_cant_wake_up_detail_3", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_detail_4", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_detail_5", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_detail_6", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_detail_7", comment: ""),
+                NSLocalizedString("nudge_cant_wake_up_detail_8", comment: "")
             ]
         case .selfLoathing:
             return [
                 NSLocalizedString("nudge_self_loathing_detail_1", comment: ""),
                 NSLocalizedString("nudge_self_loathing_detail_2", comment: ""),
-                NSLocalizedString("nudge_self_loathing_detail_3", comment: "")
+                NSLocalizedString("nudge_self_loathing_detail_3", comment: ""),
+                NSLocalizedString("nudge_self_loathing_detail_4", comment: ""),
+                NSLocalizedString("nudge_self_loathing_detail_5", comment: ""),
+                NSLocalizedString("nudge_self_loathing_detail_6", comment: ""),
+                NSLocalizedString("nudge_self_loathing_detail_7", comment: ""),
+                NSLocalizedString("nudge_self_loathing_detail_8", comment: "")
             ]
         case .rumination:
             return [
                 NSLocalizedString("nudge_rumination_detail_1", comment: ""),
                 NSLocalizedString("nudge_rumination_detail_2", comment: ""),
-                NSLocalizedString("nudge_rumination_detail_3", comment: "")
+                NSLocalizedString("nudge_rumination_detail_3", comment: ""),
+                NSLocalizedString("nudge_rumination_detail_4", comment: ""),
+                NSLocalizedString("nudge_rumination_detail_5", comment: ""),
+                NSLocalizedString("nudge_rumination_detail_6", comment: ""),
+                NSLocalizedString("nudge_rumination_detail_7", comment: ""),
+                NSLocalizedString("nudge_rumination_detail_8", comment: "")
             ]
         case .procrastination:
             return [
                 NSLocalizedString("nudge_procrastination_detail_1", comment: ""),
                 NSLocalizedString("nudge_procrastination_detail_2", comment: ""),
-                NSLocalizedString("nudge_procrastination_detail_3", comment: "")
+                NSLocalizedString("nudge_procrastination_detail_3", comment: ""),
+                NSLocalizedString("nudge_procrastination_detail_4", comment: ""),
+                NSLocalizedString("nudge_procrastination_detail_5", comment: ""),
+                NSLocalizedString("nudge_procrastination_detail_6", comment: ""),
+                NSLocalizedString("nudge_procrastination_detail_7", comment: ""),
+                NSLocalizedString("nudge_procrastination_detail_8", comment: "")
             ]
         case .anxiety:
             return [
                 NSLocalizedString("nudge_anxiety_detail_1", comment: ""),
                 NSLocalizedString("nudge_anxiety_detail_2", comment: ""),
-                NSLocalizedString("nudge_anxiety_detail_3", comment: "")
+                NSLocalizedString("nudge_anxiety_detail_3", comment: ""),
+                NSLocalizedString("nudge_anxiety_detail_4", comment: ""),
+                NSLocalizedString("nudge_anxiety_detail_5", comment: ""),
+                NSLocalizedString("nudge_anxiety_detail_6", comment: ""),
+                NSLocalizedString("nudge_anxiety_detail_7", comment: ""),
+                NSLocalizedString("nudge_anxiety_detail_8", comment: "")
             ]
         case .lying:
             return [
-                NSLocalizedString("nudge_lying_detail_1", comment: "")
+                NSLocalizedString("nudge_lying_detail_1", comment: ""),
+                NSLocalizedString("nudge_lying_detail_2", comment: ""),
+                NSLocalizedString("nudge_lying_detail_3", comment: ""),
+                NSLocalizedString("nudge_lying_detail_4", comment: ""),
+                NSLocalizedString("nudge_lying_detail_5", comment: ""),
+                NSLocalizedString("nudge_lying_detail_6", comment: ""),
+                NSLocalizedString("nudge_lying_detail_7", comment: ""),
+                NSLocalizedString("nudge_lying_detail_8", comment: "")
             ]
         case .badMouthing:
             return [
                 NSLocalizedString("nudge_bad_mouthing_detail_1", comment: ""),
-                NSLocalizedString("nudge_bad_mouthing_detail_2", comment: "")
+                NSLocalizedString("nudge_bad_mouthing_detail_2", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_detail_3", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_detail_4", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_detail_5", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_detail_6", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_detail_7", comment: ""),
+                NSLocalizedString("nudge_bad_mouthing_detail_8", comment: "")
             ]
         case .pornAddiction:
             return [
                 NSLocalizedString("nudge_porn_addiction_detail_1", comment: ""),
-                NSLocalizedString("nudge_porn_addiction_detail_2", comment: "")
+                NSLocalizedString("nudge_porn_addiction_detail_2", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_detail_3", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_detail_4", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_detail_5", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_detail_6", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_detail_7", comment: ""),
+                NSLocalizedString("nudge_porn_addiction_detail_8", comment: "")
             ]
         case .alcoholDependency:
             return [
                 NSLocalizedString("nudge_alcohol_dependency_detail_1", comment: ""),
-                NSLocalizedString("nudge_alcohol_dependency_detail_2", comment: "")
+                NSLocalizedString("nudge_alcohol_dependency_detail_2", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_detail_3", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_detail_4", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_detail_5", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_detail_6", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_detail_7", comment: ""),
+                NSLocalizedString("nudge_alcohol_dependency_detail_8", comment: "")
             ]
         case .anger:
             return [
                 NSLocalizedString("nudge_anger_detail_1", comment: ""),
-                NSLocalizedString("nudge_anger_detail_2", comment: "")
+                NSLocalizedString("nudge_anger_detail_2", comment: ""),
+                NSLocalizedString("nudge_anger_detail_3", comment: ""),
+                NSLocalizedString("nudge_anger_detail_4", comment: ""),
+                NSLocalizedString("nudge_anger_detail_5", comment: ""),
+                NSLocalizedString("nudge_anger_detail_6", comment: ""),
+                NSLocalizedString("nudge_anger_detail_7", comment: ""),
+                NSLocalizedString("nudge_anger_detail_8", comment: "")
             ]
         case .obsessive:
             return [
                 NSLocalizedString("nudge_obsessive_detail_1", comment: ""),
                 NSLocalizedString("nudge_obsessive_detail_2", comment: ""),
-                NSLocalizedString("nudge_obsessive_detail_3", comment: "")
+                NSLocalizedString("nudge_obsessive_detail_3", comment: ""),
+                NSLocalizedString("nudge_obsessive_detail_4", comment: ""),
+                NSLocalizedString("nudge_obsessive_detail_5", comment: ""),
+                NSLocalizedString("nudge_obsessive_detail_6", comment: ""),
+                NSLocalizedString("nudge_obsessive_detail_7", comment: ""),
+                NSLocalizedString("nudge_obsessive_detail_8", comment: "")
             ]
         case .loneliness:
             return [
                 NSLocalizedString("nudge_loneliness_detail_1", comment: ""),
-                NSLocalizedString("nudge_loneliness_detail_2", comment: "")
+                NSLocalizedString("nudge_loneliness_detail_2", comment: ""),
+                NSLocalizedString("nudge_loneliness_detail_3", comment: ""),
+                NSLocalizedString("nudge_loneliness_detail_4", comment: ""),
+                NSLocalizedString("nudge_loneliness_detail_5", comment: ""),
+                NSLocalizedString("nudge_loneliness_detail_6", comment: ""),
+                NSLocalizedString("nudge_loneliness_detail_7", comment: ""),
+                NSLocalizedString("nudge_loneliness_detail_8", comment: "")
             ]
         }
     }

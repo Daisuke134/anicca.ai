@@ -672,87 +672,233 @@
 "nudge_staying_up_late_detail_4" = "睡眠不足は借金のように蓄積する。今夜の1時間は、来週の集中力と判断力を確実に奪う。スマホを枕元から離して、目を閉じて。";
 "nudge_staying_up_late_detail_5" = "深夜1時以降の覚醒は、脳と心臓に測定可能なダメージを与える。今やってることの100倍、睡眠の方が大事。今すぐ寝ろ。";
 
+/* NudgeContent - 夜更かし（Phase 5拡充） */
+"nudge_staying_up_late_notification_6" = "スマホを置いて。今すぐ。";
+"nudge_staying_up_late_notification_7" = "未来の自分が見てる。何が見える？";
+"nudge_staying_up_late_notification_8" = "睡眠は贅沢じゃない。薬だ。";
+"nudge_staying_up_late_notification_9" = "画面は待てる。夢は待てない。";
+"nudge_staying_up_late_notification_10" = "睡眠1時間 = 明日の判断力向上。";
+"nudge_staying_up_late_detail_6" = "今、意志力は最低レベル。スクロール衝動と戦うな—スマホを消せ。別の部屋に置け。";
+"nudge_staying_up_late_detail_7" = "すっきり起きる明日と、疲れ切って起きる明日。どっちがいい？今決まる。";
+"nudge_staying_up_late_detail_8" = "睡眠は脳を修復し、記憶を定着させ、感情をリセットする。サボるのは毎日乗る車のメンテをサボるのと同じ。";
+"nudge_staying_up_late_detail_9" = "ブルーライトが脳に「今は昼だ」と伝えてる。体が混乱してる。画面を消して助けてあげて。";
+"nudge_staying_up_late_detail_10" = "今夜の睡眠1時間 = 明日の生産性3時間。計算は簡単。寝ろ。";
+
 /* NudgeContent - cant_wake_up */
-"nudge_cant_wake_up_notification_1" = "起きないと、今日が始まらん。";
-"nudge_cant_wake_up_notification_2" = "あと5分の君、信用ゼロ。";
-"nudge_cant_wake_up_notification_3" = "平凡なままでいい？";
-"nudge_cant_wake_up_detail_1" = "5、4、3、2、1で足を床につける。考える前に動く。脳が言い訳を作る前に、身体を起こせ。布団の中で人生は変わらない。";
-"nudge_cant_wake_up_detail_2" = "「あと5分」の自分を何回信じた？何回裏切られた？今起きることで、自分との約束を守れる。今日の自分を好きになれる。";
-"nudge_cant_wake_up_detail_3" = "今日もダラダラ始める？それとも、今日から変わる？答えは今の行動で決まる。5秒以内に立て。";
+"nudge_cant_wake_up_notification_1" = "起きるまで1日は始まらない。";
+"nudge_cant_wake_up_notification_2" = "「あと5分」の自分、信用ゼロ。";
+"nudge_cant_wake_up_notification_3" = "凡人のままでいろ";
+"nudge_cant_wake_up_notification_4" = "足を床に。5、4、3、2、1。";
+"nudge_cant_wake_up_notification_5" = "布団は嘘をついてる。";
+"nudge_cant_wake_up_notification_6" = "アラームは約束。守れ。";
+"nudge_cant_wake_up_notification_7" = "朝の勝利が自信を作る。";
+"nudge_cant_wake_up_notification_8" = "今起きろ。昼に後悔するぞ。";
+"nudge_cant_wake_up_detail_1" = "5、4、3、2、1と数えて足を床に。考える前に動け。脳が言い訳する前に起きろ。布団の中では何も変わらない。";
+"nudge_cant_wake_up_detail_2" = "「あと5分」の自分を何回信じた？何回裏切られた？今起きれば自分との約束を守れる。今日の自分を好きになれる。";
+"nudge_cant_wake_up_detail_3" = "また今日もダラダラ始める？それとも今から変わる？次の5秒の行動が決める。立て。";
+"nudge_cant_wake_up_detail_4" = "体は起きてる。脳が言い訳してるだけ。上書きしろ。足を床に。今すぐ。";
+"nudge_cant_wake_up_detail_5" = "布団は安全に感じる。でも罠だ。今の快適 = 後の後悔。絆創膏を剥がすように布団を剥がせ。";
+"nudge_cant_wake_up_detail_6" = "スヌーズを押すたびに自分との約束を破ってる。小さな裏切りは複利で増える。今日は誠実に始めろ。";
+"nudge_cant_wake_up_detail_7" = "朝を制する者は1日を制する。1日を制する者は1週間を制する。全ては決めた時間に起きることから始まる。";
+"nudge_cant_wake_up_detail_8" = "昼の自分は感謝する。夜の自分は誇りに思う。でも朝の自分が今起きた場合だけ。";
 
 /* NudgeContent - self_loathing */
-"nudge_self_loathing_notification_1" = "今日も生きてる。それだけで十分。";
-"nudge_self_loathing_notification_2" = "自分を責めるのは、もうやめていい。";
-"nudge_self_loathing_notification_3" = "あなたは思ってるより、ずっといい人だよ。";
-"nudge_self_loathing_detail_1" = "自己嫌悪は「もっと良くなりたい」という証拠。でも自分を責めても成長しない。むしろ逆効果。今日、朝起きた。それだけで十分。";
-"nudge_self_loathing_detail_2" = "親友が同じ状況だったら、なんて声をかける？「ダメなやつだ」とは言わないはず。自分にも同じ優しさを。";
-"nudge_self_loathing_detail_3" = "今責めてることは、本当に「取り返しのつかないこと」？多くの場合、思ってるより小さい。深呼吸して、客観的に見てみて。";
+"nudge_self_loathing_notification_1" = "今日も生きてる。それで十分。";
+"nudge_self_loathing_notification_2" = "自分を責めるのをやめていい。";
+"nudge_self_loathing_notification_3" = "あなたは思ってるより良い人。";
+"nudge_self_loathing_notification_4" = "自己批判は成長させない。自己慈悲が成長させる。";
+"nudge_self_loathing_notification_5" = "友達にそれ言う？なら自分にも言うな。";
+"nudge_self_loathing_notification_6" = "頑張ってる。それが大事。";
+"nudge_self_loathing_notification_7" = "あなたの価値は生産性で測れない。";
+"nudge_self_loathing_notification_8" = "自分に優しく。今日だけでいい。";
+"nudge_self_loathing_detail_1" = "自己嫌悪は良くなりたい証拠。でも自己批判は成長につながらない—逆効果。今日起きた。それで十分。";
+"nudge_self_loathing_detail_2" = "親友が同じ状況だったら何て言う？「お前は価値がない」とは言わないでしょ。自分にも同じ優しさを。";
+"nudge_self_loathing_detail_3" = "自分を責めてること、本当に「取り返しがつかない」？ほとんどのことは感じてるより小さい。深呼吸して客観的に見て。";
+"nudge_self_loathing_detail_4" = "研究によると、自己慈悲の方が自己批判より成長につながる。自分に厳しくしても効果がない。優しさを試して。";
+"nudge_self_loathing_detail_5" = "友達に誰かがこう言ったら許さないでしょ。なぜ自分には許すの？友達を守るように自分を守って。";
+"nudge_self_loathing_detail_6" = "進歩は直線じゃない。悪い日は良い日を消さない。頑張ってる、それは多くの人がやらないこと。";
+"nudge_self_loathing_detail_7" = "あなたは生産性じゃない。あなたは実績じゃない。存在するだけで愛と休息に値する。";
+"nudge_self_loathing_detail_8" = "今日だけ、愛する人に話すように自分に話して。今日だけ。明日また厳しくしていいから。";
 
 /* NudgeContent - rumination */
 "nudge_rumination_notification_1" = "今、何を感じてる？";
 "nudge_rumination_notification_2" = "今、ここにいる？";
-"nudge_rumination_notification_3" = "朝の5分、瞑想してみない？";
-"nudge_rumination_detail_1" = "ループに気づいた時点で、もう半分勝ってる。今やること：足の裏の感覚に意識を向ける。床の硬さ、温度。30秒だけ。";
-"nudge_rumination_detail_2" = "見えるもの5つ、聞こえるもの4つ、触れてるもの3つ、匂い2つ、味1つ。これで強制的に「今」に戻れる。";
-"nudge_rumination_detail_3" = "反芻を止める最も効果的な方法は瞑想。今から2分、呼吸だけに集中。吸う・止める・吐くを4秒ずつ。";
+"nudge_rumination_notification_3" = "5分、瞑想してみない？";
+"nudge_rumination_notification_4" = "そのループは罠。抜け出せ。";
+"nudge_rumination_notification_5" = "足の裏を感じて。床を感じて。ここにいる。";
+"nudge_rumination_notification_6" = "考えても変わらない。";
+"nudge_rumination_notification_7" = "見えるもの5つ言って。今すぐ。";
+"nudge_rumination_notification_8" = "思考は事実じゃない。";
+"nudge_rumination_detail_1" = "ループに気づいた時点で半分終わり。今：足の裏に集中。床の硬さ、温度。30秒だけ。";
+"nudge_rumination_detail_2" = "見えるもの5つ、聞こえるもの4つ、触れてるもの3つ、匂い2つ、味1つ。これで「今」に戻れる。";
+"nudge_rumination_detail_3" = "反芻を止める最も効果的な方法は瞑想。今から2分、呼吸だけに集中。4秒吸って、4秒止めて、4秒吐いて。";
+"nudge_rumination_detail_4" = "このループは前にもあった。何も解決しなかった。唯一の出口は体を動かすこと。立って。動いて。";
+"nudge_rumination_detail_5" = "足は地面についてる。肺は呼吸してる。あなたは今ここにいて、安全。過去は終わった。未来はまだ来てない。";
+"nudge_rumination_detail_6" = "反芻は脳が解決不能な問題を解こうとしてる。考えても解決しない。それを受け入れて、手放して。";
+"nudge_rumination_detail_7" = "周りを見て。見えるものを言って。「椅子。窓。光。本。」この単純な行為が頭の中から現実に引き戻す。";
+"nudge_rumination_detail_8" = "思考は雲のようなもの。過ぎていく。つかまなくていい、分析しなくていい、追わなくていい。見送るだけ。";
 
 /* NudgeContent - procrastination */
-"nudge_procrastination_notification_1" = "5分だけ。それだけでいい。";
-"nudge_procrastination_notification_2" = "また自分との約束、破る？";
-"nudge_procrastination_notification_3" = "やらない理由、全部言い訳。";
-"nudge_procrastination_detail_1" = "2分で終わることは今やる。2分以上かかることは、最初の2分だけやる。始めれば、脳は続けたくなる。これが科学。";
-"nudge_procrastination_detail_2" = "1週間後の自分を想像して。「あの時やっておけば...」と後悔してる？今やれば、その後悔は消える。";
-"nudge_procrastination_detail_3" = "「できない」と「やりたくない」は違う。今、どっち？やりたくないなら、なぜ？本当の理由を見つけよう。";
+"nudge_procrastination_notification_1" = "たった5分。それだけでいい。";
+"nudge_procrastination_notification_2" = "また自分との約束破る？";
+"nudge_procrastination_notification_3" = "やらない理由は全部言い訳。";
+"nudge_procrastination_notification_4" = "汚くても始めろ。後で直せ。";
+"nudge_procrastination_notification_5" = "一番難しいのは最初の2分。";
+"nudge_procrastination_notification_6" = "先延ばしする友達に何て言う？";
+"nudge_procrastination_notification_7" = "完璧より完了。";
+"nudge_procrastination_notification_8" = "未来の自分は今の自分を頼りにしてる。";
+"nudge_procrastination_detail_1" = "2分以内なら今やれ。それ以上なら最初の2分だけやれ。始めれば脳は続けたくなる。科学的事実。";
+"nudge_procrastination_detail_2" = "1週間後の自分を想像して。「あの時やっておけば…」後悔してる？今やればその後悔は消える。";
+"nudge_procrastination_detail_3" = "「できない」と「やりたくない」は違う。今どっち？やりたくないなら、なぜ？本当の理由を見つけて。";
+"nudge_procrastination_detail_4" = "完璧主義は先延ばしの変装。汚いスタートはスタートしないより無限に良い。下手な一文を書け。醜い一歩を踏め。";
+"nudge_procrastination_detail_5" = "脳は始めるのが嫌い。でも2分経てば勢いがつく。最初の2分だけ生き延びろ。";
+"nudge_procrastination_detail_6" = "友達が大事なことを先延ばしし続けたら、「とにかく始めろ」と言うでしょ。今、自分にその友達になれ。";
+"nudge_procrastination_detail_7" = "出荷が完璧に勝る。欠陥のある完成品は未完成の「傑作」にいつも勝つ。";
+"nudge_procrastination_detail_8" = "未来の自分が見てる。今始めたことに感謝するか、始めなかったことにイラつくか。未来の自分を感謝させろ。";
 
 /* NudgeContent - anxiety */
-"nudge_anxiety_notification_1" = "今この瞬間、あなたは安全。";
+"nudge_anxiety_notification_1" = "この瞬間、あなたは安全。";
 "nudge_anxiety_notification_2" = "今、何を感じてる？";
-"nudge_anxiety_notification_3" = "深呼吸。4秒吸って、4秒止めて、4秒吐く。";
-"nudge_anxiety_detail_1" = "不安は「まだ起きてないこと」への恐れ。今この瞬間、目の前で何が起きてる？実際には何も危険なことは起きてない。";
-"nudge_anxiety_detail_2" = "「私は不安だ」ではなく「私は不安を感じている」。不安は天気みたいなもの。来て、そして去っていく。";
-"nudge_anxiety_detail_3" = "4秒吸う→4秒止める→4秒吐く→4秒止める。これを3回。身体が落ち着けば、心も落ち着く。今すぐやって。";
+"nudge_anxiety_notification_3" = "深呼吸。4秒吸って、4秒止めて、4秒吐いて。";
+"nudge_anxiety_notification_4" = "不安は嘘をつく。今、あなたは大丈夫。";
+"nudge_anxiety_notification_5" = "足の裏を感じて。地に足がついてる。";
+"nudge_anxiety_notification_6" = "この感覚は過ぎ去る。いつもそう。";
+"nudge_anxiety_notification_7" = "名前をつけて手なずけろ。何が怖い？";
+"nudge_anxiety_notification_8" = "最悪の日を100%生き延びてきた。";
+"nudge_anxiety_detail_1" = "不安はまだ起きてないことへの恐れ。今、目の前で実際に何が起きてる？危険なことは何も起きてない。";
+"nudge_anxiety_detail_2" = "「不安だ」じゃなく「不安を感じてる」。不安は天気のようなもの。来て、去る。";
+"nudge_anxiety_detail_3" = "4秒吸って → 4秒止めて → 4秒吐いて → 4秒止めて。3回繰り返して。体が落ち着けば、心もついてくる。今やって。";
+"nudge_anxiety_detail_4" = "脳はここにない脅威からあなたを守ろうとしてる。感謝して、こう言って：「今、私は安全」。";
+"nudge_anxiety_detail_5" = "足を床にしっかり押し付けて。地面があなたを支えてるのを感じて。あなたは支えられてる。ここにいる。安全だ。";
+"nudge_anxiety_detail_6" = "この感覚には始まり、中間、終わりがある。あなたは中間のどこか。終わりは来る。待って。";
+"nudge_anxiety_detail_7" = "具体的に何が怖い？声に出して言って。「私が怖いのは…」恐れに名前をつけると力が弱まる。";
+"nudge_anxiety_detail_8" = "悪い日を生き延びた実績は100%。これが何であれ、乗り越えられる。";
 
 /* NudgeContent - lying */
 "nudge_lying_notification_1" = "今日は正直に生きる日。";
-"nudge_lying_detail_1" = "小さな嘘は大きな嘘を呼ぶ。嘘をつくと、その嘘を守るためにまた嘘が必要になる。今日一日、正直でいることで、明日がシンプルになる。";
+"nudge_lying_notification_2" = "1つの真実は10の嘘より信頼を築く。";
+"nudge_lying_notification_3" = "真実の方が軽い。";
+"nudge_lying_notification_4" = "嘘は複利で増える。真実は単純にする。";
+"nudge_lying_notification_5" = "もし真実を言ったらどうなる？";
+"nudge_lying_notification_6" = "正直は疲れる。でも嘘はもっと疲れる。";
+"nudge_lying_notification_7" = "言葉は絆。守れ。";
+"nudge_lying_notification_8" = "小さな嘘は大きくなる。今やめろ。";
+"nudge_lying_detail_1" = "小さな嘘は大きな嘘につながる。1つの嘘を守るために別の嘘が必要。今日正直にすれば明日が単純になる。";
+"nudge_lying_detail_2" = "信頼は一滴ずつ築かれ、バケツで失われる。嘘のたびに削られる。真実のたびに一滴増える。";
+"nudge_lying_detail_3" = "嘘を抱えるのは重い。覚えて、維持して、心配して。真実はメンテナンス不要。";
+"nudge_lying_detail_4" = "1つの嘘を隠すのに別の嘘が必要。また別の。網は広がる。人生を単純に：真実を言え。";
+"nudge_lying_detail_5" = "ほとんどの場合、真実は思ってるほど怖くない。人は完璧より正直を尊敬する。試してみて。";
+"nudge_lying_detail_6" = "嘘はメンタルエネルギーを消費する。嘘を覚えて、維持して、バレる心配して。正直の方が実は楽。";
+"nudge_lying_detail_7" = "何かを言うなら本気で。約束したら果たせ。あなたの言葉は不可侵であるべき。今日から始めろ。";
+"nudge_lying_detail_8" = "小さな嘘のたびに次が簡単になる。それがあなたになる前に今パターンを壊せ。";
 
 /* NudgeContent - bad_mouthing */
-"nudge_bad_mouthing_notification_1" = "今日は誰かを傷つける言葉を使わない。";
-"nudge_bad_mouthing_notification_2" = "その言葉、自分に言われたらどう感じる？";
-"nudge_bad_mouthing_detail_1" = "悪口を言うと、一時的にスッキリする。でも5分後に自己嫌悪が来る。そして聞いた人は「この人は自分の悪口も言うだろう」と思う。";
-"nudge_bad_mouthing_detail_2" = "言いたくなったら10秒待つ。その間に「これを本人の前で言えるか？」と考える。言えないなら、言わない。";
+"nudge_bad_mouthing_notification_1" = "今日は傷つける言葉を言わない。";
+"nudge_bad_mouthing_notification_2" = "誰かにそれ言われたらどう思う？";
+"nudge_bad_mouthing_notification_3" = "悪口は相手より自分を傷つける。";
+"nudge_bad_mouthing_notification_4" = "相手が聞いてるつもりで話せ。";
+"nudge_bad_mouthing_notification_5" = "優しさは強さ。悪口は弱さ。";
+"nudge_bad_mouthing_notification_6" = "他人の悪口は自分を語る。";
+"nudge_bad_mouthing_notification_7" = "5分の悪口、5時間の後悔。";
+"nudge_bad_mouthing_notification_8" = "子供に聞かせたい？";
+"nudge_bad_mouthing_detail_1" = "言葉は取り消せない。誰かについて言う前に聞いて：それは本当？優しい？必要？";
+"nudge_bad_mouthing_detail_2" = "その言葉があなたについて言われてると想像して、あなたが入ったばかりの部屋で。そういう気持ち。やめて。";
+"nudge_bad_mouthing_detail_3" = "悪口は一瞬気持ちいい。でも5分後に自己嫌悪が来る。しかも聞いてる人は「私のことも言うだろう」と思う。";
+"nudge_bad_mouthing_detail_4" = "相手がすぐ後ろに立ってたら言う？言わないなら、全く言うな。みんなが聞こえるつもりで話せ。";
+"nudge_bad_mouthing_detail_5" = "強い人は他人を落とす必要がない。悪口は不安の表れ。超えろ。";
+"nudge_bad_mouthing_detail_6" = "他人の悪口を言うと、人はあなたが自分のことも言うか疑問に思う。相手より自分の評判が傷つく。";
+"nudge_bad_mouthing_detail_7" = "一時的な優越感は後に来る罪悪感に値しない。そして必ず来る。";
+"nudge_bad_mouthing_detail_8" = "今、子供が聞いてたら誇りに思う？それで言葉を導いて。";
 
 /* NudgeContent - porn_addiction */
-"nudge_porn_addiction_notification_1" = "誘惑に勝てば、明日の自分が変わる。";
-"nudge_porn_addiction_notification_2" = "本当にそれが欲しい？それとも逃げたいだけ？";
-"nudge_porn_addiction_detail_1" = "衝動は波のようなもの。必ずピークがあり、必ず下がる。10分だけ別のことをしてみて。散歩、腕立て、冷水で顔を洗う。";
-"nudge_porn_addiction_detail_2" = "ポルノに逃げたくなる時、本当は何から逃げてる？ストレス？孤独？退屈？その根本を見つけよう。";
+"nudge_porn_addiction_notification_1" = "誘惑に勝て。明日の自分が変わる。";
+"nudge_porn_addiction_notification_2" = "本当に欲しい？逃げてるだけ？";
+"nudge_porn_addiction_notification_3" = "衝動は波。10分で過ぎ去る。";
+"nudge_porn_addiction_notification_4" = "本当は何から逃げてる？";
+"nudge_porn_addiction_notification_5" = "脳が嘘をついてる。必要ない。";
+"nudge_porn_addiction_notification_6" = "腕立て10回。今すぐ。エネルギーを変えろ。";
+"nudge_porn_addiction_notification_7" = "冷水を顔に。パターンを壊せ。";
+"nudge_porn_addiction_notification_8" = "この弱さの瞬間はあなたを定義しない。";
+"nudge_porn_addiction_detail_1" = "衝動は波のようなもの—ピークが来て落ちる。10分間別のことをして。歩く、腕立て、冷水を顔にかける。";
+"nudge_porn_addiction_detail_2" = "ポルノに逃げたいとき、本当は何から逃げてる？ストレス？孤独？退屈？根本原因を見つけて。";
+"nudge_porn_addiction_detail_3" = "衝動は約10分でピークに達し、その後減少する。10分生き延びればいい。タイマーをセット。他のことをして。";
+"nudge_porn_addiction_detail_4" = "ポルノは麻酔剤。何の痛みを麻痺させようとしてる？痛みに対処すれば、麻痺の必要性が減る。";
+"nudge_porn_addiction_detail_5" = "脳は期待してドーパミンを放出してる。化学的なトリック。実際には必要ない。渇望は嘘。";
+"nudge_porn_addiction_detail_6" = "身体的行動がメンタルのループを壊す。今すぐ：腕立て10回、スクワット10回、またはジャンピングジャック10回。体を動かせ。";
+"nudge_porn_addiction_detail_7" = "冷水はシステムにショックを与え、脳をリセットする。洗面所に行って、冷水を顔にかけて。効く。";
+"nudge_porn_addiction_detail_8" = "あなたは衝動じゃない。この弱さの瞬間は一時的。なりたい人はまだそこにいる。今、その人を選べ。";
 
 /* NudgeContent - alcohol_dependency */
-"nudge_alcohol_dependency_notification_1" = "今夜は飲まない。それだけで勝ち。";
-"nudge_alcohol_dependency_notification_2" = "飲まなくても、リラックスできる。";
-"nudge_alcohol_dependency_detail_1" = "明日のことは考えなくていい。今夜だけ飲まない。明日の朝、二日酔いなしで目覚める自分を想像して。その気持ちよさを味わって。";
-"nudge_alcohol_dependency_detail_2" = "飲みたくなったら、炭酸水を飲む。10分散歩する。熱いシャワーを浴びる。ストレスは消えないけど、飲まなくても対処できる。";
+"nudge_alcohol_dependency_notification_1" = "1日ずつ。できる。";
+"nudge_alcohol_dependency_notification_2" = "ボトルは友達じゃない。";
+"nudge_alcohol_dependency_notification_3" = "本当に渇いてるのは何？";
+"nudge_alcohol_dependency_notification_4" = "明日の二日酔いは今夜の酒に値しない。";
+"nudge_alcohol_dependency_notification_5" = "渇望より強い。";
+"nudge_alcohol_dependency_notification_6" = "代わりに誰かに電話して。誰でもいい。";
+"nudge_alcohol_dependency_notification_7" = "酒は問題を解決しない。増やすだけ。";
+"nudge_alcohol_dependency_notification_8" = "素面の1時間は勝利。";
+"nudge_alcohol_dependency_detail_1" = "永遠のことは考えるな。今日だけ。この1時間だけ。この瞬間だけ。1日ずつ—全ての回復はそうやって始まる。";
+"nudge_alcohol_dependency_detail_2" = "酒は友達のふりをするが、与えるより奪う。明日から幸せを借りてる。その代償を払うな。";
+"nudge_alcohol_dependency_detail_3" = "渇望は本当はアルコールへのものじゃない。逃避、安心、麻痺への渇望。本当に今必要なのは何？";
+"nudge_alcohol_dependency_detail_4" = "明日の朝を想像して。頭痛、後悔、恥。今夜の酒はそれに値する？値しないってわかってるでしょ。";
+"nudge_alcohol_dependency_detail_5" = "この渇望は波。ピークが来て落ちる。今まで100%の渇望を生き延びてきた。これも同じ。";
+"nudge_alcohol_dependency_detail_6" = "つながりは依存症の反対。誰かに電話して。メッセージして。渇望と一人でいるな。";
+"nudge_alcohol_dependency_detail_7" = "酒は問題を解決しない—新しい問題を作りながら一時停止するだけ。問題は明日もある、二日酔いと一緒に。";
+"nudge_alcohol_dependency_detail_8" = "素面でいる1時間は勝利。1日はもっと大きな勝利。今、勝ってる。続けろ。";
 
 /* NudgeContent - anger */
-"nudge_anger_notification_1" = "怒りは自分を傷つける。深呼吸。";
-"nudge_anger_notification_2" = "3秒待ってから、話そう。";
-"nudge_anger_detail_1" = "怒りを持ち続けるのは、自分が毒を飲んで相手が死ぬのを待つようなもの。相手はあなたの怒りを感じてない。苦しんでるのは自分だけ。";
-"nudge_anger_detail_2" = "怒りのピークは6秒。6秒数えてから行動する。1、2、3、4、5、6。この間に深呼吸。6秒後、まだ同じことを言いたいか確認。";
+"nudge_anger_notification_1" = "一時停止。話す前に3秒。";
+"nudge_anger_notification_2" = "怒りは相手より自分を傷つける。";
+"nudge_anger_notification_3" = "これ、心の平和に値する？";
+"nudge_anger_notification_4" = "呼吸して。この瞬間は過ぎ去る。";
+"nudge_anger_notification_5" = "怒りで反応する？後悔するよ。";
+"nudge_anger_notification_6" = "冷静なあなたは何をする？";
+"nudge_anger_notification_7" = "怒りは二次感情。下に何がある？";
+"nudge_anger_notification_8" = "離れろ。準備ができたら戻れ。";
+"nudge_anger_detail_1" = "反応する前に3まで数えて。1... 2... 3。その3秒で理性脳が感情脳に追いつける。";
+"nudge_anger_detail_2" = "怒りを抱えるのは毒を飲んで相手が死ぬのを期待するようなもの。自分のために手放せ。";
+"nudge_anger_detail_3" = "これは5年後に重要？5ヶ月後？5日後？違うなら、心の平和を失う価値はない。手放せ。";
+"nudge_anger_detail_4" = "4秒吸って。4秒止めて。4秒吐いて。神経系が落ち着く。それから反応を決めろ。";
+"nudge_anger_detail_5" = "怒りで言った言葉は取り消せない。人間関係のダメージは怒りより長く続く。待て。";
+"nudge_anger_detail_6" = "あなたには2つのバージョンがある：怒りの自分と冷静な自分。怒りの自分は言ったことを後悔する。冷静な自分に反応させろ。";
+"nudge_anger_detail_7" = "怒りは通常、傷、恐れ、フラストレーションの仮面。本当に何が起きてる？怒りではなくそれに対処しろ。";
+"nudge_anger_detail_8" = "今すぐ反応する必要はない。離れろ。散歩しろ。明確に考えられるようになったら戻れ。";
 
 /* NudgeContent - obsessive */
-"nudge_obsessive_notification_1" = "完璧じゃなくていい。手放していい。";
-"nudge_obsessive_notification_2" = "その考え、何回目？";
-"nudge_obsessive_notification_3" = "考えすぎてない？";
-"nudge_obsessive_detail_1" = "1年後、この考えは重要？大体の場合、ノー。今手放しても、何も悪いことは起きない。試してみて。";
-"nudge_obsessive_detail_2" = "「この考えは17時に考える」と決める。脳にスケジュールを伝えると、今は手放せる。17時になったら大体忘れてる。";
-"nudge_obsessive_detail_3" = "考えすぎは「動かないこと」が原因のことが多い。今すぐ立って、30秒その場で足踏み。身体を動かすと頭も変わる。";
+"nudge_obsessive_notification_1" = "その思考はあなたじゃない。通り過ぎさせて。";
+"nudge_obsessive_notification_2" = "全ての思考に従う必要はない。";
+"nudge_obsessive_notification_3" = "未完成のままでいい。";
+"nudge_obsessive_notification_4" = "完璧は平和の敵。";
+"nudge_obsessive_notification_5" = "1回の確認で十分。自分を信じろ。";
+"nudge_obsessive_notification_6" = "儀式はあなたを救わない。破ることが救う。";
+"nudge_obsessive_notification_7" = "衝動に気づいて。従うな。";
+"nudge_obsessive_notification_8" = "この不快感は一時的。耐えろ。";
+"nudge_obsessive_detail_1" = "思考はただのメンタルイベント。来て去る。関わる必要はない。雲のように通り過ぎさせて。";
+"nudge_obsessive_detail_2" = "1日に何千もの思考がある。全てが行動に値するわけじゃない。これもそう。手放せ。";
+"nudge_obsessive_detail_3" = "何かを未完成にする不安は過ぎ去る。10分待って。まだ衝動を感じたら再考。でもまず待て。";
+"nudge_obsessive_detail_4" = "完璧を追うと不安が生まれる。「十分」は平和を作る。これで十分。先に進め。";
+"nudge_obsessive_detail_5" = "確認した。終わった。もう一度確認してももっと終わったことにはならない。最初の確認を信じろ。先に進め。";
+"nudge_obsessive_detail_6" = "強迫は安心を約束するがもっと不安をもたらす。儀式をしないことでサイクルを壊せ。不快感は過ぎ去る。";
+"nudge_obsessive_detail_7" = "衝動を感じる。良い—気づいた。今、従うな。ただ気づいて。衝動は勝手にピークを迎えて消える。";
+"nudge_obsessive_detail_8" = "この不快な感覚は一時的。儀式をしてもしなくても過ぎ去る。しないことを選べ。不快感と共にいろ。";
 
 /* NudgeContent - loneliness */
-"nudge_loneliness_notification_1" = "一人じゃない。誰かがあなたを想ってる。";
-"nudge_loneliness_notification_2" = "大切な人に、一言送ってみない？";
-"nudge_loneliness_detail_1" = "孤独を感じる時、「誰も自分のことを気にしてない」と思う。でもそれは嘘。今、連絡したら喜ぶ人が1人はいる。誰？";
-"nudge_loneliness_detail_2" = "つながりは待っていても来ない。「連絡したら迷惑かも」は嘘。今すぐ誰かに「元気？」と送ってみて。それだけでいい。";
+"nudge_loneliness_notification_1" = "孤独を感じてるのはあなただけじゃない。";
+"nudge_loneliness_notification_2" = "今日、誰か一人に連絡して。";
+"nudge_loneliness_notification_3" = "孤独は穏やかになれる。寂しさは永遠じゃない。";
+"nudge_loneliness_notification_4" = "誰かにメッセージ。「やあ」だけでも。";
+"nudge_loneliness_notification_5" = "つながりは小さな一歩から。";
+"nudge_loneliness_notification_6" = "一人でいることと孤独は違う。";
+"nudge_loneliness_notification_7" = "あなたの存在は誰かにとって大事。";
+"nudge_loneliness_notification_8" = "外に出て。見知らぬ人に微笑んで。";
+"nudge_loneliness_detail_1" = "何百万人が今孤独を感じてる。孤独を感じてるのはあなただけじゃない。この感覚は人間的で、過ぎ去る。";
+"nudge_loneliness_detail_2" = "つながりに深い会話は必要ない。今日、誰か一人に連絡するだけ。「考えてた」の一言で両方の1日が変わる。";
+"nudge_loneliness_detail_3" = "孤独は一人で満足してること。寂しさは一人でつながりを渇望してること。寂しさを穏やかな孤独に変えられる。";
+"nudge_loneliness_detail_4" = "しばらく話してない人にメッセージを送って。「やあ、考えてた」だけ。ほとんどの人は連絡をもらって嬉しい。";
+"nudge_loneliness_detail_5" = "今日ソウルメイトを見つける必要はない。小さなつながり一つだけ。微笑み、メッセージ、電話。小さく始めろ。";
+"nudge_loneliness_detail_6" = "一人でも寂しくないことがある。群衆の中でも孤独になれる。鍵はつながりの質、量じゃない。";
+"nudge_loneliness_detail_7" = "誰かがあなたの存在を喜んでる。最近言われてないかもしれないけど、あなたは誰かにとって大事。いつもそう。";
+"nudge_loneliness_detail_8" = "小さな交流が気分全体を変える。外に出て。見知らぬ人に微笑んで。隣人にこんにちはと言って。つながりはどこにでもある。";
 
 /* Common Deep Dive Questions */
 "deepdive_common_duration_question" = "どのくらい前からこの問題がある？";

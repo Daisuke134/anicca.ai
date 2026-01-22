@@ -194,6 +194,56 @@ release/1.0.8 でバグ発見
 
 ---
 
+## Spec ファイルの書き方（必読）
+
+### 目的
+
+Spec ファイルは「エージェントが読んだだけで実装できる」レベルの詳細を含む。
+
+### 必須セクション
+
+| セクション | 内容 | 必須 |
+|-----------|------|------|
+| **概要** | 何を解決するか、なぜ必要か | ✅ |
+| **As-Is** | 現状のコード/問題 | ✅ |
+| **To-Be** | 変更後のコード/状態 | ✅ |
+| **To-Be チェックリスト** | 全 To-Be を列挙（漏れ防止） | ✅ |
+| **テストマトリックス** | 各 To-Be に対応するテスト | ✅ |
+| **Unit Tests** | テストコード全文 | ✅ |
+| **E2E Tests (Maestro)** | YAML 全文 | ✅ |
+| **ローカライズ** | 日本語/英語の追加文字列 | ✅ |
+| **実行手順** | ビルド、テストコマンド | ✅ |
+| **レビューチェックリスト** | レビュアー用 | ✅ |
+
+### テストマトリックス例
+
+| # | To-Be | テスト名 | カバー |
+|---|-------|----------|--------|
+| 1 | Thompson Sampling でバリアント選択 | `test_selectByThompsonSampling()` | ✅ |
+| 2 | 時刻固定バリアント | `test_time_specific_variant()` | ✅ |
+| 3 | 2日連続無視 → 30分シフト | `test_consecutive_ignored_triggers_shift()` | ❌ |
+
+**全ての To-Be にテストが必要。** ❌ があれば Spec は不完全。
+
+### レビューチェックリスト
+
+Spec レビュー時に確認すること:
+
+- [ ] 全 To-Be がテストマトリックスに含まれているか
+- [ ] 各 To-Be に対応するテストコードがあるか
+- [ ] ローカライズ（日英）は正しいか
+- [ ] パッチは完全か（コピペで動くレベル）
+- [ ] 後方互換性は保たれているか
+- [ ] As-Is の問題が To-Be で解決されるか
+
+### スキル活用
+
+- **Spec 作成時**: `/plan` で計画
+- **実装時**: `/tdd` で TDD ワークフロー
+- **レビュー時**: `/code-review` でコードレビュー
+
+---
+
 ## プロジェクト概要
 
 ### Anicca とは
@@ -517,6 +567,29 @@ PR がプッシュされると自動で実行：
 | `/refactor-clean` | 不要コードを削除する |
 | `/test-coverage` | テストカバレッジを確認・改善する |
 
+### Fastlane（ビルド・テスト・提出）
+
+**Fastlane を優先して使う。** xcodebuild 直接実行より簡潔で確実。
+
+```bash
+# ビルド（シミュレータ用）
+cd aniccaios && fastlane build_for_simulator
+
+# ビルド（実機用）
+cd aniccaios && fastlane build_for_device
+
+# テスト実行
+cd aniccaios && fastlane test
+
+# TestFlight へアップロード
+cd aniccaios && fastlane beta
+
+# App Store へ提出
+cd aniccaios && fastlane release
+```
+
+**Fastfile**: `aniccaios/fastlane/Fastfile`
+
 ---
 
 ## ペルソナ（全ての判断基準）
@@ -579,4 +652,4 @@ PR がプッシュされると自動で実行：
 
 ---
 
-最終更新: 2026年1月21日
+最終更新: 2026年1月23日

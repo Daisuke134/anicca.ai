@@ -37,21 +37,21 @@ ACCOUNTS = {
     # ---------------------------------------------------------------------
     "x_xg2grb": {
         "id": "11820",
-        "username": "@xg2grb",
+        "username": "@aniccaxxx",  # 旧@xg2grb
         "platform": "twitter",
         "content": "BIP",  # Build in Public のみ
-        "lang": "EN",
-        "frequency": 3,  # 回/日
-        "slots": ["08:00", "12:30", "21:00"],
+        "lang": "JP",  # Changed to Japanese
+        "frequency": 1,  # 回/日
+        "slots": ["20:00"],
     },
     "x_nudges": {
         "id": "11852",
-        "username": "@AniccaNudges",
+        "username": "@aniccaen",  # 旧@AniccaNudges
         "platform": "twitter",
         "content": "MKT",
         "lang": "EN",
-        "frequency": 3,
-        "slots": ["09:00", "14:00", "20:00"],
+        "frequency": 1,
+        "slots": ["20:00"],
     },
     
     # ---------------------------------------------------------------------
@@ -63,8 +63,8 @@ ACCOUNTS = {
         "platform": "instagram",
         "content": "MKT",
         "lang": "EN",
-        "frequency": 3,
-        "slots": ["12:00", "17:00", "20:00"],
+        "frequency": 1,
+        "slots": ["19:00"],
     },
     "ig_anicca_japan": {
         "id": "28897",
@@ -72,8 +72,8 @@ ACCOUNTS = {
         "platform": "instagram",
         "content": "MKT",
         "lang": "JP",
-        "frequency": 3,
-        "slots": ["12:00", "17:00", "20:00"],
+        "frequency": 1,
+        "slots": ["19:00"],
     },
     "ig_anicca_daily": {
         "id": "28682",
@@ -94,8 +94,8 @@ ACCOUNTS = {
         "platform": "tiktok",
         "content": "MKT",
         "lang": "EN",
-        "frequency": 3,
-        "slots": ["16:00", "19:00", "21:00"],
+        "frequency": 1,
+        "slots": ["19:00"],
     },
     "tt_anicca_japan": {
         "id": "27527",
@@ -103,8 +103,8 @@ ACCOUNTS = {
         "platform": "tiktok",
         "content": "MKT",
         "lang": "JP",
-        "frequency": 3,
-        "slots": ["17:00", "19:00", "21:00"],
+        "frequency": 1,
+        "slots": ["19:00"],
     },
     "tt_anicca57": {
         "id": "27528",
@@ -119,18 +119,40 @@ ACCOUNTS = {
     # ---------------------------------------------------------------------
     # YouTube - 3回/日
     # ---------------------------------------------------------------------
-    "youtube": {
+    "youtube_en": {
         "id": "25421",
         "username": "Daisuke Narita (Anicca - AI Coaching app)",
         "platform": "youtube",
         "content": "MKT",
         "lang": "EN",
-        "frequency": 3,
-        "slots": ["12:00", "17:00", "20:00"],
+        "frequency": 1,
+        "slots": ["19:00"],
+    },
+    "youtube_jp": {
+        "id": "25646",
+        "username": "@anicca.jp",  # Reviewer Test (Anicca)
+        "platform": "youtube",
+        "content": "MKT",
+        "lang": "JP",
+        "frequency": 1,
+        "slots": ["19:00"],
     },
     
     # ---------------------------------------------------------------------
-    # Pinterest - 認証待ち
+    # Threads - 日本語
+    # ---------------------------------------------------------------------
+    "threads_japan": {
+        "id": "4464",
+        "username": "@anicca.japan",
+        "platform": "threads",
+        "content": "MKT",
+        "lang": "JP",
+        "frequency": 1,
+        "slots": ["19:00"],
+    },
+    
+    # ---------------------------------------------------------------------
+    # Pinterest - 英語
     # ---------------------------------------------------------------------
     "pinterest": {
         "id": "3965",
@@ -139,9 +161,8 @@ ACCOUNTS = {
         "board_id": "796996533995957618",
         "content": "MKT",
         "lang": "EN",
-        "frequency": 0,
-        "slots": [],
-        "status": "pending",
+        "frequency": 1,
+        "slots": ["19:00"],
     },
 }
 

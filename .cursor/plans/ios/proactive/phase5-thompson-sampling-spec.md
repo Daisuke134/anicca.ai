@@ -585,3 +585,4 @@ final class NudgeContentSelector {
 
 *この仕様書は Phase 5 の Thompson Sampling 実装を定義する。*
 
+

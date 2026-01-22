@@ -44,7 +44,7 @@
     }
   },
   "accounts": {
-    "x_xg2grb": { "id": "11820", "platform": "twitter", "content": "BIP", "lang": "EN" },
+    "x_xg2grb": { "id": "11820", "platform": "twitter", "content": "BIP", "lang": "JP" },
     "x_nudges": { "id": "11852", "platform": "twitter", "content": "MKT", "lang": "EN" },
     "ig_anicca_ai": { "id": "28896", "platform": "instagram", "content": "MKT", "lang": "EN" },
     "ig_anicca_japan": { "id": "28897", "platform": "instagram", "content": "MKT", "lang": "JP" },
@@ -52,8 +52,10 @@
     "tt_anicca_ai": { "id": "27339", "platform": "tiktok", "content": "MKT", "lang": "EN" },
     "tt_anicca_japan": { "id": "27527", "platform": "tiktok", "content": "MKT", "lang": "JP" },
     "tt_anicca57": { "id": "27528", "platform": "tiktok", "content": "MKT", "lang": "EN" },
-    "youtube": { "id": "25421", "platform": "youtube", "content": "MKT", "lang": "EN" },
-    "pinterest": { "id": "3965", "platform": "pinterest", "content": "MKT", "lang": "EN", "status": "pending" }
+    "youtube_en": { "id": "25421", "platform": "youtube", "content": "MKT", "lang": "EN" },
+    "youtube_jp": { "id": "25646", "platform": "youtube", "content": "MKT", "lang": "JP" },
+    "threads_japan": { "id": "4464", "platform": "threads", "content": "MKT", "lang": "JP" },
+    "pinterest": { "id": "3965", "platform": "pinterest", "content": "MKT", "lang": "EN", "status": "pending_verification" }
   },
   "slots": {
     "x_xg2grb": ["08:00", "12:30", "21:00"],
@@ -76,6 +78,36 @@
       "caption": "Day 18 of building anicca. Jan 20th.",
       "image_url": "https://v3b.fal.media/files/b/0a8b438a/mUVfdvpjdI8lzIEybPpUX.png",
       "image_model": "nano-banana-pro"
+    },
+    {
+      "date": "2026-01-22",
+      "time": "18:20",
+      "account": "x_nudges",
+      "content_type": "BIP",
+      "post_id": "5356e5db-f189-4e72-b6d8-1ec57d7317d2",
+      "caption": "Day 20 of building Anicca to $1k MRR. Still $18.",
+      "image_url": "https://v3b.fal.media/files/b/0a8b6a1b/TXfQImXe2cN-sJa_bOa2j.png",
+      "image_model": "nano-banana-pro"
+    },
+    {
+      "date": "2026-01-22",
+      "time": "22:35",
+      "account": "threads_japan",
+      "content_type": "MKT",
+      "post_id": "d8784c30-d2dc-469e-ac7a-ca959574ea27",
+      "caption": "今この瞬間に、静けさがある。",
+      "image_url": "https://v3b.fal.media/files/b/0a8b6b0b/yHR8gdrbNZqbH4wkOjUst.png",
+      "image_model": "nano-banana-pro",
+      "note": "テスト投稿"
+    },
+    {
+      "date": "2026-01-22",
+      "time": "22:36",
+      "account": "youtube_jp",
+      "content_type": "MKT",
+      "post_id": "7f323d15-eb53-4cbb-9220-f13264f84c22",
+      "caption": "Anicca テスト",
+      "note": "テスト投稿 (private)"
     }
   ]
 }

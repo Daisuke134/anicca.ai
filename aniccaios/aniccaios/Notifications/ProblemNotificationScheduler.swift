@@ -56,26 +56,26 @@ final class ProblemNotificationScheduler {
                 let consecutiveIgnored = await MainActor.run {
                     NudgeStatsManager.shared.getConsecutiveIgnoredDays(problemType: problemRaw, hour: time.hour)
                 }
-                
-                let currentShift = getCurrentShiftMinutes(problemType: problemRaw, originalHour: time.hour)
 
-                if consecutiveIgnored >= 2 && currentShift < maxShiftMinutes {
-                    // 30分後ろにシフト
-                    let newShift = min(currentShift + 30, maxShiftMinutes)
+                let currentShift = getCurrentShiftMinutes(problemType: problemRaw, originalHour: time.hour)
+                let newShift = calculateNewShift(currentShift: currentShift, consecutiveIgnored: consecutiveIgnored)
+
+                if newShift > currentShift {
+                    // シフトが増加した場合
                     let totalMinutes = time.hour * 60 + time.minute + newShift
                     adjustedHour = (totalMinutes / 60) % 24
                     adjustedMinute = totalMinutes % 60
-                    
+
                     // シフト量を保存
                     recordShift(problemType: problemRaw, originalHour: time.hour, shiftMinutes: newShift)
-                    
+
                     logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) (total shift: \(newShift)min, max: \(self.maxShiftMinutes)min)")
-                } else if currentShift >= maxShiftMinutes {
-                    // 最大シフトに達している場合は、そのシフト量を維持
+                } else if currentShift > 0 {
+                    // 既存のシフトがある場合は維持
                     let totalMinutes = time.hour * 60 + time.minute + currentShift
                     adjustedHour = (totalMinutes / 60) % 24
                     adjustedMinute = totalMinutes % 60
-                    logger.info("Max shift reached for \(problemRaw) at \(time.hour):\(time.minute), keeping shift at \(currentShift)min")
+                    logger.info("Keeping existing shift for \(problemRaw) at \(time.hour):\(time.minute), shift: \(currentShift)min")
                 }
 
                 allSchedules.append((time: (adjustedHour, adjustedMinute), problem: problem))
@@ -272,8 +272,20 @@ final class ProblemNotificationScheduler {
         }
     }
     
+    // MARK: - Phase 5: Shift Calculation (Testable)
+
+    /// シフト量を計算（純粋関数、テスト可能）
+    /// - Parameters:
+    ///   - currentShift: 現在のシフト量（分）
+    ///   - consecutiveIgnored: 連続無視日数
+    /// - Returns: 新しいシフト量（分）、最大 maxShiftMinutes まで
+    func calculateNewShift(currentShift: Int, consecutiveIgnored: Int) -> Int {
+        guard consecutiveIgnored >= 2 else { return currentShift }
+        return min(currentShift + 30, maxShiftMinutes)
+    }
+
     // MARK: - Phase 5: Shift Management
-    
+
     /// 現在のシフト量を取得
     private func getCurrentShiftMinutes(problemType: String, originalHour: Int) -> Int {
         let key = "\(problemType)_\(originalHour)"

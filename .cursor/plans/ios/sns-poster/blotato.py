@@ -3,16 +3,18 @@ Blotato API Wrapper
 SNS投稿を統一的に管理
 
 アカウントキー:
-- x_xg2grb: @xg2grb (Build in Public EN)
-- x_nudges: @AniccaNudges (Marketing EN)
+- x_xg2grb: @aniccaxxx (Build in Public JP)
+- x_nudges: @aniccaen (Marketing EN)
 - ig_anicca_ai: @anicca.ai (Marketing EN)
 - ig_anicca_japan: @anicca.japan (Marketing JP)
 - ig_anicca_daily: @anicca.daily (Marketing EN, sub)
 - tt_anicca_ai: @anicca.ai (Marketing EN)
 - tt_anicca_japan: @anicca.japan (Marketing JP)
 - tt_anicca57: @anicca57 (Marketing EN, sub)
-- youtube: Daisuke Narita (Marketing EN)
-- pinterest: @aniccaai (pending)
+- youtube_en: Daisuke Narita (Marketing EN)
+- youtube_jp: @anicca.jp (Marketing JP)
+- threads_japan: @anicca.japan (Marketing JP)
+- pinterest: @aniccaai (pending - needs verification)
 """
 import requests
 from typing import Optional, List, Dict, Any
@@ -215,6 +217,38 @@ class BlotatoClient:
         return self._request("POST", "/posts", json=payload)
 
     # =========================================================================
+    # Post Creation - Threads
+    # =========================================================================
+    def post_to_threads(
+        self,
+        text: str,
+        media_urls: Optional[List[str]] = None,
+        scheduled_time: Optional[str] = None,
+        account: str = "threads_japan",
+    ) -> Dict[str, Any]:
+        """Post to Threads
+        
+        Args:
+            account: 
+                "threads_japan" - @anicca.japan (Marketing JP) [default]
+        """
+        account_data = ACCOUNTS.get(account, ACCOUNTS["threads_japan"])
+        payload = {
+            "post": {
+                "accountId": account_data["id"],
+                "content": {
+                    "text": text,
+                    "mediaUrls": media_urls or [],
+                    "platform": "threads",
+                },
+                "target": {"targetType": "threads"},
+            }
+        }
+        if scheduled_time:
+            payload["scheduledTime"] = scheduled_time
+        return self._request("POST", "/posts", json=payload)
+
+    # =========================================================================
     # Post Creation - Pinterest
     # =========================================================================
     def post_to_pinterest(
@@ -285,6 +319,8 @@ class BlotatoClient:
         elif platform == "youtube":
             title = kwargs.get("title", text[:50])
             return self.post_to_youtube(text, media_urls, title, scheduled_time=scheduled_time)
+        elif platform == "threads":
+            return self.post_to_threads(text, media_urls, scheduled_time, account_key)
         elif platform == "pinterest":
             title = kwargs.get("title", text[:50])
             return self.post_to_pinterest(text, media_urls, title, scheduled_time=scheduled_time)

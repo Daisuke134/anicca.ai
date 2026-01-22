@@ -159,5 +159,29 @@ final class NudgeStatsManagerTests: XCTestCase {
         )
         XCTAssertEqual(afterThree, 3)
     }
+
+    /// 連続 ignored 日数がバリアント横断で最大値を返すこと
+    func test_getConsecutiveIgnoredDays_returns_max_across_variants() {
+        // variant 0 に 5日、variant 1 に 3日の ignored を記録
+        NudgeStatsManager.shared.debugRecordIgnored(
+            problemType: "staying_up_late",
+            variantIndex: 0,
+            scheduledHour: 22,
+            count: 5
+        )
+        NudgeStatsManager.shared.debugRecordIgnored(
+            problemType: "staying_up_late",
+            variantIndex: 1,
+            scheduledHour: 22,
+            count: 3
+        )
+
+        // 最大値（5）が返る
+        let consecutive = NudgeStatsManager.shared.getConsecutiveIgnoredDays(
+            problemType: "staying_up_late",
+            hour: 22
+        )
+        XCTAssertEqual(consecutive, 5, "Should return max consecutive ignored days across variants")
+    }
 }
 

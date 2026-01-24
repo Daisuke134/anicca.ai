@@ -85,4 +85,9 @@ enum AppConfig {
     static var feelingEndURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/feeling/end")
     }
+
+    // Phase 6: LLM生成Nudge
+    static var nudgeTodayURL: URL {
+        proxyBaseURL.appendingPathComponent("mobile/nudge/today")
+    }
 }

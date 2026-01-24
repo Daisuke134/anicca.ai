@@ -1,0 +1,58 @@
+# Phase 6: LLM生成Nudge表示テスト
+# 
+# 前提条件:
+# - staging buildがインストール済み
+# - オンボーディング完了済み（clearState: falseで起動）
+#
+appId: ai.anicca.app.ios
+tags:
+  - phase6
+  - llm
+  - nudge
+---
+- launchApp:
+    clearState: false
+
+# Profile タブに移動
+- tapOn:
+    text: "Profile"
+
+# 下にスクロールしてDebugセクションを表示
+- scrollUntilVisible:
+    element:
+      text: "📱 1枚画面テスト（夜更かし）"
+    direction: DOWN
+    timeout: 5000
+
+# Debug Nudgeテストボタンをタップ
+- tapOn:
+    id: "debug-nudge-test-staying-up-late"
+
+# NudgeCard表示待ち
+- extendedWaitUntil:
+    visible:
+      id: "nudge-card-view"
+    timeout: 5000
+
+# Hookテキストが表示されていることを確認
+- assertVisible:
+    id: "nudge-hook-text"
+
+# Contentテキストが表示されていることを確認
+- assertVisible:
+    id: "nudge-content-text"
+
+# フィードバックボタンが表示されていることを確認
+- assertVisible:
+    id: "feedback-thumbs-up"
+
+- assertVisible:
+    id: "feedback-thumbs-down"
+
+# スクリーンショット
+- takeScreenshot: "llm-nudge-display"
+
+# カードを閉じる
+- tapOn:
+    id: "nudge-card-close"
+

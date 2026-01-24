@@ -1,8 +1,10 @@
 import express from 'express';
 import { z } from 'zod';
 import crypto from 'crypto';
+import { fetch } from 'undici';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
+import requireInternalAuth from '../../middleware/requireInternalAuth.js';
 import { query } from '../../lib/db.js';
 import { resolveProfileId } from '../../services/mobile/userIdResolver.js';
 import { getUserTimezone, buildScreenState, buildMovementState, getUserTraits } from '../../modules/nudge/features/stateBuilder.js';
@@ -186,6 +188,59 @@ router.post('/feedback', async (req, res) => {
   } catch (e) {
     logger.error('Failed to record nudge feedback', e);
     return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to record nudge feedback' } });
+  }
+});
+
+// Phase 6: LLM生成Nudge
+
+// GET /api/nudge/today - 今日生成されたNudgeを取得
+router.get('/today', async (req, res) => {
+  const userId = await extractUserId(req, res);
+  if (!userId) return;
+
+  try {
+    const profileId = await resolveProfileId(userId);
+    if (!profileId) {
+      return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Could not resolve profile_id' } });
+    }
+
+    // 今日の00:00 JST以降に生成されたNudgeを取得
+    // JST (UTC+9) で今日の開始時刻を計算
+    const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
+    const todayStartJST = new Date(Date.UTC(
+      nowJST.getUTCFullYear(),
+      nowJST.getUTCMonth(),
+      nowJST.getUTCDate(),
+      0, 0, 0, 0
+    ) - 9 * 60 * 60 * 1000);  // JSTの00:00をUTCに変換
+
+    const result = await query(
+      `SELECT state, subtype, created_at
+       FROM nudge_events
+       WHERE user_id = $1::uuid
+         AND domain = 'problem_nudge'
+         AND decision_point = 'llm_generation'
+         AND created_at >= $2::timestamp
+       ORDER BY created_at DESC`,
+      [profileId, todayStartJST]
+    );
+
+    // LLMGeneratedNudge形式に変換
+    const nudges = result.rows.map(row => ({
+      id: row.state.id,
+      problemType: row.subtype,
+      scheduledHour: row.state.scheduledHour,
+      hook: row.state.hook,
+      content: row.state.content,
+      tone: row.state.tone,
+      reasoning: row.state.reasoning,
+      createdAt: row.created_at.toISOString()
+    }));
+
+    return res.json({ nudges });
+  } catch (e) {
+    logger.error('Failed to fetch today\'s nudges', e);
+    return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch today\'s nudges' } });
   }
 });
 

@@ -8,6 +8,8 @@ import OSLog
 @MainActor
 final class AppState: ObservableObject {
     static let shared = AppState()
+    
+    private let logger = Logger(subsystem: "com.anicca.ios", category: "AppState")
 
     @Published private(set) var authStatus: AuthStatus = .signedOut
     @Published private(set) var userProfile: UserProfile = UserProfile()
@@ -128,6 +130,28 @@ final class AppState: ObservableObject {
         
         // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元
         Task { await bootstrapProfileFromServerIfAvailable() }
+
+        // Phase 6: LLM生成Nudgeを取得（認証済みユーザーのみ）
+        Task {
+            if case .signedIn = self.authStatus {
+                await fetchTodaysLLMNudges()
+            }
+        }
+    }
+
+    // MARK: - Phase 6: LLM生成Nudge
+
+    /// 今日生成されたLLM生成Nudgeを取得してキャッシュに保存
+    func fetchTodaysLLMNudges() async {
+        do {
+            let nudges = try await LLMNudgeService.shared.fetchTodaysNudges()
+            await MainActor.run {
+                LLMNudgeCache.shared.setNudges(nudges)
+            }
+            logger.info("Fetched \(nudges.count) LLM-generated nudges")
+        } catch {
+            logger.error("Failed to fetch todays LLM nudges: \(error.localizedDescription)")
+        }
     }
 
     func markOnboardingComplete() {
@@ -204,6 +228,11 @@ final class AppState: ObservableObject {
         // Superwall: ユーザー識別
         SuperwallManager.shared.identify(userId: credentials.userId)
         
+        // Phase 6: LLM生成Nudgeを取得
+        Task {
+            await fetchTodaysLLMNudges()
+        }
+
         // v3: サインイン直後の無条件PUTは既存ユーザー上書き事故がありうるため、
         // 「オンボーディング中 かつ ローカルに入力済みがある」場合のみ同期する
         if !isOnboardingComplete && (!userProfile.ideals.isEmpty || !userProfile.struggles.isEmpty || !userProfile.displayName.isEmpty) {

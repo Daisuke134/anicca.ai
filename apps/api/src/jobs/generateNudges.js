@@ -141,12 +141,18 @@ function validateLLMOutput(output) {
 async function runGenerateNudges() {
   console.log('✅ [GenerateNudges] Starting LLM nudge generation cron job');
 
-  // 1. 全アクティブユーザーを取得（problemsを持っている人）
+  // 1. 全アクティブユーザーを取得（struggles/problemsを持っている人）
+  // profile JSONBの中にstruggles（新）またはproblems（旧）として保存されている
   const usersResult = await query(`
-    SELECT DISTINCT mp.id as profile_id, mp.user_id, mp.problems
+    SELECT DISTINCT
+      mp.device_id as profile_id,
+      mp.user_id,
+      COALESCE(mp.profile->'struggles', mp.profile->'problems', '[]'::jsonb) as problems
     FROM mobile_profiles mp
-    WHERE mp.problems IS NOT NULL
-      AND jsonb_array_length(mp.problems) > 0
+    WHERE (
+      (mp.profile->'struggles' IS NOT NULL AND jsonb_array_length(mp.profile->'struggles') > 0)
+      OR (mp.profile->'problems' IS NOT NULL AND jsonb_array_length(mp.profile->'problems') > 0)
+    )
   `);
 
   const users = usersResult.rows;

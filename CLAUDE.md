@@ -194,6 +194,56 @@ release/1.0.8 でバグ発見
 
 ---
 
+## Spec ファイルの書き方（必読）
+
+### 目的
+
+Spec ファイルは「エージェントが読んだだけで実装できる」レベルの詳細を含む。
+
+### 必須セクション
+
+| セクション | 内容 | 必須 |
+|-----------|------|------|
+| **概要** | 何を解決するか、なぜ必要か | ✅ |
+| **As-Is** | 現状のコード/問題 | ✅ |
+| **To-Be** | 変更後のコード/状態 | ✅ |
+| **To-Be チェックリスト** | 全 To-Be を列挙（漏れ防止） | ✅ |
+| **テストマトリックス** | 各 To-Be に対応するテスト | ✅ |
+| **Unit Tests** | テストコード全文 | ✅ |
+| **E2E Tests (Maestro)** | YAML 全文 | ✅ |
+| **ローカライズ** | 日本語/英語の追加文字列 | ✅ |
+| **実行手順** | ビルド、テストコマンド | ✅ |
+| **レビューチェックリスト** | レビュアー用 | ✅ |
+
+### テストマトリックス例
+
+| # | To-Be | テスト名 | カバー |
+|---|-------|----------|--------|
+| 1 | Thompson Sampling でバリアント選択 | `test_selectByThompsonSampling()` | ✅ |
+| 2 | 時刻固定バリアント | `test_time_specific_variant()` | ✅ |
+| 3 | 2日連続無視 → 30分シフト | `test_consecutive_ignored_triggers_shift()` | ❌ |
+
+**全ての To-Be にテストが必要。** ❌ があれば Spec は不完全。
+
+### レビューチェックリスト
+
+Spec レビュー時に確認すること:
+
+- [ ] 全 To-Be がテストマトリックスに含まれているか
+- [ ] 各 To-Be に対応するテストコードがあるか
+- [ ] ローカライズ（日英）は正しいか
+- [ ] パッチは完全か（コピペで動くレベル）
+- [ ] 後方互換性は保たれているか
+- [ ] As-Is の問題が To-Be で解決されるか
+
+### スキル活用
+
+- **Spec 作成時**: `/plan` で計画
+- **実装時**: `/tdd` で TDD ワークフロー
+- **レビュー時**: `/code-review` でコードレビュー
+
+---
+
 ## プロジェクト概要
 
 ### Anicca とは
@@ -354,6 +404,98 @@ alcohol_dependency, anger, obsessive, loneliness
 
 ---
 
+## TDD & テスト戦略（必須）
+
+### 📐 テストピラミッド
+
+```
+        /\
+       /  \      E2E Tests (10%) ← Maestro
+      /____\
+     /      \    Integration Tests (20%) ← XCTest
+    /________\
+   /          \  Unit Tests (70%) ← Swift Testing / XCTest
+  /______________\
+```
+
+| レイヤー | 割合 | 速度 | ツール | 何をテストするか |
+|---------|------|------|--------|-----------------|
+| Unit Tests | 70% | ミリ秒 | Swift Testing / XCTest | 1つの関数・メソッド |
+| Integration Tests | 20% | 秒 | XCTest + Mock | 複数のサービス連携 |
+| E2E Tests | 10% | 分 | Maestro | ユーザーフロー全体 |
+
+### 🔴🟢🔵 TDD サイクル（必ず従う）
+
+```
+1. 🔴 RED    → 失敗するテストを書く（機能を定義）
+2. 🟢 GREEN  → テストを通す最小限のコードを書く
+3. 🔵 REFACTOR → コードを綺麗にする（テストは緑のまま）
+4. 🔁 REPEAT → 次の機能へ
+```
+
+**なぜ TDD？**
+- バグを**コミット時**に検出（デプロイ後じゃない）
+- 設計が強制的に良くなる（テストしやすい = 良い設計）
+- リファクタリングが怖くなくなる
+
+### テストファイルの場所
+
+| 種類 | パス | 命名規則 |
+|------|------|----------|
+| Unit Tests | `aniccaios/aniccaiosTests/` | `*Tests.swift` |
+| Integration Tests | `aniccaios/aniccaiosTests/Integration/` | `*IntegrationTests.swift` |
+| E2E Tests | `maestro/` | `NN-description.yaml` |
+
+### 新機能実装時の必須フロー
+
+```
+1. Spec ファイル作成 → .cursor/plans/ios/xxx/feature-spec.md
+2. 🔴 失敗するテストを書く → aniccaiosTests/
+3. 🟢 テストを通すコードを書く
+4. 🔵 リファクタリング
+5. Maestro E2E を書く → maestro/
+6. ビルド確認 → fastlane build_for_device
+7. 全テスト PASS 確認 → xcodebuild test
+8. PR / release ブランチ作成
+```
+
+### テスト実行コマンド
+
+```bash
+# Unit Tests + Integration Tests
+cd aniccaios && xcodebuild test \
+  -project aniccaios.xcodeproj \
+  -scheme aniccaios-staging \
+  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
+  -only-testing:aniccaiosTests \
+  | xcpretty
+
+# E2E Tests (Maestro)
+maestro test maestro/
+
+# 個別 E2E
+maestro test maestro/01-onboarding.yaml
+```
+
+### GitHub Actions CI/CD（自動化）
+
+PR がプッシュされると自動で実行：
+
+```
+1. Unit Tests → 失敗したら PR ブロック
+2. Integration Tests → 失敗したら PR ブロック
+3. E2E Tests (Maestro) → 失敗したら PR ブロック
+4. Build → 成功したら TestFlight アップロード可能
+```
+
+### デバッグ UI ルール
+
+- **`#if DEBUG` で囲む** → 本番ビルドには含まれない
+- **目的**: 開発中のテスト効率化のみ
+- **Maestro でも使える**: デバッグボタンをタップして状態をシミュレート可能
+
+---
+
 ## ユーザー情報
 
 - 日本語ネイティブ
@@ -425,6 +567,29 @@ alcohol_dependency, anger, obsessive, loneliness
 | `/refactor-clean` | 不要コードを削除する |
 | `/test-coverage` | テストカバレッジを確認・改善する |
 
+### Fastlane（ビルド・テスト・提出）
+
+**Fastlane を優先して使う。** xcodebuild 直接実行より簡潔で確実。
+
+```bash
+# ビルド（シミュレータ用）
+cd aniccaios && fastlane build_for_simulator
+
+# ビルド（実機用）
+cd aniccaios && fastlane build_for_device
+
+# テスト実行
+cd aniccaios && fastlane test
+
+# TestFlight へアップロード
+cd aniccaios && fastlane beta
+
+# App Store へ提出
+cd aniccaios && fastlane release
+```
+
+**Fastfile**: `aniccaios/fastlane/Fastfile`
+
 ---
 
 ## ペルソナ（全ての判断基準）
@@ -487,4 +652,4 @@ alcohol_dependency, anger, obsessive, loneliness
 
 ---
 
-最終更新: 2026年1月21日
+最終更新: 2026年1月23日

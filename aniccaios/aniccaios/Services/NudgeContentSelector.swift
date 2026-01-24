@@ -10,8 +10,21 @@ final class NudgeContentSelector {
 
     private init() {}
 
-    /// 問題タイプと時刻からベストなバリアントを選択
+    /// 問題タイプと時刻からベストなバリアントを選択（Phase 5: Thompson Sampling）
     func selectVariant(for problem: ProblemType, scheduledHour: Int) -> Int {
+        // 0. 完全無反応ユーザーの場合、未試行バリアントを優先
+        if NudgeStatsManager.shared.isCompletelyUnresponsive(for: problem.rawValue, hour: scheduledHour) {
+            let allVariants = getGenericVariantIndices(for: problem)
+            if let untriedVariant = NudgeStatsManager.shared.selectUntriedVariant(
+                for: problem.rawValue,
+                hour: scheduledHour,
+                availableVariants: allVariants
+            ) {
+                logger.info("Unresponsive user: selected untried variant \(untriedVariant) for \(problem.rawValue)")
+                return untriedVariant
+            }
+        }
+        
         // 1. 時刻固定バリアントをチェック
         if let fixedVariant = getTimeSpecificVariant(problem: problem, hour: scheduledHour) {
             logger.info("Selected time-specific variant \(fixedVariant) for \(problem.rawValue) at hour \(scheduledHour)")
@@ -24,8 +37,8 @@ final class NudgeContentSelector {
             return 0
         }
 
-        // 3. データ量に応じた選択戦略
-        let selectedVariant = selectByDataLevel(
+        // 3. Thompson Samplingで選択
+        let selectedVariant = selectByThompsonSampling(
             variants: genericVariants,
             problem: problem,
             hour: scheduledHour
@@ -51,42 +64,86 @@ final class NudgeContentSelector {
         }
     }
 
-    /// 汎用バリアントのインデックス配列を返す
+    /// 汎用バリアントのインデックス配列を返す（Phase 5拡充版）
     private func getGenericVariantIndices(for problem: ProblemType) -> [Int] {
         switch problem {
         case .stayingUpLate:
-            // variant_1, 2, 3 (インデックス0, 1, 2) が汎用
-            return [0, 1, 2]
+            // 10バリアント中、0-2, 5-9が汎用（3,4は時刻固定）
+            return [0, 1, 2, 5, 6, 7, 8, 9]
         case .cantWakeUp:
-            return [0, 1, 2]
+            return Array(0..<8)  // 8バリアント
         case .selfLoathing:
-            return [0, 1, 2]
+            return Array(0..<8)
         case .rumination:
-            return [0, 1, 2]
+            return Array(0..<8)
         case .procrastination:
-            return [0, 1, 2]
+            return Array(0..<8)
         case .anxiety:
-            return [0, 1, 2]
+            return Array(0..<8)
         case .lying:
-            return [0]  // 1種類のみ
+            return Array(0..<8)
         case .badMouthing:
-            return [0, 1]
+            return Array(0..<8)
         case .pornAddiction:
-            return [0, 1]
+            return Array(0..<8)
         case .alcoholDependency:
-            return [0, 1]
+            return Array(0..<8)
         case .anger:
-            return [0, 1]
+            return Array(0..<8)
         case .obsessive:
-            return [0, 1, 2]
+            return Array(0..<8)
         case .loneliness:
-            return [0, 1]
+            return Array(0..<8)
         }
     }
 
-    // MARK: - Data-Level Selection
+    // MARK: - Thompson Sampling (Phase 5)
 
-    /// データ量に応じた選択戦略
+    /// Thompson Samplingによるバリアント選択
+    private func selectByThompsonSampling(variants: [Int], problem: ProblemType, hour: Int) -> Int {
+        let samples = variants.map { variantIndex -> (variantIndex: Int, sample: Double, alpha: Double, beta: Double) in
+            let stats = NudgeStatsManager.shared.getStats(
+                problemType: problem.rawValue,
+                variantIndex: variantIndex,
+                hour: hour
+            )
+            // alpha = tapped + 1 (事前分布)
+            // beta = ignored + 1 (事前分布)
+            let alpha = Double(stats?.tappedCount ?? 0) + 1.0
+            let beta = Double(stats?.ignoredCount ?? 0) + 1.0
+            let distribution = BetaDistribution(alpha: alpha, beta: beta)
+            let sample = distribution.sample()
+            
+            logger.debug("Variant \(variantIndex): alpha=\(alpha), beta=\(beta), sample=\(String(format: "%.3f", sample))")
+            return (variantIndex, sample, alpha, beta)
+        }
+        
+        // 最大サンプル値のバリアントを選択
+        if let best = samples.max(by: { $0.sample < $1.sample }) {
+            logger.info("Thompson Sampling: selected variant \(best.variantIndex) with sample \(String(format: "%.3f", best.sample))")
+            
+            // Mixpanelに送信
+            AnalyticsManager.shared.track(.nudgeScheduled, properties: [
+                "problem_type": problem.rawValue,
+                "variant_index": best.variantIndex,
+                "scheduled_hour": hour,
+                "selection_method": "thompson_sampling",
+                "alpha": best.alpha,
+                "beta": best.beta,
+                "sample_value": best.sample,
+                "tap_rate_estimate": best.alpha / (best.alpha + best.beta)
+            ])
+            
+            return best.variantIndex
+        }
+        
+        return variants[0]
+    }
+    
+    // MARK: - Legacy Selection (Deprecated)
+
+    /// データ量に応じた選択戦略（Phase 4互換、非推奨）
+    @available(*, deprecated, message: "Use selectByThompsonSampling instead")
     private func selectByDataLevel(variants: [Int], problem: ProblemType, hour: Int) -> Int {
         // 各バリアントのサンプル数を取得
         let variantSamples = variants.map { variantIndex -> (Int, Int) in

@@ -672,87 +672,233 @@
 "nudge_staying_up_late_detail_4" = "Sleep deprivation compounds like debt. Tonight's lost hour will steal next week's focus and judgment. Move your phone away from bed. Close your eyes.";
 "nudge_staying_up_late_detail_5" = "Staying awake past 1 AM causes measurable damage to your brain and heart. What you're doing is 100x less important than sleep. Go to bed now.";
 
+/* NudgeContent - staying_up_late (Phase 5 expansion) */
+"nudge_staying_up_late_notification_6" = "Put down your phone. Now.";
+"nudge_staying_up_late_notification_7" = "Your future self is watching. What do they see?";
+"nudge_staying_up_late_notification_8" = "Sleep is not optional. It's medicine.";
+"nudge_staying_up_late_notification_9" = "The screen can wait. Your dreams can't.";
+"nudge_staying_up_late_notification_10" = "Every hour of sleep = better decisions tomorrow.";
+"nudge_staying_up_late_detail_6" = "Your willpower is at its lowest right now. Don't fight the urge to scroll—just remove the phone. Put it in another room.";
+"nudge_staying_up_late_detail_7" = "Imagine waking up refreshed vs. waking up exhausted. Which version of tomorrow do you want? You decide right now.";
+"nudge_staying_up_late_detail_8" = "Sleep repairs your brain, consolidates memories, and resets emotions. Skipping it is like skipping maintenance on a car you drive daily.";
+"nudge_staying_up_late_detail_9" = "The blue light is telling your brain it's noon. Your body is confused. Help it by putting the screen away.";
+"nudge_staying_up_late_detail_10" = "One hour of sleep tonight = 3 hours of productivity tomorrow. The math is simple. Go to bed.";
+
 /* NudgeContent - cant_wake_up */
 "nudge_cant_wake_up_notification_1" = "Your day won't start until you get up.";
 "nudge_cant_wake_up_notification_2" = "The 'just 5 more minutes' you has zero credibility.";
 "nudge_cant_wake_up_notification_3" = "Stay Mediocre";
+"nudge_cant_wake_up_notification_4" = "Feet on the floor. 5, 4, 3, 2, 1.";
+"nudge_cant_wake_up_notification_5" = "The blanket is lying to you.";
+"nudge_cant_wake_up_notification_6" = "Your alarm is a promise. Keep it.";
+"nudge_cant_wake_up_notification_7" = "Morning wins build confidence.";
+"nudge_cant_wake_up_notification_8" = "Get up now, or regret it at noon.";
 "nudge_cant_wake_up_detail_1" = "Count 5, 4, 3, 2, 1 and put your feet on the floor. Move before you think. Get up before your brain makes excuses. Nothing changes under the blanket.";
 "nudge_cant_wake_up_detail_2" = "How many times have you trusted the '5 more minutes' you? How many times were you betrayed? Getting up now keeps a promise to yourself. You'll like today's you.";
 "nudge_cant_wake_up_detail_3" = "Start today sloppy again? Or change starting now? Your action in the next 5 seconds decides. Stand up.";
+"nudge_cant_wake_up_detail_4" = "Your body is awake. Your mind is making excuses. Override it. Feet on the floor. Now.";
+"nudge_cant_wake_up_detail_5" = "The blanket feels safe, but it's a trap. Comfort now = regret later. Rip off the blanket like a bandaid.";
+"nudge_cant_wake_up_detail_6" = "Every morning you hit snooze, you break a promise to yourself. Small betrayals compound. Start today with integrity.";
+"nudge_cant_wake_up_detail_7" = "People who win mornings win days. People who win days win weeks. It starts with getting up when you said you would.";
+"nudge_cant_wake_up_detail_8" = "Noon-you will be grateful. Evening-you will be proud. But only if morning-you gets up now.";
 
 /* NudgeContent - self_loathing */
 "nudge_self_loathing_notification_1" = "You're alive today. That's enough.";
 "nudge_self_loathing_notification_2" = "It's okay to stop blaming yourself.";
 "nudge_self_loathing_notification_3" = "You're a much better person than you think.";
+"nudge_self_loathing_notification_4" = "Self-criticism won't make you better. Compassion will.";
+"nudge_self_loathing_notification_5" = "Would you say this to a friend? Then don't say it to yourself.";
+"nudge_self_loathing_notification_6" = "You're trying. That's what matters.";
+"nudge_self_loathing_notification_7" = "Your worth isn't measured by productivity.";
+"nudge_self_loathing_notification_8" = "Be kind to yourself. Just for today.";
 "nudge_self_loathing_detail_1" = "Self-loathing proves you want to be better. But self-criticism doesn't lead to growth—it backfires. You woke up today. That's enough.";
 "nudge_self_loathing_detail_2" = "If your best friend was in your situation, what would you say? You wouldn't say 'You're worthless.' Give yourself the same kindness.";
 "nudge_self_loathing_detail_3" = "Is what you're blaming yourself for truly 'irreparable'? Most things are smaller than they feel. Take a deep breath and look objectively.";
+"nudge_self_loathing_detail_4" = "Research shows self-compassion leads to more growth than self-criticism. Being harsh on yourself doesn't work. Try kindness instead.";
+"nudge_self_loathing_detail_5" = "You wouldn't let anyone else talk to your friend this way. Why do you let yourself talk to you this way? Protect yourself like you'd protect a friend.";
+"nudge_self_loathing_detail_6" = "Progress isn't linear. Bad days don't erase good days. You're trying, and that's more than most people do.";
+"nudge_self_loathing_detail_7" = "You are not your productivity. You are not your achievements. You are worthy of love and rest just by existing.";
+"nudge_self_loathing_detail_8" = "Just for today, speak to yourself like you'd speak to someone you love. Just for today. Tomorrow you can go back to being hard on yourself if you want.";
 
 /* NudgeContent - rumination */
 "nudge_rumination_notification_1" = "What are you feeling right now?";
 "nudge_rumination_notification_2" = "Are you present right now?";
-"nudge_rumination_notification_3" = "Why not meditate for 5 minutes this morning?";
+"nudge_rumination_notification_3" = "Why not meditate for 5 minutes?";
+"nudge_rumination_notification_4" = "The loop is a trap. Step out.";
+"nudge_rumination_notification_5" = "Notice your feet. Feel the floor. You're here.";
+"nudge_rumination_notification_6" = "Thinking about it won't change it.";
+"nudge_rumination_notification_7" = "Name 5 things you see. Start now.";
+"nudge_rumination_notification_8" = "Your thoughts are not facts.";
 "nudge_rumination_detail_1" = "Once you notice the loop, you're halfway done. Now: focus on the soles of your feet. The floor's hardness, temperature. Just 30 seconds.";
 "nudge_rumination_detail_2" = "Name 5 things you see, 4 you hear, 3 you're touching, 2 you smell, 1 you taste. This forces you back to 'now.'";
 "nudge_rumination_detail_3" = "The most effective way to stop rumination is meditation. For 2 minutes now, focus only on breathing. Inhale 4 sec, hold 4 sec, exhale 4 sec.";
+"nudge_rumination_detail_4" = "You've been in this loop before. It never solved anything. The only way out is to do something physical. Stand up. Move.";
+"nudge_rumination_detail_5" = "Your feet are on the ground. Your lungs are breathing. You are here, in this moment, safe. The past is gone. The future isn't here yet.";
+"nudge_rumination_detail_6" = "Rumination is your brain trying to solve an unsolvable problem. It can't be solved by thinking. Accept that, and let it go.";
+"nudge_rumination_detail_7" = "Look around you. Name what you see. \"Chair. Window. Light. Book.\" This simple act pulls you out of your head and into reality.";
+"nudge_rumination_detail_8" = "Thoughts are like clouds. They pass. You don't have to grab them, analyze them, or follow them. Just watch them go.";
 
 /* NudgeContent - procrastination */
 "nudge_procrastination_notification_1" = "Just 5 minutes. That's all you need.";
 "nudge_procrastination_notification_2" = "Breaking another promise to yourself?";
 "nudge_procrastination_notification_3" = "Every reason not to do it is an excuse.";
+"nudge_procrastination_notification_4" = "Start ugly. Refine later.";
+"nudge_procrastination_notification_5" = "The hardest part is the first 2 minutes.";
+"nudge_procrastination_notification_6" = "What would you tell a friend who keeps delaying?";
+"nudge_procrastination_notification_7" = "Done is better than perfect.";
+"nudge_procrastination_notification_8" = "Future you is counting on present you.";
 "nudge_procrastination_detail_1" = "If it takes under 2 minutes, do it now. If it takes longer, just do the first 2 minutes. Once you start, your brain wants to continue. That's science.";
 "nudge_procrastination_detail_2" = "Imagine yourself a week from now. 'I wish I'd done it then...' Regretting? Do it now and that regret disappears.";
 "nudge_procrastination_detail_3" = "'Can't do it' and 'don't want to' are different. Which is it right now? If you don't want to, why? Find the real reason.";
+"nudge_procrastination_detail_4" = "Perfectionism is procrastination in disguise. A messy start is infinitely better than no start. Write one bad sentence. Take one ugly step.";
+"nudge_procrastination_detail_5" = "Your brain hates starting. But once you're 2 minutes in, momentum takes over. Just survive the first 2 minutes.";
+"nudge_procrastination_detail_6" = "If your friend kept delaying something important, you'd tell them to just start. Be that friend to yourself right now.";
+"nudge_procrastination_detail_7" = "Shipped is better than perfect. A finished project with flaws beats an unfinished 'masterpiece' every time.";
+"nudge_procrastination_detail_8" = "Future you is watching. They're either grateful you started now, or frustrated you didn't. Make future you grateful.";
 
 /* NudgeContent - anxiety */
 "nudge_anxiety_notification_1" = "In this moment, you are safe.";
 "nudge_anxiety_notification_2" = "What are you feeling right now?";
-"nudge_anxiety_notification_3" = "Deep breath. Inhale 4 seconds, hold 4, exhale 4.";
+"nudge_anxiety_notification_3" = "Deep breath. Inhale 4, hold 4, exhale 4.";
+"nudge_anxiety_notification_4" = "Anxiety lies. Right now, you are okay.";
+"nudge_anxiety_notification_5" = "Feel your feet. You're grounded.";
+"nudge_anxiety_notification_6" = "This feeling will pass. It always does.";
+"nudge_anxiety_notification_7" = "Name it to tame it. What's the fear?";
+"nudge_anxiety_notification_8" = "You've survived 100% of your worst days.";
 "nudge_anxiety_detail_1" = "Anxiety is fear of what hasn't happened yet. Right now, what's actually happening in front of you? Nothing dangerous is occurring.";
 "nudge_anxiety_detail_2" = "Not 'I am anxious' but 'I am feeling anxiety.' Anxiety is like weather. It comes, and it goes.";
 "nudge_anxiety_detail_3" = "Inhale 4 sec → hold 4 sec → exhale 4 sec → hold 4 sec. Repeat 3 times. When your body calms, your mind follows. Do it now.";
+"nudge_anxiety_detail_4" = "Your brain is trying to protect you from a threat that isn't here. Thank it, then tell it: \"I'm safe right now.\"";
+"nudge_anxiety_detail_5" = "Press your feet firmly into the floor. Feel the ground holding you up. You are supported. You are here. You are safe.";
+"nudge_anxiety_detail_6" = "This feeling has a beginning, a middle, and an end. You're somewhere in the middle. The end is coming. Wait for it.";
+"nudge_anxiety_detail_7" = "What exactly are you afraid of? Say it out loud. \"I'm afraid that...\" Naming the fear takes away some of its power.";
+"nudge_anxiety_detail_8" = "Your track record for surviving bad days is 100%. Whatever this is, you'll get through it too.";
 
 /* NudgeContent - lying */
 "nudge_lying_notification_1" = "Today is a day to live honestly.";
+"nudge_lying_notification_2" = "One truth builds more trust than ten lies.";
+"nudge_lying_notification_3" = "The truth is lighter to carry.";
+"nudge_lying_notification_4" = "Lies compound. Truth simplifies.";
+"nudge_lying_notification_5" = "What would happen if you just told the truth?";
+"nudge_lying_notification_6" = "Honesty is exhausting. But lies are more exhausting.";
+"nudge_lying_notification_7" = "Your word is your bond. Protect it.";
+"nudge_lying_notification_8" = "Small lies grow into big ones. Stop now.";
 "nudge_lying_detail_1" = "Small lies lead to big lies. One lie requires another lie to protect it. Being honest today makes tomorrow simpler.";
+"nudge_lying_detail_2" = "Trust is built in drops and lost in buckets. Every lie chips away at it. Every truth adds a drop.";
+"nudge_lying_detail_3" = "Carrying a lie is heavy. You have to remember it, maintain it, worry about it. The truth requires no maintenance.";
+"nudge_lying_detail_4" = "One lie needs another to cover it. Then another. The web grows. Simplify your life: tell the truth.";
+"nudge_lying_detail_5" = "Most of the time, the truth isn't as scary as we think. People respect honesty more than perfection. Try it.";
+"nudge_lying_detail_6" = "Lying takes mental energy. Remembering lies, maintaining them, worrying about exposure. Honesty is actually easier.";
+"nudge_lying_detail_7" = "When you say something, mean it. When you promise, deliver. Your word should be unbreakable. Start today.";
+"nudge_lying_detail_8" = "Every small lie makes the next one easier. Break the pattern now before it becomes who you are.";
 
 /* NudgeContent - bad_mouthing */
 "nudge_bad_mouthing_notification_1" = "No hurtful words today.";
 "nudge_bad_mouthing_notification_2" = "How would you feel if someone said that to you?";
-"nudge_bad_mouthing_detail_1" = "Talking badly feels good for a moment. But 5 minutes later, self-loathing arrives. Plus, listeners think 'they'll talk about me too.'";
-"nudge_bad_mouthing_detail_2" = "When you want to say something negative, wait 10 seconds. Ask yourself: 'Could I say this to their face?' If not, don't say it.";
+"nudge_bad_mouthing_notification_3" = "Gossip hurts you more than them.";
+"nudge_bad_mouthing_notification_4" = "Speak about others as if they're listening.";
+"nudge_bad_mouthing_notification_5" = "Kindness is strength. Gossip is weakness.";
+"nudge_bad_mouthing_notification_6" = "What you say about others says more about you.";
+"nudge_bad_mouthing_notification_7" = "5 minutes of gossip, 5 hours of regret.";
+"nudge_bad_mouthing_notification_8" = "Would you want your kids to hear this?";
+"nudge_bad_mouthing_detail_1" = "Words can't be unspoken. Before you say something about someone, ask: is it true? Is it kind? Is it necessary?";
+"nudge_bad_mouthing_detail_2" = "Imagine those words being said about you, in a room you just walked into. That's how it feels. Don't do it.";
+"nudge_bad_mouthing_detail_3" = "Talking badly feels good for a moment. But 5 minutes later, self-loathing arrives. Plus, listeners think 'they'll talk about me too.'";
+"nudge_bad_mouthing_detail_4" = "If they were standing right behind you, would you say it? If not, don't say it at all. Speak as if everyone can hear.";
+"nudge_bad_mouthing_detail_5" = "Strong people don't need to put others down. Gossip is a sign of insecurity. Rise above it.";
+"nudge_bad_mouthing_detail_6" = "When you talk negatively about others, people wonder what you say about them. It damages your reputation more than theirs.";
+"nudge_bad_mouthing_detail_7" = "That temporary feeling of superiority isn't worth the guilt that follows. And it always follows.";
+"nudge_bad_mouthing_detail_8" = "If your children heard you right now, would you be proud? Let that guide your words.";
 
 /* NudgeContent - porn_addiction */
-"nudge_porn_addiction_notification_1" = "Beat the temptation and tomorrow's you will change.";
+"nudge_porn_addiction_notification_1" = "Beat the temptation. Tomorrow's you will change.";
 "nudge_porn_addiction_notification_2" = "Do you really want it? Or are you just escaping?";
+"nudge_porn_addiction_notification_3" = "The urge is a wave. It will pass in 10 minutes.";
+"nudge_porn_addiction_notification_4" = "What are you really running from?";
+"nudge_porn_addiction_notification_5" = "Your brain is lying. You don't need it.";
+"nudge_porn_addiction_notification_6" = "10 push-ups. Now. Redirect the energy.";
+"nudge_porn_addiction_notification_7" = "Cold water on your face. Break the pattern.";
+"nudge_porn_addiction_notification_8" = "This moment of weakness doesn't define you.";
 "nudge_porn_addiction_detail_1" = "The urge is like a wave—it peaks and falls. Do something else for 10 minutes. Walk, push-ups, splash cold water on your face.";
 "nudge_porn_addiction_detail_2" = "When you want to escape to porn, what are you really running from? Stress? Loneliness? Boredom? Find the root cause.";
+"nudge_porn_addiction_detail_3" = "Urges peak at about 10 minutes and then decline. You just need to survive 10 minutes. Set a timer. Do anything else.";
+"nudge_porn_addiction_detail_4" = "Porn is a numbing agent. What pain are you trying to numb? Address the pain, and the need for numbing decreases.";
+"nudge_porn_addiction_detail_5" = "Your brain is releasing dopamine in anticipation. It's a chemical trick. You don't actually need it. The craving is a lie.";
+"nudge_porn_addiction_detail_6" = "Physical action breaks the mental loop. Right now: 10 push-ups, 10 squats, or 10 jumping jacks. Move your body.";
+"nudge_porn_addiction_detail_7" = "Cold water shocks your system and resets your brain. Go to the bathroom, splash cold water on your face. It works.";
+"nudge_porn_addiction_detail_8" = "You are not your urges. This moment of weakness is temporary. The person you want to be is still there. Choose that person now.";
 
 /* NudgeContent - alcohol_dependency */
-"nudge_alcohol_dependency_notification_1" = "Don't drink tonight. That alone is a win.";
-"nudge_alcohol_dependency_notification_2" = "You can relax without drinking.";
-"nudge_alcohol_dependency_detail_1" = "Don't think about tomorrow. Just don't drink tonight. Imagine waking up tomorrow with no hangover. Feel that relief.";
-"nudge_alcohol_dependency_detail_2" = "When you want to drink: have sparkling water, take a 10-minute walk, or take a hot shower. Stress doesn't disappear, but you can cope without drinking.";
+"nudge_alcohol_dependency_notification_1" = "One day at a time. You can do this.";
+"nudge_alcohol_dependency_notification_2" = "The bottle is not your friend.";
+"nudge_alcohol_dependency_notification_3" = "What are you really thirsty for?";
+"nudge_alcohol_dependency_notification_4" = "Tomorrow's hangover isn't worth tonight's drink.";
+"nudge_alcohol_dependency_notification_5" = "You're stronger than the craving.";
+"nudge_alcohol_dependency_notification_6" = "Call someone instead. Anyone.";
+"nudge_alcohol_dependency_notification_7" = "The drink won't solve the problem. It will add another.";
+"nudge_alcohol_dependency_notification_8" = "Every sober hour is a victory.";
+"nudge_alcohol_dependency_detail_1" = "Don't think about forever. Just today. Just this hour. Just this moment. One day at a time is how every recovery starts.";
+"nudge_alcohol_dependency_detail_2" = "Alcohol pretends to be a friend, but it takes more than it gives. It borrows happiness from tomorrow. Don't pay that price.";
+"nudge_alcohol_dependency_detail_3" = "The craving isn't really for alcohol. It's for escape, comfort, or numbness. What do you really need right now?";
+"nudge_alcohol_dependency_detail_4" = "Imagine tomorrow morning. Headache, regret, shame. Is tonight's drink worth that? You know it isn't.";
+"nudge_alcohol_dependency_detail_5" = "This craving is a wave. It will peak and fall. You've survived 100% of your cravings so far. This one is no different.";
+"nudge_alcohol_dependency_detail_6" = "Connection is the opposite of addiction. Call someone. Text someone. Don't be alone with the craving.";
+"nudge_alcohol_dependency_detail_7" = "Alcohol doesn't solve problems—it pauses them while creating new ones. The problem will still be there tomorrow, plus a hangover.";
+"nudge_alcohol_dependency_detail_8" = "Every hour you stay sober is a win. Every day is a bigger win. You're winning right now. Keep going.";
 
 /* NudgeContent - anger */
-"nudge_anger_notification_1" = "Anger hurts you. Take a deep breath.";
-"nudge_anger_notification_2" = "Wait 3 seconds before speaking.";
-"nudge_anger_detail_1" = "Holding onto anger is like drinking poison expecting the other person to die. They don't feel your anger. Only you suffer.";
-"nudge_anger_detail_2" = "Anger peaks at 6 seconds. Count to 6 before acting. 1, 2, 3, 4, 5, 6. Deep breath during this. After 6 seconds, check if you still want to say it.";
+"nudge_anger_notification_1" = "Pause. 3 seconds before you speak.";
+"nudge_anger_notification_2" = "Anger hurts you more than them.";
+"nudge_anger_notification_3" = "Is this worth your peace?";
+"nudge_anger_notification_4" = "Breathe. The moment will pass.";
+"nudge_anger_notification_5" = "Responding in anger? You'll regret it.";
+"nudge_anger_notification_6" = "What would the calm version of you do?";
+"nudge_anger_notification_7" = "Anger is a secondary emotion. What's underneath?";
+"nudge_anger_notification_8" = "Walk away. Come back when you're ready.";
+"nudge_anger_detail_1" = "Before you react, count to 3. 1... 2... 3. In those 3 seconds, your rational brain can catch up to your emotional brain.";
+"nudge_anger_detail_2" = "Holding onto anger is like drinking poison and expecting the other person to die. Let it go for your own sake.";
+"nudge_anger_detail_3" = "Will this matter in 5 years? 5 months? 5 days? If not, it's not worth losing your peace over. Let it go.";
+"nudge_anger_detail_4" = "Inhale for 4 seconds. Hold for 4. Exhale for 4. Your nervous system will calm down. Then decide how to respond.";
+"nudge_anger_detail_5" = "Words spoken in anger can never be unspoken. The relationship damage lasts longer than the anger. Wait.";
+"nudge_anger_detail_6" = "There are two versions of you: angry-you and calm-you. Angry-you will regret what they say. Let calm-you respond.";
+"nudge_anger_detail_7" = "Anger is usually a mask for hurt, fear, or frustration. What's really going on? Address that, not the anger.";
+"nudge_anger_detail_8" = "You don't have to respond right now. Walk away. Take a walk. Come back when you can think clearly.";
 
 /* NudgeContent - obsessive */
-"nudge_obsessive_notification_1" = "It doesn't have to be perfect. You can let go.";
-"nudge_obsessive_notification_2" = "How many times have you thought that?";
-"nudge_obsessive_notification_3" = "Aren't you overthinking?";
-"nudge_obsessive_detail_1" = "Will this thought matter in a year? Usually no. Nothing bad happens if you let it go now. Try it.";
-"nudge_obsessive_detail_2" = "Tell yourself 'I'll think about this at 5 PM.' When you give your brain a schedule, you can let go now. By 5 PM, you'll usually forget.";
-"nudge_obsessive_detail_3" = "Overthinking often comes from not moving. Stand up right now and march in place for 30 seconds. Moving your body changes your head.";
+"nudge_obsessive_notification_1" = "The thought is not you. Let it pass.";
+"nudge_obsessive_notification_2" = "You don't have to act on every thought.";
+"nudge_obsessive_notification_3" = "It's okay to leave it unfinished.";
+"nudge_obsessive_notification_4" = "Perfection is the enemy of peace.";
+"nudge_obsessive_notification_5" = "One check is enough. Trust yourself.";
+"nudge_obsessive_notification_6" = "The ritual won't save you. Breaking it will.";
+"nudge_obsessive_notification_7" = "Notice the urge. Don't follow it.";
+"nudge_obsessive_notification_8" = "This discomfort is temporary. Sit with it.";
+"nudge_obsessive_detail_1" = "Thoughts are just mental events. They come and go. You don't have to engage with them. Let this one pass like a cloud.";
+"nudge_obsessive_detail_2" = "You have thousands of thoughts a day. Not all of them deserve action. This one doesn't. Let it go.";
+"nudge_obsessive_detail_3" = "The anxiety of leaving something undone will pass. Give it 10 minutes. If you still feel the urge, reconsider. But wait first.";
+"nudge_obsessive_detail_4" = "Chasing perfection creates anxiety. 'Good enough' creates peace. This is good enough. Move on.";
+"nudge_obsessive_detail_5" = "You checked. It's done. Checking again won't make it more done. Trust the first check. Move on.";
+"nudge_obsessive_detail_6" = "The compulsion promises relief but delivers more anxiety. Break the cycle by not performing the ritual. The discomfort will pass.";
+"nudge_obsessive_detail_7" = "You feel the urge. Good—you noticed it. Now don't act on it. Just notice. The urge will peak and fade on its own.";
+"nudge_obsessive_detail_8" = "This uncomfortable feeling is temporary. It will pass whether you perform the ritual or not. Choose not to. Sit with the discomfort.";
 
 /* NudgeContent - loneliness */
-"nudge_loneliness_notification_1" = "You're not alone. Someone is thinking of you.";
-"nudge_loneliness_notification_2" = "Why not send a message to someone you care about?";
-"nudge_loneliness_detail_1" = "When you feel lonely, you think 'nobody cares about me.' But that's a lie. There's at least one person who'd be happy to hear from you. Who?";
-"nudge_loneliness_detail_2" = "Connection won't come to you. 'They might find it annoying' is a lie. Send someone 'Hey, how are you?' right now. That's all it takes.";
+"nudge_loneliness_notification_1" = "You're not alone in feeling alone.";
+"nudge_loneliness_notification_2" = "Reach out to one person today.";
+"nudge_loneliness_notification_3" = "Solitude can be peaceful. Loneliness doesn't have to be permanent.";
+"nudge_loneliness_notification_4" = "Text someone. Even just \"hey\".";
+"nudge_loneliness_notification_5" = "Connection starts with one small step.";
+"nudge_loneliness_notification_6" = "Being alone is not the same as being lonely.";
+"nudge_loneliness_notification_7" = "Your presence matters to someone.";
+"nudge_loneliness_notification_8" = "Go outside. Smile at a stranger.";
+"nudge_loneliness_detail_1" = "Millions of people feel lonely right now. You're not alone in feeling alone. This feeling is human, and it will pass.";
+"nudge_loneliness_detail_2" = "Connection doesn't require a deep conversation. Just reach out to one person today. A simple \"thinking of you\" can change both your days.";
+"nudge_loneliness_detail_3" = "Solitude is being alone and content. Loneliness is being alone and craving connection. You can transform loneliness into peaceful solitude.";
+"nudge_loneliness_detail_4" = "Send a message to someone you haven't talked to in a while. Just \"hey, thinking of you.\" Most people are happy to hear from you.";
+"nudge_loneliness_detail_5" = "You don't need to find your soulmate today. Just one small connection. A smile, a text, a call. Start small.";
+"nudge_loneliness_detail_6" = "You can be alone without being lonely. And you can be lonely in a crowd. The key is quality of connection, not quantity.";
+"nudge_loneliness_detail_7" = "Someone out there is glad you exist. Maybe they haven't told you recently, but you matter to someone. You always do.";
+"nudge_loneliness_detail_8" = "A small interaction can shift your whole mood. Go outside. Smile at a stranger. Say hi to a neighbor. Connection is everywhere.";
 
 /* Common Deep Dive Questions */
 "deepdive_common_duration_question" = "How long have you had this problem?";

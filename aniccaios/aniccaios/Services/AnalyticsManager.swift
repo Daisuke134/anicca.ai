@@ -188,5 +188,8 @@ enum AnalyticsEvent: String {
     case nudgeIgnored = "nudge_ignored"
     case nudgePositiveFeedback = "nudge_positive_feedback"
     case nudgeNegativeFeedback = "nudge_negative_feedback"
+    
+    // Nudge (Phase 5 - Thompson Sampling)
+    case nudgeScheduled = "nudge_scheduled"
 }
 

@@ -1,0 +1,28 @@
+appId: com.anicca.ios
+---
+# Phase 5: Thompson Sampling テスト
+- launchApp:
+    clearState: true
+
+# オンボーディングをスキップ（既存フローを使用）
+- runFlow: 01-onboarding.yaml
+
+# Profile タブに移動
+- tapOn: "Profile"
+
+# デバッグセクションまでスクロール
+- scrollUntilVisible:
+    element: "🎲 Phase 5: Thompson Sampling"
+    direction: DOWN
+
+# Thompson Sampling 統計セクションを確認
+- tapOn: "🎲 Phase 5: Thompson Sampling"
+
+# 統計が表示されることを確認（実際のUIに合わせる）
+- assertVisible: "V0"
+- assertVisible: "α:"
+- assertVisible: "β:"
+
+# 成功
+- assertTrue: true
+

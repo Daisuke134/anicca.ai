@@ -60,6 +60,14 @@ final class NudgeStatsManager {
     // Storage keys
     private let statsKey = "com.anicca.nudgeStats"
     private let scheduledKey = "com.anicca.scheduledNudges"
+    
+    // Phase 5: 設定可能な閾値
+    #if DEBUG
+    private static let ignoredThresholdMinutes: Int = 1     // デバッグ: 1分（テスト用）
+    #else
+    private static let ignoredThresholdMinutes: Int = 15    // 本番: 15分
+    #endif
+    private static let unresponsiveThresholdDays: Int = 7   // 7日連続ignoredで完全無反応と判定
 
     // In-memory cache
     private var stats: [String: NudgeStats] = [:]
@@ -118,11 +126,10 @@ final class NudgeStatsManager {
         let calendar = Calendar.current
 
         for (key, nudge) in scheduledNudges {
-            // 24時間以上前 & 未tapped = ignored
-            guard let scheduledDate = nudge.scheduledDate as Date?,
-                  !nudge.wasTapped,
-                  let hoursDiff = calendar.dateComponents([.hour], from: scheduledDate, to: now).hour,
-                  hoursDiff >= 24 else {
+            // ignoredThresholdMinutes以上前 & 未tapped = ignored
+            guard !nudge.wasTapped,
+                  let minutesDiff = calendar.dateComponents([.minute], from: nudge.scheduledDate, to: now).minute,
+                  minutesDiff >= Self.ignoredThresholdMinutes else {
                 continue
             }
 
@@ -206,6 +213,57 @@ final class NudgeStatsManager {
     func getConsecutiveIgnoredDays(problemType: String, hour: Int) -> Int {
         let hourStats = stats.values.filter { $0.problemType == problemType && $0.scheduledHour == hour }
         return hourStats.map { $0.consecutiveIgnoredDays }.max() ?? 0
+    }
+    
+    // MARK: - Phase 5: Unresponsive User Handling
+    
+    /// 完全無反応ユーザー判定
+    /// 全バリアントで7日以上連続ignoredの場合にtrue
+    func isCompletelyUnresponsive(for problemType: String, hour: Int) -> Bool {
+        let hourStats = stats.values.filter { $0.problemType == problemType && $0.scheduledHour == hour }
+        
+        // 統計がなければ無反応ではない（まだ試していない）
+        guard !hourStats.isEmpty else { return false }
+        
+        // 全バリアントが閾値以上の連続ignoredならtrue
+        let minConsecutive = hourStats.map { $0.consecutiveIgnoredDays }.min() ?? 0
+        return minConsecutive >= Self.unresponsiveThresholdDays
+    }
+    
+    /// 未試行バリアントを選択
+    /// 統計がないバリアント、またはサンプル数が最小のバリアントを返す
+    func selectUntriedVariant(for problemType: String, hour: Int, availableVariants: [Int]) -> Int? {
+        // 各バリアントのサンプル数を取得
+        var variantSamples: [(index: Int, samples: Int)] = []
+        
+        for variantIndex in availableVariants {
+            let key = "\(problemType)_\(variantIndex)_\(hour)"
+            let samples = stats[key]?.totalSamples ?? 0
+            variantSamples.append((variantIndex, samples))
+        }
+        
+        // サンプル数0のバリアントがあればランダムで選択
+        let untriedVariants = variantSamples.filter { $0.samples == 0 }
+        if !untriedVariants.isEmpty {
+            logger.info("Found \(untriedVariants.count) untried variants for \(problemType)")
+            return untriedVariants.randomElement()?.index
+        }
+        
+        // なければサンプル数最小のバリアントを選択
+        if let minSamples = variantSamples.min(by: { $0.samples < $1.samples }) {
+            logger.info("Selecting least tested variant \(minSamples.index) with \(minSamples.samples) samples")
+            return minSamples.index
+        }
+        
+        return nil
+    }
+    
+    /// 特定バリアントの統計をリセット（デバッグ用）
+    func resetVariantStats(problemType: String, variantIndex: Int, hour: Int) {
+        let key = "\(problemType)_\(variantIndex)_\(hour)"
+        stats.removeValue(forKey: key)
+        saveToStorage()
+        logger.info("Reset stats for \(key)")
     }
 
     // MARK: - Storage

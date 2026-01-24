@@ -683,3 +683,4 @@ extension AnalyticsManager {
 2. `persona_notification_map.json` に追加
 3. 次回シミュレーションで効果検証
 
+

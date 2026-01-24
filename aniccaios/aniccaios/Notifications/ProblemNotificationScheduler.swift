@@ -20,6 +20,12 @@ final class ProblemNotificationScheduler {
 
     /// 最小通知間隔（分）
     private let minimumIntervalMinutes = 30
+    
+    /// Phase 5: 最大シフト量（分）- 2時間まで
+    private let maxShiftMinutes = 120
+    
+    /// 現在のシフト量を保存するキー
+    private let shiftStorageKey = "com.anicca.problemNotificationShifts"
 
     private init() {}
 
@@ -46,19 +52,30 @@ final class ProblemNotificationScheduler {
                 var adjustedHour = time.hour
                 var adjustedMinute = time.minute
 
-                // タイミング最適化: 2日連続ignoredならシフト
+                // タイミング最適化: 2日連続ignoredならシフト（最大maxShiftMinutesまで）
                 let consecutiveIgnored = await MainActor.run {
                     NudgeStatsManager.shared.getConsecutiveIgnoredDays(problemType: problemRaw, hour: time.hour)
                 }
 
-                if consecutiveIgnored >= 2 {
-                    // 30分後ろにシフト
-                    adjustedMinute += 30
-                    if adjustedMinute >= 60 {
-                        adjustedMinute -= 60
-                        adjustedHour = (adjustedHour + 1) % 24
-                    }
-                    logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) due to \(consecutiveIgnored) consecutive ignored days")
+                let currentShift = getCurrentShiftMinutes(problemType: problemRaw, originalHour: time.hour)
+                let newShift = calculateNewShift(currentShift: currentShift, consecutiveIgnored: consecutiveIgnored)
+
+                if newShift > currentShift {
+                    // シフトが増加した場合
+                    let totalMinutes = time.hour * 60 + time.minute + newShift
+                    adjustedHour = (totalMinutes / 60) % 24
+                    adjustedMinute = totalMinutes % 60
+
+                    // シフト量を保存
+                    recordShift(problemType: problemRaw, originalHour: time.hour, shiftMinutes: newShift)
+
+                    logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) (total shift: \(newShift)min, max: \(self.maxShiftMinutes)min)")
+                } else if currentShift > 0 {
+                    // 既存のシフトがある場合は維持
+                    let totalMinutes = time.hour * 60 + time.minute + currentShift
+                    adjustedHour = (totalMinutes / 60) % 24
+                    adjustedMinute = totalMinutes % 60
+                    logger.info("Keeping existing shift for \(problemRaw) at \(time.hour):\(time.minute), shift: \(currentShift)min")
                 }
 
                 allSchedules.append((time: (adjustedHour, adjustedMinute), problem: problem))
@@ -254,6 +271,57 @@ final class ProblemNotificationScheduler {
             }
         }
     }
+    
+    // MARK: - Phase 5: Shift Calculation (Testable)
+
+    /// シフト量を計算（純粋関数、テスト可能）
+    /// - Parameters:
+    ///   - currentShift: 現在のシフト量（分）
+    ///   - consecutiveIgnored: 連続無視日数
+    /// - Returns: 新しいシフト量（分）、最大 maxShiftMinutes まで
+    func calculateNewShift(currentShift: Int, consecutiveIgnored: Int) -> Int {
+        guard consecutiveIgnored >= 2 else { return currentShift }
+        return min(currentShift + 30, maxShiftMinutes)
+    }
+
+    // MARK: - Phase 5: Shift Management
+
+    /// 現在のシフト量を取得
+    private func getCurrentShiftMinutes(problemType: String, originalHour: Int) -> Int {
+        let key = "\(problemType)_\(originalHour)"
+        let shifts = UserDefaults.standard.dictionary(forKey: shiftStorageKey) as? [String: Int] ?? [:]
+        return shifts[key] ?? 0
+    }
+    
+    /// シフト量を保存
+    private func recordShift(problemType: String, originalHour: Int, shiftMinutes: Int) {
+        let key = "\(problemType)_\(originalHour)"
+        var shifts = UserDefaults.standard.dictionary(forKey: shiftStorageKey) as? [String: Int] ?? [:]
+        shifts[key] = shiftMinutes
+        UserDefaults.standard.set(shifts, forKey: shiftStorageKey)
+    }
+    
+    /// シフト量をリセット（タップ時に呼び出す）
+    func resetShift(for problemType: String, originalHour: Int) {
+        let key = "\(problemType)_\(originalHour)"
+        var shifts = UserDefaults.standard.dictionary(forKey: shiftStorageKey) as? [String: Int] ?? [:]
+        shifts.removeValue(forKey: key)
+        UserDefaults.standard.set(shifts, forKey: shiftStorageKey)
+        logger.info("Reset shift for \(problemType) at hour \(originalHour)")
+    }
+    
+    #if DEBUG
+    /// デバッグ用: 全シフトをリセット
+    func resetAllShifts() {
+        UserDefaults.standard.removeObject(forKey: shiftStorageKey)
+        logger.info("All shifts reset")
+    }
+    
+    /// デバッグ用: シフト状態を取得
+    func getAllShifts() -> [String: Int] {
+        return UserDefaults.standard.dictionary(forKey: shiftStorageKey) as? [String: Int] ?? [:]
+    }
+    #endif
 
     // MARK: - Notification Parsing
 

@@ -137,9 +137,10 @@ final class ProblemNotificationScheduler {
         // scheduledHour が指定されていれば、その時刻用のバリアントを選択
         let variantIndex: Int
         if let hour = scheduledHour {
-            variantIndex = await MainActor.run {
+            let selection = await MainActor.run {
                 NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)
             }
+            variantIndex = selection.variantIndex
         } else {
             variantIndex = NudgeContent.contentForToday(for: problem).variantIndex
         }
@@ -198,32 +199,44 @@ final class ProblemNotificationScheduler {
             #endif
         }
 
-        // NudgeContentSelectorでバリアント選択（Task 7で実装）
-        let variantIndex = await MainActor.run {
+        // NudgeContentSelectorでバリアント選択（Phase 6: LLM生成対応）
+        let selection = await MainActor.run {
             NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)
         }
 
-        // キーを生成（文字列ではなくキーを保存）
-        let notificationTextKey = "nudge_\(problem.rawValue)_notification_\(variantIndex + 1)"
-        let detailTextKey = "nudge_\(problem.rawValue)_detail_\(variantIndex + 1)"
-        let titleKey = "problem_\(problem.rawValue)_notification_title"
-
         let notificationContent = UNMutableNotificationContent()
-        // 通知のtitle/bodyはスケジュール時に解決（iOS通知センターに表示されるため）
+        let titleKey = "problem_\(problem.rawValue)_notification_title"
         notificationContent.title = NSLocalizedString(titleKey, comment: "")
-        notificationContent.body = NSLocalizedString(notificationTextKey, comment: "")
         notificationContent.categoryIdentifier = Category.problemNudge.rawValue
         notificationContent.sound = .default
 
-        // userInfo にキーを保存（表示時に再解決）
-        notificationContent.userInfo = [
-            "problemType": problem.rawValue,
-            "notificationTextKey": notificationTextKey,
-            "detailTextKey": detailTextKey,
-            "variantIndex": variantIndex,
-            "scheduledHour": hour,
-            "scheduledMinute": minute
-        ]
+        if selection.isAIGenerated, let llmNudge = selection.content {
+            // LLM生成の場合
+            notificationContent.body = llmNudge.hook
+            notificationContent.userInfo = [
+                "problemType": problem.rawValue,
+                "isAIGenerated": true,
+                "llmNudgeId": llmNudge.id,
+                "notificationText": llmNudge.hook,
+                "detailText": llmNudge.content,
+                "scheduledHour": hour,
+                "scheduledMinute": minute
+            ]
+        } else {
+            // 既存バリアントの場合
+            let notificationTextKey = "nudge_\(problem.rawValue)_notification_\(selection.variantIndex + 1)"
+            let detailTextKey = "nudge_\(problem.rawValue)_detail_\(selection.variantIndex + 1)"
+            notificationContent.body = NSLocalizedString(notificationTextKey, comment: "")
+            notificationContent.userInfo = [
+                "problemType": problem.rawValue,
+                "isAIGenerated": false,
+                "notificationTextKey": notificationTextKey,
+                "detailTextKey": detailTextKey,
+                "variantIndex": selection.variantIndex,
+                "scheduledHour": hour,
+                "scheduledMinute": minute
+            ]
+        }
 
         if #available(iOS 15.0, *) {
             notificationContent.interruptionLevel = .active
@@ -243,14 +256,16 @@ final class ProblemNotificationScheduler {
 
         do {
             try await center.add(request)
-            logger.info("Scheduled problem notification: \(problem.rawValue) at \(hour):\(minute) variant:\(variantIndex)")
+            logger.info("Scheduled problem notification: \(problem.rawValue) at \(hour):\(minute) variant:\(selection.variantIndex) isAIGenerated:\(selection.isAIGenerated)")
 
-            // スケジュール成功時にNudgeStatsに記録（Task 6で実装）
+            // スケジュール成功時にNudgeStatsに記録
             await MainActor.run {
                 NudgeStatsManager.shared.recordScheduled(
                     problemType: problem.rawValue,
-                    variantIndex: variantIndex,
-                    scheduledHour: hour
+                    variantIndex: selection.variantIndex,
+                    scheduledHour: hour,
+                    isAIGenerated: selection.isAIGenerated,
+                    llmNudgeId: selection.content?.id
                 )
             }
         } catch {
@@ -328,13 +343,28 @@ final class ProblemNotificationScheduler {
     /// 通知からNudgeContentを復元
     static func nudgeContent(from userInfo: [AnyHashable: Any]) -> NudgeContent? {
         guard let problemRaw = userInfo["problemType"] as? String,
-              let problem = ProblemType(rawValue: problemRaw),
-              let variantIndex = userInfo["variantIndex"] as? Int else {
+              let problem = ProblemType(rawValue: problemRaw) else {
             return nil
         }
 
-        // 新形式: キーから解決
-        if let notificationTextKey = userInfo["notificationTextKey"] as? String,
+        // LLM生成Nudgeの場合
+        if let isAIGenerated = userInfo["isAIGenerated"] as? Bool, isAIGenerated,
+           let llmNudgeId = userInfo["llmNudgeId"] as? String,
+           let notificationText = userInfo["notificationText"] as? String,
+           let detailText = userInfo["detailText"] as? String {
+            return NudgeContent(
+                problemType: problem,
+                notificationText: notificationText,
+                detailText: detailText,
+                variantIndex: -1,
+                isAIGenerated: true,
+                llmNudgeId: llmNudgeId
+            )
+        }
+
+        // 既存バリアント: キーから解決
+        if let variantIndex = userInfo["variantIndex"] as? Int,
+           let notificationTextKey = userInfo["notificationTextKey"] as? String,
            let detailTextKey = userInfo["detailTextKey"] as? String {
             let notificationText = NSLocalizedString(notificationTextKey, comment: "")
             let detailText = NSLocalizedString(detailTextKey, comment: "")
@@ -343,18 +373,23 @@ final class ProblemNotificationScheduler {
                 problemType: problem,
                 notificationText: notificationText,
                 detailText: detailText,
-                variantIndex: variantIndex
+                variantIndex: variantIndex,
+                isAIGenerated: false,
+                llmNudgeId: nil
             )
         }
 
         // 後方互換: 古い形式（文字列直接保存）
-        if let notificationText = userInfo["notificationText"] as? String,
+        if let variantIndex = userInfo["variantIndex"] as? Int,
+           let notificationText = userInfo["notificationText"] as? String,
            let detailText = userInfo["detailText"] as? String {
             return NudgeContent(
                 problemType: problem,
                 notificationText: notificationText,
                 detailText: detailText,
-                variantIndex: variantIndex
+                variantIndex: variantIndex,
+                isAIGenerated: false,
+                llmNudgeId: nil
             )
         }
 

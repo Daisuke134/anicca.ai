@@ -29,11 +29,13 @@ struct FigmaTabBar: View {
                     icon: "leaf.fill",
                     title: String(localized: "tab_mypath")
                 )
+                .accessibilityIdentifier("tab-mypath")
                 tabButton(
                     tab: .profile,
                     icon: "person",
                     title: String(localized: "tab_profile")
                 )
+                .accessibilityIdentifier("tab-profile")
             }
             .frame(height: tabBarHeight - 1) // ボーダー分を引く
             .frame(maxWidth: .infinity)

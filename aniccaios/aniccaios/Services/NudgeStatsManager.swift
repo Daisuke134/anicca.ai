@@ -80,7 +80,7 @@ final class NudgeStatsManager {
     // MARK: - Public API
 
     /// 通知スケジュール成功時に記録
-    func recordScheduled(problemType: String, variantIndex: Int, scheduledHour: Int) {
+    func recordScheduled(problemType: String, variantIndex: Int, scheduledHour: Int, isAIGenerated: Bool = false, llmNudgeId: String? = nil) {
         let key = "\(problemType)_\(variantIndex)_\(scheduledHour)"
         let nudge = ScheduledNudge(
             problemType: problemType,
@@ -96,11 +96,11 @@ final class NudgeStatsManager {
         stats[key] = stat
 
         saveToStorage()
-        logger.info("Recorded scheduled: \(key)")
+        logger.info("Recorded scheduled: \(key) isAIGenerated:\(isAIGenerated)")
     }
 
     /// 通知タップ時に記録
-    func recordTapped(problemType: String, variantIndex: Int, scheduledHour: Int) {
+    func recordTapped(problemType: String, variantIndex: Int, scheduledHour: Int, isAIGenerated: Bool = false, llmNudgeId: String? = nil) {
         let key = "\(problemType)_\(variantIndex)_\(scheduledHour)"
 
         // scheduledNudgesを更新
@@ -117,7 +117,16 @@ final class NudgeStatsManager {
         stats[key] = stat
 
         saveToStorage()
-        logger.info("Recorded tapped: \(key), tapRate: \(stat.tapRate)")
+        logger.info("Recorded tapped: \(key), tapRate: \(stat.tapRate), isAIGenerated:\(isAIGenerated)")
+
+        // Mixpanelに送信
+        AnalyticsManager.shared.track(.nudgeTapped, properties: [
+            "problem_type": problemType,
+            "variant_index": variantIndex,
+            "scheduled_hour": scheduledHour,
+            "is_ai_generated": isAIGenerated,
+            "llm_nudge_id": llmNudgeId ?? ""
+        ])
     }
 
     /// ignored判定（アプリ起動時に呼び出す）

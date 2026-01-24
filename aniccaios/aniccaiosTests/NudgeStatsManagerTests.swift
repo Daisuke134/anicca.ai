@@ -183,5 +183,87 @@ final class NudgeStatsManagerTests: XCTestCase {
         )
         XCTAssertEqual(consecutive, 5, "Should return max consecutive ignored days across variants")
     }
+
+    // MARK: - Phase 6: isAIGenerated のテスト
+
+    /// recordTapped が isAIGenerated=true で呼び出せること
+    func test_recordTapped_withIsAIGenerated_true() {
+        NudgeStatsManager.shared.recordTapped(
+            problemType: "cant_wake_up",
+            variantIndex: -1,  // LLM生成の場合は -1
+            scheduledHour: 7,
+            isAIGenerated: true,
+            llmNudgeId: "llm-123"
+        )
+
+        // 統計が記録されていることを確認
+        let stats = NudgeStatsManager.shared.getStats(
+            problemType: "cant_wake_up",
+            variantIndex: -1,
+            hour: 7
+        )
+
+        XCTAssertNotNil(stats)
+        XCTAssertEqual(stats?.tappedCount, 1)
+    }
+
+    /// recordTapped が isAIGenerated=false で呼び出せること（後方互換）
+    func test_recordTapped_withIsAIGenerated_false() {
+        NudgeStatsManager.shared.recordTapped(
+            problemType: "cant_wake_up",
+            variantIndex: 0,
+            scheduledHour: 7,
+            isAIGenerated: false,
+            llmNudgeId: nil
+        )
+
+        let stats = NudgeStatsManager.shared.getStats(
+            problemType: "cant_wake_up",
+            variantIndex: 0,
+            hour: 7
+        )
+
+        XCTAssertNotNil(stats)
+        XCTAssertEqual(stats?.tappedCount, 1)
+    }
+
+    /// recordTapped デフォルト引数で呼び出せること（後方互換）
+    func test_recordTapped_defaultArguments() {
+        // デフォルト引数を使用（isAIGenerated, llmNudgeIdなし）
+        NudgeStatsManager.shared.recordTapped(
+            problemType: "procrastination",
+            variantIndex: 2,
+            scheduledHour: 14
+        )
+
+        let stats = NudgeStatsManager.shared.getStats(
+            problemType: "procrastination",
+            variantIndex: 2,
+            hour: 14
+        )
+
+        XCTAssertNotNil(stats)
+        XCTAssertEqual(stats?.tappedCount, 1)
+    }
+
+    /// recordScheduled が isAIGenerated=true で呼び出せること
+    func test_recordScheduled_withIsAIGenerated() {
+        NudgeStatsManager.shared.recordScheduled(
+            problemType: "staying_up_late",
+            variantIndex: -1,
+            scheduledHour: 23,
+            isAIGenerated: true,
+            llmNudgeId: "llm-456"
+        )
+
+        let stats = NudgeStatsManager.shared.getStats(
+            problemType: "staying_up_late",
+            variantIndex: -1,
+            hour: 23
+        )
+
+        XCTAssertNotNil(stats)
+        XCTAssertNotNil(stats?.lastScheduledDate)
+    }
 }
 

@@ -7,6 +7,8 @@ struct NudgeContent: Identifiable {
     let notificationText: String
     let detailText: String
     let variantIndex: Int
+    let isAIGenerated: Bool
+    let llmNudgeId: String?
 
     /// 問題タイプから通知文言と詳細文言を取得
     static func content(for problem: ProblemType, variantIndex: Int = 0) -> NudgeContent {
@@ -18,7 +20,9 @@ struct NudgeContent: Identifiable {
             problemType: problem,
             notificationText: messages[safe: index] ?? messages[0],
             detailText: details[safe: index] ?? details[0],
-            variantIndex: index
+            variantIndex: index,
+            isAIGenerated: false,
+            llmNudgeId: nil
         )
     }
 
@@ -28,6 +32,18 @@ struct NudgeContent: Identifiable {
         let messages = notificationMessages(for: problem)
         let index = (dayOfYear - 1) % max(1, messages.count)
         return content(for: problem, variantIndex: index)
+    }
+
+    /// LLM生成NudgeからNudgeContentを作成
+    static func content(from llmNudge: LLMGeneratedNudge) -> NudgeContent {
+        return NudgeContent(
+            problemType: llmNudge.problemType,
+            notificationText: llmNudge.hook,
+            detailText: llmNudge.content,
+            variantIndex: -1,  // LLM生成の場合は-1
+            isAIGenerated: true,
+            llmNudgeId: llmNudge.id
+        )
     }
 }
 

@@ -47,12 +47,19 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
+        // NudgeCard表示を優先するため、センサー同期を遅延・低優先度で実行
         Task {
-            await SensorAccessSyncService.shared.fetchLatest()
-            await AppState.shared.refreshSensorAccessAuthorizations(
-                forceReauthIfNeeded: AppState.shared.isOnboardingComplete
-            )
-            await AppState.shared.scheduleSensorRepairIfNeeded(source: .foreground)
+            // 500ms待機してNudgeCard表示を優先
+            try? await Task.sleep(for: .milliseconds(500))
+
+            // バックグラウンド優先度で実行
+            Task.detached(priority: .utility) {
+                await SensorAccessSyncService.shared.fetchLatest()
+                await AppState.shared.refreshSensorAccessAuthorizations(
+                    forceReauthIfNeeded: await AppState.shared.isOnboardingComplete
+                )
+                await AppState.shared.scheduleSensorRepairIfNeeded(source: .foreground)
+            }
         }
     }
 
@@ -80,19 +87,14 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                     // nudge_tapped を記録
                     let scheduledHour = content.userInfo["scheduledHour"] as? Int ?? 0
                     Task { @MainActor in
-                        // NudgeStats に記録
+                        // NudgeStats に記録（isAIGeneratedとllmNudgeIdを含む）
                         NudgeStatsManager.shared.recordTapped(
                             problemType: nudgeContent.problemType.rawValue,
                             variantIndex: nudgeContent.variantIndex,
-                            scheduledHour: scheduledHour
+                            scheduledHour: scheduledHour,
+                            isAIGenerated: nudgeContent.isAIGenerated,
+                            llmNudgeId: nudgeContent.llmNudgeId
                         )
-
-                        // Mixpanel に送信
-                        AnalyticsManager.shared.track(.nudgeTapped, properties: [
-                            "problem_type": nudgeContent.problemType.rawValue,
-                            "variant_index": nudgeContent.variantIndex,
-                            "scheduled_hour": scheduledHour
-                        ])
 
                         // NudgeCard を表示
                         AppState.shared.showNudgeCard(nudgeContent)

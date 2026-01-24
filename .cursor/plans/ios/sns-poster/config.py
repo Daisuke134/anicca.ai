@@ -35,18 +35,18 @@ ACCOUNTS = {
     # ---------------------------------------------------------------------
     # X (Twitter) - 6回/日
     # ---------------------------------------------------------------------
-    "x_xg2grb": {
+    "x_aniccaxxx": {
         "id": "11820",
-        "username": "@aniccaxxx",  # 旧@xg2grb
+        "username": "@aniccaxxx",
         "platform": "twitter",
         "content": "BIP",  # Build in Public のみ
-        "lang": "JP",  # Changed to Japanese
-        "frequency": 1,  # 回/日
+        "lang": "JP",
+        "frequency": 1,
         "slots": ["20:00"],
     },
-    "x_nudges": {
+    "x_aniccaen": {
         "id": "11852",
-        "username": "@aniccaen",  # 旧@AniccaNudges
+        "username": "@aniccaen",
         "platform": "twitter",
         "content": "MKT",
         "lang": "EN",

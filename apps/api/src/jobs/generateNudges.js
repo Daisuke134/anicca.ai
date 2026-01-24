@@ -5,14 +5,44 @@
  * 全アクティブユーザーに対してGPT-4o-miniでNudge文言を生成
  *
  * Railway Cron Schedule: 0 20 * * *
+ * 環境変数: CRON_MODE=nudges
  */
 
-import { query } from '../lib/db.js';
-import baseLogger from '../utils/logger.js';
+import pg from 'pg';
 import { fetch } from 'undici';
 import crypto from 'crypto';
 
-const logger = baseLogger.withContext('GenerateNudges');
+const { Pool } = pg;
+
+// 直接環境変数から取得（environment.jsを使わない）
+const DATABASE_URL = process.env.DATABASE_URL;
+const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+
+if (!DATABASE_URL) {
+  console.error('❌ DATABASE_URL is not set');
+  process.exit(1);
+}
+
+if (!OPENAI_API_KEY) {
+  console.error('❌ OPENAI_API_KEY is not set');
+  process.exit(1);
+}
+
+// DB接続
+const pool = new Pool({
+  connectionString: DATABASE_URL,
+  max: 5,
+  idleTimeoutMillis: 30_000,
+});
+
+async function query(text, params) {
+  const client = await pool.connect();
+  try {
+    return await client.query(text, params);
+  } finally {
+    client.release();
+  }
+}
 
 // 問題タイプからスケジュール時刻を取得
 function getScheduledHourForProblem(problem) {
@@ -109,13 +139,7 @@ function validateLLMOutput(output) {
 
 // メイン処理
 async function runGenerateNudges() {
-  logger.info('Starting LLM nudge generation cron job');
-
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) {
-    logger.error('OPENAI_API_KEY not configured');
-    process.exit(1);
-  }
+  console.log('✅ [GenerateNudges] Starting LLM nudge generation cron job');
 
   // 1. 全アクティブユーザーを取得（problemsを持っている人）
   const usersResult = await query(`
@@ -126,7 +150,7 @@ async function runGenerateNudges() {
   `);
 
   const users = usersResult.rows;
-  logger.info(`Found ${users.length} users with problems`);
+  console.log(`✅ [GenerateNudges] Found ${users.length} users with problems`);
 
   let totalGenerated = 0;
   let totalSkipped = 0;
@@ -143,7 +167,7 @@ async function runGenerateNudges() {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
           method: 'POST',
           headers: {
-            'Authorization': `Bearer ${apiKey}`,
+            'Authorization': `Bearer ${OPENAI_API_KEY}`,
             'Content-Type': 'application/json'
           },
           body: JSON.stringify({
@@ -155,7 +179,7 @@ async function runGenerateNudges() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          logger.error(`OpenAI API error for user ${user.profile_id}, problem ${problem}: ${response.status} ${errorText}`);
+          console.error(`❌ [GenerateNudges] OpenAI API error for user ${user.profile_id}, problem ${problem}: ${response.status} ${errorText}`);
           totalErrors++;
           continue;
         }
@@ -166,7 +190,7 @@ async function runGenerateNudges() {
         // LLM出力バリデーション
         const validated = validateLLMOutput(rawOutput);
         if (!validated) {
-          logger.warn(`LLM output validation failed for user ${user.profile_id}, problem ${problem}`);
+          console.warn(`⚠️ [GenerateNudges] LLM output validation failed for user ${user.profile_id}, problem ${problem}`);
           totalSkipped++;
           continue;
         }
@@ -199,30 +223,27 @@ async function runGenerateNudges() {
         );
 
         totalGenerated++;
-        logger.debug(`Generated nudge for user ${user.profile_id}, problem ${problem}`);
+        console.log(`✅ [GenerateNudges] Generated nudge for user ${user.profile_id}, problem ${problem}`);
 
       } catch (error) {
-        logger.error(`LLM generation failed for user ${user.profile_id}, problem ${problem}:`, error);
+        console.error(`❌ [GenerateNudges] LLM generation failed for user ${user.profile_id}, problem ${problem}:`, error.message);
         totalErrors++;
       }
     }
   }
 
-  logger.info('LLM nudge generation complete', {
-    usersProcessed: users.length,
-    totalGenerated,
-    totalSkipped,
-    totalErrors
-  });
+  console.log(`✅ [GenerateNudges] Complete: ${totalGenerated} generated, ${totalSkipped} skipped, ${totalErrors} errors`);
 }
 
 // 実行
 runGenerateNudges()
-  .then(() => {
-    logger.info('Cron job finished successfully');
+  .then(async () => {
+    console.log('✅ [GenerateNudges] Cron job finished successfully');
+    await pool.end();
     process.exit(0);
   })
-  .catch((error) => {
-    logger.error('Cron job failed:', error);
+  .catch(async (error) => {
+    console.error('❌ [GenerateNudges] Cron job failed:', error.message);
+    await pool.end();
     process.exit(1);
   });

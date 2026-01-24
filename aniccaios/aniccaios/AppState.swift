@@ -131,11 +131,9 @@ final class AppState: ObservableObject {
         // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元
         Task { await bootstrapProfileFromServerIfAvailable() }
 
-        // Phase 6: LLM生成Nudgeを取得（認証済みユーザーのみ）
+        // Phase 6: LLM生成Nudgeを取得（device_idベース、認証不要）
         Task {
-            if case .signedIn = self.authStatus {
-                await fetchTodaysLLMNudges()
-            }
+            await fetchTodaysLLMNudges()
         }
     }
 

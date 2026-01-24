@@ -17,21 +17,14 @@ actor LLMNudgeService {
 
     /// 今日生成されたNudgeを取得
     func fetchTodaysNudges() async throws -> [LLMGeneratedNudge] {
-        guard case .signedIn(let credentials) = await AppState.shared.authStatus else {
-            logger.warning("🔄 [LLM] Not signed in, skipping fetch")
-            throw ServiceError.notAuthenticated
-        }
-
         let url = await MainActor.run { AppConfig.nudgeTodayURL }
-        logger.info("🔄 [LLM] Requesting: \(url.absoluteString)")
+        let deviceId = await AppState.shared.resolveDeviceId()
+        logger.info("🔄 [LLM] Requesting: \(url.absoluteString) with deviceId: \(deviceId)")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-        request.setValue("Bearer \(credentials.jwtAccessToken ?? "")", forHTTPHeaderField: "Authorization")
-
-        let deviceId = await AppState.shared.resolveDeviceId()
         request.setValue(deviceId, forHTTPHeaderField: "device-id")
-        request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+        request.setValue(deviceId, forHTTPHeaderField: "user-id")
 
         do {
             let (data, response) = try await session.data(for: request)
@@ -64,7 +57,6 @@ actor LLMNudgeService {
     }
 
     enum ServiceError: Error {
-        case notAuthenticated
         case invalidResponse
         case httpError(Int)
     }
@@ -74,4 +66,3 @@ actor LLMNudgeService {
 private struct NudgeTodayResponse: Codable {
     let nudges: [LLMGeneratedNudge]
 }
-

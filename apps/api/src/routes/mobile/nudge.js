@@ -201,7 +201,7 @@ router.get('/today', async (req, res) => {
   try {
     const profileId = await resolveProfileId(userId);
     if (!profileId) {
-      return res.status(401).json({ error: { code: 'UNAUTHORIZED', message: 'Could not resolve profile_id' } });
+      return res.json({ nudges: [] });
     }
 
     // 今日の00:00 JST以降に生成されたNudgeを取得
@@ -245,4 +245,3 @@ router.get('/today', async (req, res) => {
 });
 
 export default router;
-

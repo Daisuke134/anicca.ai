@@ -369,7 +369,13 @@ async function runGenerateNudges() {
         );
 
         totalGenerated++;
-        console.log(`✅ [GenerateNudges] Generated nudge for user ${user.user_id}, problem ${problem}`);
+    const hookPreview = String(validated.hook || '').slice(0, 80).replace(/\s+/g, ' ');
+    const contentLen = String(validated.content || '').length;
+    console.log(`✅ [GenerateNudges] User ${user.user_id}, ${problem}, tone=${validated.tone}, hookPreview="${hookPreview}", contentLen=${contentLen}`);
+    if (process.env.LOG_NUDGE_CONTENT === 'true') {
+      console.log(`📝 [GenerateNudges] hook="${validated.hook}"`);
+      console.log(`📝 [GenerateNudges] content="${validated.content}"`);
+    }
 
       } catch (error) {
         console.error(`❌ [GenerateNudges] LLM generation failed for user ${user.user_id}, problem ${problem}:`, error.message);

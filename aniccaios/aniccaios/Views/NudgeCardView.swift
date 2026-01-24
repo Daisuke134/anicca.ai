@@ -63,17 +63,6 @@ struct NudgeCardView: View {
                         .padding(.horizontal, 32)
                         .accessibilityIdentifier("nudge-hook-text")
 
-                    #if DEBUG
-                    if content.isAIGenerated {
-                        Text("🤖")
-                            .font(.caption)
-                            .accessibilityIdentifier("llm-indicator")
-                    }
-                    Text("DEBUG: variant \(content.variantIndex)")
-                        .font(.caption)
-                        .foregroundStyle(.gray)
-                    #endif
-
                     Divider()
                         .padding(.horizontal, 40)
                 }

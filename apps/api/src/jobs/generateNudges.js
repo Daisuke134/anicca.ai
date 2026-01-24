@@ -64,9 +64,76 @@ function getScheduledHourForProblem(problem) {
   return scheduleMap[problem] || 9;
 }
 
-// プロンプトを構築
-function buildPrompt(problem) {
-  const problemNames = {
+// ユーザーの過去フィードバックを取得（パーソナライズ用）
+async function getUserFeedback(userId, problem) {
+  const result = await query(`
+    SELECT
+      ne.state->>'hook' as hook,
+      ne.state->>'content' as content,
+      ne.state->>'tone' as tone,
+      no.reward,
+      no.signals->>'outcome' as outcome,
+      no.signals->>'thumbsUp' as thumbs_up,
+      no.signals->>'thumbsDown' as thumbs_down
+    FROM nudge_events ne
+    LEFT JOIN nudge_outcomes no ON no.nudge_event_id = ne.id
+    WHERE ne.user_id = $1::uuid
+      AND ne.subtype = $2
+      AND ne.domain = 'problem_nudge'
+      AND ne.created_at >= NOW() - INTERVAL '30 days'
+      AND no.id IS NOT NULL
+    ORDER BY ne.created_at DESC
+    LIMIT 20
+  `, [userId, problem]);
+
+  const rows = result.rows;
+  if (rows.length === 0) return null;
+
+  // 成功例（reward=1 または thumbsUp）
+  const successful = rows
+    .filter(r => r.reward === 1 || r.thumbs_up === 'true')
+    .slice(0, 3)
+    .map(r => `- "${r.hook}" → "${r.content}" (tone: ${r.tone})`);
+
+  // 失敗例（reward=0 または thumbsDown または outcome=ignored）
+  const failed = rows
+    .filter(r => r.reward === 0 || r.thumbs_down === 'true' || r.outcome === 'ignored')
+    .slice(0, 3)
+    .map(r => `- "${r.hook}" → "${r.content}" (tone: ${r.tone})`);
+
+  // 好まれるトーン（成功例から抽出）
+  const successfulTones = rows
+    .filter(r => r.reward === 1 || r.thumbs_up === 'true')
+    .map(r => r.tone)
+    .filter(Boolean);
+  const preferredTone = successfulTones.length > 0
+    ? [...new Set(successfulTones)].join(', ')
+    : null;
+
+  // 避けるべきトーン（失敗例から抽出）
+  const failedTones = rows
+    .filter(r => r.reward === 0 || r.thumbs_down === 'true')
+    .map(r => r.tone)
+    .filter(Boolean);
+  const avoidedTone = failedTones.length > 0
+    ? [...new Set(failedTones)].join(', ')
+    : null;
+
+  return { successful, failed, preferredTone, avoidedTone };
+}
+
+// 言語別の文字数制限
+const CHAR_LIMITS = {
+  ja: { hook: 12, content: 40 },
+  en: { hook: 25, content: 80 }
+};
+
+// プロンプトを構築（パーソナライズ対応）
+function buildPrompt(problem, preferredLanguage = 'en', feedback = null) {
+  const isJapanese = preferredLanguage === 'ja';
+  const limits = CHAR_LIMITS[preferredLanguage] || CHAR_LIMITS.en;
+
+  const problemNamesJa = {
     staying_up_late: '夜更かし',
     cant_wake_up: '朝起きられない',
     self_loathing: '自己嫌悪',
@@ -82,49 +149,111 @@ function buildPrompt(problem) {
     loneliness: '孤独'
   };
 
+  const problemNamesEn = {
+    staying_up_late: 'Staying Up Late',
+    cant_wake_up: 'Can\'t Wake Up',
+    self_loathing: 'Self-Loathing',
+    rumination: 'Rumination',
+    procrastination: 'Procrastination',
+    anxiety: 'Anxiety',
+    lying: 'Lying',
+    bad_mouthing: 'Bad-Mouthing',
+    porn_addiction: 'Porn Addiction',
+    alcohol_dependency: 'Alcohol Dependency',
+    anger: 'Anger',
+    obsessive: 'Obsessive Thoughts',
+    loneliness: 'Loneliness'
+  };
+
+  const problemNames = isJapanese ? problemNamesJa : problemNamesEn;
   const problemName = problemNames[problem] || problem;
+
+  const toneDefinitions = isJapanese
+    ? `- strict: 厳しい、直接的、言い訳を許さない。例：「まだ寝てる？」
+- gentle: 優しい、共感的、寄り添う。例：「大丈夫」
+- logical: 論理的、データや事実ベース。例：「睡眠不足は危険」
+- provocative: 挑発的、プライドを刺激。例：「また負ける？」
+- philosophical: 哲学的、深い問い。例：「この5分が…」`
+    : `- strict: Direct, no excuses. Example: "Still in bed?"
+- gentle: Kind, empathetic. Example: "It's okay, one step at a time."
+- logical: Data-driven, factual. Example: "Sleep deprivation cuts judgment by 40%."
+- provocative: Challenges pride. Example: "Gonna lose again?"
+- philosophical: Deep questions. Example: "These 5 minutes could change everything."`;
+
+  const exampleOutput = isJapanese
+    ? `{
+  "hook": "まだ布団の中？",
+  "content": "あと5分で起きたら、今日は違う1日になる。",
+  "tone": "strict",
+  "reasoning": "Strict tone worked 3 times for this user. Gentle was ignored."
+}`
+    : `{
+  "hook": "Still scrolling?",
+  "content": "Put the phone down. Tomorrow-you will thank you.",
+  "tone": "strict",
+  "reasoning": "Strict tone worked for this user. Gentle was ignored twice."
+}`;
+
+  const languageInstruction = isJapanese
+    ? '4. Use Japanese. Natural, conversational, not robotic.'
+    : '4. Use English. Natural, conversational, not robotic.';
+
+  // フィードバックセクションを構築（パーソナライズの核心）
+  let feedbackSection = '';
+  if (feedback) {
+    feedbackSection += '\n## User Profile';
+    if (feedback.preferredTone) {
+      feedbackSection += `\n- Preferred tone: ${feedback.preferredTone} (this person responds well to this)`;
+    }
+    if (feedback.avoidedTone) {
+      feedbackSection += `\n- Avoided tone: ${feedback.avoidedTone} (this person ignores or dislikes this)`;
+    }
+    feedbackSection += '\n';
+
+    if (feedback.successful && feedback.successful.length > 0) {
+      feedbackSection += `\n## ✅ What Worked (These hooks got tapped/liked)\n`;
+      feedbackSection += feedback.successful.join('\n') + '\n';
+    }
+
+    if (feedback.failed && feedback.failed.length > 0) {
+      feedbackSection += `\n## ❌ What Failed (These hooks were ignored/disliked)\n`;
+      feedbackSection += feedback.failed.join('\n') + '\n';
+    }
+  }
 
   return `You are Anicca, an AI that reduces human suffering through perfectly-timed nudges.
 
 ## Your Mission
-Generate notification hooks and one-screen content that will make this specific person take action. The notification alone should be powerful enough to change behavior - they shouldn't even need to tap.
+Generate a notification hook and one-screen content that will make this specific person take action. The notification alone should be powerful enough to change behavior.
 
 ## Problem Type
 ${problemName}
-
+${feedbackSection}
 ## Tone Definitions
-- strict: 厳しい、直接的、言い訳を許さない。例：「まだ寝てる？言い訳はいらない」
-- gentle: 優しい、共感的、寄り添う。例：「大丈夫、少しずつでいいよ」
-- logical: 論理的、データや事実ベース。例：「睡眠不足は判断力を40%下げる」
-- provocative: 挑発的、プライドを刺激。例：「また負けるの？」
-- philosophical: 哲学的、深い問い。例：「この5分が人生を変えるかもしれない」
+${toneDefinitions}
 
 ## Output Requirements
 
 ### Hook (Notification)
-- Maximum 25 characters (CRITICAL - must fit in notification preview)
+- Maximum ${limits.hook} characters (CRITICAL - must fit in notification preview)
 - Action-oriented
-- Powerful enough that they might change behavior without tapping
+- Uses the tone that WORKS for this person (see User Profile above)
+- AVOID the tone that failed (see What Failed above)
 
 ### Content (One-Screen)
-- Maximum 80 characters
+- Maximum ${limits.content} characters
 - Specific action or insight
 - Directly related to the hook
-- Provides value even if they only glance at it
 
 ## Output Format (JSON)
 
-{
-  "hook": "まだ布団の中？",
-  "content": "あと5分で起きたら、今日は違う1日になる。試してみろ。",
-  "tone": "strict",
-  "reasoning": "This person responds well to strict tone in the morning."
-}
+${exampleOutput}
 
 ## Critical Rules
-1. NEVER exceed character limits. Hook ≤ 25, Content ≤ 80.
+1. NEVER exceed character limits. Hook ≤ ${limits.hook}, Content ≤ ${limits.content}.
 2. Output a SINGLE JSON object, not an array.
-3. Use Japanese. Natural, conversational, not robotic.`;
+3. If past hooks failed, TRY SOMETHING DIFFERENT. Learn from What Worked and What Failed.
+${languageInstruction}`;
 }
 
 // LLM出力バリデーション
@@ -143,11 +272,13 @@ async function runGenerateNudges() {
 
   // 1. 全アクティブユーザーを取得（struggles/problemsを持っている人）
   // profile JSONBの中にstruggles（新）またはproblems（旧）として保存されている
+  // preferredLanguageも取得（デフォルトは'en'）
   const usersResult = await query(`
     SELECT DISTINCT
       mp.device_id as profile_id,
       mp.user_id,
-      COALESCE(mp.profile->'struggles', mp.profile->'problems', '[]'::jsonb) as problems
+      COALESCE(mp.profile->'struggles', mp.profile->'problems', '[]'::jsonb) as problems,
+      COALESCE(mp.profile->>'preferredLanguage', 'en') as preferred_language
     FROM mobile_profiles mp
     WHERE (
       (mp.profile->'struggles' IS NOT NULL AND jsonb_array_length(mp.profile->'struggles') > 0)
@@ -165,9 +296,17 @@ async function runGenerateNudges() {
   // 2. 各ユーザーに対して処理
   for (const user of users) {
     const problems = user.problems || [];
+    const preferredLanguage = user.preferred_language || 'en';
+    const limits = CHAR_LIMITS[preferredLanguage] || CHAR_LIMITS.en;
 
     for (const problem of problems) {
-      const prompt = buildPrompt(problem);
+      // ユーザーの過去フィードバックを取得（パーソナライズ）
+      const feedback = await getUserFeedback(user.user_id, problem);
+      if (feedback) {
+        console.log(`📊 [GenerateNudges] User ${user.user_id} feedback for ${problem}: ${feedback.successful?.length || 0} success, ${feedback.failed?.length || 0} failed, preferred: ${feedback.preferredTone || 'none'}, avoided: ${feedback.avoidedTone || 'none'}`);
+      }
+
+      const prompt = buildPrompt(problem, preferredLanguage, feedback);
 
       try {
         const response = await fetch('https://api.openai.com/v1/chat/completions', {
@@ -185,7 +324,7 @@ async function runGenerateNudges() {
 
         if (!response.ok) {
           const errorText = await response.text();
-          console.error(`❌ [GenerateNudges] OpenAI API error for user ${user.profile_id}, problem ${problem}: ${response.status} ${errorText}`);
+          console.error(`❌ [GenerateNudges] OpenAI API error for user ${user.user_id}, problem ${problem}: ${response.status} ${errorText}`);
           totalErrors++;
           continue;
         }
@@ -196,7 +335,7 @@ async function runGenerateNudges() {
         // LLM出力バリデーション
         const validated = validateLLMOutput(rawOutput);
         if (!validated) {
-          console.warn(`⚠️ [GenerateNudges] LLM output validation failed for user ${user.profile_id}, problem ${problem}`);
+          console.warn(`⚠️ [GenerateNudges] LLM output validation failed for user ${user.user_id}, problem ${problem}`);
           totalSkipped++;
           continue;
         }
@@ -204,23 +343,24 @@ async function runGenerateNudges() {
         const scheduledHour = getScheduledHourForProblem(problem);
         const nudgeId = crypto.randomUUID();
 
-        // DBに保存
+        // DBに保存（言語別の文字数制限を適用）
         await query(
           `INSERT INTO nudge_events (id, user_id, domain, subtype, decision_point, state, action_template, channel, sent, created_at)
            VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7, $8, $9, timezone('utc', now()))`,
           [
             nudgeId,
-            user.profile_id,
+            user.user_id,  // ← 修正: device_id ではなく user_id を使用（API側と一致させる）
             'problem_nudge',
             problem,
             'llm_generation',
             JSON.stringify({
               id: nudgeId,
               scheduledHour: scheduledHour,
-              hook: validated.hook.slice(0, 25),
-              content: validated.content.slice(0, 80),
+              hook: validated.hook.slice(0, limits.hook),
+              content: validated.content.slice(0, limits.content),
               tone: validated.tone,
-              reasoning: validated.reasoning
+              reasoning: validated.reasoning,
+              language: preferredLanguage
             }),
             'notification',
             'push',
@@ -229,10 +369,10 @@ async function runGenerateNudges() {
         );
 
         totalGenerated++;
-        console.log(`✅ [GenerateNudges] Generated nudge for user ${user.profile_id}, problem ${problem}`);
+        console.log(`✅ [GenerateNudges] Generated nudge for user ${user.user_id}, problem ${problem}`);
 
       } catch (error) {
-        console.error(`❌ [GenerateNudges] LLM generation failed for user ${user.profile_id}, problem ${problem}:`, error.message);
+        console.error(`❌ [GenerateNudges] LLM generation failed for user ${user.user_id}, problem ${problem}:`, error.message);
         totalErrors++;
       }
     }

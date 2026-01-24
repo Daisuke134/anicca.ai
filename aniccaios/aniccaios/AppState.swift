@@ -143,14 +143,15 @@ final class AppState: ObservableObject {
 
     /// 今日生成されたLLM生成Nudgeを取得してキャッシュに保存
     func fetchTodaysLLMNudges() async {
+        logger.info("🔄 [LLM] Starting fetchTodaysLLMNudges...")
         do {
             let nudges = try await LLMNudgeService.shared.fetchTodaysNudges()
             await MainActor.run {
                 LLMNudgeCache.shared.setNudges(nudges)
             }
-            logger.info("Fetched \(nudges.count) LLM-generated nudges")
+            logger.info("✅ [LLM] Fetched and cached \(nudges.count) nudges")
         } catch {
-            logger.error("Failed to fetch todays LLM nudges: \(error.localizedDescription)")
+            logger.error("❌ [LLM] Fetch failed: \(error.localizedDescription)")
         }
     }
 

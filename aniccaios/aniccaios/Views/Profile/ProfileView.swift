@@ -26,6 +26,10 @@ struct ProfileView: View {
     @State private var isShowingAlarmKitSettingsAlert = false
     #if DEBUG
     @State private var debugAlarmTime = Date()
+    // Phase 6: LLM Debug
+    @State private var showLLMCacheAlert = false
+    @State private var llmCacheAlertMessage = ""
+    @State private var showNoLLMAlert = false
     #endif
 
     var body: some View {
@@ -59,6 +63,7 @@ struct ProfileView: View {
                     recordingSection
                     alarmTestSection
                     phase4DebugSection
+                    phase6LLMDebugSection
                     #endif
 
                     LegalLinksView()
@@ -633,21 +638,52 @@ struct ProfileView: View {
                     
                     Divider()
                     
-                    Button("📱 1枚画面テスト（夜更かし）") {
-                        let content = NudgeContent.contentForToday(for: .stayingUpLate)
-                        appState.showNudgeCard(content)
+                    Button("📱 1枚画面テスト（夜更かし / 50% LLM）") {
+                        Task {
+                            let hour = Calendar.current.component(.hour, from: Date())
+                            let selection = await MainActor.run {
+                                NudgeContentSelector.shared.selectVariant(for: .stayingUpLate, scheduledHour: hour)
+                            }
+
+                            let content: NudgeContent
+                            if selection.isAIGenerated, let llmNudge = selection.content {
+                                content = NudgeContent.content(from: llmNudge)
+                            } else {
+                                content = NudgeContent.content(for: .stayingUpLate, variantIndex: selection.variantIndex)
+                            }
+
+                            await MainActor.run {
+                                appState.showNudgeCard(content)
+                            }
+                        }
                     }
+                    .accessibilityIdentifier("debug-nudge-test-staying-up-late")
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    
+
                     Divider()
-                    
+
                     ForEach(ProblemType.allCases, id: \.self) { problem in
-                        Button("📱 \(problem.displayName)") {
-                            let content = NudgeContent.contentForToday(for: problem)
-                            appState.showNudgeCard(content)
+                        Button("📱 \(problem.displayName) (50% LLM)") {
+                            Task {
+                                let hour = Calendar.current.component(.hour, from: Date())
+                                let selection = await MainActor.run {
+                                    NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)
+                                }
+
+                                let content: NudgeContent
+                                if selection.isAIGenerated, let llmNudge = selection.content {
+                                    content = NudgeContent.content(from: llmNudge)
+                                } else {
+                                    content = NudgeContent.content(for: problem, variantIndex: selection.variantIndex)
+                                }
+
+                                await MainActor.run {
+                                    appState.showNudgeCard(content)
+                                }
+                            }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                         if problem != ProblemType.allCases.last {
                             Divider()
                         }
@@ -871,6 +907,61 @@ struct ProfileView: View {
                     }
                 }
                 .padding(.vertical, 4)
+            }
+        }
+    }
+
+    // MARK: - Phase 6 LLM Debug Section
+    private var phase6LLMDebugSection: some View {
+        VStack(spacing: 10) {
+            Text("🤖 Phase 6 LLM Debug")
+                .font(.system(size: 14, weight: .medium))
+                .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.top, 16)
+
+            CardView {
+                VStack(spacing: 12) {
+                    Button("📦 LLMキャッシュ確認") {
+                        llmCacheAlertMessage = LLMNudgeCache.shared.debugSummary()
+                        showLLMCacheAlert = true
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Divider()
+
+                    Button("🤖 100% LLM表示テスト") {
+                        if let llmNudge = LLMNudgeCache.shared.getFirstNudge() {
+                            let content = NudgeContent.content(from: llmNudge)
+                            appState.showNudgeCard(content)
+                        } else {
+                            showNoLLMAlert = true
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Divider()
+
+                    Button("🔄 LLM再フェッチ") {
+                        Task {
+                            await AppState.shared.fetchTodaysLLMNudges()
+                            llmCacheAlertMessage = "フェッチ完了: \(LLMNudgeCache.shared.count)件"
+                            showLLMCacheAlert = true
+                        }
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                }
+                .padding(.vertical, 4)
+            }
+            .alert("LLMキャッシュ", isPresented: $showLLMCacheAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text(llmCacheAlertMessage)
+            }
+            .alert("LLMデータなし", isPresented: $showNoLLMAlert) {
+                Button("OK", role: .cancel) { }
+            } message: {
+                Text("キャッシュにLLM Nudgeがありません。\nXcodeログで[LLM]を検索してください。")
             }
         }
     }

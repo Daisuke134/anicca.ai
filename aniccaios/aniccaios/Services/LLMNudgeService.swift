@@ -18,10 +18,12 @@ actor LLMNudgeService {
     /// 今日生成されたNudgeを取得
     func fetchTodaysNudges() async throws -> [LLMGeneratedNudge] {
         guard case .signedIn(let credentials) = await AppState.shared.authStatus else {
+            logger.warning("🔄 [LLM] Not signed in, skipping fetch")
             throw ServiceError.notAuthenticated
         }
 
         let url = await MainActor.run { AppConfig.nudgeTodayURL }
+        logger.info("🔄 [LLM] Requesting: \(url.absoluteString)")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
@@ -39,11 +41,21 @@ actor LLMNudgeService {
             }
 
             guard (200..<300).contains(httpResponse.statusCode) else {
-                logger.error("Failed to fetch nudges: HTTP \(httpResponse.statusCode)")
+                logger.error("❌ [LLM] Failed: HTTP \(httpResponse.statusCode)")
+                if let body = String(data: data, encoding: .utf8) {
+                    logger.error("❌ [LLM] Response: \(body)")
+                }
                 throw ServiceError.httpError(httpResponse.statusCode)
             }
 
-            let responseBody = try decoder.decode(NudgeTodayResponse.self, from: data)
+            let responseBody: NudgeTodayResponse
+            do {
+                responseBody = try decoder.decode(NudgeTodayResponse.self, from: data)
+            } catch {
+                logger.error("❌ [LLM] Decode error: \(error.localizedDescription)")
+                throw error
+            }
+            logger.info("✅ [LLM] Decoded \(responseBody.nudges.count) nudges")
             return responseBody.nudges
         } catch {
             logger.error("Failed to fetch todays nudges: \(error.localizedDescription)")

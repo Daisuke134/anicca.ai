@@ -237,6 +237,7 @@ extension SubscriptionManager: PurchasesDelegate {
     }
 }
 
+@MainActor
 extension SubscriptionInfo {
     init(info: CustomerInfo) {
         let configuredId = AppConfig.revenueCatEntitlementId

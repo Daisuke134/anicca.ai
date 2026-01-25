@@ -15,7 +15,7 @@
 5. [テストマトリックス](#5-テストマトリックス)
 6. [実装詳細](#6-実装詳細)
 7. [Unit Tests](#7-unit-tests)
-8. [E2E Tests (Maestro)](#8-e2e-tests-maestro)
+8. [手動テストチェックリスト](#8-手動テストチェックリスト👤-ユーザー)
 9. [Skills / Sub-agents](#9-skills--sub-agents)
 10. [ローカライズ](#10-ローカライズ)
 11. [実行手順](#11-実行手順)
@@ -52,8 +52,8 @@
 |------|--------|
 | 👤 ユーザー | Superwall デザイン変更（Xボタン削除、Monthly のみ） |
 | 👤 ユーザー | RevenueCat 設定（Monthly に Free Trial 追加） |
-| 👤 ユーザー | 最終実機テスト |
-| 🤖 Claude | iOS コード実装、Unit Tests、Maestro E2E |
+| 👤 ユーザー | 最終実機テスト（手動チェックリスト） |
+| 🤖 Claude | iOS コード実装、Unit Tests |
 
 ---
 
@@ -163,14 +163,31 @@ private var subscriptionButton: some View {
 
 ```swift
 extension SubscriptionInfo {
-    /// アクティブな購読者かどうか（Trial含む）
+    /// 許可されたステータス（allowlist: fail-close 設計）
+    /// これ以外のステータスは全てブロック
+    private static let allowedStatuses: Set<String> = [
+        "active", "trialing",
+        // Grace 系ステータス（後方互換）
+        "grace", "in_grace_period", "billing_issue", "billing_retry"
+    ]
+
+    /// アクティブな購読者かどうか（Trial、Grace含む）
+    /// isSubscriptionExpiredOrCanceled の論理否定として定義
     var isActiveSubscriber: Bool {
-        plan == .pro && (status == "active" || status == "trialing")
+        return !isSubscriptionExpiredOrCanceled
     }
 
-    /// 購読がキャンセル済み/期限切れかどうか
+    /// 購読がキャンセル済み/期限切れかどうか（ブロック対象）
+    /// fail-close 設計: 許可リストにないステータスは全てブロック
+    /// 注: RevenueCat が grace 期間終了時に plan を .free に更新するため、
+    ///     通常は plan=.grace + status=expired のような不整合は発生しない
     var isSubscriptionExpiredOrCanceled: Bool {
-        plan == .free || status == "expired" || status == "canceled"
+        // Free プランは常にブロック（セキュリティ: 最初にチェック）
+        if plan == .free { return true }
+
+        // Grace プランも Pro プランも同じ allowlist でチェック（fail-close 統一）
+        // 注: .grace でも status が expired/canceled なら異常状態としてブロック
+        return !Self.allowedStatuses.contains(status)
     }
 }
 ```
@@ -272,13 +289,26 @@ enum SuperwallPlacement: String {
 | 1 | isActiveSubscriber（active） | `test_isActiveSubscriber_whenActive_returnsTrue()` | ✅ |
 | 2 | isActiveSubscriber（trialing） | `test_isActiveSubscriber_whenTrialing_returnsTrue()` | ✅ |
 | 3 | isActiveSubscriber（canceled） | `test_isActiveSubscriber_whenCanceled_returnsFalse()` | ✅ |
-| 4 | isSubscriptionExpiredOrCanceled（expired） | `test_isExpiredOrCanceled_whenExpired_returnsTrue()` | ✅ |
-| 5 | isSubscriptionExpiredOrCanceled（free） | `test_isExpiredOrCanceled_whenFree_returnsTrue()` | ✅ |
-| 6 | isSubscriptionExpiredOrCanceled（active） | `test_isExpiredOrCanceled_whenActive_returnsFalse()` | ✅ |
-| 7 | canReceiveNudge は常に true | `test_canReceiveNudge_alwaysReturnsTrue()` | ✅ |
-| 8 | BlockedView が表示される | E2E: `hard-paywall-blocked.yaml` | ✅ |
-| 9 | Subscribe ボタンで Paywall 表示 | E2E: `hard-paywall-subscribe.yaml` | ✅ |
-| 10 | Cancel Subscription で Apple 設定へ | E2E: `hard-paywall-cancel.yaml` | ✅ |
+| 4 | isActiveSubscriber（grace plan + grace status） | `test_isActiveSubscriber_whenGracePlanWithGraceStatus_returnsTrue()` | ✅ |
+| 5 | isActiveSubscriber（grace plan + expired: fail-close） | `test_isActiveSubscriber_whenGracePlanWithExpiredStatus_returnsFalse()` | ✅ |
+| 6 | isActiveSubscriber（pro + grace status） | `test_isActiveSubscriber_whenProWithGraceStatus_returnsTrue()` | ✅ |
+| 7 | isActiveSubscriber（pro + expired） | `test_isActiveSubscriber_whenProExpired_returnsFalse()` | ✅ |
+| 8 | isActiveSubscriber（pro + unknown: fail-close） | `test_isActiveSubscriber_whenProUnknownStatus_returnsFalse()` | ✅ |
+| 9 | isSubscriptionExpiredOrCanceled（expired） | `test_isExpiredOrCanceled_whenExpired_returnsTrue()` | ✅ |
+| 10 | isSubscriptionExpiredOrCanceled（free） | `test_isExpiredOrCanceled_whenFree_returnsTrue()` | ✅ |
+| 11 | isSubscriptionExpiredOrCanceled（active） | `test_isExpiredOrCanceled_whenActive_returnsFalse()` | ✅ |
+| 12 | isSubscriptionExpiredOrCanceled（grace plan + grace status） | `test_isExpiredOrCanceled_whenGracePlanWithGraceStatus_returnsFalse()` | ✅ |
+| 13 | isSubscriptionExpiredOrCanceled（pro + grace status） | `test_isExpiredOrCanceled_whenProWithGraceStatus_returnsFalse()` | ✅ |
+| 14 | isSubscriptionExpiredOrCanceled（free + grace status） | `test_isExpiredOrCanceled_whenFreeWithGraceStatus_returnsTrue()` | ✅ |
+| 15 | canReceiveNudge は常に true | `test_canReceiveNudge_alwaysReturnsTrue()` | ✅ |
+| 16 | 月間カウントロジック削除 | 👤 手動テスト（コード確認） | ✅ |
+| 17 | SuperwallPlacement に resubscribe 追加 | 👤 手動テスト | ✅ |
+| 18 | 不要な Placement 削除 | 👤 手動テスト（コード確認） | ✅ |
+| 19 | BlockedView が表示される (To-Be #4, #5) | 👤 手動テスト 8.5 | ✅ |
+| 20 | BlockedView ローカライズ (To-Be #10) | 👤 手動テスト 8.9 | ✅ |
+| 21 | Subscribe ボタンで Paywall 表示 | 👤 手動テスト 8.5, 8.6 | ✅ |
+| 22 | Cancel Subscription で Apple 設定へ (To-Be #1) | 👤 手動テスト 8.4 | ✅ |
+| 23 | Profile ボタン表示切替 (To-Be #1) | 👤 手動テスト 8.4 | ✅ |
 
 ---
 
@@ -377,9 +407,10 @@ struct SubscriptionInfoTests {
     }
 
     @Test
-    func test_isActiveSubscriber_whenExpired_returnsFalse() {
+    func test_isActiveSubscriber_whenProExpired_returnsFalse() {
+        // plan=.pro でも status="expired" ならブロック
         let info = SubscriptionInfo(
-            plan: .free,
+            plan: .pro,
             status: "expired",
             currentPeriodEnd: nil,
             managementURL: nil,
@@ -393,6 +424,85 @@ struct SubscriptionInfoTests {
             willRenew: nil
         )
         #expect(info.isActiveSubscriber == false)
+    }
+
+    @Test
+    func test_isActiveSubscriber_whenProUnknownStatus_returnsFalse() {
+        // fail-close: 未知のステータスはブロック
+        let info = SubscriptionInfo(
+            plan: .pro,
+            status: "some_unknown_status",
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isActiveSubscriber == false)
+    }
+
+    @Test
+    func test_isActiveSubscriber_whenGracePlanWithGraceStatus_returnsTrue() {
+        let info = SubscriptionInfo(
+            plan: .grace,
+            status: "grace",
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isActiveSubscriber == true)
+    }
+
+    @Test
+    func test_isActiveSubscriber_whenGracePlanWithExpiredStatus_returnsFalse() {
+        // fail-close: .grace でも status が allowlist 外ならブロック
+        let info = SubscriptionInfo(
+            plan: .grace,
+            status: "expired",
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isActiveSubscriber == false)
+    }
+
+    @Test
+    func test_isActiveSubscriber_whenProWithGraceStatus_returnsTrue() {
+        // 後方互換: plan=.pro, status=grace のケース
+        let info = SubscriptionInfo(
+            plan: .pro,
+            status: "in_grace_period",
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isActiveSubscriber == true)
     }
 
     // MARK: - isSubscriptionExpiredOrCanceled Tests
@@ -478,82 +588,108 @@ struct SubscriptionInfoTests {
         )
         #expect(info.isSubscriptionExpiredOrCanceled == false)
     }
+
+    @Test
+    func test_isExpiredOrCanceled_whenGracePlanWithGraceStatus_returnsFalse() {
+        let info = SubscriptionInfo(
+            plan: .grace,
+            status: "grace",
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isSubscriptionExpiredOrCanceled == false)
+    }
+
+    @Test
+    func test_isExpiredOrCanceled_whenProWithGraceStatus_returnsFalse() {
+        // 後方互換: plan=.pro, status=billing_issue のケース
+        let info = SubscriptionInfo(
+            plan: .pro,
+            status: "billing_issue",
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isSubscriptionExpiredOrCanceled == false)
+    }
+
+    @Test
+    func test_isExpiredOrCanceled_whenFreeWithGraceStatus_returnsTrue() {
+        // セキュリティ: plan=.free は status に関わらず常にブロック
+        let info = SubscriptionInfo(
+            plan: .free,
+            status: "billing_issue",  // grace 系ステータスでも free ならブロック
+            currentPeriodEnd: nil,
+            managementURL: nil,
+            lastSyncedAt: .now,
+            productIdentifier: nil,
+            planDisplayName: nil,
+            priceDescription: nil,
+            monthlyUsageLimit: nil,
+            monthlyUsageRemaining: nil,
+            monthlyUsageCount: nil,
+            willRenew: nil
+        )
+        #expect(info.isSubscriptionExpiredOrCanceled == true)
+    }
 }
 ```
 
 ---
 
-## 8. E2E Tests (Maestro)
+## 8. 手動テストチェックリスト（👤 ユーザー）
 
-### 8.1 BlockedView 表示テスト
+実装完了後、ユーザーが実機で確認するチェックリスト。
 
-```yaml
-# maestro/hard-paywall-blocked.yaml
-appId: com.anicca.app.staging
----
-- launchApp:
-    clearState: true
+| # | カテゴリ | テスト項目 | 確認 |
+|---|---------|-----------|------|
+| 1 | 基本動作 | アプリが起動する | [ ] |
+| 2 | 基本動作 | クラッシュしない | [ ] |
+| 3 | オンボーディング | 完了後 Paywall が表示される | [ ] |
+| 4 | オンボーディング | Paywall に X ボタンがない | [ ] |
+| 5 | オンボーディング | 「Try 7 Days Free」ボタンが表示される | [ ] |
+| 6 | オンボーディング | Monthly のみ表示（Annual なし） | [ ] |
+| 7 | Free Trial | 「Try 7 Days Free」→ 購入フロー開始 | [ ] |
+| 8 | Free Trial | Sandbox で Trial 開始できる | [ ] |
+| 9 | Free Trial | Trial 後アプリが使える（BlockedView 出ない） | [ ] |
+| 10 | Free Trial | Profile に「Cancel Subscription」表示 | [ ] |
+| 11 | Profile | 「Cancel Subscription」ボタン表示 | [ ] |
+| 12 | Profile | タップ → Apple 購読管理画面が開く | [ ] |
+| 13 | BlockedView | キャンセル後 BlockedView 表示（🔒 + メッセージ） | [ ] |
+| 14 | BlockedView | 「Subscribe」ボタン表示 | [ ] |
+| 15 | BlockedView | タップ → Paywall 表示 | [ ] |
+| 16 | 再購読 | 購読 → BlockedView 消えてアプリ使える | [ ] |
+| 17 | リグレッション | My Path タブ正常 | [ ] |
+| 18 | リグレッション | 通知が届く（Nudge 動作） | [ ] |
+| 19 | リグレッション | NudgeCard 正常表示 | [ ] |
+| 20 | リグレッション | 👍👎 フィードバック動作 | [ ] |
+| 21 | ローカライズ EN | 「Cancel Subscription」「Subscribe」 | [ ] |
+| 22 | ローカライズ JP | 「購読をキャンセル」「購読する」 | [ ] |
+| 23 | ローカライズ EN | BlockedView「Subscribe to Continue」 | [ ] |
+| 24 | ローカライズ JP | BlockedView「購読して続ける」 | [ ] |
 
-# オンボーディング完了後、購読なしの状態をシミュレート
-# （実際のテストではStaging環境でSandboxアカウントを使用）
+### 事前設定（Superwall / RevenueCat）
 
-- assertVisible:
-    id: "blocked_subscribe_button"
-
-- assertVisible:
-    text: "Subscribe to Continue"
-```
-
-### 8.2 Subscribe ボタンテスト
-
-```yaml
-# maestro/hard-paywall-subscribe.yaml
-appId: com.anicca.app.staging
----
-- launchApp
-
-# Profile タブに移動
-- tapOn:
-    id: "tab_profile"
-
-# Subscribe ボタンが表示されている（未購読状態）
-- assertVisible:
-    id: "subscription_button"
-
-# タップして Paywall 表示を確認
-- tapOn:
-    id: "subscription_button"
-
-# Superwall の Paywall が表示される
-# （Superwall の UI 要素は環境依存のため、表示確認のみ）
-- assertVisible:
-    text: "Start Free Trial"
-```
-
-### 8.3 Cancel Subscription テスト
-
-```yaml
-# maestro/hard-paywall-cancel.yaml
-appId: com.anicca.app.staging
----
-- launchApp
-
-# 購読済み状態でログイン（Sandbox アカウント）
-
-# Profile タブに移動
-- tapOn:
-    id: "tab_profile"
-
-# Cancel Subscription ボタンが表示されている
-- assertVisible:
-    id: "subscription_button"
-
-- assertVisible:
-    text: "Cancel Subscription"
-
-# タップすると Apple の購読管理画面へ
-# （外部アプリへの遷移はテスト困難なため、ボタン存在確認のみ）
-```
+| 設定場所 | 設定内容 |
+|---------|---------|
+| Superwall | onboarding_complete から閉じるボタン削除 |
+| Superwall | resubscribe Placement 作成（Trial なし版） |
+| RevenueCat | Monthly に 1週間 Free Trial 設定 |
 
 ---
 
@@ -564,7 +700,7 @@ appId: com.anicca.app.staging
 | Spec作成 | `/plan` | 実装計画の作成 |
 | テスト実装 | `/tdd` | TDDでテスト先行開発 |
 | コードレビュー | `/code-review` | 実装後のレビュー |
-| E2Eテスト | Maestro MCP | UIテスト自動化 |
+| E2Eテスト | 👤 手動テスト | ユーザーが実機で確認 |
 | ビルドエラー | `/build-fix` | エラー発生時の修正 |
 | Spec/コードレビュー | `/codex-review` | 自動レビューゲート |
 | リリースノート | `/changelog-generator` | リリース時のchangelog作成 |
@@ -582,7 +718,7 @@ appId: com.anicca.app.staging
 
 // Blocked View
 "blocked_title" = "Subscribe to Continue";
-"blocked_message" = "Your subscription has expired. Subscribe to continue using Anicca.";
+"blocked_message" = "Subscribe to continue using Anicca and start your journey of change.";
 ```
 
 ### 10.2 日本語 (ja)
@@ -594,7 +730,7 @@ appId: com.anicca.app.staging
 
 // Blocked View
 "blocked_title" = "購読して続ける";
-"blocked_message" = "購読が終了しました。Aniccaを引き続きご利用いただくには購読してください。";
+"blocked_message" = "購読してAniccaで変化の旅を始めましょう。";
 ```
 
 ---
@@ -648,20 +784,14 @@ cd aniccaios && xcodebuild test \
 # 9. ビルド確認
 cd aniccaios && fastlane build_for_device
 
-# 10. Maestro E2E テスト
-maestro test maestro/hard-paywall-*.yaml
+# 10. ユーザーに手動テストチェックリストを提示
 ```
 
 ### 11.3 最終確認（👤 ユーザー）
 
-```bash
-# 実機テスト
-1. Sandbox アカウントで Free Trial 開始
-2. Trial 中にアプリが使えることを確認
-3. Trial キャンセル後にBlockedView表示を確認
-4. Subscribe ボタンで Paywall 表示を確認
-5. Cancel Subscription ボタンで Apple 設定へ遷移を確認
-```
+**セクション 8 の手動テストチェックリストを使用して確認。**
+
+全項目にチェックが入ったら「OK」と報告 → dev にマージ。
 
 ---
 
@@ -686,8 +816,8 @@ maestro test maestro/hard-paywall-*.yaml
 ### テストレビュー
 
 - [ ] Unit Tests が全て PASS するか
-- [ ] Maestro E2E Tests が全て PASS するか
 - [ ] ビルドが成功するか
+- [ ] 手動テストチェックリスト（セクション8）が全て完了するか
 
 ---
 

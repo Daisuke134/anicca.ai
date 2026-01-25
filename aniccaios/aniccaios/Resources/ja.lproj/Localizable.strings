@@ -1081,3 +1081,9 @@
 "alarmkit_permission_needed_title" = "アラームの許可が必要です";
 "alarmkit_permission_needed_message" = "設定アプリでAniccaのアラームを許可してください。";
 "problem_cant_wake_up_alarm_title" = "起床";
+
+/* ========== Single Screen UI ========== */
+"single_screen_subscribe" = "購読する";
+"single_screen_cancel_subscription" = "サブスクリプションを管理";
+"single_screen_sign_out" = "サインアウト";
+"single_screen_delete_account" = "アカウントを削除";

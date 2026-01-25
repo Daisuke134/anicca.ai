@@ -72,13 +72,14 @@ jobs:
           xcodebuild build \
             -project aniccaios.xcodeproj \
             -scheme aniccaios-staging \
+            -configuration "staging Debug" \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
             -derivedDataPath ./build
-      
+
       - name: Install App
         working-directory: aniccaios
         run: |
-          xcrun simctl install booted ./build/Build/Products/Debug-iphonesimulator/aniccaios.app
+          xcrun simctl install booted "./build/Build/Products/staging Debug-iphonesimulator/aniccaios.app"
       
       - name: Run Maestro Tests
         run: |

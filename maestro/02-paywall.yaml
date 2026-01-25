@@ -11,8 +11,8 @@ name: Paywall display and dismiss
 - launchApp
 
 # Wait for main screen to load
-- assertVisible:
-    text: "Talk"
+- extendedWaitUntil:
+    visible: "Talk"
     timeout: 10000
 
 # Navigate to Profile tab where subscription management is accessible
@@ -20,8 +20,8 @@ name: Paywall display and dismiss
     text: "Profile"
 
 # Look for the subscription/plan section
-- assertVisible:
-    text: "Plan"
+- extendedWaitUntil:
+    visible: "Plan"
     timeout: 5000
 
 # Tap on Plan to open subscription management
@@ -40,10 +40,10 @@ name: Paywall display and dismiss
     optional: true
 
 # If paywall is shown, verify it's visible
-- assertVisible:
-    text: "Monthly"
-    optional: true
+- extendedWaitUntil:
+    visible: "Monthly"
     timeout: 5000
+    optional: true
 
 - assertVisible:
     text: "Annual"
@@ -53,7 +53,6 @@ name: Paywall display and dismiss
 - tapOn:
     text: "Close"
     optional: true
-    timeout: 3000
 
 # Alternative close methods
 - tapOn:
@@ -65,8 +64,8 @@ name: Paywall display and dismiss
     optional: true
 
 # Verify we're back to the main screen
-- assertVisible:
-    text: "Profile"
+- extendedWaitUntil:
+    visible: "Profile"
     timeout: 5000
 
 # Success - paywall was displayed and closed

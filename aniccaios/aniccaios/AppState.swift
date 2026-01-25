@@ -678,9 +678,10 @@ final class AppState: ObservableObject {
     }
 
     /// Nudge受信可能かどうか
+    /// Hard Paywall: 全員がSubscriber前提なので、常にtrue
+    /// 購読チェックはBlockedViewで行う
     var canReceiveNudge: Bool {
-        if subscriptionInfo.plan == .pro { return true }
-        return monthlyNudgeCount < 10
+        return true
     }
 
     /// 月初リセットチェック（アプリ起動時に呼び出す）

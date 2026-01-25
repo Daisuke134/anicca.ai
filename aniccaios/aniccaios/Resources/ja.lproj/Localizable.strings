@@ -1082,3 +1082,8 @@
 "alarmkit_permission_needed_message" = "設定アプリでAniccaのアラームを許可してください。";
 "problem_cant_wake_up_alarm_title" = "起床";
 
+/* ========== Hard Paywall ========== */
+"profile_subscribe" = "購読する";
+"blocked_title" = "購読して続ける";
+"blocked_message" = "購読してAniccaで変化の旅を始めましょう。";
+

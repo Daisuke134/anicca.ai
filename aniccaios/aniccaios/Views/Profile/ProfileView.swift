@@ -117,11 +117,11 @@ struct ProfileView: View {
             }
         }
     }
-    
+
     private var planDisplayValue: String {
         appState.subscriptionInfo.displayPlanName
     }
-    
+
     @ViewBuilder
     private var nameRow: some View {
         HStack {

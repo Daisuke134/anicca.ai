@@ -24,6 +24,7 @@
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
 		A9EB06B36848A738F9F7FF27 /* NudgeContentSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */; };
+		SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */; };
 		FEBAE36E43A36F64C5743079 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1FFFD13F67306F87B5AA845 /* Foundation.framework */; };
 /* End PBXBuildFile section */
 
@@ -94,6 +95,7 @@
 		8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeContentSelectorTests.swift; sourceTree = "<group>"; };
 		D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetaDistributionTests.swift; sourceTree = "<group>"; };
 		D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProblemNotificationSchedulerTests.swift; sourceTree = "<group>"; };
+		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
 		E1FFFD13F67306F87B5AA845 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 /* End PBXFileReference section */
 
@@ -264,6 +266,7 @@
 				88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */,
 				134D591FFF1E0B40CA405490 /* Info.plist */,
 				D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */,
+				SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */,
 			);
 			name = aniccaiosTests;
 			path = aniccaiosTests;
@@ -499,6 +502,7 @@
 				A9EB06B36848A738F9F7FF27 /* NudgeContentSelectorTests.swift in Sources */,
 				2FE5F42A07D6CA9CCE447F06 /* NudgeStatsManagerTests.swift in Sources */,
 				95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */,
+				SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

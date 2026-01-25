@@ -8,13 +8,21 @@ struct MainTabView: View {
 
     var body: some View {
         Group {
-            switch appState.selectedRootTab {
-            case .myPath:
-                MyPathTabView()
-                    .environmentObject(appState)
-            case .profile:
-                ProfileView()
-                    .environmentObject(appState)
+            // Hard Paywall: 購読なし + オンボーディング完了 → BlockedView
+            if appState.subscriptionInfo.isSubscriptionExpiredOrCanceled && appState.isOnboardingComplete {
+                BlockedView()
+            } else {
+                // 通常のタブ表示
+                Group {
+                    switch appState.selectedRootTab {
+                    case .myPath:
+                        MyPathTabView()
+                            .environmentObject(appState)
+                    case .profile:
+                        ProfileView()
+                            .environmentObject(appState)
+                    }
+                }
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -59,14 +67,7 @@ struct MainTabView: View {
         // カウンターをインクリメント
         appState.incrementNudgeCardCompletedCount()
 
-        // Freeプランの場合、月間カウントもインクリメント
-        if appState.subscriptionInfo.plan != .pro {
-            appState.incrementMonthlyNudgeCount()
-        }
-
         let count = appState.nudgeCardCompletedCount
-        let monthlyCount = appState.monthlyNudgeCount
-        let plan = appState.subscriptionInfo.plan
 
         // NudgeCardを閉じる
         appState.dismissNudgeCard()
@@ -82,26 +83,6 @@ struct MainTabView: View {
             appState.markReviewRequested()
             return
         }
-
-        // 5回目: Paywall
-        if count == 5 && plan != .pro {
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                SuperwallManager.shared.register(placement: SuperwallPlacement.nudgeCardComplete5.rawValue)
-            }
-            return
-        }
-
-        // 10回目（月間）: Paywall + 通知キャンセル
-        if monthlyCount >= 10 && plan != .pro {
-            // 全通知をキャンセル
-            Task {
-                await ProblemNotificationScheduler.shared.cancelAllNotifications()
-            }
-
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                SuperwallManager.shared.register(placement: SuperwallPlacement.nudgeCardComplete10.rawValue)
-            }
-            return
-        }
+        // Hard Paywall: 5回目/10回目のPaywall表示は削除（全員Subscriber前提）
     }
 }

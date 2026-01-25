@@ -41,14 +41,34 @@ struct NudgeCardView: View {
 
                 // Icon and title
                 VStack(spacing: 12) {
-                    Text(content.problemType.icon)
-                        .font(.system(size: 48))
+                    ZStack(alignment: .topTrailing) {
+                        Text(content.problemType.icon)
+                            .font(.system(size: 48))
 
-                    Text(content.problemType.notificationTitle)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .textCase(.uppercase)
-                        .tracking(1)
+                        #if DEBUG
+                        if content.isAIGenerated {
+                            Text("🤖")
+                                .font(.system(size: 16))
+                                .offset(x: 8, y: -8)
+                        }
+                        #endif
+                    }
+
+                    HStack(spacing: 4) {
+                        Text(content.problemType.notificationTitle)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                            .textCase(.uppercase)
+                            .tracking(1)
+
+                        #if DEBUG
+                        if content.isAIGenerated {
+                            Text("(LLM)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.blue)
+                        }
+                        #endif
+                    }
                 }
 
                 // Main quote

@@ -6,6 +6,97 @@
 
 ---
 
+## 背景（これを理解してから実装すること）
+
+### Aniccaとは
+
+**Anicca（アニッチャ）** はパーリ語で「無常」を意味する。
+Aniccaは行動変容をサポートするiOSアプリであり、最終的には「苦しみを終わらせる」ことを目的としたAIエージェント。
+
+**核心のビジョン:**
+- 「What if Buddha were software?」（もしブッダがソフトウェアだったら？）
+- ブッダは2500年前、一人ずつ人々の苦しみを終わらせた
+- Aniccaはそれをソフトウェアとしてスケールさせる
+- 最終的に全生物の苦しみがゼロになった時、Aniccaは自らを終了する（それが「無常」の意味）
+
+**このLPの目的:**
+- iOSアプリのプロモーション（メイン）
+- Aniccaのビジョンを伝える
+- SNSへの導線を作る
+
+### ターゲットペルソナ
+
+**6-7年間、習慣化に失敗し続けている25-35歳**
+
+| 特徴 | 詳細 |
+|------|------|
+| 経験 | 習慣アプリを10個以上試して全部3日で挫折 |
+| 心理 | 「自分はダメな人間だ」と信じている |
+| 状態 | 諦めモードだが、心の奥では変わりたい |
+| 歴史 | 自分との約束を何百回も破ってきた |
+
+**刺さるメッセージ:**
+- 「6年間、何も変われなかった」
+- 「10個のアプリ全部挫折」
+
+**避けるメッセージ:**
+- 「簡単に習慣化！」
+- 「たった○日で！」（信じない、警戒する）
+
+---
+
+## 重要な決定事項（Decision Log）
+
+| # | 決定 | 理由 |
+|---|------|------|
+| 1 | **Mac版リンクを削除** | iOSがメインプロダクト。Mac版は廃止方向 |
+| 2 | **英語版をデフォルト（`/`→`/en`）** | グローバル展開優先 |
+| 3 | **日英は別ページ（`/en`, `/ja`）** | SEO有利、SNSリンクが言語別 |
+| 4 | **Hero に画像・ボタンなし** | 「End Suffering.」だけでインパクト。LPベストプラクティス |
+| 5 | **App Store CTAは最下部** | スクロールストーリーテリング。準備できた人だけがDL |
+| 6 | **グラデーション禁止** | UI Skills制約。シンプル・仏教的 |
+| 7 | **アニメーションなし** | UI Skills制約。静かで落ち着いた印象 |
+| 8 | **金色（#D4AF37）は1箇所のみ** | Philosophy セクションの Statement ボーダーのみ |
+| 9 | **SNSは4つ** | TikTok, Instagram, YouTube, X（この順番） |
+| 10 | **新機能を追加しない哲学を明記** | Aniccaの差別化ポイント |
+
+---
+
+## Git・デプロイワークフロー
+
+### 作業ブランチ
+
+```
+dev ブランチで作業 → push → Netlify自動デプロイ
+```
+
+**重要:**
+- `dev` ブランチで作業
+- `main` ブランチは触らない（App Store承認後のみ）
+- push すると自動的に Netlify にデプロイされる
+
+### Netlify設定（現状）
+
+- **サイト名**: aniccaai.com（カスタムドメイン設定済み）
+- **ビルドコマンド**: `npm run build`
+- **パブリッシュディレクトリ**: `.next`
+- **自動デプロイ**: `dev` ブランチからのpushで自動
+
+### デプロイ確認
+
+```bash
+# ローカルでビルド確認
+cd apps/landing && npm run build
+
+# Netlify CLIでプレビュー（オプション）
+npx netlify-cli deploy --dir=out
+
+# 本番デプロイ（自動）
+git add . && git commit -m "feat(landing): new landing page" && git push origin dev
+```
+
+---
+
 ## 概要
 
 ### 何を解決するか
@@ -277,7 +368,7 @@ apps/landing/
 | Title | The Big Don't | 絶対にやらないこと |
 | Statement | We will never add new features. | 新機能は追加しない。永遠に。 |
 | Contrast | Other apps say "Connect more. Share more. Give us more data." We do the opposite. Less data. Deeper understanding. | 他のアプリは「もっと連携して。もっと共有して。もっとデータをください」と言う。私たちは逆。少ないデータで、より深く理解する。 |
-| AGI | Our definition of AGI: Not "automate jobs." "End suffering." | 私たちのAGIの定義：「仕事を自動化する」ではない。「苦しみを終わらせる」。 |
+| AGI | The promise of AI is not to automate jobs. Not to accelerate science. It is to end suffering. | AIの約束は、仕事を自動化することではない。科学を加速することでもない。苦しみを終わらせることだ。 |
 | Closer | Nothing else matters. | それ以外は、意味がない。 |
 
 **UI制約:**
@@ -667,6 +758,106 @@ export const links = {
 
 ---
 
+## ビジュアルデザインシステム
+
+### 美的方向性（Aesthetic Direction）
+
+**コンセプト**: 静寂と深さ。仏教的ミニマリズム。
+
+| 要素 | 方向性 |
+|------|--------|
+| **ムード** | 静か、深い、押し付けない、でも力強い |
+| **トーン** | 禅的ミニマリズム。余白を恐れない |
+| **感情** | 安心感、希望、静けさ |
+
+### カラーパレット
+
+```
+Background (Primary):   #FFFFFF (白)
+Background (Alternate): #FAFAFA (薄いグレー、bg-muted/30相当)
+Text (Primary):         #000000 (黒)
+Text (Secondary):       #6B7280 (text-muted-foreground)
+Accent:                 #D4AF37 (金) — Philosophy セクションのボーダーのみ
+```
+
+**禁止:**
+- グラデーション
+- 紫/マルチカラー
+- グロー効果
+- 派手な色
+
+### セクション背景パターン
+
+| # | セクション | 背景 | 理由 |
+|---|-----------|------|------|
+| 1 | Navbar | 白 `#FFFFFF` | シンプル |
+| 2 | Hero | 白 `#FFFFFF` | メッセージに集中 |
+| 3 | Pain Point | 白 `#FFFFFF` | テキスト重視 |
+| 4 | Vision | 薄グレー `#FAFAFA` | セクション区切り |
+| 5 | Philosophy | 白 `#FFFFFF` | 金ボーダーが映える |
+| 6 | Roadmap | 薄グレー `#FAFAFA` | セクション区切り |
+| 7 | How It Works | 白 `#FFFFFF` | スクリーンショットが映える |
+| 8 | Content Philosophy | 薄グレー `#FAFAFA` | セクション区切り |
+| 9 | Download CTA | 白 `#FFFFFF` | クリーンな終わり |
+| 10 | Footer | 白 `#FFFFFF` + border-t | 区切り線で分離 |
+
+### タイポグラフィ
+
+| 要素 | フォント | サイズ | ウェイト |
+|------|---------|--------|---------|
+| **Hero Headline** | Inter / Noto Sans JP | `text-6xl md:text-8xl` (60px / 96px) | `font-bold` |
+| **Section Title** | Inter / Noto Sans JP | `text-3xl md:text-5xl` (30px / 48px) | `font-bold` |
+| **Subsection Title** | Inter / Noto Sans JP | `text-2xl` (24px) | `font-bold` |
+| **Body Large** | Inter / Noto Sans JP | `text-lg` (18px) | `font-normal` |
+| **Body** | Inter / Noto Sans JP | `text-base` (16px) | `font-normal` |
+| **Small** | Inter / Noto Sans JP | `text-sm` (14px) | `font-normal` |
+
+### スペーシングシステム
+
+| 要素 | 値 |
+|------|-----|
+| **セクション縦パディング** | `py-20` (80px) |
+| **コンテンツ最大幅** | `max-w-2xl` (672px) または `max-w-4xl` (896px) |
+| **要素間ギャップ** | `mt-8` (32px) が基本 |
+| **カード間ギャップ** | `gap-8` (32px) |
+| **ページ横パディング** | `px-4 md:px-8` |
+
+### レイアウト原則
+
+1. **中央揃え**: 全セクションのコンテンツは中央揃え
+2. **テキスト幅制限**: 本文は `max-w-2xl` で読みやすく
+3. **余白重視**: Hero は `h-dvh` でフルビューポート
+4. **交互背景**: 白と薄グレーを交互に使い、セクションを区切る
+
+### 仏教的デザイン要素
+
+| 要素 | 実装 |
+|------|------|
+| **金色** | Philosophy の Statement ボックスに `border-[#D4AF37]` |
+| **余白** | 各セクションに十分な余白。詰め込まない |
+| **静けさ** | アニメーションなし。静的で落ち着いた印象 |
+| **シンプルさ** | 装飾を最小限に。テキストで伝える |
+
+### レスポンシブデザイン
+
+| ブレークポイント | 調整 |
+|-----------------|------|
+| **Mobile** (`< 768px`) | Hero: `text-6xl`, セクション: 縦積み |
+| **Tablet** (`768px - 1024px`) | Hero: `text-7xl`, 2カラム |
+| **Desktop** (`> 1024px`) | Hero: `text-8xl`, 3カラム（How It Works） |
+
+### 禁止事項（再掲）
+
+- `h-screen` → `h-dvh` を使用
+- グラデーション
+- 紫/マルチカラー
+- グロー効果
+- カスタム影（Tailwind デフォルトのみ）
+- アニメーション（明示的に要求されない限り）
+- `letter-spacing` 変更
+
+---
+
 ## デザイン制約（UI Skills）
 
 | 制約 | 適用 |
@@ -809,3 +1000,171 @@ Netlify ダッシュボードで設定：
 ---
 
 **次のステップ**: ユーザーからスクリーンショット・リンク情報を受け取り、実装開始。
+
+---
+
+## 実装詳細（追加情報）
+
+### App Store バッジ
+
+**公式ダウンロードリンク**: https://developer.apple.com/app-store/marketing/guidelines/#section-badges
+
+```bash
+# 日本語版バッジ
+Download_on_the_App_Store_Badge_JP.svg
+
+# 英語版バッジ
+Download_on_the_App_Store_Badge_US.svg
+```
+
+**実装:**
+- `/public/app-store-badge-en.svg` (英語版)
+- `/public/app-store-badge-ja.svg` (日本語版)
+- または1つのSVGで両方対応（App Storeが自動ローカライズ）
+
+### 日本語フォント設定
+
+**Noto Sans JP を追加する:**
+
+```ts
+// app/fonts.ts
+import { Inter } from 'next/font/google'
+import { Noto_Sans_JP } from 'next/font/google'
+
+export const inter = Inter({
+  subsets: ['latin'],
+  variable: '--font-inter',
+})
+
+export const notoSansJP = Noto_Sans_JP({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  variable: '--font-noto-sans-jp',
+})
+```
+
+```tsx
+// app/layout.tsx
+<body className={`${inter.variable} ${notoSansJP.variable}`}>
+```
+
+```css
+/* globals.css */
+:lang(ja) {
+  font-family: var(--font-noto-sans-jp), sans-serif;
+}
+
+:lang(en) {
+  font-family: var(--font-inter), sans-serif;
+}
+```
+
+### SNS アイコン
+
+**Lucide React を使用:**
+
+```tsx
+import { Instagram, Youtube } from 'lucide-react'
+
+// TikTok と X (Twitter) は Lucide にないのでカスタムSVG
+```
+
+**カスタムSVGアイコン:**
+
+```tsx
+// components/icons/TikTokIcon.tsx
+export function TikTokIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/>
+    </svg>
+  )
+}
+
+// components/icons/XIcon.tsx
+export function XIcon({ className }: { className?: string }) {
+  return (
+    <svg className={className} viewBox="0 0 24 24" fill="currentColor">
+      <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
+    </svg>
+  )
+}
+```
+
+### Privacy / Terms ページ
+
+**現状**: 存在するか確認が必要
+
+```bash
+# 確認コマンド
+ls apps/landing/app/privacy
+ls apps/landing/app/terms
+```
+
+**なければ作成:**
+- `/privacy` → プライバシーポリシー
+- `/terms` → 利用規約
+- `/tokushoho` → 特定商取引法に基づく表記（日本向け）
+
+**実装優先度**: 低（リンクだけ用意してページは後で）
+
+### Favicon
+
+**現状**: `/public/favicon.png` が存在
+
+**対応**: そのまま使用（変更不要）
+
+### Contact Email
+
+**Footer に表示**: `keiodaisuke@gmail.com`
+
+```tsx
+<a href="mailto:keiodaisuke@gmail.com">Contact</a>
+```
+
+---
+
+## 削除するファイル・コンポーネント
+
+以下は新しいLPでは不要:
+
+| ファイル | 理由 |
+|---------|------|
+| `components/site/Demo.tsx` | 使わない |
+| `components/site/PromiseStrip.tsx` | 使わない |
+| `components/site/KeyFeatures.tsx` | 新しいセクションに置き換え |
+| `components/site/Privacy.tsx` | 新しいセクションに置き換え |
+
+**注意**: 削除前に git commit しておくこと。
+
+---
+
+## チェックリスト（実装者用）
+
+実装開始前に確認:
+
+- [ ] `dev` ブランチにいる
+- [ ] `npm install` 完了
+- [ ] `npm run dev` でローカル起動確認
+- [ ] スクリーンショット3枚を受け取った
+- [ ] App Store URL を受け取った
+- [ ] SNS URL（日英）を受け取った
+
+実装中に確認:
+
+- [ ] Hero は `h-dvh` を使用
+- [ ] `text-balance` を見出しに適用
+- [ ] `text-pretty` を本文に適用
+- [ ] グラデーション使っていない
+- [ ] 金色は Philosophy の Statement ボーダーのみ
+- [ ] アニメーションなし
+- [ ] `/en` と `/ja` の両方が動作
+
+実装完了後に確認:
+
+- [ ] `npm run build` が成功
+- [ ] モバイル表示が正しい
+- [ ] 全リンクが動作
+- [ ] 言語トグルが動作
+- [ ] Netlify デプロイ成功
+- [ ] aniccaai.com でアクセス可能

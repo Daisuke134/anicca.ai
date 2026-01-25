@@ -17,6 +17,11 @@ final class LLMNudgeCache {
         return cache[key]
     }
 
+    /// 指定された問題タイプのNudgeを取得（時刻無視、デバッグ用）
+    func getNudgeAnyHour(for problem: ProblemType) -> LLMGeneratedNudge? {
+        return cache.values.first { $0.problemType == problem }
+    }
+
     /// Nudgeをキャッシュに設定（複数一括設定）
     func setNudges(_ nudges: [LLMGeneratedNudge]) {
         for nudge in nudges {

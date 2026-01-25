@@ -29,42 +29,48 @@ Hooksで実装する。」
 
 #### ブランチ構成
 
-| ブランチ | 役割 | 状態 |
-|---------|------|------|
-| `main` | App Store で **公開中** のコード | 承認済みのみ |
-| `release/x.x.x` | App Store に **提出済み・レビュー中** | 承認待ち |
-| `dev` | **開発中** のコード（= trunk） | 常に最新 |
+| ブランチ | 役割 | Railway 環境 |
+|---------|------|-------------|
+| `main` | Production にデプロイ済みのコード | Production（自動デプロイ） |
+| `release/x.x.x` | App Store に提出するスナップショット | - |
+| `dev` | 開発中のコード（= trunk） | Staging（自動デプロイ） |
 
 #### ルール
 
 1. **単独作業時は dev で直接開発する**（feature ブランチは作らない）
 2. **並列作業時は Git Worktrees を使う**（セクション6参照）
 3. **未完成の機能は Feature Flag で隠す**
-4. **リリース準備ができたら `release/x.x.x` を切る**
-5. **App Store で承認されたら `release/x.x.x` → `main` にマージ**
-6. **レビュー中は絶対に main を触らない**
+4. **リリース準備ができたら dev → main にマージ**（Backend を先にデプロイ）
+5. **main から `release/x.x.x` を作成**（Production と同じコード）
+6. **release ブランチから App Store に提出**
 
 #### フロー
 
 ```
 dev で開発
     ↓
-完成 → release/x.x.x ブランチを切る
+テスト完了 → dev を main にマージ（Production デプロイ）
     ↓
-TestFlight でテスト
+Production で動作確認
     ↓
-App Store に提出
+release/x.x.x を main から作成
     ↓
-【承認されるまで待つ】
+release ブランチでビルド → TestFlight → App Store 提出
     ↓
-承認 → release/x.x.x を main にマージ
+承認 → 自動配布（Production は既に動いている）
     ↓
-dev で次のバージョン開発を続ける
+release を dev にマージ（同期）
 ```
 
+**なぜこの順序か：**
+- Backend を先にデプロイしないと、審査中に API が動かずリジェクトされる可能性がある
+- 参照: [Christian Findlay](https://www.christianfindlay.com/blog/app-store-deployment-back-end-first)
+- 参照: [Appcircle](https://appcircle.io/guides/ios/ios-releases)
+
 #### 注意
-- dev ブランチはプッシュすると自動で Railway（API）にデプロイされる
-- 同時に複数バージョンをレビューに出さない（1.0.8 承認後に 1.1.0 を提出）
+- main ブランチに push → Production Railway に自動デプロイ
+- dev ブランチに push → Staging Railway に自動デプロイ
+- 同時に複数バージョンをレビューに出さない（1.2.0 承認後に 1.3.0 を提出）
 
 ### 2. バージョニングルール（Semantic Versioning）
 
@@ -428,11 +434,19 @@ dev にマージ
 
 ### Q2: いつブランチを作るの？
 
-**A: リリース準備ができた時だけ。** `release/x.x.x` を切って App Store に提出。
+**A: dev → main マージ後。** main から `release/x.x.x` を切って App Store に提出。
 
 ### Q3: main ブランチはいつ更新する？
 
-**A: App Store で承認された後だけ。** レビュー中は絶対に main を触らない。
+**A: App Store 提出の前。** Backend を先に Production にデプロイするため。
+
+```
+dev → main マージ（Production デプロイ）
+    ↓
+main から release/x.x.x 作成
+    ↓
+App Store 提出
+```
 
 ### Q4: レビュー中に次のバージョンを開発していい？
 

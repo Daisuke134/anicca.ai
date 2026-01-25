@@ -16,6 +16,11 @@ final class NudgeContentSelector {
 
     private init() {}
 
+    /// テスト用: 交互切り替え状態をリセット
+    func resetAlternatingState() {
+        lastWasLLM.removeAll()
+    }
+
     /// 問題タイプと時刻からベストなバリアントを選択（Phase 6: LLM生成対応・交互）
     /// - Returns: (variantIndex: Int, isAIGenerated: Bool, content: LLMGeneratedNudge?)
     func selectVariant(for problem: ProblemType, scheduledHour: Int) -> (variantIndex: Int, isAIGenerated: Bool, content: LLMGeneratedNudge?) {

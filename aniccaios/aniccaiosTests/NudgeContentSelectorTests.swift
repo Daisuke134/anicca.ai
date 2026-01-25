@@ -42,14 +42,14 @@ final class NudgeContentSelectorTests: XCTestCase {
         // テスト前に統計とキャッシュをリセット
         NudgeStatsManager.shared.resetAllStats()
         LLMNudgeCache.shared.clear()
-        // デフォルトの乱数プロバイダーに戻す
-        selector.randomProvider = { Double.random(in: 0...1) }
+        // 交互切り替え状態をリセット
+        selector.resetAlternatingState()
     }
 
     override func tearDown() {
         NudgeStatsManager.shared.resetAllStats()
         LLMNudgeCache.shared.clear()
-        selector.randomProvider = { Double.random(in: 0...1) }
+        selector.resetAlternatingState()
         super.tearDown()
     }
 
@@ -73,15 +73,17 @@ final class NudgeContentSelectorTests: XCTestCase {
         XCTAssertEqual(result.content?.problemType, .cantWakeUp)
     }
 
-    /// 乱数が0.5以上の場合、LLMキャッシュがあっても既存バリアントが選択される
+    /// 交互切り替え: 2回目の呼び出しでは既存バリアントが選択される
     func test_selectVariant_existingWhenRandomHigh() throws {
         // LLM nudgeをキャッシュに設定
         let llmNudge = try makeTestNudge()
         LLMNudgeCache.shared.setNudges([llmNudge])
 
-        // 乱数を0.7（>= 0.5）に固定 → 既存バリアント選択
-        selector.randomProvider = { 0.7 }
+        // 1回目: LLMが選択される（交互切り替えの初回）
+        let firstResult = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
+        XCTAssertTrue(firstResult.isAIGenerated, "First call should select LLM")
 
+        // 2回目: 既存バリアントが選択される（交互切り替え）
         let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
 
         XCTAssertFalse(result.isAIGenerated)
@@ -217,17 +219,14 @@ final class NudgeContentSelectorTests: XCTestCase {
 
     // MARK: - 50% Distribution Test
 
-    /// LLMとExisting が約50/50で選択されること（統計的テスト）
+    /// 交互切り替え: LLMと既存が交互に選択されること
     func test_selectVariant_50_50_distribution() throws {
         // LLM nudgeをキャッシュに設定
         let llmNudge = try makeTestNudge()
         LLMNudgeCache.shared.setNudges([llmNudge])
 
-        // デフォルトの乱数プロバイダーを使用
-        selector.randomProvider = { Double.random(in: 0...1) }
-
         var llmCount = 0
-        let iterations = 1000
+        let iterations = 100
 
         for _ in 0..<iterations {
             let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
@@ -236,9 +235,9 @@ final class NudgeContentSelectorTests: XCTestCase {
             }
         }
 
-        // 許容誤差 ±10% (40-60%)
+        // 交互切り替えなので、50%前後になるはず（許容誤差 ±5%）
         let llmRatio = Double(llmCount) / Double(iterations)
-        XCTAssertGreaterThan(llmRatio, 0.40, "LLM should be selected at least 40% of the time")
-        XCTAssertLessThan(llmRatio, 0.60, "LLM should be selected at most 60% of the time")
+        XCTAssertGreaterThan(llmRatio, 0.45, "LLM should be selected at least 45% of the time")
+        XCTAssertLessThan(llmRatio, 0.55, "LLM should be selected at most 55% of the time")
     }
 }

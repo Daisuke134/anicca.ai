@@ -143,7 +143,7 @@ struct MyPathTabView: View {
         if appState.subscriptionInfo.plan == .free {
             // Free: セカンダリボタン（Upgrade to Pro）
             Button {
-                SuperwallManager.shared.register(placement: SuperwallPlacement.singleScreenSubscribe.rawValue)
+                SuperwallManager.shared.register(placement: SuperwallPlacement.profilePlanTap.rawValue)
             } label: {
                 Text(String(localized: "single_screen_subscribe"))
                     .font(.subheadline.weight(.medium))

@@ -1,4 +1,4 @@
-# Anicca — Voice Persuasion Agent for Behavioral Transformation
+# Anicca — Persuasion Agent for Behavioral Transformation
 
 ## Overview
 Anicca is a persuasion-first voice agent that leads people toward their best selves through our flagship desktop and iOS apps. The desktop app lives in the system tray, keeps audio I/O hot, and uses carefully scripted wake and sleep prompts to guide users toward their commitments. The iOS app extends this leadership to mobile, enabling voice access anytime and anywhere. Both platforms share the same backend API and persuasion philosophy. Through repeated interactions, Anicca's external guidance becomes internalized, empowering users to develop agency and autonomy—building good habits and breaking bad ones through their own strength. Anicca doesn't just accompany users; it leads them until they can lead themselves.

@@ -1,10 +1,17 @@
 import SwiftUI
+import RevenueCat
+import RevenueCatUI
 
 /// My Path タブ - ユーザーが選択した問題（苦しみ）のリストを表示
 struct MyPathTabView: View {
     @EnvironmentObject private var appState: AppState
     @State private var selectedProblem: ProblemType?
     @State private var showAddSheet = false
+    @State private var showSignOutConfirm = false
+    @State private var showDeleteAccountConfirm = false
+    @State private var isDeletingAccount = false
+    @State private var deleteAccountError: Error?
+    @State private var showingManageSubscription = false
 
     var body: some View {
         NavigationStack {
@@ -71,8 +78,30 @@ struct MyPathTabView: View {
                         }
                         .padding(.horizontal, 16)
                     }
+
+                    // Subscription セクション
+                    subscriptionSection
+                        .padding(.horizontal, 16)
+                        .padding(.top, 24)
+
+                    // Account セクション（サインイン時のみ）
+                    if appState.isSignedIn {
+                        accountSection
+                            .padding(.horizontal, 16)
+                            .padding(.top, 8)
+                    }
+
+                    // Legal Links (Footer)
+                    LegalLinksView()
+                        .padding(.top, 24)
+
+                    // DEBUG: テスト状態注入UI
+                    #if DEBUG
+                    debugStateInjectionSection
+                        .padding(.top, 24)
+                    #endif
                 }
-                .padding(.bottom, 100)
+                .padding(.bottom, 0)
             }
             .navigationTitle(String(localized: "tab_mypath"))
             .background(AppBackground())
@@ -92,12 +121,229 @@ struct MyPathTabView: View {
                 DeepDiveSheetView(problem: problem)
                     .environmentObject(appState)
             }
+            .alert(String(localized: "common_error"), isPresented: Binding(
+                get: { deleteAccountError != nil },
+                set: { if !$0 { deleteAccountError = nil } }
+            )) {
+                Button(String(localized: "common_ok")) { deleteAccountError = nil }
+            } message: {
+                if let error = deleteAccountError { Text(error.localizedDescription) }
+            }
         }
     }
 
     private var userProblems: [ProblemType] {
         appState.userProfile.struggles.compactMap { ProblemType(rawValue: $0) }
     }
+
+    // MARK: - Subscription Section
+
+    @ViewBuilder
+    private var subscriptionSection: some View {
+        if appState.subscriptionInfo.plan == .free {
+            // Free: セカンダリボタン（Upgrade to Pro）
+            Button {
+                SuperwallManager.shared.register(placement: SuperwallPlacement.singleScreenSubscribe.rawValue)
+            } label: {
+                Text(String(localized: "single_screen_subscribe"))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(AppTheme.Colors.buttonSelected)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)  // 44pt タップエリア確保
+                    .background(AppTheme.Colors.buttonUnselected)
+                    .clipShape(Capsule())
+            }
+        } else {
+            // Pro: セカンダリボタン（Manage Subscription）
+            Button {
+                showingManageSubscription = true
+            } label: {
+                Text(String(localized: "single_screen_cancel_subscription"))
+                    .font(.subheadline.weight(.medium))
+                    .foregroundStyle(AppTheme.Colors.buttonSelected)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 12)  // 44pt タップエリア確保
+                    .background(AppTheme.Colors.buttonUnselected)
+                    .clipShape(Capsule())
+            }
+            .sheet(isPresented: $showingManageSubscription) {
+                customerCenterContent
+            }
+        }
+    }
+
+    // MARK: - Account Section
+
+    @ViewBuilder
+    private var accountSection: some View {
+        VStack(spacing: 16) {
+            // Sign Out: テキストリンク風（グレー）
+            Button {
+                showSignOutConfirm = true
+            } label: {
+                Text(String(localized: "single_screen_sign_out"))
+                    .font(.subheadline)
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                    .frame(minHeight: 44)  // 44pt タップエリア確保
+            }
+            .alert(String(localized: "sign_out_confirm_title"), isPresented: $showSignOutConfirm) {
+                Button(String(localized: "common_cancel"), role: .cancel) { }
+                Button(String(localized: "single_screen_sign_out"), role: .destructive) {
+                    signOut()
+                }
+            } message: {
+                Text(String(localized: "sign_out_confirm_message"))
+            }
+
+            // Delete Account: テキストリンク風（システム赤）
+            Button {
+                showDeleteAccountConfirm = true
+            } label: {
+                Text(String(localized: "single_screen_delete_account"))
+                    .font(.subheadline)
+                    .foregroundStyle(Color(.systemRed))  // ダークモード対応
+                    .frame(minHeight: 44)  // 44pt タップエリア確保
+            }
+            .alert(String(localized: "delete_account_confirm_title"), isPresented: $showDeleteAccountConfirm) {
+                Button(String(localized: "common_cancel"), role: .cancel) { }
+                Button(String(localized: "single_screen_delete_account"), role: .destructive) {
+                    deleteAccount()
+                }
+            } message: {
+                Text(String(localized: "delete_account_confirm_message"))
+            }
+        }
+    }
+
+    // MARK: - Customer Center
+
+    @ViewBuilder
+    private var customerCenterContent: some View {
+        RevenueCatUI.CustomerCenterView()
+            .onCustomerCenterRestoreCompleted { customerInfo in
+                Task {
+                    let subscription = SubscriptionInfo(info: customerInfo)
+                    await MainActor.run { appState.updateSubscriptionInfo(subscription) }
+                }
+            }
+    }
+
+    // MARK: - Actions
+
+    private func signOut() {
+        appState.signOutPreservingSensorAccess()
+    }
+
+    private func deleteAccount() {
+        Task {
+            isDeletingAccount = true
+            deleteAccountError = nil
+            defer { isDeletingAccount = false }
+
+            guard case .signedIn(let credentials) = appState.authStatus else {
+                await MainActor.run {
+                    deleteAccountError = NSError(domain: "AccountDeletionError", code: 1, userInfo: [NSLocalizedDescriptionKey: "Not signed in"])
+                }
+                return
+            }
+
+            var request = URLRequest(url: AppConfig.proxyBaseURL.appendingPathComponent("mobile/account"))
+            request.httpMethod = "DELETE"
+            request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+            request.setValue(AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
+            request.setValue(credentials.userId, forHTTPHeaderField: "user-id")
+            try? await NetworkSessionManager.shared.setAuthHeaders(for: &request)
+
+            do {
+                let (_, response) = try await NetworkSessionManager.shared.session.data(for: request)
+                guard let httpResponse = response as? HTTPURLResponse else {
+                    throw NSError(domain: "AccountDeletionError", code: 2, userInfo: [NSLocalizedDescriptionKey: "Invalid response"])
+                }
+                if httpResponse.statusCode == 204 {
+                    await SubscriptionManager.shared.handleLogout()
+                    await MainActor.run { appState.signOutAndWipe() }
+                } else {
+                    throw NSError(domain: "AccountDeletionError", code: httpResponse.statusCode, userInfo: [NSLocalizedDescriptionKey: "Server error: \(httpResponse.statusCode)"])
+                }
+            } catch {
+                await MainActor.run { deleteAccountError = error }
+            }
+        }
+    }
+
+    // MARK: - DEBUG State Injection
+
+    #if DEBUG
+    @ViewBuilder
+    private var debugStateInjectionSection: some View {
+        VStack(spacing: 12) {
+            Text("DEBUG: State Injection")
+                .font(.caption)
+                .foregroundStyle(.gray)
+
+            Button {
+                let testCredentials = UserCredentials(
+                    userId: "test-user-id-\(UUID().uuidString.prefix(8))",
+                    displayName: "Test User",
+                    email: "test@example.com",
+                    jwtAccessToken: nil
+                )
+                appState.setAuthStatus(.signedIn(testCredentials))
+            } label: {
+                Text("Set Signed In")
+                    .font(.subheadline)
+                    .foregroundStyle(.blue)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.blue.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityIdentifier("debug_set_signed_in")
+
+            Button {
+                let proInfo = SubscriptionInfo(
+                    plan: .pro,
+                    status: "active",
+                    currentPeriodEnd: Date().addingTimeInterval(86400 * 30),
+                    managementURL: nil,
+                    lastSyncedAt: .now,
+                    productIdentifier: nil,
+                    planDisplayName: "Pro",
+                    priceDescription: nil,
+                    monthlyUsageLimit: nil,
+                    monthlyUsageRemaining: nil,
+                    monthlyUsageCount: nil,
+                    willRenew: true
+                )
+                appState.updateSubscriptionInfo(proInfo)
+            } label: {
+                Text("Set Pro Plan")
+                    .font(.subheadline)
+                    .foregroundStyle(.purple)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.purple.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityIdentifier("debug_set_pro")
+
+            Button {
+                appState.setAuthStatus(.signedOut)
+                appState.updateSubscriptionInfo(.free)
+            } label: {
+                Text("Reset to Free + Signed Out")
+                    .font(.subheadline)
+                    .foregroundStyle(.red)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(Color.red.opacity(0.1))
+                    .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityIdentifier("debug_reset_state")
+        }
+        .padding(.horizontal, 16)
+    }
+    #endif
 
     private var emptyStateView: some View {
         VStack(spacing: 16) {

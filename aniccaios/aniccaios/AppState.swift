@@ -128,6 +128,9 @@ final class AppState: ObservableObject {
         
         // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元
         Task { await bootstrapProfileFromServerIfAvailable() }
+
+        // AlarmKit 移行処理（v1.3.0 以降で一度だけ実行）
+        migrateFromAlarmKit()
     }
 
     func markOnboardingComplete() {
@@ -168,7 +171,15 @@ final class AppState: ObservableObject {
     }
     
     // MARK: - Authentication
-    
+
+    /// 認証状態の単一ソース（userId が有効かどうかで判定）
+    var isSignedIn: Bool {
+        guard let userId = authStatus.userId, !userId.isEmpty else {
+            return false
+        }
+        return true
+    }
+
     func setAuthStatus(_ status: AuthStatus) {
         authStatus = status
     }
@@ -359,11 +370,7 @@ final class AppState: ObservableObject {
             "keywords": profile.keywords,
             "summary": profile.summary,
             "nudgeIntensity": profile.nudgeIntensity.rawValue,
-            "stickyMode": profile.stickyMode,
-            "useAlarmKitForWake": profile.useAlarmKitForWake,
-            "useAlarmKitForTraining": profile.useAlarmKitForTraining,
-            "useAlarmKitForBedtime": profile.useAlarmKitForBedtime,
-            "useAlarmKitForCustom": profile.useAlarmKitForCustom
+            "stickyMode": profile.stickyMode
         ]
         
         if let big5 = profile.big5 {
@@ -797,19 +804,6 @@ final class AppState: ObservableObject {
             )
             profile.big5 = scores
         }
-        // AlarmKit設定（各習慣ごと）
-        if let useAlarmKit = payload["useAlarmKitForWake"] as? Bool {
-            profile.useAlarmKitForWake = useAlarmKit
-        }
-        if let useAlarmKitTraining = payload["useAlarmKitForTraining"] as? Bool {
-            profile.useAlarmKitForTraining = useAlarmKitTraining
-        }
-        if let useAlarmKitBedtime = payload["useAlarmKitForBedtime"] as? Bool {
-            profile.useAlarmKitForBedtime = useAlarmKitBedtime
-        }
-        if let useAlarmKitCustom = payload["useAlarmKitForCustom"] as? Bool {
-            profile.useAlarmKitForCustom = useAlarmKitCustom
-        }
         // Stickyモード（後方互換: stickyModeEnabled / wakeStickyModeEnabled も読み取る）
         if let sticky = payload["stickyMode"] as? Bool {
             profile.stickyMode = sticky
@@ -830,7 +824,7 @@ final class AppState: ObservableObject {
         }
         
         // v3: サーバーにデータがあっても、オンボーディング強制完了はしない
-        // Mic/Notifications/AlarmKit画面を必ず通すため、isOnboardingCompleteの自動更新を廃止
+        // Notifications画面を必ず通すため、isOnboardingCompleteの自動更新を廃止
         // オンボーディング完了は markOnboardingComplete() でのみ行う
     }
 
@@ -1017,6 +1011,20 @@ final class AppState: ObservableObject {
         persistSensorRepairPending(false)
     }
 
+    // MARK: - AlarmKit Migration
+
+    private let alarmKitMigrationKey = "alarmKitMigrationCompleted_v1_3_0"
+
+    /// プロダクション用移行関数（init() から呼び出し）
+    func migrateFromAlarmKit() {
+        Task {
+            await migrateFromAlarmKitTestable(
+                scheduler: ProblemNotificationScheduler.shared,
+                problems: self.userProfile.struggles
+            )
+        }
+    }
+
     // MARK: - DEBUG Methods
 
     #if DEBUG
@@ -1062,7 +1070,7 @@ enum PurchaseEnvironmentStatus: Codable, Equatable {
     case ready
     case accountMissing
     case paymentsDisabled
-    
+
     var message: LocalizedStringKey {
         switch self {
         case .ready:
@@ -1072,5 +1080,45 @@ enum PurchaseEnvironmentStatus: Codable, Equatable {
         case .paymentsDisabled:
             return "settings_subscription_payments_disabled"
         }
+    }
+}
+
+// MARK: - AlarmKit Migration (Testable)
+
+/// テスト可能な移行関数（Scheduler と問題リストを注入可能）
+func migrateFromAlarmKitTestable(
+    scheduler: ProblemNotificationSchedulerProtocol,
+    problems: [String]
+) async {
+    let migrationKey = "alarmKitMigrationCompleted_v1_3_0"
+    guard !UserDefaults.standard.bool(forKey: migrationKey) else { return }
+
+    // AlarmKit API は削除済みのため、呼び出し不要
+    // → iOS システムが自動的に既存アラームを無効化
+
+    // 通知を再スケジュール（問題リストを渡す）
+    await scheduler.scheduleNotifications(for: problems)
+
+    UserDefaults.standard.set(true, forKey: migrationKey)
+}
+
+// MARK: - Single Screen Display Conditions
+
+/// View 表示条件判定ヘルパー
+enum SingleScreenDisplayConditions {
+    static func shouldShowSignOutButton(isSignedIn: Bool) -> Bool {
+        return isSignedIn
+    }
+
+    static func shouldShowDeleteAccountButton(isSignedIn: Bool) -> Bool {
+        return isSignedIn
+    }
+
+    static func shouldShowSubscribeButton(plan: SubscriptionInfo.Plan) -> Bool {
+        return plan == .free
+    }
+
+    static func shouldShowCancelSubscriptionButton(plan: SubscriptionInfo.Plan) -> Bool {
+        return plan == .pro
     }
 }

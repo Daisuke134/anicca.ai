@@ -19,19 +19,6 @@ struct aniccaiosApp: App {
                 .environmentObject(appState)
                 // v3: OSロケールに追従（locale overrideを撤廃）
                 .tint(AppTheme.Colors.accent)
-                // AlarmKit「今日を始める」ボタンでOneScreenを開く
-                .onReceive(
-                    NotificationCenter.default.publisher(for: Notification.Name("OpenProblemOneScreen"))
-                        .receive(on: DispatchQueue.main)
-                ) { notification in
-                    guard let userInfo = notification.userInfo,
-                          let problemTypeRaw = userInfo["problemType"] as? String,
-                          let problemType = ProblemType(rawValue: problemTypeRaw) else { return }
-
-                    // OneScreenを表示
-                    let content = NudgeContent.contentForToday(for: problemType)
-                    appState.pendingNudgeCard = content
-                }
         }
     }
 }

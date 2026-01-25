@@ -1082,3 +1082,13 @@
 "alarmkit_permission_needed_message" = "Please enable alarm permission for Anicca in the Settings app.";
 "problem_cant_wake_up_alarm_title" = "Wake Up";
 
+/* ========== Single Screen UI ========== */
+"single_screen_subscribe" = "Upgrade to Pro";
+"single_screen_cancel_subscription" = "Manage Subscription";
+"single_screen_sign_out" = "Sign Out";
+"single_screen_delete_account" = "Delete Account";
+"sign_out_confirm_title" = "Sign Out?";
+"sign_out_confirm_message" = "Are you sure you want to sign out?";
+"delete_account_confirm_title" = "Delete Account?";
+"delete_account_confirm_message" = "This action cannot be undone. All your data will be permanently deleted.";
+

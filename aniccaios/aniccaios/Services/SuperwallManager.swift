@@ -8,6 +8,7 @@ enum SuperwallPlacement: String {
     case nudgeCardComplete5 = "nudge_card_complete_5"
     case nudgeCardComplete10 = "nudge_card_complete_10"
     case profilePlanTap = "profile_plan_tap"
+    case singleScreenSubscribe = "single_screen_subscribe"
 }
 
 /// Superwall統合マネージャー

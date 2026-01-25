@@ -1082,3 +1082,13 @@
 "alarmkit_permission_needed_message" = "設定アプリでAniccaのアラームを許可してください。";
 "problem_cant_wake_up_alarm_title" = "起床";
 
+/* ========== Single Screen UI ========== */
+"single_screen_subscribe" = "Pro にアップグレード";
+"single_screen_cancel_subscription" = "サブスクリプションを管理";
+"single_screen_sign_out" = "サインアウト";
+"single_screen_delete_account" = "アカウントを削除";
+"sign_out_confirm_title" = "サインアウトしますか？";
+"sign_out_confirm_message" = "本当にサインアウトしますか？";
+"delete_account_confirm_title" = "アカウントを削除しますか？";
+"delete_account_confirm_message" = "この操作は取り消せません。すべてのデータが永久に削除されます。";
+

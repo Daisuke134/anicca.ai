@@ -77,16 +77,7 @@ struct UserProfile: Codable {
     var summary: String
     var nudgeIntensity: NudgeIntensity
     var stickyMode: Bool
-    
-    // AlarmKit設定（各習慣ごと）
-    var useAlarmKitForWake: Bool
-    var useAlarmKitForTraining: Bool
-    var useAlarmKitForBedtime: Bool
-    var useAlarmKitForCustom: Bool
 
-    // AlarmKit設定（ProblemType: cantWakeUp用）
-    var useAlarmKitForCantWakeUp: Bool
-    
     // Phase 3: Proactive Agent
     var problemDetails: [String: [String]]  // 深掘り回答（問題ID: 選択した選択肢）
     var customProblems: [CustomProblem]      // カスタム課題
@@ -126,11 +117,6 @@ struct UserProfile: Codable {
         summary: String = "",
         nudgeIntensity: NudgeIntensity = .default,
         stickyMode: Bool = true,
-        useAlarmKitForWake: Bool = false,  // デフォルトOFF、Wake習慣ON時にユーザーに許可を求める
-        useAlarmKitForTraining: Bool = false,
-        useAlarmKitForBedtime: Bool = false,
-        useAlarmKitForCustom: Bool = false,
-        useAlarmKitForCantWakeUp: Bool = false,  // デフォルトOFF、Profile画面でユーザーが有効化
         problemDetails: [String: [String]] = [:],
         customProblems: [CustomProblem] = []
     ) {
@@ -152,11 +138,6 @@ struct UserProfile: Codable {
         self.summary = summary
         self.nudgeIntensity = nudgeIntensity
         self.stickyMode = stickyMode
-        self.useAlarmKitForWake = useAlarmKitForWake
-        self.useAlarmKitForTraining = useAlarmKitForTraining
-        self.useAlarmKitForBedtime = useAlarmKitForBedtime
-        self.useAlarmKitForCustom = useAlarmKitForCustom
-        self.useAlarmKitForCantWakeUp = useAlarmKitForCantWakeUp
         self.problemDetails = problemDetails
         self.customProblems = customProblems
     }
@@ -181,8 +162,6 @@ struct UserProfile: Codable {
         case problems
         case stickyModeEnabled
         case wakeStickyModeEnabled
-        
-        case useAlarmKitForWake, useAlarmKitForTraining, useAlarmKitForBedtime, useAlarmKitForCustom, useAlarmKitForCantWakeUp
     }
     
     init(from decoder: Decoder) throws {
@@ -228,19 +207,7 @@ struct UserProfile: Codable {
         } else {
             stickyMode = true
         }
-        
-        // AlarmKit設定（各習慣ごと）
-        useAlarmKitForWake = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForWake) ?? false
-        useAlarmKitForTraining = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForTraining) ?? false
-        useAlarmKitForBedtime = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForBedtime) ?? false
-        useAlarmKitForCustom = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCustom) ?? false
-        
-        // カスタム習慣のAlarmKitは常にOFFから始める（既存ユーザーも含めてリセット）
-        useAlarmKitForCustom = false
 
-        // ProblemType: cantWakeUp用AlarmKit設定
-        useAlarmKitForCantWakeUp = try container.decodeIfPresent(Bool.self, forKey: .useAlarmKitForCantWakeUp) ?? false
-        
         // Phase 3: Proactive Agent
         problemDetails = try container.decodeIfPresent([String: [String]].self, forKey: .problemDetails) ?? [:]
         customProblems = try container.decodeIfPresent([CustomProblem].self, forKey: .customProblems) ?? []
@@ -271,12 +238,6 @@ struct UserProfile: Codable {
         try container.encode(summary, forKey: .summary)
         try container.encode(nudgeIntensity, forKey: .nudgeIntensity)
         try container.encode(stickyMode, forKey: .stickyMode)
-        
-        try container.encode(useAlarmKitForWake, forKey: .useAlarmKitForWake)
-        try container.encode(useAlarmKitForTraining, forKey: .useAlarmKitForTraining)
-        try container.encode(useAlarmKitForBedtime, forKey: .useAlarmKitForBedtime)
-        try container.encode(useAlarmKitForCustom, forKey: .useAlarmKitForCustom)
-        try container.encode(useAlarmKitForCantWakeUp, forKey: .useAlarmKitForCantWakeUp)
 
         // Phase 3: Proactive Agent
         try container.encode(problemDetails, forKey: .problemDetails)

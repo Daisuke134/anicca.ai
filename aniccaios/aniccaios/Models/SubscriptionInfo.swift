@@ -18,6 +18,27 @@ struct SubscriptionInfo: Codable, Equatable {
     var isEntitled: Bool { plan != .free && status != "expired" }
     var shouldShowPaywall: Bool { !isEntitled }
 
+    // MARK: - Hard Paywall Properties
+
+    /// 許可されるステータス（fail-close: このリストにないステータスはブロック）
+    private static let allowedStatuses: Set<String> = [
+        "active", "trialing",
+        "grace", "in_grace_period", "billing_issue", "billing_retry"
+    ]
+
+    /// アクティブなサブスクライバーかどうか（アプリ利用を許可するか）
+    var isActiveSubscriber: Bool {
+        return !isSubscriptionExpiredOrCanceled
+    }
+
+    /// サブスクリプションが期限切れまたはキャンセル済みか
+    var isSubscriptionExpiredOrCanceled: Bool {
+        // セキュリティ: plan=.free は status に関わらず常にブロック
+        if plan == .free { return true }
+        // fail-close: allowedStatuses にないステータスはブロック
+        return !Self.allowedStatuses.contains(status)
+    }
+
     // `init(from:)` を定義していると memberwise init が合成されないケースがあるため明示定義
     init(
         plan: Plan,

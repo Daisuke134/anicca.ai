@@ -1,0 +1,53 @@
+appId: com.anicca.ios.staging
+tags:
+  - account
+  - single-screen
+---
+# 前提条件: Apple Sign-in 済み状態
+# DEBUG ビルドでテスト用サインイン状態を注入
+
+- launchApp:
+    clearState: true
+
+# Onboarding をスキップ
+- runFlow:
+    when:
+      visible: "Get Started"
+    file: ../flows/skip-onboarding.yaml
+
+# DEBUG: テスト用にサインイン状態を設定
+- tapOn:
+    id: "debug_set_signed_in"
+    optional: true
+
+# 状態反映を待つ
+- extendedWaitUntil:
+    visible:
+      text: "Sign Out"
+    timeout: 3000
+
+# Account セクションへスクロール
+- scrollUntilVisible:
+    element:
+      text: "Sign Out"
+    direction: DOWN
+
+# Sign Out ボタンが表示されていることを確認
+- assertVisible:
+    text: "Sign Out"
+
+# Delete Account ボタンが表示されていることを確認
+- assertVisible:
+    text: "Delete Account"
+
+# Sign Out をタップして確認ダイアログを表示
+- tapOn:
+    text: "Sign Out"
+
+# 確認ダイアログが表示されることを確認
+- assertVisible:
+    text: "Sign Out?"
+
+# キャンセルをタップ
+- tapOn:
+    text: "Cancel"

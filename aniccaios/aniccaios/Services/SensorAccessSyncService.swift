@@ -5,6 +5,15 @@ actor SensorAccessSyncService {
     static let shared = SensorAccessSyncService()
     private let logger = Logger(subsystem: "com.anicca.ios", category: "SensorAccessSync")
 
+    /// タイムアウト秒数（デフォルト5秒、テスト用に変更可能）
+    /// Note: 低速ネットワークで失敗した場合、次回フォアグラウンド時にリトライされる
+    private(set) var timeoutInterval: TimeInterval = 5.0
+
+    /// テスト用: タイムアウトを設定
+    func setTimeoutInterval(_ interval: TimeInterval) {
+        timeoutInterval = interval
+    }
+
     private struct RemoteState: Decodable {
         let screenTimeEnabled: Bool
         let sleepEnabled: Bool
@@ -45,6 +54,7 @@ actor SensorAccessSyncService {
         let baseURL = await MainActor.run { AppConfig.proxyBaseURL }
         var request = URLRequest(url: baseURL.appendingPathComponent("mobile/sensors/state"))
         request.httpMethod = "GET"
+        request.timeoutInterval = timeoutInterval
         request.setValue(await AppState.shared.resolveDeviceId(), forHTTPHeaderField: "device-id")
         request.setValue(creds.userId, forHTTPHeaderField: "user-id")
 

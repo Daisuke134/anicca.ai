@@ -1,0 +1,55 @@
+# Phase 6: フィードバックフローテスト
+#
+# 👍ボタンをタップして「ありがとう！」が表示されることを確認
+#
+appId: ai.anicca.app.ios
+tags:
+  - phase6
+  - feedback
+  - nudge
+---
+- launchApp:
+    clearState: false
+
+# Profile タブに移動
+- tapOn:
+    text: "Profile"
+
+# 下にスクロールしてDebugセクションを表示
+- scrollUntilVisible:
+    element:
+      text: "📱 1枚画面テスト（夜更かし）"
+    direction: DOWN
+    timeout: 5000
+
+# Debug Nudgeテストボタンをタップ
+- tapOn:
+    id: "debug-nudge-test-staying-up-late"
+
+# NudgeCard表示待ち
+- extendedWaitUntil:
+    visible:
+      id: "nudge-card-view"
+    timeout: 5000
+
+# 👍ボタンをタップ
+- tapOn:
+    id: "feedback-thumbs-up"
+
+# フィードバック送信後の状態確認
+- extendedWaitUntil:
+    visible:
+      id: "feedback-submitted"
+    timeout: 3000
+
+# 「ありがとう！」テキストが表示されていることを確認
+- assertVisible:
+    id: "feedback-submitted"
+
+# スクリーンショット
+- takeScreenshot: "feedback-submitted"
+
+# カードを閉じる
+- tapOn:
+    id: "nudge-card-close"
+

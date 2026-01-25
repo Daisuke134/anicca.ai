@@ -23,47 +23,87 @@
 Hooksで実装する。」
 ```
 
+### 0.5 出力形式ルール
+
+**説明・チェックリスト・比較は常にテーブル形式で出力する。**
+
+### 0.6 テスト範囲ルール
+
+**テストは実装した部分だけ。変更していないものはテストしない。**
+
+手動テストチェックリストを作る時：
+- 今回の実装で変更・追加したものだけをリストに入れる
+- 変更していない既存機能（リグレッションテスト）は含めない
+- 「念のため」で無関係な項目を追加しない
+
+長文の箇条書きは読みにくい。以下の場合は必ずテーブルを使う：
+- チェックリスト
+- 手順説明
+- 比較
+- ステータス報告
+
+❌ ダメな例：
+```
+- [ ] アプリが起動する
+- [ ] クラッシュしない
+- [ ] オンボーディング完了後、Paywall が表示される
+```
+
+✅ 良い例：
+| # | カテゴリ | テスト項目 | 確認 |
+|---|---------|-----------|------|
+| 1 | 基本動作 | アプリが起動する | [ ] |
+| 2 | 基本動作 | クラッシュしない | [ ] |
+| 3 | オンボーディング | Paywall 表示 | [ ] |
+
 ### 1. ブランチルール（最重要）
 
 **Trunk-Based Development + Release Branch 戦略を採用。**
 
 #### ブランチ構成
 
-| ブランチ | 役割 | 状態 |
-|---------|------|------|
-| `main` | App Store で **公開中** のコード | 承認済みのみ |
-| `release/x.x.x` | App Store に **提出済み・レビュー中** | 承認待ち |
-| `dev` | **開発中** のコード（= trunk） | 常に最新 |
+| ブランチ | 役割 | Railway 環境 |
+|---------|------|-------------|
+| `main` | Production にデプロイ済みのコード | Production（自動デプロイ） |
+| `release/x.x.x` | App Store に提出するスナップショット | - |
+| `dev` | 開発中のコード（= trunk） | Staging（自動デプロイ） |
 
 #### ルール
 
-1. **dev で直接開発する**（feature ブランチは作らない）
-2. **未完成の機能は Feature Flag で隠す**
-3. **リリース準備ができたら `release/x.x.x` を切る**
-4. **App Store で承認されたら `release/x.x.x` → `main` にマージ**
-5. **レビュー中は絶対に main を触らない**
+1. **単独作業時は dev で直接開発する**（feature ブランチは作らない）
+2. **並列作業時は Git Worktrees を使う**（セクション6参照）
+3. **未完成の機能は Feature Flag で隠す**
+4. **リリース準備ができたら dev → main にマージ**（Backend を先にデプロイ）
+5. **main から `release/x.x.x` を作成**（Production と同じコード）
+6. **release ブランチから App Store に提出**
 
 #### フロー
 
 ```
 dev で開発
     ↓
-完成 → release/x.x.x ブランチを切る
+テスト完了 → dev を main にマージ（Production デプロイ）
     ↓
-TestFlight でテスト
+Production で動作確認
     ↓
-App Store に提出
+release/x.x.x を main から作成
     ↓
-【承認されるまで待つ】
+release ブランチでビルド → TestFlight → App Store 提出
     ↓
-承認 → release/x.x.x を main にマージ
+承認 → 自動配布（Production は既に動いている）
     ↓
-dev で次のバージョン開発を続ける
+release を dev にマージ（同期）
 ```
 
+**なぜこの順序か：**
+- Backend を先にデプロイしないと、審査中に API が動かずリジェクトされる可能性がある
+- 参照: [Christian Findlay](https://www.christianfindlay.com/blog/app-store-deployment-back-end-first)
+- 参照: [Appcircle](https://appcircle.io/guides/ios/ios-releases)
+
 #### 注意
-- dev ブランチはプッシュすると自動で Railway（API）にデプロイされる
-- 同時に複数バージョンをレビューに出さない（1.0.8 承認後に 1.1.0 を提出）
+- main ブランチに push → Production Railway に自動デプロイ
+- dev ブランチに push → Staging Railway に自動デプロイ
+- 同時に複数バージョンをレビューに出さない（1.2.0 承認後に 1.3.0 を提出）
 
 ### 2. バージョニングルール（Semantic Versioning）
 
@@ -122,7 +162,9 @@ if let newFormat = userInfo["notificationTextKey"] {
 - コミットメッセージは日本語でもOK
 
 ### 3. 言語ルール
-- 思考は英語、回答の生成は日本語で行う
+- **ユーザーは英語または日本語で話す**（音声入力で英語が速いため）
+- **回答は常に日本語で行う**（ユーザーが英語で話しても日本語で返す）
+- 思考プロセスは英語でOK
 - CLAUDE.mdやドキュメントは日本語で記述
 
 ### 4. リファクタリング方針（未使用コードの扱い）
@@ -142,6 +184,365 @@ if let newFormat = userInfo["notificationTextKey"] {
 - `.cursor/plans/future/` - 将来実装予定の機能パターン
 - `.cursor/plans/ui-patterns/` - 再利用可能なUIパターン
 
+### 5. Review Gate（codex-review）
+
+**重要なマイルストーンで必ず codex-review SKILL を実行し、ok: true になるまで修正→再レビューを繰り返す。**
+
+#### いつ実行するか
+
+| タイミング | 例 |
+|-----------|-----|
+| Spec/Plans 更新後 | `*-spec.md` 作成・編集後 |
+| 大きな実装完了後 | 5ファイル以上 / 公開API変更 / infra・config変更 |
+| コミット/PR/リリース前 | `git commit` の直前 |
+
+#### ワークフロー
+
+```
+Spec作成 → codex-review → ok: true まで修正
+    ↓
+実装 → codex-review → ok: true まで修正
+    ↓
+コミット前 → codex-review → ok: true まで修正
+    ↓
+コミット
+```
+
+#### ルール
+
+1. **blocking issue が 1件でもあれば進まない**
+2. **最大5回まで反復**（ok: true または max_iters 到達まで）
+3. **advisory は参考情報**（ok: true でもレポートに記載）
+
+### 6. 並列開発ルール（Git Worktrees）
+
+**複数エージェントが同時に作業する場合の必須ルール。**
+
+#### なぜ Worktrees か
+
+| 他の選択肢 | 問題点 |
+|-----------|--------|
+| 全員 dev で作業 | コンフリクト地獄、お互いのコードが干渉 |
+| feature ブランチ切り替え | stash 忘れ、コンテキスト切り替えのオーバーヘッド |
+| 複数 clone | ディスク容量浪費、git history が分断 |
+| **Worktrees** | ✅ 完全隔離 + 共有履歴 + 軽量 |
+
+#### ディレクトリ構成
+
+```
+~/Downloads/
+├── anicca-project/              ← メインリポジトリ（dev ブランチ）
+├── anicca-feature-auth/         ← Worktree 1（feature/auth）
+├── anicca-feature-nudge/        ← Worktree 2（feature/nudge）
+├── anicca-fix-bug-123/          ← Worktree 3（fix/bug-123）
+└── ...
+```
+
+#### 絶対禁止
+
+- 同じブランチで複数エージェントが作業
+- Worktree なしで複数タスクを並行実行
+
+#### 必須フロー
+
+```bash
+# 1. タスク開始時に Worktree を作成
+git worktree add ../anicca-<task-name> -b feature/<task-name>
+
+# 2. Worktree ディレクトリで作業（完全隔離）
+cd ../anicca-<task-name>
+
+# 3. テスト完了後、dev にマージ
+cd /path/to/anicca-project  # メインリポジトリに戻る
+git checkout dev
+git merge feature/<task-name>
+
+# 4. Worktree をクリーンアップ
+git worktree remove ../anicca-<task-name>
+git branch -d feature/<task-name>
+```
+
+#### エージェントへの指示
+
+- **作業開始時**: 必ず Worktree を作成してから作業を開始
+- **作業終了時**: テスト完了後、ユーザーにマージ許可を求める（勝手にマージしない）
+
+#### 並列開発時の Spec ルール
+
+**Spec は「契約」として機能する。** 他のエージェントがその Spec を読めば、何をやっているか理解できる。
+
+| ルール | 理由 |
+|--------|------|
+| **各 Worktree に独自の Spec を作成** | 干渉を避けるため |
+| **触るファイルを Spec の境界に明記** | 同じファイルを複数エージェントが触らないように |
+| **依存関係があれば Spec に書く** | 他タスクへの依存を可視化 |
+| **共通の CLAUDE.md は全 Worktree で共有** | 一貫したルール適用 |
+
+**Spec ファイルの配置例:**
+```
+anicca-feature-auth/
+└── .cursor/plans/auth-spec.md       ← このタスク専用の Spec
+
+anicca-feature-nudge/
+└── .cursor/plans/nudge-spec.md      ← 別タスクの Spec
+```
+
+**Spec に書く境界の例:**
+```markdown
+## 境界（Boundaries）
+
+### 触るファイル
+- `Services/AuthService.swift`（新規作成）
+- `Views/LoginView.swift`（修正）
+
+### 触らないファイル
+- `Views/NudgeCardView.swift`（他タスクで作業中）
+- `Services/NudgeService.swift`（他タスクで作業中）
+```
+
+#### ワークツリーでのバックエンド開発
+
+**ワークツリーからpushしてもRailwayに自動デプロイされない。**
+
+| 状況 | Railway デプロイ |
+|------|-----------------|
+| dev ブランチに push | ✅ 自動デプロイ |
+| ワークツリーから push | ❌ 自動デプロイされない |
+| Railway CLI で手動デプロイ | ✅ 任意のブランチから可能 |
+
+**ルール**:
+
+1. **バックエンド変更がある場合** → Railway CLIで手動デプロイが必要
+   ```bash
+   cd apps/api && railway up --environment staging
+   ```
+
+2. **デプロイ完了を待ってから** バックエンド連携テストを実行（2-3分）
+
+3. **テスト完了後** → devにマージ → Railway自動デプロイで本番反映
+
+**フロー**:
+
+```
+ワークツリーでAPI実装
+    ↓
+railway up --environment staging（手動デプロイ）
+    ↓
+デプロイ完了待ち（2-3分）
+    ↓
+iOS連携テスト
+    ↓
+テストPASS → devにマージ
+    ↓
+push → Railway自動デプロイ
+```
+
+**注意**:
+- 複数エージェントが同時にバックエンドをデプロイすると上書きされる
+- バックエンド変更がある作業は**順番に**デプロイ＆テストする
+
+### 7. 実機デプロイ自動化
+
+**テスト完了後、Xcode を開かずに実機にデプロイする。**
+
+#### 前提条件
+
+```bash
+# ios-deploy インストール（初回のみ）
+brew install ios-deploy
+
+# 動作確認
+ios-deploy --detect  # 接続中の iPhone を検出
+```
+
+#### 自動デプロイコマンド
+
+```bash
+# ステージングスキームで実機にインストール
+cd aniccaios && fastlane build_for_device
+
+# 実機未接続でエラーの場合 → シミュレータで確認
+cd aniccaios && fastlane build_for_simulator
+# シミュレータで起動後、ユーザーに確認依頼
+```
+
+#### ワークフロー
+
+```
+Unit Tests PASS
+    ↓
+Integration Tests PASS
+    ↓
+Maestro E2E Tests PASS（シミュレータ）
+    ↓
+🤖「全テスト PASS しました。実機/シミュレータにインストールしますか？」
+    ↓
+【ユーザーが選択】
+  - 実機にインストール
+  - シミュレータで確認
+  - 今はスキップ
+    ↓
+【実機選択 & 未接続の場合】→ シミュレータにフォールバック提案
+    ↓
+ビルド & インストール実行
+    ↓
+ユーザーに報告 + チェックリスト提示
+    ↓
+ユーザーが確認 →「OK」
+    ↓
+dev にマージ
+```
+
+#### デプロイ前の確認（必須）
+
+**エージェントはテスト完了後、必ずユーザーに確認を取ってからデプロイする。**
+
+なぜ確認が必要か:
+- 他のブランチ/Worktree で作業中の可能性
+- ビルドに 2-3 分かかる（待ち時間の無駄を避ける）
+- デバイスが接続されていない可能性
+
+確認メッセージの例:
+```
+全テスト PASS しました。
+
+実機にインストールしますか？
+- 実機にインストール（接続済み: iPhone 15 Pro）
+- シミュレータで確認
+- 今はスキップ（後で /deploy で実行可能）
+```
+
+**重要**:
+- エージェントが自分でコマンドを実行する（ユーザーに実行させない）
+- **デプロイ前に必ず確認を取る**（勝手にビルド開始しない）
+- 実機未接続 → シミュレータにフォールバック提案
+- 実機必須の機能（通知タップ、センサー等）の場合のみ実機を強く推奨
+- TestFlightは最終確認・配布用。開発中は build_for_device または build_for_simulator
+
+### 8. マージ前の最終確認（必須）
+
+**エージェントは勝手にマージしない。必ずユーザーの確認を得る。**
+
+#### エージェントが提示すべきチェックリスト
+
+実機テスト準備完了時、以下の形式でユーザーに報告：
+
+```markdown
+## 実機テスト チェックリスト
+
+### 基本動作
+- [ ] アプリが起動する
+- [ ] クラッシュしない
+
+### 今回の変更（feature/xxx）
+- [ ] [変更内容1] が正しく動作する
+- [ ] [変更内容2] が正しく動作する
+
+### リグレッション（壊れていないか）
+- [ ] オンボーディングが動作する
+- [ ] 通知が届く
+- [ ] 既存機能が動作する
+
+確認完了したら「OK」と言ってください。dev にマージします。
+```
+
+#### 禁止事項
+
+- ユーザーの確認なしに dev へマージ
+- チェックリストなしで「完了しました」と報告
+- 実機テストをスキップして「シミュレータで確認済み」で済ませる
+
+### 9. API 後方互換性ルール（超重要）
+
+**古いバージョンのユーザーを壊さない。モバイルアプリは即座にアップデートされない。**
+
+参照: [Endgrate](https://endgrate.com/blog/api-versioning-best-practices-for-backward-compatibility), [ITNEXT](https://itnext.io/that-simple-backend-change-just-broke-our-mobile-app-76676c0dfbe8)
+
+#### 禁止（Destructive Changes）
+
+| 変更 | 結果 |
+|------|------|
+| エンドポイント削除 | 古いアプリが 404 エラー |
+| レスポンスフィールド削除 | 古いアプリがパースエラー |
+| レスポンス型変更 | 古いアプリがパースエラー |
+| 必須パラメータ追加 | 古いアプリが 400 エラー |
+| 認証方式変更 | 古いアプリが 401 エラー |
+
+#### 許可（Additive Changes）
+
+| 変更 | 理由 |
+|------|------|
+| 新規エンドポイント追加 | 古いアプリは呼ばない |
+| オプショナルフィールド追加 | 古いアプリは無視する |
+| 新規テーブル追加 | 既存クエリに影響なし |
+
+#### 削除したい場合のルール
+
+1. **6ヶ月前に deprecated 通知**
+2. **移行ガイド提供**
+3. **95% 以上が新バージョンに移行したら削除可能**
+
+#### 例：Voice Session 削除の教訓
+
+```
+❌ やってはいけないこと:
+- /api/realtime/voice を削除
+- 古いアプリが壊れる
+
+✅ やるべきこと:
+- 新しいエンドポイントを追加
+- 古いエンドポイントは 6ヶ月維持
+- 95% 移行後に削除
+```
+
+### 10. Landing Page (Netlify) デプロイルール
+
+**確認前に dev にマージ/push するのは禁止。**
+
+#### ワークツリーでの作業フロー
+
+```
+1. ワークツリー作成: git worktree add ../anicca-landing -b feature/landing-xxx
+2. 変更完了 → cd apps/landing && npx netlify deploy --build（プレビュー）
+3. プレビュー URL で確認
+4. OK → ユーザー確認 → dev にマージ
+5. dev push → 本番自動デプロイ
+```
+
+#### Netlify CLI 必須
+
+| コマンド | 用途 |
+|---------|------|
+| `npx netlify deploy --build` | プレビューデプロイ（確認用） |
+| `npx netlify deploy --build --prod` | 本番デプロイ |
+
+**理由:** CLI を使わないとビルドエラーが見えない。push だけだとユーザーがログを確認する手間がかかる。
+
+### 11. コンテンツ変更ルール
+
+**変更を実装する前に、必ずパッチをチャットで示す。**
+
+| パターン | 判定 |
+|---------|------|
+| 「修正します」→ 実装 | ❌ |
+| Before/After をチャットで示す → 承認 → 実装 | ✅ |
+
+**特に重要な場面:**
+- i18n.ts のテキスト変更
+- Spec ファイルの変更
+- 複数ファイルにまたがる変更
+
+### 12. App Store リンクルール
+
+**直接 URL ではなくリダイレクト URL を使う。**
+
+| パターン | 判定 |
+|---------|------|
+| `https://apps.apple.com/us/app/xxx/id123` | ❌ |
+| `https://aniccaai.com/app` | ✅ |
+
+**理由:** アプリ名が変わっても URL が壊れない。`/app` ルートがリダイレクトを担当。
+
 ---
 
 ## リリース管理 Q&A
@@ -150,15 +551,26 @@ if let newFormat = userInfo["notificationTextKey"] {
 
 ### Q1: dev で直接作業する？それとも feature ブランチ作る？
 
-**A: dev で直接作業する。** feature ブランチは作らない。未完成の機能は Feature Flag で隠す。
+**A: 単独作業なら dev で直接。並列作業なら Worktree。**
+
+- **単独エージェント**: dev で直接作業。Feature Flag で未完成機能を隠す。
+- **複数エージェント**: 各自 Worktree を作成して隔離。完了後 dev にマージ。
 
 ### Q2: いつブランチを作るの？
 
-**A: リリース準備ができた時だけ。** `release/x.x.x` を切って App Store に提出。
+**A: dev → main マージ後。** main から `release/x.x.x` を切って App Store に提出。
 
 ### Q3: main ブランチはいつ更新する？
 
-**A: App Store で承認された後だけ。** レビュー中は絶対に main を触らない。
+**A: App Store 提出の前。** Backend を先に Production にデプロイするため。
+
+```
+dev → main マージ（Production デプロイ）
+    ↓
+main から release/x.x.x 作成
+    ↓
+App Store 提出
+```
 
 ### Q4: レビュー中に次のバージョンを開発していい？
 
@@ -192,28 +604,83 @@ release/1.0.8 でバグ発見
 
 **A: No。** 1 つずつ。1.0.8 が承認されてから 1.1.0 を提出。
 
+### Q9: 複数エージェントで同時に開発するときは？
+
+**A: Git Worktrees を使う。** 各エージェントは専用の Worktree で作業する。
+
+```bash
+# エージェント1: 認証機能
+git worktree add ../anicca-feature-auth -b feature/auth
+
+# エージェント2: Nudge改善
+git worktree add ../anicca-feature-nudge -b feature/nudge
+
+# 完了後、順番に dev へマージ
+```
+
+### Q10: エージェントが勝手にマージしていい？
+
+**A: No。絶対禁止。** 必ずユーザーが実機で確認してから。チェックリストを提示して許可を待つ。
+
 ---
 
 ## Spec ファイルの書き方（必読）
 
 ### 目的
 
-Spec ファイルは「エージェントが読んだだけで実装できる」レベルの詳細を含む。
+Spec ファイルは「設計の意図が明確で、AI が読んで実装できる」レベルの詳細を含む。
+
+> **原則: Spec は What と Why を定義する。How（実装コード）は AI に任せる。**
+> — Spec-Driven Development (SDD) ベストプラクティス 2025
+
+### Spec に書くもの / 書かないもの
+
+| 書くもの | 書かないもの |
+|---------|-------------|
+| 何を解決するか（What） | 関数のボディ（実装コード） |
+| なぜ必要か（Why） | テストコードの全文 |
+| 受け入れ条件（テスト可能な形式） | Maestro YAML の全文 |
+| データモデル / API コントラクト | 詳細なアルゴリズム |
+| 主要な関数シグネチャ | コピペで動くパッチ |
+| テストマトリックス（名前と対象） | - |
+| 境界（やらないこと） | - |
+
+**なぜフルパッチを書かないのか:**
+- Spec が長くなりすぎてメンテ不可
+- 実装とSpec両方を更新する二重作業
+- レビューの意味が薄れる（既に書いてあるなら何をレビュー？）
+- AI の最適化余地がゼロになる
 
 ### 必須セクション
 
 | セクション | 内容 | 必須 |
 |-----------|------|------|
 | **概要** | 何を解決するか、なぜ必要か | ✅ |
-| **As-Is** | 現状のコード/問題 | ✅ |
-| **To-Be** | 変更後のコード/状態 | ✅ |
+| **受け入れ条件** | テスト可能な形式の成功基準 | ✅ |
+| **As-Is** | 現状のコード構造/問題（概要レベル） | ✅ |
+| **To-Be** | 変更後の設計（シグネチャ、データモデル） | ✅ |
 | **To-Be チェックリスト** | 全 To-Be を列挙（漏れ防止） | ✅ |
-| **テストマトリックス** | 各 To-Be に対応するテスト | ✅ |
-| **Unit Tests** | テストコード全文 | ✅ |
-| **E2E Tests (Maestro)** | YAML 全文 | ✅ |
+| **テストマトリックス** | テスト名と対象の対応 | ✅ |
+| **E2E シナリオ** | Maestro フロー名と検証項目 | ✅ |
+| **Skills / Sub-agents** | 各ステージで使用するもの | ✅ |
+| **境界（Boundaries）** | やらないこと、触らないファイル | ✅ |
 | **ローカライズ** | 日本語/英語の追加文字列 | ✅ |
 | **実行手順** | ビルド、テストコマンド | ✅ |
 | **レビューチェックリスト** | レビュアー用 | ✅ |
+
+### Skills / Sub-agents 使用マップ
+
+Specファイルには以下を必ず記載：
+
+| ステージ | 使用するもの | 用途 |
+|---------|-------------|------|
+| Spec作成 | `/plan` | 実装計画の作成 |
+| テスト実装 | `/tdd-workflow` | TDDでテスト先行開発 |
+| コードレビュー | `/code-review` | 実装後のレビュー |
+| E2Eテスト | Maestro MCP | UIテスト自動化 |
+| リリースノート | `/changelog-generator` | リリース時のchangelog作成 |
+| ビルドエラー | `/build-fix` | エラー発生時の修正 |
+| Spec/コードレビュー | `/codex-review` | 自動レビューゲート |
 
 ### テストマトリックス例
 
@@ -230,17 +697,61 @@ Spec ファイルは「エージェントが読んだだけで実装できる」
 Spec レビュー時に確認すること:
 
 - [ ] 全 To-Be がテストマトリックスに含まれているか
-- [ ] 各 To-Be に対応するテストコードがあるか
+- [ ] 受け入れ条件がテスト可能な形式か
+- [ ] 設計（シグネチャ、データモデル）が明確か
+- [ ] 境界（やらないこと）が定義されているか
 - [ ] ローカライズ（日英）は正しいか
-- [ ] パッチは完全か（コピペで動くレベル）
 - [ ] 後方互換性は保たれているか
 - [ ] As-Is の問題が To-Be で解決されるか
+
+### ユーザー GUI タスクの明記（必須）
+
+**Spec ファイルには、ユーザーが GUI で行う作業を必ず明記する。**
+
+#### ルール
+
+1. **コード実装前にできるセットアップは、先にユーザーにやらせる**
+   - Webhook URL 取得、API Key 取得、環境変数設定など
+   - 「後でやる」は禁止。依存関係がある場合は先にやる
+
+2. **具体的な手順を書く**（「〇〇を設定」だけはNG）
+   - URL、ボタン名、画面名を明記
+   - スクリーンショットがあればなお良い
+
+3. **実装途中でユーザー確認が必要な場合は明記**
+   - Maestro でテストできない項目
+   - 実機でしか確認できない項目
+   - 外部サービスとの連携確認
+
+4. **Spec ファイルに専用セクションを設ける**
+
+```markdown
+## ユーザー作業（実装前）
+
+| # | タスク | 手順 | 取得するもの |
+|---|--------|------|-------------|
+| 1 | Slack App 作成 | [手順へのリンク] | Webhook URL |
+
+## ユーザー作業（実装中）
+
+| # | タイミング | タスク | 理由 |
+|---|-----------|--------|------|
+| 1 | Slack 投稿テスト後 | Slack で確認 | 自動テスト不可 |
+
+## ユーザー作業（実装後）
+
+| # | タスク | 確認項目 |
+|---|--------|---------|
+| 1 | 翌日6:00確認 | 自動投稿が届くか |
+```
 
 ### スキル活用
 
 - **Spec 作成時**: `/plan` で計画
-- **実装時**: `/tdd` で TDD ワークフロー
-- **レビュー時**: `/code-review` でコードレビュー
+- **テスト実装時**: `/tdd-workflow` で TDD ワークフロー
+- **コードレビュー時**: `/code-review` でコードレビュー
+- **自動レビューゲート**: `/codex-review` でSpec/コード自動レビュー
+- **リリースノート作成時**: `/changelog-generator` でchangelog生成
 
 ---
 
@@ -400,7 +911,9 @@ alcohol_dependency, anger, obsessive, loneliness
 
 - [ ] devブランチにいることを確認 (`git branch`)
 - [ ] 最新のdevをプル (`git pull origin dev`)
+- [ ] 並列作業の場合は Worktree を作成 (`git worktree add ../anicca-<task> -b feature/<task>`)
 - [ ] 作業完了後はこまめにプッシュ
+- [ ] マージ前にユーザーの実機確認を待つ
 
 ---
 
@@ -438,6 +951,61 @@ alcohol_dependency, anger, obsessive, loneliness
 - 設計が強制的に良くなる（テストしやすい = 良い設計）
 - リファクタリングが怖くなくなる
 
+### テストコードのベストプラクティス（2025年版）
+
+#### AAA パターン（必須）
+
+全てのテストは **Arrange-Act-Assert** パターンで構造化する。
+
+```swift
+func testUserLogin() {
+    // Arrange: テストデータと依存関係を準備
+    let mockAuth = MockAuthService()
+    let viewModel = LoginViewModel(auth: mockAuth)
+
+    // Act: テスト対象のアクションを実行
+    viewModel.login(email: "test@example.com", password: "pass123")
+
+    // Assert: 期待する結果を検証
+    #expect(viewModel.isLoggedIn == true)
+}
+```
+
+#### Swift Testing（Xcode 16+、推奨）
+
+新しいテストは Swift Testing フレームワークを使う。
+
+```swift
+// XCTest（旧）
+XCTAssertEqual(result, expected)
+XCTAssertTrue(condition)
+
+// Swift Testing（推奨）
+#expect(result == expected)
+#expect(condition)
+
+// パラメータ化テスト（Swift Testing の強み）
+@Test(arguments: ["staying_up_late", "cant_wake_up", "anxiety"])
+func testProblemTypeContent(type: String) {
+    let content = NudgeContent.forProblemType(type)
+    #expect(content != nil)
+}
+```
+
+#### FIRST 原則
+
+| 原則 | 説明 |
+|------|------|
+| **F**ast | ミリ秒で完了（遅いテストは実行されない） |
+| **I**solated | 他のテストに依存しない |
+| **R**epeatable | 何度実行しても同じ結果 |
+| **S**elf-validating | Pass/Fail が自動判定 |
+| **T**horough | エッジケースもカバー |
+
+#### テストの長さ
+
+**目標: 10行以下。** 長いテストは複雑すぎるサイン。
+
 ### テストファイルの場所
 
 | 種類 | パス | 命名規則 |
@@ -450,13 +1018,15 @@ alcohol_dependency, anger, obsessive, loneliness
 
 ```
 1. Spec ファイル作成 → .cursor/plans/ios/xxx/feature-spec.md
-2. 🔴 失敗するテストを書く → aniccaiosTests/
-3. 🟢 テストを通すコードを書く
-4. 🔵 リファクタリング
-5. Maestro E2E を書く → maestro/
-6. ビルド確認 → fastlane build_for_device
-7. 全テスト PASS 確認 → xcodebuild test
-8. PR / release ブランチ作成
+2. /codex-review → Spec 承認
+3. 🔴 失敗するテストを書く → aniccaiosTests/
+4. 🟢 テストを通すコードを書く
+5. 🔵 リファクタリング
+6. /codex-review → 実装レビュー
+7. ❓ UI変更あり？ → Yes: Maestro E2E / No: スキップ
+8. ユーザーに確認 →「実機にインストールしますか？」
+9. ビルド & ユーザー確認
+10. 「OK」→ dev にマージ
 ```
 
 ### テスト実行コマンド
@@ -488,11 +1058,165 @@ PR がプッシュされると自動で実行：
 4. Build → 成功したら TestFlight アップロード可能
 ```
 
-### デバッグ UI ルール
+### TDD vs Maestro E2E（使い分け）
 
-- **`#if DEBUG` で囲む** → 本番ビルドには含まれない
-- **目的**: 開発中のテスト効率化のみ
-- **Maestro でも使える**: デバッグボタンをタップして状態をシミュレート可能
+**全く違う目的のテスト。Maestro は UI 変更がある時だけ。**
+
+| 項目 | TDD (Unit/Integration) | Maestro E2E |
+|------|------------------------|-------------|
+| **何をテスト** | ロジック、計算、データ変換 | UI操作、画面遷移 |
+| **速度** | ミリ秒〜秒 | 分 |
+| **割合** | 70-90% | 10% |
+| **いつ書く** | 常に（TDD サイクル） | UI 変更がある時だけ |
+
+#### TDD でテストするもの（Unit/Integration）
+
+```
+✅ アルゴリズム（NudgeContentSelector, Thompson Sampling 等）
+✅ データ変換・パース
+✅ UserDefaults への保存/読み込み
+✅ API レスポンスのハンドリング
+✅ 日付計算、バリデーション
+✅ サービス間の連携
+```
+
+#### Maestro でテストするもの（E2E）
+
+```
+✅ 画面遷移（オンボーディング、タブ切り替え）
+✅ ボタンタップ → 次の画面に行くか
+✅ UI 要素の表示/非表示
+✅ ユーザーフロー全体
+```
+
+#### Maestro をスキップしていいケース
+
+| 変更内容 | Maestro | 理由 |
+|---------|---------|------|
+| 通知ロジック修正 | ❌ スキップ | Unit Test で十分 |
+| API 追加/修正 | ❌ スキップ | Integration Test で十分 |
+| データモデル変更 | ❌ スキップ | Unit Test で十分 |
+| 内部リファクタリング | ❌ スキップ | 既存テストが通れば OK |
+| **新しいボタン追加** | ✅ 必要 | タップ動作を確認 |
+| **新しい画面追加** | ✅ 必要 | 遷移を確認 |
+| **オンボーディング変更** | ✅ 必要 | フロー全体を確認 |
+
+#### 判断フロー
+
+```
+❓ UI の変更あり？
+    │
+    ├─→ Yes → Maestro E2E 作成
+    │         （新しい画面、ボタン、遷移がある場合）
+    │
+    └─→ No → Maestro スキップ
+              TDD + ユーザー実機確認で十分
+```
+
+### Maestro E2E テスト ベストプラクティス
+
+#### 核心ルール
+
+| ルール | 説明 |
+|--------|------|
+| **エージェントは MCP を使う** | CLI より MCP ツール優先（上記「Maestro MCP vs CLI」参照） |
+| **1 Flow = 1 シナリオ** | 1つの YAML に全部詰め込まない |
+| **ディレクトリで整理** | 機能ごとにサブディレクトリ |
+| **タグで実行分け** | smokeTest, regression, nightly |
+| **Accessibility ID 必須** | Debug ボタンではなく `.accessibilityIdentifier()` |
+
+#### ディレクトリ構成（推奨）
+
+```
+maestro/
+├── auth/
+│   ├── 01-login.yaml
+│   └── 02-logout.yaml
+├── onboarding/
+│   └── 01-full-flow.yaml
+├── nudge/
+│   ├── 01-nudge-display.yaml
+│   └── 02-nudge-feedback.yaml
+└── config.yaml  ← 共通設定
+```
+
+#### タグの使い方
+
+```yaml
+# maestro/nudge/01-nudge-display.yaml
+appId: com.anicca.ios
+tags:
+  - smokeTest
+  - nudge
+---
+- launchApp
+```
+
+```bash
+# CI/CD での実行（GitHub Actions、fastlane等）
+maestro test maestro/ --include-tags=smokeTest  # Smoke テストのみ
+maestro test maestro/                            # 全テスト
+
+# エージェント作業時は MCP を使う（上記参照）
+```
+
+#### Accessibility Identifier（Debug ボタン禁止）
+
+| NG | OK |
+|----|-----|
+| `#if DEBUG` でボタンを追加 | `accessibilityIdentifier` を設定 |
+| ボタンが増えてUIが汚れる | 本番UIに影響なし |
+| 管理が複雑になる | シンプル・安定 |
+
+**実装例：**
+```swift
+// NG: Debugボタンを追加
+#if DEBUG
+Button("Test LLM Generated") { ... }
+#endif
+
+// OK: Accessibility Identifierを設定
+Text(nudge.content)
+    .accessibilityIdentifier("nudge_content_\(nudge.isAIGenerated ? "llm" : "rule")")
+```
+
+**Maestro YAML例：**
+```yaml
+- assertVisible:
+    id: "nudge_content_llm"
+```
+
+#### 制限事項
+
+| 項目 | 状況 |
+|------|------|
+| iOS シミュレータ | ✅ 完全対応 |
+| iOS 実機 | ⚠️ 直接サポートなし（BrowserStack or Maestro Cloud 経由） |
+
+**つまり**: Maestro はシミュレータでのテスト。実機テストは `fastlane build_for_device` で別途実施。
+
+### 実機テスト（TestFlight不要）
+
+**ワークフロー:**
+1. Unit Tests + E2E (Maestro) 完了後、`fastlane build_for_device` を実行
+2. 実機未接続でエラーの場合 → シミュレータで起動して確認依頼
+3. 実機でしか確認できない機能（通知タップ、センサー等）の場合のみ → 「実機にインストールしてよいですか？」と許可を取る
+
+```bash
+# ステージングスキームで実機にインストール
+cd aniccaios && fastlane build_for_device
+
+# 実機未接続でエラーの場合 → シミュレータで確認
+cd aniccaios && fastlane build_for_simulator
+# シミュレータで起動後、ユーザーに確認依頼
+```
+
+**重要:**
+- エージェントが自分でコマンドを実行する（ユーザーに実行させない）
+- 実機未接続 → シミュレータにフォールバック → ユーザーに確認依頼
+- 実機必須の機能の場合のみ許可を取ってインストール
+- TestFlightは最終確認・配布用。開発中は `build_for_device` または `build_for_simulator`
+- Accessibility Identifierはrelease buildでも有効
 
 ---
 
@@ -515,9 +1239,47 @@ PR がプッシュされると自動で実行：
 | ドキュメント検索 | `mcp__context7__query-docs` | WebFetch |
 | Apple公式ドキュメント | `mcp__apple-docs__*` | WebFetch |
 | コード検索・編集 | `mcp__serena__*` | Grep, Read |
-| iOS実機テスト | `mcp__maestro__*` | - |
+| iOS E2Eテスト | `mcp__maestro__*` | `maestro test`（CLI） |
 | RevenueCat操作 | `mcp__revenuecat__*` | - |
 | App Store Connect | `mcp__app-store-connect__*` | - |
+
+### Maestro MCP vs CLI 使い分け
+
+| シーン | 使うもの | 理由 |
+|--------|---------|------|
+| テスト作成・デバッグ | MCP (`mcp__maestro__*`) | View Hierarchy 確認、1コマンドずつ実行可能 |
+| CI/CD、一括実行 | CLI (`maestro test`) | スクリプト向き、GitHub Actions対応 |
+
+**エージェント作業時のルール**:
+
+1. **MCP を優先して使う**
+   ```
+   mcp__maestro__list_devices       → デバイス一覧
+   mcp__maestro__inspect_view_hierarchy → 要素確認（セレクタ決定）
+   mcp__maestro__run_flow           → コマンド1つずつ実行
+   mcp__maestro__take_screenshot    → 結果確認
+   mcp__maestro__run_flow_files     → 既存YAMLファイル実行
+   ```
+
+2. **CLI は CI/CD でのみ使う**
+   ```bash
+   # GitHub Actions や fastlane から実行
+   maestro test maestro/
+   maestro test maestro/01-onboarding.yaml --include-tags=smokeTest
+   ```
+
+3. **新しいテスト作成時のフロー**
+   ```
+   inspect_view_hierarchy → セレクタ確認
+        ↓
+   run_flow でコマンドを1つずつ試す
+        ↓
+   take_screenshot で確認
+        ↓
+   動作確認後、YAML ファイルに保存
+        ↓
+   run_flow_files で最終確認
+   ```
 
 ### スキル自動適用
 
@@ -530,6 +1292,7 @@ PR がプッシュされると自動で実行：
 | `content-research-writer` | コンテンツ作成時 |
 | `coding-standards` | コードを書くとき（Swift/SwiftUI規約） |
 | `tdd-workflow` | テストを書くとき（TDD方法論） |
+| `codex-review` | Spec更新後、major step完了後（≥5files/公開API/infra変更）、コミット/PR/リリース前 |
 
 ### Serena MCP（コード作業時必須）
 
@@ -566,6 +1329,7 @@ PR がプッシュされると自動で実行：
 | `/build-fix` | ビルドエラーを修正する |
 | `/refactor-clean` | 不要コードを削除する |
 | `/test-coverage` | テストカバレッジを確認・改善する |
+| `/codex-review` | Codexでスペック/コードを自動レビュー |
 
 ### Fastlane（ビルド・テスト・提出）
 
@@ -616,6 +1380,10 @@ cd aniccaios && fastlane release
 1. devブランチにいることを確認
 2. ペルソナを意識（上記参照）
 3. 関連するSerenaメモリを確認
+4. **重要な MCP サーバーの接続確認**（最初のツール使用前に）:
+   - Playwright が必要なタスク → `MCPSearch("select:mcp__playwright__browser_snapshot")` で ping
+   - Maestro が必要なタスク → `MCPSearch("select:mcp__maestro__list_devices")` で ping
+   - 接続エラーが出たら「`/mcp` → Reconnect」をユーザーに促す
 
 ---
 
@@ -652,4 +1420,4 @@ cd aniccaios && fastlane release
 
 ---
 
-最終更新: 2026年1月23日
+最終更新: 2026年1月25日（Netlifyデプロイルール、コンテンツ変更ルール、App Storeリンクルール追加）

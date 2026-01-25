@@ -32,6 +32,7 @@ struct NudgeCardView: View {
                             .foregroundStyle(AppTheme.Colors.secondaryLabel)
                             .padding(12)
                     }
+                    .accessibilityIdentifier("nudge-card-close")
                 }
                 .padding(.horizontal, 8)
                 .padding(.top, 8)
@@ -40,14 +41,34 @@ struct NudgeCardView: View {
 
                 // Icon and title
                 VStack(spacing: 12) {
-                    Text(content.problemType.icon)
-                        .font(.system(size: 48))
+                    ZStack(alignment: .topTrailing) {
+                        Text(content.problemType.icon)
+                            .font(.system(size: 48))
 
-                    Text(content.problemType.notificationTitle)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .textCase(.uppercase)
-                        .tracking(1)
+                        #if DEBUG
+                        if content.isAIGenerated {
+                            Text("🤖")
+                                .font(.system(size: 16))
+                                .offset(x: 8, y: -8)
+                        }
+                        #endif
+                    }
+
+                    HStack(spacing: 4) {
+                        Text(content.problemType.notificationTitle)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                            .textCase(.uppercase)
+                            .tracking(1)
+
+                        #if DEBUG
+                        if content.isAIGenerated {
+                            Text("(LLM)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.blue)
+                        }
+                        #endif
+                    }
                 }
 
                 // Main quote
@@ -60,12 +81,7 @@ struct NudgeCardView: View {
                         .multilineTextAlignment(.center)
                         .foregroundStyle(AppTheme.Colors.label)
                         .padding(.horizontal, 32)
-
-                    #if DEBUG
-                    Text("DEBUG: variant \(content.variantIndex)")
-                        .font(.caption)
-                        .foregroundStyle(.gray)
-                    #endif
+                        .accessibilityIdentifier("nudge-hook-text")
 
                     Divider()
                         .padding(.horizontal, 40)
@@ -79,6 +95,8 @@ struct NudgeCardView: View {
                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
                     .lineSpacing(6)
                     .padding(.horizontal, 40)
+                    .accessibilityIdentifier("nudge-content-text")
+                    .accessibilityValue(content.isAIGenerated ? "llm" : "rule")
 
                 Spacer()
 
@@ -101,11 +119,17 @@ struct NudgeCardView: View {
                     // Feedback buttons
                     if showFeedbackButtons {
                         feedbackButtonsView
+                    } else {
+                        Text("ありがとう！")
+                            .font(.system(size: 16))
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                            .accessibilityIdentifier("feedback-submitted")
                     }
                 }
                 .padding(.bottom, 40)
             }
         }
+        .accessibilityIdentifier("nudge-card-view")
     }
 
     // MARK: - Single Button (センシティブな問題向け)
@@ -174,6 +198,7 @@ struct NudgeCardView: View {
                     .font(.system(size: 24))
                     .padding(8)
             }
+            .accessibilityIdentifier("feedback-thumbs-up")
 
             Button(action: {
                 onFeedback(false)
@@ -185,6 +210,7 @@ struct NudgeCardView: View {
                     .font(.system(size: 24))
                     .padding(8)
             }
+            .accessibilityIdentifier("feedback-thumbs-down")
         }
         .opacity(showFeedbackButtons ? 1 : 0)
     }

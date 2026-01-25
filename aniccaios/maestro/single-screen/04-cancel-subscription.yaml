@@ -1,0 +1,50 @@
+appId: com.anicca.ios.staging
+tags:
+  - subscription
+  - single-screen
+---
+# 前提条件: Pro ユーザー
+# DEBUG ビルドで Pro 状態を注入
+
+- launchApp:
+    clearState: true
+
+# Onboarding をスキップ
+- runFlow:
+    when:
+      visible: "Get Started"
+    file: ../flows/skip-onboarding.yaml
+
+# DEBUG: テスト用に Pro 状態を設定
+- tapOn:
+    id: "debug_set_pro"
+    optional: true
+
+# 状態反映を待つ
+- extendedWaitUntil:
+    visible:
+      text: "Cancel Subscription"
+    timeout: 3000
+
+# Cancel Subscription ボタンへスクロール
+- scrollUntilVisible:
+    element:
+      text: "Cancel Subscription"
+    direction: DOWN
+
+# Cancel Subscription ボタンが表示されていることを確認
+- assertVisible:
+    text: "Cancel Subscription"
+
+# Subscribe ボタンが表示されていないことを確認（Pro なので）
+- assertNotVisible:
+    text: "Subscribe"
+
+# Cancel Subscription をタップ
+- tapOn:
+    text: "Cancel Subscription"
+
+# RevenueCat CustomerCenter が表示されることを確認
+- assertVisible:
+    text: "Manage Subscription"
+    optional: true

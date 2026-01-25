@@ -19,6 +19,9 @@ import logoutAuthRouter from './auth/logout.js';
 // Billing
 import billingRouter from './billing/index.js';
 
+// Phase 6: LLM生成Nudge
+import nudgeGenerateRouter from './nudge/generate.js';
+
 // MCP
 import mcpGcalRouter from './mcp/gcal/index.js';
 
@@ -51,6 +54,8 @@ router.use('/auth/refresh', refreshAuthRouter);
 router.use('/auth/logout', logoutAuthRouter);
 
 router.use('/billing', billingRouter);
+
+router.use('/nudge', nudgeGenerateRouter);
 
 router.use('/mcp/gcal', mcpGcalRouter);
 

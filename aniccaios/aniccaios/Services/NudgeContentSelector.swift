@@ -8,10 +8,72 @@ final class NudgeContentSelector {
 
     private let logger = Logger(subsystem: "com.anicca.ios", category: "NudgeContentSelector")
 
+    // テスト用: 乱数生成を注入可能にする
+    var randomProvider: () -> Double = { Double.random(in: 0...1) }
+
+    // Phase 6: 交互切り替え用フラグ（問題タイプ+時刻ごと）
+    private var lastWasLLM: [String: Bool] = [:]
+
     private init() {}
 
-    /// 問題タイプと時刻からベストなバリアントを選択（Phase 5: Thompson Sampling）
-    func selectVariant(for problem: ProblemType, scheduledHour: Int) -> Int {
+    /// テスト用: 交互切り替え状態をリセット
+    func resetAlternatingState() {
+        lastWasLLM.removeAll()
+    }
+
+    /// 問題タイプと時刻からベストなバリアントを選択（Phase 6: LLM生成対応・交互）
+    /// - Returns: (variantIndex: Int, isAIGenerated: Bool, content: LLMGeneratedNudge?)
+    func selectVariant(for problem: ProblemType, scheduledHour: Int) -> (variantIndex: Int, isAIGenerated: Bool, content: LLMGeneratedNudge?) {
+        let key = "\(problem.rawValue)_\(scheduledHour)"
+
+        // 交互切り替え: 前回がルールベースならLLMを試みる
+        let shouldTryLLM = !(lastWasLLM[key] ?? false)
+
+        if shouldTryLLM {
+            if let llmNudge = LLMNudgeCache.shared.getNudge(for: problem, hour: scheduledHour) {
+                lastWasLLM[key] = true
+                logger.info("🤖 Selected LLM-generated nudge for \(problem.rawValue) at hour \(scheduledHour)")
+                return (variantIndex: -1, isAIGenerated: true, content: llmNudge)
+            }
+            // LLMキャッシュがなければルールベースにフォールバック（フラグは更新しない）
+        }
+
+        // ルールベース
+        lastWasLLM[key] = false
+        let selectedVariant = selectExistingVariant(for: problem, scheduledHour: scheduledHour)
+        logger.info("📋 Selected rule-based variant \(selectedVariant) for \(problem.rawValue) at hour \(scheduledHour)")
+        return (variantIndex: selectedVariant, isAIGenerated: false, content: nil)
+    }
+
+    #if DEBUG
+    /// デバッグ用: 時刻を無視してLLMを取得（交互切り替え）
+    func selectVariantForDebug(for problem: ProblemType) -> (variantIndex: Int, isAIGenerated: Bool, content: LLMGeneratedNudge?) {
+        let key = "debug_\(problem.rawValue)"
+
+        // 交互切り替え: 前回がルールベースならLLMを試みる
+        let shouldTryLLM = !(lastWasLLM[key] ?? false)
+
+        if shouldTryLLM {
+            // 時刻を無視してLLMを取得
+            if let llmNudge = LLMNudgeCache.shared.getNudgeAnyHour(for: problem) {
+                lastWasLLM[key] = true
+                logger.info("🤖 [Debug] Selected LLM nudge for \(problem.rawValue)")
+                return (variantIndex: -1, isAIGenerated: true, content: llmNudge)
+            }
+            // LLMキャッシュがなければルールベースにフォールバック
+            logger.info("⚠️ [Debug] No LLM cache for \(problem.rawValue), using rule-based")
+        }
+
+        // ルールベース
+        lastWasLLM[key] = false
+        let selectedVariant = selectExistingVariant(for: problem, scheduledHour: 21)
+        logger.info("📋 [Debug] Selected rule-based variant \(selectedVariant) for \(problem.rawValue)")
+        return (variantIndex: selectedVariant, isAIGenerated: false, content: nil)
+    }
+    #endif
+
+    /// 既存のバリアント選択ロジック（Phase 5: Thompson Sampling）
+    private func selectExistingVariant(for problem: ProblemType, scheduledHour: Int) -> Int {
         // 0. 完全無反応ユーザーの場合、未試行バリアントを優先
         if NudgeStatsManager.shared.isCompletelyUnresponsive(for: problem.rawValue, hour: scheduledHour) {
             let allVariants = getGenericVariantIndices(for: problem)
@@ -46,6 +108,14 @@ final class NudgeContentSelector {
 
         logger.info("Selected variant \(selectedVariant) for \(problem.rawValue) at hour \(scheduledHour)")
         return selectedVariant
+    }
+
+    /// 後方互換: 既存コード用のselectVariant（Intを返す）
+    /// Phase 6移行期間中は使用可能だが、将来的に削除予定
+    @available(*, deprecated, message: "Use selectVariant returning tuple instead")
+    func selectVariantLegacy(for problem: ProblemType, scheduledHour: Int) -> Int {
+        let result = selectVariant(for: problem, scheduledHour: scheduledHour)
+        return result.variantIndex
     }
 
     // MARK: - Time-Specific Variants

@@ -1,6 +1,6 @@
 import Foundation
 
-/// Rate limiter for throttling events (e.g., 32 Hz limit for AlarmKit reporting)
+/// Rate limiter for throttling events
 actor RateLimiter {
     private let eventsPerSecond: Double
     private var lastEventTime: Date?

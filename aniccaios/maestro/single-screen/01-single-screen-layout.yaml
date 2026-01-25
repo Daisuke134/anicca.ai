@@ -1,0 +1,42 @@
+appId: com.anicca.ios.staging
+tags:
+  - smokeTest
+  - single-screen
+---
+- launchApp:
+    clearState: true
+
+# Onboarding をスキップ（新規ユーザーの場合）
+- runFlow:
+    when:
+      visible: "Get Started"
+    file: ../flows/skip-onboarding.yaml
+
+# My Path タイトルが表示されていることを確認
+- assertVisible:
+    text: "My Path"
+
+# Tab Bar が存在しないことを確認（Profile タブがない）
+- assertNotVisible:
+    text: "Profile"
+
+# 問題リストセクション
+- assertVisible:
+    text: "Current Struggles"
+
+# Tell Anicca セクション
+- assertVisible:
+    text: "Tell Anicca"
+
+# Footer へスクロール
+- scrollUntilVisible:
+    element:
+      text: "Privacy Policy"
+    direction: DOWN
+
+# Legal Links が表示されていることを確認
+- assertVisible:
+    text: "Privacy Policy"
+
+- assertVisible:
+    text: "Terms of Use"

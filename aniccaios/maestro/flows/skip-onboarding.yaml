@@ -1,0 +1,36 @@
+# Onboarding スキップフロー
+# 新規ユーザーの場合、オンボーディングをスキップしてメイン画面に到達する
+
+# Welcome ステップ
+- tapOn:
+    text: "Get Started"
+
+# Value ステップ
+- tapOn:
+    text: "Continue"
+    optional: true
+
+# Struggles ステップ - 1つの問題を選択
+- tapOn:
+    text: "Staying up late"
+    optional: true
+
+- tapOn:
+    text: "Continue"
+    optional: true
+
+# Notifications ステップ
+- tapOn:
+    text: "Skip"
+    optional: true
+
+# ATT ステップ
+- tapOn:
+    text: "Skip"
+    optional: true
+
+# 少し待ってメイン画面が表示されるのを待つ
+- extendedWaitUntil:
+    visible:
+      text: "My Path"
+    timeout: 5000

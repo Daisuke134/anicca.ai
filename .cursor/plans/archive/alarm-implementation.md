@@ -1,3 +1,20 @@
+# AlarmKit Implementation Archive
+
+削除前に記録。将来復活させる場合の参考資料。
+
+---
+
+## 概要
+
+- **対象**: iOS 26+ の `cant_wake_up` 問題タイプ
+- **機能**: 2段階アラーム（6:00 + 6:05）
+- **削除理由**: AlarmKit が動作不安定のため、通知のみで対応
+
+---
+
+## ProblemAlarmKitScheduler.swift
+
+```swift
 #if canImport(AlarmKit)
 import AlarmKit
 import AppIntents
@@ -5,7 +22,7 @@ import Foundation
 import OSLog
 import SwiftUI
 
-// MARK: - Locale.Weekday Extension (AlarmKitHabitCoordinatorから移動)
+// MARK: - Locale.Weekday Extension
 @available(iOS 26.0, *)
 extension Locale.Weekday {
     static var allWeekdays: [Locale.Weekday] {
@@ -43,7 +60,6 @@ final class ProblemAlarmKitScheduler {
 
     // MARK: - Authorization
 
-    /// AlarmKit許可をリクエスト
     func requestAuthorizationIfNeeded() async -> Bool {
         do {
             let currentState = manager.authorizationState
@@ -64,7 +80,6 @@ final class ProblemAlarmKitScheduler {
 
     // MARK: - Public API
 
-    /// cantWakeUp用の2段階AlarmKitアラームをスケジュール（6:00と6:05）
     func scheduleCantWakeUp(hour: Int, minute: Int) async {
         await cancelCantWakeUp()
 
@@ -93,7 +108,6 @@ final class ProblemAlarmKitScheduler {
         logger.info("Scheduled 2-stage AlarmKit alarms for cantWakeUp: \(hour):\(minute) and \(followupHour):\(followupMinute)")
     }
 
-    /// cantWakeUp用の全AlarmKitアラームをキャンセル
     func cancelCantWakeUp() async {
         // Primary
         if let idString = UserDefaults.standard.string(forKey: primaryStorageKey),
@@ -120,10 +134,7 @@ final class ProblemAlarmKitScheduler {
         }
     }
 
-    /// 「今日を始める」タップ時に呼ばれる
-    /// 今日の6:05をキャンセルし、明日用に再スケジュール
     func cancelFollowupAndReschedule() async {
-        // 1. 現在のfollowupをキャンセル
         if let idString = UserDefaults.standard.string(forKey: followupStorageKey),
            let id = UUID(uuidString: idString) {
             do {
@@ -134,26 +145,16 @@ final class ProblemAlarmKitScheduler {
             }
         }
 
-        // 2. 即座に再スケジュール（明日から有効）
         let followupId = UUID()
         await scheduleAlarm(
             id: followupId,
             hour: 6,
-            minute: followupOffsetMinutes,  // 6:05
+            minute: followupOffsetMinutes,
             isFollowup: true
         )
         UserDefaults.standard.set(followupId.uuidString, forKey: followupStorageKey)
         logger.info("Rescheduled followup alarm for tomorrow")
     }
-
-    // MARK: - DEBUG
-
-    #if DEBUG
-    /// デバッグ用: 指定時刻にテストアラームをスケジュール
-    func scheduleTestAlarm(hour: Int, minute: Int) async {
-        await scheduleCantWakeUp(hour: hour, minute: minute)
-    }
-    #endif
 
     // MARK: - Private
 
@@ -201,15 +202,18 @@ final class ProblemAlarmKitScheduler {
         }
     }
 }
+#endif
+```
 
-// MARK: - Intents
+---
 
+## Intents
+
+```swift
 @available(iOS 26.0, *)
 struct OpenProblemOneScreenIntent: LiveActivityIntent {
     static var title: LocalizedStringResource = "Open Problem OneScreen"
     static var description = IntentDescription("Opens the Anicca app to show the nudge card")
-    
-    // アプリをフォアグラウンドで開く（WWDC2025 AlarmKit API準拠）
     static var openAppWhenRun: Bool = true
 
     @Parameter(title: "Problem Type")
@@ -224,10 +228,8 @@ struct OpenProblemOneScreenIntent: LiveActivityIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        // フォローアップアラームをキャンセルして再スケジュール（明日用）
         await ProblemAlarmKitScheduler.shared.cancelFollowupAndReschedule()
 
-        // One Screen表示を通知（MainActorから実行）
         await MainActor.run {
             NotificationCenter.default.post(
                 name: Notification.Name("OpenProblemOneScreen"),
@@ -255,11 +257,62 @@ struct CantWakeUpStopIntent: LiveActivityIntent {
     }
 
     func perform() async throws -> some IntentResult {
-        // 「布団にいる」タップ時は何もしない
-        // 6:05のフォローアップアラームはそのまま鳴る
         let logger = Logger(subsystem: "com.anicca.ios", category: "ProblemAlarmKit")
         logger.info("CantWakeUp alarm stopped (stay in bed): id=\(self.alarmID)")
         return .result()
     }
 }
-#endif
+```
+
+---
+
+## 2段階アラームの仕組み
+
+```
+6:00 Primary Alarm
+  ├─ 「今日を始める」タップ → フォローアップキャンセル、アプリ起動
+  └─ 「布団にいる」タップ → 何もしない（6:05が鳴る）
+
+6:05 Followup Alarm
+  ├─ 「今日を始める」タップ → アプリ起動
+  └─ 「布団にいる」タップ → 何もしない
+```
+
+---
+
+## プロジェクト設定
+
+### Capabilities
+- AlarmKit capability を追加
+
+### Info.plist
+```xml
+<key>NSAlarmCapabilityRequestedReason</key>
+<string>Anicca uses alarms to help you wake up at your desired time.</string>
+```
+
+### Intent Extension (もし存在する場合)
+- aniccaiosIntents ターゲット
+- Embed App Extensions に追加
+
+---
+
+## 復元手順
+
+1. **ファイル復元**: このドキュメントからコードをコピー
+2. **Capabilities 追加**: Project > Signing & Capabilities > + > AlarmKit
+3. **Info.plist 追加**: `NSAlarmCapabilityRequestedReason`
+4. **ビルド確認**: `#if canImport(AlarmKit)` で iOS 26+ のみ有効
+
+---
+
+## UserDefaults キー
+
+| キー | 用途 |
+|------|------|
+| `com.anicca.alarmkit.cantWakeUp.primaryId` | Primary アラーム UUID |
+| `com.anicca.alarmkit.cantWakeUp.followupId` | Followup アラーム UUID |
+
+---
+
+アーカイブ日: 2026-01-24

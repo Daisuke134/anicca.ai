@@ -28,7 +28,7 @@ final class NudgeTriggerService {
         case feeling = "feeling" // Feeling EMI DP（Mental）
     }
 
-    // MARK: - Public entrypoints (called by sensors / AlarmKit / UI)
+    // MARK: - Public entrypoints (called by sensors / UI)
     func trigger(eventType: EventType, payload: [String: Any] = [:]) async {
         guard case .signedIn(let credentials) = AppState.shared.authStatus else { return }
 
@@ -84,7 +84,7 @@ final class NudgeTriggerService {
         }
     }
 
-    /// AlarmKit からの wake DP
+    /// Wake DP (legacy)
     func triggerWakeAlarmFired() async {
         await trigger(eventType: .wakeAlarmFired)
     }

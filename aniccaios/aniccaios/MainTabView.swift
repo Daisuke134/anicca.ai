@@ -7,19 +7,11 @@ struct MainTabView: View {
     @EnvironmentObject private var appState: AppState
 
     var body: some View {
-        Group {
-            switch appState.selectedRootTab {
-            case .myPath:
-                MyPathTabView()
-                    .environmentObject(appState)
-            case .profile:
-                ProfileView()
-                    .environmentObject(appState)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // Proactive Agent: NudgeCard表示
-        .fullScreenCover(item: $appState.pendingNudgeCard) { content in
+        MyPathTabView()
+            .environmentObject(appState)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            // Proactive Agent: NudgeCard表示
+            .fullScreenCover(item: $appState.pendingNudgeCard) { content in
             NudgeCardView(
                 content: content,
                 onPositiveAction: {
@@ -45,9 +37,6 @@ struct MainTabView: View {
                     appState.dismissNudgeCard()
                 }
             )
-        }
-        .safeAreaInset(edge: .bottom) {
-            FigmaTabBar(selectedTab: $appState.selectedRootTab)
         }
         .background(AppBackground())
         .ignoresSafeArea(.keyboard, edges: .bottom)

@@ -1,13 +1,15 @@
 import Foundation
 import UserNotifications
 import OSLog
-#if canImport(AlarmKit)
-import AlarmKit
-#endif
+
+/// テスト用プロトコル
+protocol ProblemNotificationSchedulerProtocol {
+    func scheduleNotifications(for problems: [String]) async
+}
 
 /// 問題ベースの通知スケジューラ
 /// ユーザーが選択した問題に基づいて通知をスケジュール
-final class ProblemNotificationScheduler {
+final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
     static let shared = ProblemNotificationScheduler()
 
     private let center = UNUserNotificationCenter.current()
@@ -183,22 +185,6 @@ final class ProblemNotificationScheduler {
     // MARK: - Private Methods
 
     private func scheduleNotification(for problem: ProblemType, hour: Int, minute: Int) async {
-        // cantWakeUp + AlarmKit許可済み + トグルON → AlarmKitに委譲
-        if problem == .cantWakeUp {
-            #if canImport(AlarmKit)
-            if #available(iOS 26.0, *) {
-                let manager = AlarmManager.shared
-                if manager.authorizationState == .authorized,
-                   AppState.shared.userProfile.useAlarmKitForCantWakeUp {
-                    if hour == 6 && minute == 0 {
-                        await ProblemAlarmKitScheduler.shared.scheduleCantWakeUp(hour: hour, minute: minute)
-                    }
-                    return
-                }
-            }
-            #endif
-        }
-
         // NudgeContentSelectorでバリアント選択（Phase 6: LLM生成対応）
         let selection = await MainActor.run {
             NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)

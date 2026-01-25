@@ -24,8 +24,8 @@
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
 		A9EB06B36848A738F9F7FF27 /* NudgeContentSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */; };
-		SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */; };
 		FEBAE36E43A36F64C5743079 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1FFFD13F67306F87B5AA845 /* Foundation.framework */; };
+		SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -83,8 +83,8 @@
 		8400344F2EE52C5100A2F44C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		840034512EE52C5200A2F44C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		8471B0792EB8D091002CECAA /* Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
-		8471B07B2EB8D0B0002CECAA /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
+		8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
+		8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
 		84A5279B2EEDDA2F008CAEA1 /* AniccaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AniccaWidgetExtension.entitlements; sourceTree = "<group>"; };
 		84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
 		84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppTrackingTransparency.framework; path = System/Library/Frameworks/AppTrackingTransparency.framework; sourceTree = SDKROOT; };
@@ -95,8 +95,8 @@
 		8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeContentSelectorTests.swift; sourceTree = "<group>"; };
 		D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetaDistributionTests.swift; sourceTree = "<group>"; };
 		D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProblemNotificationSchedulerTests.swift; sourceTree = "<group>"; };
-		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
 		E1FFFD13F67306F87B5AA845 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
+		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -151,8 +151,6 @@
 		};
 		84CC79272EFAAB95005078AE /* AniccaScreenTimeReport */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = AniccaScreenTimeReport;
 			sourceTree = "<group>";
 		};
@@ -224,9 +222,9 @@
 				84CC79272EFAAB95005078AE /* AniccaScreenTimeReport */,
 				8400344E2EE52C5100A2F44C /* Frameworks */,
 				8471AE7C2EB783E1002CECAA /* Products */,
-				8471B0792EB8D091002CECAA /* Staging.xcconfig */,
-				8471B07B2EB8D0B0002CECAA /* Production.xcconfig */,
-				8471C1A22EC12345002CECAA /* WebRTCShims */,
+				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
+				8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */,
+				8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */,
 				D9FF005033DBB2BB16D6C884 /* aniccaiosTests */,
 			);
 			sourceTree = "<group>";
@@ -243,7 +241,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8471C1A22EC12345002CECAA /* WebRTCShims */ = {
+		8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -268,7 +266,6 @@
 				D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */,
 				SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */,
 			);
-			name = aniccaiosTests;
 			path = aniccaiosTests;
 			sourceTree = "<group>";
 		};
@@ -666,7 +663,7 @@
 		};
 		8471AE842EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -734,7 +731,7 @@
 		};
 		8471AE852EB783E3002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -798,7 +795,7 @@
 		};
 		8471AE872EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -850,7 +847,7 @@
 		};
 		8471AE882EB783E3002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -901,7 +898,7 @@
 		};
 		8471B0732EB8CD64002CECAA /* staging Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -969,7 +966,7 @@
 		};
 		8471B0742EB8CD64002CECAA /* staging Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -1019,7 +1016,7 @@
 		};
 		8471B0762EB8CD69002CECAA /* staging Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -1081,7 +1078,7 @@
 		};
 		8471B0772EB8CD69002CECAA /* staging Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;

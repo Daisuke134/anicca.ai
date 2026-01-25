@@ -1081,9 +1081,3 @@
 "alarmkit_permission_needed_title" = "Alarm Permission Needed";
 "alarmkit_permission_needed_message" = "Please enable alarm permission for Anicca in the Settings app.";
 "problem_cant_wake_up_alarm_title" = "Wake Up";
-
-/* ========== Hard Paywall ========== */
-"profile_subscribe" = "Subscribe";
-"blocked_title" = "Subscribe to Continue";
-"blocked_message" = "Subscribe to continue using Anicca and start your journey of change.";
-

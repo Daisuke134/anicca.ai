@@ -5,8 +5,10 @@ import RevenueCat
 /// Superwall Placement イベント名
 enum SuperwallPlacement: String {
     case onboardingComplete = "onboarding_complete"
-    case resubscribe = "resubscribe"
+    case nudgeCardComplete5 = "nudge_card_complete_5"
+    case nudgeCardComplete10 = "nudge_card_complete_10"
     case profilePlanTap = "profile_plan_tap"
+    case singleScreenSubscribe = "single_screen_subscribe"
 }
 
 /// Superwall統合マネージャー

@@ -651,6 +651,7 @@ final class AppState: ObservableObject {
     func maybePresentATTPromptAfterNudge() {
         guard isOnboardingComplete else { return }
         guard !defaults.bool(forKey: attPromptPresentedKey) else { return }
+        guard !isPresentingATTPrompt else { return }
 
         // 既にOS側で回答済みなら提示不要
         if #available(iOS 14.0, *) {
@@ -664,8 +665,12 @@ final class AppState: ObservableObject {
             return
         }
 
-        defaults.set(true, forKey: attPromptPresentedKey)
         isPresentingATTPrompt = true
+    }
+
+    /// ATT画面が「実際に表示された」ことを永続化する（表示失敗時に二度と出ない事故を防ぐため）
+    func markATTPromptPresented() {
+        defaults.set(true, forKey: attPromptPresentedKey)
     }
 
     // MARK: - Nudge Card / Paywall / Review Methods

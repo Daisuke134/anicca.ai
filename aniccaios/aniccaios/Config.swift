@@ -52,11 +52,6 @@ enum AppConfig {
         proxyBaseURL.appendingPathComponent("mobile/profile")
     }
     
-    // v0.3 (phase-7) daily aggregates upload.
-    static var dailyMetricsURL: URL {
-        proxyBaseURL.appendingPathComponent("mobile/daily_metrics")
-    }
-    
     static var revenueCatAPIKey: String { infoValue(for: revenueCatAPIKeyKey) }
     static var revenueCatEntitlementId: String { infoValue(for: revenueCatEntitlementKey) }
     static var revenueCatPaywallId: String { infoValue(for: revenueCatPaywallKey) }

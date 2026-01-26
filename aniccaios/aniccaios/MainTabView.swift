@@ -42,6 +42,7 @@ struct MainTabView: View {
                 ATTPermissionStepView {
                     appState.isPresentingATTPrompt = false
                 }
+                .environmentObject(appState)
             }
             .background(AppBackground())
             .ignoresSafeArea(.keyboard, edges: .bottom)

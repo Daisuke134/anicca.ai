@@ -3,6 +3,7 @@ import AppTrackingTransparency
 import RevenueCat
 
 struct ATTPermissionStepView: View {
+    @EnvironmentObject private var appState: AppState
     let next: () -> Void
     @State private var isRequesting = false
     
@@ -36,6 +37,7 @@ struct ATTPermissionStepView: View {
         .background(AppTheme.Colors.background.ignoresSafeArea())
         .onAppear {
             AnalyticsManager.shared.track(.onboardingATTViewed)
+            appState.markATTPromptPresented()
         }
     }
     

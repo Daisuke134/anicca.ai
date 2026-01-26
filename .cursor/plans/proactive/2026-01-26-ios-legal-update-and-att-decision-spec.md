@@ -7,6 +7,24 @@
 
 重要：現状コードには **HealthKit/Motion/センサー同期/日次メトリクス送信** が残っており、「HealthKitはもう使っていない」前提と矛盾している可能性がある。法務文面は **コード上の実態をソース・オブ・トゥルース** とし、必要なら機能側の削除/無効化もこのSpecでスコープに含める。
 
+### レビューの入口（重要）
+
+他エージェントが `dev` ブランチ作業中でもレビューできるように、**Worktree** と **ブランチ** を明記する。
+
+| 項目 | 値 |
+|---|---|
+| Worktree（ローカル） | `/workspace/worktrees/anicca-proactive-legal` |
+| ブランチ | `cursor/anicca-ios-legal-update-e2d1` |
+| Spec | `.cursor/plans/proactive/2026-01-26-ios-legal-update-and-att-decision-spec.md` |
+
+レビュー方法（ローカル例）：
+
+| # | 手順 |
+|---|---|
+| 1 | `cd /workspace/worktrees/anicca-proactive-legal` |
+| 2 | `git log --oneline --decorate -n 20` |
+| 3 | `git diff origin/dev..HEAD` |
+
 ---
 
 ## As-Is（現状）
@@ -131,6 +149,65 @@ Terms に含める要点：
 これによりMixpanel上で
 `notifications_completed → att_viewed → att_completed`
 のファネルが作れ、離脱がATT由来かどうか判定できる。
+
+---
+
+## 実装結果（このSpecのTo-Beが最終的にどう実装されたか）
+
+### iOS: ATTは「オンボーディング後」に移動（実装済み）
+
+**実装した挙動（単一仕様）**
+
+| 項目 | 仕様 |
+|---|---|
+| 提示タイミング | **オンボーディング完了後**、ユーザーが **初回NudgeCardを閉じた直後**（価値体験の直後） |
+| 提示回数 | **1回だけ**（永続化キーで制御） |
+| OSが既に回答済み | `trackingAuthorizationStatus != .notDetermined` の場合は表示しない |
+| 表示UI | 既存の `ATTPermissionStepView` を **フルスクリーン**で表示（UIデザインは再利用） |
+| 永続化キー | `com.anicca.attPromptPresented`（UserDefaults） |
+
+**実装ファイル**
+
+| 目的 | ファイル |
+|---|---|
+| オンボーディングからATTを外す | `aniccaios/aniccaios/Onboarding/OnboardingStep.swift`, `OnboardingFlowView.swift` |
+| NudgeCard閉じ後にATTを出す | `aniccaios/aniccaios/MainTabView.swift`, `aniccaios/aniccaios/AppState.swift` |
+| ATT計測イベント | `aniccaios/aniccaios/Onboarding/ATTPermissionStepView.swift`, `aniccaios/aniccaios/Services/AnalyticsManager.swift` |
+
+**Mixpanelイベント（実装済み）**
+
+| イベント | 発火タイミング | プロパティ |
+|---|---|---|
+| `onboarding_att_viewed` | ATT事前画面表示時 | - |
+| `onboarding_att_prompt_shown` | システムATTダイアログ表示直前 | - |
+| `onboarding_att_status` | ATT結果取得時 | `status`（例: `authorized`, `denied`, `notDetermined`, `restricted`, `unavailable`） |
+
+> 注意: `onboarding_att_completed` は既存互換のため **イベント定義としては残している**が、オンボーディングからATTを外したため、オンボーディング完了の計測は `onboarding_notifications_completed` → `onboarding_completed` になる。
+
+### iOS: センサー系（HealthKit/Motion/ScreenTime/日次メトリクス）を完全削除（実装済み）
+
+**削除した理由**：UIに出ていなくても、内部的に取得/送信し得る余地があるとPrivacyに「取得しない」と書き切れないため。実装と法務文面を一致させる。
+
+| 項目 | 対応 |
+|---|---|
+| センサー機能実装 | `HealthKitManager` / `MotionManager` / `ScreenTimeManager` / `SensorAccessSyncService` / `MetricsUploader` / `SensorAccessState` を削除 |
+| 実行経路 | `AppDelegate` と `AppState` から関連呼び出しを削除 |
+| Info.plist | `NSHealth*` / `NSMotionUsageDescription` / `NSAlarmKitUsageDescription` / `BGTaskSchedulerPermittedIdentifiers(com.anicca.metrics.daily)` を削除 |
+| InfoPlist.strings | `NSHealth*` / `NSMotion*` / `NSAlarmKit*` 文言を削除 |
+
+### iOS: Legalリンク（Terms）を自社ページへ統一（実装済み）
+
+| 項目 | 対応 |
+|---|---|
+| Termsリンク | `https://aniccaai.com/terms/<lang>` に変更（Apple EULAはWeb Terms内で参照） |
+| ファイル | `aniccaios/aniccaios/Views/LegalLinksView.swift` |
+
+### Web: Privacy / Terms をiOS前提に更新（実装済み）
+
+| 項目 | 対応 |
+|---|---|
+| Privacy EN/JA | desktop/Stripe/Supabase/Slack/Google/音声などの記述を撤去し、iOS実態（通知/ATT/RevenueCat/Superwall/Mixpanel/Singular等）へ更新 |
+| Terms | `/terms` を言語リダイレクトに変更し、`/terms/en` と `/terms/ja` を新設（Apple課金/Apple EULA参照を明記） |
 
 ---
 

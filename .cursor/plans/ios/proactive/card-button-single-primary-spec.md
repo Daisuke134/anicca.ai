@@ -82,7 +82,7 @@
 
 | Flow | 目的 | 検証 |
 |---|---|---|
-| `maestro/nudge/01-nudge-card-single-primary.yaml`（新規） | 2択だったケースでボタンが1つのみであること | `nudge-primary-action` が表示され、ネガティブ相当が存在しない |
+| `maestro/phase6/04-nudge-single-primary-button.yaml`（新規） | 2択だったケースでボタンが1つのみであること | `nudge-primary-action` が表示され、ネガティブ相当が存在しない |
 
 ## Skills / Sub-agents
 
@@ -99,7 +99,7 @@
 | 種別 | パス | 内容 |
 |---|---|---|
 | iOS | `aniccaios/aniccaios/Views/NudgeCardView.swift` | 2択UIの撤去、主ボタン1つへ統一、中央寄せ、a11y id |
-| E2E | `maestro/nudge/01-nudge-card-single-primary.yaml`（新規） | 表示要素の確認（ボタン1つ） |
+| E2E | `maestro/phase6/04-nudge-single-primary-button.yaml`（新規） | 表示要素の確認（ボタン1つ） |
 | Test | `aniccaios/aniccaiosTests/...`（必要なら新規） | 主ボタン動作のみの検証 |
 
 ### 触らないファイル

@@ -105,8 +105,13 @@ struct NudgeCardView: View {
                     Divider()
                         .padding(.horizontal, 40)
 
-                    // 主ボタン（ポジティブ）を1つだけ表示（選択肢を作らない）
-                    primaryButtonView
+                    if content.problemType.hasSingleButton {
+                        // 既存の1択ボタン（見た目を変えない）
+                        singleButtonView
+                    } else {
+                        // 旧2択 → 主ボタンのみ（ネガティブは表示しない）
+                        centeredPrimaryButtonView
+                    }
 
                     Divider()
                         .padding(.horizontal, 40)
@@ -127,29 +132,39 @@ struct NudgeCardView: View {
         .accessibilityIdentifier("nudge-card-view")
     }
 
-    // MARK: - Primary Action Button (single)
-    private var primaryButtonView: some View {
-        HStack {
-            Spacer(minLength: 0)
-
-            Button(action: {
-                selectedAction = .positive
-                onPositiveAction()
-            }) {
-                Text(content.problemType.positiveButtonText)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.85)
-                    .padding(.vertical, 14)
-                    .frame(minWidth: 240)
-                    .background(AppTheme.Colors.buttonSelected)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-            .accessibilityIdentifier("nudge-primary-action")
-
-            Spacer(minLength: 0)
+    // MARK: - Single Button (既存1択の見た目を維持)
+    private var singleButtonView: some View {
+        Button(action: {
+            selectedAction = .positive
+            onPositiveAction()
+        }) {
+            Text(content.problemType.positiveButtonText)
+                .font(.system(size: 18, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 16)
+                .background(AppTheme.Colors.buttonSelected)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
+        .accessibilityIdentifier("nudge-primary-action")
+        .padding(.horizontal, 40)
+    }
+
+    // MARK: - Centered Primary Button (旧2択→主ボタンのみ)
+    private var centeredPrimaryButtonView: some View {
+        Button(action: {
+            selectedAction = .positive
+            onPositiveAction()
+        }) {
+            Text(content.problemType.positiveButtonText)
+                .font(.system(size: 16, weight: .semibold))
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 14)
+                .background(AppTheme.Colors.buttonSelected)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+        }
+        .accessibilityIdentifier("nudge-primary-action")
         .padding(.horizontal, 40)
     }
 

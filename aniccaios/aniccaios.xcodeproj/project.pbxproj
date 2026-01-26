@@ -104,7 +104,6 @@
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
-				Services/ScreenTimeManager.swift,
 			);
 			target = 8471AE7A2EB783E1002CECAA /* aniccaios */;
 		};

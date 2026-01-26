@@ -418,6 +418,66 @@ platform :ios do
     )
   end
 
+  desc "Build and run on simulator"
+  lane :build_for_simulator do
+    # シミュレータ用ビルド
+    build_app(
+      scheme: SCHEME,
+      configuration: "Debug",
+      destination: "generic/platform=iOS Simulator",
+      derived_data_path: "./build/DerivedData",
+      skip_archive: true,
+      skip_codesigning: true,
+      output_directory: "./build"
+    )
+
+    # シミュレータを起動してアプリをインストール
+    sh("xcrun simctl boot 'iPhone 16 Pro' 2>/dev/null || true")
+
+    # アプリをインストール（.appバンドルを探す）
+    app_path = Dir.glob("./build/DerivedData/Build/Products/Debug-iphonesimulator/*.app").first
+    if app_path
+      sh("xcrun simctl install booted '#{app_path}'")
+      sh("xcrun simctl launch booted #{BUNDLE_ID}")
+      UI.success("✅ App installed and launched on simulator!")
+    else
+      UI.error("❌ Could not find .app bundle")
+    end
+
+    # シミュレータアプリを前面に
+    sh("open -a Simulator")
+
+    # macOS通知
+    notification(
+      title: "Anicca iOS",
+      message: "App launched on simulator!",
+      sound: "default"
+    )
+  end
+
+  desc "Run unit tests on simulator"
+  lane :test do
+    # シミュレータでユニットテスト実行
+    run_tests(
+      project: "aniccaios.xcodeproj",
+      scheme: "aniccaios-staging",
+      device: "iPhone 16 Pro",
+      clean: false,
+      code_coverage: true,
+      output_directory: "./build/test_output",
+      output_types: "html,junit"
+    )
+
+    UI.success("✅ All tests passed!")
+
+    # macOS通知
+    notification(
+      title: "Anicca iOS Tests",
+      message: "All tests passed!",
+      sound: "default"
+    )
+  end
+
   desc "Quick test: build and install on device, then notify"
   lane :test_on_device do
     start_time = Time.now

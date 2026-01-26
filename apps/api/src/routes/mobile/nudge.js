@@ -20,10 +20,19 @@ const triggerSchema = z.object({
   payload: z.any().optional()
 });
 
+// Phase 7+8: hookFeedback/contentFeedback分離対応
 const feedbackSchema = z.object({
   nudgeId: z.string(),
   outcome: z.enum(['success', 'failed', 'ignored']).optional(),
-  signals: z.record(z.any()).optional()
+  signals: z.object({
+    hookFeedback: z.enum(['tapped', 'ignored']).optional(),
+    contentFeedback: z.enum(['thumbsUp', 'thumbsDown']).nullish(),
+    timeSpentSeconds: z.number().optional(),
+    // 後方互換: 旧フィールド
+    thumbsUp: z.boolean().optional(),
+    thumbsDown: z.boolean().optional(),
+    outcome: z.string().optional()
+  }).passthrough().optional()
 });
 
 function pickTemplate({ domain, eventType, intensity }) {
@@ -191,7 +200,7 @@ router.post('/feedback', async (req, res) => {
   }
 });
 
-// Phase 6: LLM生成Nudge
+// Phase 7+8: LLM生成Nudge
 
 // GET /api/nudge/today - 今日生成されたNudgeを取得
 router.get('/today', async (req, res) => {
@@ -201,43 +210,54 @@ router.get('/today', async (req, res) => {
   try {
     const profileId = await resolveProfileId(userId);
     if (!profileId) {
-      return res.json({ nudges: [] });
+      return res.json({ nudges: [], version: '2' });
     }
 
     // 今日の00:00 JST以降に生成されたNudgeを取得
-    // JST (UTC+9) で今日の開始時刻を計算
     const nowJST = new Date(Date.now() + 9 * 60 * 60 * 1000);
     const todayStartJST = new Date(Date.UTC(
       nowJST.getUTCFullYear(),
       nowJST.getUTCMonth(),
       nowJST.getUTCDate(),
       0, 0, 0, 0
-    ) - 9 * 60 * 60 * 1000);  // JSTの00:00をUTCに変換
+    ) - 9 * 60 * 60 * 1000);
 
     const result = await query(
       `SELECT state, subtype, created_at
        FROM nudge_events
        WHERE user_id = $1::uuid
          AND domain = 'problem_nudge'
-         AND decision_point = 'llm_generation'
+         AND decision_point IN ('llm_generation', 'rule_based')
          AND created_at >= $2::timestamp
        ORDER BY created_at DESC`,
       [profileId, todayStartJST]
     );
 
-    // LLMGeneratedNudge形式に変換
+    // Phase 7+8: overallStrategyを取得（最初のレコードから）
+    const overallStrategy = result.rows[0]?.state?.overallStrategy || null;
+
+    // LLMGeneratedNudge形式に変換（Phase 7+8対応）
     const nudges = result.rows.map(row => ({
       id: row.state.id,
       problemType: row.subtype,
-      scheduledHour: row.state.scheduledHour,
+      // Phase 7+8: scheduledTime (HH:MM) を追加
+      scheduledTime: row.state.scheduledTime || `${String(row.state.scheduledHour || 9).padStart(2, '0')}:00`,
+      // 後方互換: scheduledHour も返す
+      scheduledHour: row.state.scheduledHour || parseInt((row.state.scheduledTime || '09:00').split(':')[0]),
       hook: row.state.hook,
       content: row.state.content,
       tone: row.state.tone,
       reasoning: row.state.reasoning,
+      // Phase 7+8: rootCauseHypothesis を追加
+      rootCauseHypothesis: row.state.rootCauseHypothesis || null,
       createdAt: row.created_at.toISOString()
     }));
 
-    return res.json({ nudges });
+    return res.json({
+      nudges,
+      overallStrategy,  // Phase 7+8
+      version: '2'      // APIバージョン
+    });
   } catch (e) {
     logger.error('Failed to fetch today\'s nudges', e);
     return res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: 'Failed to fetch today\'s nudges' } });

@@ -5,6 +5,7 @@ import UserNotifications
 /// v0.3: DP(Event) -> /mobile/nudge/trigger -> (必要なら) ローカル通知を提示
 /// - 送信頻度/クールダウン/優先度/延期/日次上限/metrics stale はサーバ側で判定（tech-nudge-scheduling-v3.md）
 /// - iOS は「イベントが起きた」ことと最低限の signals を送る
+@MainActor
 final class NudgeTriggerService {
     static let shared = NudgeTriggerService()
 

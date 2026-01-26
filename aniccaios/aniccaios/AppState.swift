@@ -52,17 +52,6 @@ final class AppState: ObservableObject {
         dailyRefreshTrigger = UUID()
     }
     
-    // Phase-7: sensor permissions + integration toggles
-    @Published private(set) var sensorAccess: SensorAccessState
-    private(set) var needsSensorRepairAfterOnboarding: Bool = false
-    
-    enum SensorRepairSource {
-        case remoteSync
-        case onboardingCompleted
-        case explicitUserAction
-        case foreground
-    }
-    
     enum RootTab: Int, Hashable {
         case myPath = 0
         case profile = 1
@@ -75,8 +64,6 @@ final class AppState: ObservableObject {
     private let userCredentialsKey = "com.anicca.userCredentials"
     private let userProfileKey = "com.anicca.userProfile"
     private let subscriptionKey = "com.anicca.subscription"
-    private let sensorAccessBaseKey = "com.anicca.sensorAccessState"
-    private let sensorRepairPendingKey = "com.anicca.sensorRepairPending"
     
     // Nudge Card / Paywall / Review keys
     private let nudgeCardCompletedCountKey = "com.anicca.nudgeCardCompletedCount"
@@ -84,8 +71,6 @@ final class AppState: ObservableObject {
     private let hasRequestedReviewKey = "com.anicca.hasRequestedReview"
     private let lastNudgeResetMonthKey = "com.anicca.lastNudgeResetMonth"
     private let lastNudgeResetYearKey = "com.anicca.lastNudgeResetYear"
-
-    private let sensorLogger = Logger(subsystem: "com.anicca.ios", category: "SensorAccess")
 
     private init() {
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
@@ -100,7 +85,6 @@ final class AppState: ObservableObject {
         }
 
         self.authStatus = AuthStatus.signedOut
-        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: nil)
         self.userProfile = UserProfile()
         self.subscriptionInfo = .free
         self.authStatus = loadUserCredentials()
@@ -108,8 +92,6 @@ final class AppState: ObservableObject {
         migrateStruggles()
         syncPreferredLanguageWithSystem()
         self.subscriptionInfo = loadSubscriptionInfo()
-        self.sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: authStatus.userId)
-        self.needsSensorRepairAfterOnboarding = defaults.bool(forKey: sensorRepairPendingKey)
 
         // Phase 4: Nudge Card / Paywall / Review
         self.nudgeCardCompletedCount = defaults.integer(forKey: nudgeCardCompletedCountKey)
@@ -122,10 +104,8 @@ final class AppState: ObservableObject {
         // アプリ起動時にignored判定を実行
         Task {
             await NudgeStatsManager.shared.checkAndRecordIgnored()
-        }
-
-        Task { [weak self] in
-            await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
+            // Phase 7+8: 6時間経過の未タップNudgeをignoredとしてサーバーに送信
+            await NudgeFeedbackService.shared.sendIgnoredFeedbackForExpiredNudges()
         }
         
         // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元
@@ -165,9 +145,6 @@ final class AppState: ObservableObject {
         Task {
             // Proactive Agent: 問題ベースの通知をスケジュール
             await ProblemNotificationScheduler.shared.scheduleNotifications(for: userProfile.struggles)
-            await MetricsUploader.shared.runUploadIfDue(force: true)
-            MetricsUploader.shared.scheduleNextIfPossible()
-            await scheduleSensorRepairIfNeeded(source: .onboardingCompleted)
         }
     }
 
@@ -177,7 +154,6 @@ final class AppState: ObservableObject {
         onboardingStep = .welcome
         userProfile = UserProfile()
         subscriptionInfo = .free
-        sensorAccess = .default
         clearUserCredentials()
         defaults.removeObject(forKey: onboardingStepKey)
     }
@@ -216,13 +192,6 @@ final class AppState: ObservableObject {
         appGroupDefaults.set(credentials.userId, forKey: "userId")
         appGroupDefaults.set(resolveDeviceId(), forKey: "deviceId")
         appGroupDefaults.set(AppConfig.proxyBaseURL.absoluteString, forKey: "ANICCA_PROXY_BASE_URL")
-
-        sensorAccess = Self.loadSensorAccess(from: defaults, key: sensorAccessBaseKey, userId: credentials.userId)
-        
-        Task { [weak self] in
-            await SensorAccessSyncService.shared.fetchLatest()
-            await self?.refreshSensorAccessAuthorizations(forceReauthIfNeeded: true)
-        }
         
         // Update displayName in profile if empty and Apple provided a name
         // Don't overwrite if credentials.displayName is empty or "User" (user will set it in profile step)
@@ -289,7 +258,6 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
-        // ★ sensorAccessBaseKey は削除しない - デバイス権限はユーザーアカウントではなくデバイスに紐づく
 
         // 通知をすべてキャンセル
         Task {
@@ -324,7 +292,6 @@ final class AppState: ObservableObject {
         defaults.removeObject(forKey: userCredentialsKey)
         defaults.removeObject(forKey: userProfileKey)
         defaults.removeObject(forKey: subscriptionKey)
-        defaults.removeObject(forKey: sensorAccessBaseKey)
 
         // 通知をすべてキャンセル
         Task {
@@ -412,19 +379,7 @@ final class AppState: ObservableObject {
             if let s = big5.summary { obj["summary"] = s }
             payload["big5"] = obj
         }
-        
-        payload["sensorAccess"] = sensorAccessForSync()
-        
         return payload
-    }
-    
-    func sensorAccessForSync() -> [String: Bool] {
-        return [
-            "screenTimeEnabled": sensorAccess.screenTimeEnabled,
-            "sleepEnabled": sensorAccess.sleepEnabled,
-            "stepsEnabled": sensorAccess.stepsEnabled,
-            "motionEnabled": sensorAccess.motionEnabled
-        ]
     }
     
     func bootstrapProfileFromServerIfAvailable() async {
@@ -488,7 +443,7 @@ final class AppState: ObservableObject {
         guard userProfile.preferredLanguage != systemLanguage else { return }
         userProfile.preferredLanguage = systemLanguage
         saveUserProfile()
-        sensorLogger.info("AppState: preferredLanguage synced to \(systemLanguage.rawValue)")
+        logger.info("AppState: preferredLanguage synced to \(systemLanguage.rawValue)")
     }
     
     private func loadUserProfile() -> UserProfile {
@@ -842,202 +797,10 @@ final class AppState: ObservableObject {
             profile.stickyMode = oldSticky
         }
         updateUserProfile(profile, sync: false)
-
-        if let sensor = payload["sensorAccess"] as? [String: Bool] {
-            sensorAccess.screenTimeEnabled = sensor["screenTimeEnabled"] ?? sensorAccess.screenTimeEnabled
-            sensorAccess.sleepEnabled = sensor["sleepEnabled"] ?? sensorAccess.sleepEnabled
-            sensorAccess.stepsEnabled = sensor["stepsEnabled"] ?? sensorAccess.stepsEnabled
-            sensorAccess.motionEnabled = sensor["motionEnabled"] ?? sensorAccess.motionEnabled
-            saveSensorAccess()
-            Task { await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false) }
-        }
         
         // v3: サーバーにデータがあっても、オンボーディング強制完了はしない
         // Notifications画面を必ず通すため、isOnboardingCompleteの自動更新を廃止
         // オンボーディング完了は markOnboardingComplete() でのみ行う
-    }
-
-    @MainActor
-    func refreshSensorAccessAuthorizations(forceReauthIfNeeded _: Bool) async {
-        // HealthKitの書き込み権限ステータスを確認（参考値として）
-#if canImport(HealthKit)
-        // 読み取り権限は正確に判定できないため、ローカルに保存された状態を維持
-        // ユーザーがシステム設定から明示的に権限を取り消した場合のみfalseにする
-        // しかし、HealthKitはこれを検出する手段を提供していないため、
-        // 一度許可された状態は維持する
-        let sleepAuthorized = sensorAccess.sleepAuthorized  // ← 既存のローカル状態を使用
-        let stepsAuthorized = sensorAccess.stepsAuthorized  // ← 既存のローカル状態を使用
-#else
-        let sleepAuthorized = false
-        let stepsAuthorized = false
-#endif
-        // ScreenTime API removed for App Store compliance
-        let screenTimeAuthorized = false
-
-        var next = sensorAccess
-        let wantedSleep = next.sleepEnabled
-        let wantedSteps = next.stepsEnabled
-        let wantedScreen = next.screenTimeEnabled
-
-        next.sleepAuthorized = sleepAuthorized
-        next.stepsAuthorized = stepsAuthorized
-        next.screenTimeAuthorized = screenTimeAuthorized
-        next.healthKit = (sleepAuthorized || stepsAuthorized) ? .authorized : .denied
-        next.screenTime = screenTimeAuthorized ? .authorized : .denied
-
-        // keep user intent; data収集は *Enabled && *Authorized でゲート
-        next.sleepEnabled = wantedSleep
-        next.stepsEnabled = wantedSteps
-        next.screenTimeEnabled = wantedScreen
-
-        if next != sensorAccess {
-            sensorAccess = next
-            saveSensorAccess()
-            scheduleSensorAccessSync(next)
-        }
-
-        let needsRefresh = (next.sleepEnabled && next.sleepAuthorized)
-            || (next.stepsEnabled && next.stepsAuthorized)
-            || (next.screenTimeEnabled && next.screenTimeAuthorized)
-        if needsRefresh {
-            await MetricsUploader.shared.runUploadIfDue(force: true)
-        }
-    }
-
-    // MARK: - Phase-7: Sensor Access State
-    
-    private static func loadSensorAccess(from defaults: UserDefaults, key: String, userId: String?) -> SensorAccessState {
-        if let userId,
-           let data = defaults.data(forKey: "\(key).\(userId)"),
-           let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) {
-            return decoded
-        }
-        if let data = defaults.data(forKey: key),
-           let decoded = try? JSONDecoder().decode(SensorAccessState.self, from: data) {
-            return decoded
-        }
-        return .default
-    }
-    
-    private func saveSensorAccess(for userId: String? = nil) {
-        let key = sensorAccessStorageKey(for: userId ?? currentUserId)
-        if let data = try? JSONEncoder().encode(sensorAccess) {
-            defaults.set(data, forKey: key)
-        }
-    }
-
-    func mergeRemoteSensorAccess(sleep: Bool, steps: Bool, screenTime: Bool, motion: Bool) {
-        var next = sensorAccess
-        if sleep { next.sleepEnabled = true }
-        if steps { next.stepsEnabled = true }
-        if screenTime { next.screenTimeEnabled = true }
-        if motion { next.motionEnabled = true }
-        sensorAccess = next
-        saveSensorAccess()
-        Task {
-            await refreshSensorAccessAuthorizations(forceReauthIfNeeded: false)
-            await scheduleSensorRepairIfNeeded(source: .remoteSync)
-        }
-    }
-
-    private func sensorAccessStorageKey(for userId: String?) -> String {
-        guard let userId, !userId.isEmpty else { return sensorAccessBaseKey }
-        return "\(sensorAccessBaseKey).\(userId)"
-    }
-
-    private var currentUserId: String? {
-        authStatus.userId
-    }
-    
-    // MARK: - Phase-7: integration toggles entry points (quiet fallback)
-    
-    func setScreenTimeEnabled(_ enabled: Bool) {
-        sensorAccess.screenTimeEnabled = enabled
-        saveSensorAccess()
-        Task {
-            await ProfileSyncService.shared.enqueue(profile: userProfile, sensorAccess: sensorAccessForSync())
-        }
-        scheduleSensorAccessSync(sensorAccess)
-    }
-    
-    func setSleepEnabled(_ enabled: Bool) {
-        sensorAccess.sleepEnabled = enabled
-        saveSensorAccess()
-        scheduleSensorAccessSync(sensorAccess)
-    }
-    
-    func setStepsEnabled(_ enabled: Bool) {
-        sensorAccess.stepsEnabled = enabled
-        saveSensorAccess()
-        scheduleSensorAccessSync(sensorAccess)
-    }
-    
-    func updateSleepAuthorizationStatus(_ authorized: Bool) {
-        sensorAccess.sleepAuthorized = authorized
-        saveSensorAccess()
-        scheduleSensorAccessSync(sensorAccess)
-    }
-    
-    func updateStepsAuthorizationStatus(_ authorized: Bool) {
-        sensorAccess.stepsAuthorized = authorized
-        saveSensorAccess()
-        scheduleSensorAccessSync(sensorAccess)
-    }
-    
-    func setMotionEnabled(_ enabled: Bool) {
-        sensorAccess.motionEnabled = enabled
-        saveSensorAccess()
-        scheduleSensorAccessSync(sensorAccess)
-    }
-    
-    func updateScreenTimePermission(_ status: SensorPermissionStatus) {
-        sensorAccess.screenTime = status
-        if status != .authorized { sensorAccess.screenTimeEnabled = false }
-        saveSensorAccess()
-    }
-    
-    func updateHealthKitPermission(_ status: SensorPermissionStatus) {
-        sensorAccess.healthKit = status
-        // 権限を失ってもトグル意図は保持する
-        saveSensorAccess()
-    }
-    
-    func updateMotionPermission(_ status: SensorPermissionStatus) {
-        sensorAccess.motion = status
-        if status != .authorized { sensorAccess.motionEnabled = false }
-        saveSensorAccess()
-    }
-    
-    private func scheduleSensorAccessSync(_ access: SensorAccessState) {
-        Task.detached(priority: .utility) { [access] in
-            await SensorAccessSyncService.shared.sync(access: access)
-        }
-    }
-    
-    func updateSensorAccess(_ access: SensorAccessState) {
-        sensorAccess = access
-        saveSensorAccess()
-        scheduleSensorAccessSync(access)
-    }
-    
-    func scheduleSensorRepairIfNeeded(source: SensorRepairSource) async {
-        let needsRepairNow = (sensorAccess.sleepEnabled && !sensorAccess.sleepAuthorized)
-            || (sensorAccess.stepsEnabled && !sensorAccess.stepsAuthorized)
-        if needsRepairNow {
-            persistSensorRepairPending()
-            sensorLogger.info("HealthKit authorization missing while enabled (source=\(String(describing: source)))")
-        } else {
-            clearSensorRepairPending()
-        }
-    }
-    
-    private func persistSensorRepairPending(_ value: Bool = true) {
-        needsSensorRepairAfterOnboarding = value
-        defaults.set(value, forKey: sensorRepairPendingKey)
-    }
-    
-    private func clearSensorRepairPending() {
-        persistSensorRepairPending(false)
     }
 
     // MARK: - AlarmKit Migration

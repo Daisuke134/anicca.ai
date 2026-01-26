@@ -22,6 +22,12 @@ struct NudgeCardView: View {
             AppBackground()
                 .ignoresSafeArea()
 
+            // Accessibility container for Maestro detection
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("nudge-card-view")
+
             VStack(spacing: 0) {
                 // Close button
                 HStack {
@@ -105,13 +111,8 @@ struct NudgeCardView: View {
                     Divider()
                         .padding(.horizontal, 40)
 
-                    if content.problemType.hasSingleButton {
-                        // 1択ボタン
-                        singleButtonView
-                    } else {
-                        // 2択ボタン
-                        twoButtonView
-                    }
+                    // 全ProblemTypeで主ボタン（ポジティブ）を1つだけ表示（選択肢を作らない）
+                    primaryActionButtonView
 
                     Divider()
                         .padding(.horizontal, 40)
@@ -120,7 +121,7 @@ struct NudgeCardView: View {
                     if showFeedbackButtons {
                         feedbackButtonsView
                     } else {
-                        Text("ありがとう！")
+                        Text(String(localized: "feedback_thanks"))
                             .font(.system(size: 16))
                             .foregroundStyle(AppTheme.Colors.secondaryLabel)
                             .accessibilityIdentifier("feedback-submitted")
@@ -129,11 +130,10 @@ struct NudgeCardView: View {
                 .padding(.bottom, 40)
             }
         }
-        .accessibilityIdentifier("nudge-card-view")
     }
 
-    // MARK: - Single Button (センシティブな問題向け)
-    private var singleButtonView: some View {
+    // MARK: - Primary Action Button (single, unified style)
+    private var primaryActionButtonView: some View {
         Button(action: {
             selectedAction = .positive
             onPositiveAction()
@@ -146,43 +146,8 @@ struct NudgeCardView: View {
                 .background(AppTheme.Colors.buttonSelected)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
+        .accessibilityIdentifier("nudge-primary-action")
         .padding(.horizontal, 40)
-    }
-
-    // MARK: - Two Buttons (Primary left, Ghost right)
-    private var twoButtonView: some View {
-        HStack(spacing: 12) {
-            // Primary button (左・ポジティブ)
-            Button(action: {
-                selectedAction = .positive
-                onPositiveAction()
-            }) {
-                Text(content.problemType.positiveButtonText)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(AppTheme.Colors.buttonSelected)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-
-            // Ghost button (右・ネガティブ)
-            if let negativeText = content.problemType.negativeButtonText {
-                Button(action: {
-                    selectedAction = .negative
-                    onNegativeAction?()
-                }) {
-                    Text(negativeText)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(AppTheme.Colors.buttonUnselected)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-        }
-        .padding(.horizontal, 32)
     }
 
     // MARK: - Feedback Buttons
@@ -190,6 +155,8 @@ struct NudgeCardView: View {
         HStack(spacing: 32) {
             Button(action: {
                 onFeedback(true)
+                // Phase 7+8: contentFeedbackをサーバーに送信
+                sendContentFeedback(isPositive: true)
                 withAnimation {
                     showFeedbackButtons = false
                 }
@@ -202,6 +169,8 @@ struct NudgeCardView: View {
 
             Button(action: {
                 onFeedback(false)
+                // Phase 7+8: contentFeedbackをサーバーに送信
+                sendContentFeedback(isPositive: false)
                 withAnimation {
                     showFeedbackButtons = false
                 }
@@ -213,6 +182,23 @@ struct NudgeCardView: View {
             .accessibilityIdentifier("feedback-thumbs-down")
         }
         .opacity(showFeedbackButtons ? 1 : 0)
+    }
+
+    // MARK: - Phase 7+8: Content Feedback
+    private func sendContentFeedback(isPositive: Bool) {
+        guard let nudgeId = content.llmNudgeId else { return }
+        Task {
+            do {
+                try await NudgeFeedbackService.shared.sendContentFeedback(
+                    nudgeId: nudgeId,
+                    feedback: isPositive ? "thumbsUp" : "thumbsDown",
+                    timeSpentSeconds: nil
+                )
+            } catch {
+                // エラーは無視（ユーザー体験を妨げない）
+                print("Failed to send content feedback: \(error)")
+            }
+        }
     }
 }
 

@@ -1,5 +1,5 @@
 # Phase 6: LLM生成Nudge表示テスト
-# 
+#
 # 前提条件:
 # - staging buildがインストール済み
 # - オンボーディング完了済み（clearState: falseで起動）
@@ -13,20 +13,16 @@ tags:
 - launchApp:
     clearState: false
 
-# Profile タブに移動
-- tapOn:
-    text: "Profile"
-
 # 下にスクロールしてDebugセクションを表示
 - scrollUntilVisible:
     element:
-      text: "📱 1枚画面テスト（夜更かし）"
+      id: "debug-nudge-test-staying_up_late"
     direction: DOWN
     timeout: 5000
 
 # Debug Nudgeテストボタンをタップ
 - tapOn:
-    id: "debug-nudge-test-staying-up-late"
+    id: "debug-nudge-test-staying_up_late"
 
 # NudgeCard表示待ち
 - extendedWaitUntil:
@@ -55,4 +51,3 @@ tags:
 # カードを閉じる
 - tapOn:
     id: "nudge-card-close"
-

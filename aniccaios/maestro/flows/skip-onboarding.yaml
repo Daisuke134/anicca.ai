@@ -1,36 +1,51 @@
+appId: ai.anicca.app.ios
+tags:
+  - helper
+---
 # Onboarding スキップフロー
 # 新規ユーザーの場合、オンボーディングをスキップしてメイン画面に到達する
 
-# Welcome ステップ
+# Welcome ステップ（日本語/英語両対応）
 - tapOn:
-    text: "Get Started"
+    text: "はじめる|Get Started"
+    optional: true
 
 # Value ステップ
 - tapOn:
-    text: "Continue"
+    text: "次へ|Continue"
     optional: true
 
 # Struggles ステップ - 1つの問題を選択
 - tapOn:
-    text: "Staying up late"
+    text: "夜更かし|Staying up late"
     optional: true
 
 - tapOn:
-    text: "Continue"
+    text: "次へ|Continue"
     optional: true
 
-# Notifications ステップ
+# Notifications ステップ（通知を許可をタップ）
 - tapOn:
-    text: "Skip"
+    text: "通知を許可|Allow Notifications|Enable Notifications"
     optional: true
 
-# ATT ステップ
+# システムの通知許可ダイアログ
 - tapOn:
-    text: "Skip"
+    text: "許可|Allow"
+    optional: true
+
+# パーソナライズ画面（ATT前の説明）
+- tapOn:
+    text: "続ける|Continue"
+    optional: true
+
+# ATT許可ダイアログ
+- tapOn:
+    text: "Appにトラッキングしないように要求|Ask App Not to Track|許可|Allow"
     optional: true
 
 # 少し待ってメイン画面が表示されるのを待つ
 - extendedWaitUntil:
     visible:
-      text: "My Path"
-    timeout: 5000
+      text: "My Path|マイパス"
+    timeout: 10000

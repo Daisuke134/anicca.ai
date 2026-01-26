@@ -277,6 +277,19 @@ git branch -d feature/<task-name>
 | **触るファイルを Spec の境界に明記** | 同じファイルを複数エージェントが触らないように |
 | **依存関係があれば Spec に書く** | 他タスクへの依存を可視化 |
 | **共通の CLAUDE.md は全 Worktree で共有** | 一貫したルール適用 |
+| **Specに開発環境セクションを必ず記載** | 他エージェントがどこで作業しているか把握するため |
+
+**開発環境セクション（Spec冒頭に必須）:**
+```markdown
+## 開発環境
+
+| 項目 | 値 |
+|------|-----|
+| **ワークツリーパス** | `/Users/cbns03/Downloads/anicca-<task>` |
+| **ブランチ** | `feature/<task>` |
+| **ベースブランチ** | `dev` |
+| **作業状態** | 実装中 / レビュー待ち / 完了 |
+```
 
 **Spec ファイルの配置例:**
 ```
@@ -482,11 +495,11 @@ dev にマージ
 2. **移行ガイド提供**
 3. **95% 以上が新バージョンに移行したら削除可能**
 
-#### 例：Voice Session 削除の教訓
+#### 例：Nudge API 削除の教訓
 
 ```
 ❌ やってはいけないこと:
-- /api/realtime/voice を削除
+- /api/mobile/nudge/trigger を削除
 - 古いアプリが壊れる
 
 ✅ やるべきこと:
@@ -498,6 +511,21 @@ dev にマージ
 ### 10. Landing Page (Netlify) デプロイルール
 
 **確認前に dev にマージ/push するのは禁止。**
+
+#### 重要: dev push = 自動デプロイ
+
+**dev ブランチに push すれば Netlify は自動でビルド・デプロイする。**
+
+| やること | 結果 |
+|---------|------|
+| dev に push | ✅ 自動でビルド・デプロイ |
+| `netlify status` で確認 | ❌ 無駄（push すれば動く） |
+| API で deploy 状態確認 | ❌ 無駄（push すれば動く） |
+
+**エージェントがやるべきこと:**
+1. `apps/landing/` 内のファイルを変更
+2. commit & push to dev
+3. 完了。それだけ。
 
 #### ワークツリーでの作業フロー
 
@@ -518,6 +546,13 @@ dev にマージ
 
 **理由:** CLI を使わないとビルドエラーが見えない。push だけだとユーザーがログを確認する手間がかかる。
 
+#### Netlify ビルドエラー時
+
+| エラー | 原因 | 解決策 |
+|--------|------|--------|
+| `No url found for submodule` | 壊れた submodule 参照 | `git rm --cached <path>` + `.gitignore` 追加 |
+| `Canceled: no content change` | landing 内容が変わってない | 正常。ファイル変更して再 push |
+
 ### 11. コンテンツ変更ルール
 
 **変更を実装する前に、必ずパッチをチャットで示す。**
@@ -532,7 +567,34 @@ dev にマージ
 - Spec ファイルの変更
 - 複数ファイルにまたがる変更
 
-### 12. App Store リンクルール
+### 12. Git トラブルシューティング
+
+#### 壊れた submodule の削除
+
+**症状:** `fatal: No url found for submodule path 'xxx'`
+
+**原因:** `.gitmodules` に URL がないのに git index に submodule 参照が残っている
+
+**解決方法:**
+```bash
+# 1. git index から削除
+git rm --cached <path>
+
+# 2. .gitignore に追加（再追加防止）
+echo "<path>/" >> .gitignore
+
+# 3. コミット & プッシュ
+git add .gitignore && git commit -m "fix: remove broken submodule" && git push
+```
+
+**例:**
+```bash
+git rm --cached .claude/skills/supabase-agent-skills
+echo ".claude/skills/supabase-agent-skills/" >> .gitignore
+git add .gitignore && git commit -m "fix: remove broken submodule" && git push
+```
+
+### 13. App Store リンクルール
 
 **直接 URL ではなくリダイレクト URL を使う。**
 
@@ -839,28 +901,34 @@ daily-apps/         - 関連アプリ（Daily Dhammaなど）
 | **他者依存傾向** | 自分では無理だから誰かに引っ張ってほしい |
 And also I've already done the 
 
-## iOSアプリ現在の実装状況（2026年1月時点）
+## iOSアプリ現在の実装状況（2026年1月26日時点）
 
-### タブ構成（2タブ）
+### リリース状況
+| 項目 | 内容 |
+|------|------|
+| App Store承認 | 1.3.0（Phase 6） |
+| 次回提出 | 1.4.0 |
 
-| タブ | View | 内容 |
+### メイン画面（シングルスクリーン）
+
+| 画面 | View | 内容 |
 |------|------|------|
-| My Path | `MyPathTabView` | ユーザーの問題一覧、Tell Anicca、DeepDive |
-| Profile | `ProfileView` | Name, Plan, Data Integration, Nudge Strength |
+| My Path | `MyPathTabView` | 問題一覧、Tell Anicca、DeepDive、課金/アカウント |
 
 ### オンボーディングフロー
 
 ```
-welcome → value → struggles → notifications → att → complete
+welcome → value → struggles → notifications（完了処理）
 ```
 
 | ステップ | View | 説明 |
 |---------|------|------|
-| welcome | `WelcomeStepView` | アプリ紹介 |
+| welcome | `WelcomeStepView` | アプリ紹介 + 既存ユーザー復元 |
 | value | `ValueStepView` | アプリの価値説明 |
 | struggles | `StrugglesStepView` | 13個の問題から選択 |
 | notifications | `NotificationPermissionStepView` | 通知許可 |
-| att | `ATTPermissionStepView` | ATT許可 |
+
+※ ATT許可: オンボーディング後（初回NudgeCardの価値体験後）に表示（`ATTPermissionStepView`）。
 
 ### 13個の問題タイプ（ProblemType）
 
@@ -870,21 +938,22 @@ procrastination, anxiety, lying, bad_mouthing, porn_addiction,
 alcohol_dependency, anger, obsessive, loneliness
 ```
 
-### 通知システム
+### 通知 / Nudge システム
 
-| 機能 | Scheduler | 画面 |
-|------|-----------|------|
+| 機能 | 担当 | 画面 |
+|------|------|------|
 | Problem Nudge | `ProblemNotificationScheduler` | `NudgeCardView` |
-| cantWakeUp Alarm | `ProblemAlarmKitScheduler` | AlarmKit (iOS 26+) |
-| Server Nudge | `NotificationScheduler` | - |
+| Server-driven Nudge | `NotificationScheduler` | `NudgeCardView` |
+| LLM生成Nudge（Phase 6） | `LLMNudgeService` / `LLMNudgeCache` | `NudgeCardView` |
 
-**NudgeCardView**: 通知タップで1枚カード表示。問題に応じて1択or2択ボタン、👍👎フィードバック。
+**NudgeCardView**: 通知タップで1枚カード表示。問題に応じて1択/2択ボタン、👍👎フィードバック。
 
 ### 重要な注意事項
 
 1. **ProblemTypeベース**: 全ての通知は`ProblemType`に基づく。HabitTypeシステムは完全削除済み。
-2. **音声機能**: 削除済み（OpenAI Realtime API、VoiceSessionController等）。
-3. **NotificationScheduler**: 認可とサーバーNudgeのみ担当（約140行）。
+2. **音声機能**: 削除済み（関連コンポーネントは廃止）。
+3. **LLM生成Nudge**: `/api/mobile/nudge/today` を日次取得し `LLMNudgeCache` に保存。
+4. **NotificationScheduler**: 認可とサーバーNudgeのみ担当（約140行）。
 
 ---
 
@@ -907,12 +976,49 @@ alcohol_dependency, anger, obsessive, loneliness
 
 ---
 
+## ワークツリールール（絶対厳守）
+
+### devブランチでの直接作業は禁止
+
+**単独作業でも、全ての実装はワークツリーで行う。**
+
+| 状況 | やること |
+|------|---------|
+| 新しいタスク開始 | `git worktree add ../anicca-<task> -b feature/<task>` |
+| 既存タスク継続 | 該当ワークツリーに移動してから作業 |
+| レビュー依頼された | **まずワークツリーを確認**（下記参照） |
+| devで直接コミット | ❌ **絶対禁止** |
+
+### レビュー・作業依頼時の必須フロー
+
+```
+1. ユーザーからレビュー/作業依頼を受ける
+2. 「どのワークツリーですか？」と確認（または git worktree list で確認）
+3. 該当ワークツリーに cd する
+4. Specファイルを読んで状況把握
+5. 作業開始
+```
+
+**絶対にやってはいけないこと:**
+- ワークツリーを確認せずにdevで作業開始
+- 勝手にdevにコミット
+- ワークツリー外でコード変更
+
+### ワークツリー一覧確認コマンド
+
+```bash
+git worktree list
+```
+
+---
+
 ## チェックリスト（作業開始時）
 
-- [ ] devブランチにいることを確認 (`git branch`)
-- [ ] 最新のdevをプル (`git pull origin dev`)
-- [ ] 並列作業の場合は Worktree を作成 (`git worktree add ../anicca-<task> -b feature/<task>`)
-- [ ] 作業完了後はこまめにプッシュ
+- [ ] **ワークツリーを確認** (`git worktree list`)
+- [ ] 該当ワークツリーに移動 (`cd /path/to/worktree`)
+- [ ] Specファイルを読む
+- [ ] 最新をプル (`git pull`)
+- [ ] 作業完了後はこまめにコミット＆プッシュ
 - [ ] マージ前にユーザーの実機確認を待つ
 
 ---
@@ -1031,14 +1137,11 @@ func testProblemTypeContent(type: String) {
 
 ### テスト実行コマンド
 
+**⚠️ xcodebuild 直接実行は絶対禁止。必ず Fastlane を使え。**
+
 ```bash
-# Unit Tests + Integration Tests
-cd aniccaios && xcodebuild test \
-  -project aniccaios.xcodeproj \
-  -scheme aniccaios-staging \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
-  -only-testing:aniccaiosTests \
-  | xcpretty
+# Unit Tests + Integration Tests（必須: Fastlane経由）
+cd aniccaios && fastlane test
 
 # E2E Tests (Maestro)
 maestro test maestro/
@@ -1046,6 +1149,11 @@ maestro test maestro/
 # 個別 E2E
 maestro test maestro/01-onboarding.yaml
 ```
+
+**禁止事項（絶対にやるな）:**
+- `xcodebuild test` の直接実行
+- `xcodebuild build` の直接実行
+- Fastlane を使わずに Xcode CLI を叩くこと
 
 ### GitHub Actions CI/CD（自動化）
 
@@ -1186,6 +1294,21 @@ Text(nudge.content)
     id: "nudge_content_llm"
 ```
 
+#### 日本語テキストの注意点
+
+**View Hierarchy で実際のテキストを確認せよ。想定と違うことが多い。**
+
+| 想定 | 実際（View Hierarchy で確認） |
+|------|------------------------------|
+| `利用規約` | `利用規約 (EULA)` |
+| `プライバシーポリシー` | `プライバシーポリシー` |
+| `はじめる` | `はじめる` or `Get Started` |
+
+**必須フロー:**
+1. `mcp__maestro__inspect_view_hierarchy` で実際のテキストを確認
+2. 確認したテキストをそのまま YAML に記載
+3. パイプ `|` で日英両対応: `text: "利用規約 (EULA)|Terms of Use"`
+
 #### 制限事項
 
 | 項目 | 状況 |
@@ -1243,16 +1366,22 @@ cd aniccaios && fastlane build_for_simulator
 | RevenueCat操作 | `mcp__revenuecat__*` | - |
 | App Store Connect | `mcp__app-store-connect__*` | - |
 
-### Maestro MCP vs CLI 使い分け
+### Maestro MCP（絶対ルール）
 
-| シーン | 使うもの | 理由 |
-|--------|---------|------|
-| テスト作成・デバッグ | MCP (`mcp__maestro__*`) | View Hierarchy 確認、1コマンドずつ実行可能 |
-| CI/CD、一括実行 | CLI (`maestro test`) | スクリプト向き、GitHub Actions対応 |
+**⚠️ エージェントは Maestro CLI を直接叩くな。必ず MCP を使え。**
 
-**エージェント作業時のルール**:
+| シーン | 使うもの | CLI使用 |
+|--------|---------|---------|
+| テスト作成・デバッグ | MCP (`mcp__maestro__*`) | ❌ 禁止 |
+| View Hierarchy確認 | `mcp__maestro__inspect_view_hierarchy` | ❌ 禁止 |
+| コマンド実行 | `mcp__maestro__run_flow` | ❌ 禁止 |
+| CI/CD（GitHub Actions） | CLI (`maestro test`) | ✅ CI/CDのみ許可 |
 
-1. **MCP を優先して使う**
+**違反した場合**: やり直し。MCP経由で通すまで完了とは認めない。
+
+**エージェント作業時の必須フロー**:
+
+1. **MCP を絶対に使う（CLI禁止）**
    ```
    mcp__maestro__list_devices       → デバイス一覧
    mcp__maestro__inspect_view_hierarchy → 要素確認（セレクタ決定）
@@ -1333,23 +1462,56 @@ cd aniccaios && fastlane build_for_simulator
 
 ### Fastlane（ビルド・テスト・提出）
 
-**Fastlane を優先して使う。** xcodebuild 直接実行より簡潔で確実。
+**⚠️ 絶対ルール: Fastlane 以外は使うな。xcodebuild 直接実行は禁止。**
+
+| 操作 | 正しいコマンド | 禁止 |
+|------|---------------|------|
+| テスト | `fastlane test` | ❌ `xcodebuild test` |
+| ビルド | `fastlane build` | ❌ `xcodebuild build` |
+| 実機 | `fastlane build_for_device` | ❌ 手動ビルド |
+
+**xcodebuild を直接使った場合、即座にやり直せ。Fastlane で通るまで完了とは認めない。**
+
+#### 利用可能な Lane 一覧
+
+| Lane | 用途 | コマンド |
+|------|------|---------|
+| `build_for_device` | 実機にインストール | `fastlane build_for_device` |
+| `build_for_simulator` | シミュレータで起動 | `fastlane build_for_simulator` |
+| `test` | Unit/Integration テスト | `fastlane test` |
+| `build` | App Store 用 IPA 作成 | `fastlane build` |
+| `upload` | App Store Connect にアップロード | `fastlane upload` |
+| `release` | build + upload | `fastlane release` |
+| `full_release` | build + upload + 審査提出 | `fastlane full_release` |
+| `submit_review` | 審査に提出 | `fastlane submit_review` |
+
+#### 非インタラクティブモード対応（重要）
+
+Fastlane を Claude Code から実行する場合、環境変数が必須:
 
 ```bash
-# ビルド（シミュレータ用）
-cd aniccaios && fastlane build_for_simulator
+# 正しい実行方法
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane build_for_device
+```
 
-# ビルド（実機用）
-cd aniccaios && fastlane build_for_device
+| 環境変数 | 理由 |
+|---------|------|
+| `FASTLANE_SKIP_UPDATE_CHECK=1` | アップデート確認をスキップ |
+| `FASTLANE_OPT_OUT_CRASH_REPORTING=1` | クラッシュレポート送信をスキップ |
 
-# テスト実行
-cd aniccaios && fastlane test
+**これらがないと「non-interactive mode」エラーで失敗する。**
 
-# TestFlight へアップロード
-cd aniccaios && fastlane beta
+#### 実機ビルド前の事前チェック
 
-# App Store へ提出
-cd aniccaios && fastlane release
+```bash
+# 1. 実機が接続されているか確認
+ios-deploy --detect
+
+# 2. 接続されていれば build_for_device
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_device
+
+# 3. 未接続ならシミュレータにフォールバック
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 ```
 
 **Fastfile**: `aniccaios/fastlane/Fastfile`
@@ -1420,4 +1582,4 @@ cd aniccaios && fastlane release
 
 ---
 
-最終更新: 2026年1月25日（Netlifyデプロイルール、コンテンツ変更ルール、App Storeリンクルール追加）
+最終更新: 2026年1月27日（Netlify自動デプロイ明記、Fastlane全lane一覧・非インタラクティブモード対応、Maestro日本語テキスト注意点、Gitサブモジュールトラブルシューティング追加）

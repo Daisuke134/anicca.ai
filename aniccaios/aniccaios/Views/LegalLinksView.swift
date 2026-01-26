@@ -4,7 +4,7 @@ struct LegalLinksView: View {
     var body: some View {
         VStack(spacing: 8) {
             Link(String(localized: "legal_privacy_policy"), destination: privacyURL)
-            Link(String(localized: "legal_terms_of_use"), destination: URL(string: "https://www.apple.com/legal/internet-services/itunes/dev/stdeula/")!)
+            Link(String(localized: "legal_terms_of_use"), destination: termsURL)
         }
         .font(.footnote)
         .foregroundColor(.secondary)
@@ -15,8 +15,24 @@ struct LegalLinksView: View {
     }
     
     private var privacyURL: URL {
-        let lang = AppState.shared.userProfile.preferredLanguage.rawValue
+        let lang = supportedWebLanguage
         return URL(string: "https://aniccaai.com/privacy/\(lang)")!
+    }
+
+    private var termsURL: URL {
+        let lang = supportedWebLanguage
+        return URL(string: "https://aniccaai.com/terms/\(lang)")!
+    }
+    
+    /// ウェブサイトでサポートされている言語のみ（en/ja）。その他は英語にフォールバック。
+    private var supportedWebLanguage: String {
+        let lang = AppState.shared.userProfile.preferredLanguage
+        switch lang {
+        case .ja:
+            return "ja"
+        case .en, .de, .fr, .es, .ptBR:
+            return "en"
+        }
     }
 }
 

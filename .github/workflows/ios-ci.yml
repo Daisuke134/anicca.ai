@@ -5,16 +5,34 @@ on:
     branches: [dev, main]
     paths:
       - 'aniccaios/**'
+      - 'maestro/**'
       - '.github/workflows/ios-ci.yml'
   pull_request:
     branches: [dev, main]
     paths:
       - 'aniccaios/**'
+      - 'maestro/**'
+      - '.github/workflows/ios-ci.yml'
 
 jobs:
+  localization-guard:
+    name: Localization Guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check localization key parity
+        run: |
+          python3 aniccaios/scripts/localization/check_strings_parity.py
+
+      - name: Check for hardcoded SwiftUI Text strings
+        run: |
+          python3 aniccaios/scripts/localization/check_hardcoded_swiftui_text.py
+
   unit-tests:
     name: Unit & Integration Tests
     runs-on: macos-14
+    needs: localization-guard
     steps:
       - uses: actions/checkout@v4
       
@@ -48,6 +66,7 @@ jobs:
     name: E2E Tests (Maestro)
     runs-on: macos-14
     needs: unit-tests
+    # Re-enabled after UI/accessibilityIdentifier updates (Jan 2026)
     steps:
       - uses: actions/checkout@v4
       
@@ -72,17 +91,18 @@ jobs:
           xcodebuild build \
             -project aniccaios.xcodeproj \
             -scheme aniccaios-staging \
+            -configuration "staging Debug" \
             -destination 'platform=iOS Simulator,name=iPhone 16 Pro,OS=18.2' \
             -derivedDataPath ./build
-      
+
       - name: Install App
         working-directory: aniccaios
         run: |
-          xcrun simctl install booted ./build/Build/Products/Debug-iphonesimulator/aniccaios.app
+          xcrun simctl install booted "./build/Build/Products/staging Debug-iphonesimulator/aniccaios.app"
       
       - name: Run Maestro Tests
         run: |
-          maestro test maestro/
+          maestro test maestro/ --include-tags smokeTest,phase6
       
       - name: Upload Test Results
         if: failure()

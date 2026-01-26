@@ -6,6 +6,7 @@ import OSLog
 /// - 認証リクエスト
 /// - カテゴリ登録
 /// - サーバー駆動型Nudge通知
+@MainActor
 final class NotificationScheduler {
     static let shared = NotificationScheduler()
 

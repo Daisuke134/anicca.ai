@@ -30,21 +30,32 @@ struct NotificationPermissionStepView: View {
                 .padding(.horizontal)
 
 
-            PrimaryButton(
-                title: isRequesting
-                    ? String(localized: "common_requesting")
-                    : (hasAttemptedPermission ? String(localized: "common_continue") : String(localized: "onboarding_notifications_allow")),
-                isEnabled: !isRequesting,
-                isLoading: isRequesting,
-                style: hasAttemptedPermission ? .selected : .primary
-            ) {
+            Button {
                 if hasAttemptedPermission {
-                    // 許可/拒否に関わらず次へ進める
                     next()
                 } else {
                     requestNotifications()
                 }
+            } label: {
+                if isRequesting {
+                    ProgressView()
+                        .tint(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(AppTheme.Colors.label)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                } else {
+                    Text(hasAttemptedPermission ? String(localized: "common_continue") : String(localized: "onboarding_notifications_allow"))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(hasAttemptedPermission ? AppTheme.Colors.buttonSelected : AppTheme.Colors.label)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                }
             }
+            .disabled(isRequesting)
+            .accessibilityIdentifier("onboarding-notifications-allow")
 
         }
         .padding(24)

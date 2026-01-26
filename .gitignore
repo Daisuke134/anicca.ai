@@ -140,3 +140,4 @@ examples/app_assistant_voice_agents.ipynb
 # SNS Automation
 generated/
 scripts/sns-poster/.venv/
+.claude/skills/supabase-agent-skills/

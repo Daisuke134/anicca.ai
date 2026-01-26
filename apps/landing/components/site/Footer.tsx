@@ -14,11 +14,11 @@ export default function Footer({ locale }: FooterProps) {
         <p className="font-bold text-foreground">Anicca</p>
 
         <div className="mt-4 flex flex-wrap justify-center gap-4 text-sm text-muted-foreground">
-          <Link href="/privacy" className="transition-colors hover:text-foreground">
+          <Link href={`/privacy/${locale}`} className="transition-colors hover:text-foreground">
             {t.privacy}
           </Link>
           <span>|</span>
-          <Link href="/terms" className="transition-colors hover:text-foreground">
+          <Link href={`/terms/${locale}`} className="transition-colors hover:text-foreground">
             {t.terms}
           </Link>
           <span>|</span>

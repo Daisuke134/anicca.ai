@@ -1,4 +1,4 @@
-appId: com.anicca.ios.staging
+appId: ai.anicca.app.ios
 tags:
   - smokeTest
   - single-screen
@@ -6,37 +6,47 @@ tags:
 - launchApp:
     clearState: true
 
-# Onboarding をスキップ（新規ユーザーの場合）
+# Onboarding をスキップ（新規ユーザーの場合）- 日本語/英語両対応
 - runFlow:
     when:
-      visible: "Get Started"
+      visible: "はじめる|Get Started"
     file: ../flows/skip-onboarding.yaml
 
-# My Path タイトルが表示されていることを確認
+# Paywall が表示されたら閉じる（左上の戻るボタン < をタップ）
+- tapOn:
+    point: "8%,12%"
+    optional: true
+
+# 2回タップ（確実に閉じる）
+- tapOn:
+    point: "8%,12%"
+    optional: true
+
+# 少し待つ
+- extendedWaitUntil:
+    visible:
+      text: "My Path|マイパス|夜更かし|Staying up late"
+    timeout: 8000
+
+# My Path タイトルが表示されていることを確認（日本語/英語）
 - assertVisible:
-    text: "My Path"
+    text: "My Path|マイパス"
 
 # Tab Bar が存在しないことを確認（Profile タブがない）
 - assertNotVisible:
-    text: "Profile"
+    text: "Profile|プロフィール"
 
-# 問題リストセクション
+# 問題リストセクション（日本語/英語）
 - assertVisible:
-    text: "Current Struggles"
+    text: "Current Struggles|今向き合っている課題"
 
 # Tell Anicca セクション
 - assertVisible:
-    text: "Tell Anicca"
+    text: "Tell Anicca|Aniccaに伝える"
 
-# Footer へスクロール
-- scrollUntilVisible:
-    element:
-      text: "Privacy Policy"
-    direction: DOWN
-
-# Legal Links が表示されていることを確認
+# Legal Links が表示されていることを確認（日本語/英語）- スクロールせずに既に見えている
 - assertVisible:
-    text: "Privacy Policy"
+    text: "Privacy Policy|プライバシーポリシー"
 
 - assertVisible:
-    text: "Terms of Use"
+    text: "Terms of Use|利用規約 (EULA)"

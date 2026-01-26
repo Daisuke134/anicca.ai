@@ -32,13 +32,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         }
 
         // Phase-7: register BGTask handlers
-        MetricsUploader.shared.registerBGTask()
-
         Task {
             if AppState.shared.isOnboardingComplete {
                 _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()
-                HealthKitManager.shared.configureOnLaunchIfEnabled()
-                MetricsUploader.shared.scheduleNextIfPossible()
             }
             await SubscriptionManager.shared.refreshOfferings()
             await AuthHealthCheck.shared.warmBackend()
@@ -47,20 +43,7 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // NudgeCard表示を優先するため、センサー同期を遅延・低優先度で実行
-        Task {
-            // 500ms待機してNudgeCard表示を優先
-            try? await Task.sleep(for: .milliseconds(500))
-
-            // バックグラウンド優先度で実行
-            Task.detached(priority: .utility) {
-                await SensorAccessSyncService.shared.fetchLatest()
-                await AppState.shared.refreshSensorAccessAuthorizations(
-                    forceReauthIfNeeded: await AppState.shared.isOnboardingComplete
-                )
-                await AppState.shared.scheduleSensorRepairIfNeeded(source: .foreground)
-            }
-        }
+        // no-op
     }
 
     func userNotificationCenter(_ center: UNUserNotificationCenter, willPresent notification: UNNotification, withCompletionHandler completionHandler: @escaping (UNNotificationPresentationOptions) -> Void) {
@@ -95,6 +78,18 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                             isAIGenerated: nudgeContent.isAIGenerated,
                             llmNudgeId: nudgeContent.llmNudgeId
                         )
+
+                        // Phase 7+8: hookFeedback "tapped" をサーバーに送信
+                        if let nudgeId = nudgeContent.llmNudgeId {
+                            Task {
+                                do {
+                                    try await NudgeFeedbackService.shared.handleNudgeTapped(nudgeId: nudgeId)
+                                } catch {
+                                    // エラーは無視（ユーザー体験を妨げない）
+                                    print("Failed to send tapped feedback: \(error)")
+                                }
+                            }
+                        }
 
                         // NudgeCard を表示
                         AppState.shared.showNudgeCard(nudgeContent)

@@ -1,0 +1,55 @@
+name: Netlify (landing) Deploy Preview
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - "apps/landing/**"
+
+jobs:
+  deploy-preview:
+    name: Deploy Preview (apps/landing)
+    runs-on: ubuntu-latest
+    if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' && secrets.NETLIFY_SITE_ID != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: apps/landing/package-lock.json
+
+      - name: Install dependencies
+        working-directory: apps/landing
+        run: npm ci
+
+      - name: Build
+        working-directory: apps/landing
+        run: npm run build
+
+      - name: Deploy to Netlify (preview)
+        working-directory: apps/landing
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          npx netlify deploy --dir=out --json > netlify_deploy.json
+          echo "DEPLOY_URL=$(cat netlify_deploy.json | node -e \"const fs=require('fs');const j=JSON.parse(fs.readFileSync(0,'utf8'));process.stdout.write(j.deploy_url||'')\")" >> $GITHUB_ENV
+
+      - name: Comment deploy preview URL
+        if: ${{ env.DEPLOY_URL != '' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const url = process.env.DEPLOY_URL;
+            const body = `Netlify deploy preview (apps/landing): ${url}`;
+            github.rest.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.issue.number,
+              body
+            });
+

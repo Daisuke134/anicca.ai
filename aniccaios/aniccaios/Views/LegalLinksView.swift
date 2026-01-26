@@ -15,13 +15,24 @@ struct LegalLinksView: View {
     }
     
     private var privacyURL: URL {
-        let lang = AppState.shared.userProfile.preferredLanguage.rawValue
+        let lang = supportedWebLanguage
         return URL(string: "https://aniccaai.com/privacy/\(lang)")!
     }
 
     private var termsURL: URL {
-        let lang = AppState.shared.userProfile.preferredLanguage.rawValue
+        let lang = supportedWebLanguage
         return URL(string: "https://aniccaai.com/terms/\(lang)")!
+    }
+    
+    /// ウェブサイトでサポートされている言語のみ（en/ja）。その他は英語にフォールバック。
+    private var supportedWebLanguage: String {
+        let lang = AppState.shared.userProfile.preferredLanguage
+        switch lang {
+        case .ja:
+            return "ja"
+        case .en, .de, .fr, .es, .ptBR:
+            return "en"
+        }
     }
 }
 

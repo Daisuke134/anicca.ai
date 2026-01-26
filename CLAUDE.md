@@ -851,7 +851,7 @@ And also I've already done the
 ### オンボーディングフロー
 
 ```
-welcome → value → struggles → notifications → att → complete
+welcome → value → struggles → notifications → complete
 ```
 
 | ステップ | View | 説明 |
@@ -860,7 +860,7 @@ welcome → value → struggles → notifications → att → complete
 | value | `ValueStepView` | アプリの価値説明 |
 | struggles | `StrugglesStepView` | 13個の問題から選択 |
 | notifications | `NotificationPermissionStepView` | 通知許可 |
-| att | `ATTPermissionStepView` | ATT許可 |
+| att | `ATTPermissionStepView` | オンボーディング後（初回NudgeCardの価値体験後）に表示 |
 
 ### 13個の問題タイプ（ProblemType）
 
@@ -1420,4 +1420,4 @@ cd aniccaios && fastlane release
 
 ---
 
-最終更新: 2026年1月25日（Netlifyデプロイルール、コンテンツ変更ルール、App Storeリンクルール追加）
+最終更新: 2026年1月26日（iOS: ATTをオンボーディング後へ移動、センサー系削除、法務ページ更新）

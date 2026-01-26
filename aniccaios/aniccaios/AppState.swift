@@ -449,7 +449,7 @@ final class AppState: ObservableObject {
         guard userProfile.preferredLanguage != systemLanguage else { return }
         userProfile.preferredLanguage = systemLanguage
         saveUserProfile()
-        sensorLogger.info("AppState: preferredLanguage synced to \(systemLanguage.rawValue)")
+        logger.info("AppState: preferredLanguage synced to \(systemLanguage.rawValue)")
     }
     
     private func loadUserProfile() -> UserProfile {

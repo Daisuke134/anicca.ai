@@ -12,6 +12,7 @@ on:
     paths:
       - 'aniccaios/**'
       - 'maestro/**'
+      - '.github/workflows/ios-ci.yml'
 
 jobs:
   localization-guard:

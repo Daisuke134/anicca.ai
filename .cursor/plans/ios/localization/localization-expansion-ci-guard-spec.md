@@ -48,11 +48,21 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 
 | 領域 | 現状 | 備考 |
 |---|---|---|
-| 文字列 | `Localizable.strings` が `en.lproj` / `ja.lproj` のみ | `.xcstrings` は未導入 |
+| 文字列 | `Localizable.strings` が `aniccaios/aniccaios/Resources/{en,ja}.lproj/Localizable.strings` のみ | `.xcstrings` は未導入 |
 | SwiftUI | `String(localized:)` が多いが、`Text("...")` 直書きも残存 | 直書きは漏れの原因 |
+| ツール | SwiftLint / SwiftGen は未導入 | CIで「漏れ」を落とせない |
 | 通知（Problem） | `NSLocalizedString(key)` でキー参照（良い） | 一部はユーザー情報にキーを保存 |
 | 通知（Server-driven） | `message` をそのまま通知本文に利用 | サーバー文言が英語固定なら必ずズレる |
-| 言語ソース | OS言語 + `preferredLanguage` + サーバーの文言が混在 | “日本語アカなのに英語が混ざる” 根本原因になりうる |
+| 言語ソース | OS言語 + `preferredLanguage` + サーバー文言が混在 | 混在が起きやすい |
+| 言語モデル | `LanguagePreference` は `ja/en` のみ | 追加4言語は未対応 |
+| 起動時挙動 | `AppState.syncPreferredLanguageWithSystem()` がOS言語に同期 | 「アプリ内の言語=OS」になりやすい |
+
+### 既知の “production 直書き” 候補（要修正）
+
+| ファイル | 直書き | 補足 |
+|---|---|---|
+| `aniccaios/aniccaios/Session/AuthRequiredPlaceholderView.swift` | `"Please Sign In"`, `"Sign in to start using Anicca and set up your habits."` | 完全に未ローカライズ |
+| `aniccaios/aniccaios/Views/NudgeCardView.swift` | `"ありがとう！"` | DEBUGではなく本番表示（要ローカライズ） |
 
 ---
 
@@ -60,12 +70,18 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 
 ### 1) 言語ソース（Single Source of Truth）
 
-**決め:** アプリ内で使う表示言語は `AppState.userProfile.preferredLanguage` を正とし、未設定の場合のみ OS 言語にフォールバックする。
+**決め（現状整合）:** UI表示言語は **OS言語（iOS標準のローカライズ）** を正とする。`UserProfile.preferredLanguage` は **OS言語に同期**し、LLM/サーバー要求・文言生成の補助に使う（＝“UIと言語がズレる”状態を原則作らない）。
 
 | ルール | 目的 |
 |---|---|
 | UI/通知/アクションタイトルなど、文字列の解決は同じ仕組みを使う | 混在を根絶 |
-| “OS言語” と “アカウント言語” を同時に参照しない | 事故を減らす |
+| “OS言語” と “アカウント言語” を同時に参照しない | 事故を減らす（現状、起動時にOS同期が入るため） |
+
+#### 範囲外（今回やらない）
+
+| 項目 | 理由 |
+|---|---|
+| “アプリ内で言語を手動選択する”UI/UX | 言語ソースが二重になり、混在事故の温床になりやすい。まずはOS言語準拠 + CIガードで漏れをゼロにする |
 
 #### 想定API（シグネチャ例）
 
@@ -95,6 +111,14 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 | NG | `String(localized: "mypath_header_description")`（生キー） |
 | OK | `Text(L10n.mypathHeaderDescription)`（生成定数） |
 
+#### 導入順序（現実的な段階移行）
+
+| フェーズ | まず入れるもの | 理由 |
+|---|---|---|
+| Phase A | CIで「production直書き」を落とす | 最短で事故を止める（ゼロ漏れ効果が最大） |
+| Phase B | `.xcstrings` 導入（可視化） | 追加言語のMissingを見える化 |
+| Phase C | SwiftGen（型安全） | タイポ/参照漏れをコンパイル時に潰す |
+
 ### 4) CIでの “漏れ” ガード（最重要）
 
 **決め:** 以下のどれか1つでも検出したらCIをFailにする。
@@ -105,6 +129,12 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 | 2 | `NSLocalizedString("...")` の生キー（段階的に） | SwiftLint custom rule | 生キーのタイポ事故防止 |
 | 3 | 言語ファイルに存在しないキー参照 | 生成コード（SwiftGen）によりコンパイル時に検知 | `L10n.xxx` が存在しない |
 | 4 | 追加言語の翻訳が未投入（重要キー群） | “必須キーリスト”の存在チェック（スクリプト） | onboarding/main/notifications/paywallの最重要 |
+
+#### CI統合ポイント（現状CIに合わせる）
+
+| 対象 | 現状 | To-Be |
+|---|---|---|
+| `.github/workflows/ios-ci.yml` | Unit Testsのみ（E2Eは無効） | **Lint Jobを追加**して、直書き/必須キー/未翻訳をFail |
 
 ---
 
@@ -117,6 +147,7 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 | 3 | production領域に “直書き文字列” が残っている場合、CIがFailする | 「忘れて出荷」が不可能 |
 | 4 | 通知（Server-driven）の言語がアプリの表示言語と一致する | 日本語ユーザーに英語通知が出ない |
 | 5 | 既存の `en/ja` の表示が壊れていない | 既存ユーザーの体験が維持される |
+| 6 | `LanguagePreference` が追加4言語に対応する | `detectDefault()` が `de/fr/es/pt-BR` を返せる |
 
 ---
 
@@ -130,6 +161,7 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 | 4 | CIで直書き/未翻訳を検出してFail | GitHub ActionsでFailする |
 | 5 | 言語ソースを一本化（UI/通知の整合） | 混在が再現しない |
 | 6 | 運用ドキュメントを追加 | 次回以降の手順が迷子にならない |
+| 7 | `LanguagePreference` を6言語に拡張 | `ja/en/de/fr/es/ptBR`（実装名は後述） |
 
 ---
 
@@ -142,6 +174,7 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 | 3 | CI直書き検出 | CI | `lint_no_hardcoded_strings` | ✅ |
 | 4 | 必須キー存在チェック | CI | `lint_required_localization_keys` | ✅ |
 | 5 | Server-driven通知の言語一致 | Integration（可能なら） | `test_serverDrivenNudge_usesPreferredLanguage()` | ⚠️（API依存） |
+| 6 | LanguagePreference拡張 | Unit | `test_detectDefault_supportsNewLocales()` | ✅ |
 
 ---
 
@@ -184,13 +217,21 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 
 | # | ステップ | 触る可能性が高い領域 |
 |---|---|---|
-| 1 | String Catalog導入（移行の土台） | `aniccaios/Resources/*` |
+| 0 | `LanguagePreference` を6言語へ拡張（モデル/同期） | `aniccaios/aniccaios/Models/UserProfile.swift`, `AppState.swift` |
+| 1 | String Catalog導入（移行の土台） | `aniccaios/aniccaios/Resources/**` |
 | 2 | 4言語ロケール追加（lproj / catalog） | Xcode project settings / Resources |
 | 3 | 直書き文字列の置換（productionのみ） | `aniccaios/aniccaios/**` |
 | 4 | 型安全参照（SwiftGen等）導入 | build scripts / 生成ファイル / 呼び出し置換 |
 | 5 | CIガード追加（SwiftLint+スクリプト） | `.github/workflows/*`, `.swiftlint.yml` 等 |
 | 6 | 通知の言語整合（Server-driven） | iOS側 + 必要ならAPIに言語ヘッダ/パラメータ |
 | 7 | 運用ドキュメント作成 | `.cursor/plans/ios/localization/*` |
+
+### Server-driven通知（要サーバー協調）
+
+| 対象 | 現状 | To-Be |
+|---|---|---|
+| `NotificationScheduler.scheduleNudgeNow(... message: String ...)` | `message` をそのまま通知表示 | APIが **言語別の message** を返す（または key を返し端末側でローカライズ） |
+| `AniccaNotificationService/NotificationService.swift`（pre-reminder） | サーバーから `message` を取得して差し替え | リクエストに **言語情報（例: `Accept-Language` / `preferredLanguage`）** を渡し、サーバー側でローカライズ |
 
 ---
 
@@ -212,7 +253,7 @@ Anicca iOS を **日本語/英語 + 追加4言語（de/fr/es/pt-BR）** にロ�
 
 | 種別 | パス例 |
 |---|---|
-| ローカライズ資産 | `aniccaios/Resources/**` |
+| ローカライズ資産 | `aniccaios/aniccaios/Resources/**` |
 | UI | `aniccaios/aniccaios/Views/**`, `Onboarding/**`, `Settings/**` |
 | 通知 | `aniccaios/aniccaios/Notifications/**`, `AniccaNotificationService/**` |
 | CI | `.github/workflows/**`, `*.swiftlint*`, `scripts/**`（新規） |

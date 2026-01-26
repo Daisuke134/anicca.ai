@@ -403,7 +403,7 @@
 "problem_anxiety" = "不安";
 "problem_lying" = "嘘をつく";
 "problem_bad_mouthing" = "悪口";
-"problem_porn_addiction" = "ポルノ依存";
+"problem_porn_addiction" = "性的コンテンツの過剰視聴";
 "problem_alcohol_dependency" = "お酒依存";
 "problem_anger" = "怒り";
 "problem_obsessive" = "強迫的思考";
@@ -820,9 +820,9 @@
 "nudge_porn_addiction_notification_7" = "冷水を顔に。パターンを壊せ。";
 "nudge_porn_addiction_notification_8" = "この弱さの瞬間はあなたを定義しない。";
 "nudge_porn_addiction_detail_1" = "衝動は波のようなもの—ピークが来て落ちる。10分間別のことをして。歩く、腕立て、冷水を顔にかける。";
-"nudge_porn_addiction_detail_2" = "ポルノに逃げたいとき、本当は何から逃げてる？ストレス？孤独？退屈？根本原因を見つけて。";
+"nudge_porn_addiction_detail_2" = "性的コンテンツに逃げたいとき、本当は何から逃げてる？ストレス？孤独？退屈？根本原因を見つけて。";
 "nudge_porn_addiction_detail_3" = "衝動は約10分でピークに達し、その後減少する。10分生き延びればいい。タイマーをセット。他のことをして。";
-"nudge_porn_addiction_detail_4" = "ポルノは麻酔剤。何の痛みを麻痺させようとしてる？痛みに対処すれば、麻痺の必要性が減る。";
+"nudge_porn_addiction_detail_4" = "性的コンテンツは麻痺的な逃避になりうる。何の痛みを麻痺させようとしてる？痛みに対処すれば、麻痺の必要性が減る。";
 "nudge_porn_addiction_detail_5" = "脳は期待してドーパミンを放出してる。化学的なトリック。実際には必要ない。渇望は嘘。";
 "nudge_porn_addiction_detail_6" = "身体的行動がメンタルのループを壊す。今すぐ：腕立て10回、スクワット10回、またはジャンピングジャック10回。体を動かせ。";
 "nudge_porn_addiction_detail_7" = "冷水はシステムにショックを与え、脳をリセットする。洗面所に行って、冷水を顔にかけて。効く。";
@@ -1015,12 +1015,12 @@
 "deepdive_bad_mouthing_q3_opt4" = "認めてほしい";
 
 /* Deep Dive Questions - porn_addiction */
-"deepdive_porn_addiction_q1" = "どんな時に見てしまう？";
+"deepdive_porn_addiction_q1" = "どんな時に性的コンテンツを見てしまう？";
 "deepdive_porn_addiction_q1_opt1" = "夜更かし中";
 "deepdive_porn_addiction_q1_opt2" = "帰宅後";
 "deepdive_porn_addiction_q1_opt3" = "ストレスを感じた時";
 "deepdive_porn_addiction_q1_opt4" = "暇な時";
-"deepdive_porn_addiction_q2" = "なぜ見てしまうと思う？";
+"deepdive_porn_addiction_q2" = "なぜ性的コンテンツを見てしまうと思う？";
 "deepdive_porn_addiction_q2_opt1" = "ストレス解消";
 "deepdive_porn_addiction_q2_opt2" = "習慣";
 "deepdive_porn_addiction_q2_opt3" = "逃避";

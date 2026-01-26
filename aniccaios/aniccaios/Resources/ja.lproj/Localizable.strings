@@ -345,6 +345,10 @@
 "common_list_separator" = "、";
 "language_preference_ja" = "日本語";
 "language_preference_en" = "English";
+"language_preference_de" = "ドイツ語";
+"language_preference_fr" = "フランス語";
+"language_preference_es" = "スペイン語";
+"language_preference_ptBR" = "ポルトガル語（ブラジル）";
 "settings_usage_this_month_format" = "今月: %d / %d 回";
 "settings_subscription_canceled_until" = "キャンセル済 — %@で終了";
 "quota_exceeded_title_free" = "月間利用上限に達しました";
@@ -512,6 +516,11 @@
 "session_status_listening" = "Aniccaが聞いています…";
 "session_status_speaking" = "Aniccaが話しています…";
 "session_status_disconnected" = "セッションを終了しました";
+
+"auth_required_title" = "サインインが必要です";
+"auth_required_message" = "Aniccaを使い始めるにはサインインしてください。習慣の設定も行えます。";
+
+"feedback_thanks" = "ありがとう！";
 
 "ema_question" = "さっきより楽になった？";
 "ema_yes" = "はい";

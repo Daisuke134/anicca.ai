@@ -14,9 +14,24 @@ on:
       - 'maestro/**'
 
 jobs:
+  localization-guard:
+    name: Localization Guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check localization key parity
+        run: |
+          python3 aniccaios/scripts/localization/check_strings_parity.py
+
+      - name: Check for hardcoded SwiftUI Text strings
+        run: |
+          python3 aniccaios/scripts/localization/check_hardcoded_swiftui_text.py
+
   unit-tests:
     name: Unit & Integration Tests
     runs-on: macos-14
+    needs: localization-guard
     steps:
       - uses: actions/checkout@v4
       

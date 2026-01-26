@@ -120,7 +120,7 @@ struct NudgeCardView: View {
                     if showFeedbackButtons {
                         feedbackButtonsView
                     } else {
-                        Text("ありがとう！")
+                        Text(String(localized: "feedback_thanks"))
                             .font(.system(size: 16))
                             .foregroundStyle(AppTheme.Colors.secondaryLabel)
                             .accessibilityIdentifier("feedback-submitted")

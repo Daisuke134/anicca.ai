@@ -3,7 +3,6 @@ import Combine
 import UIKit
 import SwiftUI
 import RevenueCat
-import AppTrackingTransparency
 import OSLog
 
 @MainActor
@@ -33,10 +32,6 @@ final class AppState: ObservableObject {
 
     // MARK: - Proactive Agent: NudgeCard
     @Published var pendingNudgeCard: NudgeContent? = nil
-
-    // MARK: - ATT (post-onboarding)
-    /// オンボーディング後の価値体験（NudgeCard）後にATTを提示するためのフラグ
-    @Published var isPresentingATTPrompt: Bool = false
 
     // MARK: - Nudge Card / Paywall / Review (Phase 4)
 
@@ -76,9 +71,6 @@ final class AppState: ObservableObject {
     private let hasRequestedReviewKey = "com.anicca.hasRequestedReview"
     private let lastNudgeResetMonthKey = "com.anicca.lastNudgeResetMonth"
     private let lastNudgeResetYearKey = "com.anicca.lastNudgeResetYear"
-
-    // ATT prompt (post-onboarding)
-    private let attPromptPresentedKey = "com.anicca.attPromptPresented"
 
     private init() {
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
@@ -645,32 +637,6 @@ final class AppState: ObservableObject {
     /// NudgeCardを閉じる
     func dismissNudgeCard() {
         pendingNudgeCard = nil
-    }
-
-    /// NudgeCardで価値体験した直後に、必要ならATT事前説明を提示する
-    func maybePresentATTPromptAfterNudge() {
-        guard isOnboardingComplete else { return }
-        guard !defaults.bool(forKey: attPromptPresentedKey) else { return }
-        guard !isPresentingATTPrompt else { return }
-
-        // 既にOS側で回答済みなら提示不要
-        if #available(iOS 14.0, *) {
-            guard ATTrackingManager.trackingAuthorizationStatus == .notDetermined else {
-                defaults.set(true, forKey: attPromptPresentedKey)
-                return
-            }
-        } else {
-            // ATT非対応OSでは提示しない
-            defaults.set(true, forKey: attPromptPresentedKey)
-            return
-        }
-
-        isPresentingATTPrompt = true
-    }
-
-    /// ATT画面が「実際に表示された」ことを永続化する（表示失敗時に二度と出ない事故を防ぐため）
-    func markATTPromptPresented() {
-        defaults.set(true, forKey: attPromptPresentedKey)
     }
 
     // MARK: - Nudge Card / Paywall / Review Methods

@@ -24,11 +24,6 @@
     text: "Skip"
     optional: true
 
-# ATT ステップ
-- tapOn:
-    text: "Skip"
-    optional: true
-
 # 少し待ってメイン画面が表示されるのを待つ
 - extendedWaitUntil:
     visible:

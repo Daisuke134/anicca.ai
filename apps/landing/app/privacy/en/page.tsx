@@ -56,12 +56,6 @@ export default function PrivacyEN() {
         <li>Railway / hosting providers (API hosting and operational logs)</li>
       </ul>
 
-      <h2 className="mt-10 text-xl font-semibold text-foreground">7. ATT (App Tracking Transparency)</h2>
-      <p className="mt-3 text-muted-foreground">
-        If you grant tracking permission, an advertising identifier (IDFA) may be used for measurement and attribution. You can use the Service even if you do
-        not grant permission.
-      </p>
-
       <h2 className="mt-10 text-xl font-semibold text-foreground">8. Data We Do Not Collect</h2>
       <p className="mt-3 text-muted-foreground">
         The Service does not access HealthKit data, motion/activity data, or Screen Time data.

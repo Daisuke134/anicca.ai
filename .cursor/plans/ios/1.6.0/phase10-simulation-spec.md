@@ -211,6 +211,18 @@
 | 集計元 | 既存の`nudge_feedback`テーブルを日次集計 |
 | 実行ジョブ | `daily_feedback_aggregate`が毎日06:30 UTCに実行 |
 
+#### system_settings テーブル
+
+| カラム | 型 | 説明 | 制約 |
+|--------|-----|------|------|
+| key | TEXT | 設定キー | PRIMARY KEY |
+| value | JSONB | 設定値 | NOT NULL |
+| updated_at | TIMESTAMPTZ | 更新日時 | DEFAULT NOW() |
+
+| 初期データ | key | value |
+|-----------|-----|-------|
+| Cron停止フラグ | tiktok_cron_disabled | `{"enabled": false}` |
+
 #### インデックス
 
 | テーブル | インデックス | 目的 |
@@ -276,10 +288,28 @@
 | 項目 | 内容 |
 |------|------|
 | 責務 | EDSLライブラリを使ってシミュレーション実行 |
-| 実行環境 | Railway APIサーバー上のPython |
+| 実行環境 | Railway APIサーバー上のPython（専用ワーカープロセス） |
 | 依存 | Python 3.10+, edsl, httpx, pydantic |
 | 並列度 | 最大5並列（LLM API制限考慮） |
 | LLM API | OpenAI API（OPENAI_API_KEY環境変数） |
+
+#### 週次シミュレーション実行方式
+
+| 項目 | 設定 |
+|------|------|
+| 実行方式 | 専用ワーカープロセス（APIプロセスから分離） |
+| タイムアウト | 30分/バッチ、全体2時間 |
+| リトライ | 失敗時最大3回、exponential backoff |
+| 並列上限 | 5並列（LLM API制限） |
+| チェックポイント | simulation_runsに途中結果保存、再開可能 |
+| 中断時対応 | 未処理ペルソナから再開 |
+| リソース制限 | メモリ2GB上限 |
+
+| なぜワーカー分離か | 理由 |
+|-------------------|------|
+| API可用性 | 長時間処理がAPIレスポンスを圧迫しない |
+| 障害分離 | シミュレーション失敗がAPIに影響しない |
+| スケーラビリティ | 独立スケール可能 |
 
 ### 5.3 1000パターンの計算ロジック
 
@@ -336,14 +366,16 @@
 | 3 | アプリ作成 | My Apps → Create New | App ID |
 | 4 | スコープ申請 | Ads Management, Reporting | 承認（2-3日） |
 | 5 | Access Token取得 | OAuth認証フロー実行 | Access Token |
-| 6 | 環境変数設定 | Railway Staging | 設定完了 |
+| 6 | OpenAI API Key取得 | https://platform.openai.com/ → API Keys | OPENAI_API_KEY |
+| 7 | 環境変数設定 | Railway Staging | 設定完了 |
 
-| 取得した環境変数 | 説明 |
-|-----------------|------|
-| TIKTOK_APP_ID | アプリID |
-| TIKTOK_APP_SECRET | アプリシークレット |
-| TIKTOK_ACCESS_TOKEN | アクセストークン |
-| TIKTOK_ADVERTISER_ID | 広告主ID |
+| 取得した環境変数 | 説明 | 取得元 |
+|-----------------|------|--------|
+| TIKTOK_APP_ID | アプリID | TikTok Developer Portal |
+| TIKTOK_APP_SECRET | アプリシークレット | TikTok Developer Portal |
+| TIKTOK_ACCESS_TOKEN | アクセストークン | OAuth認証フロー |
+| TIKTOK_ADVERTISER_ID | 広告主ID | TikTok Ads Manager |
+| OPENAI_API_KEY | EDSLシミュレーション用 | OpenAI Platform |
 
 ### 7.2 実装中（なし）
 
@@ -399,11 +431,9 @@
 | 復旧手順 | Token更新後、DBのフラグを`false`に更新 |
 | 通知 | 停止時にSlack通知（#anicca-alerts） |
 
-| system_settingsテーブル | 型 | 説明 |
-|------------------------|-----|------|
-| key | TEXT | 設定キー（PRIMARY KEY） |
-| value | JSONB | 設定値 |
-| updated_at | TIMESTAMPTZ | 更新日時 |
+| 参照 | 内容 |
+|------|------|
+| テーブル定義 | 5.1 DBスキーマ → system_settings テーブル参照 |
 
 ### 8.4 ログ出力方針
 

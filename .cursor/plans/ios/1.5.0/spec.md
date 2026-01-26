@@ -1401,7 +1401,7 @@ WHERE id = (SELECT hook_candidate_id FROM target_post);
 
 | 項目 | 内容 |
 |------|------|
-| **認証** | Admin Key（Authorization header） |
+| **認証** | Admin API Key（X-Admin-Key header） |
 | **用途** | TikTok Research API 取得失敗時、Creator Center から手動でコピーした指標を入力 |
 
 **リクエスト**:

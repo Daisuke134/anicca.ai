@@ -105,13 +105,8 @@ struct NudgeCardView: View {
                     Divider()
                         .padding(.horizontal, 40)
 
-                    if content.problemType.hasSingleButton {
-                        // 既存の1択ボタン（見た目を変えない）
-                        singleButtonView
-                    } else {
-                        // 旧2択 → 主ボタンのみ（ネガティブは表示しない）
-                        centeredPrimaryButtonView
-                    }
+                    // 全ProblemTypeで主ボタン（ポジティブ）を1つだけ表示（選択肢を作らない）
+                    primaryActionButtonView
 
                     Divider()
                         .padding(.horizontal, 40)
@@ -132,8 +127,8 @@ struct NudgeCardView: View {
         .accessibilityIdentifier("nudge-card-view")
     }
 
-    // MARK: - Single Button (既存1択の見た目を維持)
-    private var singleButtonView: some View {
+    // MARK: - Primary Action Button (single, unified style)
+    private var primaryActionButtonView: some View {
         Button(action: {
             selectedAction = .positive
             onPositiveAction()
@@ -143,24 +138,6 @@ struct NudgeCardView: View {
                 .foregroundStyle(.white)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 16)
-                .background(AppTheme.Colors.buttonSelected)
-                .clipShape(RoundedRectangle(cornerRadius: 12))
-        }
-        .accessibilityIdentifier("nudge-primary-action")
-        .padding(.horizontal, 40)
-    }
-
-    // MARK: - Centered Primary Button (旧2択→主ボタンのみ)
-    private var centeredPrimaryButtonView: some View {
-        Button(action: {
-            selectedAction = .positive
-            onPositiveAction()
-        }) {
-            Text(content.problemType.positiveButtonText)
-                .font(.system(size: 16, weight: .semibold))
-                .foregroundStyle(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 14)
                 .background(AppTheme.Colors.buttonSelected)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }

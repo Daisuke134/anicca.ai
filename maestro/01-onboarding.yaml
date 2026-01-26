@@ -11,13 +11,19 @@ tags:
 ---
 # Clean start - simulate first launch
 - clearState
+- clearKeychain
 - launchApp
+
+# Wait for app to fully load
+- extendedWaitUntil:
+    visible: true
+    timeout: 15000
 
 # Step 1: Welcome screen
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
-    timeout: 10000
+    timeout: 30000
 
 - tapOn:
     id: "onboarding-welcome-cta"

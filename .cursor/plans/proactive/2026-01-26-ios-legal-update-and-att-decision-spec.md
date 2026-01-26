@@ -51,6 +51,8 @@
 
 ATT ステップ（`ATTPermissionStepView`）は「Continue」を押すと `ATTrackingManager.requestTrackingAuthorization` を呼ぶ。
 
+> Note: このAs-Isは「変更前の状態」を表す。PR実装ではATTをオンボーディングから外している（後述）。
+
 ### “HealthKitはもう使っていない”前提とのギャップ
 
 UI（SwiftUI Views / Settings）上はセンサーのトグルや許可導線が見当たらず、「ユーザーが触るフロント導線としては使っていない」ように見える。
@@ -166,6 +168,12 @@ Terms に含める要点：
 | 表示UI | 既存の `ATTPermissionStepView` を **フルスクリーン**で表示（UIデザインは再利用） |
 | 永続化キー | `com.anicca.attPromptPresented`（UserDefaults） |
 
+**レビュー指摘の反映予定（未実装・次の修正タスク）**
+
+| 指摘 | 現状 | 修正方針 |
+|---|---|---|
+| 「表示前に1回消費」問題 | 画面表示前に `com.anicca.attPromptPresented` を保存しているため、表示失敗時に再提示できないリスクがある | 保存タイミングを「`ATTPermissionStepView` の `onAppear`」または「`onboarding_att_prompt_shown` を送る直前」に遅らせ、提示失敗時の回復性を確保する |
+
 **実装ファイル**
 
 | 目的 | ファイル |
@@ -195,6 +203,12 @@ Terms に含める要点：
 | Info.plist | `NSHealth*` / `NSMotionUsageDescription` / `NSAlarmKitUsageDescription` / `BGTaskSchedulerPermittedIdentifiers(com.anicca.metrics.daily)` を削除 |
 | InfoPlist.strings | `NSHealth*` / `NSMotion*` / `NSAlarmKit*` 文言を削除 |
 
+**レビュー指摘の反映予定（未実装・次の修正タスク）**
+
+| 指摘 | 現状 | 修正方針 |
+|---|---|---|
+| `mobile/daily_metrics` の残骸 | `Config.swift` にURL定義が残っている可能性がある | 未使用なら削除し、「完全削除」をより強く担保する |
+
 ### iOS: Legalリンク（Terms）を自社ページへ統一（実装済み）
 
 | 項目 | 対応 |
@@ -208,6 +222,28 @@ Terms に含める要点：
 |---|---|
 | Privacy EN/JA | desktop/Stripe/Supabase/Slack/Google/音声などの記述を撤去し、iOS実態（通知/ATT/RevenueCat/Superwall/Mixpanel/Singular等）へ更新 |
 | Terms | `/terms` を言語リダイレクトに変更し、`/terms/en` と `/terms/ja` を新設（Apple課金/Apple EULA参照を明記） |
+
+**レビュー指摘の反映予定（未実装・次の修正タスク）**
+
+| 指摘 | 現状 | 修正方針 |
+|---|---|---|
+| Privacy本文と「マイク/カメラ権限宣言」のズレ | Privacy本文にマイク/カメラの扱いを明記していない | 実装で「実際に使わない」なら Info.plist から権限宣言・許可導線を削除する（使うならPrivacy本文に目的を追記） |
+
+---
+
+## Netlify（プレビュー確認）運用
+
+| 目的 | 推奨手段 | 理由 |
+|---|---|---|
+| PRの見た目確認 | GitHub連携 Deploy Preview | トークン不要、PRごとにURLが出る |
+| ローカル/Cloud Agentから手動デプロイ | Netlify CLI + `NETLIFY_AUTH_TOKEN` | Cloud環境ではブラウザログインができないためトークンが必要 |
+
+トークンの設定先（例）：
+
+| # | どこに設定 | 何を設定 |
+|---|---|---|
+| 1 | CI / 実行環境の環境変数 | `NETLIFY_AUTH_TOKEN`（Personal Access Token） |
+
 
 ---
 

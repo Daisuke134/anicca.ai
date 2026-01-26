@@ -27,10 +27,6 @@ final class SubscriptionManager: NSObject {
         
         Purchases.shared.delegate = self
         
-        // デバイス識別子の収集はATT許可後に行う（ATTPermissionStepViewで実行）
-        // 理由: ATT許可前にcollectDeviceIdentifiers()を呼ぶとゼロIDFAが
-        // RevenueCatに送信され、後から実際のIDFAで上書きできなくなるため
-        
         // 起動直後にSDKキャッシュのOfferingをAppStateへプリロード
         if let cached = Purchases.shared.cachedOfferings,
            let preloaded = cached.offering(identifier: AppConfig.revenueCatPaywallId) ?? cached.current {

@@ -105,13 +105,8 @@ struct NudgeCardView: View {
                     Divider()
                         .padding(.horizontal, 40)
 
-                    if content.problemType.hasSingleButton {
-                        // 1択ボタン
-                        singleButtonView
-                    } else {
-                        // 2択ボタン
-                        twoButtonView
-                    }
+                    // 全ProblemTypeで主ボタン（ポジティブ）を1つだけ表示（選択肢を作らない）
+                    primaryActionButtonView
 
                     Divider()
                         .padding(.horizontal, 40)
@@ -132,8 +127,8 @@ struct NudgeCardView: View {
         .accessibilityIdentifier("nudge-card-view")
     }
 
-    // MARK: - Single Button (センシティブな問題向け)
-    private var singleButtonView: some View {
+    // MARK: - Primary Action Button (single, unified style)
+    private var primaryActionButtonView: some View {
         Button(action: {
             selectedAction = .positive
             onPositiveAction()
@@ -146,43 +141,8 @@ struct NudgeCardView: View {
                 .background(AppTheme.Colors.buttonSelected)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
+        .accessibilityIdentifier("nudge-primary-action")
         .padding(.horizontal, 40)
-    }
-
-    // MARK: - Two Buttons (Primary left, Ghost right)
-    private var twoButtonView: some View {
-        HStack(spacing: 12) {
-            // Primary button (左・ポジティブ)
-            Button(action: {
-                selectedAction = .positive
-                onPositiveAction()
-            }) {
-                Text(content.problemType.positiveButtonText)
-                    .font(.system(size: 16, weight: .semibold))
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 14)
-                    .background(AppTheme.Colors.buttonSelected)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-            }
-
-            // Ghost button (右・ネガティブ)
-            if let negativeText = content.problemType.negativeButtonText {
-                Button(action: {
-                    selectedAction = .negative
-                    onNegativeAction?()
-                }) {
-                    Text(negativeText)
-                        .font(.system(size: 16, weight: .medium))
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 14)
-                        .background(AppTheme.Colors.buttonUnselected)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-        }
-        .padding(.horizontal, 32)
     }
 
     // MARK: - Feedback Buttons

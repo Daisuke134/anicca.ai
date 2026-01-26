@@ -1,0 +1,44 @@
+# Nudge Card: single primary button (no choices)
+appId: ai.anicca.app.ios
+tags:
+  - phase6
+  - nudge
+---
+- launchApp:
+    clearState: false
+
+# Profile タブに移動
+- tapOn:
+    text: "Profile"
+
+# 下にスクロールしてDebugセクションを表示
+- scrollUntilVisible:
+    element:
+      text: "📱 1枚画面テスト（夜更かし）"
+    direction: DOWN
+    timeout: 5000
+
+# Debug Nudgeテストボタンをタップ
+- tapOn:
+    id: "debug-nudge-test-staying-up-late"
+
+# NudgeCard表示待ち
+- extendedWaitUntil:
+    visible:
+      id: "nudge-card-view"
+    timeout: 5000
+
+# 主ボタンが1つだけ表示されることを確認
+- assertVisible:
+    id: "nudge-primary-action"
+
+# 既存要素（フィードバック）が見えることも確認
+- assertVisible:
+    id: "feedback-thumbs-up"
+
+- takeScreenshot: "nudge-single-primary"
+
+# カードを閉じる
+- tapOn:
+    id: "nudge-card-close"
+

@@ -1573,6 +1573,57 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ---
 
+## App Store 提出前チェックリスト（必須）
+
+**毎回提出前に確認。これを忘れると Validation Failed で時間を無駄にする。**
+
+### バージョン番号
+
+```bash
+# 確認
+grep -E "MARKETING_VERSION" aniccaios/aniccaios.xcodeproj/project.pbxproj | head -1
+
+# 更新（例: 1.4.0 に）
+sed -i '' 's/MARKETING_VERSION = [0-9.]*;/MARKETING_VERSION = 1.4.0;/g' aniccaios/aniccaios.xcodeproj/project.pbxproj
+sed -i '' 's/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = 1;/g' aniccaios/aniccaios.xcodeproj/project.pbxproj
+```
+
+| チェック項目 | 確認方法 |
+|-------------|---------|
+| MARKETING_VERSION > 前回承認版 | `grep MARKETING_VERSION` |
+| CURRENT_PROJECT_VERSION リセット | 新バージョンでは 1 から |
+
+### Info.plist 必須キー
+
+| キー | 理由 | エラーメッセージ |
+|-----|------|-----------------|
+| `BGTaskSchedulerPermittedIdentifiers` | UIBackgroundModes に processing がある場合必須 | Missing Info.plist value |
+| `NSHealthShareUsageDescription` | HealthKit SDK が参照する場合必須 | Missing purpose string |
+| `NSHealthUpdateUsageDescription` | HealthKit SDK が参照する場合必須 | Missing purpose string |
+
+**現在の Info.plist に含まれているべき値:**
+```xml
+<key>BGTaskSchedulerPermittedIdentifiers</key>
+<array>
+    <string>ai.anicca.app.ios.refresh</string>
+    <string>ai.anicca.app.ios.nudge-fetch</string>
+</array>
+<key>NSHealthShareUsageDescription</key>
+<string>Anicca uses health data to understand your sleep patterns and provide personalized nudges.</string>
+<key>NSHealthUpdateUsageDescription</key>
+<string>Anicca may record your wellness activities to track your behavioral progress.</string>
+```
+
+### よくある Validation エラー
+
+| エラー | 原因 | 修正 |
+|--------|------|------|
+| Invalid Version / closed for new build | バージョン番号が古い | MARKETING_VERSION を上げる |
+| Missing purpose string | Info.plist にキーがない | 上記キーを追加 |
+| Missing BGTaskSchedulerPermittedIdentifiers | processing モード使用時 | 上記キーを追加 |
+
+---
+
 ## 日報
 
 開発ログは `.cursor/logs/` に日付ごとに記録。
@@ -1582,4 +1633,4 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ---
 
-最終更新: 2026年1月27日（Netlify自動デプロイ明記、Fastlane全lane一覧・非インタラクティブモード対応、Maestro日本語テキスト注意点、Gitサブモジュールトラブルシューティング追加）
+最終更新: 2026年1月27日（App Store提出チェックリスト追加）

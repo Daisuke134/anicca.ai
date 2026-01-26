@@ -152,6 +152,11 @@ enum AnalyticsEvent: String {
     case onboardingNotificationsCompleted = "onboarding_notifications_completed"
     case onboardingATTCompleted = "onboarding_att_completed"
     case onboardingAlarmkitCompleted = "onboarding_alarmkit_completed"
+
+    // ATT prompt (moved to post-onboarding value moment)
+    case onboardingATTViewed = "onboarding_att_viewed"
+    case onboardingATTPromptShown = "onboarding_att_prompt_shown"
+    case onboardingATTStatus = "onboarding_att_status"
     
     // Paywall (CRITICAL - Jake Mor #1)
     case paywallViewed = "paywall_viewed"

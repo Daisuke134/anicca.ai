@@ -7,13 +7,3 @@
 /* Notification permission description */
 "NSUserNotificationsUsageDescription" = "Anicca uses notifications to gently nudge you for waking up and routines.";
 
-/* AlarmKit permission description */
-"NSAlarmKitUsageDescription" = "Anicca schedules alarms to wake you up and remind you of routines.";
-
-/* Health permission descriptions */
-"NSHealthShareUsageDescription" = "Anicca reads sleep and step data from Health to generate insights and timely nudges.";
-"NSHealthUpdateUsageDescription" = "Anicca writes data to Health only when you explicitly choose to share it.";
-
-/* Motion permission description */
-"NSMotionUsageDescription" = "Anicca uses motion data to detect inactivity and send gentle reminders.";
-

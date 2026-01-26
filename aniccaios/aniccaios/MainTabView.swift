@@ -34,8 +34,14 @@ struct MainTabView: View {
                     },
                     onDismiss: {
                         appState.dismissNudgeCard()
+                        appState.maybePresentATTPromptAfterNudge()
                     }
                 )
+            }
+            .fullScreenCover(isPresented: $appState.isPresentingATTPrompt) {
+                ATTPermissionStepView {
+                    appState.isPresentingATTPrompt = false
+                }
             }
             .background(AppBackground())
             .ignoresSafeArea(.keyboard, edges: .bottom)
@@ -45,6 +51,7 @@ struct MainTabView: View {
         appState.incrementNudgeCardCompletedCount()
         let count = appState.nudgeCardCompletedCount
         appState.dismissNudgeCard()
+        appState.maybePresentATTPromptAfterNudge()
 
         // 3回目: レビューリクエスト
         if count == 3 && !appState.hasRequestedReview {

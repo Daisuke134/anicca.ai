@@ -24,18 +24,10 @@
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
-	<key>NSAlarmKitUsageDescription</key>
-	<string>$(INFOPLIST_KEY_NSAlarmKitUsageDescription)</string>
 	<key>NSCameraUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSMicrophoneUsageDescription)</string>
-	<key>NSHealthShareUsageDescription</key>
-	<string>Anicca reads sleep and step data from Health to generate insights and timely nudges.</string>
-	<key>NSHealthUpdateUsageDescription</key>
-	<string>Anicca can write limited data to Health only when you explicitly choose to share it.</string>
-	<key>NSMotionUsageDescription</key>
-	<string>Anicca uses motion data to detect inactivity and send gentle reminders.</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>
@@ -115,10 +107,6 @@
 	</array>
 	<key>UIApplicationSceneManifest</key>
 	<dict/>
-	<key>BGTaskSchedulerPermittedIdentifiers</key>
-	<array>
-		<string>com.anicca.metrics.daily</string>
-	</array>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>audio</string>

@@ -482,11 +482,11 @@ dev にマージ
 2. **移行ガイド提供**
 3. **95% 以上が新バージョンに移行したら削除可能**
 
-#### 例：Voice Session 削除の教訓
+#### 例：Nudge API 削除の教訓
 
 ```
 ❌ やってはいけないこと:
-- /api/realtime/voice を削除
+- /api/mobile/nudge/trigger を削除
 - 古いアプリが壊れる
 
 ✅ やるべきこと:
@@ -839,28 +839,33 @@ daily-apps/         - 関連アプリ（Daily Dhammaなど）
 | **他者依存傾向** | 自分では無理だから誰かに引っ張ってほしい |
 And also I've already done the 
 
-## iOSアプリ現在の実装状況（2026年1月時点）
+## iOSアプリ現在の実装状況（2026年1月26日時点）
 
-### タブ構成（2タブ）
+### リリース状況
+| 項目 | 内容 |
+|------|------|
+| App Store承認 | 1.3.0（Phase 6） |
+| 次回提出 | 1.4.0 |
 
-| タブ | View | 内容 |
+### メイン画面（シングルスクリーン）
+
+| 画面 | View | 内容 |
 |------|------|------|
-| My Path | `MyPathTabView` | ユーザーの問題一覧、Tell Anicca、DeepDive |
-| Profile | `ProfileView` | Name, Plan, Data Integration, Nudge Strength |
+| My Path | `MyPathTabView` | 問題一覧、Tell Anicca、DeepDive、課金/アカウント |
 
 ### オンボーディングフロー
 
 ```
-welcome → value → struggles → notifications → att → complete
+welcome → value → struggles → notifications → att（完了処理）
 ```
 
 | ステップ | View | 説明 |
 |---------|------|------|
-| welcome | `WelcomeStepView` | アプリ紹介 |
+| welcome | `WelcomeStepView` | アプリ紹介 + 既存ユーザー復元 |
 | value | `ValueStepView` | アプリの価値説明 |
 | struggles | `StrugglesStepView` | 13個の問題から選択 |
 | notifications | `NotificationPermissionStepView` | 通知許可 |
-| att | `ATTPermissionStepView` | ATT許可 |
+| att | `ATTPermissionStepView` | ATT許可 → 完了処理 |
 
 ### 13個の問題タイプ（ProblemType）
 
@@ -870,21 +875,22 @@ procrastination, anxiety, lying, bad_mouthing, porn_addiction,
 alcohol_dependency, anger, obsessive, loneliness
 ```
 
-### 通知システム
+### 通知 / Nudge システム
 
-| 機能 | Scheduler | 画面 |
-|------|-----------|------|
+| 機能 | 担当 | 画面 |
+|------|------|------|
 | Problem Nudge | `ProblemNotificationScheduler` | `NudgeCardView` |
-| cantWakeUp Alarm | `ProblemAlarmKitScheduler` | AlarmKit (iOS 26+) |
-| Server Nudge | `NotificationScheduler` | - |
+| Server-driven Nudge | `NotificationScheduler` | `NudgeCardView` |
+| LLM生成Nudge（Phase 6） | `LLMNudgeService` / `LLMNudgeCache` | `NudgeCardView` |
 
-**NudgeCardView**: 通知タップで1枚カード表示。問題に応じて1択or2択ボタン、👍👎フィードバック。
+**NudgeCardView**: 通知タップで1枚カード表示。問題に応じて1択/2択ボタン、👍👎フィードバック。
 
 ### 重要な注意事項
 
 1. **ProblemTypeベース**: 全ての通知は`ProblemType`に基づく。HabitTypeシステムは完全削除済み。
-2. **音声機能**: 削除済み（OpenAI Realtime API、VoiceSessionController等）。
-3. **NotificationScheduler**: 認可とサーバーNudgeのみ担当（約140行）。
+2. **音声機能**: 削除済み（関連コンポーネントは廃止）。
+3. **LLM生成Nudge**: `/api/mobile/nudge/today` を日次取得し `LLMNudgeCache` に保存。
+4. **NotificationScheduler**: 認可とサーバーNudgeのみ担当（約140行）。
 
 ---
 
@@ -1420,4 +1426,4 @@ cd aniccaios && fastlane release
 
 ---
 
-最終更新: 2026年1月25日（Netlifyデプロイルール、コンテンツ変更ルール、App Storeリンクルール追加）
+最終更新: 2026年1月26日（iOSプロアクティブ中心化、1.3.0/1.4.0反映）

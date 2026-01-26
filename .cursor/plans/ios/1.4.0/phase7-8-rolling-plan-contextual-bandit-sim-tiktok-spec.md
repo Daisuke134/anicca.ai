@@ -66,6 +66,19 @@
 
 ※ 実装時は `NudgeStatsManager` の永続化方針と合わせ、UserDefaultsに保存する（Phase 4/5と同じ思想）。
 
+#### 1.2 リプラン条件（擬似コード）
+
+```text
+on day_start (e.g., 05:00 local):
+  plan = build_initial_plan(context_summary)
+
+on event (nudge_tapped | nudge_ignored | thumbs_up | thumbs_down | time_tick):
+  belief = update_belief(event, recent_history)
+  plan = replan(plan, belief)
+
+execute next step only within its time window and "notification fatigue" budget.
+```
+
 ---
 
 ### 2) Contextual Bandit（基本からAniccaへの落とし込み）
@@ -92,6 +105,17 @@
 |---|---|---|
 | Forgetting（忘却） | 直近N日/直近Kサンプルを重視（スライディング窓） | 生活は変わる |
 | 状態遷移 | “落ち込み/可用性”を潜在状態として推定し、プランを切り替える | 今日は特別にしんどい、が起こる |
+
+#### 2.4 Bandit選択（擬似コード）
+
+```text
+given: context x, candidate arms A = {a1..ak}
+for each arm ai:
+  estimate reward distribution using recent-window stats (with prior)
+pick arm using Thompson Sampling (or contextual TS / linear bandit later)
+observe reward r (tap or thumbs)
+update stats in recent window (forget old)
+```
 
 ---
 
@@ -164,6 +188,60 @@
 
 ---
 
+## ローカライズ（JP/EN）
+
+| 項目 | 方針 |
+|---|---|
+| Spec自体の言語 | 日本語で記述（既存ルール準拠） |
+| 実装で追加される文字列 | **原則なし**（計画/学習/ログ中心）。もしユーザーに新しいUI文言を出す場合は `Localizable.strings`（ja/en）を同時追加する |
+| TikTok投稿文言 | まず英語中心（既存 `sns-automation-spec` の運用に従う）。日本語は後追いでOK |
+
+---
+
+## 後方互換性（Backward Compatibility）
+
+| 項目 | 方針 |
+|---|---|
+| 通知userInfo形式 | 既存形式を壊さない（`notificationTextKey`/`detailTextKey` と LLM直書きの両方を維持） |
+| Stats保存形式 | `NudgeStatsManager` の永続化キーを変更する場合は移行期間を設ける（2〜3バージョン） |
+| 既存のルールベース/TS | 安全網として維持（段階的に比率を下げるのは可） |
+
+---
+
+## エッジケース / 安全性
+
+| # | ケース | 方針 |
+|---:|---|---|
+| 1 | 通知が多すぎてストレス | “通知疲れペナルティ”を設け、送信上限（Budget）を設計に含める |
+| 2 | LLMが危険/攻撃的な文言を生成 | ルールベースのガードレールでブロックし、フォールバックへ |
+| 3 | 非定常（生活が変わる） | 忘却（直近窓）で追随。過去の最適を固定しない |
+| 4 | TikTokで伸びる表現が「煽り」に寄る | KPIを保存/共有/コメント質へ寄せ、煽り・罪悪感煽りは禁じる |
+
+---
+
+## ユーザー作業（実装前/中/後）
+
+### 実装前
+
+| # | タスク | 手順 | 取得するもの |
+|---:|---|---|---|
+| 1 | SNS自動投稿の現状確認 | `.cursor/plans/ios/marketing/sns-automation-spec.md` を参照し、Blotato側のTikTokアカウント接続が生きているか確認 | Blotatoの最新Account ID/権限状態 |
+
+### 実装中
+
+| # | タイミング | タスク | 理由 |
+|---:|---|---|---|
+| 1 | TikTok指標連携を入れた直後 | “取得可能な指標”の確定 | APIで取れない指標に依存すると設計破綻するため |
+
+### 実装後
+
+| # | タスク | 確認項目 |
+|---:|---|---|
+| 1 | ログ確認 | context/arm/reward が欠損なく記録されているか |
+| 2 | シミュ校正 | replay評価が閾値を満たすか（満たさない場合は本番利用しない） |
+
+---
+
 ## To-Be チェックリスト（漏れ防止）
 
 | # | To-Be | 完了条件 |
@@ -187,6 +265,14 @@
 | 3 | Context→Arm→Reward記録 | `test_log_schema_records_context_arm_reward()` | Unit/Integration | Stats/Analytics |
 | 4 | Simulation校正（ログ再現） | `test_simulator_replay_accuracy_threshold()` | Integration | API/Sim |
 | 5 | TikTok指標→Hook候補更新 | `test_hook_library_updates_from_tiktok_metrics()` | Integration | sns-poster pipeline |
+
+---
+
+## E2E シナリオ（Maestro）
+
+| # | フロー | 目的 | 対応 |
+|---:|---|---|---|
+| 1 | （N/A） | 本フェーズは主にロジック/計測のため、UI変更が発生しない限りMaestroは追加しない | UI変更が入る場合のみ追加 |
 
 ---
 
@@ -219,6 +305,15 @@
 | 実装コードの追加/変更 | ❌ |
 | UI/UXの勝手な変更 | ❌（Specに明記したもの以外） |
 | TikTokの非公式ボット化（自動スクロール等） | ❌ |
+
+### 実装時に“触る可能性があるファイル”（参考）
+
+| ドメイン | ファイル（例） |
+|---|---|
+| iOS通知/統計 | `aniccaios/aniccaios/Notifications/ProblemNotificationScheduler.swift`, `aniccaios/aniccaios/Services/NudgeStatsManager.swift`, `aniccaios/aniccaios/Services/NudgeContentSelector.swift` |
+| iOS LLM連携 | `aniccaios/aniccaios/Services/LLMNudgeService.swift`, `LLMNudgeCache.swift` |
+| API | `apps/api/src/routes/mobile/*`（追加のみ、後方互換維持） |
+| SNS | `.cursor/plans/ios/sns-poster/*`（既存基盤を利用） |
 
 ---
 
@@ -255,6 +350,19 @@
 | 2 | Worktree作成 | `git worktree add ... -b wt/...` |
 | 3 | 変更単位でコミット | 小さくコミット、push |
 | 4 | 実装→テスト | 触った範囲だけテスト（CLAUDE.md準拠） |
+
+---
+
+## レビューチェックリスト
+
+| # | 観点 | 確認 |
+|---:|---|---|
+| 1 | As-Is/To-Beが矛盾していない | [ ] |
+| 2 | Hook/Contentの報酬分離がログ設計に落ちている | [ ] |
+| 3 | 非定常（忘却）方針が明記されている | [ ] |
+| 4 | シミュの役割が「候補ふるい」に限定されている | [ ] |
+| 5 | TikTokが“表現学習”であり、ポリシー直移植しないと明記されている | [ ] |
+| 6 | 後方互換（userInfo/保存形式）が壊れない | [ ] |
 
 ---
 

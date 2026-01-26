@@ -380,7 +380,7 @@ const config = {
       "value": "prisma-client-js"
     },
     "output": {
-      "value": "/Users/cbns03/Downloads/anicca-project/apps/api/src/generated/prisma",
+      "value": "/Users/cbns03/Downloads/anicca-phase7-8/apps/api/src/generated/prisma",
       "fromEnvVar": null
     },
     "config": {
@@ -394,7 +394,7 @@ const config = {
       }
     ],
     "previewFeatures": [],
-    "sourceFilePath": "/Users/cbns03/Downloads/anicca-project/apps/api/prisma/schema.prisma",
+    "sourceFilePath": "/Users/cbns03/Downloads/anicca-phase7-8/apps/api/prisma/schema.prisma",
     "isCustomOutput": true
   },
   "relativeEnvPaths": {
@@ -407,7 +407,7 @@ const config = {
     "db"
   ],
   "activeProvider": "postgresql",
-  "postinstall": false,
+  "postinstall": true,
   "inlineDatasources": {
     "db": {
       "url": {

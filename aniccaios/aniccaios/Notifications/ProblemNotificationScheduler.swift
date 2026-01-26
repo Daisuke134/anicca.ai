@@ -254,6 +254,12 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
                     llmNudgeId: selection.content?.id
                 )
             }
+
+            // Phase 7+8: LLM生成Nudgeの場合、scheduledNudgesに保存（ignored判定用）
+            if let llmNudgeId = selection.content?.id {
+                let scheduledDate = calculateScheduledDate(hour: hour, minute: minute)
+                await NudgeFeedbackService.shared.saveScheduledNudge(nudgeId: llmNudgeId, scheduledDate: scheduledDate)
+            }
         } catch {
             logger.error("Failed to schedule problem notification: \(error.localizedDescription)")
         }
@@ -273,6 +279,26 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
         }
     }
     
+    // MARK: - Phase 7+8: Scheduled Date Calculation
+
+    /// スケジュール予定時刻を計算
+    private func calculateScheduledDate(hour: Int, minute: Int) -> Date {
+        let calendar = Calendar.current
+        var components = calendar.dateComponents([.year, .month, .day], from: Date())
+        components.hour = hour
+        components.minute = minute
+
+        guard let scheduledDate = calendar.date(from: components) else {
+            return Date()
+        }
+
+        // 過去の時刻なら翌日として扱う
+        if scheduledDate < Date() {
+            return calendar.date(byAdding: .day, value: 1, to: scheduledDate) ?? scheduledDate
+        }
+        return scheduledDate
+    }
+
     // MARK: - Phase 5: Shift Calculation (Testable)
 
     /// シフト量を計算（純粋関数、テスト可能）

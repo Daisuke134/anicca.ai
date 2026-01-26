@@ -119,21 +119,15 @@ Terms に含める要点：
 - `LegalLinksView` の Terms リンクを `https://aniccaai.com/terms/<lang>` に変更
 - 表示ラベルは現状の `legal_privacy_policy` / `legal_terms_of_use` を維持（UI/UX変更禁止のため）
 
-### 5) ATT ステップの意思決定（オンボーディングから外すか）
+### 5) ATT（App Tracking Transparency）の扱い
 
-**決定（推奨）**：オンボーディングからATTステップを外し、「価値体験の後」に移動する。
+**決定**：本アプリでは **ATTの許可リクエストを表示しない**（オンボーディング中も、オンボーディング後も出さない）。
 
-根拠（実務ベース）：
+理由：
 
-- ATTは一般に離脱要因になりやすく、オンボーディングのボトルネックになりがち
-- TikTok/Metaの計測は **SKAdNetwork（SKAN）** で一定精度のCPA/ROAS計測が可能（ユーザー許可不要）
-- IDFA/ATTを得られると “確率的” より良い計測・最適化になるが、初期体験を損ねるコストの方が大きいことが多い
-
-移動先（単一案）：
-
-- **案**：オンボーディング完了→最初のNudgeCardを1回閉じた直後（ユーザーが価値を感じたタイミング）に「事前説明→ATTシステムダイアログ」を提示
-  - ユーザー提案（通知タップ→カード→閉じる→ATT）に整合
-  - ただし「毎回出る」にならないよう、未回答時は最大1回/一定期間で再提示など制御する
+- 体験上の離脱要因になりやすい
+- 計測は **SKAdNetwork（SKAN）を主軸**にする（ユーザー許可不要）
+- 「プライバシーを大事にする」メッセージとの整合性を優先する
 
 ### 6) Mixpanelでの離脱検知（計測設計）
 
@@ -142,55 +136,32 @@ Terms に含める要点：
 - `onboarding_notifications_completed`
 - `onboarding_att_completed`
 
-離脱を正確に見るため、最低限以下を追加（実装は後続）：
+ATT自体を出さない方針のため、ATT画面起因の離脱ファネルは不要。
+オンボーディング完了ファネルは以下を基本とする：
 
-- `onboarding_att_viewed`（ATT画面が表示された）
-- `onboarding_att_prompt_shown`（システムATTダイアログを表示した）
-- `onboarding_att_status`（authorized/denied/notDetermined/restricted をプロパティとして記録）
-
-これによりMixpanel上で
-`notifications_completed → att_viewed → att_completed`
-のファネルが作れ、離脱がATT由来かどうか判定できる。
+- `onboarding_notifications_completed` → `onboarding_completed`
 
 ---
 
 ## 実装結果（このSpecのTo-Beが最終的にどう実装されたか）
 
-### iOS: ATTは「オンボーディング後」に移動（実装済み）
+### iOS: ATTは「出さない」（仕様変更・次の修正タスク）
 
-**実装した挙動（単一仕様）**
+現状PR実装は「オンボーディング後（初回NudgeCard後）に1回だけ提示」だが、方針を **完全撤去**に変更する。
 
 | 項目 | 仕様 |
 |---|---|
-| 提示タイミング | **オンボーディング完了後**、ユーザーが **初回NudgeCardを閉じた直後**（価値体験の直後） |
-| 提示回数 | **1回だけ**（永続化キーで制御） |
-| OSが既に回答済み | `trackingAuthorizationStatus != .notDetermined` の場合は表示しない |
-| 表示UI | 既存の `ATTPermissionStepView` を **フルスクリーン**で表示（UIデザインは再利用） |
-| 永続化キー | `com.anicca.attPromptPresented`（UserDefaults） |
+| 方針 | **ATT許可リクエストは表示しない**（onboarding中もonboarding後も） |
+| iOS実装 | ATT提示導線・永続化キー・ATTイベントを削除する |
 
-**レビュー指摘の反映予定（未実装・次の修正タスク）**
+削除対象（予定）：
 
-| 指摘 | 現状 | 修正方針 |
-|---|---|---|
-| 「表示前に1回消費」問題 | 画面表示前に `com.anicca.attPromptPresented` を保存しているため、表示失敗時に再提示できないリスクがある | 保存タイミングを「`ATTPermissionStepView` の `onAppear`」または「`onboarding_att_prompt_shown` を送る直前」に遅らせ、提示失敗時の回復性を確保する |
-
-**実装ファイル**
-
-| 目的 | ファイル |
+| 種別 | 対象 |
 |---|---|
-| オンボーディングからATTを外す | `aniccaios/aniccaios/Onboarding/OnboardingStep.swift`, `OnboardingFlowView.swift` |
-| NudgeCard閉じ後にATTを出す | `aniccaios/aniccaios/MainTabView.swift`, `aniccaios/aniccaios/AppState.swift` |
-| ATT計測イベント | `aniccaios/aniccaios/Onboarding/ATTPermissionStepView.swift`, `aniccaios/aniccaios/Services/AnalyticsManager.swift` |
-
-**Mixpanelイベント（実装済み）**
-
-| イベント | 発火タイミング | プロパティ |
-|---|---|---|
-| `onboarding_att_viewed` | ATT事前画面表示時 | - |
-| `onboarding_att_prompt_shown` | システムATTダイアログ表示直前 | - |
-| `onboarding_att_status` | ATT結果取得時 | `status`（例: `authorized`, `denied`, `notDetermined`, `restricted`, `unavailable`） |
-
-> 注意: `onboarding_att_completed` は既存互換のため **イベント定義としては残している**が、オンボーディングからATTを外したため、オンボーディング完了の計測は `onboarding_notifications_completed` → `onboarding_completed` になる。
+| iOS UI/導線 | `ATTPermissionStepView` の提示導線（`MainTabView` / `AppState`） |
+| 永続化キー | `com.anicca.attPromptPresented` |
+| Info.plist | `NSUserTrackingUsageDescription`（ATTを出さないなら削除） |
+| Analytics | `onboarding_att_viewed` / `onboarding_att_prompt_shown` / `onboarding_att_status`（不要なら削除） |
 
 ### iOS: センサー系（HealthKit/Motion/ScreenTime/日次メトリクス）を完全削除（実装済み）
 

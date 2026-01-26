@@ -1575,7 +1575,19 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ## App Store 提出前チェックリスト（必須）
 
-**毎回提出前に確認。これを忘れると Validation Failed で時間を無駄にする。**
+**⚠️ main にマージする前に確認。マージ後に気づくと二度手間。**
+
+```
+dev で開発完了
+    ↓
+【このチェックリストを実行】 ← ここ！
+    ↓
+全部 OK
+    ↓
+dev → main マージ
+    ↓
+Archive → Distribute
+```
 
 ### バージョン番号
 
@@ -1600,6 +1612,7 @@ sed -i '' 's/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = 1;/g' a
 | `BGTaskSchedulerPermittedIdentifiers` | UIBackgroundModes に processing がある場合必須 | Missing Info.plist value |
 | `NSHealthShareUsageDescription` | HealthKit SDK が参照する場合必須 | Missing purpose string |
 | `NSHealthUpdateUsageDescription` | HealthKit SDK が参照する場合必須 | Missing purpose string |
+| `NSMicrophoneUsageDescription` | WebRTC/音声SDK が参照する場合必須 | Missing purpose string |
 
 **現在の Info.plist に含まれているべき値:**
 ```xml
@@ -1612,6 +1625,8 @@ sed -i '' 's/CURRENT_PROJECT_VERSION = [0-9]*;/CURRENT_PROJECT_VERSION = 1;/g' a
 <string>Anicca uses health data to understand your sleep patterns and provide personalized nudges.</string>
 <key>NSHealthUpdateUsageDescription</key>
 <string>Anicca may record your wellness activities to track your behavioral progress.</string>
+<key>NSMicrophoneUsageDescription</key>
+<string>Anicca may use the microphone for voice-based interactions in future updates.</string>
 ```
 
 ### よくある Validation エラー

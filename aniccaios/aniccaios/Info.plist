@@ -26,8 +26,6 @@
 	<true/>
 	<key>NSCameraUsageDescription</key>
 	<string>$(INFOPLIST_KEY_NSCameraUsageDescription)</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>$(INFOPLIST_KEY_NSMicrophoneUsageDescription)</string>
 	<key>NSSupportsLiveActivities</key>
 	<true/>
 	<key>NSSupportsLiveActivitiesFrequentUpdates</key>

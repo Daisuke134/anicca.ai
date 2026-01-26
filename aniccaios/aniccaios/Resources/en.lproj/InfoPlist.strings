@@ -1,6 +1,3 @@
-/* Microphone permission description */
-"NSMicrophoneUsageDescription" = "Anicca uses the microphone for real-time voice conversations.";
-
 /* Camera permission description */
 "NSCameraUsageDescription" = "The WebRTC library references camera APIs, but this app does not use the camera.";
 

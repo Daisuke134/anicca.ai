@@ -50,8 +50,6 @@
 	<string>$(INFOPLIST_KEY_SINGULAR_SDK_KEY)</string>
 	<key>SINGULAR_SDK_SECRET</key>
 	<string>$(INFOPLIST_KEY_SINGULAR_SDK_SECRET)</string>
-	<key>NSUserTrackingUsageDescription</key>
-	<string>This identifier helps us measure the effectiveness of our ads and provide you with a better experience.</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

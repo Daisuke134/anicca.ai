@@ -56,11 +56,6 @@ export default function PrivacyJA() {
         <li>Railway等（APIホスティング、運用ログ）</li>
       </ul>
 
-      <h2 className="mt-10 text-xl font-semibold text-foreground">7. ATT（トラッキング許可）</h2>
-      <p className="mt-3 text-muted-foreground">
-        トラッキングを許可した場合、広告識別子（IDFA）を用いて広告効果測定・アトリビューション等を行う場合があります。許可しなくても本サービスは利用できます。
-      </p>
-
       <h2 className="mt-10 text-xl font-semibold text-foreground">8. 取得しない情報</h2>
       <p className="mt-3 text-muted-foreground">
         本サービスは、HealthKitデータ、モーション/アクティビティデータ、スクリーンタイムデータにはアクセスしません。

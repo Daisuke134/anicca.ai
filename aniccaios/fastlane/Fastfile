@@ -418,6 +418,29 @@ platform :ios do
     )
   end
 
+  desc "Run unit tests on simulator"
+  lane :test do
+    # シミュレータでユニットテスト実行
+    run_tests(
+      project: "aniccaios.xcodeproj",
+      scheme: "aniccaios-staging",
+      device: "iPhone 16 Pro",
+      clean: false,
+      code_coverage: true,
+      output_directory: "./build/test_output",
+      output_types: "html,junit"
+    )
+
+    UI.success("✅ All tests passed!")
+
+    # macOS通知
+    notification(
+      title: "Anicca iOS Tests",
+      message: "All tests passed!",
+      sound: "default"
+    )
+  end
+
   desc "Quick test: build and install on device, then notify"
   lane :test_on_device do
     start_time = Time.now

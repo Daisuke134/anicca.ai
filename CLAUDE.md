@@ -1088,14 +1088,11 @@ func testProblemTypeContent(type: String) {
 
 ### テスト実行コマンド
 
+**⚠️ xcodebuild 直接実行は絶対禁止。必ず Fastlane を使え。**
+
 ```bash
-# Unit Tests + Integration Tests
-cd aniccaios && xcodebuild test \
-  -project aniccaios.xcodeproj \
-  -scheme aniccaios-staging \
-  -destination 'platform=iOS Simulator,name=iPhone 17 Pro,OS=26.2' \
-  -only-testing:aniccaiosTests \
-  | xcpretty
+# Unit Tests + Integration Tests（必須: Fastlane経由）
+cd aniccaios && fastlane test
 
 # E2E Tests (Maestro)
 maestro test maestro/
@@ -1103,6 +1100,11 @@ maestro test maestro/
 # 個別 E2E
 maestro test maestro/01-onboarding.yaml
 ```
+
+**禁止事項（絶対にやるな）:**
+- `xcodebuild test` の直接実行
+- `xcodebuild build` の直接実行
+- Fastlane を使わずに Xcode CLI を叩くこと
 
 ### GitHub Actions CI/CD（自動化）
 
@@ -1300,16 +1302,22 @@ cd aniccaios && fastlane build_for_simulator
 | RevenueCat操作 | `mcp__revenuecat__*` | - |
 | App Store Connect | `mcp__app-store-connect__*` | - |
 
-### Maestro MCP vs CLI 使い分け
+### Maestro MCP（絶対ルール）
 
-| シーン | 使うもの | 理由 |
-|--------|---------|------|
-| テスト作成・デバッグ | MCP (`mcp__maestro__*`) | View Hierarchy 確認、1コマンドずつ実行可能 |
-| CI/CD、一括実行 | CLI (`maestro test`) | スクリプト向き、GitHub Actions対応 |
+**⚠️ エージェントは Maestro CLI を直接叩くな。必ず MCP を使え。**
 
-**エージェント作業時のルール**:
+| シーン | 使うもの | CLI使用 |
+|--------|---------|---------|
+| テスト作成・デバッグ | MCP (`mcp__maestro__*`) | ❌ 禁止 |
+| View Hierarchy確認 | `mcp__maestro__inspect_view_hierarchy` | ❌ 禁止 |
+| コマンド実行 | `mcp__maestro__run_flow` | ❌ 禁止 |
+| CI/CD（GitHub Actions） | CLI (`maestro test`) | ✅ CI/CDのみ許可 |
 
-1. **MCP を優先して使う**
+**違反した場合**: やり直し。MCP経由で通すまで完了とは認めない。
+
+**エージェント作業時の必須フロー**:
+
+1. **MCP を絶対に使う（CLI禁止）**
    ```
    mcp__maestro__list_devices       → デバイス一覧
    mcp__maestro__inspect_view_hierarchy → 要素確認（セレクタ決定）
@@ -1390,7 +1398,15 @@ cd aniccaios && fastlane build_for_simulator
 
 ### Fastlane（ビルド・テスト・提出）
 
-**Fastlane を優先して使う。** xcodebuild 直接実行より簡潔で確実。
+**⚠️ 絶対ルール: Fastlane 以外は使うな。xcodebuild 直接実行は禁止。**
+
+| 操作 | 正しいコマンド | 禁止 |
+|------|---------------|------|
+| テスト | `fastlane test` | ❌ `xcodebuild test` |
+| ビルド | `fastlane build` | ❌ `xcodebuild build` |
+| 実機 | `fastlane build_for_device` | ❌ 手動ビルド |
+
+**xcodebuild を直接使った場合、即座にやり直せ。Fastlane で通るまで完了とは認めない。**
 
 ```bash
 # ビルド（シミュレータ用）

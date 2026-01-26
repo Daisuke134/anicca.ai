@@ -357,11 +357,17 @@ Anicca（1つの知性）
 
 ```sql
 -- 1.4.0のnudge_eventsからHook抽出クエリ
--- ※ hook_candidates.tone は NOT NULL のため、tone未保存イベントはデフォルト'logical'で補完
+-- ※ hook_candidates.tone は NOT NULL のため、tone未保存/不正値はデフォルト'logical'で補完
 -- ※ GROUP BY は式をそのまま書く（PostgreSQLではエイリアス不可）
+-- ※ subtypeはCHECK制約許可リストに限定（NULL/未知値は除外）
+-- ⚠️ tone正規化: CHECK制約(5種)に合わせて不正値は'logical'にフォールバック
 SELECT
   ne.state->>'hook' as hook,
-  COALESCE(ne.state->>'tone', 'logical') as tone,
+  -- tone正規化: 許可リスト外はデフォルト'logical'にフォールバック
+  CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+       THEN ne.state->>'tone'
+       ELSE 'logical'
+  END as tone,
   ne.subtype as problem_type,
   COUNT(*) as sample_size,
   SUM(CASE WHEN no.signals->>'outcome' = 'tapped' THEN 1 ELSE 0 END) as tapped_count,
@@ -371,7 +377,14 @@ LEFT JOIN nudge_outcomes no ON no.nudge_event_id = ne.id
 WHERE ne.domain = 'problem_nudge'
   AND ne.created_at >= NOW() - INTERVAL '60 days'
   AND ne.state->>'hook' IS NOT NULL
-GROUP BY ne.state->>'hook', COALESCE(ne.state->>'tone', 'logical'), ne.subtype
+  AND ne.subtype IS NOT NULL
+  AND ne.subtype IN ('self_loathing','procrastination','rumination','staying_up_late','porn_addiction','anxiety','cant_wake_up','lying','bad_mouthing','alcohol_dependency','anger','obsessive','loneliness')
+GROUP BY ne.state->>'hook',
+         CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+              THEN ne.state->>'tone'
+              ELSE 'logical'
+         END,
+         ne.subtype
 HAVING COUNT(*) >= 5;
 ```
 
@@ -380,6 +393,9 @@ HAVING COUNT(*) >= 5;
 ```sql
 -- 初期投入は 1行 = hook + tone（problem_types は配列で集約）
 -- ※ tap_rate/thumbs_up_rate は加重平均（sample_size/tapped_countで重み付け）
+-- ※ subtypeはCHECK制約許可リストに限定（NULL/未知値は除外）
+-- ※ 再実行時は ON CONFLICT で UPSERT（重複防止）
+-- ⚠️ tone正規化: CHECK制約(5種)に合わせて不正値は'logical'にフォールバック
 INSERT INTO hook_candidates (text, tone, target_problem_types, app_tap_rate, app_thumbs_up_rate, app_sample_size)
 SELECT
   hook as text,
@@ -393,7 +409,11 @@ SELECT
 FROM (
   SELECT
     ne.state->>'hook' as hook,
-    COALESCE(ne.state->>'tone', 'logical') as tone,
+    -- tone正規化: 許可リスト外はデフォルト'logical'にフォールバック
+    CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+         THEN ne.state->>'tone'
+         ELSE 'logical'
+    END as tone,
     ne.subtype as problem_type,
     COUNT(*) as sample_size,
     SUM(CASE WHEN no.signals->>'outcome' = 'tapped' THEN 1 ELSE 0 END) as tapped_count,
@@ -403,10 +423,23 @@ FROM (
   WHERE ne.domain = 'problem_nudge'
     AND ne.created_at >= NOW() - INTERVAL '60 days'
     AND ne.state->>'hook' IS NOT NULL
-  GROUP BY ne.state->>'hook', COALESCE(ne.state->>'tone', 'logical'), ne.subtype
+    AND ne.subtype IS NOT NULL
+    AND ne.subtype IN ('self_loathing','procrastination','rumination','staying_up_late','porn_addiction','anxiety','cant_wake_up','lying','bad_mouthing','alcohol_dependency','anger','obsessive','loneliness')
+  GROUP BY ne.state->>'hook',
+           CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+                THEN ne.state->>'tone'
+                ELSE 'logical'
+           END,
+           ne.subtype
   HAVING COUNT(*) >= 5
 ) sub
-GROUP BY hook, tone;
+GROUP BY hook, tone
+ON CONFLICT (text, tone) DO UPDATE SET
+  target_problem_types = EXCLUDED.target_problem_types,
+  app_tap_rate = EXCLUDED.app_tap_rate,
+  app_thumbs_up_rate = EXCLUDED.app_thumbs_up_rate,
+  app_sample_size = EXCLUDED.app_sample_size,
+  updated_at = NOW();
 ```
 
 **投入方針**:
@@ -687,10 +720,15 @@ HAVING COUNT(*) >= 3;  -- 各タイプで3tone以上
 -- tapped_count/ignored_countの計算方法を明示
 -- ※ event時点の user_type を使用（state->>'user_type' に記録されたイベントのみ集計）
 -- 旧イベント（state に user_type 未保存）は集計対象外
+-- ⚠️ user_type/toneはCHECK制約許可リストに限定（不正値はジョブ失敗を防ぐため除外）
 WITH event_counts AS (
   SELECT
     ne.state->>'user_type' as type_id,  -- event時点のタイプ（必須）
-    COALESCE(ne.state->>'tone', 'logical') as tone,
+    -- tone正規化: 許可リスト外はデフォルト'logical'にフォールバック
+    CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+         THEN ne.state->>'tone'
+         ELSE 'logical'
+    END as tone,
     COUNT(*) as total_events,
     COUNT(CASE WHEN no.signals->>'outcome' = 'tapped' THEN 1 END) as tapped,
     COUNT(CASE WHEN no.signals->>'outcome' = 'tapped' AND no.signals->>'thumbsUp' = 'true' THEN 1 END) as thumbs_up,
@@ -700,7 +738,12 @@ WITH event_counts AS (
   WHERE ne.domain = 'problem_nudge'
     AND ne.created_at >= NOW() - INTERVAL '60 days'
     AND ne.state->>'user_type' IS NOT NULL  -- user_type記録済みイベントのみ
-  GROUP BY ne.state->>'user_type', COALESCE(ne.state->>'tone', 'logical')
+    AND ne.state->>'user_type' IN ('T1', 'T2', 'T3', 'T4')  -- CHECK制約許可リストと一致
+  GROUP BY ne.state->>'user_type',
+           CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+                THEN ne.state->>'tone'
+                ELSE 'logical'
+           END
 )
 INSERT INTO type_stats (type_id, tone, tapped_count, ignored_count, thumbs_up_count, thumbs_down_count, sample_size, updated_at)
 SELECT
@@ -917,11 +960,11 @@ npx prisma db execute --stdin <<< "SELECT conname FROM pg_constraint WHERE conna
 
 | テーブル | 追記項目 | 種別 |
 |---------|----------|------|
-| user_type_estimates | `REFERENCES profiles(id)` FK、`CHECK (primary_type IN (...))`, `CHECK (confidence >= 0 AND confidence <= 1)` | FK, CHECK |
+| user_type_estimates | `REFERENCES profiles(id) ON DELETE CASCADE` FK、`CHECK (primary_type IN (...))`, `CHECK (confidence >= 0 AND confidence <= 1)` | FK, CHECK |
 | type_stats | `CHECK (type_id IN (...))`, `CHECK (tone IN (...))`, `chk_sample_size_consistency`, `chk_thumbs_*` | CHECK |
 | type_stats | `tap_rate GENERATED ALWAYS AS`, `thumbs_up_rate GENERATED ALWAYS AS` | 計算列 |
-| hook_candidates | 全CHECK制約、`chk_hook_candidates_user_types`、`chk_hook_candidates_problem_types`、`WHERE is_wisdom = true` Partial Index、`USING GIN(target_user_types)` | CHECK, Index |
-| tiktok_posts | `chk_metrics_consistency`, `CHECK (retention_rate_manual ...)` | CHECK |
+| hook_candidates | 全CHECK制約、`chk_hook_candidates_user_types`、`chk_hook_candidates_problem_types`、`UNIQUE(text, tone)`、`WHERE is_wisdom = true` Partial Index、`USING GIN(target_user_types)` | CHECK, Index, UNIQUE |
+| tiktok_posts | `chk_metrics_consistency`, `CHECK (retention_rate_manual ...)`, `chk_retention_requires_hook` | CHECK |
 | wisdom_patterns | `CHECK (confidence ...)`、`chk_wisdom_patterns_user_types`、`USING GIN(target_user_types)` | CHECK, Index |
 
 **注意**: Prismaモデルには計算列（tap_rate, thumbs_up_rate）を定義しない。読み取りは`prisma.$queryRaw`で直接SQLを実行する。
@@ -932,7 +975,7 @@ npx prisma db execute --stdin <<< "SELECT conname FROM pg_constraint WHERE conna
 
 ```sql
 CREATE TABLE user_type_estimates (
-  user_id UUID PRIMARY KEY REFERENCES profiles(id),
+  user_id UUID PRIMARY KEY REFERENCES profiles(id) ON DELETE CASCADE,
   primary_type VARCHAR(10) NOT NULL
     CHECK (primary_type IN ('T1', 'T2', 'T3', 'T4')),  -- 有効なタイプのみ
   type_scores JSONB NOT NULL DEFAULT '{}',
@@ -994,9 +1037,13 @@ CREATE TABLE hook_candidates (
   text TEXT NOT NULL,
   tone VARCHAR(20) NOT NULL
     CHECK (tone IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')),  -- 5種のトーン
+  UNIQUE (text, tone),  -- 同一Hook+Toneの重複防止
   target_problem_types TEXT[] NOT NULL DEFAULT '{}',
   target_user_types TEXT[] NOT NULL DEFAULT '{}',
-  -- 配列要素の妥当性制約
+  -- 配列要素の妥当性制約（許可リストのみ、NULLは型レベルで防止）
+  -- ※ PostgreSQL TEXT[] は NOT NULL 制約で要素レベルのNULL禁止不可だが、
+  --    アプリケーション層（API入力バリデーション）でNULL要素を拒否する
+  -- ※ 空配列は許容（"全ProblemType/全UserType対象"を意味する。初期投入後に集計で更新される）
   CONSTRAINT chk_hook_candidates_user_types CHECK (
     target_user_types <@ ARRAY['T1','T2','T3','T4']::text[]
   ),
@@ -1040,13 +1087,17 @@ CREATE TABLE tiktok_posts (
   caption TEXT,
   posted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   metrics_fetched_at TIMESTAMPTZ,
-  view_count INT CHECK (view_count IS NULL OR view_count >= 0),
-  like_count INT CHECK (like_count IS NULL OR like_count >= 0),
-  comment_count INT CHECK (comment_count IS NULL OR comment_count >= 0),
-  share_count INT CHECK (share_count IS NULL OR share_count >= 0),
+  view_count BIGINT CHECK (view_count IS NULL OR view_count >= 0),  -- BIGINTで将来の大規模カウント対応
+  like_count BIGINT CHECK (like_count IS NULL OR like_count >= 0),
+  comment_count BIGINT CHECK (comment_count IS NULL OR comment_count >= 0),
+  share_count BIGINT CHECK (share_count IS NULL OR share_count >= 0),
   retention_rate_manual NUMERIC(5,4)  -- 手動入力
     CHECK (retention_rate_manual IS NULL OR (retention_rate_manual >= 0 AND retention_rate_manual <= 1)),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  -- retention整合性制約: retention_rate_manual設定時はhook_candidate_id必須（集計更新のため）
+  CONSTRAINT chk_retention_requires_hook CHECK (
+    retention_rate_manual IS NULL OR hook_candidate_id IS NOT NULL
+  ),
   -- メトリクス整合性制約: 未取得時は全てNULL、取得後は全て非NULL（metrics_fetched_at含む）
   CONSTRAINT chk_metrics_consistency CHECK (
     (metrics_fetched_at IS NULL AND view_count IS NULL AND like_count IS NULL AND comment_count IS NULL AND share_count IS NULL)
@@ -1071,7 +1122,10 @@ CREATE TABLE wisdom_patterns (
   pattern_name VARCHAR(100) NOT NULL,
   description TEXT,
   target_user_types TEXT[] NOT NULL DEFAULT '{}',
-  -- 配列要素の妥当性制約
+  -- 配列要素の妥当性制約（許可リストのみ、NULLは型レベルで防止）
+  -- ※ PostgreSQL TEXT[] は NOT NULL 制約で要素レベルのNULL禁止不可だが、
+  --    アプリケーション層（API入力バリデーション）でNULL要素を拒否する
+  -- ※ 空配列は許容（"全UserType対象"を意味する）
   CONSTRAINT chk_wisdom_patterns_user_types CHECK (
     target_user_types <@ ARRAY['T1','T2','T3','T4']::text[]
   ),
@@ -1097,19 +1151,22 @@ CREATE INDEX idx_wisdom_patterns_types ON wisdom_patterns USING GIN(target_user_
 ```prisma
 model UserTypeEstimate {
   userId      String   @id @db.Uuid @map("user_id")
-  primaryType String   @map("primary_type")
+  primaryType String   @db.VarChar(10) @map("primary_type")
   typeScores  Json     @db.JsonB @default("{}") @map("type_scores")
   confidence  Decimal  @db.Decimal(5,4) @default(0)
   createdAt   DateTime @default(now()) @db.Timestamptz @map("created_at")
   updatedAt   DateTime @default(now()) @db.Timestamptz @map("updated_at")
+
+  // FK: profiles(id) - 手動DDLで追加済み
+  profile     Profile  @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@index([primaryType])  // idx_user_type_estimates_primary
   @@map("user_type_estimates")
 }
 
 model TypeStats {
-  typeId         String   @map("type_id")
-  tone           String
+  typeId         String   @db.VarChar(10) @map("type_id")
+  tone           String   @db.VarChar(20)
   tappedCount    Int      @default(0) @map("tapped_count")
   ignoredCount   Int      @default(0) @map("ignored_count")
   thumbsUpCount  Int      @default(0) @map("thumbs_up_count")
@@ -1135,9 +1192,9 @@ model TypeStats {
 model HookCandidate {
   id                 String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
   text               String    @db.Text
-  tone               String
-  targetProblemTypes String[]  @db.Text @default([]) @map("target_problem_types")
-  targetUserTypes    String[]  @db.Text @default([]) @map("target_user_types")
+  tone               String    @db.VarChar(20)
+  targetProblemTypes String[]  @default([]) @map("target_problem_types")
+  targetUserTypes    String[]  @default([]) @map("target_user_types")
   appTapRate         Decimal   @db.Decimal(5,4) @default(0) @map("app_tap_rate")
   appThumbsUpRate    Decimal   @db.Decimal(5,4) @default(0) @map("app_thumbs_up_rate")
   appSampleSize      Int       @default(0) @map("app_sample_size")
@@ -1153,6 +1210,7 @@ model HookCandidate {
 
   tiktokPosts TiktokPost[]
 
+  @@unique([text, tone])  // 同一Hook+Toneの重複防止
   @@index([tone])  // Prisma対応インデックス
   // NOTE: GIN Index (target_user_types), Partial Index (is_wisdom) は手動SQLで追加
   @@map("hook_candidates")
@@ -1162,15 +1220,15 @@ model TiktokPost {
   id                String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
   // hookCandidateId は NULL 許容（テスト投稿や分類未確定の投稿を許可）
   hookCandidateId   String?   @db.Uuid @map("hook_candidate_id")
-  tiktokVideoId     String?   @unique @map("tiktok_video_id")  // 重複投稿防止
-  blotatoPostId     String?   @map("blotato_post_id")
+  tiktokVideoId     String?   @db.VarChar(100) @unique @map("tiktok_video_id")  // 重複投稿防止
+  blotatoPostId     String?   @db.VarChar(100) @map("blotato_post_id")
   caption           String?   @db.Text
   postedAt          DateTime  @default(now()) @db.Timestamptz @map("posted_at")
   metricsFetchedAt  DateTime? @db.Timestamptz @map("metrics_fetched_at")
-  viewCount         Int?      @map("view_count")
-  likeCount         Int?      @map("like_count")
-  commentCount      Int?      @map("comment_count")
-  shareCount        Int?      @map("share_count")
+  viewCount         BigInt?   @map("view_count")  // BIGINTで将来の大規模カウント対応
+  likeCount         BigInt?   @map("like_count")
+  commentCount      BigInt?   @map("comment_count")
+  shareCount        BigInt?   @map("share_count")
   retentionRateManual Decimal? @db.Decimal(5,4) @map("retention_rate_manual")
   createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
 
@@ -1183,12 +1241,12 @@ model TiktokPost {
 
 model WisdomPattern {
   id                   String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
-  patternName          String    @map("pattern_name")
+  patternName          String    @db.VarChar(100) @map("pattern_name")
   description          String?   @db.Text
-  targetUserTypes      String[]  @db.Text @default([]) @map("target_user_types")
-  effectiveTone        String?   @map("effective_tone")
+  targetUserTypes      String[]  @default([]) @map("target_user_types")
+  effectiveTone        String?   @db.VarChar(20) @map("effective_tone")
   effectiveHookPattern String?   @db.Text @map("effective_hook_pattern")
-  effectiveContentLength String? @map("effective_content_length")
+  effectiveContentLength String? @db.VarChar(20) @map("effective_content_length")
   appEvidence          Json      @db.JsonB @default("{}") @map("app_evidence")
   tiktokEvidence       Json      @db.JsonB @default("{}") @map("tiktok_evidence")
   confidence           Decimal   @db.Decimal(5,4) @default(0)
@@ -1202,6 +1260,22 @@ model WisdomPattern {
 ```
 
 ### 7.5 APIコントラクト
+
+#### 共通バリデーション要件
+
+**配列フィールドのNULL要素禁止**（DB CHECK制約の補完）:
+
+PostgreSQL CHECK制約では配列要素のNULL検知が困難なため、以下のフィールドは**API層で入力バリデーション**を行う:
+
+| テーブル | フィールド | バリデーション |
+|---------|-----------|---------------|
+| hook_candidates | target_user_types | `arr.every(x => x !== null && ['T1','T2','T3','T4'].includes(x))` |
+| hook_candidates | target_problem_types | `arr.every(x => x !== null && PROBLEM_TYPES.includes(x))` |
+| wisdom_patterns | target_user_types | `arr.every(x => x !== null && ['T1','T2','T3','T4'].includes(x))` |
+
+**実装箇所**: 各Admin API のリクエストボディバリデーション（Zod/Joi等）
+
+---
 
 #### GET /api/mobile/user-type
 
@@ -1235,14 +1309,21 @@ model WisdomPattern {
 | コード | 条件 | レスポンス |
 |--------|------|-----------|
 | 401 | 認証なし/無効 | `{"success": false, "error": "Unauthorized"}` |
+| 404 | プロフィール不存在 | `{"success": false, "error": "Profile not found"}` |
+| 500 | 内部エラー | `{"success": false, "error": "Internal server error"}` |
+
+**ログ方針**:
+- 404: `warn`レベル、user_id含む（デバッグ用、通常発生しない）
+- 500: `error`レベル、スタックトレース含む、アラート対象
 
 **欠損時の挙動（エッジケース処理）**:
 
-| ケース | user_type_estimates | Problems | 処理 | lastUpdated |
-|--------|---------------------|----------|------|-------------|
-| 1. 正常 | 存在 | 任意 | DBから返却 | saved `updated_at` |
-| 2. 未計算 | 欠損 | 非空 | 即時計算→UPSERT→返却 | NOW() |
-| 3. 空問題 | 任意 | 空配列 | T4/0を返却（保存しない） | NOW() |
+| ケース | Profile | user_type_estimates | Problems | 処理 | lastUpdated |
+|--------|---------|---------------------|----------|------|-------------|
+| 0. 不存在 | NULL | - | - | **404返却** | - |
+| 1. 正常 | 存在 | 存在 | 任意 | DBから返却 | saved `updated_at` |
+| 2. 未計算 | 存在 | 欠損 | 非空 | 即時計算→UPSERT→返却 | NOW() |
+| 3. 空問題 | 存在 | 任意 | 空配列 | T4/0を返却（保存しない） | NOW() |
 
 **ケース2の詳細（user_type_estimatesが存在しないがProblemsが非空）**:
 - バックフィル未実行、オンボーディング後の初回アクセス等で発生
@@ -1279,12 +1360,18 @@ async function getUserType(userId) {
     return formatApiResponse(existing, existing.updatedAt);
   }
 
-  // 2. Problemsから計算
+  // 2. プロフィール確認
   const profile = await db.profiles.findUnique({ where: { id: userId } });
-  const problems = profile?.problems || [];
+
+  // ケース0: プロフィール不存在 → 404
+  if (!profile) {
+    throw new NotFoundError('Profile not found');
+  }
+
+  const problems = profile.problems || [];
 
   if (problems.length === 0) {
-    // ケース3: 空問題 → 保存しない（デフォルト T4 を返却）
+    // ケース3: 空問題（プロフィール存在、problems空）→ 保存しない（デフォルト T4 を返却）
     const defaultData = { primaryType: 'T4', confidence: 0, scores: { T1: 0, T2: 0, T3: 0, T4: 0 } };
     return formatApiResponse(defaultData, new Date());
   }
@@ -1359,8 +1446,14 @@ async function getUserType(userId) {
 3. `hook_candidates.tiktok_retention_rate` を集計更新（同一hook_candidate_idの全投稿のAVG）
 4. レスポンスの `retentionUpdatedAt` は手動入力時刻（`metrics_fetched_at` ではない）
 
+**⚠️ トランザクション要件**:
+- 上記Step 1-3は単一トランザクションで実行すること（BEGIN/COMMIT）
+- 途中失敗時はROLLBACKし、tiktok_postsとhook_candidatesの不整合を防ぐ
+- Prisma実装: `prisma.$transaction([...])` で2つのクエリを囲む
+
 ```sql
 -- $1 = retentionRate, $2 = postId
+-- ⚠️ 以下は単一トランザクション内で実行
 
 -- Step 1: tiktok_posts更新
 UPDATE tiktok_posts SET retention_rate_manual = $1 WHERE id = $2;
@@ -1439,10 +1532,17 @@ WHERE id = (SELECT hook_candidate_id FROM target_post);
 1. バリデーション（viewCount >= like/comment/share）
 2. tiktok_posts を更新（view_count, like_count, comment_count, share_count, metrics_fetched_at = NOW()）
 3. 該当投稿の hook_candidate_id を取得（非NULLの場合のみ以降を実行）
-4. hook_candidates の tiktok_like_rate, tiktok_share_rate を再計算・更新
+4. hook_candidates の tiktok_like_rate, tiktok_share_rate を**加重平均**で再計算・更新
+5. tiktok_high_performer フラグを再計算・更新（like率>10% AND share率>5% AND sample_size>=5）
+
+**⚠️ トランザクション要件**:
+- 上記Step 2-5は単一トランザクションで実行すること（BEGIN/COMMIT）
+- 途中失敗時はROLLBACKし、tiktok_postsとhook_candidatesの不整合を防ぐ
+- Prisma実装: `prisma.$transaction([...])` でクエリを囲む
 
 ```sql
 -- $1=viewCount, $2=likeCount, $3=commentCount, $4=shareCount, $5=postId
+-- ⚠️ 以下は単一トランザクション内で実行
 
 -- Step 1: tiktok_posts更新（metrics_fetched_atも設定）
 UPDATE tiktok_posts SET
@@ -1453,28 +1553,29 @@ UPDATE tiktok_posts SET
   metrics_fetched_at = NOW()
 WHERE id = $5;
 
--- Step 2-3: hook_candidates集計更新（hook_candidate_id非NULLの場合のみ）
+-- Step 2-4: hook_candidates集計更新 + tiktok_high_performer再計算（hook_candidate_id非NULLの場合のみ）
+-- ※ 加重平均: SUM(like_count)/SUM(view_count) で投稿ごとの閲覧数差を考慮
 WITH target_post AS (
   SELECT hook_candidate_id FROM tiktok_posts WHERE id = $5 AND hook_candidate_id IS NOT NULL
+),
+aggregated AS (
+  SELECT
+    SUM(tp.like_count)::NUMERIC / NULLIF(SUM(tp.view_count), 0) AS like_rate,
+    SUM(tp.share_count)::NUMERIC / NULLIF(SUM(tp.view_count), 0) AS share_rate,
+    COUNT(*) AS sample_count
+  FROM tiktok_posts tp
+  WHERE tp.hook_candidate_id = (SELECT hook_candidate_id FROM target_post)
+    AND tp.metrics_fetched_at IS NOT NULL
 )
 UPDATE hook_candidates SET
-  tiktok_like_rate = COALESCE((
-    SELECT AVG(tp.like_count::NUMERIC / NULLIF(tp.view_count, 0))
-    FROM tiktok_posts tp
-    WHERE tp.hook_candidate_id = (SELECT hook_candidate_id FROM target_post)
-      AND tp.metrics_fetched_at IS NOT NULL
-  ), 0),
-  tiktok_share_rate = COALESCE((
-    SELECT AVG(tp.share_count::NUMERIC / NULLIF(tp.view_count, 0))
-    FROM tiktok_posts tp
-    WHERE tp.hook_candidate_id = (SELECT hook_candidate_id FROM target_post)
-      AND tp.metrics_fetched_at IS NOT NULL
-  ), 0),
-  tiktok_sample_size = (
-    SELECT COUNT(*)
-    FROM tiktok_posts tp
-    WHERE tp.hook_candidate_id = (SELECT hook_candidate_id FROM target_post)
-      AND tp.metrics_fetched_at IS NOT NULL
+  tiktok_like_rate = COALESCE((SELECT like_rate FROM aggregated), 0),
+  tiktok_share_rate = COALESCE((SELECT share_rate FROM aggregated), 0),
+  tiktok_sample_size = COALESCE((SELECT sample_count FROM aggregated), 0),
+  -- tiktok_high_performer: fetchTiktokMetricsと同じ条件（like率>10% AND share率>5% AND sample>=5）
+  tiktok_high_performer = (
+    COALESCE((SELECT like_rate FROM aggregated), 0) > 0.10
+    AND COALESCE((SELECT share_rate FROM aggregated), 0) > 0.05
+    AND COALESCE((SELECT sample_count FROM aggregated), 0) >= 5
   ),
   updated_at = NOW()
 WHERE id = (SELECT hook_candidate_id FROM target_post);

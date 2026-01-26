@@ -403,7 +403,7 @@
 "problem_anxiety" = "Anxiety";
 "problem_lying" = "Lying";
 "problem_bad_mouthing" = "Bad-mouthing";
-"problem_porn_addiction" = "Porn addiction";
+"problem_porn_addiction" = "Compulsive sexual content";
 "problem_alcohol_dependency" = "Alcohol dependency";
 "problem_anger" = "Anger";
 "problem_obsessive" = "Obsessive thinking";
@@ -820,9 +820,9 @@
 "nudge_porn_addiction_notification_7" = "Cold water on your face. Break the pattern.";
 "nudge_porn_addiction_notification_8" = "This moment of weakness doesn't define you.";
 "nudge_porn_addiction_detail_1" = "The urge is like a wave—it peaks and falls. Do something else for 10 minutes. Walk, push-ups, splash cold water on your face.";
-"nudge_porn_addiction_detail_2" = "When you want to escape to porn, what are you really running from? Stress? Loneliness? Boredom? Find the root cause.";
+"nudge_porn_addiction_detail_2" = "When you want to escape into sexual content, what are you really running from? Stress? Loneliness? Boredom? Find the root cause.";
 "nudge_porn_addiction_detail_3" = "Urges peak at about 10 minutes and then decline. You just need to survive 10 minutes. Set a timer. Do anything else.";
-"nudge_porn_addiction_detail_4" = "Porn is a numbing agent. What pain are you trying to numb? Address the pain, and the need for numbing decreases.";
+"nudge_porn_addiction_detail_4" = "Sexual content can become a numbing escape. What pain are you trying to numb? Address the pain, and the need for numbing decreases.";
 "nudge_porn_addiction_detail_5" = "Your brain is releasing dopamine in anticipation. It's a chemical trick. You don't actually need it. The craving is a lie.";
 "nudge_porn_addiction_detail_6" = "Physical action breaks the mental loop. Right now: 10 push-ups, 10 squats, or 10 jumping jacks. Move your body.";
 "nudge_porn_addiction_detail_7" = "Cold water shocks your system and resets your brain. Go to the bathroom, splash cold water on your face. It works.";
@@ -1015,12 +1015,12 @@
 "deepdive_bad_mouthing_q3_opt4" = "Want recognition";
 
 /* Deep Dive Questions - porn_addiction */
-"deepdive_porn_addiction_q1" = "When do you watch porn?";
+"deepdive_porn_addiction_q1" = "When do you view sexual content?";
 "deepdive_porn_addiction_q1_opt1" = "Late at night";
 "deepdive_porn_addiction_q1_opt2" = "After coming home";
 "deepdive_porn_addiction_q1_opt3" = "When stressed";
 "deepdive_porn_addiction_q1_opt4" = "When bored";
-"deepdive_porn_addiction_q2" = "Why do you watch porn?";
+"deepdive_porn_addiction_q2" = "Why do you view sexual content?";
 "deepdive_porn_addiction_q2_opt1" = "Stress relief";
 "deepdive_porn_addiction_q2_opt2" = "Habit";
 "deepdive_porn_addiction_q2_opt3" = "Escape";

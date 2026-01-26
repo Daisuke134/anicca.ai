@@ -512,6 +512,21 @@ dev にマージ
 
 **確認前に dev にマージ/push するのは禁止。**
 
+#### 重要: dev push = 自動デプロイ
+
+**dev ブランチに push すれば Netlify は自動でビルド・デプロイする。**
+
+| やること | 結果 |
+|---------|------|
+| dev に push | ✅ 自動でビルド・デプロイ |
+| `netlify status` で確認 | ❌ 無駄（push すれば動く） |
+| API で deploy 状態確認 | ❌ 無駄（push すれば動く） |
+
+**エージェントがやるべきこと:**
+1. `apps/landing/` 内のファイルを変更
+2. commit & push to dev
+3. 完了。それだけ。
+
 #### ワークツリーでの作業フロー
 
 ```
@@ -531,6 +546,13 @@ dev にマージ
 
 **理由:** CLI を使わないとビルドエラーが見えない。push だけだとユーザーがログを確認する手間がかかる。
 
+#### Netlify ビルドエラー時
+
+| エラー | 原因 | 解決策 |
+|--------|------|--------|
+| `No url found for submodule` | 壊れた submodule 参照 | `git rm --cached <path>` + `.gitignore` 追加 |
+| `Canceled: no content change` | landing 内容が変わってない | 正常。ファイル変更して再 push |
+
 ### 11. コンテンツ変更ルール
 
 **変更を実装する前に、必ずパッチをチャットで示す。**
@@ -545,7 +567,34 @@ dev にマージ
 - Spec ファイルの変更
 - 複数ファイルにまたがる変更
 
-### 12. App Store リンクルール
+### 12. Git トラブルシューティング
+
+#### 壊れた submodule の削除
+
+**症状:** `fatal: No url found for submodule path 'xxx'`
+
+**原因:** `.gitmodules` に URL がないのに git index に submodule 参照が残っている
+
+**解決方法:**
+```bash
+# 1. git index から削除
+git rm --cached <path>
+
+# 2. .gitignore に追加（再追加防止）
+echo "<path>/" >> .gitignore
+
+# 3. コミット & プッシュ
+git add .gitignore && git commit -m "fix: remove broken submodule" && git push
+```
+
+**例:**
+```bash
+git rm --cached .claude/skills/supabase-agent-skills
+echo ".claude/skills/supabase-agent-skills/" >> .gitignore
+git add .gitignore && git commit -m "fix: remove broken submodule" && git push
+```
+
+### 13. App Store リンクルール
 
 **直接 URL ではなくリダイレクト URL を使う。**
 
@@ -1245,6 +1294,21 @@ Text(nudge.content)
     id: "nudge_content_llm"
 ```
 
+#### 日本語テキストの注意点
+
+**View Hierarchy で実際のテキストを確認せよ。想定と違うことが多い。**
+
+| 想定 | 実際（View Hierarchy で確認） |
+|------|------------------------------|
+| `利用規約` | `利用規約 (EULA)` |
+| `プライバシーポリシー` | `プライバシーポリシー` |
+| `はじめる` | `はじめる` or `Get Started` |
+
+**必須フロー:**
+1. `mcp__maestro__inspect_view_hierarchy` で実際のテキストを確認
+2. 確認したテキストをそのまま YAML に記載
+3. パイプ `|` で日英両対応: `text: "利用規約 (EULA)|Terms of Use"`
+
 #### 制限事項
 
 | 項目 | 状況 |
@@ -1408,21 +1472,46 @@ cd aniccaios && fastlane build_for_simulator
 
 **xcodebuild を直接使った場合、即座にやり直せ。Fastlane で通るまで完了とは認めない。**
 
+#### 利用可能な Lane 一覧
+
+| Lane | 用途 | コマンド |
+|------|------|---------|
+| `build_for_device` | 実機にインストール | `fastlane build_for_device` |
+| `build_for_simulator` | シミュレータで起動 | `fastlane build_for_simulator` |
+| `test` | Unit/Integration テスト | `fastlane test` |
+| `build` | App Store 用 IPA 作成 | `fastlane build` |
+| `upload` | App Store Connect にアップロード | `fastlane upload` |
+| `release` | build + upload | `fastlane release` |
+| `full_release` | build + upload + 審査提出 | `fastlane full_release` |
+| `submit_review` | 審査に提出 | `fastlane submit_review` |
+
+#### 非インタラクティブモード対応（重要）
+
+Fastlane を Claude Code から実行する場合、環境変数が必須:
+
 ```bash
-# ビルド（シミュレータ用）
-cd aniccaios && fastlane build_for_simulator
+# 正しい実行方法
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane build_for_device
+```
 
-# ビルド（実機用）
-cd aniccaios && fastlane build_for_device
+| 環境変数 | 理由 |
+|---------|------|
+| `FASTLANE_SKIP_UPDATE_CHECK=1` | アップデート確認をスキップ |
+| `FASTLANE_OPT_OUT_CRASH_REPORTING=1` | クラッシュレポート送信をスキップ |
 
-# テスト実行
-cd aniccaios && fastlane test
+**これらがないと「non-interactive mode」エラーで失敗する。**
 
-# TestFlight へアップロード
-cd aniccaios && fastlane beta
+#### 実機ビルド前の事前チェック
 
-# App Store へ提出
-cd aniccaios && fastlane release
+```bash
+# 1. 実機が接続されているか確認
+ios-deploy --detect
+
+# 2. 接続されていれば build_for_device
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_device
+
+# 3. 未接続ならシミュレータにフォールバック
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 ```
 
 **Fastfile**: `aniccaios/fastlane/Fastfile`
@@ -1493,4 +1582,4 @@ cd aniccaios && fastlane release
 
 ---
 
-最終更新: 2026年1月26日（iOSプロアクティブ中心化、ATTをオンボーディング後へ移動、センサー系削除、法務ページ更新、1.3.0/1.4.0反映）
+最終更新: 2026年1月27日（Netlify自動デプロイ明記、Fastlane全lane一覧・非インタラクティブモード対応、Maestro日本語テキスト注意点、Gitサブモジュールトラブルシューティング追加）

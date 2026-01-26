@@ -340,6 +340,35 @@ struct MyPathTabView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .accessibilityIdentifier("debug_reset_state")
+
+            Divider()
+                .padding(.vertical, 8)
+
+            Text("DEBUG: Nudge Test Buttons")
+                .font(.caption)
+                .foregroundStyle(.gray)
+
+            LazyVStack(spacing: 8) {
+                ForEach(ProblemType.allCases, id: \.self) { problemType in
+                    Button {
+                        let content = NudgeContent.contentForToday(for: problemType)
+                        appState.pendingNudgeCard = content
+                    } label: {
+                        HStack {
+                            Text(problemType.icon)
+                            Text(problemType.displayName)
+                                .font(.subheadline)
+                                .foregroundStyle(.blue)
+                            Spacer()
+                        }
+                        .padding(.vertical, 8)
+                        .padding(.horizontal, 12)
+                        .background(Color.blue.opacity(0.1))
+                        .clipShape(RoundedRectangle(cornerRadius: 8))
+                    }
+                    .accessibilityIdentifier("debug-nudge-test-\(problemType.rawValue)")
+                }
+            }
         }
         .padding(.horizontal, 16)
     }

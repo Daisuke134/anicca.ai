@@ -37,12 +37,18 @@ struct ValueStepView: View {
 
             Spacer()
 
-            PrimaryButton(
-                title: String(localized: "common_next"),
-                style: .large
-            ) {
+            Button {
                 next()
+            } label: {
+                Text(String(localized: "common_next"))
+                    .font(.system(size: 18, weight: .semibold))
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 56)
+                    .background(AppTheme.Colors.label)
+                    .clipShape(RoundedRectangle(cornerRadius: 28))
             }
+            .accessibilityIdentifier("onboarding-value-next")
             .padding(.horizontal, 16)
             .padding(.bottom, 64)
         }

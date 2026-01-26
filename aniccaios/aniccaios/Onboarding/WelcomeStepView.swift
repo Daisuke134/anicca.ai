@@ -9,7 +9,7 @@ struct WelcomeStepView: View {
     var body: some View {
         VStack {
             Spacer()
-            
+
             VStack(spacing: 32) {
                 Text(String(localized: "onboarding_welcome_title"))
                     .font(.system(size: 52, weight: .bold))
@@ -31,23 +31,31 @@ struct WelcomeStepView: View {
                 }
                 .padding(.horizontal, 32)
             }
-            
+
             Spacer()
-            
+
             VStack(spacing: 16) {
-                PrimaryButton(
-                    title: String(localized: "onboarding_welcome_cta"),
-                    style: .large
-                ) { next() }
+                Button {
+                    next()
+                } label: {
+                    Text(String(localized: "onboarding_welcome_cta"))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(AppTheme.Colors.label)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
+                }
+                .accessibilityIdentifier("onboarding-welcome-cta")
                 .padding(.horizontal, 16)
-                
+
                 // v0.4: 既存ユーザー向けの復元ボタン
                 VStack(spacing: 12) {
                     Text(String(localized: "onboarding_welcome_restore_description"))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .multilineTextAlignment(.center)
-                    
+
                     SignInWithAppleButton(.signIn) { request in
                         AuthCoordinator.shared.configure(request)
                     } onCompletion: { result in
@@ -78,6 +86,7 @@ struct WelcomeStepView: View {
                     }
                     .signInWithAppleButtonStyle(.whiteOutline)
                     .frame(height: 44)
+                    .accessibilityIdentifier("onboarding-restore-button")
                     .padding(.horizontal, 16)
                 }
                 .padding(.top, 8)

@@ -66,7 +66,7 @@ jobs:
     name: E2E Tests (Maestro)
     runs-on: macos-14
     needs: unit-tests
-    if: false  # Temporarily disabled - E2E tests need UI/localization updates
+    # Re-enabled after UI/accessibilityIdentifier updates (Jan 2026)
     steps:
       - uses: actions/checkout@v4
       
@@ -102,7 +102,7 @@ jobs:
       
       - name: Run Maestro Tests
         run: |
-          maestro test maestro/
+          maestro test maestro/ --include-tags smokeTest,phase6
       
       - name: Upload Test Results
         if: failure()

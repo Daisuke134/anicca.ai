@@ -49,22 +49,29 @@ struct StrugglesStepView: View {
             .scrollIndicators(.visible)
 
             VStack(spacing: 12) {
-                PrimaryButton(
-                    title: String(localized: "common_next"),
-                    isEnabled: !selected.isEmpty,
-                    style: .large
-                ) {
+                Button {
                     var profile = appState.userProfile
                     profile.problems = Array(selected)
                     appState.updateUserProfile(profile, sync: true)
                     next()
+                } label: {
+                    Text(String(localized: "common_next"))
+                        .font(.system(size: 18, weight: .semibold))
+                        .foregroundStyle(.white)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 56)
+                        .background(selected.isEmpty ? AppTheme.Colors.label.opacity(0.5) : AppTheme.Colors.label)
+                        .clipShape(RoundedRectangle(cornerRadius: 28))
                 }
-                
+                .disabled(selected.isEmpty)
+                .accessibilityIdentifier("onboarding-struggles-next")
+
                 Button(String(localized: "common_skip")) {
                     next()
                 }
                 .font(.system(size: 16, weight: .medium))
                 .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                .accessibilityIdentifier("onboarding-struggles-skip")
             }
             .padding(.horizontal, 24)
             .padding(.bottom, 64)
@@ -98,6 +105,7 @@ struct StrugglesStepView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier("onboarding-struggle-\(key)")
     }
 }
 

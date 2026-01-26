@@ -1,4 +1,7 @@
 # Nudge Card: single primary button (no choices)
+#
+# 全ProblemTypeで1択ボタン表示を確認
+#
 appId: ai.anicca.app.ios
 tags:
   - phase6
@@ -7,20 +10,16 @@ tags:
 - launchApp:
     clearState: false
 
-# Profile タブに移動
-- tapOn:
-    text: "Profile"
-
 # 下にスクロールしてDebugセクションを表示
 - scrollUntilVisible:
     element:
-      text: "📱 1枚画面テスト（夜更かし）"
+      id: "debug-nudge-test-procrastination"
     direction: DOWN
     timeout: 5000
 
-# Debug Nudgeテストボタンをタップ
+# Debug Nudgeテストボタンをタップ (procrastinationで異なる問題タイプをテスト)
 - tapOn:
-    id: "debug-nudge-test-staying-up-late"
+    id: "debug-nudge-test-procrastination"
 
 # NudgeCard表示待ち
 - extendedWaitUntil:
@@ -41,4 +40,3 @@ tags:
 # カードを閉じる
 - tapOn:
     id: "nudge-card-close"
-

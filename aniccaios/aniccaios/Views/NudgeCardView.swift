@@ -22,6 +22,12 @@ struct NudgeCardView: View {
             AppBackground()
                 .ignoresSafeArea()
 
+            // Accessibility container for Maestro detection
+            Color.clear
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .accessibilityElement(children: .combine)
+                .accessibilityIdentifier("nudge-card-view")
+
             VStack(spacing: 0) {
                 // Close button
                 HStack {
@@ -124,7 +130,6 @@ struct NudgeCardView: View {
                 .padding(.bottom, 40)
             }
         }
-        .accessibilityIdentifier("nudge-card-view")
     }
 
     // MARK: - Primary Action Button (single, unified style)

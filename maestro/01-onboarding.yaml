@@ -1,107 +1,72 @@
-# Onboarding Flow Test
-# Tests the complete onboarding flow from first launch to main screen
-# Note: Uses text-based taps (no accessibilityIdentifier required)
+# Onboarding Flow Test (Updated for 4-step flow)
+# Tests: welcome -> value -> struggles -> notifications -> My Path
+# Uses accessibilityIdentifier-based selectors for reliability
 
 appId: ai.anicca.app.ios
 name: Onboarding flow
+tags:
+  - smokeTest
+  - onboarding
 
 ---
-# Clean start - delete app to simulate first launch
+# Clean start - simulate first launch
 - clearState
-
-# Launch the app
 - launchApp
 
 # Step 1: Welcome screen
 - extendedWaitUntil:
-    visible: "Anicca"
+    visible:
+      id: "onboarding-welcome-cta"
     timeout: 10000
 
-- assertVisible: "Get started"
-
-- tapOn: "Get started"
-
-# Step 2: Ideals - "Who do you want to become?"
-- extendedWaitUntil:
-    visible: "Who do you want to become?"
-    timeout: 5000
-
-# Select a trait (optional) and tap Next
 - tapOn:
-    text: "Next"
-    optional: true
+    id: "onboarding-welcome-cta"
 
-- tapOn:
-    text: "Skip"
-    optional: true
-
-# Step 3: Struggles - "What are you struggling with right now?"
+# Step 2: Value screen
 - extendedWaitUntil:
-    visible: "What are you struggling with"
+    visible:
+      id: "onboarding-value-next"
     timeout: 5000
 
 - tapOn:
-    text: "Next"
-    optional: true
+    id: "onboarding-value-next"
 
-- tapOn:
-    text: "Skip"
-    optional: true
-
-# Step 4: Value - "What Anicca can do for you"
+# Step 3: Struggles screen
 - extendedWaitUntil:
-    visible: "What Anicca can do for you"
+    visible:
+      id: "onboarding-struggle-staying_up_late"
     timeout: 5000
 
-- tapOn: "Continue"
+# Select one struggle (staying_up_late)
+- tapOn:
+    id: "onboarding-struggle-staying_up_late"
 
-# Step 5: Account - Sign in with Apple
+- tapOn:
+    id: "onboarding-struggles-next"
+
+# Step 4: Notifications screen
 - extendedWaitUntil:
-    visible: "Sign in with Apple"
+    visible:
+      id: "onboarding-notifications-allow"
     timeout: 5000
 
-# For E2E testing, we'll tap the Sign in with Apple button
-- tapOn: "Sign in with Apple"
-
-# Handle Apple Sign In dialog (simulator may show different UI)
 - tapOn:
-    text: "Continue"
+    id: "onboarding-notifications-allow"
+
+# Handle iOS notification permission dialog (Japanese: 許可, English: Allow)
+- tapOn:
+    text: "許可|Allow"
     optional: true
 
-# Step 6: Microphone permission
+# Dismiss paywall if shown (tap back button)
+- tapOn:
+    point: "28,78"
+    optional: true
+
+# Verify onboarding complete - My Path screen visible (Japanese: マイパス)
 - extendedWaitUntil:
-    visible: "Microphone"
+    visible:
+      text: "マイパス|My Path"
     timeout: 10000
 
-- tapOn: "Allow microphone"
-
-# Handle iOS permission dialog
-- tapOn:
-    text: "Allow"
-    optional: true
-
-- tapOn:
-    text: "OK"
-    optional: true
-
-# Step 7: Notifications permission
-- extendedWaitUntil:
-    visible: "Notifications"
-    timeout: 5000
-
-- tapOn: "Allow notifications"
-
-# Handle iOS permission dialog
-- tapOn:
-    text: "Allow"
-    optional: true
-
-# After notifications, onboarding should be complete
-# Main screen should show the Talk tab
-- extendedWaitUntil:
-    visible: "Talk"
-    timeout: 10000
-
-- assertVisible:
-    text: "Consult Anicca"
-    optional: true
+- takeScreenshot: "onboarding-complete"

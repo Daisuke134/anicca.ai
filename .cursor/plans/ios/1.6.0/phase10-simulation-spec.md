@@ -227,7 +227,13 @@
 |-----------|------|
 | INSERT | 通常は INSERT（新規シミュレーション結果） |
 | 重複時 | ON CONFLICT DO NOTHING（既存結果を上書きしない） |
-| 再実行時 | 新しいjob_run_idで実行するため、過去結果と混在しない |
+| 再実行時 | **同一job_run_idを再利用**（下記参照） |
+
+| 再実行時の動作 | 内容 |
+|--------------|------|
+| job_runs | 既存レコードをUPDATE（status=running）、**job_run_idは変わらない** |
+| simulation_runs | 同一(job_run_id, persona_id, nudge_config_hash)は ON CONFLICT DO NOTHING でスキップ |
+| 効果 | 中断後の再実行で、完了済みシミュレーションを再処理せず未処理分のみ実行（再開性） |
 
 | predictions JSON構造 | 型 | 説明 |
 |---------------------|-----|------|
@@ -742,8 +748,17 @@
 | 5 | Access Token取得 | OAuth認証フロー実行 | Access Token |
 | 6 | OpenAI API Key取得 | https://platform.openai.com/ → API Keys | OPENAI_API_KEY |
 | 7 | Slack Incoming Webhook作成 | Slack App → Incoming Webhooks → Add | SLACK_WEBHOOK_URL |
-| 8 | ADMIN_API_KEY生成 | `openssl rand -base64 32` | ADMIN_API_KEY |
-| 9 | 環境変数設定 | Railway Staging | 設定完了 |
+| 8 | ADMIN_API_KEY生成（Staging用） | `openssl rand -base64 32` | ADMIN_API_KEY（Staging） |
+| 9 | ADMIN_API_KEY生成（Production用） | `openssl rand -base64 32` | ADMIN_API_KEY（Production） |
+| 10 | 環境変数設定（Staging） | Railway Staging → Variables | 設定完了 |
+| 11 | 環境変数設定（Production） | Railway Production → Variables | 設定完了 |
+
+| 環境別設定の注意 | 内容 |
+|---------------|------|
+| ADMIN_API_KEY | Staging/Productionで**必ず別の値**を使用 |
+| TikTok関連 | 同じ値を共有（同一広告アカウント） |
+| OPENAI_API_KEY | 同じ値を共有可（使用量は環境で分離しない） |
+| SLACK_WEBHOOK_URL | 同じSlackチャンネルへ通知（環境タグで識別） |
 
 | 取得した環境変数 | 説明 | 取得元 |
 |-----------------|------|--------|
@@ -875,10 +890,22 @@
 |-----------|-----|------|
 | jobName (path) | string | 実行するジョブ名 |
 
+| scheduled_date決定ルール | ジョブ名 | 算出方法 | 例（2026-01-27 10:00 UTC実行時） |
+|------------------------|---------|---------|-------------------------------|
+| daily系 | daily_tiktok_collect | **前日UTC**（NOW() - 1 day） | 2026-01-26 |
+| daily系 | daily_feedback_aggregate | **前日UTC**（NOW() - 1 day） | 2026-01-26 |
+| weekly系 | weekly_simulation | **当日UTC**（NOW()の日付） | 2026-01-27 |
+
+| scheduled_date算出コード例 | 内容 |
+|-------------------------|------|
+| daily系 | `new Date(Date.now() - 86400000).toISOString().slice(0, 10)` |
+| weekly系 | `new Date().toISOString().slice(0, 10)` |
+
 | 注記 | 内容 |
 |------|------|
 | 同日再実行 | completed/failed時のみ許可（既存レコードをUPDATEして再実行） |
 | running時 | **409 Conflict**（実行中ジョブは上書き不可） |
+| 冪等性 | 同一(job_name, scheduled_date)に対する複数回呼び出しは、既存レコードのUPDATEとなり安全 |
 
 | レスポンス | 型 | 説明 |
 |-----------|-----|------|
@@ -908,6 +935,13 @@
 | IP制限 | Cloudflare Access | 1.7.0 |
 | 認証失敗アラート | 5回連続でSlack通知 | 1.7.0 |
 
+| 1.6.0運用制限（レート制限なし期間） | 内容 |
+|--------------------------------|------|
+| 手動実行頻度 | 1日あたり各ジョブ最大3回まで（運用手順で制限） |
+| 実行時間帯 | 業務時間内（9:00-18:00 JST）のみ |
+| 実行者 | 開発者のみ（ADMIN_API_KEYを知る人） |
+| 異常検知 | 監査ログを日次で目視確認、異常時はADMIN_API_KEY即時ローテーション |
+
 #### 監査ログ仕様
 
 | 項目 | 内容 |
@@ -926,6 +960,12 @@
 | job_run_id | UUID/null | 成功時のjob_runsレコードID |
 | is_retry | boolean | 同日再実行かどうか |
 | error_message | string/null | エラー時のメッセージ |
+
+| ログ除外フィールド（セキュリティ） | 理由 |
+|-------------------------------|------|
+| Authorization ヘッダー | ADMIN_API_KEY漏洩防止（絶対にログに出力しない） |
+| Cookie ヘッダー | セッション情報漏洩防止 |
+| リクエストボディ全文 | 将来的な機密データ混入防止 |
 
 | ログ出力例（成功） | 値 |
 |------------------|-----|
@@ -1065,18 +1105,25 @@
 | # | 条件 | 測定方法 | 対応テスト |
 |---|------|---------|----------|
 | 1 | 8個のペルソナがDBに登録されている | `SELECT COUNT(*) FROM simulated_personas` = 8 | #8 `test_seed_personas_count` |
-| 2 | 1000パターン以上のシミュが実行できる | **最新のjob_run_idでスコープ**（下記SQL参照） | #27 `test_acceptance_simulation_count` |
-
-| 受け入れ条件#2の測定SQL | 内容 |
-|-----------------------|------|
-| クエリ | `SELECT COUNT(*) FROM simulation_runs WHERE job_run_id = (SELECT id FROM job_runs WHERE job_name = 'weekly_simulation' ORDER BY scheduled_date DESC LIMIT 1)` |
-| 条件 | 結果 >= 1000 |
-| 理由 | 過去の実行分と混在させず、直近の週次ジョブの結果のみを測定 |
+| 2 | 1000パターン以上のシミュが実行できる | 最新job_run_idでスコープ（下記SQL参照） | #27 `test_acceptance_simulation_count` |
 | 3 | TikTok APIからデータが自動取得できる | tiktok_ad_metricsに日次データあり | #13 `test_tiktok_collector_fetch_success` |
 | 4 | Appフィードバックが日次集計される | daily_feedback_summaryテーブルにデータあり | #28 `test_acceptance_feedback_aggregate` |
 | 5 | Token失効時にCron停止フラグが有効になる | system_settingsにtiktok_cron_disabled=true | #34 `test_tiktok_token_expired_db_auto_disable` |
 | 6 | Token失効→Cron停止時にSlack通知が送信される | Slack #anicca-alertsに通知到達 | #29 `test_token_expired_slack_notification` |
-| 7 | 全テストが通過する | CI green | 全テスト |
+| 7 | admin/jobs認証がBearer Tokenで保護されている | 無効トークンで401 | #44 `test_admin_jobs_auth_failure` |
+| 8 | Cron単一実行保証が機能する | INSERT失敗時スキップログ出力 | #37 `test_cron_single_execution_guarantee` |
+| 9 | admin/jobs実行中409が返る | running状態で再トリガー→409 | #38 `test_cron_manual_trigger_api` |
+| 10 | ジョブ再開性が機能する（resumable） | 中断後のリトライで続行 | #51 `test_simulation_runs_resume_from_incomplete` |
+| 11 | 401カウンタがDBに永続化される | 再起動後もカウンタ維持 | #48 `test_tiktok_401_count_persistence` |
+| 12 | 全テストが通過する | CI green | 全テスト |
+
+**受け入れ条件#2の測定SQL:**
+
+| 項目 | 内容 |
+|------|------|
+| クエリ | `SELECT COUNT(*) FROM simulation_runs WHERE job_run_id = (SELECT id FROM job_runs WHERE job_name = 'weekly_simulation' ORDER BY scheduled_date DESC LIMIT 1)` |
+| 条件 | 結果 >= 1000 |
+| 理由 | 過去の実行分と混在させず、直近の週次ジョブの結果のみを測定 |
 
 ---
 

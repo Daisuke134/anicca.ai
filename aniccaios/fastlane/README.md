@@ -71,6 +71,14 @@ Submit the latest build for App Store review
 
 Complete automated release: build, upload, wait, and submit for review
 
+### ios build_for_simulator
+
+```sh
+[bundle exec] fastlane ios build_for_simulator
+```
+
+Build and run on simulator
+
 ### ios test
 
 ```sh

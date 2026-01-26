@@ -3,6 +3,10 @@ import Foundation
 enum LanguagePreference: String, Codable {
     case ja
     case en
+    case de
+    case fr
+    case es
+    case ptBR = "pt-BR"
     
     /// プロンプト内のLANGUAGE LOCK用（ハードコーディングで確実に正しい言語名を返す）
     var languageLine: String {
@@ -11,6 +15,14 @@ enum LanguagePreference: String, Codable {
             return "日本語"
         case .en:
             return "English"
+        case .de:
+            return "Deutsch"
+        case .fr:
+            return "Français"
+        case .es:
+            return "Español"
+        case .ptBR:
+            return "Português (Brasil)"
         }
     }
     
@@ -21,14 +33,24 @@ enum LanguagePreference: String, Codable {
             return NSLocalizedString("language_preference_ja", comment: "")
         case .en:
             return NSLocalizedString("language_preference_en", comment: "")
+        case .de:
+            return NSLocalizedString("language_preference_de", comment: "")
+        case .fr:
+            return NSLocalizedString("language_preference_fr", comment: "")
+        case .es:
+            return NSLocalizedString("language_preference_es", comment: "")
+        case .ptBR:
+            return NSLocalizedString("language_preference_ptBR", comment: "")
         }
     }
     
     static func detectDefault(locale: Locale = .current) -> Self {
         let preferred = (Locale.preferredLanguages.first ?? locale.identifier).lowercased()
-        if preferred.hasPrefix("ja") {
-            return .ja
-        }
+        if preferred.hasPrefix("ja") { return .ja }
+        if preferred.hasPrefix("de") { return .de }
+        if preferred.hasPrefix("fr") { return .fr }
+        if preferred.hasPrefix("es") { return .es }
+        if preferred.hasPrefix("pt-br") || preferred.hasPrefix("pt_br") || preferred.hasPrefix("pt") { return .ptBR }
         return .en
     }
 }

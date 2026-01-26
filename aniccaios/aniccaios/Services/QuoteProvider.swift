@@ -11,7 +11,7 @@ final class QuoteProvider {
         switch preferredLanguage {
         case .ja:
             return Self.quotesJapanese[index]
-        case .en:
+        case .en, .de, .fr, .es, .ptBR:
             return Self.quotesEnglish[index]
         }
     }

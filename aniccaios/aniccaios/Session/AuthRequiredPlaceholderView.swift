@@ -7,11 +7,11 @@ struct AuthRequiredPlaceholderView: View {
                 .font(.system(size: 64))
                 .foregroundStyle(.secondary)
             
-            Text("Please Sign In")
+            Text(String(localized: "auth_required_title"))
                 .font(.title2)
                 .fontWeight(.semibold)
             
-            Text("Sign in to start using Anicca and set up your habits.")
+            Text(String(localized: "auth_required_message"))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .multilineTextAlignment(.center)

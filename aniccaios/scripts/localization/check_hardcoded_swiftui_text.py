@@ -46,20 +46,28 @@ def is_likely_localization_key(s: str) -> bool:
 
 
 def should_flag_literal(s: str) -> bool:
-    if s in ALLOWED_LITERALS:
+    candidate = s
+    # Strip Swift string interpolations (treat as placeholders).
+    if "\\(" in candidate:
+        candidate = re.sub(r"\\\([^)]*\)", "", candidate).strip()
+        # If nothing remains after removing interpolations, it's not translatable copy.
+        if not candidate:
+            return False
+
+    if candidate in ALLOWED_LITERALS:
         return False
-    if is_emoji_only(s):
+    if is_emoji_only(candidate):
         return False
-    if is_likely_localization_key(s):
+    if is_likely_localization_key(candidate):
         return False
     # Anything with spaces is almost certainly user-facing copy → must be localized.
-    if " " in s:
+    if " " in candidate:
         return True
     # Also flag Japanese/human text without spaces.
-    if re.search(r"[\u3040-\u30FF\u4E00-\u9FFF]", s):
+    if re.search(r"[\u3040-\u30FF\u4E00-\u9FFF]", candidate):
         return True
     # Flag if it contains lowercase letters (most human strings) and isn't a key.
-    if re.search(r"[a-z]", s):
+    if re.search(r"[a-z]", candidate):
         return True
     return False
 

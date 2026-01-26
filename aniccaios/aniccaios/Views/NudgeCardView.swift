@@ -155,6 +155,8 @@ struct NudgeCardView: View {
         HStack(spacing: 32) {
             Button(action: {
                 onFeedback(true)
+                // Phase 7+8: contentFeedbackをサーバーに送信
+                sendContentFeedback(isPositive: true)
                 withAnimation {
                     showFeedbackButtons = false
                 }
@@ -167,6 +169,8 @@ struct NudgeCardView: View {
 
             Button(action: {
                 onFeedback(false)
+                // Phase 7+8: contentFeedbackをサーバーに送信
+                sendContentFeedback(isPositive: false)
                 withAnimation {
                     showFeedbackButtons = false
                 }
@@ -178,6 +182,23 @@ struct NudgeCardView: View {
             .accessibilityIdentifier("feedback-thumbs-down")
         }
         .opacity(showFeedbackButtons ? 1 : 0)
+    }
+
+    // MARK: - Phase 7+8: Content Feedback
+    private func sendContentFeedback(isPositive: Bool) {
+        guard let nudgeId = content.llmNudgeId else { return }
+        Task {
+            do {
+                try await NudgeFeedbackService.shared.sendContentFeedback(
+                    nudgeId: nudgeId,
+                    feedback: isPositive ? "thumbsUp" : "thumbsDown",
+                    timeSpentSeconds: nil
+                )
+            } catch {
+                // エラーは無視（ユーザー体験を妨げない）
+                print("Failed to send content feedback: \(error)")
+            }
+        }
     }
 }
 

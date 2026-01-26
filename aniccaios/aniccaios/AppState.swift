@@ -104,6 +104,8 @@ final class AppState: ObservableObject {
         // アプリ起動時にignored判定を実行
         Task {
             await NudgeStatsManager.shared.checkAndRecordIgnored()
+            // Phase 7+8: 6時間経過の未タップNudgeをignoredとしてサーバーに送信
+            await NudgeFeedbackService.shared.sendIgnoredFeedbackForExpiredNudges()
         }
         
         // v0.4: 匿名ユーザーでもサーバーからプロフィールを復元

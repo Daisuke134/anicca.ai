@@ -206,5 +206,123 @@ struct LLMGeneratedNudgeTests {
             try defaultDecoder.decode(LLMGeneratedNudge.self, from: json)
         }
     }
+
+    // MARK: - Phase 7+8: scheduledTime Tests
+
+    @Test("Decode with new scheduledTime field (HH:MM format)")
+    func test_LLMGeneratedNudge_scheduledTime() throws {
+        let json = """
+        {
+            "id": "test-time",
+            "problemType": "staying_up_late",
+            "scheduledTime": "22:30",
+            "hook": "まだ起きてる？",
+            "content": "今夜は早めに。明日の自分が感謝する。",
+            "tone": "gentle",
+            "reasoning": "22:30 is optimal for this user",
+            "rootCauseHypothesis": "Stress relief through late night scrolling",
+            "createdAt": "2026-01-26T05:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let decoded = try decoder.decode(LLMGeneratedNudge.self, from: json)
+
+        #expect(decoded.scheduledTime == "22:30")
+        #expect(decoded.scheduledHour == 22)
+        #expect(decoded.scheduledMinute == 30)
+        #expect(decoded.rootCauseHypothesis == "Stress relief through late night scrolling")
+    }
+
+    @Test("Backward compatibility: scheduledHour only (no scheduledTime)")
+    func test_LLMGeneratedNudge_backwardCompatibility_scheduledHourOnly() throws {
+        // Old API response format without scheduledTime
+        let json = """
+        {
+            "id": "test-old",
+            "problemType": "cant_wake_up",
+            "scheduledHour": 7,
+            "hook": "起きろ",
+            "content": "今日も頑張ろう",
+            "tone": "strict",
+            "reasoning": "test",
+            "createdAt": "2026-01-24T05:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let decoded = try decoder.decode(LLMGeneratedNudge.self, from: json)
+
+        #expect(decoded.scheduledTime == "07:00")
+        #expect(decoded.scheduledHour == 7)
+        #expect(decoded.scheduledMinute == 0)
+        #expect(decoded.rootCauseHypothesis == nil)
+    }
+
+    @Test("scheduledMinute computed property works correctly")
+    func test_LLMGeneratedNudge_scheduledMinute() throws {
+        let testCases: [(scheduledTime: String, expectedHour: Int, expectedMinute: Int)] = [
+            ("06:30", 6, 30),
+            ("22:00", 22, 0),
+            ("00:15", 0, 15),
+            ("23:59", 23, 59),
+            ("12:00", 12, 0)
+        ]
+
+        for testCase in testCases {
+            let json = """
+            {
+                "id": "test-\(testCase.scheduledTime)",
+                "problemType": "staying_up_late",
+                "scheduledTime": "\(testCase.scheduledTime)",
+                "hook": "テスト",
+                "content": "テスト",
+                "tone": "strict",
+                "reasoning": "test",
+                "createdAt": "2026-01-26T05:00:00Z"
+            }
+            """.data(using: .utf8)!
+
+            let decoded = try decoder.decode(LLMGeneratedNudge.self, from: json)
+            #expect(decoded.scheduledHour == testCase.expectedHour, "Expected hour \(testCase.expectedHour) for \(testCase.scheduledTime)")
+            #expect(decoded.scheduledMinute == testCase.expectedMinute, "Expected minute \(testCase.expectedMinute) for \(testCase.scheduledTime)")
+        }
+    }
+
+    @Test("rootCauseHypothesis is optional")
+    func test_LLMGeneratedNudge_rootCauseHypothesis_optional() throws {
+        // Without rootCauseHypothesis
+        let jsonWithout = """
+        {
+            "id": "test-no-root",
+            "problemType": "cant_wake_up",
+            "scheduledTime": "07:00",
+            "hook": "起きろ",
+            "content": "今日も頑張ろう",
+            "tone": "strict",
+            "reasoning": "test",
+            "createdAt": "2026-01-26T05:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let decodedWithout = try decoder.decode(LLMGeneratedNudge.self, from: jsonWithout)
+        #expect(decodedWithout.rootCauseHypothesis == nil)
+
+        // With rootCauseHypothesis
+        let jsonWith = """
+        {
+            "id": "test-with-root",
+            "problemType": "cant_wake_up",
+            "scheduledTime": "07:00",
+            "hook": "起きろ",
+            "content": "今日も頑張ろう",
+            "tone": "strict",
+            "reasoning": "test",
+            "rootCauseHypothesis": "Perfectionism causing self-loathing loop",
+            "createdAt": "2026-01-26T05:00:00Z"
+        }
+        """.data(using: .utf8)!
+
+        let decodedWith = try decoder.decode(LLMGeneratedNudge.self, from: jsonWith)
+        #expect(decodedWith.rootCauseHypothesis == "Perfectionism causing self-loathing loop")
+    }
 }
 

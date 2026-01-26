@@ -9,6 +9,9 @@ actor LLMNudgeService {
     private let session: URLSession
     private let decoder: JSONDecoder
 
+    /// 今日の戦略（LLMが生成）- Phase 7+8
+    private(set) var overallStrategy: String?
+
     private init() {
         self.session = URLSession.shared
         self.decoder = JSONDecoder()
@@ -48,7 +51,11 @@ actor LLMNudgeService {
                 logger.error("❌ [LLM] Decode error: \(error.localizedDescription)")
                 throw error
             }
-            logger.info("✅ [LLM] Decoded \(responseBody.nudges.count) nudges")
+
+            // Phase 7+8: overallStrategyを保存
+            self.overallStrategy = responseBody.overallStrategy
+
+            logger.info("✅ [LLM] Decoded \(responseBody.nudges.count) nudges, strategy: \(responseBody.overallStrategy ?? "none")")
             return responseBody.nudges
         } catch {
             logger.error("Failed to fetch todays nudges: \(error.localizedDescription)")
@@ -62,7 +69,9 @@ actor LLMNudgeService {
     }
 }
 
-/// APIレスポンス形式
+/// APIレスポンス形式（Phase 7+8拡張版）
 private struct NudgeTodayResponse: Codable {
     let nudges: [LLMGeneratedNudge]
+    let overallStrategy: String?  // Phase 7+8: LLMが生成した今日の戦略
+    let version: String?          // APIバージョン（後方互換確認用）
 }

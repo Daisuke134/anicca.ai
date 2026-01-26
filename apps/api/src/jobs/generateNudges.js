@@ -1,16 +1,25 @@
 /**
- * Phase 6: LLM生成Nudge - Cron Job
+ * Phase 7+8: LLM生成Nudge - Cron Job
  *
  * 毎朝5:00 JST (20:00 UTC) に実行
- * 全アクティブユーザーに対してGPT-4o-miniでNudge文言を生成
+ * Day 1: ルールベース、Day 2+: LLMで生成
  *
  * Railway Cron Schedule: 0 20 * * *
  * 環境変数: CRON_MODE=nudges
  */
 
 import pg from 'pg';
-import { fetch } from 'undici';
 import crypto from 'crypto';
+import {
+  shouldUseLLM,
+  buildUserStory,
+  getHookContentPerformance,
+  getTimingPerformance,
+  getWeeklyPatterns,
+  generateWithFallback,
+  buildPhase78Prompt,
+  generateRuleBasedNudges
+} from './nudgeHelpers.js';
 
 const { Pool } = pg;
 
@@ -266,13 +275,11 @@ function validateLLMOutput(output) {
   return output;
 }
 
-// メイン処理
+// メイン処理 (Phase 7+8)
 async function runGenerateNudges() {
-  console.log('✅ [GenerateNudges] Starting LLM nudge generation cron job');
+  console.log('✅ [GenerateNudges] Starting Phase 7+8 nudge generation cron job');
 
-  // 1. 全アクティブユーザーを取得（struggles/problemsを持っている人）
-  // profile JSONBの中にstruggles（新）またはproblems（旧）として保存されている
-  // preferredLanguageも取得（デフォルトは'en'）
+  // 1. 全アクティブユーザーを取得
   const usersResult = await query(`
     SELECT DISTINCT
       mp.device_id as profile_id,
@@ -290,7 +297,7 @@ async function runGenerateNudges() {
   console.log(`✅ [GenerateNudges] Found ${users.length} users with problems`);
 
   let totalGenerated = 0;
-  let totalSkipped = 0;
+  let totalRuleBased = 0;
   let totalErrors = 0;
 
   // 2. 各ユーザーに対して処理
@@ -299,68 +306,71 @@ async function runGenerateNudges() {
     const preferredLanguage = user.preferred_language || 'en';
     const limits = CHAR_LIMITS[preferredLanguage] || CHAR_LIMITS.en;
 
-    for (const problem of problems) {
-      // ユーザーの過去フィードバックを取得（パーソナライズ）
-      const feedback = await getUserFeedback(user.user_id, problem);
-      if (feedback) {
-        console.log(`📊 [GenerateNudges] User ${user.user_id} feedback for ${problem}: ${feedback.successful?.length || 0} success, ${feedback.failed?.length || 0} failed, preferred: ${feedback.preferredTone || 'none'}, avoided: ${feedback.avoidedTone || 'none'}`);
-      }
+    try {
+      // Phase 7+8: Day 1判定
+      const useLLM = await shouldUseLLM(query, user.user_id);
+      let scheduleResult;
 
-      const prompt = buildPrompt(problem, preferredLanguage, feedback);
+      if (useLLM) {
+        // Day 2+: LLM生成
+        console.log(`🤖 [GenerateNudges] User ${user.user_id}: Day 2+ → LLM mode`);
 
-      try {
-        const response = await fetch('https://api.openai.com/v1/chat/completions', {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${OPENAI_API_KEY}`,
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            model: 'gpt-4o-mini',
-            messages: [{ role: 'user', content: prompt }],
-            response_format: { type: 'json_object' }
-          })
+        // ストーリー形式でコンテキスト構築
+        const userStory = await buildUserStory(query, user.user_id);
+        const hookContentPerformance = await getHookContentPerformance(query, user.user_id, problems);
+        const timingPerformance = await getTimingPerformance(query, user.user_id, problems);
+        const weeklyPatterns = await getWeeklyPatterns(query, user.user_id, problems);
+
+        const prompt = buildPhase78Prompt({
+          problems,
+          preferredLanguage,
+          userStory,
+          hookContentPerformance,
+          timingPerformance,
+          weeklyPatterns
         });
 
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error(`❌ [GenerateNudges] OpenAI API error for user ${user.user_id}, problem ${problem}: ${response.status} ${errorText}`);
-          totalErrors++;
-          continue;
+        // 3-tier fallback
+        scheduleResult = await generateWithFallback(prompt, OPENAI_API_KEY, preferredLanguage);
+
+        if (!scheduleResult) {
+          // Tier 3: ルールベースにフォールバック
+          console.log(`⚠️ [GenerateNudges] User ${user.user_id}: LLM failed, falling back to rule-based`);
+          scheduleResult = generateRuleBasedNudges(problems, preferredLanguage);
+          totalRuleBased++;
         }
+      } else {
+        // Day 1: ルールベース
+        console.log(`📋 [GenerateNudges] User ${user.user_id}: Day 1 → Rule-based mode`);
+        scheduleResult = generateRuleBasedNudges(problems, preferredLanguage);
+        totalRuleBased++;
+      }
 
-        const data = await response.json();
-        const rawOutput = JSON.parse(data.choices[0].message.content);
-
-        // LLM出力バリデーション
-        const validated = validateLLMOutput(rawOutput);
-        if (!validated) {
-          console.warn(`⚠️ [GenerateNudges] LLM output validation failed for user ${user.user_id}, problem ${problem}`);
-          totalSkipped++;
-          continue;
-        }
-
-        const scheduledHour = getScheduledHourForProblem(problem);
+      // スケジュールをDBに保存
+      for (const item of scheduleResult.schedule) {
         const nudgeId = crypto.randomUUID();
+        const [hour, minute] = item.scheduledTime.split(':').map(Number);
 
-        // DBに保存（言語別の文字数制限を適用）
         await query(
           `INSERT INTO nudge_events (id, user_id, domain, subtype, decision_point, state, action_template, channel, sent, created_at)
            VALUES ($1::uuid, $2::uuid, $3, $4, $5, $6::jsonb, $7, $8, $9, timezone('utc', now()))`,
           [
             nudgeId,
-            user.user_id,  // ← 修正: device_id ではなく user_id を使用（API側と一致させる）
+            user.user_id,
             'problem_nudge',
-            problem,
-            'llm_generation',
+            item.problemType,
+            useLLM ? 'llm_generation' : 'rule_based',
             JSON.stringify({
               id: nudgeId,
-              scheduledHour: scheduledHour,
-              hook: validated.hook.slice(0, limits.hook),
-              content: validated.content.slice(0, limits.content),
-              tone: validated.tone,
-              reasoning: validated.reasoning,
-              language: preferredLanguage
+              scheduledTime: item.scheduledTime,
+              scheduledHour: hour,  // 後方互換
+              hook: item.hook.slice(0, limits.hook * 2),
+              content: item.content.slice(0, limits.content * 2),
+              tone: item.tone,
+              reasoning: item.reasoning,
+              rootCauseHypothesis: item.rootCauseHypothesis || null,
+              language: preferredLanguage,
+              overallStrategy: scheduleResult.overallStrategy
             }),
             'notification',
             'push',
@@ -369,22 +379,21 @@ async function runGenerateNudges() {
         );
 
         totalGenerated++;
-    const hookPreview = String(validated.hook || '').slice(0, 80).replace(/\s+/g, ' ');
-    const contentLen = String(validated.content || '').length;
-    console.log(`✅ [GenerateNudges] User ${user.user_id}, ${problem}, tone=${validated.tone}, hookPreview="${hookPreview}", contentLen=${contentLen}`);
-    if (process.env.LOG_NUDGE_CONTENT === 'true') {
-      console.log(`📝 [GenerateNudges] hook="${validated.hook}"`);
-      console.log(`📝 [GenerateNudges] content="${validated.content}"`);
-    }
 
-      } catch (error) {
-        console.error(`❌ [GenerateNudges] LLM generation failed for user ${user.user_id}, problem ${problem}:`, error.message);
-        totalErrors++;
+        if (process.env.LOG_NUDGE_CONTENT === 'true') {
+          console.log(`📝 [GenerateNudges] ${item.scheduledTime} ${item.problemType}: "${item.hook}"`);
+        }
       }
+
+      console.log(`✅ [GenerateNudges] User ${user.user_id}: ${scheduleResult.schedule.length} nudges scheduled`);
+
+    } catch (error) {
+      console.error(`❌ [GenerateNudges] Failed for user ${user.user_id}:`, error.message);
+      totalErrors++;
     }
   }
 
-  console.log(`✅ [GenerateNudges] Complete: ${totalGenerated} generated, ${totalSkipped} skipped, ${totalErrors} errors`);
+  console.log(`✅ [GenerateNudges] Complete: ${totalGenerated} generated, ${totalRuleBased} rule-based, ${totalErrors} errors`);
 }
 
 // 実行

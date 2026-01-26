@@ -79,6 +79,18 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
                             llmNudgeId: nudgeContent.llmNudgeId
                         )
 
+                        // Phase 7+8: hookFeedback "tapped" をサーバーに送信
+                        if let nudgeId = nudgeContent.llmNudgeId {
+                            Task {
+                                do {
+                                    try await NudgeFeedbackService.shared.handleNudgeTapped(nudgeId: nudgeId)
+                                } catch {
+                                    // エラーは無視（ユーザー体験を妨げない）
+                                    print("Failed to send tapped feedback: \(error)")
+                                }
+                            }
+                        }
+
                         // NudgeCard を表示
                         AppState.shared.showNudgeCard(nudgeContent)
                     }

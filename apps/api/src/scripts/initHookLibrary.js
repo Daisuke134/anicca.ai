@@ -37,12 +37,12 @@ const SEED_HOOKS = [
   { text: '「明日から本気出す」を何回言った？', tone: 'strict', problems: ['procrastination', 'staying_up_late'], types: ['T3', 'T4'] },
   { text: '自分との約束を何百回破った？', tone: 'strict', problems: ['self_loathing'], types: ['T1', 'T2'] },
 
-  // warm tone
-  { text: '変われないのは、あなたのせいじゃない', tone: 'warm', problems: ['self_loathing', 'anxiety'], types: ['T2', 'T4'] },
-  { text: '挫折は失敗じゃなくて、まだ途中', tone: 'warm', problems: ['self_loathing'], types: ['T1', 'T2'] },
-  { text: '完璧じゃなくていい、1%だけ', tone: 'warm', problems: ['procrastination', 'anxiety'], types: ['T1', 'T4'] },
-  { text: '自分を責めるのをやめた日から変わった', tone: 'warm', problems: ['self_loathing', 'rumination'], types: ['T2'] },
-  { text: '7年間同じ苦しみを抱えてるあなたへ', tone: 'warm', problems: ['self_loathing', 'anxiety'], types: ['T2', 'T4'] },
+  // gentle tone (DB constraint: strict, gentle, logical, provocative, philosophical)
+  { text: '変われないのは、あなたのせいじゃない', tone: 'gentle', problems: ['self_loathing', 'anxiety'], types: ['T2', 'T4'] },
+  { text: '挫折は失敗じゃなくて、まだ途中', tone: 'gentle', problems: ['self_loathing'], types: ['T1', 'T2'] },
+  { text: '完璧じゃなくていい、1%だけ', tone: 'gentle', problems: ['procrastination', 'anxiety'], types: ['T1', 'T4'] },
+  { text: '自分を責めるのをやめた日から変わった', tone: 'gentle', problems: ['self_loathing', 'rumination'], types: ['T2'] },
+  { text: '7年間同じ苦しみを抱えてるあなたへ', tone: 'gentle', problems: ['self_loathing', 'anxiety'], types: ['T2', 'T4'] },
 
   // philosophical tone
   { text: '苦しみの原因は「変わりたい」という執着', tone: 'philosophical', problems: ['anxiety', 'rumination'], types: ['T1', 'T4'] },

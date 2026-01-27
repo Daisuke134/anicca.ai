@@ -41,7 +41,7 @@ SYSTEM_PROMPT = """You are Anicca's TikTok content agent. Your job is to create 
 ## Content Guidelines
 - Hook must punch in 1-2 seconds (TikTok scroll speed)
 - Use Japanese for JP audience, English for EN (default: Japanese)
-- 4 tones: strict, warm, philosophical, provocative
+- 4 tones: strict, gentle, philosophical, provocative
 - Image must have readable text overlay (9:16 portrait)
 - Caption: hook + brief context + hashtags
 - Hashtags: #anicca #習慣化 #自己改善 #マインドフルネス #仏教 #行動変容

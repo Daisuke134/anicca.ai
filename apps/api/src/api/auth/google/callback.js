@@ -1,3 +1,8 @@
+/**
+ * Supabase SDK — 補助サービスとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: Supabase Auth（Google OAuth コールバック）
+ */
 import { createClient } from '@supabase/supabase-js';
 
 export default async function handler(req, res) {

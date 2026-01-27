@@ -1,3 +1,8 @@
+/**
+ * Supabase SDK — 補助ストレージとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: プレビューアプリの Supabase Storage 保存
+ */
 import fs from 'fs';
 import path from 'path';
 import { v4 as uuidv4 } from 'uuid';

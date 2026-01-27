@@ -1,6 +1,8 @@
 /**
- * Worker Memory Service - Supabase Storageを使用した永続化
- * 
+ * Supabase SDK — 補助ストレージとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: Worker Memory の Supabase Storage 永続化
+ *
  * 各WorkerとParentAgentのCLAUDE.mdファイルを管理
  * ユーザーごとに独立した記憶を保持
  */

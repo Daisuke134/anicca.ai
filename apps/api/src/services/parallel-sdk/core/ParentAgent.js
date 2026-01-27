@@ -1,3 +1,8 @@
+/**
+ * Supabase SDK — 補助ストレージとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: Supabase クライアント初期化 + Slackトークン取得
+ */
 import { BaseWorker } from './BaseWorker.js';
 import { fork } from 'child_process';
 import { v4 as uuidv4 } from 'uuid';

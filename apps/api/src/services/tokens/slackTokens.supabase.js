@@ -1,5 +1,8 @@
-// Slack tokens storage via Supabase (moved from services/storage/database.js)
-
+/**
+ * Supabase SDK — 補助ストレージとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: Slackトークンのkey-value保存
+ */
 import { createClient } from '@supabase/supabase-js';
 
 // Supabase client setup

@@ -1,3 +1,8 @@
+/**
+ * Supabase SDK — 補助ストレージとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: Supabase Storage（プレビューファイル配信）
+ */
 import { createClient } from '@supabase/supabase-js';
 
 /**

@@ -1,3 +1,8 @@
+/**
+ * Supabase SDK — 補助サービスとして使用（メインDBではない）
+ * メインDB: Railway PostgreSQL（Prisma経由）
+ * 用途: Supabase Auth（ユーザー検証）
+ */
 import { createClient } from '@supabase/supabase-js';
 import { signJwtHs256 } from '../../utils/jwt.js';
 import {

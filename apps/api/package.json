@@ -1,7 +1,7 @@
 {
   "name": "anicca-proxy",
   "version": "1.0.0",
-  "description": "Proxy server for ANICCA AI Screen Narrator",
+  "description": "Anicca API Server",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
@@ -23,7 +23,7 @@
   "author": "ANICCA",
   "license": "MIT",
   "devDependencies": {
-    "prisma": "^6.0.0",
+    "prisma": "^5.22.0",
     "vercel": "^32.0.0",
     "vitest": "^2.1.9"
   },
@@ -32,10 +32,10 @@
     "@composio/core": "latest",
     "@composio/openai": "latest",
     "@google-cloud/kms": "^3.3.0",
-    "@google-cloud/text-to-speech": "^6.1.0",
+
     "@js-temporal/polyfill": "^0.4.4",
     "@modelcontextprotocol/sdk": "^1.13.0",
-    "@prisma/client": "^6.0.0",
+    "@prisma/client": "^5.22.0",
     "@slack/web-api": "^7.9.3",
     "@supabase/supabase-js": "^2.50.2",
     "@vercel/mcp-adapter": "^0.11.1",

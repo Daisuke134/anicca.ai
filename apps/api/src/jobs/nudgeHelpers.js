@@ -353,12 +353,8 @@ export function validateNudgeSchedule(output, preferredLanguage = 'en') {
     if (item.content.length > charLimits.content * 2) return null;
   }
 
-  // Validate minimum interval (60 minutes)
-  try {
-    validateMinimumInterval(output.schedule);
-  } catch {
-    return null;
-  }
+  // Auto-fix minimum interval (60 minutes) — shift instead of reject
+  output.schedule = autoFixInterval(output.schedule);
 
   return output;
 }
@@ -367,6 +363,7 @@ export function validateNudgeSchedule(output, preferredLanguage = 'en') {
  * Validate minimum 60-minute interval between nudges
  * @param {Array} schedule - Array of schedule items
  * @throws {Error} If nudges are too close
+ * @deprecated Use autoFixInterval instead
  */
 export function validateMinimumInterval(schedule) {
   if (schedule.length <= 1) return;
@@ -383,6 +380,43 @@ export function validateMinimumInterval(schedule) {
       throw new Error(`Nudges too close: ${sorted[i - 1].scheduledTime} and ${sorted[i].scheduledTime}`);
     }
   }
+}
+
+/**
+ * Auto-fix nudge schedule to enforce 60-minute minimum interval.
+ * Instead of rejecting the entire schedule, shifts nudges forward to maintain the interval.
+ * LLM content (hook, content, tone, reasoning) is preserved — only scheduledTime is adjusted.
+ * @param {Array} schedule - Array of schedule items
+ * @returns {Array} Fixed schedule with adjusted times
+ */
+export function autoFixInterval(schedule) {
+  if (schedule.length <= 1) return schedule;
+
+  const sorted = [...schedule].sort((a, b) =>
+    a.scheduledTime.localeCompare(b.scheduledTime)
+  );
+
+  const fixed = [sorted[0]];
+
+  for (let i = 1; i < sorted.length; i++) {
+    const prevMinutes = timeToMinutes(fixed[fixed.length - 1].scheduledTime);
+    const currMinutes = timeToMinutes(sorted[i].scheduledTime);
+
+    if (currMinutes - prevMinutes < 60) {
+      const newMinutes = prevMinutes + 60;
+      const newHour = Math.floor(newMinutes / 60) % 24;
+      const newMin = newMinutes % 60;
+      const newTime = `${String(newHour).padStart(2, '0')}:${String(newMin).padStart(2, '0')}`;
+
+      console.log(`⏰ [AutoFix] Shifted ${sorted[i].scheduledTime}→${newTime} (${sorted[i].problemType}: "${sorted[i].hook}") - too close to ${fixed[fixed.length - 1].scheduledTime}`);
+
+      fixed.push({ ...sorted[i], scheduledTime: newTime });
+    } else {
+      fixed.push(sorted[i]);
+    }
+  }
+
+  return fixed;
 }
 
 /**
@@ -435,7 +469,11 @@ export async function generateWithFallback(prompt, openaiApiKey, preferredLangua
 
       const validated = validateNudgeSchedule(content, preferredLanguage);
       if (!validated) {
-        throw new Error('Validation failed');
+        // Log what LLM actually returned for debugging
+        const schedulePreview = (content?.schedule || []).map(s =>
+          `${s.scheduledTime} ${s.problemType}: "${s.hook}"`
+        ).join(', ');
+        throw new Error(`Validation failed. LLM output: [${schedulePreview}]`);
       }
 
       return validated;

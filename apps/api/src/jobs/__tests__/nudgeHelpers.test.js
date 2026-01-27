@@ -11,6 +11,7 @@ import {
   getWeeklyPatterns,
   validateNudgeSchedule,
   validateMinimumInterval,
+  autoFixInterval,
   timeToMinutes,
   generateRuleBasedNudges,
   buildPhase78Prompt
@@ -216,8 +217,8 @@ describe('validateNudgeSchedule', () => {
     expect(validateNudgeSchedule(invalidSchedule)).toBeNull();
   });
 
-  it('rejects nudges too close together (less than 60 min)', () => {
-    const invalidSchedule = {
+  it('auto-fixes nudges too close together instead of rejecting (v1.5.0)', () => {
+    const closeSchedule = {
       schedule: [
         {
           scheduledTime: '22:00',
@@ -239,7 +240,11 @@ describe('validateNudgeSchedule', () => {
       overallStrategy: 'Test'
     };
 
-    expect(validateNudgeSchedule(invalidSchedule)).toBeNull();
+    const result = validateNudgeSchedule(closeSchedule);
+    expect(result).not.toBeNull();
+    expect(result.schedule[0].scheduledTime).toBe('22:00');
+    expect(result.schedule[1].scheduledTime).toBe('23:00'); // shifted from 22:30
+    expect(result.schedule[1].hook).toBe('test2'); // content preserved
   });
 });
 
@@ -276,6 +281,49 @@ describe('validateMinimumInterval', () => {
       { scheduledTime: '22:00' },
       { scheduledTime: '23:00' }
     ])).not.toThrow();
+  });
+});
+
+describe('autoFixInterval', () => {
+  it('returns schedule unchanged when intervals are OK', () => {
+    const schedule = [
+      { scheduledTime: '09:00', problemType: 'anxiety', hook: 'h1' },
+      { scheduledTime: '12:00', problemType: 'anxiety', hook: 'h2' }
+    ];
+    const result = autoFixInterval(schedule);
+    expect(result[0].scheduledTime).toBe('09:00');
+    expect(result[1].scheduledTime).toBe('12:00');
+  });
+
+  it('shifts nudges forward to enforce 60-min interval', () => {
+    const schedule = [
+      { scheduledTime: '20:30', problemType: 'staying_up_late', hook: 'h1' },
+      { scheduledTime: '21:00', problemType: 'rumination', hook: 'h2' },
+      { scheduledTime: '21:30', problemType: 'staying_up_late', hook: 'h3' }
+    ];
+    const result = autoFixInterval(schedule);
+    expect(result[0].scheduledTime).toBe('20:30');
+    expect(result[1].scheduledTime).toBe('21:30'); // 21:00→21:30
+    expect(result[2].scheduledTime).toBe('22:30'); // 21:30→22:30
+  });
+
+  it('preserves hook/content/tone when shifting', () => {
+    const schedule = [
+      { scheduledTime: '22:00', problemType: 'anger', hook: 'original1', content: 'c1', tone: 'strict' },
+      { scheduledTime: '22:15', problemType: 'anger', hook: 'original2', content: 'c2', tone: 'gentle' }
+    ];
+    const result = autoFixInterval(schedule);
+    expect(result[1].hook).toBe('original2');
+    expect(result[1].content).toBe('c2');
+    expect(result[1].tone).toBe('gentle');
+    expect(result[1].scheduledTime).toBe('23:00');
+  });
+
+  it('handles single nudge', () => {
+    const schedule = [{ scheduledTime: '09:00', problemType: 'anxiety', hook: 'h1' }];
+    const result = autoFixInterval(schedule);
+    expect(result.length).toBe(1);
+    expect(result[0].scheduledTime).toBe('09:00');
   });
 });
 

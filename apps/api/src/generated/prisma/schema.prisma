@@ -73,22 +73,6 @@ model MobileVoipToken {
   @@map("mobile_voip_tokens")
 }
 
-// 注意: `mobile_alarm_schedules.id` は過去マイグレーションが UUID/TEXT で揺れている。
-// v0.3 の主要機能では必須ではないため、現DBの型に合わせて必要なら @db.Uuid/@db.Text を調整する。
-model MobileAlarmSchedule {
-  id         String    @id @map("id")
-  userId     String    @map("user_id")
-  habitType  String    @map("habit_type")
-  fireTime   DateTime  @map("fire_time") @db.Timestamptz
-  timezone   String
-  repeatRule String    @default("daily") @map("repeat_rule")
-  nextFireAt DateTime  @map("next_fire_at") @db.Timestamptz
-  createdAt  DateTime? @map("created_at") @db.Timestamptz
-  updatedAt  DateTime? @map("updated_at") @db.Timestamptz
-
-  @@map("mobile_alarm_schedules")
-}
-
 model UserSubscription {
   userId                          String    @id @map("user_id")
   plan                            String    @default("free")
@@ -275,18 +259,6 @@ model FeelingSession {
   createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("feeling_sessions")
-}
-
-model HabitLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  habitId    String   @map("habit_id")
-  occurredOn DateTime @map("occurred_on") @db.Date
-  status     String
-  payload    Json     @default("{}") @db.JsonB
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("habit_logs")
 }
 
 model BanditModel {

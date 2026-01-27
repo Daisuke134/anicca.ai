@@ -1,28 +1,9 @@
 {
-  "name": "prisma-client-421a2408623027bef8442e72016c7833f8fac9a6b26498df2c5ea6c7ae54ee5f",
+  "name": "prisma-client-d9c2de54cdfdee6dd64b2bcdf410f6030338166acabd35040e0dff332862a3f7",
   "main": "index.js",
   "types": "index.d.ts",
-  "browser": "default.js",
+  "browser": "index-browser.js",
   "exports": {
-    "./client": {
-      "require": {
-        "node": "./index.js",
-        "edge-light": "./wasm.js",
-        "workerd": "./wasm.js",
-        "worker": "./wasm.js",
-        "browser": "./index-browser.js",
-        "default": "./index.js"
-      },
-      "import": {
-        "node": "./index.js",
-        "edge-light": "./wasm.js",
-        "workerd": "./wasm.js",
-        "worker": "./wasm.js",
-        "browser": "./index-browser.js",
-        "default": "./index.js"
-      },
-      "default": "./index.js"
-    },
     "./package.json": "./package.json",
     ".": {
       "require": {
@@ -76,60 +57,20 @@
     "./wasm": {
       "types": "./wasm.d.ts",
       "require": "./wasm.js",
-      "import": "./wasm.mjs",
-      "default": "./wasm.mjs"
-    },
-    "./runtime/client": {
-      "types": "./runtime/client.d.ts",
-      "node": {
-        "require": "./runtime/client.js",
-        "default": "./runtime/client.js"
-      },
-      "require": "./runtime/client.js",
-      "import": "./runtime/client.mjs",
-      "default": "./runtime/client.mjs"
+      "import": "./wasm.js",
+      "default": "./wasm.js"
     },
     "./runtime/library": {
       "types": "./runtime/library.d.ts",
       "require": "./runtime/library.js",
-      "import": "./runtime/library.mjs",
-      "default": "./runtime/library.mjs"
+      "import": "./runtime/library.js",
+      "default": "./runtime/library.js"
     },
     "./runtime/binary": {
       "types": "./runtime/binary.d.ts",
       "require": "./runtime/binary.js",
-      "import": "./runtime/binary.mjs",
-      "default": "./runtime/binary.mjs"
-    },
-    "./runtime/wasm-engine-edge": {
-      "types": "./runtime/wasm-engine-edge.d.ts",
-      "require": "./runtime/wasm-engine-edge.js",
-      "import": "./runtime/wasm-engine-edge.mjs",
-      "default": "./runtime/wasm-engine-edge.mjs"
-    },
-    "./runtime/wasm-compiler-edge": {
-      "types": "./runtime/wasm-compiler-edge.d.ts",
-      "require": "./runtime/wasm-compiler-edge.js",
-      "import": "./runtime/wasm-compiler-edge.mjs",
-      "default": "./runtime/wasm-compiler-edge.mjs"
-    },
-    "./runtime/edge": {
-      "types": "./runtime/edge.d.ts",
-      "require": "./runtime/edge.js",
-      "import": "./runtime/edge-esm.js",
-      "default": "./runtime/edge-esm.js"
-    },
-    "./runtime/react-native": {
-      "types": "./runtime/react-native.d.ts",
-      "require": "./runtime/react-native.js",
-      "import": "./runtime/react-native.js",
-      "default": "./runtime/react-native.js"
-    },
-    "./runtime/index-browser": {
-      "types": "./runtime/index-browser.d.ts",
-      "require": "./runtime/index-browser.js",
-      "import": "./runtime/index-browser.mjs",
-      "default": "./runtime/index-browser.mjs"
+      "import": "./runtime/binary.js",
+      "default": "./runtime/binary.js"
     },
     "./generator-build": {
       "require": "./generator-build/index.js",
@@ -151,33 +92,6 @@
     },
     "./*": "./*"
   },
-  "version": "6.19.1",
-  "sideEffects": false,
-  "imports": {
-    "#wasm-engine-loader": {
-      "edge-light": "./wasm-edge-light-loader.mjs",
-      "workerd": "./wasm-worker-loader.mjs",
-      "worker": "./wasm-worker-loader.mjs",
-      "default": "./wasm-worker-loader.mjs"
-    },
-    "#main-entry-point": {
-      "require": {
-        "node": "./index.js",
-        "edge-light": "./wasm.js",
-        "workerd": "./wasm.js",
-        "worker": "./wasm.js",
-        "browser": "./index-browser.js",
-        "default": "./index.js"
-      },
-      "import": {
-        "node": "./index.js",
-        "edge-light": "./wasm.js",
-        "workerd": "./wasm.js",
-        "worker": "./wasm.js",
-        "browser": "./index-browser.js",
-        "default": "./index.js"
-      },
-      "default": "./index.js"
-    }
-  }
+  "version": "5.22.0",
+  "sideEffects": false
 }

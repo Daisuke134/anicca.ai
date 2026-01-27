@@ -1,4 +1,19 @@
-<!-- ebefdccf-d6fd-42f6-aecc-dcab8504dc36 ed7e608e-14ed-4d0a-9729-571e6cd60391 -->
+---
+name: 目的 / 出すもの（As-Is / 2B / Patch）
+overview: ""
+todos:
+  - id: d6264e71-601a-4f93-b9e1-97daa2a94b01
+    content: "`MainTabView`に習慣セッションのfullScreenCoverを移し、`TalkView`内の重複提示ロジックを削除して、どのタブからでもアラーム起動で必ずセッション画面を出す。"
+    status: pending
+  - id: c2eb29c7-b032-4691-be49-9d5b8cbfbd46
+    content: "`BehaviorView.load()`のScreen Time待ち(最大5秒ポーリング)を短縮/非ブロッキング化して、行動タブの体感ローディングを短くする。"
+    status: pending
+  - id: 0f6b4224-90e7-4d76-a541-35789e772c6f
+    content: オンボーディング中に`isBootstrappingProfile`が全画面ProgressViewで画面遷移を塞がないよう、`ContentRouterView`の条件を絞る（サインイン直後の2-3秒待ちを解消）。
+    status: pending
+isProject: false
+---
+
 # 目的 / 出すもの（As-Is / 2B / Patch）
 
 ### As-Is（現状のコードの事実）
@@ -200,9 +215,3 @@
 - alarm-routing: `MainTabView` に習慣セッション提示を移し、`TalkView` から重複ロジックを削除
 - behavior-perf: `BehaviorView.load()` の ScreenTime wait を短縮し、必要なら“再訪時にブロックしない”改善
 - signin-perf: `ContentRouterView` の `isBootstrappingProfile` ガードをオンボーディング完了後のみに限定
-
-### To-dos
-
-- [ ] `MainTabView`に習慣セッションのfullScreenCoverを移し、`TalkView`内の重複提示ロジックを削除して、どのタブからでもアラーム起動で必ずセッション画面を出す。
-- [ ] `BehaviorView.load()`のScreen Time待ち(最大5秒ポーリング)を短縮/非ブロッキング化して、行動タブの体感ローディングを短くする。
-- [ ] オンボーディング中に`isBootstrappingProfile`が全画面ProgressViewで画面遷移を塞がないよう、`ContentRouterView`の条件を絞る（サインイン直後の2-3秒待ちを解消）。

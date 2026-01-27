@@ -1,4 +1,16 @@
-<!-- ec5737ed-48ca-4bf3-8fca-488cb99fad4b fecaf849-b629-491e-9b4b-7fbee438ef26 -->
+---
+name: Stickyモードの4秒→5秒変更とパッチ案
+overview: ""
+todos:
+  - id: 60360862-37f7-438d-9722-fd5a80cc421b
+    content: VoiceSessionController.handleRealtimeEvent(_:) 内で Sticky モードのタイマー起点と4秒待ちロジックを確認する。
+    status: pending
+  - id: ab0d29c2-522d-4b56-a1d4-c2b9aee40578
+    content: response.done ハンドラ内の4秒待ち（ログ/スリープ/キャンセルログ）をすべて5秒に変更する。
+    status: pending
+isProject: false
+---
+
 # Stickyモードの4秒→5秒変更とパッチ案
 
 ## 現状の挙動整理
@@ -201,8 +213,3 @@ set: { isOn in
     }
 }
 ```
-
-### To-dos
-
-- [ ] VoiceSessionController.handleRealtimeEvent(_:) 内で Sticky モードのタイマー起点と4秒待ちロジックを確認する。
-- [ ] response.done ハンドラ内の4秒待ち（ログ/スリープ/キャンセルログ）をすべて5秒に変更する。

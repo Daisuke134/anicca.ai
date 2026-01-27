@@ -1,4 +1,10 @@
-<!-- b4ed429c-f946-42fb-8a79-e45cd7cf3bf0 34cdaceb-035a-4544-96ef-6cb0ee6e0fd4 -->
+---
+name: iOS UI修正とバックエンドエラー修正 - 完全パッチ
+overview: ""
+todos: []
+isProject: false
+---
+
 # iOS UI修正とバックエンドエラー修正 - 完全パッチ
 
 ## 問題の整理

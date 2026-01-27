@@ -1,4 +1,52 @@
-<!-- ea22e1e8-a782-4aa7-9581-06648747aeff 025734e2-65bc-4586-95d3-343f91d74425 -->
+---
+name: v3 Complete Fix Plan
+overview: ""
+todos:
+  - id: 79e5739b-7249-4a1d-9398-7506ee2dd987
+    content: "パッチ1: VoiceSessionController - SDP エンドポイントを `/v1/realtime/calls` に修正"
+    status: pending
+  - id: 87746caf-5b30-4654-822b-816d047c5487
+    content: "パッチ2: Info.plist - BGTaskSchedulerPermittedIdentifiers を追加"
+    status: pending
+  - id: eea2ca6c-1b15-444c-8cfe-68e03679886d
+    content: "パッチ3-4: ProfileView - Language行削除、Traitsキーワード削除"
+    status: pending
+  - id: 67f97790-85e3-46f8-a5ed-70f7af451afc
+    content: "パッチ5-6: TalkView - タイトル表示をヘッダに変更"
+    status: pending
+  - id: 33bd31f4-348c-4fd5-8539-ea87e2ff8245
+    content: "パッチ7A-D: **Session完全反映（OrbView/Body/TopicPill/ControlsRow）** ← session.html準拠"
+    status: pending
+  - id: f4e7ecb2-a6a8-4c48-b330-57aef704ae03
+    content: "パッチ25: MainTabView - TabBar appearance 設定（固定・背景付き）"
+    status: pending
+  - id: 36631df7-9c24-42c5-8362-0bf5c1333cf5
+    content: "パッチ8: MetricsUploader - BGTaskスケジュールとアップロード実装"
+    status: pending
+  - id: 5f93279b-14cc-4e3f-8573-6089fcc9d2b4
+    content: "パッチ9-11: HealthKitManager/ScreenTimeManager/MotionManager 新規作成"
+    status: pending
+  - id: afd327c0-88ac-4171-91fa-79d0e77d4aa6
+    content: "パッチ12-14: ProfileView - Data Integration トグルに権限リクエスト接続、Ideals/Struggles連携"
+    status: pending
+  - id: 1bbe33b2-f99a-4f3a-9276-f36c3ba1963f
+    content: "パッチ15-16: BehaviorView - ストリークをサーバーベースに変更"
+    status: pending
+  - id: 5e0f2bdd-7c35-4f6d-94fe-ef5e99247c8a
+    content: "パッチ17: Info.plist - HealthKit/Motion 使用説明を追加"
+    status: pending
+  - id: 27723dac-d68e-4928-84fe-14dbacb2f765
+    content: "パッチ18-19: Plan 画面修正（SettingsView パターンに統一）"
+    status: pending
+  - id: 8c7ea56c-f730-4024-b7f9-be2c945cae4a
+    content: "パッチ20-21: バックエンド - /api/mobile/daily_metrics エンドポイント実装"
+    status: pending
+  - id: 8e19e62b-bf76-4f4a-b29b-8fd37286569f
+    content: "パッチ22-24: バックエンド/iOS - streaks 追加"
+    status: pending
+isProject: false
+---
+
 # v3 Complete Fix Plan
 
 > **⚠️ 適用順序**
@@ -1876,25 +1924,3 @@ model DailyMetrics {
 | 25 | iOS | MainTabView に TabBar appearance 設定 |
 
 ---
-
-### To-dos（実装順）
-
-**P0: 最優先（アプリ動作不能を解消）**
-- [ ] パッチ1: VoiceSessionController - SDP エンドポイントを `/v1/realtime/calls` に修正
-- [ ] パッチ2: Info.plist - BGTaskSchedulerPermittedIdentifiers を追加
-
-**P1: UI完全一致（スクショ通りに）**
-- [ ] パッチ3-4: ProfileView - Language行削除、Traitsキーワード削除
-- [ ] パッチ5-6: TalkView - タイトル表示をヘッダに変更
-- [ ] パッチ7A-D: **Session完全反映（OrbView/Body/TopicPill/ControlsRow）** ← session.html準拠
-- [ ] パッチ25: MainTabView - TabBar appearance 設定（固定・背景付き）
-
-**P2: Data Integration・バックエンド連携**
-- [ ] パッチ8: MetricsUploader - BGTaskスケジュールとアップロード実装
-- [ ] パッチ9-11: HealthKitManager/ScreenTimeManager/MotionManager 新規作成
-- [ ] パッチ12-14: ProfileView - Data Integration トグルに権限リクエスト接続、Ideals/Struggles連携
-- [ ] パッチ15-16: BehaviorView - ストリークをサーバーベースに変更
-- [ ] パッチ17: Info.plist - HealthKit/Motion 使用説明を追加
-- [ ] パッチ18-19: Plan 画面修正（SettingsView パターンに統一）
-- [ ] パッチ20-21: バックエンド - /api/mobile/daily_metrics エンドポイント実装
-- [ ] パッチ22-24: バックエンド/iOS - streaks 追加

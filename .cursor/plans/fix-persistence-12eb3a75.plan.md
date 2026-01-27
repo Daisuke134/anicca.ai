@@ -1,4 +1,19 @@
-<!-- 12eb3a75-1f3d-446b-ab7f-f991b5cbaf4c 03a612d5-7128-4313-a9ac-e0a3234e6104 -->
+---
+name: データ永続化問題の修正
+overview: ""
+todos:
+  - id: ac898ec4-5b0e-424f-934f-1f0e14b24aa7
+    content: Staging.xcconfigのRESET_ON_LAUNCHをNOに変更
+    status: pending
+  - id: 0170a165-899d-42b5-8bb7-0bb1295bba59
+    content: HealthKitManagerの読み取り権限判定を修正
+    status: pending
+  - id: 622fd59f-1cde-424a-82ac-977ae18dff35
+    content: refreshSensorAccessAuthorizationsでローカル状態を維持する修正
+    status: pending
+isProject: false
+---
+
 # データ永続化問題の修正
 
 ## 問題の概要
@@ -92,9 +107,3 @@ func refreshSensorAccessAuthorizations(forceReauthIfNeeded _: Bool) async {
 - デバッグビルドでのテスト時にデータが永続化される
 - リリースビルドでHealthKitトグル状態が正しく維持される
 - ユーザーが一度許可した権限状態は、アプリ再起動後も維持される
-
-### To-dos
-
-- [ ] Staging.xcconfigのRESET_ON_LAUNCHをNOに変更
-- [ ] HealthKitManagerの読み取り権限判定を修正
-- [ ] refreshSensorAccessAuthorizationsでローカル状態を維持する修正

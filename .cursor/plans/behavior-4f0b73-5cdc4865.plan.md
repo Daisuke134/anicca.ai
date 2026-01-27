@@ -1,4 +1,22 @@
-<!-- 5cdc4865-246e-421e-99a0-4fbf823d3a20 eb0884e5-1400-41c5-96e6-e15c81cdbd24 -->
+---
+name: Behavior Tab Data Display Fix
+overview: ""
+todos:
+  - id: c858a3a4-dfde-4543-93cb-9f49c7c50193
+    content: "futureScenario.js: OpenAI APIエンドポイントを /v1/chat/completions に修正"
+    status: pending
+  - id: 6135ed89-4608-428a-8c17-553ae762cda6
+    content: "contextSnapshot.js: today_stats に sleepStartAt を追加"
+    status: pending
+  - id: 400907d5-3523-4a69-b6b7-70d56bebdeb8
+    content: "generateTodayInsight.js: AI生成モジュールを新規作成"
+    status: pending
+  - id: a1b2404f-d1b8-4266-97a6-ff62678eb89d
+    content: "behavior.js: AI生成Insightを統合"
+    status: pending
+isProject: false
+---
+
 # Behavior Tab Data Display Fix
 
 ## 問題の根本原因
@@ -69,10 +87,3 @@ wakeAt: today.wake_at ?? null,
 | Steps | `daily_metrics.steps` (HealthKit) |
 
 | Rumination | 計算式（SNS夜間使用等から算出）|
-
-### To-dos
-
-- [ ] futureScenario.js: OpenAI APIエンドポイントを /v1/chat/completions に修正
-- [ ] contextSnapshot.js: today_stats に sleepStartAt を追加
-- [ ] generateTodayInsight.js: AI生成モジュールを新規作成
-- [ ] behavior.js: AI生成Insightを統合

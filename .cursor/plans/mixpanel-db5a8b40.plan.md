@@ -1,4 +1,10 @@
-<!-- db5a8b40-2ab8-4154-bfdb-49f9f45e5b78 bf6df182-8a20-416a-ad01-6099553724c9 -->
+---
+name: Mixpanel朝会レポートシステム実装計画
+overview: ""
+todos: []
+isProject: false
+---
+
 # Mixpanel朝会レポートシステム実装計画
 
 ## 概要

@@ -1,4 +1,19 @@
-<!-- 2f076c5c-5c28-4345-a053-8379815c8bf0 e0a88a56-d1d2-4f62-8a6c-9aecfcbbe09a -->
+---
+name: Session画面の完全修正
+overview: ""
+todos:
+  - id: f4c1e318-81a7-4d28-ac68-cc81c99de34e
+    content: FeelingTopicにIdentifiableを追加
+    status: pending
+  - id: fa6e9bac-6425-4d82-8dcd-70c4cbcc3d6a
+    content: TalkViewをfullScreenCoverに変更
+    status: pending
+  - id: fd763ede-b4e8-49ef-9f2f-896bdcfdb64a
+    content: SessionViewを完全にsession.mdに一致させる
+    status: pending
+isProject: false
+---
+
 # Session画面の完全修正
 
 ## 問題の整理
@@ -119,9 +134,3 @@ enum FeelingTopic: String, CaseIterable, Identifiable {
 | ナビゲーションバーボーダー | なし | 1px solid rgba(200, 198, 191, 0.2) |
 
 | 背景色 | AppBackground | #F8F5ED |
-
-### To-dos
-
-- [ ] FeelingTopicにIdentifiableを追加
-- [ ] TalkViewをfullScreenCoverに変更
-- [ ] SessionViewを完全にsession.mdに一致させる

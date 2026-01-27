@@ -1,4 +1,10 @@
-<!-- 40fdb7b7-9a47-4fe9-be45-1700e5b17218 10054f9b-c205-4825-be1e-911d62e44c0c -->
+---
+name: 通知テキスト最適化
+overview: ""
+todos: []
+isProject: false
+---
+
 # 通知テキスト最適化
 
 ## 問題の背景

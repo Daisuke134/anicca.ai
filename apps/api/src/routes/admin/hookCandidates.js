@@ -1,5 +1,5 @@
 import express from 'express';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../generated/prisma/index.js';
 import requireInternalAuth from '../../middleware/requireInternalAuth.js';
 import baseLogger from '../../utils/logger.js';
 

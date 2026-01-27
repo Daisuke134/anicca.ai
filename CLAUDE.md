@@ -1629,6 +1629,101 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ---
 
+## API Key & Secret 管理（絶対ルール）
+
+### 原則: ユーザーにGUI操作を頼むな。エージェントが全部やれ。
+
+| ルール | 詳細 |
+|--------|------|
+| **GitHub Secrets 登録** | `gh secret set NAME --repo Daisuke134/anicca.ai` で CLI から登録。GUI は使わない |
+| **Railway 環境変数** | Railway Dashboard で確認（CLI 未導入のため）。値が必要な場合は下記リストを参照 |
+| **API Key をユーザーに聞くな** | 下記リストに全て記録済み。新しいキーが必要な場合のみユーザーに取得を依頼 |
+| **セキュリティ** | API Key は CLAUDE.md に**名前と用途のみ**記載。値は GitHub Secrets / Railway に保存済み |
+
+### GitHub Actions Secrets（Daisuke134/anicca.ai）
+
+| Secret Name | 用途 | 登録済み |
+|-------------|------|---------|
+| `OPENAI_API_KEY` | LLM（Nudge生成、TikTokエージェント、Vision） | ✅ |
+| `BLOTATO_API_KEY` | TikTok投稿（Blotato API） | ✅ |
+| `FAL_API_KEY` | 画像生成（Fal.ai） | ✅ |
+| `EXA_API_KEY` | トレンド検索（Exa） | ✅ |
+| `APIFY_API_TOKEN` | TikTokメトリクス取得（Apify） | ✅ |
+| `API_AUTH_TOKEN` | Railway API 認証（= Railway の INTERNAL_API_TOKEN） | ✅ |
+| `API_BASE_URL` | Railway Production URL | ✅ |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App Store提出 | ✅ |
+| `APPLE_ID` | App Store提出 | ✅ |
+| `APPLE_TEAM_ID` | App Store提出 | ✅ |
+
+### Railway 環境変数（主要なもの）
+
+| 変数名 | 用途 |
+|--------|------|
+| `DATABASE_URL` | PostgreSQL接続 |
+| `OPENAI_API_KEY` | Nudge生成 |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 補助サービス |
+| `REVENUECAT_*` | 決済連携 |
+| `APNS_*` | プッシュ通知 |
+
+**注意**: `INTERNAL_API_TOKEN` は Railway に設定済み。TikTok エージェント（GitHub Actions）が Railway API を叩く際の認証に使用。GitHub Secrets の `API_AUTH_TOKEN` と同じ値。
+
+### Railway URL
+
+| 環境 | URL |
+|------|-----|
+| Staging | `anicca-proxy-staging.up.railway.app` |
+| Production | `anicca-proxy-production.up.railway.app` |
+
+### Blotato アカウント
+
+| プラットフォーム | アカウント | Blotato Account ID |
+|-----------------|-----------|-------------------|
+| TikTok EN | @anicca.self | 28152 |
+
+### 新しい Secret の登録方法（エージェント向け）
+
+```bash
+# 1つずつ登録
+echo "VALUE" | gh secret set SECRET_NAME --repo Daisuke134/anicca.ai
+
+# 確認
+gh secret list --repo Daisuke134/anicca.ai
+```
+
+---
+
+## Cron ジョブ アーキテクチャ
+
+### 現在の構成
+
+| ジョブ | 実行環境 | スケジュール | 仕組み |
+|--------|---------|-------------|--------|
+| Nudge生成 | Railway Cron | `0 20 * * *` (5:00 JST) | `CRON_MODE=nudges` → `generateNudges.js` 直接実行 |
+| Type Stats集計 | Railway Cron | `0 21 * * *` (6:00 JST) | `CRON_MODE=aggregate_type_stats` → 直接実行 |
+| TikTok投稿 | GitHub Actions | `0 0 * * *` (9:00 JST) | Python エージェント |
+| TikTokメトリクス | GitHub Actions | `0 1 * * *` (10:00 JST) | Python スクリプト |
+
+### なぜ分離されているか
+
+| 比較 | Railway Cron | GitHub Actions |
+|------|-------------|----------------|
+| 言語 | Node.js | Python |
+| DB | 直接接続 | API経由 |
+| コスト | Railwayプランに含む | 無料 |
+| 用途 | ユーザー向け機能 | マーケティング自動化 |
+
+**ベストプラクティス**: 言語・依存関係・責務が異なるものは分離する（Separation of Concerns）。
+
+### スケーラビリティ
+
+| ユーザー数 | Nudge生成時間 | 対応 |
+|-----------|-------------|------|
+| 10-50 | 2-12分 | 現状のfor-loopで十分 |
+| 100+ | 25分+ | BullMQ + Redis に移行 |
+| 500+ | 要改善 | On-Demand生成 + キャッシュ |
+
+---
+
 ## 日報
 
 開発ログは `.cursor/logs/` に日付ごとに記録。
@@ -1638,4 +1733,4 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ---
 
-最終更新: 2026年1月27日（Netlify自動デプロイ明記、Fastlane全lane一覧・非インタラクティブモード対応、Maestro日本語テキスト注意点、Gitサブモジュールトラブルシューティング追加）
+最終更新: 2026年1月28日（API Key管理ルール追加、GitHub Secrets CLI管理、Cronアーキテクチャ文書化、Railway URL記載）

@@ -2,7 +2,7 @@
 
 > **関連Spec**: [main-spec.md](./main-spec.md)（本体）
 >
-> **最終更新**: 2026-01-27
+> **最終更新**: 2026-01-28
 
 ---
 
@@ -169,9 +169,10 @@ CREATE INDEX idx_hook_candidates_target_types ON hook_candidates USING GIN(targe
 CREATE TABLE tiktok_posts (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   hook_candidate_id UUID REFERENCES hook_candidates(id),
-  tiktok_video_id VARCHAR(100) UNIQUE,  -- 重複投稿防止
+  tiktok_video_id VARCHAR(100) UNIQUE,  -- 重複投稿防止（fetch_metrics.py で照合後にUPDATE）
   blotato_post_id VARCHAR(100),
   caption TEXT,
+  agent_reasoning TEXT,  -- エージェントの思考過程（なぜこのHook/トーンを選んだか）
   posted_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   metrics_fetched_at TIMESTAMPTZ,
   view_count BIGINT CHECK (view_count IS NULL OR view_count >= 0),  -- BIGINTで将来の大規模カウント対応
@@ -299,9 +300,10 @@ model TiktokPost {
   id                String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
   // hookCandidateId は NULL 許容（テスト投稿や分類未確定の投稿を許可）
   hookCandidateId   String?   @db.Uuid @map("hook_candidate_id")
-  tiktokVideoId     String?   @db.VarChar(100) @unique @map("tiktok_video_id")  // 重複投稿防止
+  tiktokVideoId     String?   @db.VarChar(100) @unique @map("tiktok_video_id")  // fetch_metrics.pyで照合後UPDATE
   blotatoPostId     String?   @db.VarChar(100) @map("blotato_post_id")
   caption           String?   @db.Text
+  agentReasoning    String?   @db.Text @map("agent_reasoning")  // エージェントの思考過程
   postedAt          DateTime  @default(now()) @db.Timestamptz @map("posted_at")
   metricsFetchedAt  DateTime? @db.Timestamptz @map("metrics_fetched_at")
   viewCount         BigInt?   @map("view_count")  // BIGINTで将来の大規模カウント対応

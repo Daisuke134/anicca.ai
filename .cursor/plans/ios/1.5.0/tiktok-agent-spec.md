@@ -2,7 +2,7 @@
 
 > **関連Spec**: [main-spec.md](./main-spec.md)（本体）、[db-schema-spec.md](./db-schema-spec.md)（DB）
 >
-> **最終更新**: 2026-01-27
+> **最終更新**: 2026-01-28
 >
 > **目的**: Aniccaがアプリの外（TikTok）で人々の苦しみを減らし、その結果から学んで賢くなる
 
@@ -182,12 +182,14 @@ fetch_metrics.py（24時間後に実行、機械的ジョブ）
 | 項目 | 内容 |
 |------|------|
 | 目的 | Fal.aiで画像を1枚生成 |
-| 入力 | `{ prompt: string }` |
+| 入力 | `{ prompt: string, model?: "ideogram" | "nano_banana" }` |
 | 出力 | `{ image_url: string }` |
-| 実装 | Fal.ai: `fal-ai/flux/schnell` モデル |
-| 画像仕様 | 1080x1920（9:16 TikTok縦型）、テキストオーバーレイ含む |
-| コスト | ~$0.003/画像 |
+| 実装 | Fal.ai: **`fal-ai/ideogram/v3`**（デフォルト）または `fal-ai/nano-banana-pro` |
+| 画像仕様 | 9:16 TikTok縦型、テキストオーバーレイ含む |
+| コスト | ~$0.02/画像（Ideogram v3） |
 | エラー時 | エラーメッセージを返す（エージェントがプロンプトを変えて再試行可能） |
+
+**モデル選択の根拠**: `flux/schnell`はテキスト描画精度が低い。TikTokのHook付き画像にはテキスト描画に強い`ideogram/v3`を採用。`nano-banana-pro`（Gemini 2.5 Flash）はフォールバック。既存 `fal_ai.py` に両メソッドが実装済み。
 
 ### 3.5 evaluate_image
 
@@ -216,10 +218,12 @@ fetch_metrics.py（24時間後に実行、機械的ジョブ）
 | 項目 | 内容 |
 |------|------|
 | 目的 | 投稿をtiktok_postsテーブルに記録 |
-| 入力 | `{ hook_candidate_id?: string, tiktok_video_id?: string, blotato_post_id: string, caption: string }` |
+| 入力 | `{ hook_candidate_id?: string, blotato_post_id: string, caption: string, agent_reasoning?: string }` |
 | 出力 | `{ success: boolean, record_id: string }` |
 | 実装 | API経由: `POST {API_BASE_URL}/api/admin/tiktok/posts` |
 | エラー時 | エラーメッセージを返す（投稿自体は成功している場合あり） |
+
+**注意**: `tiktok_video_id` は投稿時には不明（Blotatoが返すのは `blotato_post_id` のみ）。`tiktok_video_id` は翌日の `fetch_metrics.py` で Apify結果と照合して UPDATE する。`agent_reasoning` にはエージェントの思考過程（なぜこのHook/トーンを選んだか）を保存し、翌日の `get_yesterday_performance` で参照可能にする。
 
 ---
 
@@ -321,10 +325,10 @@ def execute_tool(tool_call):
 | エラー | エージェントの振る舞い |
 |--------|---------------------|
 | Exa API失敗 | トレンドなしで投稿（hook_candidatesのデータだけで判断） |
-| Fal.ai失敗 | プロンプトを変えて再試行（最大3回）→ 全失敗なら今日は投稿しない。`agent_log.json` に失敗理由・試行プロンプトを記録。GitHub Actionsのartifactとして保存 |
-| evaluate_image 3回リジェクト | 今日は投稿しない。`agent_log.json` に全3回の `quality_score` と `issues` を記録。翌日のエージェントが参照可能 |
-| Blotato失敗 | 投稿諦め。`agent_log.json` に記録 |
-| DB API失敗 | 投稿自体は成功の場合あり。`agent_log.json` に記録（投稿は成功、記録のみ失敗の旨） |
+| Fal.ai失敗 | プロンプトを変えて再試行（最大3回）→ 全失敗なら今日は投稿しない。失敗理由は `save_post_record` の `agent_reasoning` に記録 |
+| evaluate_image 3回リジェクト | 今日は投稿しない。全3回の `quality_score` と `issues` を `agent_reasoning` に記録 |
+| Blotato失敗 | 投稿諦め。`agent_reasoning` に記録 |
+| DB API失敗 | 投稿自体は成功の場合あり。`agent_log.json`（ローカル）に記録。GitHub Actionsのartifactとして保存 |
 | OpenAI API失敗 | セッション終了。GitHub Actionsが失敗通知（Actions標準のemail/Slack通知） |
 
 ---
@@ -353,21 +357,61 @@ def fetch_metrics():
         }
     )
 
-    # 3. 投稿を照合してメトリクスを更新
+    # 3. Apify結果をリストに集約
+    scraped_videos = []
     for item in apify_client.dataset(run["defaultDatasetId"]).iterate_items():
-        video_id = item["id"]
-        matching_post = find_matching_post(pending_posts, video_id)
-        if matching_post:
-            api.put(f"/api/admin/tiktok/posts/{matching_post['id']}/metrics", {
-                "view_count": item["playCount"],
-                "like_count": item["diggCount"],
-                "share_count": item["shareCount"],
-                "comment_count": item["commentCount"],
+        scraped_videos.append({
+            "video_id": item["id"],
+            "caption": item.get("text", ""),
+            "create_time": item["createTimeISO"],
+            "view_count": item["playCount"],
+            "like_count": item["diggCount"],
+            "share_count": item["shareCount"],
+            "comment_count": item["commentCount"],
+        })
+
+    # 4. tiktok_video_id が未設定の投稿を照合
+    #    照合戦略: posted_at ± 2時間 かつ caption 部分一致（最初の30文字）
+    for post in pending_posts:
+        if post.get("tiktok_video_id"):
+            # 既にvideo_id があるならメトリクスのみ更新
+            match = next((v for v in scraped_videos if v["video_id"] == post["tiktok_video_id"]), None)
+        else:
+            # video_id 未設定 → caption + 時刻で照合
+            match = match_by_caption_and_time(post, scraped_videos)
+
+        if match:
+            api.put(f"/api/admin/tiktok/posts/{post['id']}/metrics", {
+                "tiktok_video_id": match["video_id"],
+                "view_count": match["view_count"],
+                "like_count": match["like_count"],
+                "share_count": match["share_count"],
+                "comment_count": match["comment_count"],
             })
 
-    # 4. hook_candidatesのTikTok成績を更新
+    # 5. hook_candidatesのTikTok成績を更新
     api.post("/api/admin/hook-candidates/refresh-tiktok-stats")
+
+
+def match_by_caption_and_time(post, scraped_videos, time_window_hours=2):
+    """posted_at ± time_window_hours かつ caption先頭30文字一致で照合"""
+    from datetime import datetime, timedelta, timezone
+
+    post_time = datetime.fromisoformat(post["posted_at"].replace("Z", "+00:00"))
+    caption_prefix = (post.get("caption") or "")[:30]
+
+    for video in scraped_videos:
+        video_time = datetime.fromisoformat(video["create_time"].replace("Z", "+00:00"))
+        time_diff = abs((video_time - post_time).total_seconds())
+
+        if time_diff <= time_window_hours * 3600:
+            video_caption_prefix = (video.get("caption") or "")[:30]
+            if caption_prefix and video_caption_prefix and caption_prefix == video_caption_prefix:
+                return video
+    return None
 ```
+
+**tiktok_video_id 照合の根拠**: Blotato APIは投稿後にTikTokネイティブIDを返さない。Apify TikTok Scraperの出力に `id`（ネイティブ）と `createTimeISO` があるため、`posted_at` ± 2時間 + caption先頭30文字一致で照合する。照合成功後は `tiktok_video_id` をDBに永続化し、以降は直接IDマッチで高速化。
 
 ### 5.2 Apify Actor設定
 
@@ -392,6 +436,69 @@ def fetch_metrics():
 // 5. tiktok_high_performer = like_rate > 0.10 AND share_rate > 0.05 AND sample_size >= 5
 // 6. is_wisdom = app_tap_rate > 0.50 AND app_thumbs_up_rate > 0.60 AND tiktok_high_performer
 ```
+
+---
+
+## 5.5 Admin APIコントラクト（Track B バックエンド）
+
+**認証**: 全エンドポイントに `requireInternalAuth()` ミドルウェア適用（`INTERNAL_API_TOKEN` ヘッダー検証）。
+
+**実装場所**: `apps/api/src/routes/admin/tiktok.js`, `apps/api/src/routes/admin/hookCandidates.js`
+
+**ルート登録**: `apps/api/src/routes/index.js` に `/admin` プレフィックスで追加。
+
+### EP-1: GET /api/admin/tiktok/recent-posts
+
+| 項目 | 内容 |
+|------|------|
+| 用途 | 直近N日間のTikTok投稿と成績を取得（エージェントの `get_yesterday_performance` ツール用） |
+| パラメータ | `?days=1`（デフォルト1） |
+| レスポンス | `{ posts: [{ id, caption, posted_at, view_count, like_count, share_count, comment_count, like_rate, share_rate, agent_reasoning }] }` |
+| 計算フィールド | `like_rate = like_count / view_count`、`share_rate = share_count / view_count`（view_count=0なら0） |
+| データなし時 | `{ posts: [] }`（Day 1は空。エージェントは空でも動作可能） |
+
+### EP-2: GET /api/admin/hook-candidates
+
+| 項目 | 内容 |
+|------|------|
+| 用途 | Hook候補一覧を取得（エージェントの `get_hook_candidates` ツール用） |
+| パラメータ | `?limit=20&sort_by=app_tap_rate` |
+| レスポンス | `{ candidates: [...], meta: { currentPhase: 1|2|3, totalCandidates: N } }` |
+| Phase判定 | Phase 1: `metrics_fetched_at IS NOT NULL` < 10件、Phase 2: 10-29件、Phase 3: 30件以上 かつ `tiktok_sample_size >= 3` が5件以上 |
+
+### EP-3: POST /api/admin/tiktok/posts
+
+| 項目 | 内容 |
+|------|------|
+| 用途 | 投稿記録を保存（エージェントの `save_post_record` ツール用） |
+| リクエスト | `{ hook_candidate_id?: string, blotato_post_id: string, caption: string, agent_reasoning?: string }` |
+| レスポンス | `{ success: true, record_id: "uuid" }` |
+| バリデーション | `caption` 必須、`blotato_post_id` 必須 |
+
+### EP-4: PUT /api/admin/tiktok/posts/:id/metrics
+
+| 項目 | 内容 |
+|------|------|
+| 用途 | メトリクス更新（`fetch_metrics.py` 用） |
+| リクエスト | `{ tiktok_video_id?: string, view_count: number, like_count: number, share_count: number, comment_count: number }` |
+| レスポンス | `{ success: true }` |
+| 副作用 | `metrics_fetched_at = NOW()` を自動設定。`tiktok_video_id` が渡されたらUPDATE |
+
+### EP-5: GET /api/admin/tiktok/posts?metrics_pending=true
+
+| 項目 | 内容 |
+|------|------|
+| 用途 | メトリクス未取得の投稿を取得（`fetch_metrics.py` 用） |
+| フィルタ | `metrics_fetched_at IS NULL AND posted_at < NOW() - INTERVAL '20 hours'`（投稿後20時間以上経過） |
+| レスポンス | `{ posts: [{ id, caption, posted_at, tiktok_video_id, blotato_post_id }] }` |
+
+### EP-6: POST /api/admin/hook-candidates/refresh-tiktok-stats
+
+| 項目 | 内容 |
+|------|------|
+| 用途 | tiktok_posts からhook_candidatesのTikTok成績を再計算（`fetch_metrics.py` の最後に呼ぶ） |
+| 処理 | 各hook_candidateの `tiktok_like_rate`, `tiktok_share_rate`, `tiktok_sample_size`, `tiktok_high_performer`, `is_wisdom` を再計算 |
+| レスポンス | `{ success: true, updated: N }` |
 
 ---
 
@@ -597,6 +704,110 @@ apify-client>=1.0.0
 | 2 | TikTok投稿確認 | @anicca.self に投稿が表示されるか |
 | 3 | メトリクス取得確認 | 24時間後に fetch-metrics が成功するか |
 | 4 | 1週間後に学習確認 | hook_candidates の tiktok_* カラムが更新されているか |
+
+---
+
+---
+
+## 11. 実装判断メモ（2026-01-28 確定）
+
+### 11.1 画像生成モデル
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `fal-ai/ideogram/v3` をデフォルト、`fal-ai/nano-banana-pro` をフォールバック |
+| **根拠** | `flux/schnell` はテキスト描画精度が低い。TikTokのHook付き画像にはテキスト可読性が必須。既存 `fal_ai.py` に両メソッド実装済み |
+
+### 11.2 tiktok_video_id 照合戦略
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `posted_at ± 2時間` + `caption先頭30文字一致` で照合。照合成功後は `tiktok_video_id` をDBに永続化 |
+| **根拠** | Blotato APIはTikTokネイティブIDを返さない。Apify出力には `id` + `createTimeISO` + `text` があるため、時刻+キャプションで一意照合可能 |
+
+### 11.3 agent_reasoning 永続化
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `agent_log.json`（GitHub Actions artifact）ではなく、`tiktok_posts.agent_reasoning` カラムに保存 |
+| **根拠** | GitHub Actionsのartifactは翌日のエージェントから自動参照不可。DBに保存すれば `get_yesterday_performance` で取得可能 |
+
+### 11.4 hook_candidates 初期データ不足時のフォールバック
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `initHookLibrary.js` で既存データからの抽出が5件未満の場合、ペルソナベースの手動シードデータ（20件）をINSERT |
+| **根拠** | `HAVING COUNT(*) >= 5` で十分なHookが抽出できない可能性がある。エージェントのDay 1から `hook_candidates` が空だと学習ループが始まらない |
+
+**シードデータ例（ペルソナ直結）**:
+
+| text | tone | target_problem_types |
+|------|------|---------------------|
+| "6年間、何も変われなかった" | strict | {self_loathing, procrastination} |
+| "習慣アプリ10個全部挫折" | provocative | {procrastination, staying_up_late} |
+| "また3時まで起きてた？" | strict | {staying_up_late, cant_wake_up} |
+| "10個目の習慣アプリ、今度は何日もつ？" | provocative | {procrastination, self_loathing} |
+| "自分との約束、また破った？" | gentle | {self_loathing, lying} |
+
+### 11.5 initHookLibrary.js 実行タイミング
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | Track B 実装完了後、リリース前に1回手動実行（`node apps/api/src/scripts/initHookLibrary.js`） |
+| **根拠** | マイグレーション時には `nudge_events` のデータが必要。自動実行にするとCI/CDで不要な実行が発生する |
+
+### 11.6 セキュリティ: タイミングセーフトークン比較
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `requireInternalAuth.js` のトークン比較を `crypto.timingSafeEqual()` に変更 |
+| **根拠** | `===` 比較はタイミング攻撃に脆弱。Admin APIはTikTok投稿とDB書き込みを制御するため、セキュリティは必須 |
+| **追加対策** | `/api/admin/*` ルートに `express-rate-limit`（10 req/min）を適用 |
+
+### 11.7 GitHub Actions並行実行防止
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `concurrency: { group: "anicca-daily-post", cancel-in-progress: false }` をワークフローに追加 |
+| **根拠** | 手動dispatch + cron同時実行でダブル投稿のリスク |
+| **追加対策** | `save_post_record` API側で `posted_at >= CURRENT_DATE` の既存レコードチェック。当日投稿済みなら409 Conflict |
+
+### 11.8 video_id照合の堅牢化
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | caption正規化（ハッシュタグ除去、trim、lowercase） + prefix 50文字 + 複数マッチ時はスキップ |
+| **根拠** | Blotatoがcaptionを変形する可能性、同日重複投稿の可能性 |
+
+### 11.9 Admin API入力バリデーション
+
+| フィールド | 制約 | 根拠 |
+|-----------|------|------|
+| caption | <= 2200文字 | TikTokの文字数上限 |
+| agent_reasoning | <= 10000文字 | LLMの冗長出力防止 |
+| view_count等メトリクス | 0 <= x <= 1,000,000,000 | Apifyデータ破損防止 |
+| blotato_post_id | <= 100文字 | VARCHAR(100)と整合 |
+
+### 11.10 Fal.ai画像URL時限切れ対策
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | 画像生成直後にBlotato `upload_media(url)` で永続URLに変換。投稿時は永続URLを使用 |
+| **根拠** | Fal.ai生成URLは1-24時間で失効。Blotato投稿がキューに入る場合、URLが切れて投稿失敗のリスク |
+
+### 11.11 fetch_metrics.py の堅牢化
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | `try/finally` ブロックで `refresh-tiktok-stats` を必ず呼ぶ。EP-6はidempotent設計 |
+| **根拠** | 途中クラッシュでhook_candidatesが古いまま → エージェントが古いデータで判断するリスク |
+
+### 11.12 TikTok静止画投稿
+
+| 項目 | 決定 |
+|------|------|
+| **方針** | Blotato API経由で画像1枚をTikTokに投稿（フォト投稿モード） |
+| **根拠** | TikTokは2023年からフォト投稿対応。Blotato既存コード `post_to_tiktok()` で `mediaUrls` に画像URLを渡せば動作する。Phase 1では画像のみ、Phase 2以降でスライドショー→動画に拡張 |
 
 ---
 

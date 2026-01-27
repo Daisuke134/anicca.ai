@@ -2,7 +2,7 @@
 
 > **関連Spec**: [tiktok-agent-spec.md](./tiktok-agent-spec.md) | [db-schema-spec.md](./db-schema-spec.md)
 >
-> **最終更新**: 2026-01-28
+> **最終更新**: 2026-01-28（Spec改善: Admin APIコントラクト追加、画像モデル変更、video_id照合戦略確定、agent_reasoning追加）
 >
 > **スコープ**: クロスユーザー学習、Hook候補ライブラリ、学習ループ統合、受け入れ条件、タスクリスト、並列実装計画、テストマトリックス
 
@@ -411,23 +411,26 @@ HAVING COUNT(*) >= 3;
 | Problems更新（空） | `PUT /api/mobile/profile/problems` | `userTypeService.deleteEstimate(userId)` |
 | バックフィル | `node scripts/backfill-user-types.js` | 全ユーザーに対して `classifyAndSave` を実行 |
 
-### 5.2 Track B: Aniccaエージェント + TikTok自動投稿（Python）
+### 5.2 Track B: Aniccaエージェント + TikTok自動投稿（Python + Node.js Admin API）
 
 | # | タスク | ファイル | 優先度 |
 |---|--------|----------|--------|
+| B0a | Admin APIルート作成（TikTok） | `apps/api/src/routes/admin/tiktok.js`（新規） | 高 |
+| B0b | Admin APIルート作成（HookCandidates） | `apps/api/src/routes/admin/hookCandidates.js`（新規） | 高 |
+| B0c | Admin APIルート登録 | `apps/api/src/routes/index.js`（修正） | 高 |
 | B1 | Hook候補ライブラリ初期データ作成 | `apps/api/src/scripts/initHookLibrary.js` | 高 |
 | B2 | Aniccaエージェント本体 | `scripts/anicca-agent/anicca_tiktok_agent.py` | 高 |
 | B3 | ツール: search_trends（Exa API） | `scripts/anicca-agent/tools/search_trends.py` | 高 |
-| B4 | ツール: hook_candidates（DB読み取り） | `scripts/anicca-agent/tools/hook_candidates.py` | 高 |
-| B5 | ツール: generate_image（Fal.ai） | `scripts/anicca-agent/tools/generate_image.py` | 高 |
+| B4 | ツール: hook_candidates（API経由DB読み取り） | `scripts/anicca-agent/tools/hook_candidates.py` | 高 |
+| B5 | ツール: generate_image（Fal.ai **Ideogram v3**） | `scripts/anicca-agent/tools/generate_image.py` | 高 |
 | B6 | ツール: evaluate_image（OpenAI Vision） | `scripts/anicca-agent/tools/evaluate_image.py` | 中 |
 | B7 | ツール: post_to_tiktok（Blotato） | `scripts/anicca-agent/tools/post_to_tiktok.py` | 高 |
-| B8 | ツール: save_record（DB書き込み） | `scripts/anicca-agent/tools/save_record.py` | 高 |
-| B9 | メトリクス取得ジョブ（Apify） | `scripts/anicca-agent/fetch_metrics.py` | 高 |
+| B8 | ツール: save_record（API経由DB書き込み） | `scripts/anicca-agent/tools/save_record.py` | 高 |
+| B9 | メトリクス取得ジョブ（Apify + video_id照合） | `scripts/anicca-agent/fetch_metrics.py` | 高 |
 | B10 | GitHub Actions: daily-post | `.github/workflows/anicca-daily-post.yml` | 高 |
 | B11 | GitHub Actions: fetch-metrics | `.github/workflows/fetch-metrics.yml` | 高 |
-| B12 | DBマイグレーション（hook_candidates, tiktok_posts） | `apps/api/prisma/migrations/` | 高 |
-| B13 | Hook候補→指標反映ロジック | `scripts/anicca-agent/fetch_metrics.py`内 | 中 |
+| B12 | DBマイグレーション（tiktok_posts.agent_reasoning追加） | `apps/api/prisma/migrations/` | 高 |
+| B13 | Hook候補→指標反映ロジック | EP-6: refresh-tiktok-stats | 中 |
 
 ### 5.3 Track C: 学習ループ統合（A+B完了後）
 

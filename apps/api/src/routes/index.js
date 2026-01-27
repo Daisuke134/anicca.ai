@@ -1,8 +1,5 @@
 import express from 'express';
 
-// Realtime
-import realtimeDesktopRouter from './realtime/desktop.js';
-import realtimeWebRouter from './realtime/web.js';
 import mobileRouter from './mobile/index.js';
 
 // Proxy
@@ -40,8 +37,6 @@ import previewAppRouter from './preview/app.js';
 const router = express.Router();
 
 // Mount under /api prefix (kept by design)
-router.use('/realtime/desktop', realtimeDesktopRouter);
-router.use('/realtime/web', realtimeWebRouter);
 router.use('/mobile', mobileRouter);
 
 router.use('/proxy/claude', claudeProxyRouter);

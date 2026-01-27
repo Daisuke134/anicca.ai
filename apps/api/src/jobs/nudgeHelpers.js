@@ -353,7 +353,7 @@ export function validateNudgeSchedule(output, preferredLanguage = 'en') {
     if (item.content.length > charLimits.content * 2) return null;
   }
 
-  // Validate minimum interval (30 minutes)
+  // Validate minimum interval (60 minutes)
   try {
     validateMinimumInterval(output.schedule);
   } catch {
@@ -364,7 +364,7 @@ export function validateNudgeSchedule(output, preferredLanguage = 'en') {
 }
 
 /**
- * Validate minimum 30-minute interval between nudges
+ * Validate minimum 60-minute interval between nudges
  * @param {Array} schedule - Array of schedule items
  * @throws {Error} If nudges are too close
  */
@@ -379,7 +379,7 @@ export function validateMinimumInterval(schedule) {
     const prev = timeToMinutes(sorted[i - 1].scheduledTime);
     const curr = timeToMinutes(sorted[i].scheduledTime);
 
-    if (curr - prev < 30) {
+    if (curr - prev < 60) {
       throw new Error(`Nudges too close: ${sorted[i - 1].scheduledTime} and ${sorted[i].scheduledTime}`);
     }
   }
@@ -544,10 +544,94 @@ ${problemList}
 ## Tone Definitions
 ${toneDefinitions}
 
+## 🧠 Behavioral Science Grounding
+
+For each problem type, follow these evidence-based guidelines:
+
+### staying_up_late
+- Peak: Screen use 22:00-01:00. Melatonin suppressed within 2h of bedtime
+- Strategy: Preventive nudge 90min before bedtime > intervention during scrolling
+- NEVER: Lecture about sleep hygiene
+- DO: One concrete micro-action ("Put phone in another room for 10 min")
+- Urges fade within 30 minutes if not reinforced
+
+### cant_wake_up
+- Peak: Sleep inertia upon waking = cognitive impairment equal to 40h sleep deprivation
+- Strategy: Rapid micro-actions within 15min of alarm. Night-before prep is key
+- NEVER: Imply laziness. Sleep inertia is biological, not moral
+- DO: "Feet on the floor" or "Walk to window for light exposure"
+
+### self_loathing
+- Peak: Morning (cortisol awakening response) and evening (weakened cognitive control)
+- Strategy: Radical acceptance, not productivity language
+- NEVER: "You can do it!" (triggers past failure memories)
+- DO: "You're here. That's enough." Self-compassion reduces the self-criticism cycle
+
+### rumination
+- Peak: Night (21:00-01:00) when external distractions fade
+- Strategy: "Scheduled worry time" earlier in the day (evidence-based technique)
+- NEVER: "Just stop thinking about it" (backfires)
+- DO: Externalization — write it down, name the thought pattern, grounding exercise (5 senses)
+
+### procrastination
+- Peak: 13:00-15:00 (circadian energy dip). Evening bedtime procrastination
+- Strategy: Address the emotion, not the task
+- NEVER: "Just do it" or time management advice
+- DO: "What's the 2-minute version?" Acknowledge the feeling behind the avoidance
+
+### anxiety
+- Peak: Morning — Cortisol Awakening Response (50-60% spike 30-45min after waking)
+- Strategy: Physiological regulation before cognitive intervention
+- NEVER: "Don't worry" or "There's nothing to be afraid of"
+- DO: "Breathe in for 4, out for 6." Extended exhale activates parasympathetic system
+
+### lying
+- Peak: Afternoon (22% more likely) and evening (44% more likely) — "morning morality effect"
+- Strategy: Explore the emotional need behind the lie, not the lie itself
+- NEVER: Shame or moralize (triggers defensive lying)
+- DO: "What were you protecting?" Lying is often a learned survival strategy
+
+### bad_mouthing
+- Peak: Social hours, afternoon self-control decline, evening social media
+- Strategy: Redirect from judging others to understanding own reaction
+- NEVER: "Don't talk about people" (moralizing)
+- DO: "What did that person's behavior make you feel?" Address the underlying frustration
+
+### porn_addiction
+- Peak: 22:00-01:00 (privacy, fatigue, lowered inhibition). Urges last <30 minutes
+- Strategy: Urge surfing — observe without acting. Address emotional trigger (HALT: Hungry/Angry/Lonely/Tired)
+- NEVER: Shame or moral judgment (shame is #1 relapse trigger)
+- DO: "The urge is here. It will pass. You don't have to act on it."
+
+### alcohol_dependency
+- Peak: 20:00-21:00 craving peak (replicated in multiple studies). Trough at 08:00-09:00
+- Strategy: The craving is a wave — ride it past the peak
+- NEVER: "You shouldn't drink"
+- DO: "What can you do with your hands for the next 20 minutes?" (cooking, walking, stretching)
+
+### anger
+- Peak: Late afternoon/early evening (16:00-19:00). Biological "brake" loosens through the day
+- Strategy: Physical circuit-breaker first, emotional processing later
+- NEVER: "Calm down" (escalates anger)
+- DO: "Step away for 90 seconds. Splash cold water on your face." (vagal dive reflex)
+
+### obsessive
+- Peak: Night (21:00-03:00). OCD patients have delayed melatonin peak by 2 hours
+- Strategy: Cognitive defusion — change relationship with the thought, not the thought itself
+- NEVER: Reassure "It won't happen" (feeds the OCD cycle)
+- DO: "Notice the thought. Label it: 'That's an intrusive thought.' Let it pass like a cloud."
+
+### loneliness
+- Peak: Late evening/night (21:00-00:00). Circadian mood dip near midnight
+- Strategy: Micro-connections, not big social commitments
+- NEVER: "Join a club" or "Make more friends" (overwhelms someone already isolated)
+- DO: "Text one person right now. Even just an emoji." Validate the courage it takes
+
 ## Nudge Frequency Rules
-- Minimum interval: 30 minutes between nudges
-- Guideline: 2-10 nudges per day (flexible based on user response)
-- Base your schedule on what times actually worked for this person
+- Minimum interval: 60 minutes between nudges (EXCEPT cant_wake_up wake window 06:00-06:30: 15 min allowed)
+- Guideline: 4-8 nudges per day
+- Strategy mix: ~40% preventive (before peak), ~40% intervention (during peak), ~20% reflection (after/next morning)
+- Base schedule on peak times from behavioral science AND user's actual response patterns
 
 ## Output Requirements
 
@@ -569,7 +653,7 @@ Return JSON in this exact format:
 
 ## Critical Rules
 1. Learn from the story. Repeat what worked, avoid what failed.
-2. Minimum 30 minutes between nudges.
+2. Minimum 60 minutes between nudges.
 3. Character limits: Hook ≤ ${limits.hook}, Content ≤ ${limits.content}.
 4. ${languageInstruction}
 5. Every schedule item MUST have all required fields.`;

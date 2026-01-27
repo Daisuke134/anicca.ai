@@ -216,7 +216,7 @@ describe('validateNudgeSchedule', () => {
     expect(validateNudgeSchedule(invalidSchedule)).toBeNull();
   });
 
-  it('rejects nudges too close together', () => {
+  it('rejects nudges too close together (less than 60 min)', () => {
     const invalidSchedule = {
       schedule: [
         {
@@ -228,7 +228,7 @@ describe('validateNudgeSchedule', () => {
           reasoning: 'test'
         },
         {
-          scheduledTime: '22:15',
+          scheduledTime: '22:30',
           problemType: 'staying_up_late',
           hook: 'test2',
           content: 'test2',
@@ -250,18 +250,32 @@ describe('validateMinimumInterval', () => {
     ])).not.toThrow();
   });
 
-  it('passes for nudges 30+ minutes apart', () => {
+  it('passes for nudges 60+ minutes apart', () => {
     expect(() => validateMinimumInterval([
       { scheduledTime: '22:00' },
-      { scheduledTime: '22:30' }
+      { scheduledTime: '23:00' }
     ])).not.toThrow();
   });
 
-  it('throws for nudges less than 30 minutes apart', () => {
+  it('throws for nudges less than 60 minutes apart (AC7)', () => {
     expect(() => validateMinimumInterval([
       { scheduledTime: '22:00' },
-      { scheduledTime: '22:15' }
+      { scheduledTime: '22:30' }
     ])).toThrow('Nudges too close');
+  });
+
+  it('rejects 59-minute interval (test_validateMinimumInterval_rejects59min)', () => {
+    expect(() => validateMinimumInterval([
+      { scheduledTime: '22:00' },
+      { scheduledTime: '22:59' }
+    ])).toThrow('Nudges too close');
+  });
+
+  it('accepts exactly 60-minute interval', () => {
+    expect(() => validateMinimumInterval([
+      { scheduledTime: '22:00' },
+      { scheduledTime: '23:00' }
+    ])).not.toThrow();
   });
 });
 
@@ -303,7 +317,7 @@ describe('generateRuleBasedNudges', () => {
 });
 
 describe('buildPhase78Prompt', () => {
-  it('builds prompt with all sections', () => {
+  it('builds prompt with all sections including grounding (AC6)', () => {
     const result = buildPhase78Prompt({
       problems: ['staying_up_late'],
       preferredLanguage: 'ja',
@@ -319,7 +333,34 @@ describe('buildPhase78Prompt', () => {
     expect(result).toContain('Timing');
     expect(result).toContain('Weekly');
     expect(result).toContain('夜更かし');
-    expect(result).toContain('30 minutes');
+    // v1.5.0: 60分間隔に更新
+    expect(result).toContain('60 minutes');
+    // v1.5.0: グラウンディングセクション
+    expect(result).toContain('Behavioral Science Grounding');
+    expect(result).toContain('staying_up_late');
+    expect(result).toContain('NEVER');
+    expect(result).toContain('DO:');
+  });
+
+  it('includes grounding for all 13 problem types (test_buildPhase78Prompt_includesGrounding)', () => {
+    const result = buildPhase78Prompt({
+      problems: ['staying_up_late'],
+      preferredLanguage: 'en',
+      userStory: '',
+      hookContentPerformance: '',
+      timingPerformance: '',
+      weeklyPatterns: ''
+    });
+
+    const problemTypes = [
+      'staying_up_late', 'cant_wake_up', 'self_loathing', 'rumination',
+      'procrastination', 'anxiety', 'lying', 'bad_mouthing',
+      'porn_addiction', 'alcohol_dependency', 'anger', 'obsessive', 'loneliness'
+    ];
+
+    for (const pt of problemTypes) {
+      expect(result).toContain(`### ${pt}`);
+    }
   });
 
   it('uses English for en language', () => {
@@ -334,5 +375,20 @@ describe('buildPhase78Prompt', () => {
 
     expect(result).toContain('Staying Up Late');
     expect(result).toContain('Use English');
+  });
+
+  it('specifies 60-minute minimum interval in prompt (test_buildPhase78Prompt_60minInterval)', () => {
+    const result = buildPhase78Prompt({
+      problems: ['staying_up_late'],
+      preferredLanguage: 'en',
+      userStory: '',
+      hookContentPerformance: '',
+      timingPerformance: '',
+      weeklyPatterns: ''
+    });
+
+    expect(result).toContain('Minimum interval: 60 minutes');
+    expect(result).toContain('Minimum 60 minutes between nudges');
+    expect(result).not.toContain('Minimum interval: 30 minutes');
   });
 });

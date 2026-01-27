@@ -858,6 +858,7 @@ Spec ファイルは「設計の意図が明確で、AI が読んで実装でき
 - **iOS**: Swift, SwiftUI
 - **通知**: ProblemType-based Nudge System（ルールベース）
 - **API**: Node.js, Railway
+- **DB**: Railway PostgreSQL + Prisma（メインDB）。Supabaseは補助サービス（Slackトークン保存、Worker Memory、一部OAuth）として残存しているが、メインDBではない
 - **決済**: RevenueCat, Superwall
 - **分析**: Mixpanel, Singular
 
@@ -1476,6 +1477,7 @@ cd aniccaios && fastlane build_for_simulator
 | `coding-standards` | コードを書くとき（Swift/SwiftUI規約） |
 | `tdd-workflow` | テストを書くとき（TDD方法論） |
 | `codex-review` | Spec更新後、major step完了後（≥5files/公開API/infra変更）、コミット/PR/リリース前 |
+| `aso-growth` | ASO/ASA作業、キーワード最適化、Product Page改善、マーケティングメトリクス分析 |
 
 ### Serena MCP（コード作業時必須）
 

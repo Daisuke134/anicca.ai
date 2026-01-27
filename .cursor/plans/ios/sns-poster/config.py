@@ -158,6 +158,13 @@ TIKTOK_EXCLUDED = {
         "lang": "EN",
         "status": "reelfarm_active",
     },
+    "tt_anicca_self": {
+        "id": "28152",
+        "username": "@anicca.self",
+        "platform": "tiktok",
+        "lang": "EN",
+        "status": "connected",  # 2026-01-27: Blotato接続完了
+    },
     # 新アカウント作成後にここに追加 → ACCOUNTS に移動
     # "tt_new_jp": { "id": "???", "platform": "tiktok", "lang": "JP", "slots": ["09:00"] },
     # "tt_new_en": { "id": "???", "platform": "tiktok", "lang": "EN", "slots": ["09:00"] },

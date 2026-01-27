@@ -503,7 +503,8 @@ export function buildPhase78Prompt({
   userStory,
   hookContentPerformance,
   timingPerformance,
-  weeklyPatterns
+  weeklyPatterns,
+  crossUserPatterns = '',
 }) {
   const isJapanese = preferredLanguage === 'ja';
   const limits = isJapanese ? { hook: 12, content: 40 } : { hook: 25, content: 80 };
@@ -568,7 +569,7 @@ ${userStory}
 ${hookContentPerformance}
 ${timingPerformance}
 ${weeklyPatterns}
-
+${crossUserPatterns}
 ## This User's Problems
 ${problemList}
 

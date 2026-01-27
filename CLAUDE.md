@@ -857,8 +857,9 @@ Spec ファイルは「設計の意図が明確で、AI が読んで実装でき
 ### 技術スタック（アクティブ）
 - **iOS**: Swift, SwiftUI
 - **通知**: ProblemType-based Nudge System（ルールベース）
-- **API**: Node.js, Railway
-- **DB**: Railway PostgreSQL + Prisma（メインDB）。Supabaseは補助サービス（Slackトークン保存、Worker Memory、一部OAuth）として残存しているが、メインDBではない
+- **API**: Node.js, Railway Container
+- **メインDB**: Railway PostgreSQL（Prisma ORM経由）
+- **Supabase SDK**: 補助サービスのみ（Slackトークン保存、Worker Memory、Storage、一部OAuth）。DBとしては使用していない
 - **決済**: RevenueCat, Superwall
 - **分析**: Mixpanel, Singular
 

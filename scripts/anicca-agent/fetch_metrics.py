@@ -120,7 +120,7 @@ def match_post(db_post: dict, scraped_posts: list) -> dict | None:
         scraped_caption_norm = normalize_caption(scraped.get("text", ""))
         if not db_caption_norm or not scraped_caption_norm:
             continue
-        if db_caption_norm[:30] == scraped_caption_norm[:30]:
+        if db_caption_norm[:50] == scraped_caption_norm[:50]:
             matches.append(scraped)
 
     # Skip if ambiguous (multiple matches)

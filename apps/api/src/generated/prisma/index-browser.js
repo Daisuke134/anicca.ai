@@ -395,6 +395,7 @@ exports.Prisma.TiktokPostScalarFieldEnum = {
   likeCount: 'likeCount',
   commentCount: 'commentCount',
   shareCount: 'shareCount',
+  agentReasoning: 'agentReasoning',
   createdAt: 'createdAt'
 };
 

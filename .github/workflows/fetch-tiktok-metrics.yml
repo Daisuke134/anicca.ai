@@ -5,6 +5,9 @@ on:
     - cron: '0 1 * * *'  # 01:00 UTC = 10:00 JST (~25h after post)
   workflow_dispatch: {}   # Manual trigger
 
+permissions:
+  contents: read
+
 concurrency:
   group: fetch-tiktok-metrics
   cancel-in-progress: false

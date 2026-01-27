@@ -73,8 +73,8 @@ router.use('/tools/transcribe', transcribeRouter);
 
 router.use('/preview/app', previewAppRouter);
 
-// Admin API (requireInternalAuth on each router + rate limit 10 req/min)
-const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 10 });
+// Admin API (requireInternalAuth on each router + rate limit 30 req/min)
+const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 router.use('/admin/tiktok', adminLimiter, adminTiktokRouter);
 router.use('/admin/hook-candidates', adminLimiter, adminHookCandidatesRouter);
 

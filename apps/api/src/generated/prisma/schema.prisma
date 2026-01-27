@@ -374,6 +374,7 @@ model TiktokPost {
   likeCount        BigInt?   @map("like_count")
   commentCount     BigInt?   @map("comment_count")
   shareCount       BigInt?   @map("share_count")
+  agentReasoning   String?   @map("agent_reasoning") @db.Text
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
   hookCandidate HookCandidate? @relation(fields: [hookCandidateId], references: [id])

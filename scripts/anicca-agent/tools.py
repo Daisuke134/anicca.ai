@@ -15,9 +15,11 @@ from config import (
     TIKTOK_ACCOUNT_ID,
     IMAGE_QUALITY_THRESHOLD,
 )
+from openai import OpenAI
 from api_client import AdminAPIClient
 
 api = AdminAPIClient()
+_openai_client = OpenAI(api_key=OPENAI_API_KEY)
 
 # =============================================================================
 # OpenAI Tool Definitions (JSON Schema)
@@ -184,70 +186,69 @@ def search_trends(**kwargs):
 
 
 def generate_image(**kwargs):
-    prompt = kwargs["prompt"]
-    model = kwargs.get("model", "ideogram")
+    try:
+        prompt = kwargs["prompt"]
+        model = kwargs.get("model", "ideogram")
 
-    endpoint_map = {
-        "ideogram": "fal-ai/ideogram/v3",
-        "nano_banana": "fal-ai/nano-banana-pro",
-    }
-    endpoint = endpoint_map.get(model, "fal-ai/ideogram/v3")
+        endpoint_map = {
+            "ideogram": "fal-ai/ideogram/v3",
+            "nano_banana": "fal-ai/nano-banana-pro",
+        }
+        endpoint = endpoint_map.get(model, "fal-ai/ideogram/v3")
 
-    headers = {
-        "Authorization": f"Key {FAL_API_KEY}",
-        "Content-Type": "application/json",
-    }
-    payload = {
-        "prompt": prompt,
-        "aspect_ratio": "9:16",
-    }
+        headers = {
+            "Authorization": f"Key {FAL_API_KEY}",
+            "Content-Type": "application/json",
+        }
+        payload = {
+            "prompt": prompt,
+            "aspect_ratio": "9:16",
+        }
 
-    # Submit to queue
-    resp = requests.post(
-        f"{FAL_BASE_URL}/{endpoint}",
-        headers=headers,
-        json=payload,
-        timeout=30,
-    )
-    resp.raise_for_status()
-    queue_result = resp.json()
+        # Submit to queue
+        resp = requests.post(
+            f"{FAL_BASE_URL}/{endpoint}",
+            headers=headers,
+            json=payload,
+            timeout=30,
+        )
+        resp.raise_for_status()
+        queue_result = resp.json()
 
-    if "request_id" not in queue_result:
-        # Direct result
-        images = queue_result.get("images", [])
-        url = images[0].get("url", "") if images else ""
-        return json.dumps({"image_url": url})
-
-    # Poll for completion
-    status_url = queue_result.get("status_url", "")
-    response_url = queue_result.get("response_url", "")
-
-    for _ in range(60):  # 5 min timeout
-        time.sleep(5)
-        status_resp = requests.get(status_url, headers=headers, timeout=15)
-        status_resp.raise_for_status()
-        status = status_resp.json()
-        if status.get("status") == "COMPLETED":
-            result_resp = requests.get(response_url, headers=headers, timeout=15)
-            result_resp.raise_for_status()
-            result = result_resp.json()
-            images = result.get("images", [])
+        if "request_id" not in queue_result:
+            images = queue_result.get("images", [])
             url = images[0].get("url", "") if images else ""
             return json.dumps({"image_url": url})
-        if status.get("status") == "FAILED":
-            return json.dumps({"error": "Image generation failed", "image_url": ""})
 
-    return json.dumps({"error": "Image generation timed out", "image_url": ""})
+        # Poll for completion
+        status_url = queue_result.get("status_url", "")
+        response_url = queue_result.get("response_url", "")
+
+        for _ in range(60):  # 5 min timeout
+            time.sleep(5)
+            status_resp = requests.get(status_url, headers=headers, timeout=15)
+            status_resp.raise_for_status()
+            status = status_resp.json()
+            if status.get("status") == "COMPLETED":
+                result_resp = requests.get(response_url, headers=headers, timeout=15)
+                result_resp.raise_for_status()
+                result = result_resp.json()
+                images = result.get("images", [])
+                url = images[0].get("url", "") if images else ""
+                return json.dumps({"image_url": url})
+            if status.get("status") == "FAILED":
+                return json.dumps({"error": "Image generation failed", "image_url": ""})
+
+        return json.dumps({"error": "Image generation timed out", "image_url": ""})
+    except Exception as e:
+        return json.dumps({"error": str(e), "image_url": ""})
 
 
 def evaluate_image(**kwargs):
     image_url = kwargs["image_url"]
     intended_hook = kwargs["intended_hook"]
 
-    from openai import OpenAI
-    client = OpenAI(api_key=OPENAI_API_KEY)
-
-    response = client.chat.completions.create(
+    response = _openai_client.chat.completions.create(
         model="gpt-4o",
         messages=[
             {
@@ -315,7 +316,7 @@ def post_to_tiktok(**kwargs):
         data = resp.json()
         post_id = data.get("id", data.get("postId", "unknown"))
         return json.dumps({"success": True, "blotato_post_id": str(post_id)})
-    except requests.exceptions.HTTPError as e:
+    except requests.exceptions.RequestException as e:
         return json.dumps({"success": False, "error": str(e), "blotato_post_id": ""})
 
 

@@ -5,6 +5,9 @@ on:
     - cron: '0 0 * * *'  # 00:00 UTC = 09:00 JST
   workflow_dispatch: {}   # Manual trigger
 
+permissions:
+  contents: read
+
 concurrency:
   group: anicca-daily-post
   cancel-in-progress: false

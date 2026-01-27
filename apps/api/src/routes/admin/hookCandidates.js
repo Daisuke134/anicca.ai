@@ -83,7 +83,7 @@ router.post('/refresh-tiktok-stats', async (req, res) => {
   try {
     // Aggregate TikTok metrics per hook_candidate using raw SQL
     // This is idempotent: safe to call multiple times
-    const updated = await prisma.$executeRawUnsafe(`
+    const updated = await prisma.$executeRaw`
       UPDATE hook_candidates hc SET
         tiktok_like_rate = COALESCE(agg.like_rate, 0),
         tiktok_share_rate = COALESCE(agg.share_rate, 0),
@@ -117,7 +117,7 @@ router.post('/refresh-tiktok-stats', async (req, res) => {
         GROUP BY hook_candidate_id
       ) agg
       WHERE hc.id = agg.hook_candidate_id
-    `);
+    `;
 
     logger.info(`Refreshed TikTok stats for hook candidates (${updated} rows)`);
     res.json({ success: true, updated });

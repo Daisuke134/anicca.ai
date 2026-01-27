@@ -9,6 +9,8 @@ const logger = baseLogger.withContext('AdminTiktok');
 
 router.use(requireInternalAuth);
 
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 // =============================================================================
 // EP-1: GET /api/admin/tiktok/recent-posts
 // Agent tool: get_yesterday_performance
@@ -77,6 +79,9 @@ router.post('/posts', async (req, res) => {
     if (agent_reasoning && agent_reasoning.length > 10000) {
       return res.status(400).json({ error: 'agent_reasoning exceeds 10000 characters' });
     }
+    if (hook_candidate_id && !UUID_RE.test(hook_candidate_id)) {
+      return res.status(400).json({ error: 'hook_candidate_id must be a valid UUID' });
+    }
 
     // Duplicate guard: 1 post per day
     const todayStart = new Date();
@@ -104,6 +109,10 @@ router.post('/posts', async (req, res) => {
     logger.info(`TikTok post saved: ${post.id}`);
     res.json({ success: true, record_id: post.id });
   } catch (error) {
+    // P2002 = unique constraint violation (one-post-per-day DB index)
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'Already posted today (DB constraint)' });
+    }
     logger.error('Failed to save post record', error);
     res.status(500).json({ error: 'Failed to save post record' });
   }
@@ -116,6 +125,9 @@ router.post('/posts', async (req, res) => {
 router.put('/posts/:id/metrics', async (req, res) => {
   try {
     const { id } = req.params;
+    if (!UUID_RE.test(id)) {
+      return res.status(400).json({ error: 'id must be a valid UUID' });
+    }
     const { tiktok_video_id, view_count, like_count, share_count, comment_count } = req.body;
 
     const MAX_METRIC = 1_000_000_000;

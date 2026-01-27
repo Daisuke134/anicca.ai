@@ -15,7 +15,7 @@ API_AUTH_TOKEN = os.environ.get("API_AUTH_TOKEN", "")
 
 # Blotato
 BLOTATO_BASE_URL = "https://backend.blotato.com/v2"
-TIKTOK_ACCOUNT_ID = "28152"  # @anicca.self
+TIKTOK_ACCOUNT_ID = os.environ.get("TIKTOK_ACCOUNT_ID", "28152")  # @anicca.self
 
 # Fal.ai
 FAL_BASE_URL = "https://queue.fal.run"
@@ -24,3 +24,9 @@ FAL_BASE_URL = "https://queue.fal.run"
 MODEL = "gpt-4o"
 MAX_RETRIES = 2
 IMAGE_QUALITY_THRESHOLD = 6  # minimum score to post (1-10)
+
+# Startup validation
+REQUIRED_KEYS = ["OPENAI_API_KEY", "BLOTATO_API_KEY", "FAL_API_KEY", "API_BASE_URL", "API_AUTH_TOKEN"]
+_missing = [k for k in REQUIRED_KEYS if not os.environ.get(k)]
+if _missing:
+    raise EnvironmentError(f"Missing required environment variables: {', '.join(_missing)}")

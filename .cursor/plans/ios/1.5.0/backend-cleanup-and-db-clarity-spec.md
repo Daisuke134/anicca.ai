@@ -117,6 +117,7 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `examples/` | 8.3GB | DEAD — サンプルプロジェクト45個 |
 | `plantuml/` | 48MB | DEAD — ツールクローン |
 | `apps/web/` | 120KB | DORMANT — 2021年以降停止 |
+| `apps/workspace-mcp/` | — | DEAD — Google Workspace MCP。参照は `apps/desktop/` のみ（同時削除）。デプロイ・ビルド・CI 参照ゼロ。最終更新 2025/09 |
 
 **To-Be**: 全て削除
 
@@ -163,6 +164,7 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | 8 | `examples/` 削除 | `test ! -d examples/` | ✅ |
 | 9 | `plantuml/` 削除 | `test ! -d plantuml/` | ✅ |
 | 10 | `apps/web/` 削除 | `test ! -d apps/web/` | ✅ |
+| 10b | `apps/workspace-mcp/` 削除 | `test ! -d apps/workspace-mcp/` | ✅ |
 | 11 | Dead パッケージ削除 | `grep "text-to-speech" package.json` → 0件 | ✅ |
 | 12 | package.json description 更新 | description に "Anicca" が含まれる | ✅ |
 | 13 | CLAUDE.md DB 記述正確 | テキスト確認 | ✅ |
@@ -213,8 +215,9 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `docs/electron.md` | — |
 | `docs/desktop-auth-and-mcp-token-architecture.md` | — |
 | `docs/desktop-billing-subscription-plan.md` | — |
+| `apps/workspace-mcp/` | — |
 
-**合計削除**: 約 13.8GB
+**合計削除**: 約 13.8GB+
 
 ---
 
@@ -244,6 +247,7 @@ rm docs/electron.md docs/desktop-auth-and-mcp-token-architecture.md docs/desktop
 rm -rf examples/
 rm -rf plantuml/
 rm -rf apps/web/
+rm -rf apps/workspace-mcp/
 
 # 4. Dead パッケージ削除
 # package.json から @google-cloud/text-to-speech を削除（音声機能削除済み）
@@ -265,7 +269,7 @@ cd apps/api && npm test
 # 9. コミット（フェーズごと）
 git add -A && git commit -m "refactor: remove dead Prisma models (HabitLog, MobileAlarmSchedule)"
 git add -A && git commit -m "refactor: remove Desktop/Web Realtime remnants and handler files"
-git add -A && git commit -m "refactor: remove dead directories (examples, plantuml, apps/web, release)"
+git add -A && git commit -m "refactor: remove dead directories (examples, plantuml, apps/web, workspace-mcp, release)"
 git add -A && git commit -m "chore: remove unused @google-cloud/text-to-speech, update package description"
 git add -A && git commit -m "docs: clarify DB architecture in CLAUDE.md"
 git add -A && git commit -m "docs: add Supabase SDK usage comments for clarity"

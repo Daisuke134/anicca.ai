@@ -68,10 +68,13 @@ Railway PostgreSQL → Supabase PostgreSQL への移行は**将来のオプシ�
 | AC8 | CLAUDE.md の DB 記述が正確（Railway PostgreSQL が明記） | CLAUDE.md に「Railway PostgreSQL」の記述がある |
 | AC9 | Supabase SDK の用途がコード内コメントで明確 | `slackTokens.supabase.js` 冒頭に用途コメントがある |
 | AC10 | 全既存 API テストが PASS する | `cd apps/api && npm test` → all pass |
-| AC11 | Desktop API ハンドラファイル（3ファイル）が削除されている | 該当ファイルが存在しない |
-| AC12 | Web Realtime ルート登録が routes/index.js から除去されている | `grep -c "web" apps/api/src/routes/realtime/` → 0 |
+| AC11 | Desktop API ハンドラファイル（3ファイル）が削除されている | `desktopSession.js`, `desktopStop.js`, `desktop.js` が存在しない |
+| AC12 | Web Realtime ルート登録が routes/index.js から除去されている | `grep -c "realtimeWeb" apps/api/src/routes/index.js` → 0 |
 | AC13 | `@google-cloud/text-to-speech` が package.json から削除されている | `grep -c "text-to-speech" package.json` → 0 |
 | AC14 | package.json の description が正確 | description に "Anicca" が含まれている |
+| AC15 | `apps/workspace-mcp/` ディレクトリが削除されている | `test ! -d apps/workspace-mcp/` |
+| AC16 | `apps/api/src/routes/realtime/` 空ディレクトリが削除されている | `test ! -d apps/api/src/routes/realtime/` |
+| AC17 | `apps/api/src/api/proxy/realtime/` 空ディレクトリが削除されている | `test ! -d apps/api/src/api/proxy/realtime/` |
 
 ---
 
@@ -79,14 +82,14 @@ Railway PostgreSQL → Supabase PostgreSQL への移行は**将来のオプシ�
 
 ### 3.1 Prisma Schema
 
-**As-Is**: 20 モデル（うち 2 つ Dead）
+**As-Is**: 25 モデル（うち 2 つ Dead）
 
 ```
 model HabitLog { ... }           ← DEAD（ProblemType ベースに置換済み）
 model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換済み）
 ```
 
-**To-Be**: 18 モデル（Dead モデル削除）
+**To-Be**: 23 モデル（Dead モデル 2 つ削除）
 
 ### 3.2 Desktop 残骸
 
@@ -105,8 +108,10 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | Desktop 認証設計 | `docs/desktop-auth-and-mcp-token-architecture.md` | — |
 | Desktop 課金設計 | `docs/desktop-billing-subscription-plan.md` | — |
 | Desktop バイナリ | `release/` | 805MB |
+| Realtime ルートディレクトリ（空になる） | `apps/api/src/routes/realtime/` | — |
+| Realtime ハンドラディレクトリ（空になる） | `apps/api/src/api/proxy/realtime/` | — |
 
-**To-Be**: 全て削除
+**To-Be**: 全て削除（ファイル削除後に空になる親ディレクトリも含む）
 
 ### 3.3 Dead ディレクトリ
 
@@ -117,7 +122,7 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `examples/` | 8.3GB | DEAD — サンプルプロジェクト45個 |
 | `plantuml/` | 48MB | DEAD — ツールクローン |
 | `apps/web/` | 120KB | DORMANT — 2021年以降停止 |
-| `apps/workspace-mcp/` | — | DEAD — Google Workspace MCP。参照は `apps/desktop/` のみ（同時削除）。デプロイ・ビルド・CI 参照ゼロ。最終更新 2025/09 |
+| `apps/workspace-mcp/` | — | DEAD — Google Workspace MCP。参照は `apps/desktop/` のみ（同時削除）。デプロイ・ビルド・CI 参照ゼロ |
 
 **To-Be**: 全て削除
 
@@ -138,7 +143,21 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 
 **As-Is**: `slackTokens.supabase.js` 等のファイル名が「Supabase = メイン DB」と誤解させる
 
-**To-Be**: 各 Supabase import ファイルの冒頭にコメント追加:
+**対象ファイル（`createClient` で直接 Supabase SDK を使用する 9 ファイル）:**
+
+| # | ファイル | 用途 |
+|---|---------|------|
+| 1 | `services/tokens/slackTokens.supabase.js` | Slack トークン key-value 保存 |
+| 2 | `services/storage/workerMemory.js` | Worker Memory の Supabase Storage 永続化 |
+| 3 | `services/parallel-sdk/utils/PreviewManager.js` | プレビューアプリの Supabase Storage 保存 |
+| 4 | `services/parallel-sdk/core/ParentAgent.js` | Supabase クライアント初期化 + Slack トークン取得 |
+| 5 | `api/auth/entitlement.js` | Supabase Auth（ユーザー検証） |
+| 6 | `api/auth/google/oauth.js` | Supabase Auth（OAuth 開始） |
+| 7 | `api/auth/google/callback.js` | Supabase Auth（OAuth コールバック） |
+| 8 | `api/auth/google/refresh.js` | Supabase Auth（セッションリフレッシュ） |
+| 9 | `api/static/preview-app.js` | Supabase Storage（プレビューファイル配信） |
+
+**To-Be**: 上記 9 ファイルの冒頭にコメント追加:
 
 ```javascript
 /**
@@ -165,6 +184,8 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | 9 | `plantuml/` 削除 | `test ! -d plantuml/` | ✅ |
 | 10 | `apps/web/` 削除 | `test ! -d apps/web/` | ✅ |
 | 10b | `apps/workspace-mcp/` 削除 | `test ! -d apps/workspace-mcp/` | ✅ |
+| 10c | `routes/realtime/` 空ディレクトリ削除 | `test ! -d apps/api/src/routes/realtime/` | ✅ |
+| 10d | `api/proxy/realtime/` 空ディレクトリ削除 | `test ! -d apps/api/src/api/proxy/realtime/` | ✅ |
 | 11 | Dead パッケージ削除 | `grep "text-to-speech" package.json` → 0件 | ✅ |
 | 12 | package.json description 更新 | description に "Anicca" が含まれる | ✅ |
 | 13 | CLAUDE.md DB 記述正確 | テキスト確認 | ✅ |
@@ -216,6 +237,8 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `docs/desktop-auth-and-mcp-token-architecture.md` | — |
 | `docs/desktop-billing-subscription-plan.md` | — |
 | `apps/workspace-mcp/` | — |
+| `apps/api/src/routes/realtime/` | — （ファイル削除後の空ディレクトリ） |
+| `apps/api/src/api/proxy/realtime/` | — （ファイル削除後の空ディレクトリ） |
 
 **合計削除**: 約 13.8GB+
 
@@ -240,8 +263,13 @@ rm -rf apps/desktop/
 rm -rf release/
 rm docs/electron.md docs/desktop-auth-and-mcp-token-architecture.md docs/desktop-billing-subscription-plan.md
 # routes/index.js から desktop + web realtime の import と登録を削除
-# desktopSession.js, desktopStop.js, desktop.js ルートファイルを削除
-# webSession.js, web.js ルートファイルを削除
+rm apps/api/src/routes/realtime/desktop.js
+rm apps/api/src/routes/realtime/web.js
+rmdir apps/api/src/routes/realtime/  # 空ディレクトリ削除
+rm apps/api/src/api/proxy/realtime/desktopSession.js
+rm apps/api/src/api/proxy/realtime/desktopStop.js
+rm apps/api/src/api/proxy/realtime/webSession.js
+rmdir apps/api/src/api/proxy/realtime/  # 空ディレクトリ削除
 
 # 3. Dead ディレクトリ削除
 rm -rf examples/
@@ -266,13 +294,41 @@ git worktree prune  # stale worktree 参照を削除
 # 8. テスト実行
 cd apps/api && npm test
 
-# 9. コミット（フェーズごと）
-git add -A && git commit -m "refactor: remove dead Prisma models (HabitLog, MobileAlarmSchedule)"
-git add -A && git commit -m "refactor: remove Desktop/Web Realtime remnants and handler files"
-git add -A && git commit -m "refactor: remove dead directories (examples, plantuml, apps/web, workspace-mcp, release)"
-git add -A && git commit -m "chore: remove unused @google-cloud/text-to-speech, update package description"
-git add -A && git commit -m "docs: clarify DB architecture in CLAUDE.md"
-git add -A && git commit -m "docs: add Supabase SDK usage comments for clarity"
+# 9. コミット（フェーズごとに対象ファイルを明示的にステージング）
+# ⚠️ git add -A は使わない。各コミットで対象ファイルを明示する。
+
+# Commit 1: Dead Prisma モデル
+git add apps/api/prisma/schema.prisma
+git commit -m "refactor: remove dead Prisma models (HabitLog, MobileAlarmSchedule)"
+
+# Commit 2: Desktop + Web Realtime 残骸
+git add apps/desktop/ release/ docs/electron.md docs/desktop-auth-and-mcp-token-architecture.md docs/desktop-billing-subscription-plan.md
+git add apps/api/src/routes/index.js apps/api/src/routes/realtime/ apps/api/src/api/proxy/realtime/
+git commit -m "refactor: remove Desktop/Web Realtime remnants and handler files"
+
+# Commit 3: Dead ディレクトリ
+git add examples/ plantuml/ apps/web/ apps/workspace-mcp/
+git commit -m "refactor: remove dead directories (examples, plantuml, apps/web, workspace-mcp)"
+
+# Commit 4: Dead パッケージ
+git add apps/api/package.json apps/api/package-lock.json
+git commit -m "chore: remove unused @google-cloud/text-to-speech, update package description"
+
+# Commit 5: CLAUDE.md
+git add CLAUDE.md
+git commit -m "docs: clarify DB architecture in CLAUDE.md"
+
+# Commit 6: Supabase コメント
+git add apps/api/src/services/tokens/slackTokens.supabase.js
+git add apps/api/src/services/storage/workerMemory.js
+git add apps/api/src/services/parallel-sdk/utils/PreviewManager.js
+git add apps/api/src/services/parallel-sdk/core/ParentAgent.js
+git add apps/api/src/api/auth/entitlement.js
+git add apps/api/src/api/auth/google/oauth.js
+git add apps/api/src/api/auth/google/callback.js
+git add apps/api/src/api/auth/google/refresh.js
+git add apps/api/src/api/static/preview-app.js
+git commit -m "docs: add Supabase SDK usage comments for clarity"
 ```
 
 ### ⚠️ Prisma Migration 警告
@@ -317,3 +373,31 @@ git add -A && git commit -m "docs: add Supabase SDK usage comments for clarity"
 | A9 | `docs/` 全体に stale ファイル多数 | 別 Spec でまとめてクリーンアップ |
 | A10 | Stripe 課金コードが Desktop 残骸 | 影響範囲大。別 Spec |
 | A11 | Desktop 用 Prisma モデル（usage 系） | mobile も参照。別 Spec で分析 |
+
+---
+
+## 8. GATE 1 レビュー結果（code-quality-reviewer）
+
+**Verdict: ok: true** — BLOCKING issue なし。
+
+### 対応済み（ADVISORY → Spec に反映）
+
+| # | 指摘 | 対応 |
+|---|------|------|
+| G1-A1 | AC12 の検証対象が `routes/realtime/` → `routes/index.js` の方が正確 | AC12 を `grep -c "realtimeWeb" routes/index.js` に修正 |
+| G1-A2 | `routes/realtime/` ディレクトリが空になるが削除未記載 | AC16, As-Is 3.2, 削除対象リスト, 実行手順に追加 |
+| G1-A3 | Supabase ファイル数「9」の根拠が不明 | 3.5 に全9ファイルの具体名と用途を列挙 |
+| G1-A5 | `git add -A` ではなく具体的ファイル指定すべき | 実行手順 Commit 1-6 を全て具体ファイル指定に修正 |
+| G1-A6 | `api/proxy/realtime/` も空になるが削除未記載 | AC17, As-Is 3.2, 削除対象リスト, 実行手順に追加 |
+
+### 検証結果（コードベース照合）
+
+| Spec の主張 | 検証結果 |
+|------------|---------|
+| HabitLog / MobileAlarmSchedule が Dead | ✅ アプリコード参照ゼロ |
+| Desktop ルート登録が routes/index.js に存在 | ✅ 確認 |
+| Web Realtime ルート登録が routes/index.js に存在 | ✅ 確認 |
+| Desktop ハンドラ 3 ファイル存在 | ✅ `desktopSession.js`, `desktopStop.js`, `webSession.js` |
+| `@google-cloud/text-to-speech` 未使用 | ✅ import ゼロ |
+| Dead ディレクトリ 6 個存在 | ✅ 全確認 |
+| 総モデル数 | ⚠️ Spec 旧値「20」→ 実測「25」に修正済み |

@@ -353,8 +353,8 @@ export function validateNudgeSchedule(output, preferredLanguage = 'en') {
     if (item.content.length > charLimits.content * 2) return null;
   }
 
-  // Auto-fix minimum interval (60 minutes) — shift instead of reject
-  output.schedule = autoFixInterval(output.schedule);
+  // Log interval warnings (don't reject — LLM content is too valuable to throw away)
+  logIntervalWarnings(output.schedule);
 
   return output;
 }
@@ -389,34 +389,27 @@ export function validateMinimumInterval(schedule) {
  * @param {Array} schedule - Array of schedule items
  * @returns {Array} Fixed schedule with adjusted times
  */
-export function autoFixInterval(schedule) {
-  if (schedule.length <= 1) return schedule;
+/**
+ * Log warnings for nudges closer than 60 minutes apart.
+ * Does NOT reject or modify the schedule — just logs for monitoring.
+ * If warnings are frequent, fix the prompt to improve LLM compliance.
+ * @param {Array} schedule - Array of schedule items
+ */
+export function logIntervalWarnings(schedule) {
+  if (schedule.length <= 1) return;
 
   const sorted = [...schedule].sort((a, b) =>
     a.scheduledTime.localeCompare(b.scheduledTime)
   );
 
-  const fixed = [sorted[0]];
-
   for (let i = 1; i < sorted.length; i++) {
-    const prevMinutes = timeToMinutes(fixed[fixed.length - 1].scheduledTime);
-    const currMinutes = timeToMinutes(sorted[i].scheduledTime);
+    const prev = timeToMinutes(sorted[i - 1].scheduledTime);
+    const curr = timeToMinutes(sorted[i].scheduledTime);
 
-    if (currMinutes - prevMinutes < 60) {
-      const newMinutes = prevMinutes + 60;
-      const newHour = Math.floor(newMinutes / 60) % 24;
-      const newMin = newMinutes % 60;
-      const newTime = `${String(newHour).padStart(2, '0')}:${String(newMin).padStart(2, '0')}`;
-
-      console.log(`⏰ [AutoFix] Shifted ${sorted[i].scheduledTime}→${newTime} (${sorted[i].problemType}: "${sorted[i].hook}") - too close to ${fixed[fixed.length - 1].scheduledTime}`);
-
-      fixed.push({ ...sorted[i], scheduledTime: newTime });
-    } else {
-      fixed.push(sorted[i]);
+    if (curr - prev < 60) {
+      console.log(`⚠️ [IntervalWarning] ${sorted[i - 1].scheduledTime} → ${sorted[i].scheduledTime} (${curr - prev}min apart) | ${sorted[i].problemType}: "${sorted[i].hook}"`);
     }
   }
-
-  return fixed;
 }
 
 /**

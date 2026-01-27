@@ -11,7 +11,7 @@ import {
   getWeeklyPatterns,
   validateNudgeSchedule,
   validateMinimumInterval,
-  autoFixInterval,
+  logIntervalWarnings,
   timeToMinutes,
   generateRuleBasedNudges,
   buildPhase78Prompt
@@ -217,7 +217,7 @@ describe('validateNudgeSchedule', () => {
     expect(validateNudgeSchedule(invalidSchedule)).toBeNull();
   });
 
-  it('auto-fixes nudges too close together instead of rejecting (v1.5.0)', () => {
+  it('passes nudges with close intervals through (logs warning only, no rejection)', () => {
     const closeSchedule = {
       schedule: [
         {
@@ -243,8 +243,8 @@ describe('validateNudgeSchedule', () => {
     const result = validateNudgeSchedule(closeSchedule);
     expect(result).not.toBeNull();
     expect(result.schedule[0].scheduledTime).toBe('22:00');
-    expect(result.schedule[1].scheduledTime).toBe('23:00'); // shifted from 22:30
-    expect(result.schedule[1].hook).toBe('test2'); // content preserved
+    expect(result.schedule[1].scheduledTime).toBe('22:30'); // kept as-is, just logged
+    expect(result.schedule[1].hook).toBe('test2');
   });
 });
 
@@ -284,46 +284,34 @@ describe('validateMinimumInterval', () => {
   });
 });
 
-describe('autoFixInterval', () => {
-  it('returns schedule unchanged when intervals are OK', () => {
+describe('logIntervalWarnings', () => {
+  it('logs warning for nudges less than 60 minutes apart', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+    const schedule = [
+      { scheduledTime: '20:30', problemType: 'staying_up_late', hook: 'h1' },
+      { scheduledTime: '21:00', problemType: 'rumination', hook: 'h2' },
+      { scheduledTime: '22:00', problemType: 'staying_up_late', hook: 'h3' }
+    ];
+    logIntervalWarnings(schedule);
+    expect(consoleSpy).toHaveBeenCalledTimes(1); // only 20:30→21:00 is too close
+    expect(consoleSpy.mock.calls[0][0]).toContain('IntervalWarning');
+    consoleSpy.mockRestore();
+  });
+
+  it('does not log when all intervals are 60+ minutes', () => {
+    const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const schedule = [
       { scheduledTime: '09:00', problemType: 'anxiety', hook: 'h1' },
       { scheduledTime: '12:00', problemType: 'anxiety', hook: 'h2' }
     ];
-    const result = autoFixInterval(schedule);
-    expect(result[0].scheduledTime).toBe('09:00');
-    expect(result[1].scheduledTime).toBe('12:00');
+    logIntervalWarnings(schedule);
+    expect(consoleSpy).not.toHaveBeenCalled();
+    consoleSpy.mockRestore();
   });
 
-  it('shifts nudges forward to enforce 60-min interval', () => {
-    const schedule = [
-      { scheduledTime: '20:30', problemType: 'staying_up_late', hook: 'h1' },
-      { scheduledTime: '21:00', problemType: 'rumination', hook: 'h2' },
-      { scheduledTime: '21:30', problemType: 'staying_up_late', hook: 'h3' }
-    ];
-    const result = autoFixInterval(schedule);
-    expect(result[0].scheduledTime).toBe('20:30');
-    expect(result[1].scheduledTime).toBe('21:30'); // 21:00→21:30
-    expect(result[2].scheduledTime).toBe('22:30'); // 21:30→22:30
-  });
-
-  it('preserves hook/content/tone when shifting', () => {
-    const schedule = [
-      { scheduledTime: '22:00', problemType: 'anger', hook: 'original1', content: 'c1', tone: 'strict' },
-      { scheduledTime: '22:15', problemType: 'anger', hook: 'original2', content: 'c2', tone: 'gentle' }
-    ];
-    const result = autoFixInterval(schedule);
-    expect(result[1].hook).toBe('original2');
-    expect(result[1].content).toBe('c2');
-    expect(result[1].tone).toBe('gentle');
-    expect(result[1].scheduledTime).toBe('23:00');
-  });
-
-  it('handles single nudge', () => {
+  it('handles single nudge without error', () => {
     const schedule = [{ scheduledTime: '09:00', problemType: 'anxiety', hook: 'h1' }];
-    const result = autoFixInterval(schedule);
-    expect(result.length).toBe(1);
-    expect(result[0].scheduledTime).toBe('09:00');
+    expect(() => logIntervalWarnings(schedule)).not.toThrow();
   });
 });
 

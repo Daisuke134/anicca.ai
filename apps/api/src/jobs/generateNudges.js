@@ -20,6 +20,7 @@ import {
   buildPhase78Prompt,
   generateRuleBasedNudges
 } from './nudgeHelpers.js';
+import { classifyUserType, TYPE_NAMES } from '../services/userTypeService.js';
 
 const { Pool } = pg;
 
@@ -129,6 +130,58 @@ async function getUserFeedback(userId, problem) {
     : null;
 
   return { successful, failed, preferredTone, avoidedTone };
+}
+
+// 1.5.0: Get user type from DB or compute on-the-fly
+async function getUserTypeForNudge(userId, problems) {
+  // Try DB first
+  const dbResult = await query(
+    `SELECT primary_type, type_scores, confidence FROM user_type_estimates WHERE user_id = $1::uuid`,
+    [userId]
+  );
+  if (dbResult.rows.length > 0) {
+    const row = dbResult.rows[0];
+    return { primaryType: row.primary_type, scores: row.type_scores, confidence: Number(row.confidence) };
+  }
+  // Fallback: compute from problems
+  return classifyUserType(problems);
+}
+
+// 1.5.0: Get cross-user patterns from type_stats (only if data exists)
+async function getCrossUserPatterns(userType) {
+  const result = await query(`
+    SELECT type_id, tone, tapped_count, ignored_count, thumbs_up_count, sample_size, tap_rate, thumbs_up_rate
+    FROM type_stats
+    WHERE type_id = $1 AND sample_size >= 10
+    ORDER BY tap_rate DESC
+  `, [userType]);
+  return result.rows;
+}
+
+// 1.5.0: Build cross-user patterns prompt section
+function buildCrossUserPatternsSection(userType, typeStats) {
+  const typeName = TYPE_NAMES[userType] || userType;
+  let section = `\n## 📊 Cross-User Patterns (What works for similar users)\n`;
+  section += `\nThis user is estimated to be Type: **${typeName} (${userType})**\n`;
+
+  const effective = typeStats.filter(s => Number(s.tap_rate) > 0.5);
+  const ineffective = typeStats.filter(s => Number(s.tap_rate) <= 0.35);
+
+  if (effective.length > 0) {
+    section += `\n### What works for ${userType} users:\n`;
+    for (const s of effective) {
+      section += `- Tone: ${s.tone} (tap率 ${(Number(s.tap_rate) * 100).toFixed(0)}%, 👍率 ${(Number(s.thumbs_up_rate) * 100).toFixed(0)}%)\n`;
+    }
+  }
+
+  if (ineffective.length > 0) {
+    section += `\n### What doesn't work for ${userType} users:\n`;
+    for (const s of ineffective) {
+      section += `- Tone: ${s.tone} (tap率 ${(Number(s.tap_rate) * 100).toFixed(0)}%) ❌\n`;
+    }
+  }
+
+  return section;
 }
 
 // 言語別の文字数制限
@@ -307,6 +360,10 @@ async function runGenerateNudges() {
     const limits = CHAR_LIMITS[preferredLanguage] || CHAR_LIMITS.en;
 
     try {
+      // 1.5.0: Get user type for cross-user learning
+      const userTypeResult = await getUserTypeForNudge(user.user_id, problems);
+      const userType = userTypeResult.primaryType;
+
       // Phase 7+8: Day 1判定
       const useLLM = await shouldUseLLM(query, user.user_id);
       let scheduleResult;
@@ -321,13 +378,21 @@ async function runGenerateNudges() {
         const timingPerformance = await getTimingPerformance(query, user.user_id, problems);
         const weeklyPatterns = await getWeeklyPatterns(query, user.user_id, problems);
 
+        // 1.5.0: Inject cross-user patterns into prompt (graceful degradation if empty)
+        let crossUserSection = '';
+        const typeStats = await getCrossUserPatterns(userType);
+        if (typeStats.length > 0) {
+          crossUserSection = buildCrossUserPatternsSection(userType, typeStats);
+        }
+
         const prompt = buildPhase78Prompt({
           problems,
           preferredLanguage,
           userStory,
           hookContentPerformance,
           timingPerformance,
-          weeklyPatterns
+          weeklyPatterns,
+          crossUserPatterns: crossUserSection,
         });
 
         // 3-tier fallback
@@ -370,7 +435,8 @@ async function runGenerateNudges() {
               reasoning: item.reasoning,
               rootCauseHypothesis: item.rootCauseHypothesis || null,
               language: preferredLanguage,
-              overallStrategy: scheduleResult.overallStrategy
+              overallStrategy: scheduleResult.overallStrategy,
+              user_type: userType,  // 1.5.0: for aggregateTypeStats
             }),
             'notification',
             'push',

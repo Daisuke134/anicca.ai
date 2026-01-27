@@ -1,6 +1,7 @@
 import express from 'express';
 import { z } from 'zod';
 import { getProfile, getProfileByUserId, upsertProfile } from '../../services/mobile/profileService.js';
+import { classifyAndSave, deleteEstimate } from '../../services/userTypeService.js';
 import baseLogger from '../../utils/logger.js';
 import extractUserId from '../../middleware/extractUserId.js';
 
@@ -187,7 +188,20 @@ router.put('/', async (req, res) => {
       profile: profileData,
       language
     });
-    
+
+    // 1.5.0: User type classification trigger (A6+A7)
+    try {
+      const struggles = profileData.struggles || profileData.problems || [];
+      if (struggles.length > 0) {
+        await classifyAndSave(userId, struggles);
+      } else {
+        await deleteEstimate(userId);
+      }
+    } catch (classifyError) {
+      // Non-blocking: classification failure should not break profile upsert
+      logger.warn('User type classification failed (non-blocking)', classifyError);
+    }
+
     return res.json({ success: true });
   } catch (error) {
     logger.error('Failed to upsert profile', error);

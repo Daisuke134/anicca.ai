@@ -325,16 +325,29 @@ def post_to_tiktok(**kwargs):
 
     # Upload media to Blotato first (handles Fal.ai URL expiration - Spec 11.10)
     headers = {
-        "x-api-key": BLOTATO_API_KEY,
+        "blotato-api-key": BLOTATO_API_KEY,
         "Content-Type": "application/json",
     }
 
     payload = {
-        "accountId": TIKTOK_ACCOUNT_ID,
-        "text": full_caption[:2200],
-        "mediaUrls": [image_url],
-        "privacyLevel": "PUBLIC_TO_EVERYONE",
-        "isAiGenerated": True,
+        "post": {
+            "accountId": TIKTOK_ACCOUNT_ID,
+            "content": {
+                "text": full_caption[:2200],
+                "mediaUrls": [image_url],
+                "platform": "tiktok",
+            },
+            "target": {
+                "targetType": "tiktok",
+                "privacyLevel": "PUBLIC_TO_EVERYONE",
+                "disabledComments": False,
+                "disabledDuet": False,
+                "disabledStitch": False,
+                "isBrandedContent": False,
+                "isYourBrand": False,
+                "isAiGenerated": True,
+            },
+        }
     }
 
     try:

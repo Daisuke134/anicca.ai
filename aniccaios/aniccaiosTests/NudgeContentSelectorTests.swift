@@ -39,30 +39,22 @@ final class NudgeContentSelectorTests: XCTestCase {
     override func setUp() {
         super.setUp()
         selector = NudgeContentSelector.shared
-        // テスト前に統計とキャッシュをリセット
         NudgeStatsManager.shared.resetAllStats()
         LLMNudgeCache.shared.clear()
-        // 交互切り替え状態をリセット
-        selector.resetAlternatingState()
     }
 
     override func tearDown() {
         NudgeStatsManager.shared.resetAllStats()
         LLMNudgeCache.shared.clear()
-        selector.resetAlternatingState()
         super.tearDown()
     }
 
-    // MARK: - Phase 6: LLM Selection Tests
+    // MARK: - v1.5.0: LLM Priority Tests (交互ロジック削除後)
 
-    /// LLMキャッシュがあり、乱数が0.5未満の場合、LLM Nudgeが選択される
-    func test_selectVariant_withLLMAvailable() throws {
-        // LLM nudgeをキャッシュに設定
+    /// LLMキャッシュがあれば常にLLMが選択される（AC2: LLM優先）
+    func test_selectVariant_prefersLLM_whenCached() throws {
         let llmNudge = try makeTestNudge()
         LLMNudgeCache.shared.setNudges([llmNudge])
-
-        // 乱数を0.3（< 0.5）に固定 → LLM選択
-        selector.randomProvider = { 0.3 }
 
         let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
 
@@ -70,35 +62,24 @@ final class NudgeContentSelectorTests: XCTestCase {
         XCTAssertEqual(result.variantIndex, -1)
         XCTAssertNotNil(result.content)
         XCTAssertEqual(result.content?.id, "llm-123")
-        XCTAssertEqual(result.content?.problemType, .cantWakeUp)
     }
 
-    /// 交互切り替え: 2回目の呼び出しでは既存バリアントが選択される
-    func test_selectVariant_existingWhenRandomHigh() throws {
-        // LLM nudgeをキャッシュに設定
+    /// LLMキャッシュがあれば複数回呼んでも常にLLM（交互ではない）
+    func test_selectVariant_alwaysLLM_whenCached() throws {
         let llmNudge = try makeTestNudge()
         LLMNudgeCache.shared.setNudges([llmNudge])
 
-        // 1回目: LLMが選択される（交互切り替えの初回）
-        let firstResult = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
-        XCTAssertTrue(firstResult.isAIGenerated, "First call should select LLM")
-
-        // 2回目: 既存バリアントが選択される（交互切り替え）
-        let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
-
-        XCTAssertFalse(result.isAIGenerated)
-        XCTAssertGreaterThanOrEqual(result.variantIndex, 0)
-        XCTAssertNil(result.content)
+        // 連続で呼んでも常にLLM
+        for _ in 0..<5 {
+            let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
+            XCTAssertTrue(result.isAIGenerated, "Should always select LLM when cached")
+        }
     }
 
-    /// LLMキャッシュが空の場合、乱数が0.5未満でも既存バリアントにフォールバック
-    func test_selectVariant_fallbackToExisting() {
-        // キャッシュを空にする
+    /// LLMキャッシュが空の場合、ルールベースにフォールバック（AC2フォールバック）
+    func test_selectVariant_fallsBackToRuleBased() {
         LLMNudgeCache.shared.clear()
 
-        // 乱数を0.3（< 0.5）に固定してもキャッシュが空ならfallback
-        selector.randomProvider = { 0.3 }
-
         let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 7)
 
         XCTAssertFalse(result.isAIGenerated)
@@ -106,20 +87,16 @@ final class NudgeContentSelectorTests: XCTestCase {
         XCTAssertNil(result.content)
     }
 
-    /// 問題タイプと時刻の組み合わせが一致しない場合はLLMキャッシュから取得できない
+    /// 問題タイプと時刻の組み合わせが一致しない場合はルールベースにフォールバック
     func test_selectVariant_llmCacheMismatch() throws {
-        // cant_wake_up の hour=7 にNudgeを設定
         let llmNudge = try makeTestNudge(problemType: .cantWakeUp, scheduledHour: 7)
         LLMNudgeCache.shared.setNudges([llmNudge])
 
-        // 乱数を0.3に固定
-        selector.randomProvider = { 0.3 }
-
-        // 異なる時刻で取得 → LLMなし
+        // 異なる時刻で取得 → ルールベース
         let result = selector.selectVariant(for: .cantWakeUp, scheduledHour: 8)
         XCTAssertFalse(result.isAIGenerated)
 
-        // 異なる問題タイプで取得 → LLMなし
+        // 異なる問題タイプで取得 → ルールベース
         let result2 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 7)
         XCTAssertFalse(result2.isAIGenerated)
     }
@@ -217,11 +194,10 @@ final class NudgeContentSelectorTests: XCTestCase {
         XCTAssertGreaterThan(variant0Count, 60, "High-tapped variant should be selected > 60% of the time")
     }
 
-    // MARK: - 50% Distribution Test
+    // MARK: - v1.5.0: 100% LLM Distribution Test
 
-    /// 交互切り替え: LLMと既存が交互に選択されること
-    func test_selectVariant_50_50_distribution() throws {
-        // LLM nudgeをキャッシュに設定
+    /// LLMキャッシュがあれば100%LLMが選択される（交互ロジック削除後）
+    func test_selectVariant_100percent_LLM_distribution() throws {
         let llmNudge = try makeTestNudge()
         LLMNudgeCache.shared.setNudges([llmNudge])
 
@@ -235,9 +211,7 @@ final class NudgeContentSelectorTests: XCTestCase {
             }
         }
 
-        // 交互切り替えなので、50%前後になるはず（許容誤差 ±5%）
-        let llmRatio = Double(llmCount) / Double(iterations)
-        XCTAssertGreaterThan(llmRatio, 0.45, "LLM should be selected at least 45% of the time")
-        XCTAssertLessThan(llmRatio, 0.55, "LLM should be selected at most 55% of the time")
+        // 交互ロジック削除後、LLMキャッシュがあれば100% LLM
+        XCTAssertEqual(llmCount, iterations, "LLM should be selected 100% of the time when cached")
     }
 }

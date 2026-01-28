@@ -21,8 +21,8 @@
 "settings_language_label" = "言語";
 
 "onboarding_welcome_title" = "Aniccaへ\nようこそ";
-"onboarding_welcome_subtitle_line1" = "Aniccaはあなたの声のコーチです。";
-"onboarding_welcome_subtitle_line2" = "行動と心を導きます。";
+"onboarding_welcome_subtitle_line1" = "Aniccaは、あなたが一番つらいときに";
+"onboarding_welcome_subtitle_line2" = "そっと声をかけます。";
 "onboarding_welcome_cta" = "はじめる";
 "onboarding_welcome_restore_description" = "以前使っていた方はこちら";
 
@@ -371,12 +371,12 @@
 "onboarding_struggles_subtitle" = "当てはまるものをすべて選んでください。";
 
 "onboarding_value_title" = "Aniccaができること";
-"onboarding_value_card1_title" = "つらいときに寄り添う";
-"onboarding_value_card1_body" = "困難な瞬間に寄り添い、軌道に乗り続けるためのパーソナルな助言と励ましを提供します。";
-"onboarding_value_card2_title" = "より良い習慣を築く";
-"onboarding_value_card2_body" = "あなたの目標とライフスタイルに合わせた実践的なインサイトで、持続可能なルーティンを構築します。";
-"onboarding_value_card3_title" = "自分のパターンを理解する";
-"onboarding_value_card3_body" = "自分の行動や思考パターンを明確にし、意味のある持続的な変化を起こします。";
+"onboarding_value_card1_title" = "最適なタイミングで声をかける";
+"onboarding_value_card1_body" = "悪循環に陥る前に、Aniccaがメッセージを届けます。あなたが気づく前に。";
+"onboarding_value_card2_title" = "あなたに効く言葉を学ぶ";
+"onboarding_value_card2_body" = "あなたの反応からAniccaは学びます。日が経つほど、あなたに刺さる言葉がわかるようになります。";
+"onboarding_value_card3_title" = "習慣トラッカーを超える";
+"onboarding_value_card3_body" = "Aniccaは連続記録を数えません。なぜ夜更かしするのか、なぜやめられないのか、その根本に向き合います。";
 
 "ideal_trait_kind" = "優しい";
 "ideal_trait_honest" = "誠実";

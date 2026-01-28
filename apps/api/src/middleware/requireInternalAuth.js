@@ -1,10 +1,12 @@
+import crypto from 'crypto';
 import baseLogger from '../utils/logger.js';
 
 const logger = baseLogger.withContext('RequireInternalAuth');
 
 /**
- * 内部API用認証ミドルウェア（cron job専用）
+ * 内部API用認証ミドルウェア（Admin API + cron job）
  * INTERNAL_API_TOKEN環境変数と一致するBearerトークンを要求
+ * timing-safe comparison でタイミング攻撃を防止
  */
 export default function requireInternalAuth(req, res, next) {
   const auth = req.headers['authorization'] || '';
@@ -21,7 +23,10 @@ export default function requireInternalAuth(req, res, next) {
     return res.status(500).json({ error: 'Internal API token not configured' });
   }
 
-  if (token !== expectedToken) {
+  const tokenBuf = Buffer.from(token, 'utf8');
+  const expectedBuf = Buffer.from(expectedToken, 'utf8');
+
+  if (tokenBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(tokenBuf, expectedBuf)) {
     logger.warn('Invalid internal API token');
     return res.status(401).json({ error: 'Invalid token' });
   }

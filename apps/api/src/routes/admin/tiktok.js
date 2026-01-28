@@ -83,6 +83,19 @@ router.post('/posts', async (req, res) => {
     if (hook_candidate_id && !UUID_RE.test(hook_candidate_id)) {
       return res.status(400).json({ error: 'hook_candidate_id must be a valid UUID' });
     }
+    if (scheduled_time) {
+      const parsed = new Date(scheduled_time);
+      if (isNaN(parsed.getTime())) {
+        return res.status(400).json({ error: 'scheduled_time must be a valid ISO 8601 datetime' });
+      }
+      const now = Date.now();
+      if (parsed.getTime() < now - 5 * 60 * 1000) {
+        return res.status(400).json({ error: 'scheduled_time must be in the future' });
+      }
+      if (parsed.getTime() > now + 30 * 24 * 60 * 60 * 1000) {
+        return res.status(400).json({ error: 'scheduled_time must be within 30 days' });
+      }
+    }
 
     // Duplicate guard: 1 post per day
     const todayStart = new Date();

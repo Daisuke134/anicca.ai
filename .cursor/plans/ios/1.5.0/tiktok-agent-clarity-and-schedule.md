@@ -1,6 +1,7 @@
 # TikTok Agent: 現状分析 + スケジュール投稿 + 統合ロードマップ
 
 > 作成日: 2026-01-28
+> 最終更新: 2026-01-28
 > 目的: エージェントが何を受け取り、何を決定し、何を出力するのかを明確にする。嘘なし。
 
 ---
@@ -12,7 +13,7 @@
 | 情報源 | 内容 | タイミング |
 |--------|------|-----------|
 | System Prompt | ペルソナ定義（25-35歳、6-7年習慣失敗）、7ステップワークフロー、コンテンツルール、4トーン | 起動時に固定 |
-| User Message | 「今日のTikTok投稿プロセスを実行しろ」（1文のみ） | 起動時に固定 |
+| User Message | 「今日のTikTok投稿プロセスを実行しろ」+ 現在のJST時刻（HH:MM）+ 今日の日付 | 起動時に注入 |
 
 **エージェントが起動時に持っている情報はこれだけ。** 昨日の成績も、hookリストも、トレンドも持っていない。全てツール呼び出しで取得する。
 
@@ -20,6 +21,7 @@
 
 | Step | Tool | 取得データ | フィールド |
 |------|------|-----------|-----------|
+| - | User Message injection | 現在のJST時刻・今日の日付 | 現在時刻（HH:MM JST）、日付（YYYY-MM-DD） |
 | 1 | `get_yesterday_performance` | 昨日の投稿成績 | `posts[]`（like_rate, share_rate等） |
 | 2 | `get_hook_candidates` | Thompson Sampling選択hook | `selected.id`, `selected.text`, `selected.tone`, `selected.target_problem_types` |
 | 3 | `search_trends` | Exa APIトレンド | `results[]`（title, url, snippet × 5件） |
@@ -35,7 +37,7 @@
 | **キャプション** | エージェントが作成 | ✅ 実装済み |
 | **ハッシュタグ** | エージェントが選択 | ✅ 実装済み |
 | **Agent Reasoning** | エージェントが2-3文で説明 | ✅ 実装済み |
-| **投稿時刻** | ❌ 即時投稿（エージェントは決定していない） | ⚠️ **未実装 — 1.5.0で追加必須** |
+| **投稿時刻** | ✅ エージェントはHH:MM（時刻のみ）を出力。日付はコード側で今日に固定 | ✅ 実装済み（1.5.0） |
 
 ### 1.4 エージェントの出力（OUTPUT）
 
@@ -44,10 +46,8 @@
 | 出力先 | 内容 | ツール |
 |--------|------|--------|
 | Fal.ai | 画像プロンプト + モデル選択 | `generate_image` |
-| Blotato → TikTok | キャプション + 画像URL + ハッシュタグ | `post_to_tiktok` |
-| Railway DB | blotato_post_id, caption, hook_candidate_id, agent_reasoning | `save_post_record` |
-
-**足りないもの: `scheduledTime`（投稿時刻）がBlotato APIに送信されていない。**
+| Blotato → TikTok | キャプション + 画像URL + ハッシュタグ + `scheduledTime` | `post_to_tiktok` |
+| Railway DB | blotato_post_id, caption, hook_candidate_id, agent_reasoning, `scheduled_at` | `save_post_record` |
 
 ---
 
@@ -61,7 +61,7 @@ Blotato API `/v2/posts` は以下のスケジュールオプションをサポ�
 |-----------|-----|------|
 | `scheduledTime` | ISO 8601 string | 指定時刻に投稿（最優先） |
 | `useNextFreeSlot` | boolean | 次の空きスロットに自動配置 |
-| なし | — | 即時投稿（現在の動作） |
+| なし | — | 即時投稿 |
 
 Source: [Blotato Publish Post API](https://help.blotato.com/api/api-reference/publish-post)
 
@@ -87,49 +87,30 @@ Sources:
 - [SocialPilot - 700K TikTok Insights](https://www.socialpilot.co/blog/best-time-to-post-on-tiktok)
 - [Shopify - Best Time to Post](https://www.shopify.com/blog/best-time-to-post-on-tikok)
 
-### 2.3 実装変更
+### 2.3 実装変更（実装済み）
 
-#### A. `post_to_tiktok` ツールに `scheduled_time` パラメータ追加
+#### A. `post_to_tiktok` ツール — `posting_time`（HH:MM）を受け取る
+
+エージェントは `posting_time`（HH:MM形式、例: `"20:00"`）を出力する。コード側で今日の日付と組み合わせてISO 8601（例: `"2026-01-28T20:00:00+09:00"`）を構築し、Blotato APIの `scheduledTime` に渡す。
 
 ```python
-# tools.py — TOOL_DEFINITIONS
-{
-    "name": "post_to_tiktok",
-    "parameters": {
-        "properties": {
-            "image_url": {"type": "string"},
-            "caption": {"type": "string"},
-            "hashtags": {"type": "array", "items": {"type": "string"}},
-            "scheduled_time": {
-                "type": "string",
-                "description": "ISO 8601 datetime for scheduled posting (e.g., '2026-01-29T08:00:00+09:00'). If omitted, posts immediately."
-            },
-        },
-        "required": ["image_url", "caption"],
-    },
+# tools.py — post_to_tiktok
+# エージェントは HH:MM のみ指定。日付はコードが today で固定。
+"posting_time": {
+    "type": "string",
+    "description": "Posting time in HH:MM format (JST). Code will build ISO 8601 from today's date + this time."
 }
 ```
 
-```python
-# tools.py — post_to_tiktok 実装
-def post_to_tiktok(**kwargs):
-    ...
-    payload = {"post": { ... }}
-
-    # スケジュール投稿対応
-    scheduled_time = kwargs.get("scheduled_time")
-    if scheduled_time:
-        payload["scheduledTime"] = scheduled_time
-
-    resp = requests.post(f"{BLOTATO_BASE_URL}/posts", ...)
-```
-
-#### B. System Promptにタイミング決定の指示を追加
+#### B. System Prompt STEP 3.5 — エージェントはHH:MMのみ出力
 
 ```
-### STEP 3.5: Decide Posting Time (NEW)
+### STEP 3.5: Decide Posting Time
 Based on the selected hook's target_problem_type and today's day of week,
 decide the optimal posting time (JST).
+
+Output HH:MM only (e.g., "20:00"). The date is never decided by the agent —
+code always uses today's date.
 
 Use these evidence-based guidelines:
 - Monday: 10:00 or 22:00 JST
@@ -143,27 +124,33 @@ Use these evidence-based guidelines:
 Consider the target persona (25-35歳): evening hours (19:00-23:00) tend to
 have higher engagement for self-improvement content.
 
-Pass the decided time as scheduled_time in ISO 8601 format to post_to_tiktok.
+Pass the decided time as posting_time (HH:MM) to post_to_tiktok.
 ```
 
-#### C. `save_post_record` に `scheduled_time` フィールド追加
+#### C. `save_post_record` — `posting_time`（HH:MM）を受け取り、コード側でISO 8601に変換
+
+`save_post_record` も `posting_time`（HH:MM）を受け取る。コード内で今日の日付と結合しISO 8601に変換してDBの `scheduled_at` カラムに保存する。
 
 ```python
 # save_post_record ツール定義
-"scheduled_time": {
+"posting_time": {
     "type": "string",
-    "description": "The scheduled posting time (ISO 8601)"
+    "description": "Posting time in HH:MM format (JST). Converted to ISO 8601 in code."
 }
 ```
 
+#### D. User Message にJST時刻を注入
+
+エージェント起動時のUser Messageに現在のJST時刻と今日の日付を注入する。これによりエージェントは現在時刻を認識し、過去の時刻を指定しないよう判断できる。
+
 ---
 
-## 3. エージェントの完全な INPUT → OUTPUT フロー（1.5.0修正後）
+## 3. エージェントの完全な INPUT → OUTPUT フロー（1.5.0実装済み）
 
 ```
 INPUT（固定）:
 ├── System Prompt: ペルソナ、ワークフロー、コンテンツルール、投稿時刻ガイドライン
-└── User Message: 「今日のTikTok投稿を実行しろ」
+└── User Message: 「今日のTikTok投稿を実行しろ」+ 現在JST時刻 + 今日の日付
 
 STEP 1: get_yesterday_performance
 ├── INPUT: なし
@@ -178,8 +165,8 @@ STEP 3: search_trends(query=エージェントが決定)
 └── OUTPUT: トレンド5件（title, url, snippet）
 
 STEP 3.5: 【エージェントが内部で決定】投稿時刻
-├── INPUT: 曜日 + ガイドライン + ペルソナ
-└── OUTPUT: scheduled_time（ISO 8601）
+├── INPUT: 曜日 + ガイドライン + ペルソナ + 現在JST時刻
+└── OUTPUT: posting_time（HH:MM）→ コード側で今日の日付 + HH:MM → ISO 8601に変換
 
 STEP 4: generate_image(prompt=エージェントが作成, model="nano_banana")
 ├── INPUT: 画像プロンプト + モデル
@@ -192,12 +179,14 @@ STEP 5: evaluate_image(image_url, intended_hook)
 ├── score < 6 → STEP 4に戻る（max 2回）
 └── 2回失敗 → 一番良い画像でSTEP 6
 
-STEP 6: post_to_tiktok(image_url, caption, hashtags, scheduled_time) ← NEW
-├── INPUT: 画像URL + キャプション + ハッシュタグ + 投稿予定時刻
+STEP 6: post_to_tiktok(image_url, caption, hashtags, posting_time)
+├── INPUT: 画像URL + キャプション + ハッシュタグ + 投稿時刻（HH:MM）
+├── コード: 今日の日付 + posting_time → ISO 8601 → Blotato scheduledTime
 └── OUTPUT: blotato_post_id
 
-STEP 7: save_post_record(blotato_post_id, caption, hook_candidate_id, agent_reasoning, scheduled_time) ← NEW
-├── INPUT: 投稿記録の全フィールド
+STEP 7: save_post_record(blotato_post_id, caption, hook_candidate_id, agent_reasoning, posting_time)
+├── INPUT: 投稿記録の全フィールド + posting_time（HH:MM）
+├── コード: HH:MM → ISO 8601変換 → scheduled_at カラムに保存
 └── OUTPUT: record_id
 ```
 
@@ -209,7 +198,7 @@ STEP 7: save_post_record(blotato_post_id, caption, hook_candidate_id, agent_reas
 | 2 | **トレンド検索クエリ** | 選択されたhookのテーマ |
 | 3 | **画像プロンプト** | hook + トレンド + ペルソナ |
 | 4 | **キャプション** | hook + トレンド + ハッシュタグ |
-| 5 | **投稿時刻** ← NEW | 曜日 + エンゲージメントデータ + ペルソナ |
+| 5 | **投稿時刻（HH:MMのみ）** | 曜日 + エンゲージメントデータ + ペルソナ + 現在JST時刻 |
 | 6 | **Agent Reasoning** | 全ステップの判断根拠 |
 
 ---
@@ -263,24 +252,24 @@ STEP 7: save_post_record(blotato_post_id, caption, hook_candidate_id, agent_reas
 
 **V1（1.5.0）でやること:**
 - スケジュール投稿をBlotato `scheduledTime` で実装
-- エージェントがWHENを決定できるようにする
+- エージェントがWHEN（HH:MMのみ）を決定できるようにする
 - Python + GHAのまま（リファクタは次バージョン）
 
 ---
 
 ## 5. テスト計画
 
-### 5.1 スケジュール投稿テスト
+### 5.1 スケジュール投稿テスト — テスト済み・検証完了
 
-エージェントを実行し、`scheduledTime` を現在時刻+3分に設定。3分後にTikTokに投稿が出現することを確認。
+エージェントを実行し、`posting_time` を現在時刻+3分に設定。3分後にTikTokに投稿が出現することを確認済み。
 
-```bash
-# 1. エージェント実行
-python3 anicca_tiktok_agent.py
-
-# 2. Blotato APIレスポンスで scheduledTime を確認
-# 3. 指定時刻にTikTok投稿が出現することを確認
-```
+| テスト項目 | 結果 |
+|-----------|------|
+| Blotato `scheduledTime` 送信 | ✅ PASS |
+| 3分後にTikTok投稿出現 | ✅ PASS |
+| Blotato投稿ステータス | ✅ `"published"` 確認 |
+| DB `scheduled_at` カラム追加 | ✅ 動作確認済み |
+| `save_post_record` に `scheduled_at` 保存 | ✅ 動作確認済み |
 
 ### 5.2 GHA CLIテスト
 
@@ -300,10 +289,10 @@ GUI操作は不要。全てターミナルから実行・監視可能。
 
 | # | タスク | 内容 | 状態 |
 |---|--------|------|------|
-| 1 | スケジュール投稿実装 | `post_to_tiktok` に `scheduled_time` 追加 + System Prompt改修 | 未着手 |
-| 2 | `save_post_record` に `scheduled_time` 追加 | DB記録にも投稿予定時刻を保存 | 未着手 |
-| 3 | スケジュール投稿テスト | 3分後投稿でBlotato動作確認 | 未着手 |
-| 4 | コードレビュー（サブエージェント） | マージ前の最終チェック | 未着手 |
+| 1 | スケジュール投稿実装 | `post_to_tiktok` に `posting_time`（HH:MM）追加 + System Prompt STEP 3.5改修 | ✅ 完了 |
+| 2 | `save_post_record` に `scheduled_at` 追加 | DB記録にも投稿予定時刻を保存（`posting_time` HH:MM → ISO 8601変換） | ✅ 完了 |
+| 3 | スケジュール投稿テスト | 3分後投稿でBlotato動作確認 | ✅ 完了（3分後テストPASS、Blotato status: `"published"` 確認） |
+| 4 | コードレビュー（サブエージェント） | マージ前の最終チェック | ✅ 完了（C-1 validation追加、W-1/S-2/S-3エラーリーク修正） |
 | 5 | dev → main マージ | Backend Production デプロイ | 未着手 |
 | 6 | GHA CLIテスト | `gh workflow run` で動作確認 | 未着手 |
 | 7 | release/1.5.0 作成 | mainから切る | 未着手 |

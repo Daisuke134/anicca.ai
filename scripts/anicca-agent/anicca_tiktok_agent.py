@@ -41,8 +41,9 @@ Call search_trends with a query related to the selected hook's theme.
 - Use trend insights to enhance your caption and image prompt
 
 ### STEP 3.5: Decide Posting Time (MANDATORY)
-Decide the optimal posting time in JST based on today's day of week and the target persona.
-Use this evidence-based schedule (sources: Sprout Social 2.7B engagements, SocialPilot 700K posts):
+Choose the best TIME to post. You ONLY decide the hour and minute — the date is handled automatically.
+
+Evidence-based best times by day (sources: Sprout Social 2.7B engagements, SocialPilot 700K posts):
 
 | Day       | Best Times (JST)      |
 |-----------|-----------------------|
@@ -55,11 +56,12 @@ Use this evidence-based schedule (sources: Sprout Social 2.7B engagements, Socia
 | Sunday    | 20:00                 |
 
 Rules:
+- Pick the best remaining time slot that hasn't passed yet.
+- If ALL slots for today have passed, pick 30 minutes from the current time.
 - Target persona (25-35歳) scrolls most in evening (19:00-23:00). Prefer evening slots.
-- Early engagement (first 30-90 min) drives TikTok algorithm. Choose times when audience is active.
-- Output the chosen time as ISO 8601 with +09:00 timezone (JST).
-- Example: "2026-01-29T22:00:00+09:00"
-- If the current time has already passed today's best slot, choose tomorrow's best slot.
+- Early engagement (first 30-90 min) drives TikTok algorithm.
+- Output format: "HH:MM" (24-hour JST). Examples: "22:00", "10:00", "20:00"
+- NEVER output a date. ONLY output the time as HH:MM.
 
 ### STEP 4: Generate Image
 Call generate_image with a detailed prompt.
@@ -74,11 +76,11 @@ Call evaluate_image with the generated image URL and hook text.
 - After 2 failed retries: post the best image anyway
 
 ### STEP 6: Post to TikTok (Scheduled)
-Call post_to_tiktok with the image URL, caption, and scheduled_time from Step 3.5.
+Call post_to_tiktok with the image URL, caption, and posting_time from Step 3.5.
 - Caption: hook text + brief context + hashtags
 - Hashtags: #anicca #習慣化 #自己改善 #マインドフルネス #仏教 #行動変容
 - Max caption length: 2200 chars
-- scheduled_time: ISO 8601 from Step 3.5 (MANDATORY)
+- posting_time: The HH:MM time you decided in Step 3.5 (MANDATORY)
 
 ### STEP 7: Save Record (MANDATORY - NEVER SKIP)
 Call save_post_record with ALL fields:
@@ -86,7 +88,7 @@ Call save_post_record with ALL fields:
 - caption: the posted caption
 - hook_candidate_id: from Step 2 result (the selected hook's id)
 - agent_reasoning: 2-3 sentences explaining why you chose this hook, approach, AND posting time
-- scheduled_time: from Step 3.5 (the decided posting time)
+- posting_time: the HH:MM time you decided in Step 3.5
 
 ## Target Persona
 25-35 years old, struggled with habits for 6-7 years, tried 10+ habit apps and failed.
@@ -108,10 +110,22 @@ They feel "I'm a broken person." They're in give-up mode but secretly want to ch
 def run_agent():
     print("🤖 [Anicca Agent] Starting daily TikTok post generation")
 
+    # Inject current JST time so agent knows today's date and day of week
+    from datetime import datetime, timezone, timedelta
+    jst = timezone(timedelta(hours=9))
+    now_jst = datetime.now(jst)
+    current_time_str = now_jst.strftime("%Y-%m-%dT%H:%M:%S+09:00")
+    day_of_week = now_jst.strftime("%A")
+    today_date = now_jst.strftime("%Y-%m-%d")
+
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages.append({
         "role": "user",
-        "content": "Execute your daily TikTok posting process. Review performance, select a hook, generate content, and post.",
+        "content": (
+            f"Today is {today_date} ({day_of_week}). Current time: {current_time_str}.\n\n"
+            "Execute your daily TikTok posting process. "
+            "Review performance, select a hook, research trends, generate content, and post."
+        ),
     })
 
     max_iterations = 15
@@ -122,6 +136,7 @@ def run_agent():
     last_blotato_post_id = None
     last_caption = None
     last_hook_candidate_id = None
+    last_scheduled_time = None
 
     while iteration < max_iterations:
         iteration += 1
@@ -204,6 +219,10 @@ def run_agent():
                     if result_data.get("success"):
                         last_blotato_post_id = result_data.get("blotato_post_id")
                         last_caption = fn_args.get("caption", "")
+                        # Convert posting_time (HH:MM) to ISO 8601
+                        pt = fn_args.get("posting_time")
+                        if pt:
+                            last_scheduled_time = f"{today_date}T{pt}:00+09:00"
                 except (json.JSONDecodeError, KeyError):
                     pass
             elif fn_name == "get_hook_candidates":
@@ -235,6 +254,7 @@ def run_agent():
                     caption=last_caption or "auto-saved",
                     hook_candidate_id=last_hook_candidate_id or "",
                     agent_reasoning="[FORCED] Agent did not call save_post_record. Auto-saved by safety mechanism.",
+                    scheduled_time=last_scheduled_time,
                 )
                 print(f"  → Forced save result: {forced_result}")
             except Exception as e:

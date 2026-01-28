@@ -113,7 +113,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "post_to_tiktok",
-            "description": "Post image to TikTok via Blotato API. Supports scheduled posting via scheduled_time.",
+            "description": "Post image to TikTok via Blotato API. The posting date is always TODAY (auto-set by code). You only provide the time.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -124,12 +124,12 @@ TOOL_DEFINITIONS = [
                         "items": {"type": "string"},
                         "default": [],
                     },
-                    "scheduled_time": {
+                    "posting_time": {
                         "type": "string",
-                        "description": "ISO 8601 datetime for scheduled posting (e.g., '2026-01-29T22:00:00+09:00'). If omitted, posts immediately.",
+                        "description": "Time to post in HH:MM format (24-hour JST). Example: '22:00', '10:00'. The date is always today.",
                     },
                 },
-                "required": ["image_url", "caption", "scheduled_time"],
+                "required": ["image_url", "caption", "posting_time"],
             },
         },
     },
@@ -145,7 +145,7 @@ TOOL_DEFINITIONS = [
                     "blotato_post_id": {"type": "string", "description": "The post ID from Blotato API"},
                     "caption": {"type": "string", "description": "The posted caption text"},
                     "agent_reasoning": {"type": "string", "description": "2-3 sentences explaining why this hook and approach were chosen"},
-                    "scheduled_time": {"type": "string", "description": "The scheduled posting time (ISO 8601) decided by the agent"},
+                    "posting_time": {"type": "string", "description": "The posting time in HH:MM format (24-hour JST) decided by the agent"},
                 },
                 "required": ["blotato_post_id", "caption", "agent_reasoning"],
             },
@@ -315,7 +315,7 @@ def evaluate_image(**kwargs):
         # H-2/M-1: score=5 with recommendation="regenerate" (not "post" — threshold is 6)
         return json.dumps({"quality_score": 5, "issues": ["Failed to parse evaluation"], "recommendation": "regenerate"})
     except Exception as e:
-        return json.dumps({"quality_score": 0, "issues": [str(e)], "recommendation": "regenerate"})
+        return json.dumps({"quality_score": 0, "issues": [type(e).__name__], "recommendation": "regenerate"})
 
 
 def post_to_tiktok(**kwargs):
@@ -358,10 +358,14 @@ def post_to_tiktok(**kwargs):
         },
     }
 
-    # Scheduled posting: pass scheduledTime at top level (Blotato API spec)
-    scheduled_time = kwargs.get("scheduled_time")
-    if scheduled_time:
-        payload["scheduledTime"] = scheduled_time
+    # Scheduled posting: build ISO 8601 from posting_time (HH:MM) + today's date
+    posting_time = kwargs.get("posting_time")
+    if posting_time:
+        from datetime import datetime, timezone, timedelta
+        jst = timezone(timedelta(hours=9))
+        today = datetime.now(jst).strftime("%Y-%m-%d")
+        scheduled_iso = f"{today}T{posting_time}:00+09:00"
+        payload["scheduledTime"] = scheduled_iso
 
     try:
         resp = requests.post(
@@ -375,7 +379,10 @@ def post_to_tiktok(**kwargs):
         post_id = data.get("postSubmissionId", data.get("id", data.get("postId", "unknown")))
         return json.dumps({"success": True, "blotato_post_id": str(post_id)})
     except requests.exceptions.RequestException as e:
-        return json.dumps({"success": False, "error": str(e), "blotato_post_id": ""})
+        error_msg = f"Blotato API request failed: {type(e).__name__}"
+        if hasattr(e, 'response') and e.response is not None:
+            error_msg += f" (HTTP {e.response.status_code})"
+        return json.dumps({"success": False, "error": error_msg, "blotato_post_id": ""})
 
 
 def save_post_record(**kwargs):
@@ -390,13 +397,22 @@ def save_post_record(**kwargs):
     if not hook_candidate_id:
         print("⚠️ [save_post_record] hook_candidate_id is missing. Thompson Sampling feedback loop will be incomplete.")
 
+    # Convert posting_time (HH:MM) to ISO 8601 with today's date
+    posting_time = kwargs.get("posting_time")
+    scheduled_time_iso = None
+    if posting_time:
+        from datetime import datetime, timezone, timedelta
+        jst = timezone(timedelta(hours=9))
+        today = datetime.now(jst).strftime("%Y-%m-%d")
+        scheduled_time_iso = f"{today}T{posting_time}:00+09:00"
+
     try:
         result = api.save_post_record(
             blotato_post_id=blotato_post_id,
             caption=kwargs["caption"],
             hook_candidate_id=hook_candidate_id,
             agent_reasoning=kwargs.get("agent_reasoning"),
-            scheduled_time=kwargs.get("scheduled_time"),
+            scheduled_time=scheduled_time_iso,
         )
         return json.dumps(result)
     except Exception as e:

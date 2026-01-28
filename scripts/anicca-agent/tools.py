@@ -158,7 +158,7 @@ def get_yesterday_performance(**kwargs):
         result = api.get_recent_posts(days=1)
         return json.dumps(result)
     except Exception as e:
-        return json.dumps({"error": str(e), "posts": []})
+        return json.dumps({"error": f"API request failed: {type(e).__name__}", "posts": []})
 
 
 def get_hook_candidates(**kwargs):
@@ -169,7 +169,7 @@ def get_hook_candidates(**kwargs):
         result = api.get_hook_candidates(limit=limit, sort_by=sort_by, strategy=strategy)
         return json.dumps(result)
     except Exception as e:
-        return json.dumps({"error": str(e), "candidates": [], "selected": None})
+        return json.dumps({"error": f"API request failed: {type(e).__name__}", "candidates": [], "selected": None})
 
 
 def search_trends(**kwargs):
@@ -359,16 +359,21 @@ def save_post_record(**kwargs):
     if not blotato_post_id or blotato_post_id.strip() == "":
         return json.dumps({"error": "blotato_post_id is empty. Post may have failed.", "saved": False})
 
+    # W-2: Warn if hook_candidate_id is missing (breaks Thompson Sampling feedback loop)
+    hook_candidate_id = kwargs.get("hook_candidate_id")
+    if not hook_candidate_id:
+        print("⚠️ [save_post_record] hook_candidate_id is missing. Thompson Sampling feedback loop will be incomplete.")
+
     try:
         result = api.save_post_record(
             blotato_post_id=blotato_post_id,
             caption=kwargs["caption"],
-            hook_candidate_id=kwargs.get("hook_candidate_id"),
+            hook_candidate_id=hook_candidate_id,
             agent_reasoning=kwargs.get("agent_reasoning"),
         )
         return json.dumps(result)
     except Exception as e:
-        return json.dumps({"error": str(e), "saved": False})
+        return json.dumps({"error": f"API request failed: {type(e).__name__}", "saved": False})
 
 
 # Tool name → function mapping

@@ -126,7 +126,15 @@ def run_agent():
         # Execute tool calls
         for tool_call in message.tool_calls:
             fn_name = tool_call.function.name
-            fn_args = json.loads(tool_call.function.arguments)
+
+            # W-1: Safely parse function arguments
+            try:
+                fn_args = json.loads(tool_call.function.arguments)
+            except json.JSONDecodeError as e:
+                result = json.dumps({"error": f"Failed to parse arguments: {type(e).__name__}"})
+                print(f"  ❌ JSON parse error for {fn_name}: {e}")
+                messages.append({"role": "tool", "tool_call_id": tool_call.id, "content": result})
+                continue
 
             print(f"🔧 Tool: {fn_name}({json.dumps(fn_args, ensure_ascii=False)[:100]})")
 
@@ -137,7 +145,7 @@ def run_agent():
                 try:
                     result = fn(**fn_args)
                 except Exception as e:
-                    result = json.dumps({"error": str(e)})
+                    result = json.dumps({"error": f"Tool execution failed: {type(e).__name__}"})
                     print(f"  ❌ Error: {e}")
 
             print(f"  → Result: {result[:200]}")

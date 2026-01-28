@@ -26,7 +26,7 @@ MAX_RETRIES = 2
 IMAGE_QUALITY_THRESHOLD = 6  # minimum score to post (1-10)
 
 # Startup validation
-REQUIRED_KEYS = ["OPENAI_API_KEY", "BLOTATO_API_KEY", "FAL_API_KEY", "API_BASE_URL", "API_AUTH_TOKEN"]
+REQUIRED_KEYS = ["OPENAI_API_KEY", "BLOTATO_API_KEY", "FAL_API_KEY", "EXA_API_KEY", "API_BASE_URL", "API_AUTH_TOKEN"]
 _missing = [k for k in REQUIRED_KEYS if not os.environ.get(k)]
 if _missing:
     raise EnvironmentError(f"Missing required environment variables: {', '.join(_missing)}")

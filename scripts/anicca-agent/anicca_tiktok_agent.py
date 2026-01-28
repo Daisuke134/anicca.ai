@@ -104,12 +104,29 @@ def run_agent():
         iteration += 1
         print(f"\n--- Iteration {iteration}/{max_iterations} ---")
 
-        response = client.chat.completions.create(
-            model=MODEL,
-            messages=messages,
-            tools=TOOL_DEFINITIONS,
-            tool_choice="auto",
-        )
+        # H-2: Retry on transient OpenAI API errors
+        response = None
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                response = client.chat.completions.create(
+                    model=MODEL,
+                    messages=messages,
+                    tools=TOOL_DEFINITIONS,
+                    tool_choice="auto",
+                    timeout=120,
+                )
+                break
+            except Exception as e:
+                if attempt < MAX_RETRIES:
+                    wait = 2 ** attempt
+                    print(f"  ⚠️ OpenAI API error (attempt {attempt + 1}/{MAX_RETRIES + 1}): {type(e).__name__}. Retrying in {wait}s...")
+                    import time as _time
+                    _time.sleep(wait)
+                else:
+                    print(f"  ❌ OpenAI API error after {MAX_RETRIES + 1} attempts: {type(e).__name__}")
+                    raise
+        if response is None:
+            break
 
         choice = response.choices[0]
         message = choice.message
@@ -152,7 +169,12 @@ def run_agent():
 
             # Track state for forced save (C-1, G-1)
             if fn_name == "save_post_record":
-                post_record_saved = True
+                try:
+                    save_result = json.loads(result)
+                    if not save_result.get("error"):
+                        post_record_saved = True
+                except json.JSONDecodeError:
+                    pass  # leave post_record_saved as False
             elif fn_name == "post_to_tiktok":
                 try:
                     result_data = json.loads(result)

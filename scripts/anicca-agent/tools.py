@@ -13,7 +13,6 @@ from config import (
     EXA_API_KEY,
     OPENAI_API_KEY,
     TIKTOK_ACCOUNT_ID,
-    IMAGE_QUALITY_THRESHOLD,
 )
 from openai import OpenAI
 from api_client import AdminAPIClient
@@ -198,8 +197,10 @@ def search_trends(**kwargs):
             for r in data.get("results", [])[:5]
         ]
         return json.dumps({"results": results})
+    except requests.exceptions.RequestException as e:
+        return json.dumps({"error": f"Exa API request failed: {type(e).__name__}", "results": []})
     except Exception as e:
-        return json.dumps({"error": str(e), "results": []})
+        return json.dumps({"error": f"Unexpected error: {type(e).__name__}", "results": []})
 
 
 def generate_image(**kwargs):
@@ -261,8 +262,10 @@ def generate_image(**kwargs):
                 return json.dumps({"error": "Image generation failed", "image_url": ""})
 
         return json.dumps({"error": "Image generation timed out", "image_url": ""})
+    except requests.exceptions.RequestException as e:
+        return json.dumps({"error": f"Fal.ai API request failed: {type(e).__name__}", "image_url": ""})
     except Exception as e:
-        return json.dumps({"error": str(e), "image_url": ""})
+        return json.dumps({"error": f"Unexpected error: {type(e).__name__}", "image_url": ""})
 
 
 def evaluate_image(**kwargs):

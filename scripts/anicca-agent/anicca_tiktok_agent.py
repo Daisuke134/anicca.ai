@@ -40,6 +40,27 @@ Call search_trends with a query related to the selected hook's theme.
 - Query examples: "self-improvement TikTok 2025", "habit change viral content"
 - Use trend insights to enhance your caption and image prompt
 
+### STEP 3.5: Decide Posting Time (MANDATORY)
+Decide the optimal posting time in JST based on today's day of week and the target persona.
+Use this evidence-based schedule (sources: Sprout Social 2.7B engagements, SocialPilot 700K posts):
+
+| Day       | Best Times (JST)      |
+|-----------|-----------------------|
+| Monday    | 10:00, 22:00          |
+| Tuesday   | 9:00, 22:00           |
+| Wednesday | 14:00, 17:00          |
+| Thursday  | 7:00, 11:00, 23:00    |
+| Friday    | 20:00                 |
+| Saturday  | 17:00, 20:00          |
+| Sunday    | 20:00                 |
+
+Rules:
+- Target persona (25-35歳) scrolls most in evening (19:00-23:00). Prefer evening slots.
+- Early engagement (first 30-90 min) drives TikTok algorithm. Choose times when audience is active.
+- Output the chosen time as ISO 8601 with +09:00 timezone (JST).
+- Example: "2026-01-29T22:00:00+09:00"
+- If the current time has already passed today's best slot, choose tomorrow's best slot.
+
 ### STEP 4: Generate Image
 Call generate_image with a detailed prompt.
 - Format: 9:16 portrait (TikTok standard)
@@ -52,18 +73,20 @@ Call evaluate_image with the generated image URL and hook text.
 - If score >= 6: proceed to Step 6
 - After 2 failed retries: post the best image anyway
 
-### STEP 6: Post to TikTok
-Call post_to_tiktok with the image URL and caption.
+### STEP 6: Post to TikTok (Scheduled)
+Call post_to_tiktok with the image URL, caption, and scheduled_time from Step 3.5.
 - Caption: hook text + brief context + hashtags
 - Hashtags: #anicca #習慣化 #自己改善 #マインドフルネス #仏教 #行動変容
 - Max caption length: 2200 chars
+- scheduled_time: ISO 8601 from Step 3.5 (MANDATORY)
 
 ### STEP 7: Save Record (MANDATORY - NEVER SKIP)
 Call save_post_record with ALL fields:
 - blotato_post_id: from Step 6 result
 - caption: the posted caption
 - hook_candidate_id: from Step 2 result (the selected hook's id)
-- agent_reasoning: 2-3 sentences explaining why you chose this hook and approach
+- agent_reasoning: 2-3 sentences explaining why you chose this hook, approach, AND posting time
+- scheduled_time: from Step 3.5 (the decided posting time)
 
 ## Target Persona
 25-35 years old, struggled with habits for 6-7 years, tried 10+ habit apps and failed.

@@ -46,7 +46,7 @@ class AdminAPIClient:
         return self._get("/hook-candidates", params=params)
 
     # EP-3
-    def save_post_record(self, blotato_post_id, caption, hook_candidate_id=None, agent_reasoning=None):
+    def save_post_record(self, blotato_post_id, caption, hook_candidate_id=None, agent_reasoning=None, scheduled_time=None):
         data = {
             "blotato_post_id": blotato_post_id,
             "caption": caption,
@@ -55,6 +55,8 @@ class AdminAPIClient:
             data["hook_candidate_id"] = hook_candidate_id
         if agent_reasoning:
             data["agent_reasoning"] = agent_reasoning[:10000]
+        if scheduled_time:
+            data["scheduled_time"] = scheduled_time
         return self._post("/tiktok/posts", json_data=data)
 
     # EP-4

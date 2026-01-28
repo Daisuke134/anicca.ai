@@ -113,7 +113,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "post_to_tiktok",
-            "description": "Post image to TikTok via Blotato API.",
+            "description": "Post image to TikTok via Blotato API. Supports scheduled posting via scheduled_time.",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -124,8 +124,12 @@ TOOL_DEFINITIONS = [
                         "items": {"type": "string"},
                         "default": [],
                     },
+                    "scheduled_time": {
+                        "type": "string",
+                        "description": "ISO 8601 datetime for scheduled posting (e.g., '2026-01-29T22:00:00+09:00'). If omitted, posts immediately.",
+                    },
                 },
-                "required": ["image_url", "caption"],
+                "required": ["image_url", "caption", "scheduled_time"],
             },
         },
     },
@@ -141,6 +145,7 @@ TOOL_DEFINITIONS = [
                     "blotato_post_id": {"type": "string", "description": "The post ID from Blotato API"},
                     "caption": {"type": "string", "description": "The posted caption text"},
                     "agent_reasoning": {"type": "string", "description": "2-3 sentences explaining why this hook and approach were chosen"},
+                    "scheduled_time": {"type": "string", "description": "The scheduled posting time (ISO 8601) decided by the agent"},
                 },
                 "required": ["blotato_post_id", "caption", "agent_reasoning"],
             },
@@ -350,8 +355,13 @@ def post_to_tiktok(**kwargs):
                 "isYourBrand": False,
                 "isAiGenerated": True,
             },
-        }
+        },
     }
+
+    # Scheduled posting: pass scheduledTime at top level (Blotato API spec)
+    scheduled_time = kwargs.get("scheduled_time")
+    if scheduled_time:
+        payload["scheduledTime"] = scheduled_time
 
     try:
         resp = requests.post(
@@ -386,6 +396,7 @@ def save_post_record(**kwargs):
             caption=kwargs["caption"],
             hook_candidate_id=hook_candidate_id,
             agent_reasoning=kwargs.get("agent_reasoning"),
+            scheduled_time=kwargs.get("scheduled_time"),
         )
         return json.dumps(result)
     except Exception as e:

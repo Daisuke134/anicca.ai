@@ -39,8 +39,11 @@ class AdminAPIClient:
         return self._get("/tiktok/recent-posts", params={"days": days})
 
     # EP-2
-    def get_hook_candidates(self, limit=20, sort_by="app_tap_rate"):
-        return self._get("/hook-candidates", params={"limit": limit, "sort_by": sort_by})
+    def get_hook_candidates(self, limit=20, sort_by="app_tap_rate", strategy=None):
+        params = {"limit": limit, "sort_by": sort_by}
+        if strategy:
+            params["strategy"] = strategy
+        return self._get("/hook-candidates", params=params)
 
     # EP-3
     def save_post_record(self, blotato_post_id, caption, hook_candidate_id=None, agent_reasoning=None):

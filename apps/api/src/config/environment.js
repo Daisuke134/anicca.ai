@@ -13,9 +13,9 @@ export const IS_DEVELOPMENT = NODE_ENV === 'development';
 // プロキシサーバー設定
 export const PROXY_BASE_URL = process.env.PROXY_BASE_URL || '';
 
-// 本番では必須（未設定は即座に失敗）
+// 本番では推奨（cron jobなど一部プロセスでは不要）
 if (IS_PRODUCTION && !PROXY_BASE_URL) {
-  throw new Error('PROXY_BASE_URL is required in production environment');
+  console.warn('[environment] PROXY_BASE_URL is not set in production (not required for cron jobs)');
 }
 
 // アプリケーションモード

@@ -339,14 +339,14 @@ def post_to_tiktok(**kwargs):
 
     try:
         resp = requests.post(
-            f"{BLOTATO_BASE_URL}/post",
+            f"{BLOTATO_BASE_URL}/posts",
             headers=headers,
             json=payload,
             timeout=30,
         )
         resp.raise_for_status()
         data = resp.json()
-        post_id = data.get("id", data.get("postId", "unknown"))
+        post_id = data.get("postSubmissionId", data.get("id", data.get("postId", "unknown")))
         return json.dumps({"success": True, "blotato_post_id": str(post_id)})
     except requests.exceptions.RequestException as e:
         return json.dumps({"success": False, "error": str(e), "blotato_post_id": ""})

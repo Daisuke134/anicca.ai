@@ -1,0 +1,15 @@
+{
+  "date": "2026-01-28",
+  "app_store": null,
+  "revenuecat": {
+    "mrr": 0.0,
+    "active_subscriptions": 0,
+    "active_trials": 0,
+    "trial_to_paid_count": 0,
+    "trial_expired_count": 0,
+    "monthly_churn_rate": 0.0
+  },
+  "errors": [
+    "App Store Connect API: ValueError: Unable to load PEM file. See https://cryptography.io/en/latest/faq/#why-can-t-i-import-my-pem-file for more details. MalformedFraming"
+  ]
+}

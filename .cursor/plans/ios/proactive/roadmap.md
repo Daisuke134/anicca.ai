@@ -1,6 +1,40 @@
 # Anicca ロードマップ
 
-> 最終更新: 2026-01-25 (Landing Page哲学を反映：自己終了原則、The Big Don't、AIの真の約束を追加)
+> 最終更新: 2026-01-28 (1.5.0完了 — TikTok AI Agent + Cross-User Learning + 自動メトリクス収集)
+
+## 実装ステータス
+
+| バージョン | Phase | 内容 | ステータス |
+|-----------|-------|------|----------|
+| **1.3.0** | Phase 6 (App) | LLM生成Nudge + ProblemType統一 + 通知言語修正 | ✅ App Store承認済 |
+| **1.4.0** | Phase 6 (App) | UI改善 + Paywall最適化 | ✅ App Store承認済 |
+| **1.5.0** | Phase 5-6 (Backend) | TikTok AI Agent + Thompson Sampling + Cross-User Learning | ✅ **Production稼働中** |
+| **1.6.0** | Phase 7 (統合) | One Buddha統合 + X Agent + 動的Nudge頻度 | 🔜 計画中 |
+| **1.7.0** | Phase 8 | 合成ユーザーシミュレーション | 🔜 計画中 |
+
+### 1.5.0 で完了したこと（2026-01-28）
+
+| 機能 | 詳細 | GHA/Production |
+|------|------|----------------|
+| **TikTok AI Agent** | OpenAI GPT-4o でフック選択→画像生成→投稿→記録を自動実行 | GHA毎日09:00 JST |
+| **Thompson Sampling** | hook_candidateの80%搾取/20%探索でフック選択を最適化 | Backend API |
+| **自動メトリクス収集** | Apify経由でTikTok view/like/share/commentを25時間後に自動取得 | GHA毎日10:00 JST |
+| **Cross-User Learning** | 全ユーザーの反応から「効くフック」を抽出→CrossUserWisdomテーブル | Backend cron |
+| **スケジュール投稿** | エージェントが「いつ投稿するか」を曜日別ベストプラクティスに基づき決定 | Blotato API |
+
+### 1.6.0 計画（One Buddha 統合）
+
+詳細: `.cursor/plans/ios/1.6.0/roadmap-1.6.0.md`
+
+| 優先度 | 機能 | 効果 |
+|--------|------|------|
+| P0 | データ統合層（TikTok + App + X） | 全プラットフォームで学習が加速 |
+| P0 | Thompson Sampling + LLM併用 | TSが「何が効く」、LLMが「なぜ効く」を担当 |
+| P1 | X (Twitter) Agent | テキストフックの高速検証（1日10投稿可能） |
+| P1 | 動的Nudge頻度 | Aniccaが「今日は10回」「今日は2回」を判断 |
+| P2 | 新フック生成→DB保存 | エージェントが作ったフックがThompson Samplingに入る |
+
+---
 >
 > この文書は、Aniccaの全ての計画の基盤となる。
 > プロダクトの思想、LP、デザイン、実装の全てがここから決まる。

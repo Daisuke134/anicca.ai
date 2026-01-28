@@ -1674,6 +1674,42 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 | Staging | `anicca-proxy-staging.up.railway.app` |
 | Production | `anicca-proxy-production.up.railway.app` |
 
+**注意**: `anicca-api-production` ではない。`anicca-proxy-production` が正しいURL。
+
+### Railway DB Proxy URL
+
+ローカルからRailway DBに接続する場合（Prismaマイグレーション等）:
+
+```
+# Production
+postgresql://postgres:***@tramway.proxy.rlwy.net:32477/railway
+
+# Staging
+postgresql://postgres:***@ballast.proxy.rlwy.net:51992/railway
+```
+
+**詳細**: `apps/api/.env.proxy` に保存済み（gitignored）
+
+### Railway トラブルシューティング
+
+| 問題 | 原因 | 解決 |
+|------|------|------|
+| **P3005: database schema not empty** | 既存DBにPrismaベースラインがない | `DATABASE_URL="..." npx prisma migrate resolve --applied <migration>` |
+| **pushしたのにRailwayが古いまま** | キャッシュまたはデプロイ未トリガー | `git commit --allow-empty -m "trigger redeploy" && git push` |
+| **502 Bad Gateway** | デプロイ中 or サーバークラッシュ | Railway Dashboard でログ確認 |
+| **railway run が internal hostに接続** | 内部URLはRailway内からのみアクセス可 | Proxy URL（上記）を使う |
+
+### 本番デプロイ前チェックリスト
+
+mainマージ前に必ず確認:
+
+| # | 項目 | コマンド |
+|---|------|---------|
+| 1 | GHA secrets確認 | `gh secret list -R Daisuke134/anicca.ai` |
+| 2 | API_BASE_URL確認 | `anicca-proxy-production` になっているか |
+| 3 | Prismaマイグレーション | 既存DBなら `migrate resolve --applied` |
+| 4 | 3並列サブエージェントレビュー | Python Agent, Backend API, DB Schema |
+
 ### Blotato アカウント
 
 | プラットフォーム | アカウント | Blotato Account ID |
@@ -1733,4 +1769,4 @@ gh secret list --repo Daisuke134/anicca.ai
 
 ---
 
-最終更新: 2026年1月28日（API Key管理ルール追加、GitHub Secrets CLI管理、Cronアーキテクチャ文書化、Railway URL記載）
+最終更新: 2026年1月28日（1.5.0完了、Railwayトラブルシューティング追加、本番デプロイ前チェックリスト追加、DB Proxy URL記載）

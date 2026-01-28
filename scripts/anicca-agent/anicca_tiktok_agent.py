@@ -16,8 +16,11 @@ Runs via GitHub Actions: .github/workflows/anicca-daily-post.yml
 import json
 import sys
 from openai import OpenAI
-from config import OPENAI_API_KEY, MODEL, MAX_RETRIES
+from config import OPENAI_API_KEY, MODEL, MAX_RETRIES, ALL_AGENT_KEYS, validate_env
 from tools import TOOL_DEFINITIONS, TOOL_FUNCTIONS, save_post_record, set_today_date, build_jst_iso
+
+# Validate all agent keys at startup
+validate_env(ALL_AGENT_KEYS)
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 

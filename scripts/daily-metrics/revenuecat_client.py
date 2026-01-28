@@ -41,13 +41,13 @@ async def fetch_revenuecat_metrics() -> RevenueCatMetrics:
         active_trials = 0
 
         for metric in metrics:
-            name = metric.get("name", "")
+            metric_id = metric.get("id", "")
             value = metric.get("value", 0)
-            if name == "mrr":
-                mrr = float(value) / 100  # cents to dollars
-            elif name == "active_subscriptions":
+            if metric_id == "mrr":
+                mrr = float(value)  # API returns dollars, not cents
+            elif metric_id == "active_subscriptions":
                 active_subs = int(value)
-            elif name == "active_trials":
+            elif metric_id == "active_trials":
                 active_trials = int(value)
 
         # Get trial-to-paid and churn metrics
@@ -64,13 +64,13 @@ async def fetch_revenuecat_metrics() -> RevenueCatMetrics:
             if events_resp.status_code == 200:
                 events_data = events_resp.json()
                 for metric in events_data.get("metrics", []):
-                    name = metric.get("name", "")
+                    metric_id = metric.get("id", "")
                     value = metric.get("value", 0)
-                    if name == "new_paid_from_trial":
+                    if metric_id == "new_paid_from_trial":
                         trial_to_paid = int(value)
-                    elif name == "expired_trials":
+                    elif metric_id == "expired_trials":
                         trial_expired = int(value)
-                    elif name == "churn":
+                    elif metric_id == "churn":
                         churn_rate = float(value)
         except httpx.HTTPError as e:
             # W-2: Log instead of silently swallowing

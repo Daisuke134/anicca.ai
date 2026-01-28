@@ -38,11 +38,6 @@ final class LLMNudgeCache {
         return cacheByHour[hourKey]
     }
 
-    /// 指定された問題タイプと時刻のNudgeが存在するか判定（getNudgeのnil判定ラッパー）
-    func hasNudge(for problem: ProblemType, hour: Int, minute: Int = 0) -> Bool {
-        return getNudge(for: problem, hour: hour, minute: minute) != nil
-    }
-
     /// 指定された問題タイプのNudgeを取得（時刻無視、デバッグ用）
     func getNudgeAnyHour(for problem: ProblemType) -> LLMGeneratedNudge? {
         return cacheByTime.values.first { $0.problemType == problem }

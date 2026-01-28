@@ -1,5 +1,4 @@
 import express from 'express';
-import rateLimit from 'express-rate-limit';
 
 // Realtime
 import realtimeDesktopRouter from './realtime/desktop.js';
@@ -37,10 +36,6 @@ import transcribeRouter from './tools/transcribe.js';
 // Preview
 import previewAppRouter from './preview/app.js';
 
-// Admin (internal API for TikTok agent / GitHub Actions)
-import adminTiktokRouter from './admin/tiktok.js';
-import adminHookCandidatesRouter from './admin/hookCandidates.js';
-
 
 const router = express.Router();
 
@@ -72,10 +67,5 @@ router.use('/tools/playwright', playwrightRouter);
 router.use('/tools/transcribe', transcribeRouter);
 
 router.use('/preview/app', previewAppRouter);
-
-// Admin API (requireInternalAuth on each router + rate limit 30 req/min)
-const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
-router.use('/admin/tiktok', adminLimiter, adminTiktokRouter);
-router.use('/admin/hook-candidates', adminLimiter, adminHookCandidatesRouter);
 
 export default router;

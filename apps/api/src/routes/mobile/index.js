@@ -9,13 +9,11 @@ import nudgeRouter from './nudge.js';
 import dailyMetricsRouter from './dailyMetrics.js';
 import preReminderRouter from './preReminder.js';
 import sensorsRouter from './sensors.js';
-import userTypeRouter from './userType.js';
 
 const router = express.Router();
 
 router.use('/realtime', realtimeRouter);
 router.use('/profile', profileRouter);
-router.use('/user-type', userTypeRouter);
 router.use('/entitlement', entitlementRouter);
 router.use('/account', accountRouter);
 router.use('/behavior', behaviorRouter);

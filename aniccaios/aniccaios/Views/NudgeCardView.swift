@@ -51,20 +51,30 @@ struct NudgeCardView: View {
                         Text(content.problemType.icon)
                             .font(.system(size: 48))
 
+                        #if DEBUG
                         if content.isAIGenerated {
-                            Circle()
-                                .fill(Color.blue.opacity(0.6))
-                                .frame(width: 6, height: 6)
+                            Text("🤖")
+                                .font(.system(size: 16))
                                 .offset(x: 8, y: -8)
-                                .accessibilityIdentifier("nudge-llm-indicator")
                         }
+                        #endif
                     }
 
-                    Text(content.problemType.notificationTitle)
-                        .font(.system(size: 14, weight: .medium))
-                        .foregroundStyle(AppTheme.Colors.secondaryLabel)
-                        .textCase(.uppercase)
-                        .tracking(1)
+                    HStack(spacing: 4) {
+                        Text(content.problemType.notificationTitle)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                            .textCase(.uppercase)
+                            .tracking(1)
+
+                        #if DEBUG
+                        if content.isAIGenerated {
+                            Text("(LLM)")
+                                .font(.system(size: 10, weight: .medium))
+                                .foregroundStyle(.blue)
+                        }
+                        #endif
+                    }
                 }
 
                 // Main quote

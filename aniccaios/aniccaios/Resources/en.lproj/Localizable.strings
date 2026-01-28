@@ -21,8 +21,8 @@
 "settings_language_label" = "Language";
 
 "onboarding_welcome_title" = "Welcome to\nAnicca";
-"onboarding_welcome_subtitle_line1" = "Anicca reaches out to you";
-"onboarding_welcome_subtitle_line2" = "at the moments you struggle most.";
+"onboarding_welcome_subtitle_line1" = "Anicca is your voice coach guiding";
+"onboarding_welcome_subtitle_line2" = "your actions and mind.";
 "onboarding_welcome_cta" = "Get Started";
 "onboarding_welcome_restore_description" = "Already have an account?";
 
@@ -371,12 +371,12 @@
 "onboarding_struggles_subtitle" = "Select all that apply.";
 
 "onboarding_value_title" = "What Anicca Can Do";
-"onboarding_value_card1_title" = "Nudges at the right moment";
-"onboarding_value_card1_body" = "Anicca sends you a message exactly when you need it — before you spiral, not after.";
-"onboarding_value_card2_title" = "Learns what works for you";
-"onboarding_value_card2_body" = "Every reaction teaches Anicca. Over time, it learns which words land and which ones miss.";
-"onboarding_value_card3_title" = "Goes beyond habit tracking";
-"onboarding_value_card3_body" = "Anicca doesn't count streaks. It addresses why you stay up late, why you can't stop, why you feel stuck.";
+"onboarding_value_card1_title" = "Guide your struggles";
+"onboarding_value_card1_body" = "Get personalized guidance and encouragement during difficult moments to help you stay on track.";
+"onboarding_value_card2_title" = "Help you build better habits";
+"onboarding_value_card2_body" = "Develop sustainable routines with actionable insights tailored to your unique goals and lifestyle.";
+"onboarding_value_card3_title" = "Understand your patterns";
+"onboarding_value_card3_body" = "Gain clarity on your behaviors and thought patterns to make meaningful, lasting changes.";
 
 "ideal_trait_kind" = "Kind";
 "ideal_trait_honest" = "Honest";

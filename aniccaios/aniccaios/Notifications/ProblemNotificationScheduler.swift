@@ -21,10 +21,7 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
     }
 
     /// 最小通知間隔（分）
-    private let minimumIntervalMinutes = 60
-
-    /// cant_wake_upの起床ウィンドウ用間隔（分）: 06:00-06:30
-    private let wakeWindowIntervalMinutes = 15
+    private let minimumIntervalMinutes = 30
     
     /// Phase 5: 最大シフト量（分）- 2時間まで
     private let maxShiftMinutes = 120
@@ -57,34 +54,31 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
                 var adjustedHour = time.hour
                 var adjustedMinute = time.minute
 
-                // v1.5.0: LLMキャッシュの有無を事前判定 — LLM Nudgeにはshiftを適用しない
-                let hasLLMContent = await MainActor.run {
-                    LLMNudgeCache.shared.hasNudge(for: problem, hour: time.hour, minute: time.minute)
+                // タイミング最適化: 2日連続ignoredならシフト（最大maxShiftMinutesまで）
+                let consecutiveIgnored = await MainActor.run {
+                    NudgeStatsManager.shared.getConsecutiveIgnoredDays(problemType: problemRaw, hour: time.hour)
                 }
 
-                if !hasLLMContent {
-                    // ルールベースのみ: タイミング最適化（2日連続ignoredならシフト）
-                    let consecutiveIgnored = await MainActor.run {
-                        NudgeStatsManager.shared.getConsecutiveIgnoredDays(problemType: problemRaw, hour: time.hour)
-                    }
+                let currentShift = getCurrentShiftMinutes(problemType: problemRaw, originalHour: time.hour)
+                let newShift = calculateNewShift(currentShift: currentShift, consecutiveIgnored: consecutiveIgnored)
 
-                    let currentShift = getCurrentShiftMinutes(problemType: problemRaw, originalHour: time.hour)
-                    let newShift = calculateNewShift(currentShift: currentShift, consecutiveIgnored: consecutiveIgnored)
+                if newShift > currentShift {
+                    // シフトが増加した場合
+                    let totalMinutes = time.hour * 60 + time.minute + newShift
+                    adjustedHour = (totalMinutes / 60) % 24
+                    adjustedMinute = totalMinutes % 60
 
-                    if newShift > currentShift {
-                        let totalMinutes = time.hour * 60 + time.minute + newShift
-                        adjustedHour = (totalMinutes / 60) % 24
-                        adjustedMinute = totalMinutes % 60
-                        recordShift(problemType: problemRaw, originalHour: time.hour, shiftMinutes: newShift)
-                        logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) (total shift: \(newShift)min, max: \(self.maxShiftMinutes)min)")
-                    } else if currentShift > 0 {
-                        let totalMinutes = time.hour * 60 + time.minute + currentShift
-                        adjustedHour = (totalMinutes / 60) % 24
-                        adjustedMinute = totalMinutes % 60
-                        logger.info("Keeping existing shift for \(problemRaw) at \(time.hour):\(time.minute), shift: \(currentShift)min")
-                    }
+                    // シフト量を保存
+                    recordShift(problemType: problemRaw, originalHour: time.hour, shiftMinutes: newShift)
+
+                    logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) (total shift: \(newShift)min, max: \(self.maxShiftMinutes)min)")
+                } else if currentShift > 0 {
+                    // 既存のシフトがある場合は維持
+                    let totalMinutes = time.hour * 60 + time.minute + currentShift
+                    adjustedHour = (totalMinutes / 60) % 24
+                    adjustedMinute = totalMinutes % 60
+                    logger.info("Keeping existing shift for \(problemRaw) at \(time.hour):\(time.minute), shift: \(currentShift)min")
                 }
-                // LLM Nudge → shiftスキップ（LLMが最適タイミングを判断済み）
 
                 allSchedules.append((time: (adjustedHour, adjustedMinute), problem: problem))
             }
@@ -93,7 +87,7 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
         // 時刻でソート
         allSchedules.sort { $0.time.hour * 60 + $0.time.minute < $1.time.hour * 60 + $1.time.minute }
 
-        // 最小間隔以内に被る場合は間隔分ずらしてスケジュール
+        // 30分以内に被る場合は15分ずらしてスケジュール（既存ロジック）
         var lastScheduledMinutes: Int?
         var scheduledCount = 0
 
@@ -103,9 +97,8 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
             var currentMinutes = hour * 60 + minute
 
             if let last = lastScheduledMinutes {
-                let interval = isWakeWindow(problem: schedule.problem, hour: hour, minute: minute) ? wakeWindowIntervalMinutes : minimumIntervalMinutes
-                if currentMinutes < last + interval {
-                    currentMinutes = last + interval
+                if currentMinutes < last + minimumIntervalMinutes {
+                    currentMinutes = last + 15
                     hour = (currentMinutes / 60) % 24
                     minute = currentMinutes % 60
                     logger.info("Shifted \(schedule.problem.rawValue) to \(hour):\(minute) to avoid collision")
@@ -286,15 +279,6 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
         }
     }
     
-    // MARK: - Wake Window Detection
-
-    /// cant_wake_upの起床ウィンドウ（06:00-06:30）かどうか判定
-    func isWakeWindow(problem: ProblemType, hour: Int, minute: Int) -> Bool {
-        guard problem == .cantWakeUp else { return false }
-        let totalMinutes = hour * 60 + minute
-        return totalMinutes >= 360 && totalMinutes <= 390 // 06:00-06:30
-    }
-
     // MARK: - Phase 7+8: Scheduled Date Calculation
 
     /// スケジュール予定時刻を計算

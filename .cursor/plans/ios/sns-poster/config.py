@@ -2,8 +2,7 @@
 SNS Poster Configuration
 アカウントID、APIエンドポイント、投稿設定
 
-戦略: 量で攻める。全アカウント「苦しみ軽減」コンテンツ。09:00 JST 一斉投稿。
-Phase 1: TikTok 除外（ReelFarm 運用中、新アカウント作成待ち）
+戦略: 量で攻める。1日3回投稿でバイラル確率を最大化。
 """
 import os
 from pathlib import Path
@@ -19,9 +18,6 @@ load_dotenv(PROJECT_ROOT / ".env")
 # =============================================================================
 BLOTATO_API_KEY = os.getenv("BLOTATO_API_KEY", "")
 FAL_API_KEY = os.getenv("FAL_API_KEY", "")
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY", "")
-EXA_API_KEY = os.getenv("EXA_API_KEY", "")
-APIFY_API_TOKEN = os.getenv("APIFY_API_TOKEN", "")  # Phase 2 で使用
 
 # =============================================================================
 # API Endpoints
@@ -31,158 +27,160 @@ FAL_BASE_URL = "https://queue.fal.run"
 
 # =============================================================================
 # 接続アカウント (Blotato Account IDs)
-#
-# 戦略: 量で攻める。全アカウント「苦しみ軽減」コンテンツ。09:00 JST 統一。
-# Phase 1: TikTok 除外（ReelFarm 運用中 → 新アカウント作成後に追加）
+# 
+# 戦略: 量で攻める。メインは1日3回投稿。
+# コンテンツ: BIP = Build in Public, MKT = マーケティング
 # =============================================================================
-
-# Phase 1 対象（9アカウント）
 ACCOUNTS = {
     # ---------------------------------------------------------------------
-    # X (Twitter) - 苦しみ軽減コンテンツ（テキスト重視）
+    # X (Twitter) - 6回/日
     # ---------------------------------------------------------------------
     "x_aniccaxxx": {
         "id": "11820",
         "username": "@aniccaxxx",
         "platform": "twitter",
+        "content": "BIP",  # Build in Public のみ
         "lang": "JP",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["20:00"],
     },
     "x_aniccaen": {
         "id": "11852",
         "username": "@aniccaen",
         "platform": "twitter",
+        "content": "MKT",
         "lang": "EN",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["20:00"],
     },
-
+    
     # ---------------------------------------------------------------------
-    # Instagram - 苦しみ軽減コンテンツ（ビジュアル重視）
+    # Instagram - 7回/日
     # ---------------------------------------------------------------------
     "ig_anicca_ai": {
         "id": "28896",
         "username": "@anicca.ai",
         "platform": "instagram",
+        "content": "MKT",
         "lang": "EN",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
     "ig_anicca_japan": {
         "id": "28897",
         "username": "@anicca.japan",
         "platform": "instagram",
+        "content": "MKT",
         "lang": "JP",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
     "ig_anicca_daily": {
         "id": "28682",
         "username": "@anicca.daily",
         "platform": "instagram",
+        "content": "MKT",
         "lang": "EN",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
-
+    
     # ---------------------------------------------------------------------
-    # YouTube - 苦しみ軽減コンテンツ（動画）
+    # TikTok - 7回/日
+    # ---------------------------------------------------------------------
+    "tt_anicca_ai": {
+        "id": "27339",
+        "username": "@anicca.ai",
+        "platform": "tiktok",
+        "content": "MKT",
+        "lang": "EN",
+        "frequency": 1,
+        "slots": ["19:00"],
+    },
+    "tt_anicca_japan": {
+        "id": "27527",
+        "username": "@anicca.japan",
+        "platform": "tiktok",
+        "content": "MKT",
+        "lang": "JP",
+        "frequency": 1,
+        "slots": ["19:00"],
+    },
+    "tt_anicca57": {
+        "id": "27528",
+        "username": "@anicca57",
+        "platform": "tiktok",
+        "content": "MKT",
+        "lang": "EN",
+        "frequency": 1,
+        "slots": ["20:00"],
+    },
+    
+    # ---------------------------------------------------------------------
+    # YouTube - 3回/日
     # ---------------------------------------------------------------------
     "youtube_en": {
         "id": "25421",
         "username": "Daisuke Narita (Anicca - AI Coaching app)",
         "platform": "youtube",
+        "content": "MKT",
         "lang": "EN",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
     "youtube_jp": {
         "id": "25646",
         "username": "@anicca.jp",  # Reviewer Test (Anicca)
         "platform": "youtube",
+        "content": "MKT",
         "lang": "JP",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
-
+    
     # ---------------------------------------------------------------------
-    # Threads - 苦しみ軽減コンテンツ（テキスト、カジュアル）
+    # Threads - 日本語
     # ---------------------------------------------------------------------
     "threads_japan": {
         "id": "4464",
         "username": "@anicca.japan",
         "platform": "threads",
+        "content": "MKT",
         "lang": "JP",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
-
+    
     # ---------------------------------------------------------------------
-    # Pinterest - 苦しみ軽減コンテンツ（美しい画像 + 啓発テキスト）
+    # Pinterest - 英語
     # ---------------------------------------------------------------------
     "pinterest": {
         "id": "3965",
         "username": "@aniccaai",
         "platform": "pinterest",
         "board_id": "796996533995957618",
+        "content": "MKT",
         "lang": "EN",
         "frequency": 1,
-        "slots": ["09:00"],
+        "slots": ["19:00"],
     },
 }
 
 # =============================================================================
-# TikTok アカウント（Phase 1 除外 - ReelFarm 運用中）
-# 新アカウント作成後に ACCOUNTS に追加する
+# コンテンツタイプ
 # =============================================================================
-TIKTOK_EXCLUDED = {
-    "tt_anicca_ai": {
-        "id": "27339",
-        "username": "@anicca.ai",
-        "platform": "tiktok",
-        "lang": "EN",
-        "status": "reelfarm_active",  # ReelFarm で運用中
-    },
-    "tt_anicca_japan": {
-        "id": "27527",
-        "username": "@anicca.japan",
-        "platform": "tiktok",
-        "lang": "JP",
-        "status": "reelfarm_active",
-    },
-    "tt_anicca57": {
-        "id": "27528",
-        "username": "@anicca57",
-        "platform": "tiktok",
-        "lang": "EN",
-        "status": "reelfarm_active",
-    },
-    "tt_anicca_self": {
-        "id": "28152",
-        "username": "@anicca.self",
-        "platform": "tiktok",
-        "lang": "EN",
-        "status": "connected",  # 2026-01-27: Blotato接続完了
-    },
-    # 新アカウント作成後にここに追加 → ACCOUNTS に移動
-    # "tt_new_jp": { "id": "???", "platform": "tiktok", "lang": "JP", "slots": ["09:00"] },
-    # "tt_new_en": { "id": "???", "platform": "tiktok", "lang": "EN", "slots": ["09:00"] },
-}
-
-# =============================================================================
-# コンテンツ4柱（Content Brain のローテーション）
-# =============================================================================
-CONTENT_PILLARS = {
-    "demo": "アプリの機能を見せる（通知→NudgeCard→変化）",
-    "story": "挫折→希望の物語（「6年間何も変われなかった」系）",
-    "faceless": "テキスト動画（フック + 仏教的メッセージ + 字幕）",
-    "mythbust": "「習慣アプリが全部失敗する本当の理由」系",
+CONTENT_TYPES = {
+    "BIP": "Build in Public",  # 開発日記、Day X、MRR報告
+    "MKT": "Marketing",        # アプリ紹介、チル動画、仏教系
 }
 
 # =============================================================================
 # アカウント検索ヘルパー
 # =============================================================================
+def get_accounts_by_content(content_type: str) -> list:
+    """コンテンツタイプでアカウントを取得"""
+    return [k for k, v in ACCOUNTS.items() if v.get("content") == content_type]
+
 def get_accounts_by_lang(lang: str) -> list:
     """言語でアカウントを取得"""
     return [k for k, v in ACCOUNTS.items() if v.get("lang") == lang]
@@ -196,8 +194,8 @@ def get_accounts_by_platform(platform: str) -> list:
 # =============================================================================
 DEFAULT_LINK = "https://anicca.app"
 DEFAULT_HASHTAGS = {
-    "EN": "#anicca #habits #selfimprovement #mindfulness #wellness #buddhism #mentalhealth",
-    "JP": "#anicca #習慣化 #自己改善 #マインドフルネス #仏教 #行動変容 #メンタルヘルス",
+    "BIP": "#buildinpublic #indiehacker #startup #ios #swiftui #anicca",
+    "MKT": "#anicca #habits #selfimprovement #mindfulness #wellness #buddhism",
 }
 
 # =============================================================================

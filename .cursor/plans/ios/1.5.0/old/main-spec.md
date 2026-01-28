@@ -274,82 +274,165 @@ This user is estimated to be Type: **完璧主義 (T1)** (confidence: 75%)
 ```
 Anicca（1つの知性）
 ├── アプリ内: Nudge → tap/👍👎 で学習
-└── TikTok: 投稿 → 視聴維持/保存 で学習
+└── TikTok: 投稿 → view/like/share で学習
      ↓
-両方の学習が統合されて、より良いHook/Contentを生成
+両方の学習が hook_candidates に統合
+     ↓
+Aniccaがどんどん賢くなる
 ```
 
-#### 4.3.2 TikTok API指標（調査結果確定）
+#### 4.3.2 アーキテクチャ（Aniccaエージェント）
 
-| 指標 | API取得可否 | 使用方法 |
-|------|------------|---------|
-| view_count | ✅ Research API | Hookのリーチ評価 |
-| like_count | ✅ Research API | Content品質評価 |
-| comment_count | ✅ Research API | エンゲージメント評価 |
-| share_count | ✅ Research API | **「刺さり」の代理指標** |
-| retention_rate | ❌ 取得不可 | **週1手動入力**（Creator Center） |
-| save_count | ❌ 取得不可 | share_countで代替 |
+**Aniccaは「ツールを持ったAIエージェント」としてTikTokに投稿する。**
 
-**APIソース**: [TikTok Research API](https://developers.tiktok.com/doc/research-api-specs-query-videos/)
-
-#### 4.3.2.1 TikTok Research APIフォールバック戦略
-
-**Research APIは申請依存のため、以下のフォールバックを用意する。**
-
-| 状況 | フォールバック | 影響 |
-|------|---------------|------|
-| 申請不許可 | 手動計測モードに切り替え | 週1でCreator Centerから全指標を手動入力 |
-| 権限不足（一部指標のみ） | 手動計測モードに切り替え | API部分取得は使用しない（DB整合性維持のため） |
-| レート制限超過 | 指標取得頻度を下げる（24h→48h） | 学習速度低下（許容） |
-| API障害 | リトライ + 手動計測 | 一時的な障害は許容 |
-
-**メトリクス整合性ルール**: 全指標（view/like/comment/share）は常にセットで保存。部分的な指標取得・保存は不可。
-- API取得成功 → 全指標を保存（metrics_fetched_at も設定）
-- API取得失敗/不許可 → 手動計測で全指標を入力（**metrics_fetched_atは手動入力時刻（NOW()）を設定**）
-  - CHECK制約 `chk_metrics_consistency` がメトリクス非NULL時に metrics_fetched_at 必須を強制するため
-
-**段階的ロールアウト基準**:
-
-| フェーズ | 条件 | アクション |
-|---------|------|-----------|
-| 1 | API申請承認 | 自動取得開始 |
-| 2 | 1週間安定稼働 | 探索率を20%→30%に上げる |
-| 3 | 30日間で50投稿 | wisdom判定を開始 |
-
-**申請不許可時の代替案**:
-1. Blotato APIでの指標取得を調査（公開APIに指標取得がある場合）
-2. 手動計測運用を継続（週1でCreator Centerからコピペ）
-3. TikTokチャネルをPhase 2以降に延期し、アプリ内学習に集中
-
-#### 4.3.3 指標マッピング（修正版）
-
-| TikTok指標 | Anicca指標 | 計算式 | 用途 |
-|-----------|-----------|--------|------|
-| like_count / view_count | Hook効果 | like率 > 10% = 効く | Hookの「掴み」評価 |
-| share_count / view_count | Content「刺さり」 | share率 > 5% = 刺さる | **保存の代替指標** |
-| comment_count（質的分析） | 安全性 | ネガティブ < 10% | ガードレール |
-| retention_rate（週1手動） | Hook品質 | 維持率 > 40% = 効く | 補足データ |
-
-#### 4.3.4 投稿フロー
+パイプライン（スクリプトが順番に実行される）ではなく、**LLMがツールを使って自律的に判断・生成・評価・投稿する**エージェントループ。
 
 ```
-1. Aniccaが「今日テストするHook」を決定
-   └── Hook候補ライブラリから探索枠（20%）+ 活用枠（80%）を選択
-2. Hook → Fal.ai で画像生成
-3. Blotato経由でTikTok投稿（Account ID: 27339）
-4. 24時間後、TikTok Research APIで指標取得
-5. 指標をHook候補ライブラリに反映
-6. 週1でCreator Centerからretention_rateを手動入力
+GitHub Actions cron (00:00 UTC = 09:00 JST)
+    │
+    ▼
+anicca_tiktok_agent.py を起動（= Aniccaが目を覚ます）
+    │
+    └── Aniccaが自分でツールを使って思考・生成・評価・投稿
+        └── OpenAI Function Calling エージェントループ
+            └── finish_reason == "stop" まで繰り返し
+
+═══════════════════════════════════════════════
+
+fetch_metrics.py（別cron、投稿24時間後）
+    │
+    └── Apify TikTok Scraperでメトリクス自動取得（機械的ジョブ）
 ```
+
+| 部分 | Aniccaの判断（エージェント） | 機械的（cron） |
+|------|---------------------------|---------------|
+| 何を投稿するか | ✅ Aniccaが考える | |
+| 画像生成・評価・やり直し | ✅ Aniccaが判断 | |
+| 投稿する/しない | ✅ Aniccaが判断（品質低ければ投稿しない選択も可） | |
+| メトリクス取得 | | ✅ 機械的（Apifyで数字を取るだけ） |
+| hook_candidates更新 | | ✅ 機械的（取得した数字をDBに書くだけ） |
+
+#### 4.3.3 ツール定義
+
+Aniccaエージェントが使用するツール一覧：
+
+| ツール名 | 内部実装 | 入力 | 出力 | 用途 |
+|---------|---------|------|------|------|
+| `get_yesterday_performance` | DB読み取り（API経由） | なし | 昨日の投稿メトリクス（view/like/share/comment） | 振り返り |
+| `get_hook_candidates` | DB読み取り（API経由） | フィルタ条件（任意） | hook_candidatesの成績データ（アプリ+TikTok） | 分析 |
+| `search_trends` | Exa API | 検索クエリ（string） | トレンド記事・パターン | トレンド調査 |
+| `generate_image` | Fal.ai FLUX Schnell | プロンプト（string） | 画像URL | コンテンツ生成 |
+| `evaluate_image` | OpenAI Vision API | 画像URL | 品質評価（OK/NG + 理由） | 自己評価 |
+| `post_to_tiktok` | Blotato API (Account ID: 28152) | 画像URL + キャプション | 投稿結果（post_id） | 投稿実行 |
+| `save_post_record` | DB書き込み（API経由） | 投稿データ | 保存結果 | 記録 |
+
+**ツール実装**: 既存の `blotato.py`、`fal_ai.py` をツール関数としてラップ。
+
+**DB接続方式**: GitHub ActionsからSupabase DBへの直接接続ではなく、**API経由**（`apps/api/` のエンドポイントを叩く）。セキュリティリスク軽減のため。
+
+#### 4.3.4 エージェントフロー
+
+```
+Aniccaが目を覚ます（GitHub Actions cron起動）
+
+Aniccaの思考ループ:
+│
+├── 1. get_yesterday_performance() → 昨日の成績を確認
+│      「like率7%か。Hookが弱かった」
+│
+├── 2. get_hook_candidates() → 何が効いているか分析
+│      「strictトーンの命令形がtap率72%で最高」
+│
+├── 3. search_trends() → 今日のトレンドを調べる
+│      「"I tried quitting..." 形式がバズってる」
+│
+├── 4. LLMの思考 → 今日の投稿内容を決定
+│      Hook: "6年間、毎晩『今日こそ早く寝る』って言ってた"
+│      キャプション: "..."
+│
+├── 5. generate_image() → Fal.aiで画像生成
+│
+├── 6. evaluate_image() → 画像を自己評価
+│      「テキストが読みにくい。作り直し」
+│      → generate_image() を再度呼ぶ（最大3回）
+│
+├── 7. evaluate_image() → OK
+│      「これなら良い」
+│
+├── 8. post_to_tiktok() → Blotato経由で投稿
+│
+└── 9. save_post_record() → tiktok_postsに記録
+
+finish_reason: "stop"（Aniccaが完了と判断）
+```
+
+**安全制限**:
+- ツール呼び出し上限: 20回/セッション（無限ループ防止）
+- 画像生成リトライ上限: 3回
+- エラー時: ログ記録 → Slack/Discord webhook通知 → 投稿スキップ（翌日リトライ）
 
 #### 4.3.5 投稿スケジュール（確定）
 
 | 項目 | 設定 |
 |------|------|
-| 頻度 | 1日1投稿（平日のみ、週5） |
-| 時間 | 12:00 JST（TikTokのエンゲージメントピーク） |
-| 形式 | 静止画（初期）→ スライド（中期）→ 動画（将来） |
+| 頻度 | 1日1投稿（毎日） |
+| 時間 | 09:00 JST（GitHub Actions cron: 00:00 UTC） |
+| 形式 | Phase 1: 画像1枚のみ（スライド・動画は後） |
 | 言語 | 英語中心 |
+| アカウント | @anicca.self（Blotato Account ID: 28152）のみ |
+
+#### 4.3.6 メトリクス取得（自動）
+
+**Apify TikTok Scraperで全メトリクスを自動取得。手動入力なし。**
+
+| 項目 | 内容 |
+|------|------|
+| **Actor** | `clockworks/tiktok-scraper`（Apify公式、119Kユーザー） |
+| **実行タイミング** | 投稿24時間後（GitHub Actions cron） |
+| **取得指標** | playCount(view), diggCount(like), shareCount, commentCount |
+| **保存先** | `tiktok_posts` テーブル → `hook_candidates` テーブル更新 |
+
+```
+fetch_metrics.py（機械的ジョブ、エージェント不要）
+│
+├── 1. Apify API呼び出し（@anicca.self の動画一覧取得）
+├── 2. metrics_fetched_at が NULL の投稿を照合
+├── 3. tiktok_posts のメトリクス更新
+├── 4. hook_candidates の tiktok_* カラム更新（加重平均）
+└── 5. tiktok_high_performer フラグ再計算
+```
+
+**メトリクス整合性ルール**: 全指標（view/like/comment/share）は常にセットで保存。部分的な指標取得・保存は不可。
+
+#### 4.3.7 指標マッピング
+
+| TikTok指標 | Anicca指標 | 計算式 | 用途 |
+|-----------|-----------|--------|------|
+| diggCount / playCount | Hook効果 | like率 > 10% = 効く | Hookの「掴み」評価 |
+| shareCount / playCount | Content「刺さり」 | share率 > 5% = 刺さる | 保存の代替指標 |
+| commentCount（質的分析） | 安全性 | ネガティブ < 10% | ガードレール |
+
+#### 4.3.8 学習フェーズ
+
+| Phase | 期間 | データソース | Aniccaの判断材料 |
+|-------|------|-------------|-----------------|
+| 1（コールドスタート） | Day 1-14 | hook_candidatesのアプリ内データ + Exaトレンド | past_performance = なし |
+| 2（混合） | Day 15-30 | 自分のTikTokデータ + アプリ内データ + トレンド | トップ成績パターン強化、ワースト回避 |
+| 3（自己最適化） | Day 31+ | 自分のデータが主 | 完全フィードバックループ |
+
+#### 4.3.9 制限・禁止事項
+
+| 制限（Phase 1） | 理由 |
+|----------------|------|
+| 画像1枚のみ（動画・スライドは後） | 制限 = 革新。テキスト+画像で学びを最大化 |
+| TikTok EN 1アカウントのみ（@anicca.self） | 1つのチャネルで学習ループを確立してから拡張 |
+
+| 禁止 | 理由 |
+|------|------|
+| ビュー最大化に寄せる | 煽りに走る危険 |
+| 罪悪感を煽る表現 | 「苦しみを減らす」の反対 |
+| 「簡単に習慣化！」「たったN日で！」系のHook | ペルソナが警戒する嘘Hook |
+| 自動スクロール/自動いいね | 規約違反リスク |
 
 ### 4.4 Hook候補ライブラリ
 
@@ -485,7 +568,6 @@ interface HookCandidate {
   tiktokPerformance: {
     likeRate: number;          // like_count / view_count
     shareRate: number;         // share_count / view_count
-    retentionRate: number | null;  // 手動入力
     sampleSize: number;        // 投稿数
     lastUpdated: Date;         // → DB: updated_at（チャネル別なし、全体の最終更新）
   };
@@ -499,6 +581,8 @@ interface HookCandidate {
 **DB⇔Interface マッピング注記**:
 - `lastUpdated`は両チャネルで共通の`updated_at`を使用（チャネル別更新時刻は持たない）
 - `sampleSize`の定義: アプリ = 総Nudgeイベント数（tapped+ignored）、TikTok = 投稿数
+
+**エージェント連携**: Aniccaエージェント（`anicca_tiktok_agent.py`）が `get_hook_candidates` ツールでこのテーブルを読み、投稿内容の判断に使用する。高成績のHookを活用枠（80%）、新規Hookを探索枠（20%）でThompson Samplingにより選択。
 
 ### 4.5 学習ループ
 
@@ -964,7 +1048,7 @@ npx prisma db execute --stdin <<< "SELECT conname FROM pg_constraint WHERE conna
 | type_stats | `CHECK (type_id IN (...))`, `CHECK (tone IN (...))`, `chk_sample_size_consistency`, `chk_thumbs_*` | CHECK |
 | type_stats | `tap_rate GENERATED ALWAYS AS`, `thumbs_up_rate GENERATED ALWAYS AS` | 計算列 |
 | hook_candidates | 全CHECK制約、`chk_hook_candidates_user_types`、`chk_hook_candidates_problem_types`、`UNIQUE(text, tone)`、`WHERE is_wisdom = true` Partial Index、`USING GIN(target_user_types)` | CHECK, Index, UNIQUE |
-| tiktok_posts | `chk_metrics_consistency`, `CHECK (retention_rate_manual ...)`, `chk_retention_requires_hook` | CHECK |
+| tiktok_posts | `chk_metrics_consistency` | CHECK |
 | wisdom_patterns | `CHECK (confidence ...)`、`chk_wisdom_patterns_user_types`、`USING GIN(target_user_types)` | CHECK, Index |
 
 **注意**: Prismaモデルには計算列（tap_rate, thumbs_up_rate）を定義しない。読み取りは`prisma.$queryRaw`で直接SQLを実行する。
@@ -1059,8 +1143,6 @@ CREATE TABLE hook_candidates (
     CHECK (tiktok_like_rate >= 0 AND tiktok_like_rate <= 1),
   tiktok_share_rate NUMERIC(5,4) NOT NULL DEFAULT 0
     CHECK (tiktok_share_rate >= 0 AND tiktok_share_rate <= 1),
-  tiktok_retention_rate NUMERIC(5,4)  -- nullable, 手動入力（集計元がない場合NULL許容）
-    CHECK (tiktok_retention_rate IS NULL OR (tiktok_retention_rate >= 0 AND tiktok_retention_rate <= 1)),
   tiktok_sample_size INT NOT NULL DEFAULT 0 CHECK (tiktok_sample_size >= 0),
   tiktok_high_performer BOOLEAN NOT NULL DEFAULT FALSE,  -- like率>10% AND share率>5%
   is_wisdom BOOLEAN NOT NULL DEFAULT FALSE,
@@ -1091,21 +1173,12 @@ CREATE TABLE tiktok_posts (
   like_count BIGINT CHECK (like_count IS NULL OR like_count >= 0),
   comment_count BIGINT CHECK (comment_count IS NULL OR comment_count >= 0),
   share_count BIGINT CHECK (share_count IS NULL OR share_count >= 0),
-  retention_rate_manual NUMERIC(5,4)  -- 手動入力
-    CHECK (retention_rate_manual IS NULL OR (retention_rate_manual >= 0 AND retention_rate_manual <= 1)),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  -- retention整合性制約: retention_rate_manual設定時はhook_candidate_id必須（集計更新のため）
-  CONSTRAINT chk_retention_requires_hook CHECK (
-    retention_rate_manual IS NULL OR hook_candidate_id IS NOT NULL
-  ),
-  -- メトリクス整合性制約: 未取得時は全てNULL、取得後は全て非NULL（metrics_fetched_at含む）
+  -- メトリクス整合性制約: 未取得時は全てNULL、取得後は全て非NULL
   CONSTRAINT chk_metrics_consistency CHECK (
     (metrics_fetched_at IS NULL AND view_count IS NULL AND like_count IS NULL AND comment_count IS NULL AND share_count IS NULL)
     OR (
       metrics_fetched_at IS NOT NULL AND view_count IS NOT NULL AND like_count IS NOT NULL AND comment_count IS NOT NULL AND share_count IS NOT NULL
-      AND view_count >= like_count
-      AND view_count >= comment_count
-      AND view_count >= share_count
     )
   )
 );
@@ -1200,7 +1273,6 @@ model HookCandidate {
   appSampleSize      Int       @default(0) @map("app_sample_size")
   tiktokLikeRate     Decimal   @db.Decimal(5,4) @default(0) @map("tiktok_like_rate")
   tiktokShareRate    Decimal   @db.Decimal(5,4) @default(0) @map("tiktok_share_rate")
-  tiktokRetentionRate Decimal? @db.Decimal(5,4) @map("tiktok_retention_rate")
   tiktokSampleSize   Int       @default(0) @map("tiktok_sample_size")
   tiktokHighPerformer Boolean  @default(false) @map("tiktok_high_performer")
   isWisdom           Boolean   @default(false) @map("is_wisdom")
@@ -1229,7 +1301,6 @@ model TiktokPost {
   likeCount         BigInt?   @map("like_count")
   commentCount      BigInt?   @map("comment_count")
   shareCount        BigInt?   @map("share_count")
-  retentionRateManual Decimal? @db.Decimal(5,4) @map("retention_rate_manual")
   createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
 
   hookCandidate HookCandidate? @relation(fields: [hookCandidateId], references: [id])
@@ -1406,187 +1477,10 @@ async function getUserType(userId) {
   - 実装場所: `apps/api/src/routes/mobile/profile.js` の Problems 更新ハンドラ
 - テスト: `test_classifyUserType_empty_problems_returns_default`, `test_clearProblems_deletes_user_type_estimate`, `test_getUserType_calculates_on_missing` で検証
 
-#### POST /admin/tiktok/retention
+#### ※ 削除済み: POST /admin/tiktok/retention, POST /admin/tiktok/metrics
 
-**概要**: TikTok投稿のretention_rateを手動入力（週1運用）
-
-| 項目 | 内容 |
-|------|------|
-| **認証** | Admin API Key（X-Admin-Key header） |
-| **レート制限** | 10 req/min |
-
-**リクエスト**:
-```json
-{
-  "postId": "uuid-of-tiktok-post",
-  "retentionRate": 0.42
-}
-```
-
-| フィールド | 型 | 必須 | バリデーション |
-|-----------|-----|------|---------------|
-| postId | string (UUID) | ✅ | 存在するtiktok_posts.id |
-| retentionRate | number | ✅ | 0.0 <= x <= 1.0 |
-
-**レスポンス（200 OK）**:
-```json
-{
-  "success": true,
-  "data": {
-    "postId": "uuid-of-tiktok-post",
-    "retentionRate": 0.42,
-    "retentionUpdatedAt": "2026-01-26T10:00:00Z"
-  }
-}
-```
-
-**データフロー**:
-1. `tiktok_posts.retention_rate_manual` を更新（postId指定の1件）
-2. 該当投稿の `hook_candidate_id` を取得
-3. `hook_candidates.tiktok_retention_rate` を集計更新（同一hook_candidate_idの全投稿のAVG）
-4. レスポンスの `retentionUpdatedAt` は手動入力時刻（`metrics_fetched_at` ではない）
-
-**⚠️ トランザクション要件**:
-- 上記Step 1-3は単一トランザクションで実行すること（BEGIN/COMMIT）
-- 途中失敗時はROLLBACKし、tiktok_postsとhook_candidatesの不整合を防ぐ
-- Prisma実装: `prisma.$transaction([...])` で2つのクエリを囲む
-
-```sql
--- $1 = retentionRate, $2 = postId
--- ⚠️ 以下は単一トランザクション内で実行
-
--- Step 1: tiktok_posts更新
-UPDATE tiktok_posts SET retention_rate_manual = $1 WHERE id = $2;
-
--- Step 2-3: hook_candidates集計更新（postIdからhook_candidate_idを取得）
-WITH target_post AS (
-  SELECT hook_candidate_id FROM tiktok_posts WHERE id = $2
-)
-UPDATE hook_candidates SET
-  tiktok_retention_rate = (
-    SELECT AVG(tp.retention_rate_manual)
-    FROM tiktok_posts tp
-    WHERE tp.hook_candidate_id = (SELECT hook_candidate_id FROM target_post)
-      AND tp.retention_rate_manual IS NOT NULL
-  ),
-  updated_at = NOW()
-WHERE id = (SELECT hook_candidate_id FROM target_post);
-```
-
-**監査ログ**: Task B8（auditLogger.js）でログファイルに記録。DBテーブルは不要（JSON Lines形式で `logs/audit/retention-*.jsonl` に保存）。
-
-**hook_candidate_id が NULL の場合**:
-- tiktok_posts の hook_candidate_id が NULL の投稿に対しては retention 入力を**拒否**
-- 理由: hook_candidates への集計更新ができないため、データ整合性が崩れる
-- 対応: 先に hook_candidate_id を設定するよう促す
-
-**エラーレスポンス**:
-| コード | 条件 | レスポンス |
-|--------|------|-----------|
-| 400 | バリデーションエラー | `{"success": false, "error": "retentionRate must be between 0 and 1"}` |
-| 401 | Admin Key無効 | `{"success": false, "error": "Invalid admin key"}` |
-| 404 | postId不存在 | `{"success": false, "error": "Post not found"}` |
-| 422 | hook_candidate_id未設定 | `{"success": false, "error": "Post has no hook_candidate_id. Assign a hook candidate first."}` |
-
-#### POST /admin/tiktok/metrics
-
-**概要**: TikTok投稿のメトリクスを手動入力（API取得失敗時のフォールバック）
-
-| 項目 | 内容 |
-|------|------|
-| **認証** | Admin API Key（X-Admin-Key header） |
-| **用途** | TikTok Research API 取得失敗時、Creator Center から手動でコピーした指標を入力 |
-
-**リクエスト**:
-```json
-{
-  "postId": "uuid-of-tiktok-post",
-  "viewCount": 12500,
-  "likeCount": 850,
-  "commentCount": 42,
-  "shareCount": 125
-}
-```
-
-**パラメータ**:
-| フィールド | 型 | 必須 | 制約 |
-|-----------|-----|------|------|
-| postId | string (UUID) | ✅ | 存在する tiktok_posts.id |
-| viewCount | number | ✅ | >= 0 |
-| likeCount | number | ✅ | >= 0, <= viewCount |
-| commentCount | number | ✅ | >= 0, <= viewCount |
-| shareCount | number | ✅ | >= 0, <= viewCount |
-
-**レスポンス（200 OK）**:
-```json
-{
-  "success": true,
-  "data": {
-    "postId": "uuid-of-tiktok-post",
-    "metricsUpdatedAt": "2026-01-26T10:00:00Z"
-  }
-}
-```
-
-**データフロー**:
-1. バリデーション（viewCount >= like/comment/share）
-2. tiktok_posts を更新（view_count, like_count, comment_count, share_count, metrics_fetched_at = NOW()）
-3. 該当投稿の hook_candidate_id を取得（非NULLの場合のみ以降を実行）
-4. hook_candidates の tiktok_like_rate, tiktok_share_rate を**加重平均**で再計算・更新
-5. tiktok_high_performer フラグを再計算・更新（like率>10% AND share率>5% AND sample_size>=5）
-
-**⚠️ トランザクション要件**:
-- 上記Step 2-5は単一トランザクションで実行すること（BEGIN/COMMIT）
-- 途中失敗時はROLLBACKし、tiktok_postsとhook_candidatesの不整合を防ぐ
-- Prisma実装: `prisma.$transaction([...])` でクエリを囲む
-
-```sql
--- $1=viewCount, $2=likeCount, $3=commentCount, $4=shareCount, $5=postId
--- ⚠️ 以下は単一トランザクション内で実行
-
--- Step 1: tiktok_posts更新（metrics_fetched_atも設定）
-UPDATE tiktok_posts SET
-  view_count = $1,
-  like_count = $2,
-  comment_count = $3,
-  share_count = $4,
-  metrics_fetched_at = NOW()
-WHERE id = $5;
-
--- Step 2-4: hook_candidates集計更新 + tiktok_high_performer再計算（hook_candidate_id非NULLの場合のみ）
--- ※ 加重平均: SUM(like_count)/SUM(view_count) で投稿ごとの閲覧数差を考慮
-WITH target_post AS (
-  SELECT hook_candidate_id FROM tiktok_posts WHERE id = $5 AND hook_candidate_id IS NOT NULL
-),
-aggregated AS (
-  SELECT
-    SUM(tp.like_count)::NUMERIC / NULLIF(SUM(tp.view_count), 0) AS like_rate,
-    SUM(tp.share_count)::NUMERIC / NULLIF(SUM(tp.view_count), 0) AS share_rate,
-    COUNT(*) AS sample_count
-  FROM tiktok_posts tp
-  WHERE tp.hook_candidate_id = (SELECT hook_candidate_id FROM target_post)
-    AND tp.metrics_fetched_at IS NOT NULL
-)
-UPDATE hook_candidates SET
-  tiktok_like_rate = COALESCE((SELECT like_rate FROM aggregated), 0),
-  tiktok_share_rate = COALESCE((SELECT share_rate FROM aggregated), 0),
-  tiktok_sample_size = COALESCE((SELECT sample_count FROM aggregated), 0),
-  -- tiktok_high_performer: fetchTiktokMetricsと同じ条件（like率>10% AND share率>5% AND sample>=5）
-  tiktok_high_performer = (
-    COALESCE((SELECT like_rate FROM aggregated), 0) > 0.10
-    AND COALESCE((SELECT share_rate FROM aggregated), 0) > 0.05
-    AND COALESCE((SELECT sample_count FROM aggregated), 0) >= 5
-  ),
-  updated_at = NOW()
-WHERE id = (SELECT hook_candidate_id FROM target_post);
-```
-
-**エラーレスポンス**:
-| コード | 条件 | レスポンス |
-|--------|------|-----------|
-| 400 | バリデーションエラー | `{"success": false, "error": "viewCount must be >= likeCount/commentCount/shareCount"}` |
-| 401 | Admin Key無効 | `{"success": false, "error": "Invalid admin key"}` |
-| 404 | postId不存在 | `{"success": false, "error": "Post not found"}` |
+**理由**: メトリクス取得は Apify TikTok Scraper (`clockworks/tiktok-scraper`) で完全自動化。手動入力API不要。
+`fetch_metrics.py` が24時間後に自動取得し、`tiktok_posts` と `hook_candidates` を更新する。
 
 ---
 
@@ -1662,19 +1556,23 @@ WHERE id = (SELECT hook_candidate_id FROM target_post);
 
 ### 9.1 並列可能性分析
 
-| Track | 依存関係 | 並列実行 |
-|-------|---------|---------|
-| Track A（クロスユーザー学習） | なし | ✅ 可能 |
-| Track B（TikTok投稿） | なし | ✅ 可能 |
-| Track C（学習ループ統合） | A + B 完了後 | ❌ 待機 |
+| Track | 依存関係 | 並列実行 | 担当ディレクトリ |
+|-------|---------|---------|----------------|
+| Track A（クロスユーザー学習） | なし | ✅ 可能 | `apps/api/src/services/`, `apps/api/src/routes/` |
+| Track B（TikTok投稿） | なし | ✅ 可能 | `apps/api/src/jobs/`, `apps/api/src/services/hookEvaluator.js` |
+| Track C（学習ループ統合） | A + B 完了後 | ❌ 待機 | `apps/api/src/jobs/generateNudges.js` |
+| **SNS Poster（別 Spec）** | **なし** | **✅ 可能** | **`.cursor/plans/ios/sns-poster/*.py`, `.github/workflows/`** |
+
+**注**: SNS Poster は別エージェントが `sns-full-automation-spec.md` に基づき並列実装。Python スクリプトのため Node.js バックエンドとコンフリクトなし。
 
 ### 9.2 Worktree構成
 
 ```
 ~/Downloads/
 ├── anicca-project/                    ← メインリポジトリ（dev）
-├── anicca-1.5.0-track-a/             ← Worktree（Track A）
-└── anicca-1.5.0-track-b/             ← Worktree（Track B）
+├── anicca-1.5.0-track-a/             ← Worktree（Track A: クロスユーザー学習）
+├── anicca-1.5.0-track-b/             ← Worktree（Track B: TikTok投稿）
+└── anicca-sns-poster/                ← Worktree（SNS Poster: 別エージェント）
 ```
 
 ### 9.3 Worktree作成コマンド
@@ -1685,22 +1583,27 @@ git worktree add ../anicca-1.5.0-track-a -b feature/1.5.0-cross-user-learning
 
 # Track B: TikTok投稿
 git worktree add ../anicca-1.5.0-track-b -b feature/1.5.0-tiktok-bridge
+
+# SNS Poster（別エージェントが実行）
+git worktree add ../anicca-sns-poster -b feature/sns-poster
 ```
 
 ### 9.4 担当範囲（触るファイル）
 
 | Worktree | 触るファイル | 触らないファイル |
 |----------|------------|----------------|
-| Track A | `apps/api/src/services/userTypeService.js`<br>`apps/api/src/routes/mobile/userType.js`<br>`apps/api/src/jobs/aggregateTypeStats.js`<br>`apps/api/src/jobs/generateNudges.js`（タイプ別パターンセクション追加のみ） | `scripts/sns-poster/**` |
-| Track B | `apps/api/src/jobs/postToTiktok.js`<br>`apps/api/src/jobs/fetchTiktokMetrics.js`<br>`apps/api/src/services/hookEvaluator.js`<br>`scripts/sns-poster/**` | `apps/api/src/services/userTypeService.js` |
+| Track A | `apps/api/src/services/userTypeService.js`<br>`apps/api/src/routes/mobile/userType.js`<br>`apps/api/src/jobs/aggregateTypeStats.js`<br>`apps/api/src/jobs/generateNudges.js`（タイプ別パターンセクション追加のみ） | `scripts/sns-poster/**`, `.cursor/plans/ios/sns-poster/**` |
+| Track B | `apps/api/src/jobs/postToTiktok.js`<br>`apps/api/src/jobs/fetchTiktokMetrics.js`<br>`apps/api/src/services/hookEvaluator.js` | `apps/api/src/services/userTypeService.js`, `.cursor/plans/ios/sns-poster/**` |
+| SNS Poster | `.cursor/plans/ios/sns-poster/*.py`<br>`.github/workflows/sns-daily.yml` | `apps/api/**`（一切触らない） |
 
 ### 9.5 マージ順序
 
 ```
-1. Track A と Track B を並列実行
-2. 両方完了後、dev にマージ（A → B の順）
+1. Track A と Track B と SNS Poster を並列実行
+2. Track A + B 完了後、dev にマージ（A → B の順）
 3. Track C を dev で実行
-4. 全完了後、main にマージ → リリース
+4. SNS Poster は独立してマージ可能（Track A/B/C と依存関係なし）
+5. 全完了後、main にマージ → リリース
 ```
 
 ---

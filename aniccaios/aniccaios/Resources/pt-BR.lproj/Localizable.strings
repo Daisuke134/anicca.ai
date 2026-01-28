@@ -21,8 +21,8 @@
 "settings_language_label" = "Language";
 
 "onboarding_welcome_title" = "Welcome to\nAnicca";
-"onboarding_welcome_subtitle_line1" = "Anicca is your voice coach guiding";
-"onboarding_welcome_subtitle_line2" = "your actions and mind.";
+"onboarding_welcome_subtitle_line1" = "Anicca vem até você";
+"onboarding_welcome_subtitle_line2" = "nos momentos mais difíceis.";
 "onboarding_welcome_cta" = "Get Started";
 "onboarding_welcome_restore_description" = "Already have an account?";
 
@@ -371,12 +371,12 @@
 "onboarding_struggles_subtitle" = "Select all that apply.";
 
 "onboarding_value_title" = "What Anicca Can Do";
-"onboarding_value_card1_title" = "Guide your struggles";
-"onboarding_value_card1_body" = "Get personalized guidance and encouragement during difficult moments to help you stay on track.";
-"onboarding_value_card2_title" = "Help you build better habits";
-"onboarding_value_card2_body" = "Develop sustainable routines with actionable insights tailored to your unique goals and lifestyle.";
-"onboarding_value_card3_title" = "Understand your patterns";
-"onboarding_value_card3_body" = "Gain clarity on your behaviors and thought patterns to make meaningful, lasting changes.";
+"onboarding_value_card1_title" = "Na hora certa";
+"onboarding_value_card1_body" = "Anicca te envia uma mensagem exatamente quando você precisa — antes de entrar em espiral.";
+"onboarding_value_card2_title" = "Aprende o que funciona para você";
+"onboarding_value_card2_body" = "Cada reação ensina Anicca. Com o tempo, sabe quais palavras te tocam.";
+"onboarding_value_card3_title" = "Mais que um rastreador de hábitos";
+"onboarding_value_card3_body" = "Anicca não conta sequências. Aborda por que você fica acordado, por que não consegue parar, por que se sente preso.";
 
 "ideal_trait_kind" = "Kind";
 "ideal_trait_honest" = "Honest";

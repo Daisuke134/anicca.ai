@@ -344,6 +344,78 @@ exports.Prisma.BanditModelScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
+exports.Prisma.UserTypeEstimateScalarFieldEnum = {
+  userId: 'userId',
+  primaryType: 'primaryType',
+  typeScores: 'typeScores',
+  confidence: 'confidence',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TypeStatsScalarFieldEnum = {
+  typeId: 'typeId',
+  tone: 'tone',
+  tappedCount: 'tappedCount',
+  ignoredCount: 'ignoredCount',
+  thumbsUpCount: 'thumbsUpCount',
+  thumbsDownCount: 'thumbsDownCount',
+  sampleSize: 'sampleSize',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.HookCandidateScalarFieldEnum = {
+  id: 'id',
+  text: 'text',
+  tone: 'tone',
+  targetProblemTypes: 'targetProblemTypes',
+  targetUserTypes: 'targetUserTypes',
+  appTapRate: 'appTapRate',
+  appThumbsUpRate: 'appThumbsUpRate',
+  appSampleSize: 'appSampleSize',
+  tiktokLikeRate: 'tiktokLikeRate',
+  tiktokShareRate: 'tiktokShareRate',
+  tiktokSampleSize: 'tiktokSampleSize',
+  tiktokHighPerformer: 'tiktokHighPerformer',
+  isWisdom: 'isWisdom',
+  explorationWeight: 'explorationWeight',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
+exports.Prisma.TiktokPostScalarFieldEnum = {
+  id: 'id',
+  hookCandidateId: 'hookCandidateId',
+  tiktokVideoId: 'tiktokVideoId',
+  blotatoPostId: 'blotatoPostId',
+  caption: 'caption',
+  postedAt: 'postedAt',
+  metricsFetchedAt: 'metricsFetchedAt',
+  viewCount: 'viewCount',
+  likeCount: 'likeCount',
+  commentCount: 'commentCount',
+  shareCount: 'shareCount',
+  agentReasoning: 'agentReasoning',
+  scheduledAt: 'scheduledAt',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.WisdomPatternScalarFieldEnum = {
+  id: 'id',
+  patternName: 'patternName',
+  description: 'description',
+  targetUserTypes: 'targetUserTypes',
+  effectiveTone: 'effectiveTone',
+  effectiveHookPattern: 'effectiveHookPattern',
+  effectiveContentLength: 'effectiveContentLength',
+  appEvidence: 'appEvidence',
+  tiktokEvidence: 'tiktokEvidence',
+  confidence: 'confidence',
+  verifiedAt: 'verifiedAt',
+  createdAt: 'createdAt',
+  updatedAt: 'updatedAt'
+};
+
 exports.Prisma.SortOrder = {
   asc: 'asc',
   desc: 'desc'
@@ -395,7 +467,12 @@ exports.Prisma.ModelName = {
   NudgeOutcome: 'NudgeOutcome',
   FeelingSession: 'FeelingSession',
   HabitLog: 'HabitLog',
-  BanditModel: 'BanditModel'
+  BanditModel: 'BanditModel',
+  UserTypeEstimate: 'UserTypeEstimate',
+  TypeStats: 'TypeStats',
+  HookCandidate: 'HookCandidate',
+  TiktokPost: 'TiktokPost',
+  WisdomPattern: 'WisdomPattern'
 };
 
 /**

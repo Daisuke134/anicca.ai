@@ -170,7 +170,8 @@ model Profile {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
 
-  settings UserSetting?
+  settings         UserSetting?
+  userTypeEstimate UserTypeEstimate?
 
   @@map("profiles")
 }
@@ -300,4 +301,104 @@ model BanditModel {
 
   @@unique([domain, version])
   @@map("bandit_models")
+}
+
+// -----------------------------
+// 1.5.0 Cross-User Learning
+// -----------------------------
+
+model UserTypeEstimate {
+  userId      String   @id @map("user_id") @db.Uuid
+  primaryType String   @map("primary_type") @db.VarChar(10)
+  typeScores  Json     @default("{}") @map("type_scores") @db.JsonB
+  confidence  Decimal  @default(0) @db.Decimal(5, 4)
+  createdAt   DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  profile Profile @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([primaryType])
+  @@map("user_type_estimates")
+}
+
+model TypeStats {
+  typeId          String   @map("type_id") @db.VarChar(10)
+  tone            String   @db.VarChar(20)
+  tappedCount     BigInt   @default(0) @map("tapped_count")
+  ignoredCount    BigInt   @default(0) @map("ignored_count")
+  thumbsUpCount   BigInt   @default(0) @map("thumbs_up_count")
+  thumbsDownCount BigInt   @default(0) @map("thumbs_down_count")
+  sampleSize      BigInt   @default(0) @map("sample_size")
+  updatedAt       DateTime @default(now()) @map("updated_at") @db.Timestamptz
+  // NOTE: tap_rate, thumbs_up_rate are GENERATED ALWAYS AS columns in PostgreSQL
+  // Not defined in Prisma; read via prisma.$queryRaw
+
+  @@id([typeId, tone])
+  @@map("type_stats")
+}
+
+model HookCandidate {
+  id                  String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  text                String   @db.Text
+  tone                String   @db.VarChar(20)
+  targetProblemTypes  String[] @default([]) @map("target_problem_types")
+  targetUserTypes     String[] @default([]) @map("target_user_types")
+  appTapRate          Decimal  @default(0) @map("app_tap_rate") @db.Decimal(5, 4)
+  appThumbsUpRate     Decimal  @default(0) @map("app_thumbs_up_rate") @db.Decimal(5, 4)
+  appSampleSize       Int      @default(0) @map("app_sample_size")
+  tiktokLikeRate      Decimal  @default(0) @map("tiktok_like_rate") @db.Decimal(5, 4)
+  tiktokShareRate     Decimal  @default(0) @map("tiktok_share_rate") @db.Decimal(5, 4)
+  tiktokSampleSize    Int      @default(0) @map("tiktok_sample_size")
+  tiktokHighPerformer Boolean  @default(false) @map("tiktok_high_performer")
+  isWisdom            Boolean  @default(false) @map("is_wisdom")
+  explorationWeight   Decimal  @default(1.0) @map("exploration_weight") @db.Decimal(3, 2)
+  createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  tiktokPosts TiktokPost[]
+
+  @@unique([text, tone])
+  @@index([tone])
+  @@map("hook_candidates")
+}
+
+model TiktokPost {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hookCandidateId  String?   @map("hook_candidate_id") @db.Uuid
+  tiktokVideoId    String?   @unique @map("tiktok_video_id") @db.VarChar(100)
+  blotatoPostId    String?   @map("blotato_post_id") @db.VarChar(100)
+  caption          String?   @db.Text
+  postedAt         DateTime  @default(now()) @map("posted_at") @db.Timestamptz
+  metricsFetchedAt DateTime? @map("metrics_fetched_at") @db.Timestamptz
+  viewCount        BigInt?   @map("view_count")
+  likeCount        BigInt?   @map("like_count")
+  commentCount     BigInt?   @map("comment_count")
+  shareCount       BigInt?   @map("share_count")
+  agentReasoning   String?   @map("agent_reasoning") @db.Text
+  scheduledAt      DateTime? @map("scheduled_at") @db.Timestamptz
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  hookCandidate HookCandidate? @relation(fields: [hookCandidateId], references: [id])
+
+  @@index([hookCandidateId])
+  @@index([postedAt(sort: Desc)])
+  @@map("tiktok_posts")
+}
+
+model WisdomPattern {
+  id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  patternName            String    @unique @map("pattern_name") @db.VarChar(100)
+  description            String?   @db.Text
+  targetUserTypes        String[]  @default([]) @map("target_user_types")
+  effectiveTone          String?   @map("effective_tone") @db.VarChar(20)
+  effectiveHookPattern   String?   @map("effective_hook_pattern") @db.Text
+  effectiveContentLength String?   @map("effective_content_length") @db.VarChar(20)
+  appEvidence            Json      @default("{}") @map("app_evidence") @db.JsonB
+  tiktokEvidence         Json      @default("{}") @map("tiktok_evidence") @db.JsonB
+  confidence             Decimal   @default(0) @db.Decimal(5, 4)
+  verifiedAt             DateTime? @map("verified_at") @db.Timestamptz
+  createdAt              DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt              DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("wisdom_patterns")
 }

@@ -232,6 +232,38 @@ struct LLMNudgeCacheTests {
         #expect(cache.getNudge(for: .cantWakeUp, hour: 5, minute: 30) == nil)
     }
 
+    // MARK: - v1.5.0: hasNudge Tests
+
+    @Test("hasNudge returns true when nudge exists")
+    func test_hasNudge_returnsTrue() async throws {
+        let cache = LLMNudgeCache.shared
+        cache.clear()
+
+        let nudge = try makeTestNudge()
+        cache.setNudges([nudge])
+
+        #expect(cache.hasNudge(for: .cantWakeUp, hour: 7) == true)
+    }
+
+    @Test("hasNudge returns false when nudge does not exist")
+    func test_hasNudge_returnsFalse() async {
+        let cache = LLMNudgeCache.shared
+        cache.clear()
+
+        #expect(cache.hasNudge(for: .cantWakeUp, hour: 7) == false)
+    }
+
+    @Test("hasNudge returns false for wrong problem type")
+    func test_hasNudge_wrongProblem() async throws {
+        let cache = LLMNudgeCache.shared
+        cache.clear()
+
+        let nudge = try makeTestNudge(problemType: .cantWakeUp, scheduledHour: 7)
+        cache.setNudges([nudge])
+
+        #expect(cache.hasNudge(for: .stayingUpLate, hour: 7) == false)
+    }
+
     @Test("Multiple nudges with different minutes are stored correctly")
     func test_multipleNudges_differentMinutes() async {
         let cache = LLMNudgeCache.shared

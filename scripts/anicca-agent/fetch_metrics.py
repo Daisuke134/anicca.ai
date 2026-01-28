@@ -20,6 +20,11 @@ from datetime import datetime, timedelta, timezone
 
 import requests
 
+from config import API_ONLY_KEYS, validate_env
+
+# Only require API keys (not OpenAI/Blotato/Fal/Exa)
+validate_env(API_ONLY_KEYS)
+
 from api_client import AdminAPIClient
 
 APIFY_API_TOKEN = os.environ.get("APIFY_API_TOKEN", "")

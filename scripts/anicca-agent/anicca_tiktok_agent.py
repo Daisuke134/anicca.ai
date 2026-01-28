@@ -17,7 +17,7 @@ import json
 import sys
 from openai import OpenAI
 from config import OPENAI_API_KEY, MODEL, MAX_RETRIES
-from tools import TOOL_DEFINITIONS, TOOL_FUNCTIONS, save_post_record
+from tools import TOOL_DEFINITIONS, TOOL_FUNCTIONS, save_post_record, set_today_date, build_jst_iso
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
@@ -117,6 +117,9 @@ def run_agent():
     current_time_str = now_jst.strftime("%Y-%m-%dT%H:%M:%S+09:00")
     day_of_week = now_jst.strftime("%A")
     today_date = now_jst.strftime("%Y-%m-%d")
+
+    # C-1 fix: anchor all tools to the same date
+    set_today_date(today_date)
 
     messages = [{"role": "system", "content": SYSTEM_PROMPT}]
     messages.append({
@@ -219,10 +222,10 @@ def run_agent():
                     if result_data.get("success"):
                         last_blotato_post_id = result_data.get("blotato_post_id")
                         last_caption = fn_args.get("caption", "")
-                        # Convert posting_time (HH:MM) to ISO 8601
+                        # Convert posting_time (HH:MM) to ISO 8601 via shared helper
                         pt = fn_args.get("posting_time")
                         if pt:
-                            last_scheduled_time = f"{today_date}T{pt}:00+09:00"
+                            last_scheduled_time = build_jst_iso(pt)
                 except (json.JSONDecodeError, KeyError):
                     pass
             elif fn_name == "get_hook_candidates":

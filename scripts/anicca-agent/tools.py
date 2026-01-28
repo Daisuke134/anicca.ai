@@ -3,7 +3,9 @@ Anicca TikTok Agent - Tool Definitions
 7 tools for the OpenAI function calling agent.
 """
 import json
+import re
 import time
+from datetime import datetime, timezone, timedelta
 import requests
 from config import (
     BLOTATO_API_KEY,
@@ -19,6 +21,45 @@ from api_client import AdminAPIClient
 
 api = AdminAPIClient()
 _openai_client = OpenAI(api_key=OPENAI_API_KEY)
+
+# =============================================================================
+# Date anchor (C-1 fix): set once at agent startup, used by all tools
+# =============================================================================
+_JST = timezone(timedelta(hours=9))
+_today_date_jst = None  # set by set_today_date()
+
+
+def set_today_date(date_str: str):
+    """Set the date anchor once at agent startup. Format: YYYY-MM-DD"""
+    global _today_date_jst
+    _today_date_jst = date_str
+
+
+def _get_today_date():
+    if _today_date_jst:
+        return _today_date_jst
+    return datetime.now(_JST).strftime("%Y-%m-%d")
+
+
+def _validate_hhmm(time_str):
+    """Validate HH:MM format and return normalized string, or None if invalid."""
+    if not time_str or not isinstance(time_str, str):
+        return None
+    match = re.match(r'^(\d{1,2}):(\d{2})$', time_str.strip())
+    if not match:
+        return None
+    h, m = int(match.group(1)), int(match.group(2))
+    if h < 0 or h > 23 or m < 0 or m > 59:
+        return None
+    return f"{h:02d}:{m:02d}"
+
+
+def build_jst_iso(time_hhmm: str):
+    """Build ISO 8601 JST datetime from HH:MM + today's date anchor."""
+    validated = _validate_hhmm(time_hhmm)
+    if not validated:
+        return None
+    return f"{_get_today_date()}T{validated}:00+09:00"
 
 # =============================================================================
 # OpenAI Tool Definitions (JSON Schema)
@@ -358,13 +399,17 @@ def post_to_tiktok(**kwargs):
         },
     }
 
-    # Scheduled posting: build ISO 8601 from posting_time (HH:MM) + today's date
+    # Scheduled posting: build ISO 8601 from posting_time (HH:MM) + anchored date
     posting_time = kwargs.get("posting_time")
     if posting_time:
-        from datetime import datetime, timezone, timedelta
-        jst = timezone(timedelta(hours=9))
-        today = datetime.now(jst).strftime("%Y-%m-%d")
-        scheduled_iso = f"{today}T{posting_time}:00+09:00"
+        scheduled_iso = build_jst_iso(posting_time)
+        if not scheduled_iso:
+            return json.dumps({"success": False, "error": f"Invalid posting_time format: '{posting_time}'. Expected HH:MM.", "blotato_post_id": ""})
+        # C-3: Reject past times (allow 5 min grace for clock skew)
+        scheduled_dt = datetime.fromisoformat(scheduled_iso)
+        now_jst = datetime.now(_JST)
+        if scheduled_dt < now_jst - timedelta(minutes=5):
+            return json.dumps({"success": False, "error": f"posting_time {posting_time} is in the past (now: {now_jst.strftime('%H:%M')} JST). Pick a future time.", "blotato_post_id": ""})
         payload["scheduledTime"] = scheduled_iso
 
     try:
@@ -397,14 +442,9 @@ def save_post_record(**kwargs):
     if not hook_candidate_id:
         print("⚠️ [save_post_record] hook_candidate_id is missing. Thompson Sampling feedback loop will be incomplete.")
 
-    # Convert posting_time (HH:MM) to ISO 8601 with today's date
+    # Convert posting_time (HH:MM) to ISO 8601 using anchored date
     posting_time = kwargs.get("posting_time")
-    scheduled_time_iso = None
-    if posting_time:
-        from datetime import datetime, timezone, timedelta
-        jst = timezone(timedelta(hours=9))
-        today = datetime.now(jst).strftime("%Y-%m-%d")
-        scheduled_time_iso = f"{today}T{posting_time}:00+09:00"
+    scheduled_time_iso = build_jst_iso(posting_time) if posting_time else None
 
     try:
         result = api.save_post_record(

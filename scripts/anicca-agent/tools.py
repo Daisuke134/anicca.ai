@@ -79,15 +79,15 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "generate_image",
-            "description": "Generate an image via Fal.ai Ideogram v3 (best for text-in-image).",
+            "description": "Generate an image via Fal.ai. Default model is nano_banana (fast, high quality).",
             "parameters": {
                 "type": "object",
                 "properties": {
                     "prompt": {"type": "string", "description": "Image generation prompt"},
                     "model": {
                         "type": "string",
-                        "enum": ["ideogram", "nano_banana"],
-                        "default": "ideogram",
+                        "enum": ["nano_banana", "ideogram"],
+                        "default": "nano_banana",
                     },
                 },
                 "required": ["prompt"],
@@ -206,13 +206,13 @@ def search_trends(**kwargs):
 def generate_image(**kwargs):
     try:
         prompt = kwargs["prompt"]
-        model = kwargs.get("model", "ideogram")
+        model = kwargs.get("model", "nano_banana")
 
         endpoint_map = {
             "ideogram": "fal-ai/ideogram/v3",
             "nano_banana": "fal-ai/nano-banana-pro",
         }
-        endpoint = endpoint_map.get(model, "fal-ai/ideogram/v3")
+        endpoint = endpoint_map.get(model, "fal-ai/nano-banana-pro")
 
         headers = {
             "Authorization": f"Key {FAL_API_KEY}",

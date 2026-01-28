@@ -40,6 +40,14 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
     func scheduleNotifications(for problems: [String]) async {
         await removeAllProblemNotifications()
 
+        // Time Sensitive 設定チェック（計測用ログ）
+        if #available(iOS 15.0, *) {
+            let settings = await center.notificationSettings()
+            if settings.timeSensitiveSetting == .disabled {
+                logger.warning("Time Sensitive notifications are disabled by user. Nudges will not break through Focus modes.")
+            }
+        }
+
         // ★ 重要: Free プランかつ月間上限到達済みの場合はスケジュールしない
         let canSchedule = await MainActor.run { AppState.shared.canReceiveNudge }
 
@@ -232,7 +240,8 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
         }
 
         if #available(iOS 15.0, *) {
-            notificationContent.interruptionLevel = .active
+            let settings = await center.notificationSettings()
+            notificationContent.interruptionLevel = (settings.timeSensitiveSetting == .enabled) ? .timeSensitive : .active
         }
 
         var dateComponents = DateComponents()

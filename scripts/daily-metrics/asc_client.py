@@ -1,5 +1,6 @@
 """App Store Connect API client for fetching download and conversion metrics."""
 
+import gzip
 import os
 import sys
 import time
@@ -84,7 +85,12 @@ async def fetch_app_store_metrics() -> AppStoreMetrics:
                     params=params,
                 )
                 if resp.status_code == 200:
-                    lines = resp.text.strip().split("\n")
+                    # Sales reports are gzip compressed
+                    try:
+                        content = gzip.decompress(resp.content).decode("utf-8")
+                    except gzip.BadGzipFile:
+                        content = resp.text  # Fallback if not compressed
+                    lines = content.strip().split("\n")
                     if len(lines) > 1:
                         # S-2: Parse header row for column indices
                         header_cols = lines[0].split("\t")

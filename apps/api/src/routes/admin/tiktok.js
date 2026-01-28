@@ -42,6 +42,7 @@ router.get('/recent-posts', async (req, res) => {
         like_rate: viewCount > 0 ? likeCount / viewCount : 0,
         share_rate: viewCount > 0 ? shareCount / viewCount : 0,
         agent_reasoning: p.agentReasoning,
+        scheduled_at: p.scheduledAt,
         hook: p.hookCandidate
           ? { text: p.hookCandidate.text, tone: p.hookCandidate.tone }
           : null,
@@ -62,7 +63,7 @@ router.get('/recent-posts', async (req, res) => {
 // =============================================================================
 router.post('/posts', async (req, res) => {
   try {
-    const { hook_candidate_id, blotato_post_id, caption, agent_reasoning } = req.body;
+    const { hook_candidate_id, blotato_post_id, caption, agent_reasoning, scheduled_time } = req.body;
 
     if (!blotato_post_id || typeof blotato_post_id !== 'string') {
       return res.status(400).json({ error: 'blotato_post_id is required' });
@@ -102,6 +103,7 @@ router.post('/posts', async (req, res) => {
         blotatoPostId: blotato_post_id,
         caption,
         agentReasoning: agent_reasoning || null,
+        scheduledAt: scheduled_time ? new Date(scheduled_time) : null,
         postedAt: new Date(),
       },
     });

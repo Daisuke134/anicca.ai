@@ -27728,6 +27728,7 @@ export namespace Prisma {
     commentCount: bigint | null
     shareCount: bigint | null
     agentReasoning: string | null
+    scheduledAt: Date | null
     createdAt: Date | null
   }
 
@@ -27744,6 +27745,7 @@ export namespace Prisma {
     commentCount: bigint | null
     shareCount: bigint | null
     agentReasoning: string | null
+    scheduledAt: Date | null
     createdAt: Date | null
   }
 
@@ -27760,6 +27762,7 @@ export namespace Prisma {
     commentCount: number
     shareCount: number
     agentReasoning: number
+    scheduledAt: number
     createdAt: number
     _all: number
   }
@@ -27792,6 +27795,7 @@ export namespace Prisma {
     commentCount?: true
     shareCount?: true
     agentReasoning?: true
+    scheduledAt?: true
     createdAt?: true
   }
 
@@ -27808,6 +27812,7 @@ export namespace Prisma {
     commentCount?: true
     shareCount?: true
     agentReasoning?: true
+    scheduledAt?: true
     createdAt?: true
   }
 
@@ -27824,6 +27829,7 @@ export namespace Prisma {
     commentCount?: true
     shareCount?: true
     agentReasoning?: true
+    scheduledAt?: true
     createdAt?: true
     _all?: true
   }
@@ -27927,6 +27933,7 @@ export namespace Prisma {
     commentCount: bigint | null
     shareCount: bigint | null
     agentReasoning: string | null
+    scheduledAt: Date | null
     createdAt: Date
     _count: TiktokPostCountAggregateOutputType | null
     _avg: TiktokPostAvgAggregateOutputType | null
@@ -27962,6 +27969,7 @@ export namespace Prisma {
     commentCount?: boolean
     shareCount?: boolean
     agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
     hookCandidate?: boolean | TiktokPost$hookCandidateArgs<ExtArgs>
   }, ExtArgs["result"]["tiktokPost"]>
@@ -27979,6 +27987,7 @@ export namespace Prisma {
     commentCount?: boolean
     shareCount?: boolean
     agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
     hookCandidate?: boolean | TiktokPost$hookCandidateArgs<ExtArgs>
   }, ExtArgs["result"]["tiktokPost"]>
@@ -27996,6 +28005,7 @@ export namespace Prisma {
     commentCount?: boolean
     shareCount?: boolean
     agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
     hookCandidate?: boolean | TiktokPost$hookCandidateArgs<ExtArgs>
   }, ExtArgs["result"]["tiktokPost"]>
@@ -28013,10 +28023,11 @@ export namespace Prisma {
     commentCount?: boolean
     shareCount?: boolean
     agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
   }
 
-  export type TiktokPostOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "hookCandidateId" | "tiktokVideoId" | "blotatoPostId" | "caption" | "postedAt" | "metricsFetchedAt" | "viewCount" | "likeCount" | "commentCount" | "shareCount" | "agentReasoning" | "createdAt", ExtArgs["result"]["tiktokPost"]>
+  export type TiktokPostOmit<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetOmit<"id" | "hookCandidateId" | "tiktokVideoId" | "blotatoPostId" | "caption" | "postedAt" | "metricsFetchedAt" | "viewCount" | "likeCount" | "commentCount" | "shareCount" | "agentReasoning" | "scheduledAt" | "createdAt", ExtArgs["result"]["tiktokPost"]>
   export type TiktokPostInclude<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
     hookCandidate?: boolean | TiktokPost$hookCandidateArgs<ExtArgs>
   }
@@ -28045,6 +28056,7 @@ export namespace Prisma {
       commentCount: bigint | null
       shareCount: bigint | null
       agentReasoning: string | null
+      scheduledAt: Date | null
       createdAt: Date
     }, ExtArgs["result"]["tiktokPost"]>
     composites: {}
@@ -28482,6 +28494,7 @@ export namespace Prisma {
     readonly commentCount: FieldRef<"TiktokPost", 'BigInt'>
     readonly shareCount: FieldRef<"TiktokPost", 'BigInt'>
     readonly agentReasoning: FieldRef<"TiktokPost", 'String'>
+    readonly scheduledAt: FieldRef<"TiktokPost", 'DateTime'>
     readonly createdAt: FieldRef<"TiktokPost", 'DateTime'>
   }
     
@@ -30395,6 +30408,7 @@ export namespace Prisma {
     commentCount: 'commentCount',
     shareCount: 'shareCount',
     agentReasoning: 'agentReasoning',
+    scheduledAt: 'scheduledAt',
     createdAt: 'createdAt'
   };
 
@@ -32230,6 +32244,7 @@ export namespace Prisma {
     commentCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     agentReasoning?: StringNullableFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeFilter<"TiktokPost"> | Date | string
     hookCandidate?: XOR<HookCandidateNullableScalarRelationFilter, HookCandidateWhereInput> | null
   }
@@ -32247,6 +32262,7 @@ export namespace Prisma {
     commentCount?: SortOrderInput | SortOrder
     shareCount?: SortOrderInput | SortOrder
     agentReasoning?: SortOrderInput | SortOrder
+    scheduledAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     hookCandidate?: HookCandidateOrderByWithRelationInput
   }
@@ -32267,6 +32283,7 @@ export namespace Prisma {
     commentCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     agentReasoning?: StringNullableFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeFilter<"TiktokPost"> | Date | string
     hookCandidate?: XOR<HookCandidateNullableScalarRelationFilter, HookCandidateWhereInput> | null
   }, "id" | "tiktokVideoId">
@@ -32284,6 +32301,7 @@ export namespace Prisma {
     commentCount?: SortOrderInput | SortOrder
     shareCount?: SortOrderInput | SortOrder
     agentReasoning?: SortOrderInput | SortOrder
+    scheduledAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: TiktokPostCountOrderByAggregateInput
     _avg?: TiktokPostAvgOrderByAggregateInput
@@ -32308,6 +32326,7 @@ export namespace Prisma {
     commentCount?: BigIntNullableWithAggregatesFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableWithAggregatesFilter<"TiktokPost"> | bigint | number | null
     agentReasoning?: StringNullableWithAggregatesFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableWithAggregatesFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"TiktokPost"> | Date | string
   }
 
@@ -34264,6 +34283,7 @@ export namespace Prisma {
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
     agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
     hookCandidate?: HookCandidateCreateNestedOneWithoutTiktokPostsInput
   }
@@ -34281,6 +34301,7 @@ export namespace Prisma {
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
     agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -34296,6 +34317,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     hookCandidate?: HookCandidateUpdateOneWithoutTiktokPostsNestedInput
   }
@@ -34313,6 +34335,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -34329,6 +34352,7 @@ export namespace Prisma {
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
     agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -34344,6 +34368,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -34360,6 +34385,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -35859,6 +35885,7 @@ export namespace Prisma {
     commentCount?: SortOrder
     shareCount?: SortOrder
     agentReasoning?: SortOrder
+    scheduledAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -35882,6 +35909,7 @@ export namespace Prisma {
     commentCount?: SortOrder
     shareCount?: SortOrder
     agentReasoning?: SortOrder
+    scheduledAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -35898,6 +35926,7 @@ export namespace Prisma {
     commentCount?: SortOrder
     shareCount?: SortOrder
     agentReasoning?: SortOrder
+    scheduledAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -37054,6 +37083,7 @@ export namespace Prisma {
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
     agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -37069,6 +37099,7 @@ export namespace Prisma {
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
     agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -37114,6 +37145,7 @@ export namespace Prisma {
     commentCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     agentReasoning?: StringNullableFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeFilter<"TiktokPost"> | Date | string
   }
 
@@ -37257,6 +37289,7 @@ export namespace Prisma {
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
     agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -37272,6 +37305,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -37287,6 +37321,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -37302,6 +37337,7 @@ export namespace Prisma {
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 

@@ -2,6 +2,8 @@ import express from 'express';
 import { PrismaClient } from '../../generated/prisma/index.js';
 import requireInternalAuth from '../../middleware/requireInternalAuth.js';
 import baseLogger from '../../utils/logger.js';
+import { selectHook } from '../../services/hookSelector.js';
+import { extractWisdom } from '../../services/wisdomExtractor.js';
 
 const router = express.Router();
 const prisma = new PrismaClient();
@@ -15,6 +17,40 @@ router.use(requireInternalAuth);
 // =============================================================================
 router.get('/', async (req, res) => {
   try {
+    const strategy = req.query.strategy;
+
+    // Thompson Sampling mode: select ONE hook via algorithm
+    if (strategy === 'thompson') {
+      const allCandidates = await prisma.hookCandidate.findMany();
+      const result = selectHook(allCandidates);
+      if (!result) {
+        return res.json({ selected: null, strategy: 'thompson', meta: { totalCandidates: 0 } });
+      }
+      const c = result.hook;
+      return res.json({
+        selected: {
+          id: c.id,
+          text: c.text,
+          tone: c.tone,
+          target_problem_types: c.targetProblemTypes,
+          target_user_types: c.targetUserTypes,
+          app_tap_rate: Number(c.appTapRate),
+          app_thumbs_up_rate: Number(c.appThumbsUpRate),
+          app_sample_size: c.appSampleSize,
+          tiktok_like_rate: Number(c.tiktokLikeRate),
+          tiktok_share_rate: Number(c.tiktokShareRate),
+          tiktok_sample_size: c.tiktokSampleSize,
+          tiktok_high_performer: c.tiktokHighPerformer,
+          is_wisdom: c.isWisdom,
+          exploration_weight: Number(c.explorationWeight),
+        },
+        strategy: result.strategy,
+        score: result.score,
+        meta: { totalCandidates: allCandidates.length },
+      });
+    }
+
+    // Default: list mode
     const limit = Math.min(Math.max(parseInt(req.query.limit) || 20, 1), 100);
     const sortBy = req.query.sort_by || 'app_tap_rate';
 
@@ -119,8 +155,11 @@ router.post('/refresh-tiktok-stats', async (req, res) => {
       WHERE hc.id = agg.hook_candidate_id
     `;
 
-    logger.info(`Refreshed TikTok stats for hook candidates (${updated} rows)`);
-    res.json({ success: true, updated });
+    // After refreshing TikTok stats, run wisdom extraction
+    const wisdom = await extractWisdom(prisma);
+
+    logger.info(`Refreshed TikTok stats for hook candidates (${updated} rows), wisdom: ${wisdom.total}`);
+    res.json({ success: true, updated, wisdom });
   } catch (error) {
     logger.error('Failed to refresh TikTok stats', error);
     res.status(500).json({ error: 'Failed to refresh TikTok stats' });

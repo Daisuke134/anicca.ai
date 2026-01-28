@@ -64,17 +64,17 @@ async function extractFromNudgeEvents(client) {
   // Group by notification text + tone, calculate tap/thumbs_up rates
   const result = await client.query(`
     SELECT
-      ne.notification_text AS text,
-      COALESCE(ne.tone, 'warm') AS tone,
+      ne.state->>'hook' AS text,
+      COALESCE(ne.tone, 'gentle') AS tone,
       ne.problem_type,
       COUNT(*) AS total,
       COUNT(*) FILTER (WHERE ne.state->>'tapped' = 'true') AS tapped,
       COUNT(*) FILTER (WHERE ne.state->>'thumbsUp' = 'true') AS thumbs_up
     FROM nudge_events ne
-    WHERE ne.notification_text IS NOT NULL
-      AND ne.notification_text != ''
-      AND LENGTH(ne.notification_text) <= 100
-    GROUP BY ne.notification_text, COALESCE(ne.tone, 'warm'), ne.problem_type
+    WHERE ne.state->>'hook' IS NOT NULL
+      AND ne.state->>'hook' != ''
+      AND LENGTH(ne.state->>'hook') <= 100
+    GROUP BY ne.state->>'hook', COALESCE(ne.tone, 'gentle'), ne.problem_type
     HAVING COUNT(*) >= 5
     ORDER BY
       COUNT(*) FILTER (WHERE ne.state->>'tapped' = 'true')::numeric / COUNT(*)::numeric DESC

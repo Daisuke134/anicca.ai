@@ -385,6 +385,44 @@ async function runGenerateNudges() {
           crossUserSection = buildCrossUserPatternsSection(userType, typeStats);
         }
 
+        // 1.5.0 Track C: TikTok high-performer hooks + Wisdom patterns
+        let tiktokHighPerformerSection = '';
+        let wisdomSection = '';
+        try {
+          const highPerformers = await query(
+            `SELECT text, tone, tiktok_like_rate, tiktok_share_rate, tiktok_sample_size
+             FROM hook_candidates
+             WHERE tiktok_high_performer = true
+             ORDER BY tiktok_like_rate DESC LIMIT 5`
+          );
+          if (highPerformers.rows.length > 0) {
+            tiktokHighPerformerSection = '\n## 🎯 TikTok High Performers\nThese hooks performed well on TikTok. Consider using similar patterns:\n';
+            for (const h of highPerformers.rows) {
+              tiktokHighPerformerSection += `- "${h.text}" (tone: ${h.tone}, like率: ${(Number(h.tiktok_like_rate) * 100).toFixed(0)}%, share率: ${(Number(h.tiktok_share_rate) * 100).toFixed(0)}%)\n`;
+            }
+          }
+
+          const wisdomPatterns = await query(
+            `SELECT pattern_name, target_user_types, effective_tone, app_evidence, tiktok_evidence
+             FROM wisdom_patterns
+             WHERE verified_at IS NOT NULL
+             ORDER BY confidence DESC LIMIT 3`
+          );
+          if (wisdomPatterns.rows.length > 0) {
+            wisdomSection = '\n## 🌟 Wisdom (Proven across app AND TikTok)\n';
+            for (const w of wisdomPatterns.rows) {
+              const appEv = typeof w.app_evidence === 'string' ? JSON.parse(w.app_evidence) : w.app_evidence;
+              const tikEv = typeof w.tiktok_evidence === 'string' ? JSON.parse(w.tiktok_evidence) : w.tiktok_evidence;
+              wisdomSection += `\n### Pattern: ${w.pattern_name}\n`;
+              wisdomSection += `- Works for: ${(w.target_user_types || []).join(', ')}\n`;
+              wisdomSection += `- Tone: ${w.effective_tone}\n`;
+              wisdomSection += `- Evidence: App tap率 ${((appEv.tapRate || 0) * 100).toFixed(0)}%, TikTok like率 ${((tikEv.likeRate || 0) * 100).toFixed(0)}%\n`;
+            }
+          }
+        } catch (err) {
+          console.warn(`⚠️ [GenerateNudges] Track C injection failed (non-fatal): ${err.message}`);
+        }
+
         const prompt = buildPhase78Prompt({
           problems,
           preferredLanguage,
@@ -393,6 +431,8 @@ async function runGenerateNudges() {
           timingPerformance,
           weeklyPatterns,
           crossUserPatterns: crossUserSection,
+          tiktokHighPerformers: tiktokHighPerformerSection,
+          wisdomPatterns: wisdomSection,
         });
 
         // 3-tier fallback

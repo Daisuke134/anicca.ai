@@ -32,21 +32,22 @@
 
 | # | 条件 | テスト可能 |
 |---|------|-----------|
-| AC-1 | `requestAuthorization` で `.timeSensitive` オプションを要求する | ✅ |
-| AC-2 | Problem Nudge の `interruptionLevel` が `.timeSensitive` になる | ✅ |
-| AC-3 | Server-driven Nudge の `interruptionLevel` が `.timeSensitive` になる | ✅ |
-| AC-4 | iOS 14 以下では `interruptionLevel` 設定をスキップする（既存の `#available` ガード維持） | ✅ |
+| AC-1 | `requestAuthorization` で `.timeSensitive` オプションを要求する（`#available(iOS 15.0, *)` ガード付き。iOS 14以下では `.timeSensitive` を含めない） | ✅ |
+| AC-2 | Problem Nudge の `interruptionLevel` が `.timeSensitive` になる（iOS 15+） | ✅ |
+| AC-3 | Server-driven Nudge の `interruptionLevel` が `.timeSensitive` になる（iOS 15+） | ✅ |
+| AC-4 | iOS 14 以下では `interruptionLevel` 設定と `.timeSensitive` 認可オプションの両方をスキップする（既存の `#available` ガード維持） | ✅ |
 | AC-5 | オンボーディングの通知許可チェックが引き続き `timeSensitiveSetting` を検証する | ✅ |
+| AC-6 | 既存ユーザーで `timeSensitiveSetting == .disabled` の場合、ログ警告を出力する（将来の設定導線追加の計測基盤） | ✅ |
 
 ### ScreenTimeReport Extension 削除
 
 | # | 条件 | テスト可能 |
 |---|------|-----------|
-| AC-6 | `AniccaScreenTimeReport` ターゲットが Xcode プロジェクトから削除されている | ✅ |
-| AC-7 | `AniccaScreenTimeReport/` ディレクトリが削除されている | ✅ |
-| AC-8 | `ScreenTimeSharedStore.swift` が削除されている（メインアプリ側の共有ストア） | ✅ |
-| AC-9 | ScreenTime 関連の参照がメインアプリから除去されている | ✅ |
-| AC-10 | ビルドが成功する（`fastlane test`） | ✅ |
+| AC-7 | `AniccaScreenTimeReport` ターゲットが Xcode プロジェクトから削除されている | ✅ |
+| AC-8 | `AniccaScreenTimeReport/` ディレクトリが削除されている | ✅ |
+| AC-9 | `ScreenTimeSharedStore.swift` が削除されている（メインアプリ側の共有ストア） | ✅ |
+| AC-10 | ScreenTime 関連の参照がメインアプリから除去されている（grep で 0 件） | ✅ |
+| AC-11 | ビルドが成功する（`fastlane test`） | ✅ |
 
 ---
 
@@ -78,24 +79,36 @@ notificationContent.interruptionLevel = .active
 
 #### To-Be
 
-**`NotificationScheduler.swift:43`** — 認可リクエストに `.timeSensitive` 追加
+**`NotificationScheduler.swift:43`** — 認可リクエストに `.timeSensitive` 追加（iOS 15+ ガード付き）
 ```swift
-let notificationsGranted = try await center.requestAuthorization(options: [.alert, .sound, .badge, .timeSensitive])
+var options: UNAuthorizationOptions = [.alert, .sound, .badge]
+if #available(iOS 15.0, *) {
+    options.insert(.timeSensitive)
+}
+let notificationsGranted = try await center.requestAuthorization(options: options)
 ```
 
-**`NotificationScheduler.swift:113`** — interruptionLevel 変更
+**`NotificationScheduler.swift:112-114`** — interruptionLevel 変更（既存の `#available` ガード内）
 ```swift
-content.interruptionLevel = .timeSensitive
+if #available(iOS 15.0, *) {
+    content.interruptionLevel = .timeSensitive  // was: .active
+}
+// iOS 14以下: このブロックに入らないため interruptionLevel 未設定（デフォルト動作）
 ```
 
-**`ProblemNotificationScheduler.swift:235`** — interruptionLevel 変更
+**`ProblemNotificationScheduler.swift:234-236`** — interruptionLevel 変更（既存の `#available` ガード内）
 ```swift
-notificationContent.interruptionLevel = .timeSensitive
+if #available(iOS 15.0, *) {
+    notificationContent.interruptionLevel = .timeSensitive  // was: .active
+}
+// iOS 14以下: このブロックに入らないため interruptionLevel 未設定（デフォルト動作）
 ```
 
-**`ProblemNotificationScheduler.swift:175-176`** — テスト通知も同様
+**`ProblemNotificationScheduler.swift:174-176`** — テスト通知も同様（既存の `#available` ガード内）
 ```swift
-notificationContent.interruptionLevel = .timeSensitive
+if #available(iOS 15.0, *) {
+    notificationContent.interruptionLevel = .timeSensitive  // was: .active
+}
 ```
 
 ### 変更2: ScreenTimeReport Extension 削除
@@ -134,13 +147,19 @@ aniccaios/
 
 ## テストマトリックス
 
-| # | To-Be | テスト名 | カバー |
-|---|-------|----------|--------|
-| 1 | requestAuthorization に `.timeSensitive` 含む | `test_requestAuthorization_includesTimeSensitive()` | ✅ |
-| 2 | Problem Nudge の interruptionLevel が `.timeSensitive` | `test_problemNudge_interruptionLevel_isTimeSensitive()` | ✅ |
-| 3 | Server-driven Nudge の interruptionLevel が `.timeSensitive` | `test_serverNudge_interruptionLevel_isTimeSensitive()` | ✅ |
-| 4 | ScreenTimeSharedStore がプロジェクトに存在しない | `test_screenTimeSharedStore_removed()`（ビルド成功で暗黙的に検証） | ✅ |
-| 5 | ビルド成功（Extension 削除後） | `fastlane test` 通過 | ✅ |
+| # | To-Be | テスト名 | AC対応 | カバー |
+|---|-------|----------|--------|--------|
+| 1 | requestAuthorization に `.timeSensitive` 含む（iOS 15+） | `test_requestAuthorization_includesTimeSensitive()` | AC-1 | ✅ |
+| 2 | iOS 14以下で `.timeSensitive` を含めない | `test_requestAuthorization_iOS14_excludesTimeSensitive()` | AC-4 | ✅ |
+| 3 | Problem Nudge の interruptionLevel が `.timeSensitive` | `test_problemNudge_interruptionLevel_isTimeSensitive()` | AC-2 | ✅ |
+| 4 | Server-driven Nudge の interruptionLevel が `.timeSensitive` | `test_serverNudge_interruptionLevel_isTimeSensitive()` | AC-3 | ✅ |
+| 5 | timeSensitiveSetting チェックが引き続き動作 | `test_notificationPermission_checksTimeSensitiveSetting()` | AC-5 | ✅ |
+| 6 | timeSensitiveSetting == .disabled 時にログ警告 | `test_timeSensitiveDisabled_logsWarning()` | AC-6 | ✅ |
+| 7 | AniccaScreenTimeReport ターゲットが削除されている | `grep "AniccaScreenTimeReport" aniccaios.xcodeproj/project.pbxproj → 0 件` | AC-7 | ✅ |
+| 8 | AniccaScreenTimeReport ディレクトリが削除されている | `ls aniccaios/AniccaScreenTimeReport/ → not found` | AC-8 | ✅ |
+| 9 | ScreenTimeSharedStore.swift が削除されている | `ls aniccaios/aniccaios/Shared/ScreenTimeSharedStore.swift → not found` | AC-9 | ✅ |
+| 10 | ScreenTime 関連参照がメインアプリに存在しない | `grep -r "ScreenTime" aniccaios/aniccaios/ → 0 件` | AC-10 | ✅ |
+| 11 | ビルド成功（Extension 削除後） | `fastlane test` 通過 | AC-11 | ✅ |
 
 ---
 
@@ -162,6 +181,7 @@ aniccaios/
 |---|------|------|
 | 1 | 通知ごとに interruptionLevel を分ける（夜間だけ timeSensitive 等） | 全Nudgeはユーザーが助けを求めた問題への介入であり、全て Time Sensitive に該当 |
 | 2 | オンボーディング UI の変更 | 既存の通知許可ダイアログに `.timeSensitive` が自動的に含まれる。別画面不要 |
+| 2.5 | 既存ユーザー向けの設定導線 UI（バナー等） | 本Specの範囲外。`timeSensitiveSetting == .disabled` のログ計測を先に入れ、無効率が高ければ別Specで対応 |
 | 3 | Focus Mode API の検出・連携 | iOS が自動で Time Sensitive の突破を制御するため不要 |
 | 4 | `.critical` レベルの使用 | Apple の特別承認が必要（医療・緊急用途のみ） |
 | 5 | HealthKit entitlement の削除 | ScreenTime とは無関係。別機能で使用中の可能性あり |
@@ -201,6 +221,20 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 
 # 4. 実機確認（ユーザー許可後）
 cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane build_for_device
 ```
+
+---
+
+## 補足: 既存ユーザーへの影響
+
+| シナリオ | 動作 |
+|---------|------|
+| **新規ユーザー（1.5.0以降）** | `requestAuthorization` で `.timeSensitive` を含むため、初回許可ダイアログでTime Sensitiveも許可される |
+| **既存ユーザー（1.4.0以前で許可済み）** | `requestAuthorization` は再度ダイアログを表示しない。iOS のデフォルトでは Time Sensitive は ON のため、**大多数は追加操作なしで有効** |
+| **既存ユーザーが手動でOFFにしていた場合** | `timeSensitiveSetting == .disabled` → ログ警告を出力。通知は `.active` 相当にフォールバック（iOS が自動制御） |
+
+**段階的アプローチ:**
+1. **本Spec**: `.timeSensitive` 有効化 + `.disabled` 時のログ計測
+2. **将来Spec（必要に応じて）**: ログデータから `.disabled` 率が高い場合、アプリ内で設定画面への導線を追加
 
 ---
 

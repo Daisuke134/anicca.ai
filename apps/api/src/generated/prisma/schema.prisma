@@ -386,7 +386,7 @@ model TiktokPost {
 
 model WisdomPattern {
   id                     String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  patternName            String    @map("pattern_name") @db.VarChar(100)
+  patternName            String    @unique @map("pattern_name") @db.VarChar(100)
   description            String?   @db.Text
   targetUserTypes        String[]  @default([]) @map("target_user_types")
   effectiveTone          String?   @map("effective_tone") @db.VarChar(20)

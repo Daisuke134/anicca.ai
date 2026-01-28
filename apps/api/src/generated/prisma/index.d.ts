@@ -32348,10 +32348,10 @@ export namespace Prisma {
 
   export type WisdomPatternWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    patternName?: string
     AND?: WisdomPatternWhereInput | WisdomPatternWhereInput[]
     OR?: WisdomPatternWhereInput[]
     NOT?: WisdomPatternWhereInput | WisdomPatternWhereInput[]
-    patternName?: StringFilter<"WisdomPattern"> | string
     description?: StringNullableFilter<"WisdomPattern"> | string | null
     targetUserTypes?: StringNullableListFilter<"WisdomPattern">
     effectiveTone?: StringNullableFilter<"WisdomPattern"> | string | null
@@ -32363,7 +32363,7 @@ export namespace Prisma {
     verifiedAt?: DateTimeNullableFilter<"WisdomPattern"> | Date | string | null
     createdAt?: DateTimeFilter<"WisdomPattern"> | Date | string
     updatedAt?: DateTimeFilter<"WisdomPattern"> | Date | string
-  }, "id">
+  }, "id" | "patternName">
 
   export type WisdomPatternOrderByWithAggregationInput = {
     id?: SortOrder

@@ -505,6 +505,8 @@ export function buildPhase78Prompt({
   timingPerformance,
   weeklyPatterns,
   crossUserPatterns = '',
+  tiktokHighPerformers = '',
+  wisdomPatterns = '',
 }) {
   const isJapanese = preferredLanguage === 'ja';
   const limits = isJapanese ? { hook: 12, content: 40 } : { hook: 25, content: 80 };
@@ -570,6 +572,8 @@ ${hookContentPerformance}
 ${timingPerformance}
 ${weeklyPatterns}
 ${crossUserPatterns}
+${tiktokHighPerformers}
+${wisdomPatterns}
 ## This User's Problems
 ${problemList}
 

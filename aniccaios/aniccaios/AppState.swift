@@ -366,6 +366,9 @@ final class AppState: ObservableObject {
             "summary": profile.summary,
             "nudgeIntensity": profile.nudgeIntensity.rawValue,
             "stickyMode": profile.stickyMode
+            // NOTE: v1.5.0でScreenTime Extension削除。screenTimeEnabled=falseへの移行は
+            // サーバー側バックフィル（UPDATE sensor_access_state SET screen_time_enabled=false）で対応予定。
+            // profileSyncPayloadに部分sensorAccessを含めると他フラグが消えるため、ここでは送信しない。
         ]
         
         if let big5 = profile.big5 {

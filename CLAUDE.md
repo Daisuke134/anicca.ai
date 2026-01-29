@@ -1674,6 +1674,42 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 | Staging | `anicca-proxy-staging.up.railway.app` |
 | Production | `anicca-proxy-production.up.railway.app` |
 
+**注意**: `anicca-api-production` ではない。`anicca-proxy-production` が正しいURL。
+
+### Railway DB Proxy URL
+
+ローカルからRailway DBに接続する場合（Prismaマイグレーション等）:
+
+```
+# Production
+postgresql://postgres:***@tramway.proxy.rlwy.net:32477/railway
+
+# Staging
+postgresql://postgres:***@ballast.proxy.rlwy.net:51992/railway
+```
+
+**詳細**: `apps/api/.env.proxy` に保存済み（gitignored）
+
+### Railway トラブルシューティング
+
+| 問題 | 原因 | 解決 |
+|------|------|------|
+| **P3005: database schema not empty** | 既存DBにPrismaベースラインがない | `DATABASE_URL="..." npx prisma migrate resolve --applied <migration>` |
+| **pushしたのにRailwayが古いまま** | キャッシュまたはデプロイ未トリガー | `git commit --allow-empty -m "trigger redeploy" && git push` |
+| **502 Bad Gateway** | デプロイ中 or サーバークラッシュ | Railway Dashboard でログ確認 |
+| **railway run が internal hostに接続** | 内部URLはRailway内からのみアクセス可 | Proxy URL（上記）を使う |
+
+### 本番デプロイ前チェックリスト
+
+mainマージ前に必ず確認:
+
+| # | 項目 | コマンド |
+|---|------|---------|
+| 1 | GHA secrets確認 | `gh secret list -R Daisuke134/anicca.ai` |
+| 2 | API_BASE_URL確認 | `anicca-proxy-production` になっているか |
+| 3 | Prismaマイグレーション | 既存DBなら `migrate resolve --applied` |
+| 4 | 3並列サブエージェントレビュー | Python Agent, Backend API, DB Schema |
+
 ### Blotato アカウント
 
 | プラットフォーム | アカウント | Blotato Account ID |
@@ -1724,6 +1760,76 @@ gh secret list --repo Daisuke134/anicca.ai
 
 ---
 
+## 1.5.0 で学んだ教訓（全エージェント必読）
+
+### FK制約エラー（P2003）の防止
+
+**Prisma upsert で FK 先のレコードが存在しない場合、P2003 エラーでクラッシュする。**
+
+| ルール | 詳細 |
+|--------|------|
+| FK依存 upsert の前に存在チェック | `findUnique({ where: { id }, select: { id: true } })` |
+| 存在しない場合 | warn ログを出して早期 return（throw しない） |
+| 該当箇所 | `userTypeService.js:classifyAndSave()`, `profileService` 等 |
+
+```javascript
+// 必須パターン: FK依存 upsert の前
+const exists = await prisma.targetTable.findUnique({ where: { id }, select: { id: true } });
+if (!exists) {
+  logger.warn(`Record not found, skipping FK-dependent operation`);
+  return;
+}
+await prisma.dependentTable.upsert({ ... });
+```
+
+### 環境変数のフォールバック
+
+**Railway 環境変数が未設定でコンテナがクラッシュするのを防ぐ。**
+
+| ルール | 詳細 |
+|--------|------|
+| `PROXY_BASE_URL` | `RAILWAY_PUBLIC_DOMAIN` から自動生成可能 |
+| throw 前にフォールバック | 自動復旧できるものは throw しない |
+| 新しい必須変数追加時 | Railway Dashboard で設定 + コードにフォールバック |
+
+### GitHub Actions デバッグ手順
+
+| # | 手順 | コマンド |
+|---|------|---------|
+| 1 | Secret 一覧確認 | `gh secret list -R Daisuke134/anicca.ai` |
+| 2 | **URL が正しいか確認** | `anicca-proxy-production`（`anicca-api-production` ではない） |
+| 3 | 手動実行 | `gh workflow run "Name" --ref main` |
+| 4 | 結果確認 | `gh run list --workflow "Name" -L 3` |
+
+### Prisma マイグレーション（既存DB）
+
+| ステップ | コマンド |
+|---------|---------|
+| 1. baseline 適用 | `DATABASE_URL="..." npx prisma migrate resolve --applied <migration_name>` |
+| 2. 残りを deploy | `DATABASE_URL="..." npx prisma migrate deploy` |
+| 3. **main に push** | Railway は push で自動デプロイ。DB変更だけでは再デプロイされない |
+
+### Railway 運用ルール
+
+| ルール | 理由 |
+|--------|------|
+| main push = 自動デプロイ | DB変更後も push が必要 |
+| env var 変更 = 自動再起動 | `railway variables --set` で即反映 |
+| 内部URL vs Proxy URL | 内部は Railway 内のみ。外部アクセスは Proxy URL |
+| DB資格情報は `.env.proxy` に保存 | 毎回ユーザーに聞かない |
+
+### GHA + Railway 並行テストのフロー
+
+```
+1. dev でコード修正
+2. dev → main マージ & push（Railway 自動デプロイ）
+3. Railway デプロイ完了待ち（2-3分）
+4. GHA workflow 手動実行で検証
+5. 両方 SUCCESS で完了
+```
+
+---
+
 ## 日報
 
 開発ログは `.cursor/logs/` に日付ごとに記録。
@@ -1733,4 +1839,4 @@ gh secret list --repo Daisuke134/anicca.ai
 
 ---
 
-最終更新: 2026年1月28日（API Key管理ルール追加、GitHub Secrets CLI管理、Cronアーキテクチャ文書化、Railway URL記載）
+最終更新: 2026年1月29日（1.5.0教訓追加: P2003 FK防止、環境変数フォールバック、GHAデバッグ手順、Prismaマイグレーション手順、Railway運用ルール）

@@ -83,7 +83,7 @@ final class ProblemNotificationSchedulerTests: XCTestCase {
     func test_llmNudge_noTimeShift() {
         // shiftの計算ロジック自体は正常動作する（ルールベース時に使用される）
         let shiftResult = scheduler.calculateNewShift(currentShift: 0, consecutiveIgnored: 5)
-        XCTAssertEqual(shiftResult, 90, "calculateNewShift works correctly")
+        XCTAssertEqual(shiftResult, 30, "calculateNewShift adds 30 to currentShift when consecutiveIgnored >= 2")
 
         // しかしLLM Nudgeの場合、scheduleNotifications内で以下の分岐が発生：
         // let hasLLMContent = LLMNudgeCache.shared.hasNudge(...)

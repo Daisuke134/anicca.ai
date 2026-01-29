@@ -451,7 +451,6 @@
 "profile_sticky_description" = "When ON, Anicca keeps talking until you respond 5 times.";
 "profile_section_data_integration" = "Data Integration";
 "profile_data_integration_hint" = "Optional. Link your data so Anicca can nudge you more precisely. All core features work even if everything is OFF.";
-"profile_toggle_screen_time" = "Screen Time";
 "profile_toggle_sleep" = "Sleep";
 "profile_toggle_steps" = "Steps";
 "profile_toggle_movement" = "Movement";

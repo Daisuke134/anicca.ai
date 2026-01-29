@@ -10,8 +10,10 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const IS_PRODUCTION = NODE_ENV === 'production';
 export const IS_DEVELOPMENT = NODE_ENV === 'development';
 
-// プロキシサーバー設定
-export const PROXY_BASE_URL = process.env.PROXY_BASE_URL || '';
+// プロキシサーバー設定（RAILWAY_PUBLIC_DOMAIN から自動生成可能）
+const rawProxyUrl = process.env.PROXY_BASE_URL
+  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '');
+export const PROXY_BASE_URL = rawProxyUrl;
 
 // 本番ではAPI本体に必須（cron jobでは不要）
 const IS_CRON_JOB = process.env.CRON_MODE === 'true';

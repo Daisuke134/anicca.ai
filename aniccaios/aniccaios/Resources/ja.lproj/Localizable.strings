@@ -441,7 +441,6 @@
 "profile_sticky_description" = "ONにすると、5回応答するまでAniccaが話し続けます。";
 "profile_section_data_integration" = "データ連携";
 "profile_data_integration_hint" = "任意。データを連携すると、Aniccaがより適切に促せます。すべてOFFでも主要機能は利用できます。";
-"profile_toggle_screen_time" = "スクリーンタイム";
 "profile_toggle_sleep" = "就寝";
 "profile_toggle_steps" = "歩数";
 "profile_toggle_movement" = "移動";

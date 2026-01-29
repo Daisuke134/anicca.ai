@@ -369,6 +369,43 @@ struct MyPathTabView: View {
                     .accessibilityIdentifier("debug-nudge-test-\(problemType.rawValue)")
                 }
             }
+
+            Divider()
+                .padding(.vertical, 8)
+
+            Text("DEBUG: LLM Nudge Test")
+                .font(.caption)
+                .foregroundStyle(.gray)
+
+            Button {
+                let mockLLMNudge = LLMGeneratedNudge(
+                    id: "debug-llm-\(UUID().uuidString.prefix(8))",
+                    problemType: .stayingUpLate,
+                    scheduledTime: "22:00",
+                    hook: "まだ起きてる？明日の自分が泣くよ",
+                    content: "画面の光が睡眠ホルモンを抑制してる。今すぐスマホを裏返して、目を閉じてみて。",
+                    tone: .gentle,
+                    reasoning: "debug test"
+                )
+                let content = NudgeContent.content(from: mockLLMNudge)
+                appState.pendingNudgeCard = content
+            } label: {
+                HStack {
+                    Text("🤖")
+                    Text("Show LLM Nudge (blue dot)")
+                        .font(.subheadline)
+                        .foregroundStyle(.green)
+                    Spacer()
+                    Circle()
+                        .fill(Color.blue.opacity(0.6))
+                        .frame(width: 6, height: 6)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.green.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityIdentifier("debug-nudge-test-llm")
         }
         .padding(.horizontal, 16)
     }

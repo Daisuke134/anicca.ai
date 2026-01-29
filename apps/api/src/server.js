@@ -35,6 +35,7 @@ async function initializeServer() {
 }
 
 const app = express();
+app.set('trust proxy', 1); // Railway runs behind a reverse proxy
 const PORT = process.env.PORT || 3000;
 const controller = new AbortController();
 

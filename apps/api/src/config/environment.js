@@ -10,12 +10,16 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const IS_PRODUCTION = NODE_ENV === 'production';
 export const IS_DEVELOPMENT = NODE_ENV === 'development';
 
-// プロキシサーバー設定
-export const PROXY_BASE_URL = process.env.PROXY_BASE_URL || '';
+// プロキシサーバー設定（RAILWAY_PUBLIC_DOMAIN から自動生成可能）
+const rawProxyUrl = process.env.PROXY_BASE_URL
+  || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '');
+export const PROXY_BASE_URL = rawProxyUrl;
 
-// 本番では必須（未設定は即座に失敗）
-if (IS_PRODUCTION && !PROXY_BASE_URL) {
-  throw new Error('PROXY_BASE_URL is required in production environment');
+// 本番ではAPI本体に推奨（cron jobでは不要）
+// ベストプラクティス: 運用変数は warn（crash しない）。セキュリティ必須変数(DB/Auth)のみ crash。
+const IS_CRON_JOB = !!process.env.CRON_MODE;
+if (IS_PRODUCTION && !PROXY_BASE_URL && !IS_CRON_JOB) {
+  console.error('⚠️ PROXY_BASE_URL is not set in production. Some proxy features may not work. Set PROXY_BASE_URL or ensure RAILWAY_PUBLIC_DOMAIN is available.');
 }
 
 // アプリケーションモード

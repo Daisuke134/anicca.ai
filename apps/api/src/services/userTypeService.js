@@ -7,10 +7,9 @@
  * Uses Prisma for CRUD, Raw SQL for generated column reads.
  */
 
-import { PrismaClient } from '../generated/prisma/index.js';
+import prisma from '../lib/prisma.js';
 import baseLogger from '../utils/logger.js';
 
-const prisma = new PrismaClient();
 const logger = baseLogger.withContext('UserTypeService');
 
 // Weight matrix: ProblemType × UserType
@@ -80,21 +79,37 @@ export async function classifyAndSave(userId, problems) {
     return result;
   }
 
-  await prisma.userTypeEstimate.upsert({
-    where: { userId },
-    create: {
-      userId,
-      primaryType: result.primaryType,
-      typeScores: result.scores,
-      confidence: result.confidence,
-    },
-    update: {
-      primaryType: result.primaryType,
-      typeScores: result.scores,
-      confidence: result.confidence,
-      updatedAt: new Date(),
-    },
-  });
+  // Verify profiles record exists before FK-dependent upsert (P2003 fix)
+  const profileExists = await prisma.profile.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!profileExists) {
+    logger.warn(`User ${userId}: profiles record not found, skipping user type estimate save`);
+    return result;
+  }
+
+  try {
+    await prisma.userTypeEstimate.upsert({
+      where: { userId },
+      create: {
+        userId,
+        primaryType: result.primaryType,
+        typeScores: result.scores,
+        confidence: result.confidence,
+      },
+      update: {
+        primaryType: result.primaryType,
+        typeScores: result.scores,
+        confidence: result.confidence,
+        updatedAt: new Date(),
+      },
+    });
+  } catch (error) {
+    // Belt-and-suspenders: handle race condition where profile is deleted between check and upsert
+    if (error.code === 'P2003') {
+      logger.warn(`User ${userId}: FK constraint failed during upsert (profile deleted concurrently), skipping`);
+      return result;
+    }
+    throw error;
+  }
 
   logger.info(`User ${userId}: classified as ${result.primaryType} (confidence: ${result.confidence.toFixed(4)})`);
   return result;

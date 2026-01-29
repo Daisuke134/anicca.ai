@@ -478,6 +478,23 @@ platform :ios do
     )
   end
 
+  desc "Set MARKETING_VERSION across all targets"
+  lane :set_version do |options|
+    version = options[:version]
+    UI.user_error!("Usage: fastlane set_version version:X.Y.Z") unless version
+    UI.user_error!("Invalid format. Expected X.Y.Z, got: #{version}") unless version.match?(/^\d+\.\d+\.\d+$/)
+
+    pbxproj = File.expand_path("../aniccaios.xcodeproj/project.pbxproj", __dir__)
+    UI.user_error!("#{pbxproj} not found") unless File.exist?(pbxproj)
+
+    content = File.read(pbxproj)
+    count = content.scan(/MARKETING_VERSION = [0-9]+\.[0-9]+\.[0-9]+;/).length
+    updated = content.gsub(/MARKETING_VERSION = [0-9]+\.[0-9]+\.[0-9]+;/, "MARKETING_VERSION = #{version};")
+    File.write(pbxproj, updated)
+
+    UI.success("✅ MARKETING_VERSION updated to #{version} (#{count} occurrences)")
+  end
+
   desc "Quick test: build and install on device, then notify"
   lane :test_on_device do
     start_time = Time.now

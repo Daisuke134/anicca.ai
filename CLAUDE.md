@@ -110,7 +110,7 @@ Hooksで実装する。」
 3. **未完成の機能は Feature Flag で隠す**
 4. **リリース準備ができたら dev → main にマージ**（Backend を先にデプロイ）
 5. **main から `release/x.x.x` を作成**（Production と同じコード）
-6. **release ブランチから App Store に提出**
+6. **release ブランチから App Store に提出（Fastlane で全自動）**
 
 #### フロー
 
@@ -123,17 +123,96 @@ Production で動作確認
     ↓
 release/x.x.x を main から作成
     ↓
-release ブランチでビルド → TestFlight → App Store 提出
+fastlane set_version version:x.x.x（バージョン自動更新）
+    ↓
+fastlane full_release（Archive → Upload → 処理待ち → 審査提出 全自動）
     ↓
 承認 → 自動配布（Production は既に動いている）
     ↓
 release を dev にマージ（同期）
 ```
 
+#### エージェント向けリリース手順（完全自動化）
+
+ユーザーが「X.Y.Z をリリースして」と言ったら、エージェントが以下を実行:
+
+```bash
+# 1. main を最新にして release ブランチ作成
+git checkout main && git pull origin main
+git checkout -b release/X.Y.Z
+
+# 2. バージョン更新（必須: 忘れると Apple Validation エラー）
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane set_version version:X.Y.Z
+
+# 3. コミット & プッシュ
+cd .. && git add -A && git commit -m "chore: bump version to X.Y.Z
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+git push -u origin release/X.Y.Z
+
+# 4. 全自動リリース（Archive → Upload → 処理待ち → 審査提出）
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane full_release
+
+# 5. 結果報告
+# 「Build #XX (vX.Y.Z) が審査に提出されました。Waiting for Review です。」
+
+# 6. release → dev にマージ（バージョン更新を同期）
+cd .. && git checkout dev && git merge release/X.Y.Z && git push origin dev
+```
+
+#### リリースエラー時のリカバリ
+
+| エラー | 原因 | 対処 |
+|--------|------|------|
+| `Invalid Pre-Release Train` | バージョンが古い/閉じている | `fastlane set_version version:正しいバージョン` で修正 |
+| `CFBundleShortVersionString must be higher` | バージョンが前回以下 | バージョン番号を上げて再実行 |
+| build 失敗 | コンパイルエラー | Fastlane CLI 出力を読んで修正 → `fastlane full_release` 再実行 |
+| upload 失敗 | ネットワーク/認証 | `cd aniccaios && fastlane upload` を再実行 |
+| processing タイムアウト | Apple 側の遅延 | ASC で確認 → `fastlane submit_review` を個別実行 |
+| submit 失敗 | コンプライアンス問題 | ASC で確認 → Fastfile の `submission_information` 修正 |
+
+#### ロールバック手順
+
+```bash
+git checkout dev
+git branch -D release/X.Y.Z
+git push origin --delete release/X.Y.Z
+```
+
 **なぜこの順序か：**
 - Backend を先にデプロイしないと、審査中に API が動かずリジェクトされる可能性がある
 - 参照: [Christian Findlay](https://www.christianfindlay.com/blog/app-store-deployment-back-end-first)
 - 参照: [Appcircle](https://appcircle.io/guides/ios/ios-releases)
+
+#### Railway サービス名（重要: 環境ごとに名前が違う）
+
+| 環境 | API サービス | Cron サービス |
+|------|-------------|--------------|
+| **Staging** | `API` | `nudge-cron` |
+| **Production** | `API` | `nudge-cronp` |
+
+**⚠️ Production の Cron は `nudge-cronp`（末尾に `p`）。`nudge-cron` は Staging 用。**
+
+#### Railway 環境変数（各サービス）
+
+| 変数 | API (Staging/Prod) | nudge-cron (Staging) | nudge-cronp (Prod) |
+|------|-------------------|---------------------|-------------------|
+| `CRON_MODE` | なし | `nudges` | `nudges` |
+| `PROXY_BASE_URL` | あり | なし（不要） | なし（不要） |
+| `DATABASE_URL` | あり | あり（internal） | あり（internal） |
+| `OPENAI_API_KEY` | あり | あり | あり |
+| `ANTHROPIC_API_KEY` | あり | なし | なし |
+
+**⚠️ `CRON_MODE` は truthy チェック（`!!process.env.CRON_MODE`）。値は `nudges` 等何でもOK。**
+
+環境変数設定時の例:
+```bash
+# Staging
+railway variables --set "KEY=value" --service "nudge-cron"
+
+# Production
+railway variables --set "KEY=value" --service "nudge-cronp"
+```
 
 #### 注意
 - main ブランチに push → Production Railway に自動デプロイ
@@ -1533,6 +1612,7 @@ cd aniccaios && fastlane build_for_simulator
 
 | Lane | 用途 | コマンド |
 |------|------|---------|
+| `set_version` | MARKETING_VERSION 一括更新 | `fastlane set_version version:X.Y.Z` |
 | `build_for_device` | 実機にインストール | `fastlane build_for_device` |
 | `build_for_simulator` | シミュレータで起動 | `fastlane build_for_simulator` |
 | `test` | Unit/Integration テスト | `fastlane test` |
@@ -1630,6 +1710,271 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ---
 
+## API Key & Secret 管理（絶対ルール）
+
+### 原則: ユーザーにGUI操作を頼むな。エージェントが全部やれ。
+
+| ルール | 詳細 |
+|--------|------|
+| **GitHub Secrets 登録** | `gh secret set NAME --repo Daisuke134/anicca.ai` で CLI から登録。GUI は使わない |
+| **Railway 環境変数** | Railway Dashboard で確認（CLI 未導入のため）。値が必要な場合は下記リストを参照 |
+| **API Key をユーザーに聞くな** | 下記リストに全て記録済み。新しいキーが必要な場合のみユーザーに取得を依頼 |
+| **セキュリティ** | API Key は CLAUDE.md に**名前と用途のみ**記載。値は GitHub Secrets / Railway に保存済み |
+
+### GitHub Actions Secrets（Daisuke134/anicca.ai）
+
+| Secret Name | 用途 | 登録済み |
+|-------------|------|---------|
+| `OPENAI_API_KEY` | LLM（Nudge生成、TikTokエージェント、Vision） | ✅ |
+| `BLOTATO_API_KEY` | TikTok投稿（Blotato API） | ✅ |
+| `FAL_API_KEY` | 画像生成（Fal.ai） | ✅ |
+| `EXA_API_KEY` | トレンド検索（Exa） | ✅ |
+| `APIFY_API_TOKEN` | TikTokメトリクス取得（Apify） | ✅ |
+| `API_AUTH_TOKEN` | Railway API 認証（= Railway の INTERNAL_API_TOKEN） | ✅ |
+| `API_BASE_URL` | Railway Production URL | ✅ |
+| `APPLE_APP_SPECIFIC_PASSWORD` | App Store提出 | ✅ |
+| `APPLE_ID` | App Store提出 | ✅ |
+| `APPLE_TEAM_ID` | App Store提出 | ✅ |
+| `ASC_KEY_ID` | ASC API Key ID（`D637C7RGFN`） | ✅ |
+| `ASC_ISSUER_ID` | ASC API Issuer ID | ✅ |
+| `ASC_PRIVATE_KEY` | ASC API .p8 秘密鍵（`AuthKey_D637C7RGFN.p8` の中身） | ✅ |
+| `ASC_VENDOR_NUMBER` | ASC Sales Reports 用ベンダー番号（`93486075`） | ✅ |
+| `REVENUECAT_V2_SECRET_KEY` | RevenueCat API v2 シークレットキー | ✅ |
+| `SLACK_METRICS_WEBHOOK_URL` | Slack #agents チャンネル Webhook URL | ✅ |
+
+### Railway 環境変数（主要なもの）
+
+| 変数名 | 用途 |
+|--------|------|
+| `DATABASE_URL` | PostgreSQL接続 |
+| `OPENAI_API_KEY` | Nudge生成 |
+| `SUPABASE_URL` / `SUPABASE_SERVICE_ROLE_KEY` | 補助サービス |
+| `REVENUECAT_*` | 決済連携 |
+| `APNS_*` | プッシュ通知 |
+
+**注意**: `INTERNAL_API_TOKEN` は Railway に設定済み。TikTok エージェント（GitHub Actions）が Railway API を叩く際の認証に使用。GitHub Secrets の `API_AUTH_TOKEN` と同じ値。
+
+### Railway URL
+
+| 環境 | URL |
+|------|-----|
+| Staging | `anicca-proxy-staging.up.railway.app` |
+| Production | `anicca-proxy-production.up.railway.app` |
+
+**注意**: `anicca-api-production` ではない。`anicca-proxy-production` が正しいURL。
+
+### Railway DB Proxy URL
+
+ローカルからRailway DBに接続する場合（Prismaマイグレーション等）:
+
+```
+# Production
+postgresql://postgres:***@tramway.proxy.rlwy.net:32477/railway
+
+# Staging
+postgresql://postgres:***@ballast.proxy.rlwy.net:51992/railway
+```
+
+**詳細**: `apps/api/.env.proxy` に保存済み（gitignored）
+
+### Railway トラブルシューティング
+
+| 問題 | 原因 | 解決 |
+|------|------|------|
+| **P3005: database schema not empty** | 既存DBにPrismaベースラインがない | `DATABASE_URL="..." npx prisma migrate resolve --applied <migration>` |
+| **pushしたのにRailwayが古いまま** | キャッシュまたはデプロイ未トリガー | `git commit --allow-empty -m "trigger redeploy" && git push` |
+| **502 Bad Gateway** | デプロイ中 or サーバークラッシュ | Railway Dashboard でログ確認 |
+| **railway run が internal hostに接続** | 内部URLはRailway内からのみアクセス可 | Proxy URL（上記）を使う |
+
+### 本番デプロイ前チェックリスト
+
+mainマージ前に必ず確認:
+
+| # | 項目 | コマンド |
+|---|------|---------|
+| 1 | GHA secrets確認 | `gh secret list -R Daisuke134/anicca.ai` |
+| 2 | API_BASE_URL確認 | `anicca-proxy-production` になっているか |
+| 3 | Prismaマイグレーション | 既存DBなら `migrate resolve --applied` |
+| 4 | 3並列サブエージェントレビュー | Python Agent, Backend API, DB Schema |
+
+### Blotato アカウント
+
+| プラットフォーム | アカウント | Blotato Account ID |
+|-----------------|-----------|-------------------|
+| TikTok EN | @anicca.self | 28152 |
+
+### 新しい Secret の登録方法（エージェント向け）
+
+```bash
+# 1つずつ登録
+echo "VALUE" | gh secret set SECRET_NAME --repo Daisuke134/anicca.ai
+
+# 確認
+gh secret list --repo Daisuke134/anicca.ai
+```
+
+---
+
+## Cron ジョブ アーキテクチャ
+
+### 現在の構成
+
+| ジョブ | 実行環境 | スケジュール | 仕組み |
+|--------|---------|-------------|--------|
+| Nudge生成 | Railway Cron | `0 20 * * *` (5:00 JST) | `CRON_MODE=nudges` → `generateNudges.js` 直接実行 |
+| Type Stats集計 | Railway Cron | `0 21 * * *` (6:00 JST) | `CRON_MODE=aggregate_type_stats` → 直接実行 |
+| TikTok投稿 | GitHub Actions | `0 0 * * *` (9:00 JST) | Python エージェント |
+| TikTokメトリクス | GitHub Actions | `0 1 * * *` (10:00 JST) | Python スクリプト |
+| **Daily Metrics Report** | GitHub Actions | `15 20 * * *` (5:15 JST) | Python: ASC + RevenueCat → Slack #agents |
+
+### なぜ分離されているか
+
+| 比較 | Railway Cron | GitHub Actions |
+|------|-------------|----------------|
+| 言語 | Node.js | Python |
+| DB | 直接接続 | API経由 |
+| コスト | Railwayプランに含む | 無料 |
+| 用途 | ユーザー向け機能 | マーケティング自動化 |
+
+**ベストプラクティス**: 言語・依存関係・責務が異なるものは分離する（Separation of Concerns）。
+
+### スケーラビリティ
+
+| ユーザー数 | Nudge生成時間 | 対応 |
+|-----------|-------------|------|
+| 10-50 | 2-12分 | 現状のfor-loopで十分 |
+| 100+ | 25分+ | BullMQ + Redis に移行 |
+| 500+ | 要改善 | On-Demand生成 + キャッシュ |
+
+---
+
+## 1.5.0 で学んだ教訓（全エージェント必読）
+
+### FK制約エラー（P2003）の防止
+
+**Prisma upsert で FK 先のレコードが存在しない場合、P2003 エラーでクラッシュする。**
+
+| ルール | 詳細 |
+|--------|------|
+| FK依存 upsert の前に存在チェック | `findUnique({ where: { id }, select: { id: true } })` |
+| 存在しない場合 | warn ログを出して早期 return（throw しない） |
+| 該当箇所 | `userTypeService.js:classifyAndSave()`, `profileService` 等 |
+
+```javascript
+// 必須パターン: FK依存 upsert の前
+const exists = await prisma.targetTable.findUnique({ where: { id }, select: { id: true } });
+if (!exists) {
+  logger.warn(`Record not found, skipping FK-dependent operation`);
+  return;
+}
+await prisma.dependentTable.upsert({ ... });
+```
+
+### 環境変数のフォールバック
+
+**Railway 環境変数が未設定でコンテナがクラッシュするのを防ぐ。**
+
+| ルール | 詳細 |
+|--------|------|
+| `PROXY_BASE_URL` | `RAILWAY_PUBLIC_DOMAIN` から自動生成可能 |
+| throw 前にフォールバック | 自動復旧できるものは throw しない |
+| 新しい必須変数追加時 | Railway Dashboard で設定 + コードにフォールバック |
+
+### GitHub Actions デバッグ手順
+
+| # | 手順 | コマンド |
+|---|------|---------|
+| 1 | Secret 一覧確認 | `gh secret list -R Daisuke134/anicca.ai` |
+| 2 | **URL が正しいか確認** | `anicca-proxy-production`（`anicca-api-production` ではない） |
+| 3 | 手動実行 | `gh workflow run "Name" --ref main` |
+| 4 | 結果確認 | `gh run list --workflow "Name" -L 3` |
+
+### Prisma マイグレーション（既存DB）
+
+| ステップ | コマンド |
+|---------|---------|
+| 1. baseline 適用 | `DATABASE_URL="..." npx prisma migrate resolve --applied <migration_name>` |
+| 2. 残りを deploy | `DATABASE_URL="..." npx prisma migrate deploy` |
+| 3. **main に push** | Railway は push で自動デプロイ。DB変更だけでは再デプロイされない |
+
+### Railway 運用ルール
+
+| ルール | 理由 |
+|--------|------|
+| main push = 自動デプロイ | DB変更後も push が必要 |
+| env var 変更 = 自動再起動 | `railway variables --set` で即反映 |
+| 内部URL vs Proxy URL | 内部は Railway 内のみ。外部アクセスは Proxy URL |
+| DB資格情報は `.env.proxy` に保存 | 毎回ユーザーに聞かない |
+
+### GHA + Railway 並行テストのフロー
+
+```
+1. dev でコード修正
+2. dev → main マージ & push（Railway 自動デプロイ）
+3. Railway デプロイ完了待ち（2-3分）
+4. GHA workflow 手動実行で検証
+5. 両方 SUCCESS で完了
+```
+
+---
+
+## Daily Metrics Report（自動化済み）
+
+### 概要
+
+ASC + RevenueCat のメトリクスを毎日自動取得し、Slack #agents に投稿する。
+
+| 項目 | 値 |
+|------|-----|
+| **ワークフロー** | `.github/workflows/daily-metrics.yml` |
+| **スクリプト** | `scripts/daily-metrics/` |
+| **スケジュール** | 毎日 5:15 JST（`15 20 * * *` UTC） |
+| **送信先** | Slack #agents チャンネル |
+| **GitHub Secrets** | 全て設定済み（上記テーブル参照） |
+| **手動実行** | `gh workflow run "Daily Metrics Report" --repo Daisuke134/anicca.ai` |
+
+### 取得メトリクス
+
+| ソース | メトリクス | 注意事項 |
+|--------|-----------|---------|
+| ASC Sales Reports | 新規DL数（7日間）、国別内訳 | **type 1のみ**（更新/IAPは除外）、**2日前データ**使用 |
+| ASC Analytics Reports | Impressions, Page Views | ONGOINGレポート作成済み。初回は1-2日後からデータ取得可能 |
+| RevenueCat v2 | MRR, Active Subs, Active Trials, Trial→Paid, Churn | `id`フィールドで取得（`name`ではない）、値はドル（セントではない） |
+
+### ASC API Key 情報
+
+| 項目 | 値 |
+|------|-----|
+| **使用するキー** | `D637C7RGFN`（Fastlane と同じキー） |
+| **p8ファイル** | `~/Downloads/AuthKey_D637C7RGFN.p8` |
+| **Issuer ID** | GitHub Secret `ASC_ISSUER_ID` に設定済み |
+| **Vendor Number** | `93486075` |
+| **バンドルID** | `ai.anicca.app.ios`（`com.anicca.ios` ではない） |
+| **App ID** | `6755129214` |
+
+### 重要な注意（過去のバグから学んだ教訓）
+
+| 教訓 | 詳細 |
+|------|------|
+| **Sales Reports は gzip 圧縮** | `gzip.decompress(resp.content)` が必要 |
+| **Product Type フィルター必須** | type `1` = 新規DL、`7` = アップデート、`3` = IAP。フィルターなしだとDL数が過大 |
+| **ASCデータは2日遅れ** | `today - 2` を使う。昨日のデータは不完全 |
+| **RevenueCat は `id` フィールド** | `name` ではない（例: `id: "mrr"`, `name: "MRR"`） |
+| **RevenueCat MRR はドル単位** | 100で割らない |
+| **p8キーは`D637C7RGFN`** | `646Y27MJ8C` は古い/無効なキー |
+| **テスト時は `gh workflow run`** | ローカルにRC/Slack秘密鍵がないため、GitHub Actions経由で実行 |
+
+### 目標KPI
+
+| KPI | 目標 | 現状（2026/1/27時点） |
+|-----|------|---------------------|
+| **日次DL** | 10/日 | 1.7/日 |
+| **CVR (Page View → DL)** | 3% | 0.3% |
+| **MRR** | - | $17 |
+| **Active Subs** | - | 2 |
+
+---
+
 ## 日報
 
 開発ログは `.cursor/logs/` に日付ごとに記録。
@@ -1639,4 +1984,4 @@ cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 fastlane build_for_simulator
 
 ---
 
-最終更新: 2026年1月27日（Netlify自動デプロイ明記、Fastlane全lane一覧・非インタラクティブモード対応、Maestro日本語テキスト注意点、Gitサブモジュールトラブルシューティング追加）
+最終更新: 2026年1月29日（Daily Metrics Report セクション追加、ASC API Key情報・教訓・KPI目標記録、GitHub Secrets テーブル更新）

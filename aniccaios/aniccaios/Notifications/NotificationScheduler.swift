@@ -40,7 +40,11 @@ final class NotificationScheduler {
     @discardableResult
     func requestAuthorization() async -> Bool {
         do {
-            let notificationsGranted = try await center.requestAuthorization(options: [.alert, .sound, .badge])
+            var options: UNAuthorizationOptions = [.alert, .sound, .badge]
+            if #available(iOS 15.0, *) {
+                options.insert(.timeSensitive)
+            }
+            let notificationsGranted = try await center.requestAuthorization(options: options)
             return notificationsGranted
         } catch {
             logger.error("Notification authorization error: \(error.localizedDescription, privacy: .public)")
@@ -110,7 +114,8 @@ final class NotificationScheduler {
         content.sound = .default
 
         if #available(iOS 15.0, *) {
-            content.interruptionLevel = .active
+            let settings = await center.notificationSettings()
+            content.interruptionLevel = (settings.timeSensitiveSetting == .enabled) ? .timeSensitive : .active
         }
 
         let trigger = UNTimeIntervalNotificationTrigger(timeInterval: 1, repeats: false)

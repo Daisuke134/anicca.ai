@@ -135,6 +135,24 @@ release を dev にマージ（同期）
 - 参照: [Christian Findlay](https://www.christianfindlay.com/blog/app-store-deployment-back-end-first)
 - 参照: [Appcircle](https://appcircle.io/guides/ios/ios-releases)
 
+#### Railway サービス名（重要: 環境ごとに名前が違う）
+
+| 環境 | API サービス | Cron サービス |
+|------|-------------|--------------|
+| **Staging** | `API` | `nudge-cron` |
+| **Production** | `API` | `nudge-cronp` |
+
+**⚠️ Production の Cron は `nudge-cronp`（末尾に `p`）。`nudge-cron` は Staging 用。**
+
+環境変数設定時の例:
+```bash
+# Staging
+railway variables --set "KEY=value" --service "nudge-cron"
+
+# Production
+railway variables --set "KEY=value" --service "nudge-cronp"
+```
+
 #### 注意
 - main ブランチに push → Production Railway に自動デプロイ
 - dev ブランチに push → Staging Railway に自動デプロイ

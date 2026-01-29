@@ -110,7 +110,7 @@ Hooksで実装する。」
 3. **未完成の機能は Feature Flag で隠す**
 4. **リリース準備ができたら dev → main にマージ**（Backend を先にデプロイ）
 5. **main から `release/x.x.x` を作成**（Production と同じコード）
-6. **release ブランチから App Store に提出**
+6. **release ブランチから App Store に提出（Fastlane で全自動）**
 
 #### フロー
 
@@ -123,11 +123,60 @@ Production で動作確認
     ↓
 release/x.x.x を main から作成
     ↓
-release ブランチでビルド → TestFlight → App Store 提出
+fastlane set_version version:x.x.x（バージョン自動更新）
+    ↓
+fastlane full_release（Archive → Upload → 処理待ち → 審査提出 全自動）
     ↓
 承認 → 自動配布（Production は既に動いている）
     ↓
 release を dev にマージ（同期）
+```
+
+#### エージェント向けリリース手順（完全自動化）
+
+ユーザーが「X.Y.Z をリリースして」と言ったら、エージェントが以下を実行:
+
+```bash
+# 1. main を最新にして release ブランチ作成
+git checkout main && git pull origin main
+git checkout -b release/X.Y.Z
+
+# 2. バージョン更新（必須: 忘れると Apple Validation エラー）
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane set_version version:X.Y.Z
+
+# 3. コミット & プッシュ
+cd .. && git add -A && git commit -m "chore: bump version to X.Y.Z
+
+Co-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>"
+git push -u origin release/X.Y.Z
+
+# 4. 全自動リリース（Archive → Upload → 処理待ち → 審査提出）
+cd aniccaios && FASTLANE_SKIP_UPDATE_CHECK=1 FASTLANE_OPT_OUT_CRASH_REPORTING=1 fastlane full_release
+
+# 5. 結果報告
+# 「Build #XX (vX.Y.Z) が審査に提出されました。Waiting for Review です。」
+
+# 6. release → dev にマージ（バージョン更新を同期）
+cd .. && git checkout dev && git merge release/X.Y.Z && git push origin dev
+```
+
+#### リリースエラー時のリカバリ
+
+| エラー | 原因 | 対処 |
+|--------|------|------|
+| `Invalid Pre-Release Train` | バージョンが古い/閉じている | `fastlane set_version version:正しいバージョン` で修正 |
+| `CFBundleShortVersionString must be higher` | バージョンが前回以下 | バージョン番号を上げて再実行 |
+| build 失敗 | コンパイルエラー | Fastlane CLI 出力を読んで修正 → `fastlane full_release` 再実行 |
+| upload 失敗 | ネットワーク/認証 | `cd aniccaios && fastlane upload` を再実行 |
+| processing タイムアウト | Apple 側の遅延 | ASC で確認 → `fastlane submit_review` を個別実行 |
+| submit 失敗 | コンプライアンス問題 | ASC で確認 → Fastfile の `submission_information` 修正 |
+
+#### ロールバック手順
+
+```bash
+git checkout dev
+git branch -D release/X.Y.Z
+git push origin --delete release/X.Y.Z
 ```
 
 **なぜこの順序か：**
@@ -1562,6 +1611,7 @@ cd aniccaios && fastlane build_for_simulator
 
 | Lane | 用途 | コマンド |
 |------|------|---------|
+| `set_version` | MARKETING_VERSION 一括更新 | `fastlane set_version version:X.Y.Z` |
 | `build_for_device` | 実機にインストール | `fastlane build_for_device` |
 | `build_for_simulator` | シミュレータで起動 | `fastlane build_for_simulator` |
 | `test` | Unit/Integration テスト | `fastlane test` |

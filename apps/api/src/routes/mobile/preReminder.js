@@ -7,9 +7,8 @@ import extractUserId from '../../middleware/extractUserId.js';
 import { query } from '../../lib/db.js';
 import { resolveProfileId } from '../../services/mobile/userIdResolver.js';
 import { getMem0Client } from '../../modules/memory/mem0Client.js';
-import { PrismaClient } from '../../generated/prisma/index.js';
+import prisma from '../../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 const logger = baseLogger.withContext('PreReminder');
 

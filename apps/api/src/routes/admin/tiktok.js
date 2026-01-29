@@ -1,10 +1,9 @@
 import express from 'express';
-import { PrismaClient } from '../../generated/prisma/index.js';
+import prisma from '../../lib/prisma.js';
 import requireInternalAuth from '../../middleware/requireInternalAuth.js';
 import baseLogger from '../../utils/logger.js';
 
 const router = express.Router();
-const prisma = new PrismaClient();
 const logger = baseLogger.withContext('AdminTiktok');
 
 router.use(requireInternalAuth);

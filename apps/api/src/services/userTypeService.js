@@ -80,6 +80,13 @@ export async function classifyAndSave(userId, problems) {
     return result;
   }
 
+  // Verify profiles record exists before FK-dependent upsert (P2003 fix)
+  const profileExists = await prisma.profile.findUnique({ where: { id: userId }, select: { id: true } });
+  if (!profileExists) {
+    logger.warn(`User ${userId}: profiles record not found, skipping user type estimate save`);
+    return result;
+  }
+
   await prisma.userTypeEstimate.upsert({
     where: { userId },
     create: {

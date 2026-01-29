@@ -52,7 +52,8 @@ def _get_headers() -> dict[str, str]:
 
 async def fetch_app_store_metrics() -> AppStoreMetrics:
     """Fetch downloads, impressions, page views, and CVR from App Store Connect."""
-    end_date = date.today() - timedelta(days=1)
+    # Use 2 days ago as end_date: yesterday's data is often incomplete on ASC
+    end_date = date.today() - timedelta(days=2)
     start_date = end_date - timedelta(days=6)  # 7-day window
 
     headers = _get_headers()
@@ -96,9 +97,14 @@ async def fetch_app_store_metrics() -> AppStoreMetrics:
                         header_cols = lines[0].split("\t")
                         units_idx = _find_col(header_cols, "Units", fallback=7)
                         country_idx = _find_col(header_cols, "Country Code", fallback=12)
+                        pti_idx = _find_col(header_cols, "Product Type Identifier", fallback=6)
                         for line in lines[1:]:
                             cols = line.split("\t")
-                            if len(cols) > max(units_idx, country_idx):
+                            if len(cols) > max(units_idx, country_idx, pti_idx):
+                                # Only count new downloads (type 1), not updates (7) or IAP (3)
+                                product_type = cols[pti_idx].strip()
+                                if not product_type.startswith("1"):
+                                    continue
                                 units = int(cols[units_idx]) if cols[units_idx].isdigit() else 0
                                 country = cols[country_idx] if len(cols) > country_idx else "Unknown"
                                 total_downloads += units
@@ -113,29 +119,12 @@ async def fetch_app_store_metrics() -> AppStoreMetrics:
                 continue
 
         # Fetch app analytics for impressions and page views
+        # Uses the Analytics Reports API (async multi-step flow)
         try:
-            apps_resp = await client.get(
-                f"{ASC_BASE_URL}/apps",
-                headers=headers,
-                params={"filter[bundleId]": "com.anicca.ios"},
+            impressions, page_views = await _fetch_analytics(
+                client, headers, start_date, end_date
             )
-            if apps_resp.status_code == 200:
-                apps_data = apps_resp.json()
-                if apps_data.get("data"):
-                    app_id = apps_data["data"][0]["id"]
-                    analytics_resp = await client.get(
-                        f"{ASC_BASE_URL}/apps/{app_id}/analyticsReportRequests",
-                        headers=headers,
-                    )
-                    if analytics_resp.status_code == 200:
-                        analytics_data = analytics_resp.json()
-                        for report in analytics_data.get("data", []):
-                            attrs = report.get("attributes", {})
-                            if attrs.get("category") == "APP_STORE_ENGAGEMENT":
-                                impressions = attrs.get("impressionsTotalUnique", 0)
-                                page_views = attrs.get("pageViewsTotalUnique", 0)
-        except httpx.HTTPError as e:
-            # W-2: Log instead of silently swallowing
+        except Exception as e:
             print(f"WARNING: ASC analytics fetch failed: {e}", file=sys.stderr)
 
     cvr = (total_downloads / page_views * 100) if page_views > 0 else 0.0
@@ -152,6 +141,172 @@ async def fetch_app_store_metrics() -> AppStoreMetrics:
         page_views=page_views,
         cvr_page_to_download=round(cvr, 1),
     )
+
+
+async def _fetch_analytics(
+    client: httpx.AsyncClient,
+    headers: dict[str, str],
+    start_date: date,
+    end_date: date,
+) -> tuple[int, int]:
+    """Fetch impressions and page views via Analytics Reports API.
+
+    Flow: get app_id → find/create ONGOING report request
+          → list reports (APP_STORE_ENGAGEMENT) → get instances
+          → download segment TSV → sum impressions & page views.
+
+    Returns (impressions, page_views).
+    """
+    # Step 1: Get app ID
+    apps_resp = await client.get(
+        f"{ASC_BASE_URL}/apps",
+        headers=headers,
+        params={"filter[bundleId]": "ai.anicca.app.ios"},
+    )
+    if apps_resp.status_code != 200:
+        print(f"WARNING: ASC apps endpoint: HTTP {apps_resp.status_code}", file=sys.stderr)
+        return 0, 0
+
+    apps_data = apps_resp.json()
+    if not apps_data.get("data"):
+        print("WARNING: No app found for bundle ID ai.anicca.app.ios", file=sys.stderr)
+        return 0, 0
+
+    app_id = apps_data["data"][0]["id"]
+
+    # Step 2: Find existing ONGOING report request or create one
+    req_resp = await client.get(
+        f"{ASC_BASE_URL}/apps/{app_id}/analyticsReportRequests",
+        headers=headers,
+        params={"filter[accessType]": "ONGOING"},
+    )
+    request_id = None
+    if req_resp.status_code == 200:
+        for req in req_resp.json().get("data", []):
+            if req.get("attributes", {}).get("accessType") == "ONGOING":
+                request_id = req["id"]
+                break
+
+    if not request_id:
+        # Create an ONGOING report request (first-time setup)
+        create_resp = await client.post(
+            f"{ASC_BASE_URL}/analyticsReportRequests",
+            headers=headers,
+            json={
+                "data": {
+                    "type": "analyticsReportRequests",
+                    "attributes": {"accessType": "ONGOING"},
+                    "relationships": {
+                        "app": {"data": {"type": "apps", "id": app_id}}
+                    },
+                }
+            },
+        )
+        if create_resp.status_code in (200, 201):
+            request_id = create_resp.json()["data"]["id"]
+            print("INFO: Created ONGOING analytics report request. Data available in 1-2 days.", file=sys.stderr)
+            return 0, 0
+        else:
+            print(f"WARNING: Failed to create analytics report request: {create_resp.status_code} {create_resp.text}", file=sys.stderr)
+            return 0, 0
+
+    # Step 3: List reports filtered by APP_STORE_ENGAGEMENT
+    reports_resp = await client.get(
+        f"{ASC_BASE_URL}/analyticsReportRequests/{request_id}/reports",
+        headers=headers,
+        params={"filter[category]": "APP_STORE_ENGAGEMENT"},
+    )
+    if reports_resp.status_code != 200:
+        print(f"WARNING: ASC analytics reports: HTTP {reports_resp.status_code}", file=sys.stderr)
+        return 0, 0
+
+    reports_data = reports_resp.json().get("data", [])
+    if not reports_data:
+        print("WARNING: No APP_STORE_ENGAGEMENT reports available yet.", file=sys.stderr)
+        return 0, 0
+
+    # Find the report with name containing "App Store Engagement" or similar
+    report_id = reports_data[0]["id"]
+
+    # Step 4: Get report instances (daily granularity)
+    instances_resp = await client.get(
+        f"{ASC_BASE_URL}/analyticsReports/{report_id}/instances",
+        headers=headers,
+        params={"filter[granularity]": "DAILY", "limit": 30},
+    )
+    if instances_resp.status_code != 200:
+        print(f"WARNING: ASC analytics instances: HTTP {instances_resp.status_code}", file=sys.stderr)
+        return 0, 0
+
+    instances = instances_resp.json().get("data", [])
+    if not instances:
+        print("WARNING: No analytics report instances available.", file=sys.stderr)
+        return 0, 0
+
+    # Filter instances within our date range
+    total_impressions = 0
+    total_page_views = 0
+
+    for instance in instances:
+        proc_date_str = instance.get("attributes", {}).get("processingDate", "")
+        if not proc_date_str:
+            continue
+        try:
+            proc_date = date.fromisoformat(proc_date_str[:10])
+        except ValueError:
+            continue
+        if proc_date < start_date or proc_date > end_date:
+            continue
+
+        instance_id = instance["id"]
+
+        # Step 5: Get segments (download URLs)
+        segments_resp = await client.get(
+            f"{ASC_BASE_URL}/analyticsReportInstances/{instance_id}/segments",
+            headers=headers,
+        )
+        if segments_resp.status_code != 200:
+            continue
+
+        for segment in segments_resp.json().get("data", []):
+            url = segment.get("attributes", {}).get("url", "")
+            if not url:
+                continue
+
+            # Download and parse the TSV segment
+            dl_resp = await client.get(url)
+            if dl_resp.status_code != 200:
+                continue
+
+            try:
+                tsv_content = gzip.decompress(dl_resp.content).decode("utf-8")
+            except gzip.BadGzipFile:
+                tsv_content = dl_resp.text
+
+            lines = tsv_content.strip().split("\n")
+            if len(lines) < 2:
+                continue
+
+            tsv_headers = lines[0].split("\t")
+            imp_idx = _find_col(tsv_headers, "Impressions Total Unique", fallback=-1)
+            pv_idx = _find_col(tsv_headers, "Product Page Views Total Unique", fallback=-1)
+
+            # Fallback column names
+            if imp_idx == -1:
+                imp_idx = _find_col(tsv_headers, "Impressions", fallback=-1)
+            if pv_idx == -1:
+                pv_idx = _find_col(tsv_headers, "Page Views", fallback=-1)
+
+            for line in lines[1:]:
+                cols = line.split("\t")
+                if imp_idx >= 0 and imp_idx < len(cols):
+                    val = cols[imp_idx].strip()
+                    total_impressions += int(val) if val.isdigit() else 0
+                if pv_idx >= 0 and pv_idx < len(cols):
+                    val = cols[pv_idx].strip()
+                    total_page_views += int(val) if val.isdigit() else 0
+
+    return total_impressions, total_page_views
 
 
 def _find_col(headers: list[str], name: str, fallback: int) -> int:

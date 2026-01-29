@@ -15,10 +15,11 @@ const rawProxyUrl = process.env.PROXY_BASE_URL
   || (process.env.RAILWAY_PUBLIC_DOMAIN ? `https://${process.env.RAILWAY_PUBLIC_DOMAIN}` : '');
 export const PROXY_BASE_URL = rawProxyUrl;
 
-// 本番ではAPI本体に必須（cron jobでは不要）
+// 本番ではAPI本体に推奨（cron jobでは不要）
+// ベストプラクティス: 運用変数は warn（crash しない）。セキュリティ必須変数(DB/Auth)のみ crash。
 const IS_CRON_JOB = process.env.CRON_MODE === 'true';
 if (IS_PRODUCTION && !PROXY_BASE_URL && !IS_CRON_JOB) {
-  throw new Error('PROXY_BASE_URL is required in production environment (set CRON_MODE=true for cron workers)');
+  console.error('⚠️ PROXY_BASE_URL is not set in production. Some proxy features may not work. Set PROXY_BASE_URL or ensure RAILWAY_PUBLIC_DOMAIN is available.');
 }
 
 // アプリケーションモード

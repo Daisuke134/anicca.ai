@@ -144,6 +144,18 @@ release を dev にマージ（同期）
 
 **⚠️ Production の Cron は `nudge-cronp`（末尾に `p`）。`nudge-cron` は Staging 用。**
 
+#### Railway 環境変数（各サービス）
+
+| 変数 | API (Staging/Prod) | nudge-cron (Staging) | nudge-cronp (Prod) |
+|------|-------------------|---------------------|-------------------|
+| `CRON_MODE` | なし | `nudges` | `nudges` |
+| `PROXY_BASE_URL` | あり | なし（不要） | なし（不要） |
+| `DATABASE_URL` | あり | あり（internal） | あり（internal） |
+| `OPENAI_API_KEY` | あり | あり | あり |
+| `ANTHROPIC_API_KEY` | あり | なし | なし |
+
+**⚠️ `CRON_MODE` は truthy チェック（`!!process.env.CRON_MODE`）。値は `nudges` 等何でもOK。**
+
 環境変数設定時の例:
 ```bash
 # Staging

@@ -5,11 +5,10 @@ import { buildContextSnapshot } from '../../modules/realtime/contextSnapshot.js'
 import { buildHighlights, buildTimeline, pickTodayInsight, getInsightFallback } from '../../modules/metrics/stateBuilder.js';  // ★ getInsightFallback 追加
 import { generateFutureScenario } from '../../modules/simulation/futureScenario.js';
 import { generateTodayInsight } from '../../modules/insights/generateTodayInsight.js';  // ★ 追加
-import { PrismaClient } from '../../generated/prisma/index.js';
+import prisma from '../../lib/prisma.js';
 
 const router = express.Router();
 const logger = baseLogger.withContext('MobileBehavior');
-const prisma = new PrismaClient();
 
 // GET /api/mobile/behavior/summary
 router.get('/summary', async (req, res) => {

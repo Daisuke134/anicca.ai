@@ -1,9 +1,8 @@
 import express from 'express';
 import extractUserId from '../../middleware/extractUserId.js';
 import baseLogger from '../../utils/logger.js';
-import { PrismaClient } from '../../generated/prisma/index.js';
+import prisma from '../../lib/prisma.js';
 
-const prisma = new PrismaClient();
 const router = express.Router();
 const logger = baseLogger.withContext('MobileSensors');
 

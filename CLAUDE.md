@@ -1558,16 +1558,6 @@ cd aniccaios && fastlane build_for_simulator
 | `codex-review` | Spec更新後、major step完了後（≥5files/公開API/infra変更）、コミット/PR/リリース前 |
 | `aso-growth` | ASO/ASA作業、キーワード最適化、Product Page改善、マーケティングメトリクス分析 |
 
-### Serena MCP（コード作業時必須）
-
-| タスク | Serenaツール |
-|--------|-------------|
-| ファイル検索 | `mcp__serena__find_file` |
-| パターン検索 | `mcp__serena__search_for_pattern` |
-| シンボル検索 | `mcp__serena__find_symbol` |
-| シンボル編集 | `mcp__serena__replace_symbol_body` |
-| メモリ読み書き | `mcp__serena__read_memory` / `write_memory` |
-
 ### サブエージェント活用
 
 | タスク | エージェント |
@@ -1885,7 +1875,7 @@ await prisma.dependentTable.upsert({ ... });
 |---|------|---------|
 | 1 | Secret 一覧確認 | `gh secret list -R Daisuke134/anicca.ai` |
 | 2 | **URL が正しいか確認** | `anicca-proxy-production`（`anicca-api-production` ではない） |
-| 3 | 手動実行 | `gh workflow run "Name" --ref main` |
+| 3 | 手動実行 | `gh workflow run "Name" --ref dev`（**mainにマージ不要。`--ref dev`で実行可能**） |
 | 4 | 結果確認 | `gh run list --workflow "Name" -L 3` |
 
 ### Prisma マイグレーション（既存DB）
@@ -1930,7 +1920,7 @@ ASC + RevenueCat のメトリクスを毎日自動取得し、Slack #agents に�
 | **スケジュール** | 毎日 5:15 JST（`15 20 * * *` UTC） |
 | **送信先** | Slack #agents チャンネル |
 | **GitHub Secrets** | 全て設定済み（上記テーブル参照） |
-| **手動実行** | `gh workflow run "Daily Metrics Report" --repo Daisuke134/anicca.ai` |
+| **手動実行** | `gh workflow run "Daily Metrics Report" --ref dev --repo Daisuke134/anicca.ai` |
 
 ### 取得メトリクス
 

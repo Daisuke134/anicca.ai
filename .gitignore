@@ -145,3 +145,5 @@ AuthKey_*.p8
 __pycache__/
 *.xlsx
 dpo/
+aniccaios/fastlane/build/
+aniccaios/fastlane/build/

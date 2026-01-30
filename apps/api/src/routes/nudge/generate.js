@@ -150,7 +150,10 @@ router.post('/generate', requireInternalAuth, async (req, res) => {
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: prompt }],
+          messages: [
+            { role: 'system', content: 'You are a behavioral nudge generation assistant. Always output valid JSON.' },
+            { role: 'user', content: prompt }
+          ],
           response_format: { type: 'json_object' }
         })
       });

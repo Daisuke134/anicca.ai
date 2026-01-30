@@ -17,7 +17,7 @@
 
 ## テーブル一覧: アクティブ vs Legacy
 
-### アクティブ（現在使用中）
+### アクティブ（iOS から実際に使用中）
 
 | テーブル | 行数(Prod) | 用途 | 書き込み元 |
 |---------|-----------|------|-----------|
@@ -25,14 +25,19 @@
 | `nudge_events` | 8,240 | 全 Nudge 送信履歴（ルールベース + LLM） | Cron `generateNudges.js` |
 | `user_subscriptions` | 53 | サブスクリプション状態（RevenueCat 連携） | RevenueCat Webhook |
 | `user_settings` | 41 | ユーザー設定（言語、タイムゾーン、通知ON/OFF） | iOS アプリ → API |
-| `daily_metrics` | 46 | 日次メトリクス（睡眠、歩数、SNS使用等） | iOS HealthKit → API |
-| `feeling_sessions` | 111 | DeepDive / Tell Anicca セッション | iOS アプリ → API |
-| `bandit_models` | 1 | Thompson Sampling モデル重み | Cron `aggregateTypeStats` |
-| `type_stats` | 0 | ProblemType 別の集計統計（tap率、thumbs_up率） | Cron `aggregateTypeStats` |
+| `bandit_models` | 1 | Thompson Sampling モデル重み | Cron / LinTS algorithm |
 | `tiktok_posts` | 3 | TikTok 投稿記録 | GitHub Actions TikTok エージェント |
-| `sensor_access_state` | 10 | センサーアクセス許可状態 | iOS アプリ → API |
 | `_prisma_migrations` | 5 | Prisma マイグレーション履歴 | `prisma migrate deploy` |
 | `schema_migrations` | 6 | 手動マイグレーション履歴 | 手動 SQL |
+
+### API はあるが iOS 未連携（孤立テーブル）
+
+| テーブル | 行数(Prod) | 用途 | 実態 |
+|---------|-----------|------|------|
+| `daily_metrics` | 46 | 日次メトリクス（睡眠、歩数、SNS使用等） | **API エンドポイント存在するが iOS が一度も呼んでいない。HealthKit 連携未実装。** |
+| `feeling_sessions` | 111 | DeepDive / Tell Anicca セッション | **API（`/feeling/start`, `/feeling/end`）存在するが iOS の DeepDive/TellAnicca はローカル保存のみ。API 未連携。** |
+| `sensor_access_state` | 10 | センサーアクセス許可状態 | **API 存在するが ScreenTime Extension は v1.5.0 で削除済み。iOS から呼ばれていない可能性大。** |
+| `type_stats` | 0 | ProblemType 別の集計統計 | **Cron が毎日書き込むはずだが 0行。読み取るコードもない。完全に死んでいる。** |
 
 ### Legacy（Sign in with Apple 時代 — 現在新規ユーザーは使わない）
 

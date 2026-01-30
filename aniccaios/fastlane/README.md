@@ -87,6 +87,14 @@ Build and run on simulator
 
 Run unit tests on simulator
 
+### ios set_version
+
+```sh
+[bundle exec] fastlane ios set_version
+```
+
+Set MARKETING_VERSION across all targets
+
 ### ios test_on_device
 
 ```sh

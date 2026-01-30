@@ -131,6 +131,15 @@ final class AppState: ObservableObject {
                 LLMNudgeCache.shared.setNudges(nudges)
             }
             logger.info("✅ [LLM] Fetched and cached \(nudges.count) nudges")
+
+            // P1 hotfix: LLM fetch完了後、通知を再スケジュールしてLLMコンテンツを反映
+            if LLMNudgeCache.shared.count > 0 {
+                let problems = self.userProfile.struggles
+                if !problems.isEmpty {
+                    logger.info("🔄 [LLM] Rescheduling notifications with \(LLMNudgeCache.shared.count) LLM nudges")
+                    await ProblemNotificationScheduler.shared.scheduleNotifications(for: problems)
+                }
+            }
         } catch {
             logger.error("❌ [LLM] Fetch failed: \(error.localizedDescription)")
         }

@@ -12,6 +12,9 @@ struct MyPathTabView: View {
     @State private var isDeletingAccount = false
     @State private var deleteAccountError: Error?
     @State private var showingManageSubscription = false
+    #if DEBUG
+    @State private var showLLMCacheEmptyAlert = false
+    #endif
 
     var body: some View {
         NavigationStack {
@@ -378,24 +381,22 @@ struct MyPathTabView: View {
                 .foregroundStyle(.gray)
 
             Button {
-                let mockLLMNudge = LLMGeneratedNudge(
-                    id: "debug-llm-\(UUID().uuidString.prefix(8))",
-                    problemType: .stayingUpLate,
-                    scheduledTime: "22:00",
-                    hook: "まだ起きてる？明日の自分が泣くよ",
-                    content: "画面の光が睡眠ホルモンを抑制してる。今すぐスマホを裏返して、目を閉じてみて。",
-                    tone: .gentle,
-                    reasoning: "debug test"
-                )
-                let content = NudgeContent.content(from: mockLLMNudge)
-                appState.pendingNudgeCard = content
+                if let realNudge = LLMNudgeCache.shared.getFirstNudge() {
+                    let content = NudgeContent.content(from: realNudge)
+                    appState.pendingNudgeCard = content
+                } else {
+                    showLLMCacheEmptyAlert = true
+                }
             } label: {
                 HStack {
                     Text("🤖")
-                    Text("Show LLM Nudge (blue dot)")
+                    Text("Show LLM Nudge (real data)")
                         .font(.subheadline)
                         .foregroundStyle(.green)
                     Spacer()
+                    Text("\(LLMNudgeCache.shared.count)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     Circle()
                         .fill(Color.blue.opacity(0.6))
                         .frame(width: 6, height: 6)
@@ -406,6 +407,31 @@ struct MyPathTabView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             .accessibilityIdentifier("debug-nudge-test-llm")
+            .alert("LLM Cache Empty", isPresented: $showLLMCacheEmptyAlert) {
+                Button("OK", role: .cancel) {}
+            } message: {
+                Text("LLM Nudge がまだ取得されていません。アプリ起動時に自動フェッチされます。")
+            }
+
+            NavigationLink {
+                LLMNudgeDebugView()
+            } label: {
+                HStack {
+                    Text("📋")
+                    Text("Nudge Cache List")
+                        .font(.subheadline)
+                        .foregroundStyle(.orange)
+                    Spacer()
+                    Text("\(LLMNudgeCache.shared.count) cached")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 8)
+                .padding(.horizontal, 12)
+                .background(Color.orange.opacity(0.1))
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            }
+            .accessibilityIdentifier("debug-nudge-cache-list")
         }
         .padding(.horizontal, 16)
     }

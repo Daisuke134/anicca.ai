@@ -448,13 +448,17 @@ export async function generateWithFallback(prompt, openaiApiKey, preferredLangua
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: currentPrompt }],
+          messages: [
+            { role: 'system', content: 'You are a behavioral nudge generation assistant. Always output valid JSON.' },
+            { role: 'user', content: currentPrompt }
+          ],
           response_format: { type: 'json_object' }
         })
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
 
       const data = await response.json();

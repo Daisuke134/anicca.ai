@@ -21,43 +21,50 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
         NSLocalizedString("problem_\(self.rawValue)", comment: "")
     }
 
-    /// 通知タイミング（時刻の配列）- 全問題5回/日、行動科学リサーチに基づく
+    /// 通知タイミング（時刻の配列）- 行動科学リサーチに基づく最適スロット
     var notificationSchedule: [(hour: Int, minute: Int)] {
         switch self {
         case .stayingUpLate:
-            return [(20, 30), (21, 30), (22, 30), (23, 30), (7, 30)]
+            return [(20, 0), (21, 0), (22, 0), (23, 0), (0, 0), (1, 0)]
         case .cantWakeUp:
-            return [(22, 0), (6, 0), (6, 15), (6, 30), (8, 0)]
+            return [(6, 0), (6, 15), (6, 30), (8, 0), (22, 15)]
         case .selfLoathing:
-            return [(7, 0), (12, 0), (18, 0), (21, 30), (22, 30)]
+            return [(7, 0), (12, 0), (14, 45), (17, 0), (19, 0)]
         case .rumination:
-            return [(7, 30), (19, 0), (20, 30), (22, 0), (23, 0)]
+            return [(8, 30), (18, 0), (19, 30), (21, 15), (22, 45)]
         case .procrastination:
-            return [(9, 0), (13, 30), (15, 0), (19, 0), (21, 0)]
+            return [(9, 0), (11, 0), (13, 0), (15, 0), (18, 30)]
         case .anxiety:
-            return [(6, 30), (9, 30), (14, 0), (20, 0), (22, 30)]
+            return [(7, 30), (10, 0), (14, 0), (17, 30), (20, 45)]
         case .lying:
-            return [(8, 0), (12, 0), (15, 0), (19, 0), (21, 30)]
+            return [(8, 15), (11, 30), (14, 30), (16, 30), (19, 15)]
         case .badMouthing:
-            return [(8, 30), (12, 30), (17, 0), (20, 0), (22, 0)]
+            return [(9, 30), (12, 30), (15, 30), (18, 15), (21, 45)]
         case .pornAddiction:
-            return [(20, 0), (21, 30), (22, 30), (23, 30), (7, 30)]
+            return [(20, 30), (21, 30), (22, 30), (23, 30), (0, 30), (1, 30)]
         case .alcoholDependency:
-            return [(16, 0), (18, 0), (19, 30), (20, 30), (22, 0)]
+            return [(16, 0), (17, 15), (18, 45), (19, 45), (20, 15)]
         case .anger:
-            return [(7, 30), (12, 0), (15, 30), (17, 30), (21, 0)]
+            return [(7, 45), (10, 45), (13, 30), (15, 45), (16, 45)]
         case .obsessive:
-            return [(8, 0), (18, 0), (20, 0), (21, 30), (23, 0)]
+            return [(8, 45), (10, 30), (12, 15), (14, 15), (17, 45)]
         case .loneliness:
-            return [(9, 0), (14, 0), (18, 30), (21, 0), (22, 30)]
+            return [(9, 15), (11, 15), (13, 45), (15, 15), (16, 15)]
         }
     }
 
     /// 有効な通知時間帯（時間帯制限がある問題のみ）
     /// - Returns: (startHour, startMinute, endHour, endMinute) or nil if no restriction
     var validTimeRange: (startHour: Int, startMinute: Int, endHour: Int, endMinute: Int)? {
-        // v1.5.0: 全問題で制限なし。スケジュールはnotificationScheduleのスロット定義に委ねる
-        return nil
+        switch self {
+        case .stayingUpLate, .pornAddiction:
+            // Deep night allowed: peak 22:00-01:30 intervention is core
+            // endMinute is exclusive, so 1:31 includes 1:30 slot
+            return (startHour: 6, startMinute: 0, endHour: 1, endMinute: 31)
+        default:
+            // Non-sleep problems: 6:00-23:00 only
+            return (startHour: 6, startMinute: 0, endHour: 23, endMinute: 0)
+        }
     }
 
     /// 指定時刻がこの問題の有効時間帯内かどうか
@@ -66,7 +73,14 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
         let timeMinutes = hour * 60 + minute
         let startMinutes = range.startHour * 60 + range.startMinute
         let endMinutes = range.endHour * 60 + range.endMinute
-        return timeMinutes >= startMinutes && timeMinutes < endMinutes
+
+        if endMinutes < startMinutes {
+            // Crosses midnight (e.g., 6:00-01:30)
+            return timeMinutes >= startMinutes || timeMinutes < endMinutes
+        } else {
+            // Same day (e.g., 6:00-23:00)
+            return timeMinutes >= startMinutes && timeMinutes < endMinutes
+        }
     }
 
     /// 1択ボタンか2択ボタンか
@@ -125,12 +139,10 @@ enum ProblemType: String, Codable, CaseIterable, Sendable {
     /// 通知文言のバリアント数
     var notificationVariantCount: Int {
         switch self {
-        case .stayingUpLate, .cantWakeUp, .selfLoathing, .obsessive:
-            return 3
-        case .rumination, .procrastination, .anxiety, .badMouthing, .pornAddiction, .alcoholDependency, .anger, .loneliness:
-            return 2
-        case .lying:
-            return 1
+        case .stayingUpLate:
+            return 10
+        default:
+            return 8
         }
     }
 

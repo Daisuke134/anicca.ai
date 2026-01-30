@@ -83,6 +83,16 @@ final class LLMNudgeCache {
         cacheByTime.values.first ?? cacheByHour.values.first
     }
 
+    /// 全キャッシュNudgeを時刻順で取得（デバッグ一覧ビュー用）
+    var allCachedNudges: [LLMGeneratedNudge] {
+        let nudges = Array(cacheByTime.values)
+        return nudges.sorted { lhs, rhs in
+            let lhsMinutes = lhs.scheduledHour * 60 + lhs.scheduledMinute
+            let rhsMinutes = rhs.scheduledHour * 60 + rhs.scheduledMinute
+            return lhsMinutes < rhsMinutes
+        }
+    }
+
     /// デバッグ用サマリー
     func debugSummary() -> String {
         if cacheByTime.isEmpty { return "📦 LLMキャッシュ: 空" }

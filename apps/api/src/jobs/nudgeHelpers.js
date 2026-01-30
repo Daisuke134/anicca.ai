@@ -390,7 +390,7 @@ export function validateMinimumInterval(schedule) {
  * @returns {Array} Fixed schedule with adjusted times
  */
 /**
- * Log warnings for nudges closer than 60 minutes apart.
+ * Log warnings for nudges closer than 30 minutes apart.
  * Does NOT reject or modify the schedule — just logs for monitoring.
  * If warnings are frequent, fix the prompt to improve LLM compliance.
  * @param {Array} schedule - Array of schedule items
@@ -406,7 +406,7 @@ export function logIntervalWarnings(schedule) {
     const prev = timeToMinutes(sorted[i - 1].scheduledTime);
     const curr = timeToMinutes(sorted[i].scheduledTime);
 
-    if (curr - prev < 60) {
+    if (curr - prev < 30) {
       console.log(`⚠️ [IntervalWarning] ${sorted[i - 1].scheduledTime} → ${sorted[i].scheduledTime} (${curr - prev}min apart) | ${sorted[i].problemType}: "${sorted[i].hook}"`);
     }
   }
@@ -664,7 +664,7 @@ For each problem type, follow these evidence-based guidelines:
 - DO: "Text one person right now. Even just an emoji." Validate the courage it takes
 
 ## Nudge Frequency Rules
-- Minimum interval: 60 minutes between nudges (EXCEPT cant_wake_up wake window 06:00-06:30: 15 min allowed)
+- Minimum interval: 30 minutes between nudges for different problems, 60 minutes for the same problem (EXCEPT cant_wake_up wake window 06:00-06:30: 15 min allowed)
 - Guideline: 4-8 nudges per day
 - Strategy mix: ~40% preventive (before peak), ~40% intervention (during peak), ~20% reflection (after/next morning)
 - Base schedule on peak times from behavioral science AND user's actual response patterns
@@ -687,9 +687,14 @@ Return JSON in this exact format:
   "overallStrategy": "Your overall strategy for today"
 }
 
+## DON'T
+- Never schedule two nudges for the same time slot
+- Maintain at least 30 minutes between nudges for different problems
+- Maintain at least 60 minutes between nudges for the same problem
+
 ## Critical Rules
 1. Learn from the story. Repeat what worked, avoid what failed.
-2. Minimum 60 minutes between nudges.
+2. Minimum 30 minutes between nudges for different problems, 60 minutes for same problem.
 3. Character limits: Hook ≤ ${limits.hook}, Content ≤ ${limits.content}.
 4. ${languageInstruction}
 5. Every schedule item MUST have all required fields.`;

@@ -131,31 +131,21 @@ final class NudgeContentSelectorTests: XCTestCase {
         }
     }
 
-    /// 時刻固定バリアントが正しく選択されること（0時と1時）
-    func test_selectVariant_returns_time_specific_variant_at_correct_hour() {
-        // 乱数を高めに設定して既存ロジックを使用
+    /// v1.5.1: time-specific variant は廃止。全10バリアントが汎用
+    func test_selectVariant_stayingUpLate_allVariantsAreGeneric() {
         selector.randomProvider = { 0.9 }
 
-        // 0時（深夜0時）は stayingUpLate の時刻固定バリアント 3
+        // 0時でも汎用バリアント (0-9) から Thompson Sampling で選択
         let result0 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 0)
-        XCTAssertEqual(result0.variantIndex, 3, "At 00:00, should select variant 3 (midnight)")
+        XCTAssertTrue((0..<10).contains(result0.variantIndex), "At 00:00, should select from all 10 variants")
 
-        // 1時（深夜1時）は stayingUpLate の時刻固定バリアント 4
+        // 1時も同様
         let result1 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 1)
-        XCTAssertEqual(result1.variantIndex, 4, "At 01:00, should select variant 4 (1 AM)")
-    }
+        XCTAssertTrue((0..<10).contains(result1.variantIndex), "At 01:00, should select from all 10 variants")
 
-    /// 22時などの通常時間帯では汎用バリアントから選択されること
-    func test_selectVariant_does_not_return_time_specific_variant_at_other_hours() {
-        // 乱数を高めに設定して既存ロジックを使用
-        selector.randomProvider = { 0.9 }
-
+        // 22時も同様（全10バリアントが候補）
         let result22 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 22)
-
-        // 22時は時刻固定が発動しないので、Thompson Sampling が汎用バリアント [0,1,2,5,6,7,8,9] から選択
-        // Note: 3, 4 は genericVariants に含まれないため、絶対に返らない
-        let validVariants = [0, 1, 2, 5, 6, 7, 8, 9]
-        XCTAssertTrue(validVariants.contains(result22.variantIndex), "At 22:00, should select a generic variant")
+        XCTAssertTrue((0..<10).contains(result22.variantIndex), "At 22:00, should select from all 10 variants")
     }
 
     // MARK: - Thompson Sampling Tests

@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		2FE5F42A07D6CA9CCE447F06 /* NudgeStatsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */; };
+		3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */; };
 		840034502EE52C5200A2F44C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8400344F2EE52C5100A2F44C /* WidgetKit.framework */; };
 		840034522EE52C5200A2F44C /* SwiftUI.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 840034512EE52C5200A2F44C /* SwiftUI.framework */; };
 		840034632EE52C5400A2F44C /* AniccaWidgetExtension.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
@@ -24,6 +25,7 @@
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
 		A9EB06B36848A738F9F7FF27 /* NudgeContentSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */; };
+		F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */; };
 		FEBAE36E43A36F64C5743079 /* Foundation.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = E1FFFD13F67306F87B5AA845 /* Foundation.framework */; };
 		SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */; };
 /* End PBXBuildFile section */
@@ -65,11 +67,11 @@
 			name = "Embed Foundation Extensions";
 			runOnlyForDeploymentPostprocessing = 0;
 		};
-
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
 		134D591FFF1E0B40CA405490 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationHotfixTests.swift; sourceTree = "<group>"; };
 		8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8400344F2EE52C5100A2F44C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		840034512EE52C5200A2F44C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
@@ -80,12 +82,12 @@
 		84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
 		84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppTrackingTransparency.framework; path = System/Library/Frameworks/AppTrackingTransparency.framework; sourceTree = SDKROOT; };
 		84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
-
 		88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeStatsManagerTests.swift; sourceTree = "<group>"; };
 		8EB5063EEB22012F0836EE85 /* aniccaiosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 		8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeContentSelectorTests.swift; sourceTree = "<group>"; };
 		D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = BetaDistributionTests.swift; sourceTree = "<group>"; };
 		D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ProblemNotificationSchedulerTests.swift; sourceTree = "<group>"; };
+		E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeLocalizationTests.swift; sourceTree = "<group>"; };
 		E1FFFD13F67306F87B5AA845 /* Foundation.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = Foundation.framework; path = Platforms/iPhoneOS.platform/Developer/SDKs/iPhoneOS18.0.sdk/System/Library/Frameworks/Foundation.framework; sourceTree = DEVELOPER_DIR; };
 		SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubscriptionInfoTests.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
@@ -139,7 +141,6 @@
 			path = AniccaNotificationService;
 			sourceTree = "<group>";
 		};
-
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -205,7 +206,6 @@
 				8471AE7D2EB783E1002CECAA /* aniccaios */,
 				840034532EE52C5200A2F44C /* AniccaWidget */,
 				84CC79142EFAA90F005078AE /* AniccaNotificationService */,
-
 				8400344E2EE52C5100A2F44C /* Frameworks */,
 				8471AE7C2EB783E1002CECAA /* Products */,
 				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
@@ -221,7 +221,6 @@
 				8471AE7B2EB783E1002CECAA /* aniccaios.app */,
 				8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */,
 				84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */,
-
 				8EB5063EEB22012F0836EE85 /* aniccaiosTests.xctest */,
 			);
 			name = Products;
@@ -251,6 +250,8 @@
 				134D591FFF1E0B40CA405490 /* Info.plist */,
 				D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */,
 				SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */,
+				76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */,
+				E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */,
 			);
 			path = aniccaiosTests;
 			sourceTree = "<group>";
@@ -287,7 +288,6 @@
 				8471AE792EB783E1002CECAA /* Resources */,
 				8471AE802EB783E1002CECAA /* Copy WebRTC dSYM */,
 				8400346A2EE52C5400A2F44C /* Embed Foundation Extensions */,
-
 			);
 			buildRules = (
 			);
@@ -490,6 +490,8 @@
 				2FE5F42A07D6CA9CCE447F06 /* NudgeStatsManagerTests.swift in Sources */,
 				95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */,
 				SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */,
+				F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */,
+				3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

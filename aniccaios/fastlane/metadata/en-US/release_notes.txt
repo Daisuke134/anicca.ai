@@ -1,0 +1,4 @@
+- Smarter notifications: AI-personalized nudges now deliver from Day 2
+- Fixed notifications arriving at 2-3 AM
+- Redesigned notification timing to prevent duplicates
+- Improved notification content variety

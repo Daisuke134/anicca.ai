@@ -39,32 +39,35 @@ platform :ios do
   desc "Build and install on connected device"
   lane :build_for_device do |options|
     selected_scheme = options[:scheme] || SCHEME
+    project_path = File.expand_path("../aniccaios.xcodeproj", __dir__)
     derived_data = File.expand_path("./build/DerivedData")
 
-    # 接続デバイスを検出
-    require 'json'
-    require 'tempfile'
-    json_file = Tempfile.new(['devices', '.json'])
-    sh("xcrun devicectl list devices --json-output '#{json_file.path}' 2>/dev/null || true", log: false)
-    devices_data = JSON.parse(File.read(json_file.path))
-    json_file.unlink
-    connected_devices = devices_data.dig("result", "devices")&.select { |d| d.dig("connectionProperties", "tunnelState") == "connected" }
-    UI.user_error!("❌ No connected device found. Please connect your iPhone.") unless connected_devices && !connected_devices.empty?
-    device_id = connected_devices.first["identifier"]
-    device_name = connected_devices.first["name"] || device_id
+    # 接続デバイスを検出（xctrace の UDID を使用 — xcodebuild と互換性あり）
+    device_lines = sh("xcrun xctrace list devices 2>&1", log: false)
+      .split("\n")
+      .select { |l| l.include?("(") && !l.include?("Simulator") && !l.include?("MacBook") && !l.include?("== ") }
+      .reject { |l| l.strip.empty? }
+    UI.user_error!("❌ No connected device found. Please connect your iPhone.") if device_lines.empty?
+    # フォーマット: "Device Name  (OS) (UDID)"
+    match = device_lines.first.match(/^(.+?)\s+\([\d.]+\)\s+\(([A-F0-9\-]+)\)$/i)
+    UI.user_error!("❌ Could not parse device info: #{device_lines.first}") unless match
+    device_name = match[1].strip
+    device_id = match[2]
     UI.important("📱 Target device: #{device_name} (#{device_id})")
 
     # xcodebuild build で直接デバイス向けにビルド（Xcode 26 対応: archive+export を回避）
     UI.important("🔨 Building #{selected_scheme} for device...")
+    build_log = "#{derived_data}/build_for_device.log"
+    FileUtils.mkdir_p(derived_data)
     sh(
       "xcodebuild build " \
       "-scheme '#{selected_scheme}' " \
-      "-project ./aniccaios.xcodeproj " \
-      "-destination 'id=#{device_id}' " \
+      "-project '#{project_path}' " \
+      "-destination 'platform=iOS,id=#{device_id}' " \
       "-derivedDataPath '#{derived_data}' " \
       "-allowProvisioningUpdates " \
       "ONLY_ACTIVE_ARCH=YES " \
-      "2>&1 | xcpretty"
+      "2>&1 | tee '#{build_log}' | xcpretty"
     )
 
     # ビルド成果物の .app を探す

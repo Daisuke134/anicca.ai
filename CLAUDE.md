@@ -944,11 +944,18 @@ Spec ファイルは「設計の意図が明確で、AI が読んで実装でき
 
 ### 主要ディレクトリ
 ```
-aniccaios/          - iOSアプリ本体
-apps/api/           - APIサーバー
-daily-apps/         - 関連アプリ（Daily Dhammaなど）
-.cursor/plans/      - 計画・仕様書
-.kiro/              - ステアリング・スペック
+aniccaios/              - iOSアプリ本体
+aniccaios/maestro/      - E2Eテスト（Maestro）
+apps/api/               - APIサーバー（Node.js, Railway）
+apps/landing/           - ランディングページ（Next.js, Netlify）
+assets/                 - メディア（icon, screenshots, videos）
+data/                   - CSV/JSONデータ（apple-ads, audits）
+daily-apps/             - 関連アプリ（Daily Dhammaなど）
+research/               - 学術研究（NAIST）
+scripts/                - 自動化スクリプト
+docs/                   - ドキュメント
+.cursor/plans/          - 計画・仕様書
+.kiro/                  - ステアリング・スペック
 ```
 
 
@@ -1254,7 +1261,7 @@ func testProblemTypeContent(type: String) {
 |------|------|----------|
 | Unit Tests | `aniccaios/aniccaiosTests/` | `*Tests.swift` |
 | Integration Tests | `aniccaios/aniccaiosTests/Integration/` | `*IntegrationTests.swift` |
-| E2E Tests | `maestro/` | `NN-description.yaml` |
+| E2E Tests | `aniccaios/maestro/` | `NN-description.yaml` |
 
 ### 新機能実装時の必須フロー（3ゲート）
 
@@ -1279,10 +1286,10 @@ GATE 3: codex-review → ok: true → UI変更あれば Maestro E2E
 cd aniccaios && fastlane test
 
 # E2E Tests (Maestro)
-maestro test maestro/
+maestro test aniccaios/maestro/
 
 # 個別 E2E
-maestro test maestro/01-onboarding.yaml
+maestro test aniccaios/maestro/onboarding/01-onboarding.yaml
 ```
 
 **禁止事項（絶対にやるな）:**
@@ -1371,22 +1378,29 @@ PR がプッシュされると自動で実行：
 #### ディレクトリ構成（推奨）
 
 ```
-maestro/
-├── auth/
-│   ├── 01-login.yaml
-│   └── 02-logout.yaml
+aniccaios/maestro/
+├── flows/
+│   └── skip-onboarding.yaml
 ├── onboarding/
-│   └── 01-full-flow.yaml
+│   ├── 01-onboarding.yaml
+│   └── 02-paywall.yaml
 ├── nudge/
-│   ├── 01-nudge-display.yaml
-│   └── 02-nudge-feedback.yaml
-└── config.yaml  ← 共通設定
+│   ├── 05-phase5-thompson-sampling.yaml
+│   ├── 06-phase5-unresponsive-simulation.yaml
+│   ├── 15-nudge-card-loading-speed.yaml
+│   └── phase6/
+│       ├── 01-llm-nudge-display.yaml
+│       └── ...
+├── single-screen/
+│   ├── 01-single-screen-layout.yaml
+│   └── ...
+└── results/
 ```
 
 #### タグの使い方
 
 ```yaml
-# maestro/nudge/01-nudge-display.yaml
+# aniccaios/maestro/nudge/01-nudge-display.yaml
 appId: com.anicca.ios
 tags:
   - smokeTest
@@ -1397,8 +1411,8 @@ tags:
 
 ```bash
 # CI/CD での実行（GitHub Actions、fastlane等）
-maestro test maestro/ --include-tags=smokeTest  # Smoke テストのみ
-maestro test maestro/                            # 全テスト
+maestro test aniccaios/maestro/ --include-tags=smokeTest  # Smoke テストのみ
+maestro test aniccaios/maestro/                            # 全テスト
 
 # エージェント作業時は MCP を使う（上記参照）
 ```
@@ -1528,8 +1542,8 @@ cd aniccaios && fastlane build_for_simulator
 2. **CLI は CI/CD でのみ使う**
    ```bash
    # GitHub Actions や fastlane から実行
-   maestro test maestro/
-   maestro test maestro/01-onboarding.yaml --include-tags=smokeTest
+   maestro test aniccaios/maestro/
+   maestro test aniccaios/maestro/onboarding/01-onboarding.yaml --include-tags=smokeTest
    ```
 
 3. **新しいテスト作成時のフロー**

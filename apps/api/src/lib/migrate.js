@@ -16,7 +16,8 @@ export async function runMigrationsOnce() {
 
   // 006以降のRailway用DDLを適用。既存の他SQLは対象外。
   // v0.3: 010/011 を追加（v0.3新規テーブル + JSONB GINインデックス）
-  // Phase-7: 012 を追加（sensor_access_state テーブル）
+  // Phase-7: 012 = sensor_access_state（v1.5.0で廃止済みだが、既存環境にはテーブルが残存。
+  //   新規環境でもCREATE IF NOT EXISTSなのでべき等。将来のクリーンアップで除外予定。）
   const files = (await fs.readdir(MIGRATIONS_DIR))
     .filter(f => /^(006|007|008|010|011|012)_.*\.sql$/.test(f))
     .sort();

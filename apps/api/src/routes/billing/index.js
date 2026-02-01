@@ -1,16 +1,14 @@
 import express from 'express';
-import checkoutRouter from './checkout-session.js';
-import portalRouter from './portal-session.js';
-import stripeWebhookRouter from './webhook/stripe.js';
 import revenuecatWebhookRouter from './webhook/revenuecat.js';
 import revenuecatSyncRouter from './revenuecat-sync.js';
 
 const router = express.Router();
 
-router.use('/checkout-session', checkoutRouter);
-router.use('/portal-session', portalRouter);
-router.use('/webhook/stripe', stripeWebhookRouter);
 router.use('/webhook/revenuecat', revenuecatWebhookRouter);
 router.use('/revenuecat/sync', revenuecatSyncRouter);
+
+// Backward-compat: Stripe billing endpoints removed in 1.5.0, kept as 410 for old clients
+router.post('/checkout-session', (_req, res) => res.status(410).json({ error: { code: 'GONE', message: 'Stripe billing removed in v1.5.0. Use RevenueCat.' } }));
+router.post('/portal-session', (_req, res) => res.status(410).json({ error: { code: 'GONE', message: 'Stripe billing removed in v1.5.0. Use RevenueCat.' } }));
 
 export default router;

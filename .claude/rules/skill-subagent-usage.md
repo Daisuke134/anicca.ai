@@ -121,3 +121,20 @@ Web検索、コード探索、レビュー等の調査タスクはサブエー�
 | 小さすぎるタスクの委任 | 20k+ トークンのオーバーヘッド | 5行以下は直接実行 |
 | 全出力をメインにダンプ | コンテキスト汚染 | 要約のみ返す |
 | コンテキスト依存タスクの委任 | 会話履歴がない | 必要な文脈を全て指示に含める |
+
+### 並列実行の最適値（Anthropic公式 + コミュニティBP）
+
+| ルール | 値 | 根拠 |
+|--------|-----|------|
+| **推奨並列数** | 3-5 agents | Anthropic Multi-Agent Research |
+| **最大並列数** | 7 agents（ハードキャップ10） | Claude Code Task tool仕様 |
+| **コンテキスト委任閾値** | 40-60%で積極委任 | 75%で強制compact（遅い＆割り込み） |
+| **委任最小タスク** | 100行以上の出力 OR 3つ以上の独立タスク | オーバーヘッド vs 効果のバランス |
+
+**重要な制限:** Claude は並列タスクをバッチで実行する。全タスク完了後に次のバッチを開始。
+10個投げると最も遅いタスク完了まで全部待機 → 5個×2バッチの方が効率的な場合あり。
+
+Sources:
+- https://www.anthropic.com/engineering/multi-agent-research-system
+- https://www.anthropic.com/engineering/claude-code-best-practices
+- https://www.anthropic.com/engineering/building-agents-with-the-claude-agent-sdk

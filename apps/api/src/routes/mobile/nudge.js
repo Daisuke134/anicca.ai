@@ -236,27 +236,33 @@ router.get('/today', async (req, res) => {
     // Phase 7+8: overallStrategyを取得（最初のレコードから）
     const overallStrategy = result.rows[0]?.state?.overallStrategy || null;
 
-    // LLMGeneratedNudge形式に変換（Phase 7+8対応）
-    const nudges = result.rows.map(row => ({
-      id: row.state.id,
-      problemType: row.subtype,
-      // Phase 7+8: scheduledTime (HH:MM) を追加
-      scheduledTime: row.state.scheduledTime || `${String(row.state.scheduledHour || 9).padStart(2, '0')}:00`,
-      // 後方互換: scheduledHour も返す
-      scheduledHour: row.state.scheduledHour || parseInt((row.state.scheduledTime || '09:00').split(':')[0]),
-      hook: row.state.hook,
-      content: row.state.content,
-      tone: row.state.tone,
-      reasoning: row.state.reasoning,
-      // Phase 7+8: rootCauseHypothesis を追加
-      rootCauseHypothesis: row.state.rootCauseHypothesis || null,
-      createdAt: row.created_at.toISOString()
-    }));
+    // LLMGeneratedNudge形式に変換（1.6.0: slotIndex + enabled 追加）
+    const nudges = result.rows.map(row => {
+      const scheduledTime = row.state.scheduledTime || `${String(row.state.scheduledHour || 9).padStart(2, '0')}:00`;
+      const [h, m] = scheduledTime.split(':').map(Number);
+      return {
+        id: row.state.id,
+        problemType: row.subtype,
+        scheduledTime,
+        scheduledHour: h,
+        scheduledMinute: m,
+        // 1.6.0: slotIndex（フラット化テーブルのインデックス、iOS完全一致マッチ用）
+        slotIndex: row.state.slotIndex ?? null,
+        // 1.6.0: enabled（Phase 7 Dynamic Frequency用、デフォルトtrue）
+        enabled: row.state.enabled ?? true,
+        hook: row.state.hook,
+        content: row.state.content,
+        tone: row.state.tone,
+        reasoning: row.state.reasoning,
+        rootCauseHypothesis: row.state.rootCauseHypothesis || null,
+        createdAt: row.created_at.toISOString(),
+      };
+    });
 
     return res.json({
       nudges,
-      overallStrategy,  // Phase 7+8
-      version: '2'      // APIバージョン
+      overallStrategy,
+      version: '3',  // 1.6.0: slotIndex + enabled
     });
   } catch (e) {
     logger.error('Failed to fetch today\'s nudges', e);

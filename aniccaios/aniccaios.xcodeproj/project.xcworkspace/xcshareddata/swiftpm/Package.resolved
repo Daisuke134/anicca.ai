@@ -47,24 +47,6 @@
       }
     },
     {
-      "identity" : "superscript-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/superwall/Superscript-iOS",
-      "state" : {
-        "revision" : "ce546d7ad70b5ce5f66ea0caffefb0d97be49f34",
-        "version" : "1.0.12"
-      }
-    },
-    {
-      "identity" : "superwall-ios",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/superwall/Superwall-iOS",
-      "state" : {
-        "revision" : "583f5123444764cab642b250f7164c72e418a460",
-        "version" : "4.12.5"
-      }
-    },
-    {
       "identity" : "webrtc",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/stasel/WebRTC.git",

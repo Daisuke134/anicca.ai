@@ -21,7 +21,6 @@
 		84B4DEFE2F136C89002BCC6A /* AppTrackingTransparency.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */; };
 		84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = 84DE437E2F090BDA00198F6C /* Mixpanel */; };
-		84DE43842F09841900198F6C /* SuperwallKit in Frameworks */ = {isa = PBXBuildFile; productRef = 84DE43832F09841900198F6C /* SuperwallKit */; };
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
 		A2A557539B41673D5F86B4DD /* BetaDistributionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D65F6D43EDB935AF0AB2C0DD /* BetaDistributionTests.swift */; };
 		A9EB06B36848A738F9F7FF27 /* NudgeContentSelectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8EE67B738723C40D7312339C /* NudgeContentSelectorTests.swift */; };
@@ -165,7 +164,6 @@
 				840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */,
 				840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */,
 				840BA3AA2EC772EA005CDB8D /* RevenueCat in Frameworks */,
-				84DE43842F09841900198F6C /* SuperwallKit in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -305,7 +303,6 @@
 				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
 				840BA3B12EC77325005CDB8D /* WebRTC */,
 				84DE437E2F090BDA00198F6C /* Mixpanel */,
-				84DE43832F09841900198F6C /* SuperwallKit */,
 				84B4DEF92F136632002BCC6A /* Singular */,
 			);
 			productName = aniccaios;
@@ -390,7 +387,6 @@
 				840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */,
 				840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */,
 				84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
-				84DE43802F096EF200198F6C /* XCRemoteSwiftPackageReference "Superwall-iOS" */,
 				84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -537,7 +533,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -571,7 +567,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -605,7 +601,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -639,7 +635,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaWidget;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -819,7 +815,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -870,7 +866,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -988,7 +984,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1099,7 +1095,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				PROVISIONING_PROFILE_SPECIFIER = "";
@@ -1132,7 +1128,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1163,7 +1159,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1194,7 +1190,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1225,7 +1221,7 @@
 					"@executable_path/Frameworks",
 					"@executable_path/../../Frameworks",
 				);
-				MARKETING_VERSION = 1.4.0;
+				MARKETING_VERSION = 1.5.1;
 				PRODUCT_BUNDLE_IDENTIFIER = ai.anicca.app.ios.AniccaNotificationService;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = YES;
@@ -1413,14 +1409,6 @@
 				kind = branch;
 			};
 		};
-		84DE43802F096EF200198F6C /* XCRemoteSwiftPackageReference "Superwall-iOS" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/superwall/Superwall-iOS";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 4.11.2;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -1453,11 +1441,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */;
 			productName = Mixpanel;
-		};
-		84DE43832F09841900198F6C /* SuperwallKit */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 84DE43802F096EF200198F6C /* XCRemoteSwiftPackageReference "Superwall-iOS" */;
-			productName = SuperwallKit;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

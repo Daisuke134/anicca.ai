@@ -67,25 +67,9 @@ async function getTodayMetrics(profileId, localDate) {
   return r.rows?.[0] || null;
 }
 
-async function getLatestFeeling(profileId) {
-  const r = await query(
-    `select id, feeling_id, started_at, ended_at, ema_better, action_template
-       from feeling_sessions
-      where user_id = $1::uuid
-      order by started_at desc
-      limit 1`,
-    [profileId]
-  );
-  const row = r.rows?.[0];
-  if (!row) return null;
-  return {
-    id: row.id,
-    feelingId: row.feeling_id,
-    startedAt: row.started_at,
-    endedAt: row.ended_at,
-    emaBetter: row.ema_better,
-    actionTemplate: row.action_template
-  };
+async function getLatestFeeling(_profileId) {
+  // feeling_sessions table removed in 1.6.0 (dead feature)
+  return null;
 }
 
 async function getMem0Buckets(profileId) {

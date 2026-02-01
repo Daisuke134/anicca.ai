@@ -57,6 +57,5 @@ struct MainTabView: View {
             appState.markReviewRequested()
             return
         }
-        // Hard Paywall: 5回目/10回目のPaywall表示は削除（全員Subscriber前提）
     }
 }

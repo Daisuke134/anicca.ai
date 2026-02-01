@@ -237,7 +237,9 @@ platform :ios do
       ipa: ipa_path,
       skip_metadata: true,
       skip_screenshots: true,
-      force: true
+      force: true,
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false
     )
     
     UI.success("✅ Upload completed! Build will appear in App Store Connect within a few minutes.")
@@ -265,7 +267,7 @@ platform :ios do
     current_build = options[:build_number]
     unless current_build
       # 最新のTestFlightビルド番号を取得して1を足す
-      current_build = latest_testflight_build_number(api_key: api_key).to_i
+      current_build = latest_testflight_build_number(api_key: api_key, app_identifier: BUNDLE_ID).to_i
     end
     
     UI.important("⏳ Waiting for build #{current_build} to finish processing...")
@@ -323,21 +325,25 @@ platform :ios do
     api_key = get_api_key
     
     # 最新のビルド番号を取得
-    build_number = options[:build_number] || latest_testflight_build_number(api_key: api_key)
+    build_number = options[:build_number] || latest_testflight_build_number(api_key: api_key, app_identifier: BUNDLE_ID)
     version = options[:version] || get_version_number(target: PROJECT_NAME)
-    
+
     UI.important("📤 Submitting build #{build_number} (v#{version}) for App Store review...")
-    
+
     deliver(
       api_key: api_key,
       app_identifier: BUNDLE_ID,
-      skip_metadata: true,
+      skip_metadata: false,
       skip_screenshots: true,
       skip_binary_upload: true,
       build_number: build_number.to_s,
       submit_for_review: true,
       automatic_release: true,
       force: true,
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false,
+      overwrite_screenshots: false,
+      ignore_language_directory_validation: true,
       submission_information: {
         add_id_info_serves_ads: false,
         add_id_info_tracks_action: false,

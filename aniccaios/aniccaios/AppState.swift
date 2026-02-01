@@ -213,9 +213,6 @@ final class AppState: ObservableObject {
         // Mixpanel: ユーザー識別
         AnalyticsManager.shared.identify(userId: credentials.userId)
         
-        // Superwall: ユーザー識別
-        SuperwallManager.shared.identify(userId: credentials.userId)
-        
         // Phase 6: LLM生成Nudgeを取得
         Task {
             await fetchTodaysLLMNudges()
@@ -255,9 +252,6 @@ final class AppState: ObservableObject {
         // Mixpanel: リセット
         AnalyticsManager.shared.reset()
         
-        // Superwall: リセット
-        SuperwallManager.shared.reset()
-        
         // オンボーディングはサインアウト時に戻す
         isOnboardingComplete = false
         defaults.removeObject(forKey: onboardingKey)
@@ -288,9 +282,6 @@ final class AppState: ObservableObject {
 
         // Mixpanel: リセット
         AnalyticsManager.shared.reset()
-
-        // Superwall: リセット
-        SuperwallManager.shared.reset()
 
         // オンボーディング状態をリセット
         isOnboardingComplete = false

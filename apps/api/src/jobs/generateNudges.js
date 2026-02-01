@@ -16,6 +16,7 @@ import {
 } from './nudgeHelpers.js';
 import { classifyUserType } from '../services/userTypeService.js';
 import { runCommanderAgent, normalizeToDecision } from '../agents/commander.js';
+import { runCrossPlatformSync } from './syncCrossPlatform.js';
 import { collectAllGrounding } from '../agents/groundingCollectors.js';
 import { logCommanderDecision, buildSlackNudgeSummary, sendSlackNotification } from '../agents/reasoningLogger.js';
 
@@ -292,6 +293,15 @@ function validateLLMOutput(output) {
 // メイン処理 (Phase 7+8)
 async function runGenerateNudges() {
   console.log('✅ [GenerateNudges] Starting Phase 7+8 nudge generation cron job');
+
+  // Step 0: Cross-Platform Learning — 前日のメトリクスを処理
+  try {
+    console.log('🔁 [GenerateNudges] Running cross-platform learning pipeline...');
+    await runCrossPlatformSync(query);
+    console.log('✅ [GenerateNudges] Cross-platform learning complete.');
+  } catch (err) {
+    console.warn(`⚠️ [GenerateNudges] Cross-platform learning failed (non-fatal): ${err?.message || err}`);
+  }
 
   // 1. 全アクティブユーザーを取得
   const usersResult = await query(`

@@ -377,7 +377,7 @@ model TiktokPost {
   id                String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
   hookCandidateId   String?   @db.Uuid @map("hook_candidate_id")
   tiktokVideoId     String?   @db.VarChar(100) @unique @map("tiktok_video_id")
-  blotatoPostId     String?   @db.VarChar(100) @map("blotato_post_id")
+  blotatoPostId     String?   @unique @db.VarChar(100) @map("blotato_post_id")
   caption           String?   @db.Text
   postedAt          DateTime  @default(now()) @db.Timestamptz @map("posted_at")
   metricsFetchedAt  DateTime? @db.Timestamptz @map("metrics_fetched_at")
@@ -386,6 +386,7 @@ model TiktokPost {
   commentCount      BigInt?   @map("comment_count")
   shareCount        BigInt?   @map("share_count")
   agentReasoning    String?   @db.Text @map("agent_reasoning")
+  slot              String?   @db.VarChar(20) @map("slot")
   scheduledAt       DateTime? @db.Timestamptz @map("scheduled_at")
   createdAt         DateTime  @default(now()) @db.Timestamptz @map("created_at")
 
@@ -419,7 +420,9 @@ model XPost {
   id                String    @id @db.Uuid @default(dbgenerated("gen_random_uuid()"))
   hookCandidateId   String?   @db.Uuid @map("hook_candidate_id")
   xPostId           String?   @unique @db.VarChar(100) @map("x_post_id")
+  blotatoPostId     String?   @unique @db.VarChar(100) @map("blotato_post_id")
   text              String    @db.Text
+  slot              String?   @db.VarChar(20) @map("slot")
   postedAt          DateTime? @db.Timestamptz @map("posted_at")
   metricsFetchedAt  DateTime? @db.Timestamptz @map("metrics_fetched_at")
   impressionCount   BigInt    @default(0) @map("impression_count")

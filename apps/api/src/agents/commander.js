@@ -24,15 +24,20 @@ const AppNudgeSchema = z.object({
   reasoning: z.string(),
 });
 
+const TiktokPostSlot = z.enum(['morning', 'evening']);
+const XPostSlot = z.enum(['morning', 'evening']);
+
 const TiktokPostSchema = z.object({
-  hook: z.string(),
-  caption: z.string(),
+  slot: TiktokPostSlot,
+  caption: z.string().max(2200),
+  hashtags: z.array(z.string()).max(5).optional(),
   tone: z.string(),
   reasoning: z.string(),
 });
 
 const XPostSchema = z.object({
-  text: z.string(),
+  slot: XPostSlot,
+  text: z.string().max(280),
   reasoning: z.string(),
 });
 
@@ -41,8 +46,16 @@ const AgentRawOutputSchema = z.object({
   overallStrategy: z.string(),
   frequencyReasoning: z.string(),
   appNudges: z.array(AppNudgeSchema),
-  tiktokPost: TiktokPostSchema.optional(),
-  xPosts: z.array(XPostSchema).optional(),
+  tiktokPosts: z.array(TiktokPostSchema).length(2),
+  xPosts: z.array(XPostSchema).length(2),
+}).superRefine((data, ctx) => {
+  // slot 一意性保証: morning + evening が各1件ずつであること
+  for (const [field, arr] of [['tiktokPosts', data.tiktokPosts], ['xPosts', data.xPosts]]) {
+    const slots = arr.map(p => p.slot);
+    if (!slots.includes('morning') || !slots.includes('evening')) {
+      ctx.addIssue({ code: 'custom', message: `${field} must have exactly one morning and one evening slot` });
+    }
+  }
 });
 
 // ===== Prompt Template =====
@@ -159,13 +172,23 @@ ${grounding.behavioralScienceGuidelines}
 - hook: 日本語12文字 / 英語25文字
 - content: 日本語40文字 / 英語80文字
 
-### TikTok / X（固定スケジュール）
+### TikTok / X（固定スケジュール: 9:00 + 21:00 JST）
 
-- TikTok: 1投稿（09:00 JST に即時投稿）
-- X: 2投稿（09:00 JST 即時 + 21:00 JST 予約）
+TikTok と X、それぞれ2投稿を生成せよ:
 
-App で効いた洞察を TikTok/X にも展開し、
-TikTok/X で効いた洞察を App にフィードバックせよ。
+| プラットフォーム | スロット | 投稿時刻 | 目的 |
+|----------------|---------|---------|------|
+| TikTok | morning | 09:00 JST | 朝の通勤・準備時間帯。啓発・問題提起系 |
+| TikTok | evening | 21:00 JST | 夜のリラックス時間帯。内省・共感系 |
+| X | morning | 09:00 JST | 朝のタイムライン。知識・洞察系 |
+| X | evening | 21:00 JST | 夜のタイムライン。共感・物語系 |
+
+ルール:
+- App で効いた洞察を TikTok/X にも展開せよ
+- TikTok/X で効いた洞察を App にフィードバックせよ
+- morning と evening は異なる切り口にせよ（同じ内容を繰り返すな）
+- TikTok caption は 2200文字以内、ハッシュタグ最大5つ
+- X text は 280文字以内
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
@@ -392,8 +415,8 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
   return {
     userId,
     appNudges,
-    tiktokPost: agentOutput.tiktokPost ?? null,
-    xPosts: agentOutput.xPosts ?? null,
+    tiktokPosts: agentOutput.tiktokPosts ?? [],
+    xPosts: agentOutput.xPosts ?? [],
     overallStrategy: agentOutput.overallStrategy,
     rootCauseHypothesis: agentOutput.rootCauseHypothesis ?? null,
     frequencyDecision: {

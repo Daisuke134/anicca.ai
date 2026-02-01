@@ -1,19 +1,21 @@
 """
-Anicca TikTok Agent
-Daily autonomous agent that posts to TikTok using OpenAI function calling.
+Anicca TikTok Agent — Slot-based posting
+Daily agent that posts to TikTok using Commander's output + image generation.
 
 Flow:
-1. Review yesterday's performance (get_yesterday_performance)
-2. Get hook candidates via Thompson Sampling (get_hook_candidates)
-3. Search trends (search_trends) — MANDATORY
-4. Select hook + generate image (generate_image)
-5. Evaluate image quality (evaluate_image)
-6. Post to TikTok (post_to_tiktok)
-7. Save record (save_post_record) — MANDATORY, code-enforced
+1. Read POST_SLOT env (morning/evening) from GHA
+2. Review yesterday's performance (get_yesterday_performance)
+3. Get hook candidates via Thompson Sampling (get_hook_candidates)
+4. Search trends (search_trends) — MANDATORY
+5. Select hook + generate image (generate_image)
+6. Evaluate image quality (evaluate_image)
+7. Post to TikTok (post_to_tiktok) — IMMEDIATE (scheduling handled by GHA cron)
+8. Save record (save_post_record) — MANDATORY, code-enforced
 
 Runs via GitHub Actions: .github/workflows/anicca-daily-post.yml
 """
 import json
+import os
 import sys
 from openai import OpenAI
 from config import OPENAI_API_KEY, MODEL, MAX_RETRIES, ALL_AGENT_KEYS, validate_env
@@ -24,7 +26,7 @@ validate_env(ALL_AGENT_KEYS)
 
 client = OpenAI(api_key=OPENAI_API_KEY)
 
-SYSTEM_PROMPT = """You are Anicca's TikTok content agent. You create ONE TikTok post per day.
+SYSTEM_PROMPT = """You are Anicca's TikTok content agent. You create ONE TikTok post per slot (morning or evening). Read the POST_SLOT environment variable to know your current slot.
 
 ## MANDATORY WORKFLOW (follow this exact order)
 
@@ -43,29 +45,6 @@ Call search_trends with a query related to the selected hook's theme.
 - Query examples: "self-improvement TikTok 2025", "habit change viral content"
 - Use trend insights to enhance your caption and image prompt
 
-### STEP 3.5: Decide Posting Time (MANDATORY)
-Choose the best TIME to post. You ONLY decide the hour and minute — the date is handled automatically.
-
-Evidence-based best times by day (sources: Sprout Social 2.7B engagements, SocialPilot 700K posts):
-
-| Day       | Best Times (JST)      |
-|-----------|-----------------------|
-| Monday    | 10:00, 22:00          |
-| Tuesday   | 9:00, 22:00           |
-| Wednesday | 14:00, 17:00          |
-| Thursday  | 7:00, 11:00, 23:00    |
-| Friday    | 20:00                 |
-| Saturday  | 17:00, 20:00          |
-| Sunday    | 20:00                 |
-
-Rules:
-- Pick the best remaining time slot that hasn't passed yet.
-- If ALL slots for today have passed, pick 30 minutes from the current time.
-- Target persona (25-35歳) scrolls most in evening (19:00-23:00). Prefer evening slots.
-- Early engagement (first 30-90 min) drives TikTok algorithm.
-- Output format: "HH:MM" (24-hour JST). Examples: "22:00", "10:00", "20:00"
-- NEVER output a date. ONLY output the time as HH:MM.
-
 ### STEP 4: Generate Image
 Call generate_image with a detailed prompt.
 - Format: 9:16 portrait (TikTok standard)
@@ -78,20 +57,20 @@ Call evaluate_image with the generated image URL and hook text.
 - If score >= 6: proceed to Step 6
 - After 2 failed retries: post the best image anyway
 
-### STEP 6: Post to TikTok (Scheduled)
-Call post_to_tiktok with the image URL, caption, and posting_time from Step 3.5.
+### STEP 6: Post to TikTok (Immediate)
+Call post_to_tiktok with the image URL and caption. Post immediately (scheduling is handled by GHA cron).
 - Caption: hook text + brief context + hashtags
 - Hashtags: #anicca #習慣化 #自己改善 #マインドフルネス #仏教 #行動変容
 - Max caption length: 2200 chars
-- posting_time: The HH:MM time you decided in Step 3.5 (MANDATORY)
+- DO NOT set posting_time — post immediately
 
 ### STEP 7: Save Record (MANDATORY - NEVER SKIP)
 Call save_post_record with ALL fields:
 - blotato_post_id: from Step 6 result
 - caption: the posted caption
 - hook_candidate_id: from Step 2 result (the selected hook's id)
-- agent_reasoning: 2-3 sentences explaining why you chose this hook, approach, AND posting time
-- posting_time: the HH:MM time you decided in Step 3.5
+- agent_reasoning: 2-3 sentences explaining why you chose this hook and approach
+- slot: your current POST_SLOT value (morning or evening)
 
 ## Target Persona
 25-35 years old, struggled with habits for 6-7 years, tried 10+ habit apps and failed.
@@ -111,7 +90,8 @@ They feel "I'm a broken person." They're in give-up mode but secretly want to ch
 
 
 def run_agent():
-    print("🤖 [Anicca Agent] Starting daily TikTok post generation")
+    slot = os.environ.get("POST_SLOT", "morning")
+    print(f"🤖 [Anicca Agent] Starting TikTok post generation ({slot} slot)")
 
     # Inject current JST time so agent knows today's date and day of week
     from datetime import datetime, timezone, timedelta
@@ -128,9 +108,10 @@ def run_agent():
     messages.append({
         "role": "user",
         "content": (
-            f"Today is {today_date} ({day_of_week}). Current time: {current_time_str}.\n\n"
-            "Execute your daily TikTok posting process. "
-            "Review performance, select a hook, research trends, generate content, and post."
+            f"Today is {today_date} ({day_of_week}). Current time: {current_time_str}.\n"
+            f"Slot: {slot} ({'morning 9:00 JST' if slot == 'morning' else 'evening 21:00 JST'})\n\n"
+            "Execute your TikTok posting process for this slot. "
+            "Review performance, select a hook, research trends, generate content, and post IMMEDIATELY."
         ),
     })
 
@@ -261,6 +242,7 @@ def run_agent():
                     hook_candidate_id=last_hook_candidate_id or "",
                     agent_reasoning="[FORCED] Agent did not call save_post_record. Auto-saved by safety mechanism.",
                     scheduled_time=last_scheduled_time,
+                    slot=slot,
                 )
                 print(f"  → Forced save result: {forced_result}")
             except Exception as e:

@@ -10,6 +10,31 @@ router.use(requireInternalAuth);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function normalizeScheduleOutput(raw) {
+  // tiktokPost（単数）→ tiktokPosts（複数）
+  let tiktokPosts = raw?.tiktokPosts;
+  if (!tiktokPosts && raw?.tiktokPost) {
+    tiktokPosts = [{ ...raw.tiktokPost, slot: 'morning' }];
+  }
+
+  // tiktokPosts に slot がない場合のフォールバック（件数は増やさない）
+  if (tiktokPosts) {
+    tiktokPosts = tiktokPosts.map((post, i) => ({
+      ...post,
+      slot: post.slot || (i === 0 ? 'morning' : 'evening'),
+    }));
+  }
+
+  // xPosts に slot がない場合のフォールバック（件数は増やさない）
+  let xPosts = Array.isArray(raw?.xPosts) ? raw.xPosts : [];
+  xPosts = xPosts.map((post, i) => ({
+    ...post,
+    slot: post.slot || (i === 0 ? 'morning' : 'evening'),
+  }));
+
+  return { tiktokPosts: tiktokPosts || [], xPosts };
+}
+
 // =============================================================================
 // GET /api/admin/x/pending
 // Fetch today's Commander-generated xPosts from notification_schedules
@@ -17,6 +42,8 @@ const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/
 // =============================================================================
 router.get('/pending', async (req, res) => {
   try {
+    const { slot } = req.query;
+
     // Get most recent notification_schedule with xPosts
     const schedules = await prisma.notificationSchedule.findMany({
       where: {
@@ -29,23 +56,26 @@ router.get('/pending', async (req, res) => {
     const xPosts = [];
     for (const s of schedules) {
       const raw = s.agentRawOutput;
-      if (raw && Array.isArray(raw.xPosts)) {
-        for (const xp of raw.xPosts) {
-          xPosts.push({
-            text: xp.text,
-            reasoning: xp.reasoning,
-            sourceUserId: s.userId,
-            scheduleId: s.id,
-          });
-        }
+      const normalized = normalizeScheduleOutput(raw || {});
+      const candidates = normalized.xPosts || [];
+      for (const xp of candidates) {
+        if (slot && xp.slot !== slot) continue;
+        xPosts.push({
+          text: xp.text,
+          reasoning: xp.reasoning,
+          slot: xp.slot,
+          sourceUserId: s.userId,
+          scheduleId: s.id,
+        });
       }
     }
 
     // Deduplicate by text
     const seen = new Set();
     const unique = xPosts.filter((p) => {
-      if (seen.has(p.text)) return false;
-      seen.add(p.text);
+      const key = `${p.slot || 'any'}::${p.text}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
       return true;
     });
 
@@ -63,7 +93,7 @@ router.get('/pending', async (req, res) => {
 // =============================================================================
 router.post('/posts', async (req, res) => {
   try {
-    const { hook_candidate_id, x_post_id, text, agent_reasoning, posted_at } = req.body;
+    const { hook_candidate_id, x_post_id, blotato_post_id, text, agent_reasoning, posted_at, slot } = req.body;
 
     if (!text || typeof text !== 'string') {
       return res.status(400).json({ error: 'text is required' });
@@ -74,12 +104,21 @@ router.post('/posts', async (req, res) => {
     if (hook_candidate_id && !UUID_RE.test(hook_candidate_id)) {
       return res.status(400).json({ error: 'hook_candidate_id must be a valid UUID' });
     }
+    if (slot && !['morning', 'evening'].includes(slot)) {
+      return res.status(400).json({ error: 'slot must be "morning" or "evening"' });
+    }
 
-    // Duplicate guard: check x_post_id
+    // Duplicate guard: check x_post_id or blotato_post_id
     if (x_post_id) {
       const existing = await prisma.xPost.findUnique({ where: { xPostId: x_post_id } });
       if (existing) {
         return res.status(409).json({ error: 'X post already recorded', existing_id: existing.id });
+      }
+    }
+    if (blotato_post_id) {
+      const existing = await prisma.xPost.findFirst({ where: { blotatoPostId: blotato_post_id } });
+      if (existing) {
+        return res.status(409).json({ error: 'Duplicate blotato_post_id', existing_id: existing.id });
       }
     }
 
@@ -87,7 +126,9 @@ router.post('/posts', async (req, res) => {
       data: {
         hookCandidateId: hook_candidate_id || null,
         xPostId: x_post_id || null,
+        blotatoPostId: blotato_post_id || null,
         text,
+        slot: slot || null,
         agentReasoning: agent_reasoning || null,
         postedAt: posted_at ? new Date(posted_at) : new Date(),
       },
@@ -125,6 +166,7 @@ router.get('/recent-posts', async (req, res) => {
       id: p.id,
       text: p.text,
       x_post_id: p.xPostId,
+      blotato_post_id: p.blotatoPostId,
       posted_at: p.postedAt,
       impression_count: Number(p.impressionCount ?? 0),
       like_count: Number(p.likeCount ?? 0),
@@ -156,7 +198,7 @@ router.put('/posts/:id/metrics', async (req, res) => {
       return res.status(400).json({ error: 'id must be a valid UUID' });
     }
 
-    const { impression_count, like_count, retweet_count, reply_count } = req.body;
+    const { x_post_id, impression_count, like_count, retweet_count, reply_count } = req.body;
 
     const MAX_METRIC = 1_000_000_000;
     const metrics = { impression_count, like_count, retweet_count, reply_count };
@@ -167,23 +209,33 @@ router.put('/posts/:id/metrics', async (req, res) => {
       }
     }
 
-    const impressions = impression_count ?? 0;
-    const likes = like_count ?? 0;
-    const retweets = retweet_count ?? 0;
-    const replies = reply_count ?? 0;
-    const totalEngagements = likes + retweets + replies;
-    const engagementRate = impressions > 0 ? totalEngagements / impressions : 0;
+    // 部分更新: 送信されたフィールドのみ更新（欠落フィールドは既存値維持）
+    const updateData = { metricsFetchedAt: new Date() };
+    if (x_post_id && typeof x_post_id === 'string' && x_post_id.length <= 100) {
+      updateData.xPostId = x_post_id;
+    }
+    if (impression_count !== undefined && impression_count !== null) {
+      updateData.impressionCount = BigInt(impression_count);
+    }
+    if (like_count !== undefined && like_count !== null) {
+      updateData.likeCount = BigInt(like_count);
+    }
+    if (retweet_count !== undefined && retweet_count !== null) {
+      updateData.retweetCount = BigInt(retweet_count);
+    }
+    if (reply_count !== undefined && reply_count !== null) {
+      updateData.replyCount = BigInt(reply_count);
+    }
+
+    // engagementRate は全フィールド揃った時のみ再計算
+    if (impression_count != null && like_count != null && retweet_count != null && reply_count != null) {
+      const totalEngagements = like_count + retweet_count + reply_count;
+      updateData.engagementRate = impression_count > 0 ? totalEngagements / impression_count : 0;
+    }
 
     await prisma.xPost.update({
       where: { id },
-      data: {
-        impressionCount: BigInt(impressions),
-        likeCount: BigInt(likes),
-        retweetCount: BigInt(retweets),
-        replyCount: BigInt(replies),
-        engagementRate,
-        metricsFetchedAt: new Date(),
-      },
+      data: updateData,
     });
 
     logger.info(`X post metrics updated: ${id}`);
@@ -191,6 +243,9 @@ router.put('/posts/:id/metrics', async (req, res) => {
   } catch (error) {
     if (error.code === 'P2025') {
       return res.status(404).json({ error: 'X post not found' });
+    }
+    if (error.code === 'P2002') {
+      return res.status(409).json({ error: 'Duplicate x_post_id (DB constraint)' });
     }
     logger.error('Failed to update x post metrics', error);
     res.status(500).json({ error: 'Failed to update x post metrics' });

@@ -11,6 +11,11 @@ on:
         required: false
         default: ''
         type: string
+      lookback:
+        description: 'Lookback window in hours (default: 14)'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   group: cross-post-tiktok-ig
@@ -49,7 +54,10 @@ jobs:
         run: |
           ARGS=""
           if [ -n "${{ github.event.inputs.account }}" ]; then
-            ARGS="--account ${{ github.event.inputs.account }}"
+            ARGS="$ARGS --account ${{ github.event.inputs.account }}"
+          fi
+          if [ -n "${{ github.event.inputs.lookback }}" ]; then
+            ARGS="$ARGS --lookback ${{ github.event.inputs.lookback }}"
           fi
           python cross_post_tiktok_to_ig.py $ARGS
 

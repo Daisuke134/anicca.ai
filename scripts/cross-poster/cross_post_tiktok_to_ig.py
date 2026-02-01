@@ -62,6 +62,7 @@ def process_account(
     account_config: dict,
     now_utc: datetime,
     dry_run: bool = False,
+    lookback_hours: int = LOOKBACK_HOURS,
 ) -> dict:
     """Process one account mapping (RSS → Apify → Instagram).
 
@@ -79,7 +80,7 @@ def process_account(
     print(f"{'='*60}")
 
     # 1. Fetch RSS feed
-    since = now_utc - timedelta(hours=LOOKBACK_HOURS)
+    since = now_utc - timedelta(hours=lookback_hours)
     try:
         posts = fetch_new_posts(rss_url, since)
     except Exception as e:
@@ -190,6 +191,7 @@ def main():
     parser = argparse.ArgumentParser(description="Cross-post TikTok slideshows to Instagram")
     parser.add_argument("--dry-run", action="store_true", help="Don't actually post")
     parser.add_argument("--account", choices=list(ACCOUNT_MAPPING.keys()), help="Process only this account")
+    parser.add_argument("--lookback", type=int, default=LOOKBACK_HOURS, help="Lookback window in hours")
     args = parser.parse_args()
 
     validate_env()
@@ -199,11 +201,13 @@ def main():
     print(f"Dry run: {args.dry_run}")
     if args.account:
         print(f"Account filter: {args.account}")
+    if args.lookback != LOOKBACK_HOURS:
+        print(f"Custom lookback: {args.lookback}h")
 
     accounts = {args.account: ACCOUNT_MAPPING[args.account]} if args.account else ACCOUNT_MAPPING
     all_stats = {}
     for key, config in accounts.items():
-        all_stats[key] = process_account(key, config, now_utc, dry_run=args.dry_run)
+        all_stats[key] = process_account(key, config, now_utc, dry_run=args.dry_run, lookback_hours=args.lookback)
 
     # Summary
     print(f"\n{'='*60}")

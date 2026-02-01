@@ -29,9 +29,7 @@
   },
   "dependencies": {
     "@anthropic-ai/claude-code": "^1.0.35",
-    "@composio/core": "latest",
-    "@composio/openai": "latest",
-    "@google-cloud/kms": "^3.3.0",
+"@google-cloud/kms": "^3.3.0",
     "@google-cloud/text-to-speech": "^6.1.0",
     "@js-temporal/polyfill": "^0.4.4",
     "@modelcontextprotocol/sdk": "^1.13.0",

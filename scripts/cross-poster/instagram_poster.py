@@ -41,7 +41,7 @@ def upload_and_post_carousel(
     account_id: str,
     caption: str,
     image_urls: list[str],
-    scheduled_time: str,
+    scheduled_time: str | None = None,
 ) -> dict:
     """Upload images to Blotato storage, then post carousel to Instagram.
 
@@ -49,7 +49,7 @@ def upload_and_post_carousel(
         account_id: Blotato Instagram account ID
         caption: Post caption (TikTok hashtags already stripped)
         image_urls: List of image URLs (from Apify scraper)
-        scheduled_time: ISO 8601 UTC datetime for scheduled posting
+        scheduled_time: ISO 8601 UTC datetime for scheduled posting, or None for immediate
 
     Returns:
         Blotato API response dict
@@ -75,8 +75,9 @@ def upload_and_post_carousel(
                 "targetType": "instagram",
             },
         },
-        "scheduledTime": scheduled_time,
     }
+    if scheduled_time:
+        payload["scheduledTime"] = scheduled_time
 
     resp = requests.post(
         f"{BLOTATO_BASE_URL}/posts",

@@ -57,12 +57,35 @@ def next_posting_slot(now_utc: datetime, slot_index: int = 0) -> str:
     return first_slot.astimezone(timezone.utc).isoformat()
 
 
+def _parse_schedule_times(schedule_str: str, now_utc: datetime) -> list[str | None]:
+    """Parse comma-separated schedule times.
+
+    'now' = None (immediate), 'HH:MM' = JST time today, ISO 8601 = as-is.
+    """
+    times = []
+    for t in schedule_str.split(","):
+        t = t.strip()
+        if t.lower() == "now":
+            times.append(None)
+        elif ":" in t and len(t) <= 5:
+            hour, minute = int(t.split(":")[0]), int(t.split(":")[1])
+            jst_time = now_utc.astimezone(JST).replace(
+                hour=hour, minute=minute, second=0, microsecond=0
+            )
+            times.append(jst_time.astimezone(timezone.utc).isoformat())
+        else:
+            times.append(t)
+    return times
+
+
 def process_account(
     account_key: str,
     account_config: dict,
     now_utc: datetime,
     dry_run: bool = False,
     lookback_hours: int = LOOKBACK_HOURS,
+    force: bool = False,
+    schedule_times: list[str | None] | None = None,
 ) -> dict:
     """Process one account mapping (RSS → Apify → Instagram).
 
@@ -94,16 +117,20 @@ def process_account(
     if not posts:
         return stats
 
-    # 2. Filter out already-processed posts
-    processed_ids = load_processed_ids()
-    new_posts = [p for p in posts if p["id"] not in processed_ids]
-    stats["skipped"] = len(posts) - len(new_posts)
+    # 2. Filter out already-processed posts (skip if --force)
+    if force:
+        new_posts = posts
+        print(f"  Force mode: processing all {len(posts)} posts")
+    else:
+        processed_ids = load_processed_ids()
+        new_posts = [p for p in posts if p["id"] not in processed_ids]
+        stats["skipped"] = len(posts) - len(new_posts)
 
-    if not new_posts:
-        print(f"  All posts already processed. Skipping.")
-        return stats
+        if not new_posts:
+            print(f"  All posts already processed. Skipping.")
+            return stats
 
-    print(f"  {len(new_posts)} new, {stats['skipped']} already processed")
+        print(f"  {len(new_posts)} new, {stats['skipped']} already processed")
 
     # 3. Scrape TikTok for slideshow images
     target_urls = [p["link"] for p in new_posts]
@@ -129,9 +156,15 @@ def process_account(
             continue
 
         caption = strip_tiktok_hashtags(post["title"])
-        scheduled = next_posting_slot(now_utc, slot_index)
 
-        print(f"  Posting {len(images)} images to IG (scheduled: {scheduled})")
+        # Use custom schedule or auto-calculate
+        if schedule_times and slot_index < len(schedule_times):
+            scheduled = schedule_times[slot_index]
+        else:
+            scheduled = next_posting_slot(now_utc, slot_index)
+
+        time_label = "IMMEDIATE" if scheduled is None else scheduled
+        print(f"  Posting {len(images)} images to IG ({time_label})")
         print(f"  Caption: {caption[:80]}...")
 
         if dry_run:
@@ -192,6 +225,8 @@ def main():
     parser.add_argument("--dry-run", action="store_true", help="Don't actually post")
     parser.add_argument("--account", choices=list(ACCOUNT_MAPPING.keys()), help="Process only this account")
     parser.add_argument("--lookback", type=int, default=LOOKBACK_HOURS, help="Lookback window in hours")
+    parser.add_argument("--force", action="store_true", help="Ignore processed IDs cache")
+    parser.add_argument("--schedule-times", type=str, default="", help="Custom schedule: 'now,17:00,22:00' (JST)")
     args = parser.parse_args()
 
     validate_env()
@@ -203,11 +238,24 @@ def main():
         print(f"Account filter: {args.account}")
     if args.lookback != LOOKBACK_HOURS:
         print(f"Custom lookback: {args.lookback}h")
+    if args.force:
+        print(f"Force mode: ignoring processed IDs")
+
+    schedule_times = None
+    if args.schedule_times:
+        schedule_times = _parse_schedule_times(args.schedule_times, now_utc)
+        print(f"Custom schedule: {schedule_times}")
 
     accounts = {args.account: ACCOUNT_MAPPING[args.account]} if args.account else ACCOUNT_MAPPING
     all_stats = {}
     for key, config in accounts.items():
-        all_stats[key] = process_account(key, config, now_utc, dry_run=args.dry_run, lookback_hours=args.lookback)
+        all_stats[key] = process_account(
+            key, config, now_utc,
+            dry_run=args.dry_run,
+            lookback_hours=args.lookback,
+            force=args.force,
+            schedule_times=schedule_times,
+        )
 
     # Summary
     print(f"\n{'='*60}")

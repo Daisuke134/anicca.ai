@@ -16,6 +16,16 @@ on:
         required: false
         default: ''
         type: string
+      force:
+        description: 'Ignore processed IDs cache'
+        required: false
+        default: false
+        type: boolean
+      schedule_times:
+        description: 'Custom schedule times (e.g. "now,17:00,22:00" in JST)'
+        required: false
+        default: ''
+        type: string
 
 concurrency:
   group: cross-post-tiktok-ig
@@ -58,6 +68,12 @@ jobs:
           fi
           if [ -n "${{ github.event.inputs.lookback }}" ]; then
             ARGS="$ARGS --lookback ${{ github.event.inputs.lookback }}"
+          fi
+          if [ "${{ github.event.inputs.force }}" = "true" ]; then
+            ARGS="$ARGS --force"
+          fi
+          if [ -n "${{ github.event.inputs.schedule_times }}" ]; then
+            ARGS="$ARGS --schedule-times '${{ github.event.inputs.schedule_times }}'"
           fi
           python cross_post_tiktok_to_ig.py $ARGS
 

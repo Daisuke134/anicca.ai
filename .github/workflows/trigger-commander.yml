@@ -1,0 +1,27 @@
+name: Trigger Commander Agent
+on:
+  workflow_dispatch: {}
+concurrency:
+  group: trigger-commander
+  cancel-in-progress: false
+jobs:
+  trigger:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Trigger Commander Agent on Staging
+        run: |
+          echo "=== Triggering Commander Agent ==="
+          STATUS=$(curl -s -o response.json -w "%{http_code}" \
+            -X POST "$API_BASE_URL/api/nudge/generate" \
+            -H "Authorization: Bearer $API_AUTH_TOKEN" \
+            -H "Content-Type: application/json")
+          echo "HTTP Status: $STATUS"
+          cat response.json
+          if [ "$STATUS" -ge 400 ]; then
+            echo "::error::Commander Agent trigger failed with status $STATUS"
+            exit 1
+          fi
+        env:
+          API_BASE_URL: https://anicca-proxy-staging.up.railway.app
+          API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}

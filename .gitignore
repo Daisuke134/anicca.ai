@@ -144,6 +144,7 @@ scripts/sns-poster/.venv/
 AuthKey_*.p8
 __pycache__/
 *.xlsx
-dpo/
 aniccaios/fastlane/build/
-aniccaios/fastlane/build/
+
+# Masters thesis (formerly dpo/)
+masters-thesis/

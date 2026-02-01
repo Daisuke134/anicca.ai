@@ -1,12 +1,10 @@
 {
-  "name": "anicca-proxy",
+  "name": "anicca-api",
   "version": "1.0.0",
-  "description": "Anicca API Server",
+  "description": "Anicca iOS API Server (Railway)",
   "type": "module",
   "main": "src/server.js",
   "scripts": {
-    "dev": "vercel dev",
-    "deploy": "vercel --prod",
     "start": "npx prisma migrate deploy && npx prisma generate && node src/server.js",
     "dev:railway": "nodemon src/server.js",
     "prisma:generate": "prisma generate",
@@ -15,9 +13,8 @@
     "test:watch": "vitest"
   },
   "keywords": [
-    "proxy",
-    "gemini",
-    "claude",
+    "anicca",
+    "ios",
     "api"
   ],
   "author": "ANICCA",

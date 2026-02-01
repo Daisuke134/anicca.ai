@@ -296,9 +296,18 @@ export function applyGuardrails(appNudges, slotTable) {
     });
     const hasEnabled = ptNudges.some(n => n.enabled);
     if (!hasEnabled && ptNudges.length > 0) {
-      // Re-enable the first slot for this problem
-      ptNudges[0].enabled = true;
-      ptNudges[0].reasoning += ' [guardrail: min-1 per problem re-enabled]';
+      // Re-enable the first non-night slot (or first exempt-night slot)
+      const candidate = ptNudges.find(n => {
+        const s = slotLookup.get(n.slotIndex);
+        if (!s) return false;
+        const isNight = s.scheduledHour >= 23 || s.scheduledHour < 6;
+        return !isNight || NIGHT_EXEMPT_PROBLEMS.has(pt);
+      });
+      if (candidate) {
+        candidate.enabled = true;
+        candidate.reasoning += ' [guardrail: min-1 per problem re-enabled]';
+      }
+      // If all slots are night-only and not exempt, leave all disabled
     }
   }
 

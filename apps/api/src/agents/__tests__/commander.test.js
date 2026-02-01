@@ -108,7 +108,7 @@ describe('applyGuardrails', () => {
     expect(result.find(n => n.slotIndex === 2).enabled).toBe(true);
   });
 
-  it('ensures each problem has at least 1 enabled slot', () => {
+  it('does not re-enable night-curfewed non-exempt problems even for min-1 rule', () => {
     const slotTable = [
       { slotIndex: 0, problemType: 'anxiety', scheduledTime: '23:30', scheduledHour: 23, scheduledMinute: 30 },
     ];
@@ -118,7 +118,22 @@ describe('applyGuardrails', () => {
 
     const result = applyGuardrails(nudges, slotTable);
 
-    // anxiety at 23:30 would be disabled by night curfew, but re-enabled by min-1 rule
+    // anxiety (non-exempt) at 23:30 stays disabled — night curfew takes precedence
+    expect(result[0].enabled).toBe(false);
+    expect(result[0].reasoning).toContain('night curfew');
+  });
+
+  it('re-enables exempt problems at night for min-1 rule', () => {
+    const slotTable = [
+      { slotIndex: 0, problemType: 'staying_up_late', scheduledTime: '23:30', scheduledHour: 23, scheduledMinute: 30 },
+    ];
+    const nudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', enabled: false, reasoning: 'r' },
+    ];
+
+    const result = applyGuardrails(nudges, slotTable);
+
+    // staying_up_late (exempt) should be re-enabled by min-1 rule
     expect(result[0].enabled).toBe(true);
     expect(result[0].reasoning).toContain('re-enabled');
   });

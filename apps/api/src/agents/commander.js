@@ -345,30 +345,17 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
   // Filter: only keep nudges whose slotIndex exists in slotTable
   const validNudges = agentOutput.appNudges.filter(n => slotLookup.has(n.slotIndex));
 
-  const guardrailedNudges = applyGuardrails(validNudges, slotTable);
-
   // Build lookup of LLM-provided nudges by slotIndex
   const nudgeLookup = new Map();
-  for (const nudge of guardrailedNudges) {
+  for (const nudge of validNudges) {
     nudgeLookup.set(nudge.slotIndex, nudge);
   }
 
-  // Ensure ALL slotTable slots are covered (fill missing with disabled fallback)
-  const appNudges = slotTable.map(slot => {
+  // Fill ALL slotTable slots BEFORE guardrails (so min-1 rule covers all problemTypes)
+  const filledNudges = slotTable.map(slot => {
     const nudge = nudgeLookup.get(slot.slotIndex);
     if (nudge) {
-      return {
-        slotIndex: slot.slotIndex,
-        hook: nudge.hook,
-        content: nudge.content,
-        tone: nudge.tone,
-        enabled: nudge.enabled,
-        reasoning: nudge.reasoning,
-        problemType: slot.problemType,
-        scheduledTime: slot.scheduledTime,
-        scheduledHour: slot.scheduledHour,
-        scheduledMinute: slot.scheduledMinute,
-      };
+      return { ...nudge };
     }
     // Missing slot: fill with disabled rule-based fallback
     return {
@@ -378,6 +365,21 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
       tone: 'gentle',
       enabled: false,
       reasoning: 'LLM did not generate content for this slot; auto-disabled.',
+    };
+  });
+
+  const guardrailedNudges = applyGuardrails(filledNudges, slotTable);
+
+  // Enrich with slot metadata
+  const appNudges = guardrailedNudges.map(nudge => {
+    const slot = slotLookup.get(nudge.slotIndex);
+    return {
+      slotIndex: nudge.slotIndex,
+      hook: nudge.hook,
+      content: nudge.content,
+      tone: nudge.tone,
+      enabled: nudge.enabled,
+      reasoning: nudge.reasoning,
       problemType: slot.problemType,
       scheduledTime: slot.scheduledTime,
       scheduledHour: slot.scheduledHour,

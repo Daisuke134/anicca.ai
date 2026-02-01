@@ -759,16 +759,21 @@ export function generateRuleBasedNudges(problems, preferredLanguage = 'en') {
   const NIGHT_EXEMPT = new Set(['staying_up_late', 'cant_wake_up', 'porn_addiction']);
   const isNightHour = (h) => h >= 23 || h < 6;
 
-  const schedule = slotTable.map((slot, idx) => {
+  // Track per-problemType index for content/tone cycling
+  const problemIndexMap = new Map();
+  const schedule = slotTable.map((slot) => {
+    const ptIdx = problemIndexMap.get(slot.problemType) || 0;
+    problemIndexMap.set(slot.problemType, ptIdx + 1);
+
     const problemContent = content[slot.problemType] || [defaultContent];
-    const c = problemContent[idx % problemContent.length];
+    const c = problemContent[ptIdx % problemContent.length];
     const nightDisabled = isNightHour(slot.scheduledHour) && !NIGHT_EXEMPT.has(slot.problemType);
     return {
       scheduledTime: slot.scheduledTime,
       problemType: slot.problemType,
       hook: c.hook,
       content: c.content,
-      tone: NUDGE_TONES[idx % NUDGE_TONES.length],
+      tone: NUDGE_TONES[ptIdx % NUDGE_TONES.length],
       reasoning: nightDisabled ? 'Night curfew (23:00-05:59)' : 'Rule-based (Day 1 or fallback)',
       rootCauseHypothesis: null,
       slotIndex: slot.slotIndex,

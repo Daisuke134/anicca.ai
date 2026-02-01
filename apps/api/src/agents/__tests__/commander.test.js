@@ -252,9 +252,11 @@ describe('normalizeToDecision', () => {
     expect(decision.appNudges.length).toBe(3);
     expect(decision.appNudges[0].enabled).toBe(true);
     expect(decision.appNudges[0].hook).toBe('h0');
+    // procrastination slot 1: disabled fallback (procrastination already has slot 0 enabled)
     expect(decision.appNudges[1].enabled).toBe(false);
     expect(decision.appNudges[1].problemType).toBe('procrastination');
-    expect(decision.appNudges[2].enabled).toBe(false);
+    // anxiety slot 2: fallback re-enabled by min-1 rule (only slot for anxiety, daytime)
+    expect(decision.appNudges[2].enabled).toBe(true);
     expect(decision.appNudges[2].problemType).toBe('anxiety');
   });
 

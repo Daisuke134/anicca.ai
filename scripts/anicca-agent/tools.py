@@ -310,7 +310,9 @@ def generate_image(**kwargs):
 
         return json.dumps({"error": "Image generation timed out", "image_url": ""})
     except requests.exceptions.RequestException as e:
-        return json.dumps({"error": f"Fal.ai API request failed: {type(e).__name__}", "image_url": ""})
+        status_code = getattr(getattr(e, 'response', None), 'status_code', 'N/A')
+        body = getattr(getattr(e, 'response', None), 'text', '')[:300]
+        return json.dumps({"error": f"Fal.ai HTTP {status_code}: {type(e).__name__} - {body}", "image_url": ""})
     except Exception as e:
         return json.dumps({"error": f"Unexpected error: {type(e).__name__}", "image_url": ""})
 

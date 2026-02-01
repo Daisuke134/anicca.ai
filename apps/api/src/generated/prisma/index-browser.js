@@ -200,15 +200,6 @@ exports.Prisma.RealtimeUsageDailyScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.SubscriptionEventScalarFieldEnum = {
-  eventId: 'eventId',
-  userId: 'userId',
-  type: 'type',
-  provider: 'provider',
-  payload: 'payload',
-  createdAt: 'createdAt'
-};
-
 exports.Prisma.UsageSessionScalarFieldEnum = {
   sessionId: 'sessionId',
   userId: 'userId',
@@ -217,15 +208,6 @@ exports.Prisma.UsageSessionScalarFieldEnum = {
   billedSeconds: 'billedSeconds',
   billedMinutes: 'billedMinutes',
   source: 'source',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.SensorAccessStateScalarFieldEnum = {
-  userId: 'userId',
-  screenTimeEnabled: 'screenTimeEnabled',
-  sleepEnabled: 'sleepEnabled',
-  stepsEnabled: 'stepsEnabled',
-  motionEnabled: 'motionEnabled',
   updatedAt: 'updatedAt'
 };
 
@@ -268,23 +250,6 @@ exports.Prisma.UserTraitScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.DailyMetricScalarFieldEnum = {
-  userId: 'userId',
-  date: 'date',
-  sleepDurationMin: 'sleepDurationMin',
-  sleepStartAt: 'sleepStartAt',
-  wakeAt: 'wakeAt',
-  snsMinutesTotal: 'snsMinutesTotal',
-  snsMinutesNight: 'snsMinutesNight',
-  steps: 'steps',
-  sedentaryMinutes: 'sedentaryMinutes',
-  activitySummary: 'activitySummary',
-  mindSummary: 'mindSummary',
-  insights: 'insights',
-  createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.NudgeEventScalarFieldEnum = {
   id: 'id',
   userId: 'userId',
@@ -305,31 +270,6 @@ exports.Prisma.NudgeOutcomeScalarFieldEnum = {
   shortTerm: 'shortTerm',
   emaScore: 'emaScore',
   signals: 'signals',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.FeelingSessionScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  feelingId: 'feelingId',
-  topic: 'topic',
-  actionTemplate: 'actionTemplate',
-  startedAt: 'startedAt',
-  endedAt: 'endedAt',
-  emaBetter: 'emaBetter',
-  summary: 'summary',
-  transcript: 'transcript',
-  context: 'context',
-  createdAt: 'createdAt'
-};
-
-exports.Prisma.HabitLogScalarFieldEnum = {
-  id: 'id',
-  userId: 'userId',
-  habitId: 'habitId',
-  occurredOn: 'occurredOn',
-  status: 'status',
-  payload: 'payload',
   createdAt: 'createdAt'
 };
 
@@ -380,7 +320,13 @@ exports.Prisma.HookCandidateScalarFieldEnum = {
   isWisdom: 'isWisdom',
   explorationWeight: 'explorationWeight',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  source: 'source',
+  generatedForUserId: 'generatedForUserId',
+  promoted: 'promoted',
+  xEngagementRate: 'xEngagementRate',
+  xSampleSize: 'xSampleSize',
+  xHighPerformer: 'xHighPerformer'
 };
 
 exports.Prisma.TiktokPostScalarFieldEnum = {
@@ -396,6 +342,7 @@ exports.Prisma.TiktokPostScalarFieldEnum = {
   commentCount: 'commentCount',
   shareCount: 'shareCount',
   agentReasoning: 'agentReasoning',
+  slot: 'slot',
   scheduledAt: 'scheduledAt',
   createdAt: 'createdAt'
 };
@@ -414,6 +361,32 @@ exports.Prisma.WisdomPatternScalarFieldEnum = {
   verifiedAt: 'verifiedAt',
   createdAt: 'createdAt',
   updatedAt: 'updatedAt'
+};
+
+exports.Prisma.XPostScalarFieldEnum = {
+  id: 'id',
+  hookCandidateId: 'hookCandidateId',
+  xPostId: 'xPostId',
+  blotatoPostId: 'blotatoPostId',
+  text: 'text',
+  slot: 'slot',
+  postedAt: 'postedAt',
+  metricsFetchedAt: 'metricsFetchedAt',
+  impressionCount: 'impressionCount',
+  likeCount: 'likeCount',
+  retweetCount: 'retweetCount',
+  replyCount: 'replyCount',
+  engagementRate: 'engagementRate',
+  agentReasoning: 'agentReasoning',
+  createdAt: 'createdAt'
+};
+
+exports.Prisma.NotificationScheduleScalarFieldEnum = {
+  id: 'id',
+  userId: 'userId',
+  schedule: 'schedule',
+  agentRawOutput: 'agentRawOutput',
+  createdAt: 'createdAt'
 };
 
 exports.Prisma.SortOrder = {
@@ -455,24 +428,21 @@ exports.Prisma.ModelName = {
   MobileAlarmSchedule: 'MobileAlarmSchedule',
   UserSubscription: 'UserSubscription',
   RealtimeUsageDaily: 'RealtimeUsageDaily',
-  SubscriptionEvent: 'SubscriptionEvent',
   UsageSession: 'UsageSession',
-  SensorAccessState: 'SensorAccessState',
   MonthlyVcGrant: 'MonthlyVcGrant',
   Profile: 'Profile',
   UserSetting: 'UserSetting',
   UserTrait: 'UserTrait',
-  DailyMetric: 'DailyMetric',
   NudgeEvent: 'NudgeEvent',
   NudgeOutcome: 'NudgeOutcome',
-  FeelingSession: 'FeelingSession',
-  HabitLog: 'HabitLog',
   BanditModel: 'BanditModel',
   UserTypeEstimate: 'UserTypeEstimate',
   TypeStats: 'TypeStats',
   HookCandidate: 'HookCandidate',
   TiktokPost: 'TiktokPost',
-  WisdomPattern: 'WisdomPattern'
+  WisdomPattern: 'WisdomPattern',
+  XPost: 'XPost',
+  NotificationSchedule: 'NotificationSchedule'
 };
 
 /**

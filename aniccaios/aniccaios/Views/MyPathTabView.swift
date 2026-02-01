@@ -15,6 +15,7 @@ struct MyPathTabView: View {
     #if DEBUG
     @State private var showLLMCacheEmptyAlert = false
     #endif
+    @State private var showUpgradePaywall = false
 
     var body: some View {
         NavigationStack {
@@ -146,7 +147,7 @@ struct MyPathTabView: View {
         if appState.subscriptionInfo.plan == .free {
             // Free: セカンダリボタン（Upgrade to Pro）
             Button {
-                SuperwallManager.shared.register(placement: SuperwallPlacement.profilePlanTap.rawValue)
+                showUpgradePaywall = true
             } label: {
                 Text(String(localized: "single_screen_subscribe"))
                     .font(.subheadline.weight(.medium))
@@ -155,6 +156,23 @@ struct MyPathTabView: View {
                     .padding(.vertical, 12)  // 44pt タップエリア確保
                     .background(AppTheme.Colors.buttonUnselected)
                     .clipShape(Capsule())
+            }
+            .sheet(isPresented: $showUpgradePaywall, onDismiss: {
+                AnalyticsManager.shared.trackPaywallDismissed(paywallId: "profile_upgrade")
+            }) {
+                paywallContent
+                    .onPurchaseCompleted { customerInfo in
+                        showUpgradePaywall = false
+                    }
+                    .onRestoreCompleted { customerInfo in
+                        showUpgradePaywall = false
+                    }
+                    .onAppear {
+                        AnalyticsManager.shared.trackPaywallViewed(
+                            paywallId: "profile_upgrade",
+                            trigger: "profile_plan_tap"
+                        )
+                    }
             }
         } else {
             // Pro: セカンダリボタン（Manage Subscription）
@@ -172,6 +190,15 @@ struct MyPathTabView: View {
             .sheet(isPresented: $showingManageSubscription) {
                 customerCenterContent
             }
+        }
+    }
+
+    @ViewBuilder
+    private var paywallContent: some View {
+        if let offering = appState.cachedOffering {
+            PaywallView(offering: offering)
+        } else {
+            PaywallView()
         }
     }
 

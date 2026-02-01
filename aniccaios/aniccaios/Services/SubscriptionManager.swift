@@ -204,11 +204,11 @@ extension SubscriptionManager: PurchasesDelegate {
                 let currency: String
                 if let offering = AppState.shared.cachedOffering,
                    let package = offering.availablePackages.first(where: { $0.storeProduct.productIdentifier == productId }) {
-                    price = package.storeProduct.price as? Double ?? (productId.contains("annual") ? 49.99 : 9.99)
+                    price = package.storeProduct.price as? Double ?? 9.99
                     currency = package.storeProduct.currencyCode ?? "USD"
                 } else {
                     // フォールバック価格
-                    price = productId.contains("annual") ? 49.99 : 9.99
+                    price = 9.99
                     currency = "USD"
                 }
                 SingularManager.shared.trackPurchase(productId: productId, price: price, currency: currency)
@@ -259,8 +259,6 @@ extension SubscriptionInfo {
 
         let mappedName: String? = {
             switch productId {
-            case "ai.anicca.app.ios.annual":
-                return NSLocalizedString("subscription_plan_annual", comment: "")
             case "ai.anicca.app.ios.monthly":
                 return NSLocalizedString("subscription_plan_monthly", comment: "")
             default:

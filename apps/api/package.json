@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod",
-    "start": "npx prisma@6 migrate deploy && npx prisma@6 generate && node src/server.js",
+    "start": "prisma migrate deploy && prisma generate && node src/server.js",
     "dev:railway": "nodemon src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",
@@ -23,7 +23,6 @@
   "author": "ANICCA",
   "license": "MIT",
   "devDependencies": {
-    "prisma": "^6.0.0",
     "vercel": "^32.0.0",
     "vitest": "^2.1.9"
   },
@@ -35,6 +34,7 @@
     "@modelcontextprotocol/sdk": "^1.13.0",
     "@openai/agents": "^0.4.4",
     "@prisma/client": "^6.0.0",
+    "prisma": "^6.0.0",
     "@slack/web-api": "^7.9.3",
     "@supabase/supabase-js": "^2.50.2",
     "@vercel/mcp-adapter": "^0.11.1",

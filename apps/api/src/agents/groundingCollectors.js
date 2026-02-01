@@ -297,7 +297,7 @@ export async function collectCrossPlatformData(query) {
   // X posts performance
   try {
     const xResult = await query(`
-      SELECT text, engagement_rate, impressions
+      SELECT text, engagement_rate, impression_count
       FROM x_posts
       WHERE created_at >= NOW() - INTERVAL '7 days'
       ORDER BY engagement_rate DESC
@@ -308,7 +308,7 @@ export async function collectCrossPlatformData(query) {
       output += '### X/Twitter Recent Performance\n';
       for (const row of xResult.rows) {
         const engagement = Math.round(Number(row.engagement_rate || 0) * 100);
-        output += `- "${(row.text || '').slice(0, 40)}..." engagement${engagement}% imp${row.impressions}\n`;
+        output += `- "${(row.text || '').slice(0, 40)}..." engagement${engagement}% imp${row.impression_count}\n`;
       }
       output += '\n';
     }

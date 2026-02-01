@@ -164,8 +164,15 @@ def main():
         text = post["text"][:280]
         time_str = post.get("scheduled_time_jst", "09:00")
 
-        # Parse scheduled time
-        hour, minute = map(int, time_str.split(":"))
+        # Parse scheduled time (with validation)
+        try:
+            hour, minute = map(int, time_str.split(":"))
+            if not (0 <= hour <= 23 and 0 <= minute <= 59):
+                raise ValueError(f"Invalid time: {time_str}")
+        except (ValueError, AttributeError):
+            print(f"  Warning: Invalid time format '{time_str}', defaulting to 09:00")
+            hour, minute = 9, 0
+
         scheduled_dt = now_jst.replace(hour=hour, minute=minute, second=0, microsecond=0)
 
         # If scheduled time has passed, post immediately

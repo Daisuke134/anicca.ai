@@ -17,6 +17,7 @@ import {
 import { classifyUserType } from '../services/userTypeService.js';
 import { runCommanderAgent, normalizeToDecision } from '../agents/commander.js';
 import { collectAllGrounding } from '../agents/groundingCollectors.js';
+import { logCommanderDecision, buildSlackNudgeSummary, sendSlackNotification } from '../agents/reasoningLogger.js';
 
 const { Pool } = pg;
 
@@ -312,6 +313,7 @@ async function runGenerateNudges() {
   let totalGenerated = 0;
   let totalRuleBased = 0;
   let totalErrors = 0;
+  const nudgeResults = [];  // Phase 6: collect results for Slack summary
 
   // 2. 各ユーザーに対して処理
   for (const user of users) {
@@ -365,6 +367,10 @@ async function runGenerateNudges() {
             // notification_schedules table may not exist yet — non-fatal
             console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
           }
+
+          // Phase 6: Log Commander decision
+          logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
+          nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
 
         } catch (agentErr) {
           console.warn(`⚠️ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${agentErr.message}`);
@@ -453,6 +459,13 @@ async function runGenerateNudges() {
   }
 
   console.log(`✅ [GenerateNudges] Complete: ${totalGenerated} generated, ${totalRuleBased} rule-based, ${totalErrors} errors`);
+
+  // Phase 6: Send Slack summary
+  if (nudgeResults.length > 0) {
+    const slackPayload = buildSlackNudgeSummary(nudgeResults);
+    const webhookUrl = process.env.SLACK_METRICS_WEBHOOK_URL;
+    await sendSlackNotification(webhookUrl, slackPayload);
+  }
 }
 
 // 実行

@@ -22,11 +22,11 @@ RUN apt-get update -qq && \
 
 # Install node modules
 COPY package-lock.json package.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 # Copy Prisma schema and generate client
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npx prisma@6 generate
 
 # Copy only required application files to reduce build context
 COPY src ./src

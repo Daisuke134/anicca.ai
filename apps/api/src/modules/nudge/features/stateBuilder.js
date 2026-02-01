@@ -242,15 +242,8 @@ export async function buildMentalState({ profileId, feelingId, now = new Date(),
   const mind = today?.mind_summary || {};
   const feelingCounts = mind?.feelingCounts || {};
 
-  const count7dR = await query(
-    `select count(*)::int as c
-       from feeling_sessions
-      where user_id = $1::uuid
-        and feeling_id = $2
-        and started_at >= ($3::timestamptz - interval '7 days')`,
-    [profileId, String(feelingId), now.toISOString()]
-  );
-  const recentFeelingCount7d = Number(count7dR.rows?.[0]?.c ?? 0);
+  // feeling_sessions table removed in 1.6.0 (dead feature)
+  const recentFeelingCount7d = 0;
 
   const activity = today?.activity_summary || {};
   const ruminationProxy = calculateRuminationProxy({

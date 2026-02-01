@@ -38,7 +38,7 @@ struct OnboardingFlowView: View {
             }
         }
         .fullScreenCover(isPresented: $showPaywall) {
-            PaywallView(displayCloseButton: false)
+            paywallContent(displayCloseButton: false)
                 .interactiveDismissDisabled(true)
                 .onPurchaseCompleted { customerInfo in
                     AnalyticsManager.shared.track(.onboardingPaywallPurchased)
@@ -91,5 +91,14 @@ struct OnboardingFlowView: View {
     private func handlePaywallSuccess() {
         showPaywall = false
         appState.markOnboardingComplete()
+    }
+
+    @ViewBuilder
+    private func paywallContent(displayCloseButton: Bool) -> some View {
+        if let offering = appState.cachedOffering {
+            PaywallView(offering: offering, displayCloseButton: displayCloseButton)
+        } else {
+            PaywallView(displayCloseButton: displayCloseButton)
+        }
     }
 }

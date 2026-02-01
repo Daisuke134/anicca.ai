@@ -157,7 +157,7 @@ struct MyPathTabView: View {
             .sheet(isPresented: $showUpgradePaywall, onDismiss: {
                 AnalyticsManager.shared.trackPaywallDismissed(paywallId: "profile_upgrade")
             }) {
-                PaywallView()
+                paywallContent
                     .onPurchaseCompleted { customerInfo in
                         showUpgradePaywall = false
                     }
@@ -187,6 +187,15 @@ struct MyPathTabView: View {
             .sheet(isPresented: $showingManageSubscription) {
                 customerCenterContent
             }
+        }
+    }
+
+    @ViewBuilder
+    private var paywallContent: some View {
+        if let offering = appState.cachedOffering {
+            PaywallView(offering: offering)
+        } else {
+            PaywallView()
         }
     }
 

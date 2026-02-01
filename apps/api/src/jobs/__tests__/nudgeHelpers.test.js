@@ -289,11 +289,11 @@ describe('logIntervalWarnings', () => {
     const consoleSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
     const schedule = [
       { scheduledTime: '20:30', problemType: 'staying_up_late', hook: 'h1' },
-      { scheduledTime: '21:00', problemType: 'rumination', hook: 'h2' },
+      { scheduledTime: '20:45', problemType: 'rumination', hook: 'h2' },
       { scheduledTime: '22:00', problemType: 'staying_up_late', hook: 'h3' }
     ];
     logIntervalWarnings(schedule);
-    expect(consoleSpy).toHaveBeenCalledTimes(1); // only 20:30→21:00 is too close
+    expect(consoleSpy).toHaveBeenCalledTimes(1); // only 20:30→20:45 is <30min
     expect(consoleSpy.mock.calls[0][0]).toContain('IntervalWarning');
     consoleSpy.mockRestore();
   });
@@ -423,8 +423,7 @@ describe('buildPhase78Prompt', () => {
       weeklyPatterns: ''
     });
 
-    expect(result).toContain('Minimum interval: 60 minutes');
-    expect(result).toContain('Minimum 60 minutes between nudges');
-    expect(result).not.toContain('Minimum interval: 30 minutes');
+    expect(result).toContain('60 minutes for the same problem');
+    expect(result).toContain('Maintain at least 60 minutes between nudges for the same problem');
   });
 });

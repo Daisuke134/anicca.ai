@@ -12,15 +12,12 @@ import pg from 'pg';
 import crypto from 'crypto';
 import {
   shouldUseLLM,
-  buildUserStory,
-  getHookContentPerformance,
-  getTimingPerformance,
-  getWeeklyPatterns,
-  generateWithFallback,
-  buildPhase78Prompt,
   generateRuleBasedNudges
 } from './nudgeHelpers.js';
-import { classifyUserType, TYPE_NAMES } from '../services/userTypeService.js';
+import { classifyUserType } from '../services/userTypeService.js';
+import { runCommanderAgent, normalizeToDecision } from '../agents/commander.js';
+import { collectAllGrounding } from '../agents/groundingCollectors.js';
+import { logCommanderDecision, buildSlackNudgeSummary, sendSlackNotification } from '../agents/reasoningLogger.js';
 
 const { Pool } = pg;
 
@@ -148,42 +145,6 @@ async function getUserTypeForNudge(userId, problems) {
 }
 
 // 1.5.0: Get cross-user patterns from type_stats (only if data exists)
-async function getCrossUserPatterns(userType) {
-  const result = await query(`
-    SELECT type_id, tone, tapped_count, ignored_count, thumbs_up_count, sample_size, tap_rate, thumbs_up_rate
-    FROM type_stats
-    WHERE type_id = $1 AND sample_size >= 10
-    ORDER BY tap_rate DESC
-  `, [userType]);
-  return result.rows;
-}
-
-// 1.5.0: Build cross-user patterns prompt section
-function buildCrossUserPatternsSection(userType, typeStats) {
-  const typeName = TYPE_NAMES[userType] || userType;
-  let section = `\n## 📊 Cross-User Patterns (What works for similar users)\n`;
-  section += `\nThis user is estimated to be Type: **${typeName} (${userType})**\n`;
-
-  const effective = typeStats.filter(s => Number(s.tap_rate) > 0.5);
-  const ineffective = typeStats.filter(s => Number(s.tap_rate) <= 0.35);
-
-  if (effective.length > 0) {
-    section += `\n### What works for ${userType} users:\n`;
-    for (const s of effective) {
-      section += `- Tone: ${s.tone} (tap率 ${(Number(s.tap_rate) * 100).toFixed(0)}%, 👍率 ${(Number(s.thumbs_up_rate) * 100).toFixed(0)}%)\n`;
-    }
-  }
-
-  if (ineffective.length > 0) {
-    section += `\n### What doesn't work for ${userType} users:\n`;
-    for (const s of ineffective) {
-      section += `- Tone: ${s.tone} (tap率 ${(Number(s.tap_rate) * 100).toFixed(0)}%) ❌\n`;
-    }
-  }
-
-  return section;
-}
-
 // 言語別の文字数制限
 const CHAR_LIMITS = {
   ja: { hook: 12, content: 40 },
@@ -352,6 +313,7 @@ async function runGenerateNudges() {
   let totalGenerated = 0;
   let totalRuleBased = 0;
   let totalErrors = 0;
+  const nudgeResults = [];  // Phase 6: collect results for Slack summary
 
   // 2. 各ユーザーに対して処理
   for (const user of users) {
@@ -369,78 +331,70 @@ async function runGenerateNudges() {
       let scheduleResult;
 
       if (useLLM) {
-        // Day 2+: LLM生成
-        console.log(`🤖 [GenerateNudges] User ${user.user_id}: Day 2+ → LLM mode`);
+        // Day 2+: Commander Agent（1.6.0）
+        console.log(`🪷 [GenerateNudges] User ${user.user_id}: Day 2+ → Commander Agent`);
 
-        // ストーリー形式でコンテキスト構築
-        const userStory = await buildUserStory(query, user.user_id);
-        const hookContentPerformance = await getHookContentPerformance(query, user.user_id, problems);
-        const timingPerformance = await getTimingPerformance(query, user.user_id, problems);
-        const weeklyPatterns = await getWeeklyPatterns(query, user.user_id, problems);
-
-        // 1.5.0: Inject cross-user patterns into prompt (graceful degradation if empty)
-        let crossUserSection = '';
-        const typeStats = await getCrossUserPatterns(userType);
-        if (typeStats.length > 0) {
-          crossUserSection = buildCrossUserPatternsSection(userType, typeStats);
-        }
-
-        // 1.5.0 Track C: TikTok high-performer hooks + Wisdom patterns
-        let tiktokHighPerformerSection = '';
-        let wisdomSection = '';
+        let decision = null;
         try {
-          const highPerformers = await query(
-            `SELECT text, tone, tiktok_like_rate, tiktok_share_rate, tiktok_sample_size
-             FROM hook_candidates
-             WHERE tiktok_high_performer = true
-             ORDER BY tiktok_like_rate DESC LIMIT 5`
+          // 1. Collect all grounding variables (parallel DB queries)
+          const { grounding, slotTable } = await collectAllGrounding(
+            query, user.user_id, problems, preferredLanguage
           );
-          if (highPerformers.rows.length > 0) {
-            tiktokHighPerformerSection = '\n## 🎯 TikTok High Performers\nThese hooks performed well on TikTok. Consider using similar patterns:\n';
-            for (const h of highPerformers.rows) {
-              tiktokHighPerformerSection += `- "${h.text}" (tone: ${h.tone}, like率: ${(Number(h.tiktok_like_rate) * 100).toFixed(0)}%, share率: ${(Number(h.tiktok_share_rate) * 100).toFixed(0)}%)\n`;
-            }
+
+          // 2. Run Commander Agent
+          const agentOutput = await runCommanderAgent({ grounding });
+
+          // 3. Normalize to CommanderDecision (guardrails + enrichment)
+          decision = normalizeToDecision(agentOutput, slotTable, user.user_id);
+
+          // 4. Store raw agent output for audit (notification_schedules)
+          try {
+            await query(
+              `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
+               VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
+               ON CONFLICT (user_id) DO UPDATE SET
+                 schedule = EXCLUDED.schedule,
+                 agent_raw_output = EXCLUDED.agent_raw_output,
+                 created_at = EXCLUDED.created_at`,
+              [
+                crypto.randomUUID(),
+                user.user_id,
+                JSON.stringify(decision),
+                JSON.stringify(agentOutput),
+              ]
+            );
+          } catch (nsErr) {
+            // notification_schedules table may not exist yet — non-fatal
+            console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
           }
 
-          const wisdomPatterns = await query(
-            `SELECT pattern_name, target_user_types, effective_tone, app_evidence, tiktok_evidence
-             FROM wisdom_patterns
-             WHERE verified_at IS NOT NULL
-             ORDER BY confidence DESC LIMIT 3`
-          );
-          if (wisdomPatterns.rows.length > 0) {
-            wisdomSection = '\n## 🌟 Wisdom (Proven across app AND TikTok)\n';
-            for (const w of wisdomPatterns.rows) {
-              const appEv = typeof w.app_evidence === 'string' ? JSON.parse(w.app_evidence) : w.app_evidence;
-              const tikEv = typeof w.tiktok_evidence === 'string' ? JSON.parse(w.tiktok_evidence) : w.tiktok_evidence;
-              wisdomSection += `\n### Pattern: ${w.pattern_name}\n`;
-              wisdomSection += `- Works for: ${(w.target_user_types || []).join(', ')}\n`;
-              wisdomSection += `- Tone: ${w.effective_tone}\n`;
-              wisdomSection += `- Evidence: App tap率 ${((appEv.tapRate || 0) * 100).toFixed(0)}%, TikTok like率 ${((tikEv.likeRate || 0) * 100).toFixed(0)}%\n`;
-            }
-          }
-        } catch (err) {
-          console.warn(`⚠️ [GenerateNudges] Track C injection failed (non-fatal): ${err.message}`);
+          // Phase 6: Log Commander decision
+          logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
+          nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
+
+        } catch (agentErr) {
+          console.warn(`⚠️ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${agentErr.message}`);
+          console.warn(`⚠️ [GenerateNudges] Falling back to rule-based`);
         }
 
-        const prompt = buildPhase78Prompt({
-          problems,
-          preferredLanguage,
-          userStory,
-          hookContentPerformance,
-          timingPerformance,
-          weeklyPatterns,
-          crossUserPatterns: crossUserSection,
-          tiktokHighPerformers: tiktokHighPerformerSection,
-          wisdomPatterns: wisdomSection,
-        });
-
-        // 3-tier fallback
-        scheduleResult = await generateWithFallback(prompt, OPENAI_API_KEY, preferredLanguage);
-
-        if (!scheduleResult) {
-          // Tier 3: ルールベースにフォールバック
-          console.log(`⚠️ [GenerateNudges] User ${user.user_id}: LLM failed, falling back to rule-based`);
+        if (decision) {
+          // Convert CommanderDecision → legacy schedule format for DB save
+          scheduleResult = {
+            schedule: decision.appNudges.map(n => ({
+              problemType: n.problemType,
+              scheduledTime: n.scheduledTime,
+              hook: n.hook,
+              content: n.content,
+              tone: n.tone,
+              reasoning: n.reasoning,
+              rootCauseHypothesis: decision.rootCauseHypothesis || decision.overallStrategy,
+              slotIndex: n.slotIndex,
+              enabled: n.enabled,
+            })),
+            overallStrategy: decision.overallStrategy,
+          };
+        } else {
+          // Fallback: rule-based
           scheduleResult = generateRuleBasedNudges(problems, preferredLanguage);
           totalRuleBased++;
         }
@@ -469,6 +423,9 @@ async function runGenerateNudges() {
               id: nudgeId,
               scheduledTime: item.scheduledTime,
               scheduledHour: hour,  // 後方互換
+              scheduledMinute: minute,
+              slotIndex: item.slotIndex ?? null,  // 1.6.0: フラット化テーブルのインデックス
+              enabled: item.enabled ?? true,       // 1.6.0: Phase 7 用
               hook: item.hook.slice(0, limits.hook * 2),
               content: item.content.slice(0, limits.content * 2),
               tone: item.tone,
@@ -500,6 +457,13 @@ async function runGenerateNudges() {
   }
 
   console.log(`✅ [GenerateNudges] Complete: ${totalGenerated} generated, ${totalRuleBased} rule-based, ${totalErrors} errors`);
+
+  // Phase 6: Send Slack summary
+  if (nudgeResults.length > 0) {
+    const slackPayload = buildSlackNudgeSummary(nudgeResults);
+    const webhookUrl = process.env.SLACK_METRICS_WEBHOOK_URL;
+    await sendSlackNotification(webhookUrl, slackPayload);
+  }
 }
 
 // 実行

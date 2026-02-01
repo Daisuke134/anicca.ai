@@ -142,3 +142,6 @@ generated/
 scripts/sns-poster/.venv/
 .claude/skills/supabase-agent-skills/
 AuthKey_646Y27MJ8C.p8
+
+# Masters thesis (formerly dpo/)
+masters-thesis/

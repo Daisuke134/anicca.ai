@@ -189,6 +189,7 @@ def send_slack_summary(all_stats: dict[str, dict]) -> None:
 def main():
     parser = argparse.ArgumentParser(description="Cross-post TikTok slideshows to Instagram")
     parser.add_argument("--dry-run", action="store_true", help="Don't actually post")
+    parser.add_argument("--account", choices=list(ACCOUNT_MAPPING.keys()), help="Process only this account")
     args = parser.parse_args()
 
     validate_env()
@@ -196,9 +197,12 @@ def main():
     now_utc = datetime.now(timezone.utc)
     print(f"Cross-poster started at {now_utc.isoformat()}")
     print(f"Dry run: {args.dry_run}")
+    if args.account:
+        print(f"Account filter: {args.account}")
 
+    accounts = {args.account: ACCOUNT_MAPPING[args.account]} if args.account else ACCOUNT_MAPPING
     all_stats = {}
-    for key, config in ACCOUNT_MAPPING.items():
+    for key, config in accounts.items():
         all_stats[key] = process_account(key, config, now_utc, dry_run=args.dry_run)
 
     # Summary

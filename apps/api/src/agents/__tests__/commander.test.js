@@ -197,6 +197,65 @@ describe('normalizeToDecision', () => {
     expect(decision.frequencyDecision.reasoning).toBe('f');
   });
 
+  it('filters out nudges with invalid slotIndex', () => {
+    const agentOutput = {
+      rootCauseHypothesis: 'h',
+      overallStrategy: 's',
+      frequencyReasoning: 'f',
+      appNudges: [
+        { slotIndex: 0, hook: 'valid', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
+        { slotIndex: 999, hook: 'invalid', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
+      ],
+    };
+    const slotTable = [
+      { slotIndex: 0, problemType: 'procrastination', scheduledTime: '09:00', scheduledHour: 9, scheduledMinute: 0 },
+    ];
+
+    const decision = normalizeToDecision(agentOutput, slotTable, 'u');
+
+    expect(decision.appNudges.length).toBe(1);
+    expect(decision.appNudges[0].hook).toBe('valid');
+  });
+
+  it('fills missing slots with disabled fallback', () => {
+    const agentOutput = {
+      rootCauseHypothesis: 'h',
+      overallStrategy: 's',
+      frequencyReasoning: 'f',
+      appNudges: [
+        { slotIndex: 0, hook: 'h0', content: 'c0', tone: 'strict', enabled: true, reasoning: 'r0' },
+      ],
+    };
+    const slotTable = [
+      { slotIndex: 0, problemType: 'procrastination', scheduledTime: '09:00', scheduledHour: 9, scheduledMinute: 0 },
+      { slotIndex: 1, problemType: 'procrastination', scheduledTime: '11:00', scheduledHour: 11, scheduledMinute: 0 },
+      { slotIndex: 2, problemType: 'anxiety', scheduledTime: '14:00', scheduledHour: 14, scheduledMinute: 0 },
+    ];
+
+    const decision = normalizeToDecision(agentOutput, slotTable, 'u');
+
+    expect(decision.appNudges.length).toBe(3);
+    expect(decision.appNudges[0].enabled).toBe(true);
+    expect(decision.appNudges[0].hook).toBe('h0');
+    expect(decision.appNudges[1].enabled).toBe(false);
+    expect(decision.appNudges[1].problemType).toBe('procrastination');
+    expect(decision.appNudges[2].enabled).toBe(false);
+    expect(decision.appNudges[2].problemType).toBe('anxiety');
+  });
+
+  it('preserves rootCauseHypothesis in decision', () => {
+    const agentOutput = {
+      rootCauseHypothesis: 'deep cause',
+      overallStrategy: 'strategy',
+      frequencyReasoning: 'f',
+      appNudges: [],
+    };
+
+    const decision = normalizeToDecision(agentOutput, [], 'u');
+
+    expect(decision.rootCauseHypothesis).toBe('deep cause');
+  });
+
   it('passes through tiktokPost and xPosts', () => {
     const agentOutput = {
       rootCauseHypothesis: 'h',

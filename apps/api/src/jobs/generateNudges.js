@@ -380,19 +380,17 @@ async function runGenerateNudges() {
         if (decision) {
           // Convert CommanderDecision → legacy schedule format for DB save
           scheduleResult = {
-            schedule: decision.appNudges
-              .filter(n => n.enabled)
-              .map(n => ({
-                problemType: n.problemType,
-                scheduledTime: n.scheduledTime,
-                hook: n.hook,
-                content: n.content,
-                tone: n.tone,
-                reasoning: n.reasoning,
-                rootCauseHypothesis: decision.overallStrategy,
-                slotIndex: n.slotIndex,
-                enabled: n.enabled,
-              })),
+            schedule: decision.appNudges.map(n => ({
+              problemType: n.problemType,
+              scheduledTime: n.scheduledTime,
+              hook: n.hook,
+              content: n.content,
+              tone: n.tone,
+              reasoning: n.reasoning,
+              rootCauseHypothesis: decision.rootCauseHypothesis || decision.overallStrategy,
+              slotIndex: n.slotIndex,
+              enabled: n.enabled,
+            })),
             overallStrategy: decision.overallStrategy,
           };
         } else {

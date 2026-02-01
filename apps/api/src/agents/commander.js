@@ -333,21 +333,46 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
     slotLookup.set(slot.slotIndex, slot);
   }
 
-  const guardrailedNudges = applyGuardrails(agentOutput.appNudges, slotTable);
+  // Filter: only keep nudges whose slotIndex exists in slotTable
+  const validNudges = agentOutput.appNudges.filter(n => slotLookup.has(n.slotIndex));
 
-  const appNudges = guardrailedNudges.map(nudge => {
-    const slot = slotLookup.get(nudge.slotIndex);
+  const guardrailedNudges = applyGuardrails(validNudges, slotTable);
+
+  // Build lookup of LLM-provided nudges by slotIndex
+  const nudgeLookup = new Map();
+  for (const nudge of guardrailedNudges) {
+    nudgeLookup.set(nudge.slotIndex, nudge);
+  }
+
+  // Ensure ALL slotTable slots are covered (fill missing with disabled fallback)
+  const appNudges = slotTable.map(slot => {
+    const nudge = nudgeLookup.get(slot.slotIndex);
+    if (nudge) {
+      return {
+        slotIndex: slot.slotIndex,
+        hook: nudge.hook,
+        content: nudge.content,
+        tone: nudge.tone,
+        enabled: nudge.enabled,
+        reasoning: nudge.reasoning,
+        problemType: slot.problemType,
+        scheduledTime: slot.scheduledTime,
+        scheduledHour: slot.scheduledHour,
+        scheduledMinute: slot.scheduledMinute,
+      };
+    }
+    // Missing slot: fill with disabled rule-based fallback
     return {
-      slotIndex: nudge.slotIndex,
-      hook: nudge.hook,
-      content: nudge.content,
-      tone: nudge.tone,
-      enabled: nudge.enabled,
-      reasoning: nudge.reasoning,
-      problemType: slot?.problemType ?? 'unknown',
-      scheduledTime: slot?.scheduledTime ?? '09:00',
-      scheduledHour: slot?.scheduledHour ?? 9,
-      scheduledMinute: slot?.scheduledMinute ?? 0,
+      slotIndex: slot.slotIndex,
+      hook: 'Keep moving forward',
+      content: 'Start with a small step.',
+      tone: 'gentle',
+      enabled: false,
+      reasoning: 'LLM did not generate content for this slot; auto-disabled.',
+      problemType: slot.problemType,
+      scheduledTime: slot.scheduledTime,
+      scheduledHour: slot.scheduledHour,
+      scheduledMinute: slot.scheduledMinute,
     };
   });
 
@@ -359,6 +384,7 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
     tiktokPost: agentOutput.tiktokPost ?? null,
     xPosts: agentOutput.xPosts ?? null,
     overallStrategy: agentOutput.overallStrategy,
+    rootCauseHypothesis: agentOutput.rootCauseHypothesis ?? null,
     frequencyDecision: {
       count: enabledCount,
       reasoning: agentOutput.frequencyReasoning,

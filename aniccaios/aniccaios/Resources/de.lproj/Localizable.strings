@@ -594,20 +594,9 @@
 /* My Path Tab */
 "mypath_header_description" = "Anicca understands your struggles and supports you at the right moments.";
 "mypath_section_current_struggles" = "Current Struggles";
-"mypath_section_tell_anicca" = "Tell Anicca";
 "mypath_empty_title" = "Add a struggle to work on";
 "mypath_empty_action" = "Add Struggle";
 "mypath_add_problem" = "Add Struggle";
-"mypath_deepdive_save" = "Save";
-"mypath_deepdive_delete" = "Delete this struggle";
-"mypath_deepdive_delete_confirm_title" = "Delete this struggle?";
-"mypath_deepdive_delete_confirm_message" = "Related notifications will also be stopped.";
-
-/* Tell Anicca */
-"mypath_tell_struggling_with" = "I'm struggling with...";
-"mypath_tell_my_goal_is" = "My goal is...";
-"mypath_tell_remember_that" = "Remember that...";
-"mypath_tell_saved" = "Remembered";
 
 /* Add Problem Sheet */
 "mypath_add_problem_title" = "Add Struggle";

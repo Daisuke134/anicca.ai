@@ -64,15 +64,6 @@ model MobileProfile {
   @@map("mobile_profiles")
 }
 
-model MobileVoipToken {
-  userId      String   @map("user_id")
-  deviceToken String   @map("device_token")
-  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@id([userId, deviceToken])
-  @@map("mobile_voip_tokens")
-}
-
 model UserSubscription {
   userId                          String    @id @map("user_id")
   plan                            String    @default("free")
@@ -91,16 +82,6 @@ model UserSubscription {
   @@map("user_subscriptions")
 }
 
-model RealtimeUsageDaily {
-  userId    String   @map("user_id")
-  usageDate DateTime @map("usage_date") @db.Date
-  count     Int      @default(0)
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@id([userId, usageDate])
-  @@map("realtime_usage_daily")
-}
-
 model SubscriptionEvent {
   eventId   String   @id @map("event_id")
   userId    String?  @map("user_id")
@@ -110,30 +91,6 @@ model SubscriptionEvent {
   createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
   @@map("subscription_events")
-}
-
-model UsageSession {
-  sessionId     String    @id @map("session_id")
-  userId        String    @map("user_id")
-  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
-  endedAt       DateTime? @map("ended_at") @db.Timestamptz
-  billedSeconds Int       @default(0) @map("billed_seconds")
-  billedMinutes Int       @default(0) @map("billed_minutes")
-  source        String    @default("realtime")
-  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@map("usage_sessions")
-}
-
-model SensorAccessState {
-  userId            String   @id @map("user_id") @db.Uuid
-  screenTimeEnabled Boolean  @default(false) @map("screen_time_enabled")
-  sleepEnabled      Boolean  @default(false) @map("sleep_enabled")
-  stepsEnabled      Boolean  @default(false) @map("steps_enabled")
-  motionEnabled     Boolean  @default(false) @map("motion_enabled")
-  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@map("sensor_access_state")
 }
 
 model MonthlyVcGrant {

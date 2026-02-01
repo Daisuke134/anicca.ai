@@ -160,12 +160,6 @@ exports.Prisma.MobileProfileScalarFieldEnum = {
   createdAt: 'createdAt'
 };
 
-exports.Prisma.MobileVoipTokenScalarFieldEnum = {
-  userId: 'userId',
-  deviceToken: 'deviceToken',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.UserSubscriptionScalarFieldEnum = {
   userId: 'userId',
   plan: 'plan',
@@ -182,13 +176,6 @@ exports.Prisma.UserSubscriptionScalarFieldEnum = {
   updatedAt: 'updatedAt'
 };
 
-exports.Prisma.RealtimeUsageDailyScalarFieldEnum = {
-  userId: 'userId',
-  usageDate: 'usageDate',
-  count: 'count',
-  updatedAt: 'updatedAt'
-};
-
 exports.Prisma.SubscriptionEventScalarFieldEnum = {
   eventId: 'eventId',
   userId: 'userId',
@@ -196,26 +183,6 @@ exports.Prisma.SubscriptionEventScalarFieldEnum = {
   provider: 'provider',
   payload: 'payload',
   createdAt: 'createdAt'
-};
-
-exports.Prisma.UsageSessionScalarFieldEnum = {
-  sessionId: 'sessionId',
-  userId: 'userId',
-  startedAt: 'startedAt',
-  endedAt: 'endedAt',
-  billedSeconds: 'billedSeconds',
-  billedMinutes: 'billedMinutes',
-  source: 'source',
-  updatedAt: 'updatedAt'
-};
-
-exports.Prisma.SensorAccessStateScalarFieldEnum = {
-  userId: 'userId',
-  screenTimeEnabled: 'screenTimeEnabled',
-  sleepEnabled: 'sleepEnabled',
-  stepsEnabled: 'stepsEnabled',
-  motionEnabled: 'motionEnabled',
-  updatedAt: 'updatedAt'
 };
 
 exports.Prisma.MonthlyVcGrantScalarFieldEnum = {
@@ -374,6 +341,8 @@ exports.Prisma.TiktokPostScalarFieldEnum = {
   likeCount: 'likeCount',
   commentCount: 'commentCount',
   shareCount: 'shareCount',
+  agentReasoning: 'agentReasoning',
+  scheduledAt: 'scheduledAt',
   createdAt: 'createdAt'
 };
 
@@ -428,12 +397,8 @@ exports.Prisma.ModelName = {
   Token: 'Token',
   RefreshToken: 'RefreshToken',
   MobileProfile: 'MobileProfile',
-  MobileVoipToken: 'MobileVoipToken',
   UserSubscription: 'UserSubscription',
-  RealtimeUsageDaily: 'RealtimeUsageDaily',
   SubscriptionEvent: 'SubscriptionEvent',
-  UsageSession: 'UsageSession',
-  SensorAccessState: 'SensorAccessState',
   MonthlyVcGrant: 'MonthlyVcGrant',
   Profile: 'Profile',
   UserSetting: 'UserSetting',

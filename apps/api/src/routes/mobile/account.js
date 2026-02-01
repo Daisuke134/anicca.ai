@@ -49,16 +49,12 @@ router.delete('/', async (req, res, next) => {
     try {
       await client.query('BEGIN');
       // 関連データを削除（外部キー制約の順序に注意）
-      await client.query('DELETE FROM usage_sessions WHERE user_id = $1', [userId]);
       await client.query('DELETE FROM mobile_profiles WHERE user_id = $1', [userId]);
       // テーブル存在チェックの上で安全に削除
       const tableExists = async (name) => {
         const { rows } = await client.query('SELECT to_regclass($1) as reg', [`public.${name}`]);
         return Boolean(rows?.[0]?.reg);
       };
-      if (await tableExists('mobile_voip_tokens')) {
-        await client.query('DELETE FROM mobile_voip_tokens WHERE user_id = $1', [userId]);
-      }
       if (await tableExists('tokens')) {
         await client.query('DELETE FROM tokens WHERE user_id = $1', [userId]);
       }

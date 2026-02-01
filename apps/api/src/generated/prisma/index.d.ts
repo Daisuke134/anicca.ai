@@ -29,35 +29,15 @@ export type RefreshToken = $Result.DefaultSelection<Prisma.$RefreshTokenPayload>
  */
 export type MobileProfile = $Result.DefaultSelection<Prisma.$MobileProfilePayload>
 /**
- * Model MobileVoipToken
- * 
- */
-export type MobileVoipToken = $Result.DefaultSelection<Prisma.$MobileVoipTokenPayload>
-/**
  * Model UserSubscription
  * 
  */
 export type UserSubscription = $Result.DefaultSelection<Prisma.$UserSubscriptionPayload>
 /**
- * Model RealtimeUsageDaily
- * 
- */
-export type RealtimeUsageDaily = $Result.DefaultSelection<Prisma.$RealtimeUsageDailyPayload>
-/**
  * Model SubscriptionEvent
  * 
  */
 export type SubscriptionEvent = $Result.DefaultSelection<Prisma.$SubscriptionEventPayload>
-/**
- * Model UsageSession
- * 
- */
-export type UsageSession = $Result.DefaultSelection<Prisma.$UsageSessionPayload>
-/**
- * Model SensorAccessState
- * 
- */
-export type SensorAccessState = $Result.DefaultSelection<Prisma.$SensorAccessStatePayload>
 /**
  * Model MonthlyVcGrant
  * 
@@ -283,16 +263,6 @@ export class PrismaClient<
   get mobileProfile(): Prisma.MobileProfileDelegate<ExtArgs>;
 
   /**
-   * `prisma.mobileVoipToken`: Exposes CRUD operations for the **MobileVoipToken** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more MobileVoipTokens
-    * const mobileVoipTokens = await prisma.mobileVoipToken.findMany()
-    * ```
-    */
-  get mobileVoipToken(): Prisma.MobileVoipTokenDelegate<ExtArgs>;
-
-  /**
    * `prisma.userSubscription`: Exposes CRUD operations for the **UserSubscription** model.
     * Example usage:
     * ```ts
@@ -303,16 +273,6 @@ export class PrismaClient<
   get userSubscription(): Prisma.UserSubscriptionDelegate<ExtArgs>;
 
   /**
-   * `prisma.realtimeUsageDaily`: Exposes CRUD operations for the **RealtimeUsageDaily** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more RealtimeUsageDailies
-    * const realtimeUsageDailies = await prisma.realtimeUsageDaily.findMany()
-    * ```
-    */
-  get realtimeUsageDaily(): Prisma.RealtimeUsageDailyDelegate<ExtArgs>;
-
-  /**
    * `prisma.subscriptionEvent`: Exposes CRUD operations for the **SubscriptionEvent** model.
     * Example usage:
     * ```ts
@@ -321,26 +281,6 @@ export class PrismaClient<
     * ```
     */
   get subscriptionEvent(): Prisma.SubscriptionEventDelegate<ExtArgs>;
-
-  /**
-   * `prisma.usageSession`: Exposes CRUD operations for the **UsageSession** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more UsageSessions
-    * const usageSessions = await prisma.usageSession.findMany()
-    * ```
-    */
-  get usageSession(): Prisma.UsageSessionDelegate<ExtArgs>;
-
-  /**
-   * `prisma.sensorAccessState`: Exposes CRUD operations for the **SensorAccessState** model.
-    * Example usage:
-    * ```ts
-    * // Fetch zero or more SensorAccessStates
-    * const sensorAccessStates = await prisma.sensorAccessState.findMany()
-    * ```
-    */
-  get sensorAccessState(): Prisma.SensorAccessStateDelegate<ExtArgs>;
 
   /**
    * `prisma.monthlyVcGrant`: Exposes CRUD operations for the **MonthlyVcGrant** model.
@@ -925,12 +865,8 @@ export namespace Prisma {
     Token: 'Token',
     RefreshToken: 'RefreshToken',
     MobileProfile: 'MobileProfile',
-    MobileVoipToken: 'MobileVoipToken',
     UserSubscription: 'UserSubscription',
-    RealtimeUsageDaily: 'RealtimeUsageDaily',
     SubscriptionEvent: 'SubscriptionEvent',
-    UsageSession: 'UsageSession',
-    SensorAccessState: 'SensorAccessState',
     MonthlyVcGrant: 'MonthlyVcGrant',
     Profile: 'Profile',
     UserSetting: 'UserSetting',
@@ -960,7 +896,7 @@ export namespace Prisma {
 
   export type TypeMap<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs, ClientOptions = {}> = {
     meta: {
-      modelProps: "token" | "refreshToken" | "mobileProfile" | "mobileVoipToken" | "userSubscription" | "realtimeUsageDaily" | "subscriptionEvent" | "usageSession" | "sensorAccessState" | "monthlyVcGrant" | "profile" | "userSetting" | "userTrait" | "dailyMetric" | "nudgeEvent" | "nudgeOutcome" | "feelingSession" | "banditModel" | "userTypeEstimate" | "typeStats" | "hookCandidate" | "tiktokPost" | "wisdomPattern"
+      modelProps: "token" | "refreshToken" | "mobileProfile" | "userSubscription" | "subscriptionEvent" | "monthlyVcGrant" | "profile" | "userSetting" | "userTrait" | "dailyMetric" | "nudgeEvent" | "nudgeOutcome" | "feelingSession" | "banditModel" | "userTypeEstimate" | "typeStats" | "hookCandidate" | "tiktokPost" | "wisdomPattern"
       txIsolationLevel: Prisma.TransactionIsolationLevel
     }
     model: {
@@ -1174,76 +1110,6 @@ export namespace Prisma {
           }
         }
       }
-      MobileVoipToken: {
-        payload: Prisma.$MobileVoipTokenPayload<ExtArgs>
-        fields: Prisma.MobileVoipTokenFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.MobileVoipTokenFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.MobileVoipTokenFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>
-          }
-          findFirst: {
-            args: Prisma.MobileVoipTokenFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.MobileVoipTokenFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>
-          }
-          findMany: {
-            args: Prisma.MobileVoipTokenFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>[]
-          }
-          create: {
-            args: Prisma.MobileVoipTokenCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>
-          }
-          createMany: {
-            args: Prisma.MobileVoipTokenCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.MobileVoipTokenCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>[]
-          }
-          delete: {
-            args: Prisma.MobileVoipTokenDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>
-          }
-          update: {
-            args: Prisma.MobileVoipTokenUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>
-          }
-          deleteMany: {
-            args: Prisma.MobileVoipTokenDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.MobileVoipTokenUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.MobileVoipTokenUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$MobileVoipTokenPayload>
-          }
-          aggregate: {
-            args: Prisma.MobileVoipTokenAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateMobileVoipToken>
-          }
-          groupBy: {
-            args: Prisma.MobileVoipTokenGroupByArgs<ExtArgs>
-            result: $Utils.Optional<MobileVoipTokenGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.MobileVoipTokenCountArgs<ExtArgs>
-            result: $Utils.Optional<MobileVoipTokenCountAggregateOutputType> | number
-          }
-        }
-      }
       UserSubscription: {
         payload: Prisma.$UserSubscriptionPayload<ExtArgs>
         fields: Prisma.UserSubscriptionFieldRefs
@@ -1314,76 +1180,6 @@ export namespace Prisma {
           }
         }
       }
-      RealtimeUsageDaily: {
-        payload: Prisma.$RealtimeUsageDailyPayload<ExtArgs>
-        fields: Prisma.RealtimeUsageDailyFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.RealtimeUsageDailyFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.RealtimeUsageDailyFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>
-          }
-          findFirst: {
-            args: Prisma.RealtimeUsageDailyFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.RealtimeUsageDailyFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>
-          }
-          findMany: {
-            args: Prisma.RealtimeUsageDailyFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>[]
-          }
-          create: {
-            args: Prisma.RealtimeUsageDailyCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>
-          }
-          createMany: {
-            args: Prisma.RealtimeUsageDailyCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.RealtimeUsageDailyCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>[]
-          }
-          delete: {
-            args: Prisma.RealtimeUsageDailyDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>
-          }
-          update: {
-            args: Prisma.RealtimeUsageDailyUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>
-          }
-          deleteMany: {
-            args: Prisma.RealtimeUsageDailyDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.RealtimeUsageDailyUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.RealtimeUsageDailyUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$RealtimeUsageDailyPayload>
-          }
-          aggregate: {
-            args: Prisma.RealtimeUsageDailyAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateRealtimeUsageDaily>
-          }
-          groupBy: {
-            args: Prisma.RealtimeUsageDailyGroupByArgs<ExtArgs>
-            result: $Utils.Optional<RealtimeUsageDailyGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.RealtimeUsageDailyCountArgs<ExtArgs>
-            result: $Utils.Optional<RealtimeUsageDailyCountAggregateOutputType> | number
-          }
-        }
-      }
       SubscriptionEvent: {
         payload: Prisma.$SubscriptionEventPayload<ExtArgs>
         fields: Prisma.SubscriptionEventFieldRefs
@@ -1451,146 +1247,6 @@ export namespace Prisma {
           count: {
             args: Prisma.SubscriptionEventCountArgs<ExtArgs>
             result: $Utils.Optional<SubscriptionEventCountAggregateOutputType> | number
-          }
-        }
-      }
-      UsageSession: {
-        payload: Prisma.$UsageSessionPayload<ExtArgs>
-        fields: Prisma.UsageSessionFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.UsageSessionFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.UsageSessionFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>
-          }
-          findFirst: {
-            args: Prisma.UsageSessionFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.UsageSessionFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>
-          }
-          findMany: {
-            args: Prisma.UsageSessionFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>[]
-          }
-          create: {
-            args: Prisma.UsageSessionCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>
-          }
-          createMany: {
-            args: Prisma.UsageSessionCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.UsageSessionCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>[]
-          }
-          delete: {
-            args: Prisma.UsageSessionDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>
-          }
-          update: {
-            args: Prisma.UsageSessionUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>
-          }
-          deleteMany: {
-            args: Prisma.UsageSessionDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.UsageSessionUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.UsageSessionUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$UsageSessionPayload>
-          }
-          aggregate: {
-            args: Prisma.UsageSessionAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateUsageSession>
-          }
-          groupBy: {
-            args: Prisma.UsageSessionGroupByArgs<ExtArgs>
-            result: $Utils.Optional<UsageSessionGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.UsageSessionCountArgs<ExtArgs>
-            result: $Utils.Optional<UsageSessionCountAggregateOutputType> | number
-          }
-        }
-      }
-      SensorAccessState: {
-        payload: Prisma.$SensorAccessStatePayload<ExtArgs>
-        fields: Prisma.SensorAccessStateFieldRefs
-        operations: {
-          findUnique: {
-            args: Prisma.SensorAccessStateFindUniqueArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload> | null
-          }
-          findUniqueOrThrow: {
-            args: Prisma.SensorAccessStateFindUniqueOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
-          }
-          findFirst: {
-            args: Prisma.SensorAccessStateFindFirstArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload> | null
-          }
-          findFirstOrThrow: {
-            args: Prisma.SensorAccessStateFindFirstOrThrowArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
-          }
-          findMany: {
-            args: Prisma.SensorAccessStateFindManyArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>[]
-          }
-          create: {
-            args: Prisma.SensorAccessStateCreateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
-          }
-          createMany: {
-            args: Prisma.SensorAccessStateCreateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          createManyAndReturn: {
-            args: Prisma.SensorAccessStateCreateManyAndReturnArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>[]
-          }
-          delete: {
-            args: Prisma.SensorAccessStateDeleteArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
-          }
-          update: {
-            args: Prisma.SensorAccessStateUpdateArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
-          }
-          deleteMany: {
-            args: Prisma.SensorAccessStateDeleteManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          updateMany: {
-            args: Prisma.SensorAccessStateUpdateManyArgs<ExtArgs>
-            result: BatchPayload
-          }
-          upsert: {
-            args: Prisma.SensorAccessStateUpsertArgs<ExtArgs>
-            result: $Utils.PayloadToResult<Prisma.$SensorAccessStatePayload>
-          }
-          aggregate: {
-            args: Prisma.SensorAccessStateAggregateArgs<ExtArgs>
-            result: $Utils.Optional<AggregateSensorAccessState>
-          }
-          groupBy: {
-            args: Prisma.SensorAccessStateGroupByArgs<ExtArgs>
-            result: $Utils.Optional<SensorAccessStateGroupByOutputType>[]
-          }
-          count: {
-            args: Prisma.SensorAccessStateCountArgs<ExtArgs>
-            result: $Utils.Optional<SensorAccessStateCountAggregateOutputType> | number
           }
         }
       }
@@ -5587,860 +5243,6 @@ export namespace Prisma {
 
 
   /**
-   * Model MobileVoipToken
-   */
-
-  export type AggregateMobileVoipToken = {
-    _count: MobileVoipTokenCountAggregateOutputType | null
-    _min: MobileVoipTokenMinAggregateOutputType | null
-    _max: MobileVoipTokenMaxAggregateOutputType | null
-  }
-
-  export type MobileVoipTokenMinAggregateOutputType = {
-    userId: string | null
-    deviceToken: string | null
-    updatedAt: Date | null
-  }
-
-  export type MobileVoipTokenMaxAggregateOutputType = {
-    userId: string | null
-    deviceToken: string | null
-    updatedAt: Date | null
-  }
-
-  export type MobileVoipTokenCountAggregateOutputType = {
-    userId: number
-    deviceToken: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type MobileVoipTokenMinAggregateInputType = {
-    userId?: true
-    deviceToken?: true
-    updatedAt?: true
-  }
-
-  export type MobileVoipTokenMaxAggregateInputType = {
-    userId?: true
-    deviceToken?: true
-    updatedAt?: true
-  }
-
-  export type MobileVoipTokenCountAggregateInputType = {
-    userId?: true
-    deviceToken?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type MobileVoipTokenAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which MobileVoipToken to aggregate.
-     */
-    where?: MobileVoipTokenWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MobileVoipTokens to fetch.
-     */
-    orderBy?: MobileVoipTokenOrderByWithRelationInput | MobileVoipTokenOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: MobileVoipTokenWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MobileVoipTokens from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MobileVoipTokens.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned MobileVoipTokens
-    **/
-    _count?: true | MobileVoipTokenCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: MobileVoipTokenMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: MobileVoipTokenMaxAggregateInputType
-  }
-
-  export type GetMobileVoipTokenAggregateType<T extends MobileVoipTokenAggregateArgs> = {
-        [P in keyof T & keyof AggregateMobileVoipToken]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateMobileVoipToken[P]>
-      : GetScalarType<T[P], AggregateMobileVoipToken[P]>
-  }
-
-
-
-
-  export type MobileVoipTokenGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: MobileVoipTokenWhereInput
-    orderBy?: MobileVoipTokenOrderByWithAggregationInput | MobileVoipTokenOrderByWithAggregationInput[]
-    by: MobileVoipTokenScalarFieldEnum[] | MobileVoipTokenScalarFieldEnum
-    having?: MobileVoipTokenScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: MobileVoipTokenCountAggregateInputType | true
-    _min?: MobileVoipTokenMinAggregateInputType
-    _max?: MobileVoipTokenMaxAggregateInputType
-  }
-
-  export type MobileVoipTokenGroupByOutputType = {
-    userId: string
-    deviceToken: string
-    updatedAt: Date
-    _count: MobileVoipTokenCountAggregateOutputType | null
-    _min: MobileVoipTokenMinAggregateOutputType | null
-    _max: MobileVoipTokenMaxAggregateOutputType | null
-  }
-
-  type GetMobileVoipTokenGroupByPayload<T extends MobileVoipTokenGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<MobileVoipTokenGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof MobileVoipTokenGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], MobileVoipTokenGroupByOutputType[P]>
-            : GetScalarType<T[P], MobileVoipTokenGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type MobileVoipTokenSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    userId?: boolean
-    deviceToken?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["mobileVoipToken"]>
-
-  export type MobileVoipTokenSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    userId?: boolean
-    deviceToken?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["mobileVoipToken"]>
-
-  export type MobileVoipTokenSelectScalar = {
-    userId?: boolean
-    deviceToken?: boolean
-    updatedAt?: boolean
-  }
-
-
-  export type $MobileVoipTokenPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "MobileVoipToken"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      userId: string
-      deviceToken: string
-      updatedAt: Date
-    }, ExtArgs["result"]["mobileVoipToken"]>
-    composites: {}
-  }
-
-  type MobileVoipTokenGetPayload<S extends boolean | null | undefined | MobileVoipTokenDefaultArgs> = $Result.GetResult<Prisma.$MobileVoipTokenPayload, S>
-
-  type MobileVoipTokenCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<MobileVoipTokenFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: MobileVoipTokenCountAggregateInputType | true
-    }
-
-  export interface MobileVoipTokenDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['MobileVoipToken'], meta: { name: 'MobileVoipToken' } }
-    /**
-     * Find zero or one MobileVoipToken that matches the filter.
-     * @param {MobileVoipTokenFindUniqueArgs} args - Arguments to find a MobileVoipToken
-     * @example
-     * // Get one MobileVoipToken
-     * const mobileVoipToken = await prisma.mobileVoipToken.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends MobileVoipTokenFindUniqueArgs>(args: SelectSubset<T, MobileVoipTokenFindUniqueArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one MobileVoipToken that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {MobileVoipTokenFindUniqueOrThrowArgs} args - Arguments to find a MobileVoipToken
-     * @example
-     * // Get one MobileVoipToken
-     * const mobileVoipToken = await prisma.mobileVoipToken.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends MobileVoipTokenFindUniqueOrThrowArgs>(args: SelectSubset<T, MobileVoipTokenFindUniqueOrThrowArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first MobileVoipToken that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenFindFirstArgs} args - Arguments to find a MobileVoipToken
-     * @example
-     * // Get one MobileVoipToken
-     * const mobileVoipToken = await prisma.mobileVoipToken.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends MobileVoipTokenFindFirstArgs>(args?: SelectSubset<T, MobileVoipTokenFindFirstArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first MobileVoipToken that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenFindFirstOrThrowArgs} args - Arguments to find a MobileVoipToken
-     * @example
-     * // Get one MobileVoipToken
-     * const mobileVoipToken = await prisma.mobileVoipToken.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends MobileVoipTokenFindFirstOrThrowArgs>(args?: SelectSubset<T, MobileVoipTokenFindFirstOrThrowArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more MobileVoipTokens that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all MobileVoipTokens
-     * const mobileVoipTokens = await prisma.mobileVoipToken.findMany()
-     * 
-     * // Get first 10 MobileVoipTokens
-     * const mobileVoipTokens = await prisma.mobileVoipToken.findMany({ take: 10 })
-     * 
-     * // Only select the `userId`
-     * const mobileVoipTokenWithUserIdOnly = await prisma.mobileVoipToken.findMany({ select: { userId: true } })
-     * 
-     */
-    findMany<T extends MobileVoipTokenFindManyArgs>(args?: SelectSubset<T, MobileVoipTokenFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a MobileVoipToken.
-     * @param {MobileVoipTokenCreateArgs} args - Arguments to create a MobileVoipToken.
-     * @example
-     * // Create one MobileVoipToken
-     * const MobileVoipToken = await prisma.mobileVoipToken.create({
-     *   data: {
-     *     // ... data to create a MobileVoipToken
-     *   }
-     * })
-     * 
-     */
-    create<T extends MobileVoipTokenCreateArgs>(args: SelectSubset<T, MobileVoipTokenCreateArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many MobileVoipTokens.
-     * @param {MobileVoipTokenCreateManyArgs} args - Arguments to create many MobileVoipTokens.
-     * @example
-     * // Create many MobileVoipTokens
-     * const mobileVoipToken = await prisma.mobileVoipToken.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends MobileVoipTokenCreateManyArgs>(args?: SelectSubset<T, MobileVoipTokenCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many MobileVoipTokens and returns the data saved in the database.
-     * @param {MobileVoipTokenCreateManyAndReturnArgs} args - Arguments to create many MobileVoipTokens.
-     * @example
-     * // Create many MobileVoipTokens
-     * const mobileVoipToken = await prisma.mobileVoipToken.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many MobileVoipTokens and only return the `userId`
-     * const mobileVoipTokenWithUserIdOnly = await prisma.mobileVoipToken.createManyAndReturn({ 
-     *   select: { userId: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends MobileVoipTokenCreateManyAndReturnArgs>(args?: SelectSubset<T, MobileVoipTokenCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a MobileVoipToken.
-     * @param {MobileVoipTokenDeleteArgs} args - Arguments to delete one MobileVoipToken.
-     * @example
-     * // Delete one MobileVoipToken
-     * const MobileVoipToken = await prisma.mobileVoipToken.delete({
-     *   where: {
-     *     // ... filter to delete one MobileVoipToken
-     *   }
-     * })
-     * 
-     */
-    delete<T extends MobileVoipTokenDeleteArgs>(args: SelectSubset<T, MobileVoipTokenDeleteArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one MobileVoipToken.
-     * @param {MobileVoipTokenUpdateArgs} args - Arguments to update one MobileVoipToken.
-     * @example
-     * // Update one MobileVoipToken
-     * const mobileVoipToken = await prisma.mobileVoipToken.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends MobileVoipTokenUpdateArgs>(args: SelectSubset<T, MobileVoipTokenUpdateArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more MobileVoipTokens.
-     * @param {MobileVoipTokenDeleteManyArgs} args - Arguments to filter MobileVoipTokens to delete.
-     * @example
-     * // Delete a few MobileVoipTokens
-     * const { count } = await prisma.mobileVoipToken.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends MobileVoipTokenDeleteManyArgs>(args?: SelectSubset<T, MobileVoipTokenDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more MobileVoipTokens.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many MobileVoipTokens
-     * const mobileVoipToken = await prisma.mobileVoipToken.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends MobileVoipTokenUpdateManyArgs>(args: SelectSubset<T, MobileVoipTokenUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one MobileVoipToken.
-     * @param {MobileVoipTokenUpsertArgs} args - Arguments to update or create a MobileVoipToken.
-     * @example
-     * // Update or create a MobileVoipToken
-     * const mobileVoipToken = await prisma.mobileVoipToken.upsert({
-     *   create: {
-     *     // ... data to create a MobileVoipToken
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the MobileVoipToken we want to update
-     *   }
-     * })
-     */
-    upsert<T extends MobileVoipTokenUpsertArgs>(args: SelectSubset<T, MobileVoipTokenUpsertArgs<ExtArgs>>): Prisma__MobileVoipTokenClient<$Result.GetResult<Prisma.$MobileVoipTokenPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of MobileVoipTokens.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenCountArgs} args - Arguments to filter MobileVoipTokens to count.
-     * @example
-     * // Count the number of MobileVoipTokens
-     * const count = await prisma.mobileVoipToken.count({
-     *   where: {
-     *     // ... the filter for the MobileVoipTokens we want to count
-     *   }
-     * })
-    **/
-    count<T extends MobileVoipTokenCountArgs>(
-      args?: Subset<T, MobileVoipTokenCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], MobileVoipTokenCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a MobileVoipToken.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends MobileVoipTokenAggregateArgs>(args: Subset<T, MobileVoipTokenAggregateArgs>): Prisma.PrismaPromise<GetMobileVoipTokenAggregateType<T>>
-
-    /**
-     * Group by MobileVoipToken.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {MobileVoipTokenGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends MobileVoipTokenGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: MobileVoipTokenGroupByArgs['orderBy'] }
-        : { orderBy?: MobileVoipTokenGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, MobileVoipTokenGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetMobileVoipTokenGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the MobileVoipToken model
-   */
-  readonly fields: MobileVoipTokenFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for MobileVoipToken.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__MobileVoipTokenClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the MobileVoipToken model
-   */ 
-  interface MobileVoipTokenFieldRefs {
-    readonly userId: FieldRef<"MobileVoipToken", 'String'>
-    readonly deviceToken: FieldRef<"MobileVoipToken", 'String'>
-    readonly updatedAt: FieldRef<"MobileVoipToken", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * MobileVoipToken findUnique
-   */
-  export type MobileVoipTokenFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * Filter, which MobileVoipToken to fetch.
-     */
-    where: MobileVoipTokenWhereUniqueInput
-  }
-
-  /**
-   * MobileVoipToken findUniqueOrThrow
-   */
-  export type MobileVoipTokenFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * Filter, which MobileVoipToken to fetch.
-     */
-    where: MobileVoipTokenWhereUniqueInput
-  }
-
-  /**
-   * MobileVoipToken findFirst
-   */
-  export type MobileVoipTokenFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * Filter, which MobileVoipToken to fetch.
-     */
-    where?: MobileVoipTokenWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MobileVoipTokens to fetch.
-     */
-    orderBy?: MobileVoipTokenOrderByWithRelationInput | MobileVoipTokenOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for MobileVoipTokens.
-     */
-    cursor?: MobileVoipTokenWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MobileVoipTokens from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MobileVoipTokens.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of MobileVoipTokens.
-     */
-    distinct?: MobileVoipTokenScalarFieldEnum | MobileVoipTokenScalarFieldEnum[]
-  }
-
-  /**
-   * MobileVoipToken findFirstOrThrow
-   */
-  export type MobileVoipTokenFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * Filter, which MobileVoipToken to fetch.
-     */
-    where?: MobileVoipTokenWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MobileVoipTokens to fetch.
-     */
-    orderBy?: MobileVoipTokenOrderByWithRelationInput | MobileVoipTokenOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for MobileVoipTokens.
-     */
-    cursor?: MobileVoipTokenWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MobileVoipTokens from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MobileVoipTokens.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of MobileVoipTokens.
-     */
-    distinct?: MobileVoipTokenScalarFieldEnum | MobileVoipTokenScalarFieldEnum[]
-  }
-
-  /**
-   * MobileVoipToken findMany
-   */
-  export type MobileVoipTokenFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * Filter, which MobileVoipTokens to fetch.
-     */
-    where?: MobileVoipTokenWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of MobileVoipTokens to fetch.
-     */
-    orderBy?: MobileVoipTokenOrderByWithRelationInput | MobileVoipTokenOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing MobileVoipTokens.
-     */
-    cursor?: MobileVoipTokenWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` MobileVoipTokens from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` MobileVoipTokens.
-     */
-    skip?: number
-    distinct?: MobileVoipTokenScalarFieldEnum | MobileVoipTokenScalarFieldEnum[]
-  }
-
-  /**
-   * MobileVoipToken create
-   */
-  export type MobileVoipTokenCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * The data needed to create a MobileVoipToken.
-     */
-    data: XOR<MobileVoipTokenCreateInput, MobileVoipTokenUncheckedCreateInput>
-  }
-
-  /**
-   * MobileVoipToken createMany
-   */
-  export type MobileVoipTokenCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many MobileVoipTokens.
-     */
-    data: MobileVoipTokenCreateManyInput | MobileVoipTokenCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * MobileVoipToken createManyAndReturn
-   */
-  export type MobileVoipTokenCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many MobileVoipTokens.
-     */
-    data: MobileVoipTokenCreateManyInput | MobileVoipTokenCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * MobileVoipToken update
-   */
-  export type MobileVoipTokenUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * The data needed to update a MobileVoipToken.
-     */
-    data: XOR<MobileVoipTokenUpdateInput, MobileVoipTokenUncheckedUpdateInput>
-    /**
-     * Choose, which MobileVoipToken to update.
-     */
-    where: MobileVoipTokenWhereUniqueInput
-  }
-
-  /**
-   * MobileVoipToken updateMany
-   */
-  export type MobileVoipTokenUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update MobileVoipTokens.
-     */
-    data: XOR<MobileVoipTokenUpdateManyMutationInput, MobileVoipTokenUncheckedUpdateManyInput>
-    /**
-     * Filter which MobileVoipTokens to update
-     */
-    where?: MobileVoipTokenWhereInput
-  }
-
-  /**
-   * MobileVoipToken upsert
-   */
-  export type MobileVoipTokenUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * The filter to search for the MobileVoipToken to update in case it exists.
-     */
-    where: MobileVoipTokenWhereUniqueInput
-    /**
-     * In case the MobileVoipToken found by the `where` argument doesn't exist, create a new MobileVoipToken with this data.
-     */
-    create: XOR<MobileVoipTokenCreateInput, MobileVoipTokenUncheckedCreateInput>
-    /**
-     * In case the MobileVoipToken was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<MobileVoipTokenUpdateInput, MobileVoipTokenUncheckedUpdateInput>
-  }
-
-  /**
-   * MobileVoipToken delete
-   */
-  export type MobileVoipTokenDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-    /**
-     * Filter which MobileVoipToken to delete.
-     */
-    where: MobileVoipTokenWhereUniqueInput
-  }
-
-  /**
-   * MobileVoipToken deleteMany
-   */
-  export type MobileVoipTokenDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which MobileVoipTokens to delete
-     */
-    where?: MobileVoipTokenWhereInput
-  }
-
-  /**
-   * MobileVoipToken without action
-   */
-  export type MobileVoipTokenDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the MobileVoipToken
-     */
-    select?: MobileVoipTokenSelect<ExtArgs> | null
-  }
-
-
-  /**
    * Model UserSubscription
    */
 
@@ -7407,906 +6209,6 @@ export namespace Prisma {
 
 
   /**
-   * Model RealtimeUsageDaily
-   */
-
-  export type AggregateRealtimeUsageDaily = {
-    _count: RealtimeUsageDailyCountAggregateOutputType | null
-    _avg: RealtimeUsageDailyAvgAggregateOutputType | null
-    _sum: RealtimeUsageDailySumAggregateOutputType | null
-    _min: RealtimeUsageDailyMinAggregateOutputType | null
-    _max: RealtimeUsageDailyMaxAggregateOutputType | null
-  }
-
-  export type RealtimeUsageDailyAvgAggregateOutputType = {
-    count: number | null
-  }
-
-  export type RealtimeUsageDailySumAggregateOutputType = {
-    count: number | null
-  }
-
-  export type RealtimeUsageDailyMinAggregateOutputType = {
-    userId: string | null
-    usageDate: Date | null
-    count: number | null
-    updatedAt: Date | null
-  }
-
-  export type RealtimeUsageDailyMaxAggregateOutputType = {
-    userId: string | null
-    usageDate: Date | null
-    count: number | null
-    updatedAt: Date | null
-  }
-
-  export type RealtimeUsageDailyCountAggregateOutputType = {
-    userId: number
-    usageDate: number
-    count: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type RealtimeUsageDailyAvgAggregateInputType = {
-    count?: true
-  }
-
-  export type RealtimeUsageDailySumAggregateInputType = {
-    count?: true
-  }
-
-  export type RealtimeUsageDailyMinAggregateInputType = {
-    userId?: true
-    usageDate?: true
-    count?: true
-    updatedAt?: true
-  }
-
-  export type RealtimeUsageDailyMaxAggregateInputType = {
-    userId?: true
-    usageDate?: true
-    count?: true
-    updatedAt?: true
-  }
-
-  export type RealtimeUsageDailyCountAggregateInputType = {
-    userId?: true
-    usageDate?: true
-    count?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type RealtimeUsageDailyAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which RealtimeUsageDaily to aggregate.
-     */
-    where?: RealtimeUsageDailyWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RealtimeUsageDailies to fetch.
-     */
-    orderBy?: RealtimeUsageDailyOrderByWithRelationInput | RealtimeUsageDailyOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: RealtimeUsageDailyWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RealtimeUsageDailies from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RealtimeUsageDailies.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned RealtimeUsageDailies
-    **/
-    _count?: true | RealtimeUsageDailyCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: RealtimeUsageDailyAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: RealtimeUsageDailySumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: RealtimeUsageDailyMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: RealtimeUsageDailyMaxAggregateInputType
-  }
-
-  export type GetRealtimeUsageDailyAggregateType<T extends RealtimeUsageDailyAggregateArgs> = {
-        [P in keyof T & keyof AggregateRealtimeUsageDaily]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateRealtimeUsageDaily[P]>
-      : GetScalarType<T[P], AggregateRealtimeUsageDaily[P]>
-  }
-
-
-
-
-  export type RealtimeUsageDailyGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: RealtimeUsageDailyWhereInput
-    orderBy?: RealtimeUsageDailyOrderByWithAggregationInput | RealtimeUsageDailyOrderByWithAggregationInput[]
-    by: RealtimeUsageDailyScalarFieldEnum[] | RealtimeUsageDailyScalarFieldEnum
-    having?: RealtimeUsageDailyScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: RealtimeUsageDailyCountAggregateInputType | true
-    _avg?: RealtimeUsageDailyAvgAggregateInputType
-    _sum?: RealtimeUsageDailySumAggregateInputType
-    _min?: RealtimeUsageDailyMinAggregateInputType
-    _max?: RealtimeUsageDailyMaxAggregateInputType
-  }
-
-  export type RealtimeUsageDailyGroupByOutputType = {
-    userId: string
-    usageDate: Date
-    count: number
-    updatedAt: Date
-    _count: RealtimeUsageDailyCountAggregateOutputType | null
-    _avg: RealtimeUsageDailyAvgAggregateOutputType | null
-    _sum: RealtimeUsageDailySumAggregateOutputType | null
-    _min: RealtimeUsageDailyMinAggregateOutputType | null
-    _max: RealtimeUsageDailyMaxAggregateOutputType | null
-  }
-
-  type GetRealtimeUsageDailyGroupByPayload<T extends RealtimeUsageDailyGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<RealtimeUsageDailyGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof RealtimeUsageDailyGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], RealtimeUsageDailyGroupByOutputType[P]>
-            : GetScalarType<T[P], RealtimeUsageDailyGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type RealtimeUsageDailySelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    userId?: boolean
-    usageDate?: boolean
-    count?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["realtimeUsageDaily"]>
-
-  export type RealtimeUsageDailySelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    userId?: boolean
-    usageDate?: boolean
-    count?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["realtimeUsageDaily"]>
-
-  export type RealtimeUsageDailySelectScalar = {
-    userId?: boolean
-    usageDate?: boolean
-    count?: boolean
-    updatedAt?: boolean
-  }
-
-
-  export type $RealtimeUsageDailyPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "RealtimeUsageDaily"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      userId: string
-      usageDate: Date
-      count: number
-      updatedAt: Date
-    }, ExtArgs["result"]["realtimeUsageDaily"]>
-    composites: {}
-  }
-
-  type RealtimeUsageDailyGetPayload<S extends boolean | null | undefined | RealtimeUsageDailyDefaultArgs> = $Result.GetResult<Prisma.$RealtimeUsageDailyPayload, S>
-
-  type RealtimeUsageDailyCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<RealtimeUsageDailyFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: RealtimeUsageDailyCountAggregateInputType | true
-    }
-
-  export interface RealtimeUsageDailyDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['RealtimeUsageDaily'], meta: { name: 'RealtimeUsageDaily' } }
-    /**
-     * Find zero or one RealtimeUsageDaily that matches the filter.
-     * @param {RealtimeUsageDailyFindUniqueArgs} args - Arguments to find a RealtimeUsageDaily
-     * @example
-     * // Get one RealtimeUsageDaily
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends RealtimeUsageDailyFindUniqueArgs>(args: SelectSubset<T, RealtimeUsageDailyFindUniqueArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one RealtimeUsageDaily that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {RealtimeUsageDailyFindUniqueOrThrowArgs} args - Arguments to find a RealtimeUsageDaily
-     * @example
-     * // Get one RealtimeUsageDaily
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends RealtimeUsageDailyFindUniqueOrThrowArgs>(args: SelectSubset<T, RealtimeUsageDailyFindUniqueOrThrowArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first RealtimeUsageDaily that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyFindFirstArgs} args - Arguments to find a RealtimeUsageDaily
-     * @example
-     * // Get one RealtimeUsageDaily
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends RealtimeUsageDailyFindFirstArgs>(args?: SelectSubset<T, RealtimeUsageDailyFindFirstArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first RealtimeUsageDaily that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyFindFirstOrThrowArgs} args - Arguments to find a RealtimeUsageDaily
-     * @example
-     * // Get one RealtimeUsageDaily
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends RealtimeUsageDailyFindFirstOrThrowArgs>(args?: SelectSubset<T, RealtimeUsageDailyFindFirstOrThrowArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more RealtimeUsageDailies that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all RealtimeUsageDailies
-     * const realtimeUsageDailies = await prisma.realtimeUsageDaily.findMany()
-     * 
-     * // Get first 10 RealtimeUsageDailies
-     * const realtimeUsageDailies = await prisma.realtimeUsageDaily.findMany({ take: 10 })
-     * 
-     * // Only select the `userId`
-     * const realtimeUsageDailyWithUserIdOnly = await prisma.realtimeUsageDaily.findMany({ select: { userId: true } })
-     * 
-     */
-    findMany<T extends RealtimeUsageDailyFindManyArgs>(args?: SelectSubset<T, RealtimeUsageDailyFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a RealtimeUsageDaily.
-     * @param {RealtimeUsageDailyCreateArgs} args - Arguments to create a RealtimeUsageDaily.
-     * @example
-     * // Create one RealtimeUsageDaily
-     * const RealtimeUsageDaily = await prisma.realtimeUsageDaily.create({
-     *   data: {
-     *     // ... data to create a RealtimeUsageDaily
-     *   }
-     * })
-     * 
-     */
-    create<T extends RealtimeUsageDailyCreateArgs>(args: SelectSubset<T, RealtimeUsageDailyCreateArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many RealtimeUsageDailies.
-     * @param {RealtimeUsageDailyCreateManyArgs} args - Arguments to create many RealtimeUsageDailies.
-     * @example
-     * // Create many RealtimeUsageDailies
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends RealtimeUsageDailyCreateManyArgs>(args?: SelectSubset<T, RealtimeUsageDailyCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many RealtimeUsageDailies and returns the data saved in the database.
-     * @param {RealtimeUsageDailyCreateManyAndReturnArgs} args - Arguments to create many RealtimeUsageDailies.
-     * @example
-     * // Create many RealtimeUsageDailies
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many RealtimeUsageDailies and only return the `userId`
-     * const realtimeUsageDailyWithUserIdOnly = await prisma.realtimeUsageDaily.createManyAndReturn({ 
-     *   select: { userId: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends RealtimeUsageDailyCreateManyAndReturnArgs>(args?: SelectSubset<T, RealtimeUsageDailyCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a RealtimeUsageDaily.
-     * @param {RealtimeUsageDailyDeleteArgs} args - Arguments to delete one RealtimeUsageDaily.
-     * @example
-     * // Delete one RealtimeUsageDaily
-     * const RealtimeUsageDaily = await prisma.realtimeUsageDaily.delete({
-     *   where: {
-     *     // ... filter to delete one RealtimeUsageDaily
-     *   }
-     * })
-     * 
-     */
-    delete<T extends RealtimeUsageDailyDeleteArgs>(args: SelectSubset<T, RealtimeUsageDailyDeleteArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one RealtimeUsageDaily.
-     * @param {RealtimeUsageDailyUpdateArgs} args - Arguments to update one RealtimeUsageDaily.
-     * @example
-     * // Update one RealtimeUsageDaily
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends RealtimeUsageDailyUpdateArgs>(args: SelectSubset<T, RealtimeUsageDailyUpdateArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more RealtimeUsageDailies.
-     * @param {RealtimeUsageDailyDeleteManyArgs} args - Arguments to filter RealtimeUsageDailies to delete.
-     * @example
-     * // Delete a few RealtimeUsageDailies
-     * const { count } = await prisma.realtimeUsageDaily.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends RealtimeUsageDailyDeleteManyArgs>(args?: SelectSubset<T, RealtimeUsageDailyDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more RealtimeUsageDailies.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many RealtimeUsageDailies
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends RealtimeUsageDailyUpdateManyArgs>(args: SelectSubset<T, RealtimeUsageDailyUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one RealtimeUsageDaily.
-     * @param {RealtimeUsageDailyUpsertArgs} args - Arguments to update or create a RealtimeUsageDaily.
-     * @example
-     * // Update or create a RealtimeUsageDaily
-     * const realtimeUsageDaily = await prisma.realtimeUsageDaily.upsert({
-     *   create: {
-     *     // ... data to create a RealtimeUsageDaily
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the RealtimeUsageDaily we want to update
-     *   }
-     * })
-     */
-    upsert<T extends RealtimeUsageDailyUpsertArgs>(args: SelectSubset<T, RealtimeUsageDailyUpsertArgs<ExtArgs>>): Prisma__RealtimeUsageDailyClient<$Result.GetResult<Prisma.$RealtimeUsageDailyPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of RealtimeUsageDailies.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyCountArgs} args - Arguments to filter RealtimeUsageDailies to count.
-     * @example
-     * // Count the number of RealtimeUsageDailies
-     * const count = await prisma.realtimeUsageDaily.count({
-     *   where: {
-     *     // ... the filter for the RealtimeUsageDailies we want to count
-     *   }
-     * })
-    **/
-    count<T extends RealtimeUsageDailyCountArgs>(
-      args?: Subset<T, RealtimeUsageDailyCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], RealtimeUsageDailyCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a RealtimeUsageDaily.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends RealtimeUsageDailyAggregateArgs>(args: Subset<T, RealtimeUsageDailyAggregateArgs>): Prisma.PrismaPromise<GetRealtimeUsageDailyAggregateType<T>>
-
-    /**
-     * Group by RealtimeUsageDaily.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {RealtimeUsageDailyGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends RealtimeUsageDailyGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: RealtimeUsageDailyGroupByArgs['orderBy'] }
-        : { orderBy?: RealtimeUsageDailyGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, RealtimeUsageDailyGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetRealtimeUsageDailyGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the RealtimeUsageDaily model
-   */
-  readonly fields: RealtimeUsageDailyFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for RealtimeUsageDaily.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__RealtimeUsageDailyClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the RealtimeUsageDaily model
-   */ 
-  interface RealtimeUsageDailyFieldRefs {
-    readonly userId: FieldRef<"RealtimeUsageDaily", 'String'>
-    readonly usageDate: FieldRef<"RealtimeUsageDaily", 'DateTime'>
-    readonly count: FieldRef<"RealtimeUsageDaily", 'Int'>
-    readonly updatedAt: FieldRef<"RealtimeUsageDaily", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * RealtimeUsageDaily findUnique
-   */
-  export type RealtimeUsageDailyFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * Filter, which RealtimeUsageDaily to fetch.
-     */
-    where: RealtimeUsageDailyWhereUniqueInput
-  }
-
-  /**
-   * RealtimeUsageDaily findUniqueOrThrow
-   */
-  export type RealtimeUsageDailyFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * Filter, which RealtimeUsageDaily to fetch.
-     */
-    where: RealtimeUsageDailyWhereUniqueInput
-  }
-
-  /**
-   * RealtimeUsageDaily findFirst
-   */
-  export type RealtimeUsageDailyFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * Filter, which RealtimeUsageDaily to fetch.
-     */
-    where?: RealtimeUsageDailyWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RealtimeUsageDailies to fetch.
-     */
-    orderBy?: RealtimeUsageDailyOrderByWithRelationInput | RealtimeUsageDailyOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for RealtimeUsageDailies.
-     */
-    cursor?: RealtimeUsageDailyWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RealtimeUsageDailies from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RealtimeUsageDailies.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of RealtimeUsageDailies.
-     */
-    distinct?: RealtimeUsageDailyScalarFieldEnum | RealtimeUsageDailyScalarFieldEnum[]
-  }
-
-  /**
-   * RealtimeUsageDaily findFirstOrThrow
-   */
-  export type RealtimeUsageDailyFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * Filter, which RealtimeUsageDaily to fetch.
-     */
-    where?: RealtimeUsageDailyWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RealtimeUsageDailies to fetch.
-     */
-    orderBy?: RealtimeUsageDailyOrderByWithRelationInput | RealtimeUsageDailyOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for RealtimeUsageDailies.
-     */
-    cursor?: RealtimeUsageDailyWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RealtimeUsageDailies from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RealtimeUsageDailies.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of RealtimeUsageDailies.
-     */
-    distinct?: RealtimeUsageDailyScalarFieldEnum | RealtimeUsageDailyScalarFieldEnum[]
-  }
-
-  /**
-   * RealtimeUsageDaily findMany
-   */
-  export type RealtimeUsageDailyFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * Filter, which RealtimeUsageDailies to fetch.
-     */
-    where?: RealtimeUsageDailyWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of RealtimeUsageDailies to fetch.
-     */
-    orderBy?: RealtimeUsageDailyOrderByWithRelationInput | RealtimeUsageDailyOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing RealtimeUsageDailies.
-     */
-    cursor?: RealtimeUsageDailyWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` RealtimeUsageDailies from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` RealtimeUsageDailies.
-     */
-    skip?: number
-    distinct?: RealtimeUsageDailyScalarFieldEnum | RealtimeUsageDailyScalarFieldEnum[]
-  }
-
-  /**
-   * RealtimeUsageDaily create
-   */
-  export type RealtimeUsageDailyCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * The data needed to create a RealtimeUsageDaily.
-     */
-    data: XOR<RealtimeUsageDailyCreateInput, RealtimeUsageDailyUncheckedCreateInput>
-  }
-
-  /**
-   * RealtimeUsageDaily createMany
-   */
-  export type RealtimeUsageDailyCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many RealtimeUsageDailies.
-     */
-    data: RealtimeUsageDailyCreateManyInput | RealtimeUsageDailyCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * RealtimeUsageDaily createManyAndReturn
-   */
-  export type RealtimeUsageDailyCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many RealtimeUsageDailies.
-     */
-    data: RealtimeUsageDailyCreateManyInput | RealtimeUsageDailyCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * RealtimeUsageDaily update
-   */
-  export type RealtimeUsageDailyUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * The data needed to update a RealtimeUsageDaily.
-     */
-    data: XOR<RealtimeUsageDailyUpdateInput, RealtimeUsageDailyUncheckedUpdateInput>
-    /**
-     * Choose, which RealtimeUsageDaily to update.
-     */
-    where: RealtimeUsageDailyWhereUniqueInput
-  }
-
-  /**
-   * RealtimeUsageDaily updateMany
-   */
-  export type RealtimeUsageDailyUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update RealtimeUsageDailies.
-     */
-    data: XOR<RealtimeUsageDailyUpdateManyMutationInput, RealtimeUsageDailyUncheckedUpdateManyInput>
-    /**
-     * Filter which RealtimeUsageDailies to update
-     */
-    where?: RealtimeUsageDailyWhereInput
-  }
-
-  /**
-   * RealtimeUsageDaily upsert
-   */
-  export type RealtimeUsageDailyUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * The filter to search for the RealtimeUsageDaily to update in case it exists.
-     */
-    where: RealtimeUsageDailyWhereUniqueInput
-    /**
-     * In case the RealtimeUsageDaily found by the `where` argument doesn't exist, create a new RealtimeUsageDaily with this data.
-     */
-    create: XOR<RealtimeUsageDailyCreateInput, RealtimeUsageDailyUncheckedCreateInput>
-    /**
-     * In case the RealtimeUsageDaily was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<RealtimeUsageDailyUpdateInput, RealtimeUsageDailyUncheckedUpdateInput>
-  }
-
-  /**
-   * RealtimeUsageDaily delete
-   */
-  export type RealtimeUsageDailyDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-    /**
-     * Filter which RealtimeUsageDaily to delete.
-     */
-    where: RealtimeUsageDailyWhereUniqueInput
-  }
-
-  /**
-   * RealtimeUsageDaily deleteMany
-   */
-  export type RealtimeUsageDailyDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which RealtimeUsageDailies to delete
-     */
-    where?: RealtimeUsageDailyWhereInput
-  }
-
-  /**
-   * RealtimeUsageDaily without action
-   */
-  export type RealtimeUsageDailyDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the RealtimeUsageDaily
-     */
-    select?: RealtimeUsageDailySelect<ExtArgs> | null
-  }
-
-
-  /**
    * Model SubscriptionEvent
    */
 
@@ -9189,1848 +7091,6 @@ export namespace Prisma {
      * Select specific fields to fetch from the SubscriptionEvent
      */
     select?: SubscriptionEventSelect<ExtArgs> | null
-  }
-
-
-  /**
-   * Model UsageSession
-   */
-
-  export type AggregateUsageSession = {
-    _count: UsageSessionCountAggregateOutputType | null
-    _avg: UsageSessionAvgAggregateOutputType | null
-    _sum: UsageSessionSumAggregateOutputType | null
-    _min: UsageSessionMinAggregateOutputType | null
-    _max: UsageSessionMaxAggregateOutputType | null
-  }
-
-  export type UsageSessionAvgAggregateOutputType = {
-    billedSeconds: number | null
-    billedMinutes: number | null
-  }
-
-  export type UsageSessionSumAggregateOutputType = {
-    billedSeconds: number | null
-    billedMinutes: number | null
-  }
-
-  export type UsageSessionMinAggregateOutputType = {
-    sessionId: string | null
-    userId: string | null
-    startedAt: Date | null
-    endedAt: Date | null
-    billedSeconds: number | null
-    billedMinutes: number | null
-    source: string | null
-    updatedAt: Date | null
-  }
-
-  export type UsageSessionMaxAggregateOutputType = {
-    sessionId: string | null
-    userId: string | null
-    startedAt: Date | null
-    endedAt: Date | null
-    billedSeconds: number | null
-    billedMinutes: number | null
-    source: string | null
-    updatedAt: Date | null
-  }
-
-  export type UsageSessionCountAggregateOutputType = {
-    sessionId: number
-    userId: number
-    startedAt: number
-    endedAt: number
-    billedSeconds: number
-    billedMinutes: number
-    source: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type UsageSessionAvgAggregateInputType = {
-    billedSeconds?: true
-    billedMinutes?: true
-  }
-
-  export type UsageSessionSumAggregateInputType = {
-    billedSeconds?: true
-    billedMinutes?: true
-  }
-
-  export type UsageSessionMinAggregateInputType = {
-    sessionId?: true
-    userId?: true
-    startedAt?: true
-    endedAt?: true
-    billedSeconds?: true
-    billedMinutes?: true
-    source?: true
-    updatedAt?: true
-  }
-
-  export type UsageSessionMaxAggregateInputType = {
-    sessionId?: true
-    userId?: true
-    startedAt?: true
-    endedAt?: true
-    billedSeconds?: true
-    billedMinutes?: true
-    source?: true
-    updatedAt?: true
-  }
-
-  export type UsageSessionCountAggregateInputType = {
-    sessionId?: true
-    userId?: true
-    startedAt?: true
-    endedAt?: true
-    billedSeconds?: true
-    billedMinutes?: true
-    source?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type UsageSessionAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which UsageSession to aggregate.
-     */
-    where?: UsageSessionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of UsageSessions to fetch.
-     */
-    orderBy?: UsageSessionOrderByWithRelationInput | UsageSessionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: UsageSessionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` UsageSessions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` UsageSessions.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned UsageSessions
-    **/
-    _count?: true | UsageSessionCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to average
-    **/
-    _avg?: UsageSessionAvgAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to sum
-    **/
-    _sum?: UsageSessionSumAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: UsageSessionMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: UsageSessionMaxAggregateInputType
-  }
-
-  export type GetUsageSessionAggregateType<T extends UsageSessionAggregateArgs> = {
-        [P in keyof T & keyof AggregateUsageSession]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateUsageSession[P]>
-      : GetScalarType<T[P], AggregateUsageSession[P]>
-  }
-
-
-
-
-  export type UsageSessionGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: UsageSessionWhereInput
-    orderBy?: UsageSessionOrderByWithAggregationInput | UsageSessionOrderByWithAggregationInput[]
-    by: UsageSessionScalarFieldEnum[] | UsageSessionScalarFieldEnum
-    having?: UsageSessionScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: UsageSessionCountAggregateInputType | true
-    _avg?: UsageSessionAvgAggregateInputType
-    _sum?: UsageSessionSumAggregateInputType
-    _min?: UsageSessionMinAggregateInputType
-    _max?: UsageSessionMaxAggregateInputType
-  }
-
-  export type UsageSessionGroupByOutputType = {
-    sessionId: string
-    userId: string
-    startedAt: Date
-    endedAt: Date | null
-    billedSeconds: number
-    billedMinutes: number
-    source: string
-    updatedAt: Date
-    _count: UsageSessionCountAggregateOutputType | null
-    _avg: UsageSessionAvgAggregateOutputType | null
-    _sum: UsageSessionSumAggregateOutputType | null
-    _min: UsageSessionMinAggregateOutputType | null
-    _max: UsageSessionMaxAggregateOutputType | null
-  }
-
-  type GetUsageSessionGroupByPayload<T extends UsageSessionGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<UsageSessionGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof UsageSessionGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], UsageSessionGroupByOutputType[P]>
-            : GetScalarType<T[P], UsageSessionGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type UsageSessionSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    sessionId?: boolean
-    userId?: boolean
-    startedAt?: boolean
-    endedAt?: boolean
-    billedSeconds?: boolean
-    billedMinutes?: boolean
-    source?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["usageSession"]>
-
-  export type UsageSessionSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    sessionId?: boolean
-    userId?: boolean
-    startedAt?: boolean
-    endedAt?: boolean
-    billedSeconds?: boolean
-    billedMinutes?: boolean
-    source?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["usageSession"]>
-
-  export type UsageSessionSelectScalar = {
-    sessionId?: boolean
-    userId?: boolean
-    startedAt?: boolean
-    endedAt?: boolean
-    billedSeconds?: boolean
-    billedMinutes?: boolean
-    source?: boolean
-    updatedAt?: boolean
-  }
-
-
-  export type $UsageSessionPayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "UsageSession"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      sessionId: string
-      userId: string
-      startedAt: Date
-      endedAt: Date | null
-      billedSeconds: number
-      billedMinutes: number
-      source: string
-      updatedAt: Date
-    }, ExtArgs["result"]["usageSession"]>
-    composites: {}
-  }
-
-  type UsageSessionGetPayload<S extends boolean | null | undefined | UsageSessionDefaultArgs> = $Result.GetResult<Prisma.$UsageSessionPayload, S>
-
-  type UsageSessionCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<UsageSessionFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: UsageSessionCountAggregateInputType | true
-    }
-
-  export interface UsageSessionDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['UsageSession'], meta: { name: 'UsageSession' } }
-    /**
-     * Find zero or one UsageSession that matches the filter.
-     * @param {UsageSessionFindUniqueArgs} args - Arguments to find a UsageSession
-     * @example
-     * // Get one UsageSession
-     * const usageSession = await prisma.usageSession.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends UsageSessionFindUniqueArgs>(args: SelectSubset<T, UsageSessionFindUniqueArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one UsageSession that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {UsageSessionFindUniqueOrThrowArgs} args - Arguments to find a UsageSession
-     * @example
-     * // Get one UsageSession
-     * const usageSession = await prisma.usageSession.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends UsageSessionFindUniqueOrThrowArgs>(args: SelectSubset<T, UsageSessionFindUniqueOrThrowArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first UsageSession that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionFindFirstArgs} args - Arguments to find a UsageSession
-     * @example
-     * // Get one UsageSession
-     * const usageSession = await prisma.usageSession.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends UsageSessionFindFirstArgs>(args?: SelectSubset<T, UsageSessionFindFirstArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first UsageSession that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionFindFirstOrThrowArgs} args - Arguments to find a UsageSession
-     * @example
-     * // Get one UsageSession
-     * const usageSession = await prisma.usageSession.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends UsageSessionFindFirstOrThrowArgs>(args?: SelectSubset<T, UsageSessionFindFirstOrThrowArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more UsageSessions that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all UsageSessions
-     * const usageSessions = await prisma.usageSession.findMany()
-     * 
-     * // Get first 10 UsageSessions
-     * const usageSessions = await prisma.usageSession.findMany({ take: 10 })
-     * 
-     * // Only select the `sessionId`
-     * const usageSessionWithSessionIdOnly = await prisma.usageSession.findMany({ select: { sessionId: true } })
-     * 
-     */
-    findMany<T extends UsageSessionFindManyArgs>(args?: SelectSubset<T, UsageSessionFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a UsageSession.
-     * @param {UsageSessionCreateArgs} args - Arguments to create a UsageSession.
-     * @example
-     * // Create one UsageSession
-     * const UsageSession = await prisma.usageSession.create({
-     *   data: {
-     *     // ... data to create a UsageSession
-     *   }
-     * })
-     * 
-     */
-    create<T extends UsageSessionCreateArgs>(args: SelectSubset<T, UsageSessionCreateArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many UsageSessions.
-     * @param {UsageSessionCreateManyArgs} args - Arguments to create many UsageSessions.
-     * @example
-     * // Create many UsageSessions
-     * const usageSession = await prisma.usageSession.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends UsageSessionCreateManyArgs>(args?: SelectSubset<T, UsageSessionCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many UsageSessions and returns the data saved in the database.
-     * @param {UsageSessionCreateManyAndReturnArgs} args - Arguments to create many UsageSessions.
-     * @example
-     * // Create many UsageSessions
-     * const usageSession = await prisma.usageSession.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many UsageSessions and only return the `sessionId`
-     * const usageSessionWithSessionIdOnly = await prisma.usageSession.createManyAndReturn({ 
-     *   select: { sessionId: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends UsageSessionCreateManyAndReturnArgs>(args?: SelectSubset<T, UsageSessionCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a UsageSession.
-     * @param {UsageSessionDeleteArgs} args - Arguments to delete one UsageSession.
-     * @example
-     * // Delete one UsageSession
-     * const UsageSession = await prisma.usageSession.delete({
-     *   where: {
-     *     // ... filter to delete one UsageSession
-     *   }
-     * })
-     * 
-     */
-    delete<T extends UsageSessionDeleteArgs>(args: SelectSubset<T, UsageSessionDeleteArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one UsageSession.
-     * @param {UsageSessionUpdateArgs} args - Arguments to update one UsageSession.
-     * @example
-     * // Update one UsageSession
-     * const usageSession = await prisma.usageSession.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends UsageSessionUpdateArgs>(args: SelectSubset<T, UsageSessionUpdateArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more UsageSessions.
-     * @param {UsageSessionDeleteManyArgs} args - Arguments to filter UsageSessions to delete.
-     * @example
-     * // Delete a few UsageSessions
-     * const { count } = await prisma.usageSession.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends UsageSessionDeleteManyArgs>(args?: SelectSubset<T, UsageSessionDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more UsageSessions.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many UsageSessions
-     * const usageSession = await prisma.usageSession.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends UsageSessionUpdateManyArgs>(args: SelectSubset<T, UsageSessionUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one UsageSession.
-     * @param {UsageSessionUpsertArgs} args - Arguments to update or create a UsageSession.
-     * @example
-     * // Update or create a UsageSession
-     * const usageSession = await prisma.usageSession.upsert({
-     *   create: {
-     *     // ... data to create a UsageSession
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the UsageSession we want to update
-     *   }
-     * })
-     */
-    upsert<T extends UsageSessionUpsertArgs>(args: SelectSubset<T, UsageSessionUpsertArgs<ExtArgs>>): Prisma__UsageSessionClient<$Result.GetResult<Prisma.$UsageSessionPayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of UsageSessions.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionCountArgs} args - Arguments to filter UsageSessions to count.
-     * @example
-     * // Count the number of UsageSessions
-     * const count = await prisma.usageSession.count({
-     *   where: {
-     *     // ... the filter for the UsageSessions we want to count
-     *   }
-     * })
-    **/
-    count<T extends UsageSessionCountArgs>(
-      args?: Subset<T, UsageSessionCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], UsageSessionCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a UsageSession.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends UsageSessionAggregateArgs>(args: Subset<T, UsageSessionAggregateArgs>): Prisma.PrismaPromise<GetUsageSessionAggregateType<T>>
-
-    /**
-     * Group by UsageSession.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {UsageSessionGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends UsageSessionGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: UsageSessionGroupByArgs['orderBy'] }
-        : { orderBy?: UsageSessionGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, UsageSessionGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetUsageSessionGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the UsageSession model
-   */
-  readonly fields: UsageSessionFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for UsageSession.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__UsageSessionClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the UsageSession model
-   */ 
-  interface UsageSessionFieldRefs {
-    readonly sessionId: FieldRef<"UsageSession", 'String'>
-    readonly userId: FieldRef<"UsageSession", 'String'>
-    readonly startedAt: FieldRef<"UsageSession", 'DateTime'>
-    readonly endedAt: FieldRef<"UsageSession", 'DateTime'>
-    readonly billedSeconds: FieldRef<"UsageSession", 'Int'>
-    readonly billedMinutes: FieldRef<"UsageSession", 'Int'>
-    readonly source: FieldRef<"UsageSession", 'String'>
-    readonly updatedAt: FieldRef<"UsageSession", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * UsageSession findUnique
-   */
-  export type UsageSessionFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * Filter, which UsageSession to fetch.
-     */
-    where: UsageSessionWhereUniqueInput
-  }
-
-  /**
-   * UsageSession findUniqueOrThrow
-   */
-  export type UsageSessionFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * Filter, which UsageSession to fetch.
-     */
-    where: UsageSessionWhereUniqueInput
-  }
-
-  /**
-   * UsageSession findFirst
-   */
-  export type UsageSessionFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * Filter, which UsageSession to fetch.
-     */
-    where?: UsageSessionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of UsageSessions to fetch.
-     */
-    orderBy?: UsageSessionOrderByWithRelationInput | UsageSessionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for UsageSessions.
-     */
-    cursor?: UsageSessionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` UsageSessions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` UsageSessions.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of UsageSessions.
-     */
-    distinct?: UsageSessionScalarFieldEnum | UsageSessionScalarFieldEnum[]
-  }
-
-  /**
-   * UsageSession findFirstOrThrow
-   */
-  export type UsageSessionFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * Filter, which UsageSession to fetch.
-     */
-    where?: UsageSessionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of UsageSessions to fetch.
-     */
-    orderBy?: UsageSessionOrderByWithRelationInput | UsageSessionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for UsageSessions.
-     */
-    cursor?: UsageSessionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` UsageSessions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` UsageSessions.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of UsageSessions.
-     */
-    distinct?: UsageSessionScalarFieldEnum | UsageSessionScalarFieldEnum[]
-  }
-
-  /**
-   * UsageSession findMany
-   */
-  export type UsageSessionFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * Filter, which UsageSessions to fetch.
-     */
-    where?: UsageSessionWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of UsageSessions to fetch.
-     */
-    orderBy?: UsageSessionOrderByWithRelationInput | UsageSessionOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing UsageSessions.
-     */
-    cursor?: UsageSessionWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` UsageSessions from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` UsageSessions.
-     */
-    skip?: number
-    distinct?: UsageSessionScalarFieldEnum | UsageSessionScalarFieldEnum[]
-  }
-
-  /**
-   * UsageSession create
-   */
-  export type UsageSessionCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * The data needed to create a UsageSession.
-     */
-    data: XOR<UsageSessionCreateInput, UsageSessionUncheckedCreateInput>
-  }
-
-  /**
-   * UsageSession createMany
-   */
-  export type UsageSessionCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many UsageSessions.
-     */
-    data: UsageSessionCreateManyInput | UsageSessionCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * UsageSession createManyAndReturn
-   */
-  export type UsageSessionCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many UsageSessions.
-     */
-    data: UsageSessionCreateManyInput | UsageSessionCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * UsageSession update
-   */
-  export type UsageSessionUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * The data needed to update a UsageSession.
-     */
-    data: XOR<UsageSessionUpdateInput, UsageSessionUncheckedUpdateInput>
-    /**
-     * Choose, which UsageSession to update.
-     */
-    where: UsageSessionWhereUniqueInput
-  }
-
-  /**
-   * UsageSession updateMany
-   */
-  export type UsageSessionUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update UsageSessions.
-     */
-    data: XOR<UsageSessionUpdateManyMutationInput, UsageSessionUncheckedUpdateManyInput>
-    /**
-     * Filter which UsageSessions to update
-     */
-    where?: UsageSessionWhereInput
-  }
-
-  /**
-   * UsageSession upsert
-   */
-  export type UsageSessionUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * The filter to search for the UsageSession to update in case it exists.
-     */
-    where: UsageSessionWhereUniqueInput
-    /**
-     * In case the UsageSession found by the `where` argument doesn't exist, create a new UsageSession with this data.
-     */
-    create: XOR<UsageSessionCreateInput, UsageSessionUncheckedCreateInput>
-    /**
-     * In case the UsageSession was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<UsageSessionUpdateInput, UsageSessionUncheckedUpdateInput>
-  }
-
-  /**
-   * UsageSession delete
-   */
-  export type UsageSessionDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-    /**
-     * Filter which UsageSession to delete.
-     */
-    where: UsageSessionWhereUniqueInput
-  }
-
-  /**
-   * UsageSession deleteMany
-   */
-  export type UsageSessionDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which UsageSessions to delete
-     */
-    where?: UsageSessionWhereInput
-  }
-
-  /**
-   * UsageSession without action
-   */
-  export type UsageSessionDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the UsageSession
-     */
-    select?: UsageSessionSelect<ExtArgs> | null
-  }
-
-
-  /**
-   * Model SensorAccessState
-   */
-
-  export type AggregateSensorAccessState = {
-    _count: SensorAccessStateCountAggregateOutputType | null
-    _min: SensorAccessStateMinAggregateOutputType | null
-    _max: SensorAccessStateMaxAggregateOutputType | null
-  }
-
-  export type SensorAccessStateMinAggregateOutputType = {
-    userId: string | null
-    screenTimeEnabled: boolean | null
-    sleepEnabled: boolean | null
-    stepsEnabled: boolean | null
-    motionEnabled: boolean | null
-    updatedAt: Date | null
-  }
-
-  export type SensorAccessStateMaxAggregateOutputType = {
-    userId: string | null
-    screenTimeEnabled: boolean | null
-    sleepEnabled: boolean | null
-    stepsEnabled: boolean | null
-    motionEnabled: boolean | null
-    updatedAt: Date | null
-  }
-
-  export type SensorAccessStateCountAggregateOutputType = {
-    userId: number
-    screenTimeEnabled: number
-    sleepEnabled: number
-    stepsEnabled: number
-    motionEnabled: number
-    updatedAt: number
-    _all: number
-  }
-
-
-  export type SensorAccessStateMinAggregateInputType = {
-    userId?: true
-    screenTimeEnabled?: true
-    sleepEnabled?: true
-    stepsEnabled?: true
-    motionEnabled?: true
-    updatedAt?: true
-  }
-
-  export type SensorAccessStateMaxAggregateInputType = {
-    userId?: true
-    screenTimeEnabled?: true
-    sleepEnabled?: true
-    stepsEnabled?: true
-    motionEnabled?: true
-    updatedAt?: true
-  }
-
-  export type SensorAccessStateCountAggregateInputType = {
-    userId?: true
-    screenTimeEnabled?: true
-    sleepEnabled?: true
-    stepsEnabled?: true
-    motionEnabled?: true
-    updatedAt?: true
-    _all?: true
-  }
-
-  export type SensorAccessStateAggregateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which SensorAccessState to aggregate.
-     */
-    where?: SensorAccessStateWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of SensorAccessStates to fetch.
-     */
-    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the start position
-     */
-    cursor?: SensorAccessStateWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` SensorAccessStates from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` SensorAccessStates.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Count returned SensorAccessStates
-    **/
-    _count?: true | SensorAccessStateCountAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the minimum value
-    **/
-    _min?: SensorAccessStateMinAggregateInputType
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/aggregations Aggregation Docs}
-     * 
-     * Select which fields to find the maximum value
-    **/
-    _max?: SensorAccessStateMaxAggregateInputType
-  }
-
-  export type GetSensorAccessStateAggregateType<T extends SensorAccessStateAggregateArgs> = {
-        [P in keyof T & keyof AggregateSensorAccessState]: P extends '_count' | 'count'
-      ? T[P] extends true
-        ? number
-        : GetScalarType<T[P], AggregateSensorAccessState[P]>
-      : GetScalarType<T[P], AggregateSensorAccessState[P]>
-  }
-
-
-
-
-  export type SensorAccessStateGroupByArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    where?: SensorAccessStateWhereInput
-    orderBy?: SensorAccessStateOrderByWithAggregationInput | SensorAccessStateOrderByWithAggregationInput[]
-    by: SensorAccessStateScalarFieldEnum[] | SensorAccessStateScalarFieldEnum
-    having?: SensorAccessStateScalarWhereWithAggregatesInput
-    take?: number
-    skip?: number
-    _count?: SensorAccessStateCountAggregateInputType | true
-    _min?: SensorAccessStateMinAggregateInputType
-    _max?: SensorAccessStateMaxAggregateInputType
-  }
-
-  export type SensorAccessStateGroupByOutputType = {
-    userId: string
-    screenTimeEnabled: boolean
-    sleepEnabled: boolean
-    stepsEnabled: boolean
-    motionEnabled: boolean
-    updatedAt: Date
-    _count: SensorAccessStateCountAggregateOutputType | null
-    _min: SensorAccessStateMinAggregateOutputType | null
-    _max: SensorAccessStateMaxAggregateOutputType | null
-  }
-
-  type GetSensorAccessStateGroupByPayload<T extends SensorAccessStateGroupByArgs> = Prisma.PrismaPromise<
-    Array<
-      PickEnumerable<SensorAccessStateGroupByOutputType, T['by']> &
-        {
-          [P in ((keyof T) & (keyof SensorAccessStateGroupByOutputType))]: P extends '_count'
-            ? T[P] extends boolean
-              ? number
-              : GetScalarType<T[P], SensorAccessStateGroupByOutputType[P]>
-            : GetScalarType<T[P], SensorAccessStateGroupByOutputType[P]>
-        }
-      >
-    >
-
-
-  export type SensorAccessStateSelect<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    userId?: boolean
-    screenTimeEnabled?: boolean
-    sleepEnabled?: boolean
-    stepsEnabled?: boolean
-    motionEnabled?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["sensorAccessState"]>
-
-  export type SensorAccessStateSelectCreateManyAndReturn<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = $Extensions.GetSelect<{
-    userId?: boolean
-    screenTimeEnabled?: boolean
-    sleepEnabled?: boolean
-    stepsEnabled?: boolean
-    motionEnabled?: boolean
-    updatedAt?: boolean
-  }, ExtArgs["result"]["sensorAccessState"]>
-
-  export type SensorAccessStateSelectScalar = {
-    userId?: boolean
-    screenTimeEnabled?: boolean
-    sleepEnabled?: boolean
-    stepsEnabled?: boolean
-    motionEnabled?: boolean
-    updatedAt?: boolean
-  }
-
-
-  export type $SensorAccessStatePayload<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    name: "SensorAccessState"
-    objects: {}
-    scalars: $Extensions.GetPayloadResult<{
-      userId: string
-      screenTimeEnabled: boolean
-      sleepEnabled: boolean
-      stepsEnabled: boolean
-      motionEnabled: boolean
-      updatedAt: Date
-    }, ExtArgs["result"]["sensorAccessState"]>
-    composites: {}
-  }
-
-  type SensorAccessStateGetPayload<S extends boolean | null | undefined | SensorAccessStateDefaultArgs> = $Result.GetResult<Prisma.$SensorAccessStatePayload, S>
-
-  type SensorAccessStateCountArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = 
-    Omit<SensorAccessStateFindManyArgs, 'select' | 'include' | 'distinct'> & {
-      select?: SensorAccessStateCountAggregateInputType | true
-    }
-
-  export interface SensorAccessStateDelegate<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> {
-    [K: symbol]: { types: Prisma.TypeMap<ExtArgs>['model']['SensorAccessState'], meta: { name: 'SensorAccessState' } }
-    /**
-     * Find zero or one SensorAccessState that matches the filter.
-     * @param {SensorAccessStateFindUniqueArgs} args - Arguments to find a SensorAccessState
-     * @example
-     * // Get one SensorAccessState
-     * const sensorAccessState = await prisma.sensorAccessState.findUnique({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUnique<T extends SensorAccessStateFindUniqueArgs>(args: SelectSubset<T, SensorAccessStateFindUniqueArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findUnique"> | null, null, ExtArgs>
-
-    /**
-     * Find one SensorAccessState that matches the filter or throw an error with `error.code='P2025'` 
-     * if no matches were found.
-     * @param {SensorAccessStateFindUniqueOrThrowArgs} args - Arguments to find a SensorAccessState
-     * @example
-     * // Get one SensorAccessState
-     * const sensorAccessState = await prisma.sensorAccessState.findUniqueOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findUniqueOrThrow<T extends SensorAccessStateFindUniqueOrThrowArgs>(args: SelectSubset<T, SensorAccessStateFindUniqueOrThrowArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findUniqueOrThrow">, never, ExtArgs>
-
-    /**
-     * Find the first SensorAccessState that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateFindFirstArgs} args - Arguments to find a SensorAccessState
-     * @example
-     * // Get one SensorAccessState
-     * const sensorAccessState = await prisma.sensorAccessState.findFirst({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirst<T extends SensorAccessStateFindFirstArgs>(args?: SelectSubset<T, SensorAccessStateFindFirstArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findFirst"> | null, null, ExtArgs>
-
-    /**
-     * Find the first SensorAccessState that matches the filter or
-     * throw `PrismaKnownClientError` with `P2025` code if no matches were found.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateFindFirstOrThrowArgs} args - Arguments to find a SensorAccessState
-     * @example
-     * // Get one SensorAccessState
-     * const sensorAccessState = await prisma.sensorAccessState.findFirstOrThrow({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     */
-    findFirstOrThrow<T extends SensorAccessStateFindFirstOrThrowArgs>(args?: SelectSubset<T, SensorAccessStateFindFirstOrThrowArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findFirstOrThrow">, never, ExtArgs>
-
-    /**
-     * Find zero or more SensorAccessStates that matches the filter.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateFindManyArgs} args - Arguments to filter and select certain fields only.
-     * @example
-     * // Get all SensorAccessStates
-     * const sensorAccessStates = await prisma.sensorAccessState.findMany()
-     * 
-     * // Get first 10 SensorAccessStates
-     * const sensorAccessStates = await prisma.sensorAccessState.findMany({ take: 10 })
-     * 
-     * // Only select the `userId`
-     * const sensorAccessStateWithUserIdOnly = await prisma.sensorAccessState.findMany({ select: { userId: true } })
-     * 
-     */
-    findMany<T extends SensorAccessStateFindManyArgs>(args?: SelectSubset<T, SensorAccessStateFindManyArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "findMany">>
-
-    /**
-     * Create a SensorAccessState.
-     * @param {SensorAccessStateCreateArgs} args - Arguments to create a SensorAccessState.
-     * @example
-     * // Create one SensorAccessState
-     * const SensorAccessState = await prisma.sensorAccessState.create({
-     *   data: {
-     *     // ... data to create a SensorAccessState
-     *   }
-     * })
-     * 
-     */
-    create<T extends SensorAccessStateCreateArgs>(args: SelectSubset<T, SensorAccessStateCreateArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "create">, never, ExtArgs>
-
-    /**
-     * Create many SensorAccessStates.
-     * @param {SensorAccessStateCreateManyArgs} args - Arguments to create many SensorAccessStates.
-     * @example
-     * // Create many SensorAccessStates
-     * const sensorAccessState = await prisma.sensorAccessState.createMany({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     *     
-     */
-    createMany<T extends SensorAccessStateCreateManyArgs>(args?: SelectSubset<T, SensorAccessStateCreateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create many SensorAccessStates and returns the data saved in the database.
-     * @param {SensorAccessStateCreateManyAndReturnArgs} args - Arguments to create many SensorAccessStates.
-     * @example
-     * // Create many SensorAccessStates
-     * const sensorAccessState = await prisma.sensorAccessState.createManyAndReturn({
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * 
-     * // Create many SensorAccessStates and only return the `userId`
-     * const sensorAccessStateWithUserIdOnly = await prisma.sensorAccessState.createManyAndReturn({ 
-     *   select: { userId: true },
-     *   data: [
-     *     // ... provide data here
-     *   ]
-     * })
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * 
-     */
-    createManyAndReturn<T extends SensorAccessStateCreateManyAndReturnArgs>(args?: SelectSubset<T, SensorAccessStateCreateManyAndReturnArgs<ExtArgs>>): Prisma.PrismaPromise<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "createManyAndReturn">>
-
-    /**
-     * Delete a SensorAccessState.
-     * @param {SensorAccessStateDeleteArgs} args - Arguments to delete one SensorAccessState.
-     * @example
-     * // Delete one SensorAccessState
-     * const SensorAccessState = await prisma.sensorAccessState.delete({
-     *   where: {
-     *     // ... filter to delete one SensorAccessState
-     *   }
-     * })
-     * 
-     */
-    delete<T extends SensorAccessStateDeleteArgs>(args: SelectSubset<T, SensorAccessStateDeleteArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "delete">, never, ExtArgs>
-
-    /**
-     * Update one SensorAccessState.
-     * @param {SensorAccessStateUpdateArgs} args - Arguments to update one SensorAccessState.
-     * @example
-     * // Update one SensorAccessState
-     * const sensorAccessState = await prisma.sensorAccessState.update({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    update<T extends SensorAccessStateUpdateArgs>(args: SelectSubset<T, SensorAccessStateUpdateArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "update">, never, ExtArgs>
-
-    /**
-     * Delete zero or more SensorAccessStates.
-     * @param {SensorAccessStateDeleteManyArgs} args - Arguments to filter SensorAccessStates to delete.
-     * @example
-     * // Delete a few SensorAccessStates
-     * const { count } = await prisma.sensorAccessState.deleteMany({
-     *   where: {
-     *     // ... provide filter here
-     *   }
-     * })
-     * 
-     */
-    deleteMany<T extends SensorAccessStateDeleteManyArgs>(args?: SelectSubset<T, SensorAccessStateDeleteManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Update zero or more SensorAccessStates.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateUpdateManyArgs} args - Arguments to update one or more rows.
-     * @example
-     * // Update many SensorAccessStates
-     * const sensorAccessState = await prisma.sensorAccessState.updateMany({
-     *   where: {
-     *     // ... provide filter here
-     *   },
-     *   data: {
-     *     // ... provide data here
-     *   }
-     * })
-     * 
-     */
-    updateMany<T extends SensorAccessStateUpdateManyArgs>(args: SelectSubset<T, SensorAccessStateUpdateManyArgs<ExtArgs>>): Prisma.PrismaPromise<BatchPayload>
-
-    /**
-     * Create or update one SensorAccessState.
-     * @param {SensorAccessStateUpsertArgs} args - Arguments to update or create a SensorAccessState.
-     * @example
-     * // Update or create a SensorAccessState
-     * const sensorAccessState = await prisma.sensorAccessState.upsert({
-     *   create: {
-     *     // ... data to create a SensorAccessState
-     *   },
-     *   update: {
-     *     // ... in case it already exists, update
-     *   },
-     *   where: {
-     *     // ... the filter for the SensorAccessState we want to update
-     *   }
-     * })
-     */
-    upsert<T extends SensorAccessStateUpsertArgs>(args: SelectSubset<T, SensorAccessStateUpsertArgs<ExtArgs>>): Prisma__SensorAccessStateClient<$Result.GetResult<Prisma.$SensorAccessStatePayload<ExtArgs>, T, "upsert">, never, ExtArgs>
-
-
-    /**
-     * Count the number of SensorAccessStates.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateCountArgs} args - Arguments to filter SensorAccessStates to count.
-     * @example
-     * // Count the number of SensorAccessStates
-     * const count = await prisma.sensorAccessState.count({
-     *   where: {
-     *     // ... the filter for the SensorAccessStates we want to count
-     *   }
-     * })
-    **/
-    count<T extends SensorAccessStateCountArgs>(
-      args?: Subset<T, SensorAccessStateCountArgs>,
-    ): Prisma.PrismaPromise<
-      T extends $Utils.Record<'select', any>
-        ? T['select'] extends true
-          ? number
-          : GetScalarType<T['select'], SensorAccessStateCountAggregateOutputType>
-        : number
-    >
-
-    /**
-     * Allows you to perform aggregations operations on a SensorAccessState.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateAggregateArgs} args - Select which aggregations you would like to apply and on what fields.
-     * @example
-     * // Ordered by age ascending
-     * // Where email contains prisma.io
-     * // Limited to the 10 users
-     * const aggregations = await prisma.user.aggregate({
-     *   _avg: {
-     *     age: true,
-     *   },
-     *   where: {
-     *     email: {
-     *       contains: "prisma.io",
-     *     },
-     *   },
-     *   orderBy: {
-     *     age: "asc",
-     *   },
-     *   take: 10,
-     * })
-    **/
-    aggregate<T extends SensorAccessStateAggregateArgs>(args: Subset<T, SensorAccessStateAggregateArgs>): Prisma.PrismaPromise<GetSensorAccessStateAggregateType<T>>
-
-    /**
-     * Group by SensorAccessState.
-     * Note, that providing `undefined` is treated as the value not being there.
-     * Read more here: https://pris.ly/d/null-undefined
-     * @param {SensorAccessStateGroupByArgs} args - Group by arguments.
-     * @example
-     * // Group by city, order by createdAt, get count
-     * const result = await prisma.user.groupBy({
-     *   by: ['city', 'createdAt'],
-     *   orderBy: {
-     *     createdAt: true
-     *   },
-     *   _count: {
-     *     _all: true
-     *   },
-     * })
-     * 
-    **/
-    groupBy<
-      T extends SensorAccessStateGroupByArgs,
-      HasSelectOrTake extends Or<
-        Extends<'skip', Keys<T>>,
-        Extends<'take', Keys<T>>
-      >,
-      OrderByArg extends True extends HasSelectOrTake
-        ? { orderBy: SensorAccessStateGroupByArgs['orderBy'] }
-        : { orderBy?: SensorAccessStateGroupByArgs['orderBy'] },
-      OrderFields extends ExcludeUnderscoreKeys<Keys<MaybeTupleToUnion<T['orderBy']>>>,
-      ByFields extends MaybeTupleToUnion<T['by']>,
-      ByValid extends Has<ByFields, OrderFields>,
-      HavingFields extends GetHavingFields<T['having']>,
-      HavingValid extends Has<ByFields, HavingFields>,
-      ByEmpty extends T['by'] extends never[] ? True : False,
-      InputErrors extends ByEmpty extends True
-      ? `Error: "by" must not be empty.`
-      : HavingValid extends False
-      ? {
-          [P in HavingFields]: P extends ByFields
-            ? never
-            : P extends string
-            ? `Error: Field "${P}" used in "having" needs to be provided in "by".`
-            : [
-                Error,
-                'Field ',
-                P,
-                ` in "having" needs to be provided in "by"`,
-              ]
-        }[HavingFields]
-      : 'take' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "take", you also need to provide "orderBy"'
-      : 'skip' extends Keys<T>
-      ? 'orderBy' extends Keys<T>
-        ? ByValid extends True
-          ? {}
-          : {
-              [P in OrderFields]: P extends ByFields
-                ? never
-                : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-            }[OrderFields]
-        : 'Error: If you provide "skip", you also need to provide "orderBy"'
-      : ByValid extends True
-      ? {}
-      : {
-          [P in OrderFields]: P extends ByFields
-            ? never
-            : `Error: Field "${P}" in "orderBy" needs to be provided in "by"`
-        }[OrderFields]
-    >(args: SubsetIntersection<T, SensorAccessStateGroupByArgs, OrderByArg> & InputErrors): {} extends InputErrors ? GetSensorAccessStateGroupByPayload<T> : Prisma.PrismaPromise<InputErrors>
-  /**
-   * Fields of the SensorAccessState model
-   */
-  readonly fields: SensorAccessStateFieldRefs;
-  }
-
-  /**
-   * The delegate class that acts as a "Promise-like" for SensorAccessState.
-   * Why is this prefixed with `Prisma__`?
-   * Because we want to prevent naming conflicts as mentioned in
-   * https://github.com/prisma/prisma-client-js/issues/707
-   */
-  export interface Prisma__SensorAccessStateClient<T, Null = never, ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> extends Prisma.PrismaPromise<T> {
-    readonly [Symbol.toStringTag]: "PrismaPromise"
-    /**
-     * Attaches callbacks for the resolution and/or rejection of the Promise.
-     * @param onfulfilled The callback to execute when the Promise is resolved.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of which ever callback is executed.
-     */
-    then<TResult1 = T, TResult2 = never>(onfulfilled?: ((value: T) => TResult1 | PromiseLike<TResult1>) | undefined | null, onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null): $Utils.JsPromise<TResult1 | TResult2>
-    /**
-     * Attaches a callback for only the rejection of the Promise.
-     * @param onrejected The callback to execute when the Promise is rejected.
-     * @returns A Promise for the completion of the callback.
-     */
-    catch<TResult = never>(onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null): $Utils.JsPromise<T | TResult>
-    /**
-     * Attaches a callback that is invoked when the Promise is settled (fulfilled or rejected). The
-     * resolved value cannot be modified from the callback.
-     * @param onfinally The callback to execute when the Promise is settled (fulfilled or rejected).
-     * @returns A Promise for the completion of the callback.
-     */
-    finally(onfinally?: (() => void) | undefined | null): $Utils.JsPromise<T>
-  }
-
-
-
-
-  /**
-   * Fields of the SensorAccessState model
-   */ 
-  interface SensorAccessStateFieldRefs {
-    readonly userId: FieldRef<"SensorAccessState", 'String'>
-    readonly screenTimeEnabled: FieldRef<"SensorAccessState", 'Boolean'>
-    readonly sleepEnabled: FieldRef<"SensorAccessState", 'Boolean'>
-    readonly stepsEnabled: FieldRef<"SensorAccessState", 'Boolean'>
-    readonly motionEnabled: FieldRef<"SensorAccessState", 'Boolean'>
-    readonly updatedAt: FieldRef<"SensorAccessState", 'DateTime'>
-  }
-    
-
-  // Custom InputTypes
-  /**
-   * SensorAccessState findUnique
-   */
-  export type SensorAccessStateFindUniqueArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * Filter, which SensorAccessState to fetch.
-     */
-    where: SensorAccessStateWhereUniqueInput
-  }
-
-  /**
-   * SensorAccessState findUniqueOrThrow
-   */
-  export type SensorAccessStateFindUniqueOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * Filter, which SensorAccessState to fetch.
-     */
-    where: SensorAccessStateWhereUniqueInput
-  }
-
-  /**
-   * SensorAccessState findFirst
-   */
-  export type SensorAccessStateFindFirstArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * Filter, which SensorAccessState to fetch.
-     */
-    where?: SensorAccessStateWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of SensorAccessStates to fetch.
-     */
-    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for SensorAccessStates.
-     */
-    cursor?: SensorAccessStateWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` SensorAccessStates from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` SensorAccessStates.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of SensorAccessStates.
-     */
-    distinct?: SensorAccessStateScalarFieldEnum | SensorAccessStateScalarFieldEnum[]
-  }
-
-  /**
-   * SensorAccessState findFirstOrThrow
-   */
-  export type SensorAccessStateFindFirstOrThrowArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * Filter, which SensorAccessState to fetch.
-     */
-    where?: SensorAccessStateWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of SensorAccessStates to fetch.
-     */
-    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for searching for SensorAccessStates.
-     */
-    cursor?: SensorAccessStateWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` SensorAccessStates from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` SensorAccessStates.
-     */
-    skip?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/distinct Distinct Docs}
-     * 
-     * Filter by unique combinations of SensorAccessStates.
-     */
-    distinct?: SensorAccessStateScalarFieldEnum | SensorAccessStateScalarFieldEnum[]
-  }
-
-  /**
-   * SensorAccessState findMany
-   */
-  export type SensorAccessStateFindManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * Filter, which SensorAccessStates to fetch.
-     */
-    where?: SensorAccessStateWhereInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/sorting Sorting Docs}
-     * 
-     * Determine the order of SensorAccessStates to fetch.
-     */
-    orderBy?: SensorAccessStateOrderByWithRelationInput | SensorAccessStateOrderByWithRelationInput[]
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination#cursor-based-pagination Cursor Docs}
-     * 
-     * Sets the position for listing SensorAccessStates.
-     */
-    cursor?: SensorAccessStateWhereUniqueInput
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Take `±n` SensorAccessStates from the position of the cursor.
-     */
-    take?: number
-    /**
-     * {@link https://www.prisma.io/docs/concepts/components/prisma-client/pagination Pagination Docs}
-     * 
-     * Skip the first `n` SensorAccessStates.
-     */
-    skip?: number
-    distinct?: SensorAccessStateScalarFieldEnum | SensorAccessStateScalarFieldEnum[]
-  }
-
-  /**
-   * SensorAccessState create
-   */
-  export type SensorAccessStateCreateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * The data needed to create a SensorAccessState.
-     */
-    data: XOR<SensorAccessStateCreateInput, SensorAccessStateUncheckedCreateInput>
-  }
-
-  /**
-   * SensorAccessState createMany
-   */
-  export type SensorAccessStateCreateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to create many SensorAccessStates.
-     */
-    data: SensorAccessStateCreateManyInput | SensorAccessStateCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * SensorAccessState createManyAndReturn
-   */
-  export type SensorAccessStateCreateManyAndReturnArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelectCreateManyAndReturn<ExtArgs> | null
-    /**
-     * The data used to create many SensorAccessStates.
-     */
-    data: SensorAccessStateCreateManyInput | SensorAccessStateCreateManyInput[]
-    skipDuplicates?: boolean
-  }
-
-  /**
-   * SensorAccessState update
-   */
-  export type SensorAccessStateUpdateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * The data needed to update a SensorAccessState.
-     */
-    data: XOR<SensorAccessStateUpdateInput, SensorAccessStateUncheckedUpdateInput>
-    /**
-     * Choose, which SensorAccessState to update.
-     */
-    where: SensorAccessStateWhereUniqueInput
-  }
-
-  /**
-   * SensorAccessState updateMany
-   */
-  export type SensorAccessStateUpdateManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * The data used to update SensorAccessStates.
-     */
-    data: XOR<SensorAccessStateUpdateManyMutationInput, SensorAccessStateUncheckedUpdateManyInput>
-    /**
-     * Filter which SensorAccessStates to update
-     */
-    where?: SensorAccessStateWhereInput
-  }
-
-  /**
-   * SensorAccessState upsert
-   */
-  export type SensorAccessStateUpsertArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * The filter to search for the SensorAccessState to update in case it exists.
-     */
-    where: SensorAccessStateWhereUniqueInput
-    /**
-     * In case the SensorAccessState found by the `where` argument doesn't exist, create a new SensorAccessState with this data.
-     */
-    create: XOR<SensorAccessStateCreateInput, SensorAccessStateUncheckedCreateInput>
-    /**
-     * In case the SensorAccessState was found with the provided `where` argument, update it with this data.
-     */
-    update: XOR<SensorAccessStateUpdateInput, SensorAccessStateUncheckedUpdateInput>
-  }
-
-  /**
-   * SensorAccessState delete
-   */
-  export type SensorAccessStateDeleteArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
-    /**
-     * Filter which SensorAccessState to delete.
-     */
-    where: SensorAccessStateWhereUniqueInput
-  }
-
-  /**
-   * SensorAccessState deleteMany
-   */
-  export type SensorAccessStateDeleteManyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Filter which SensorAccessStates to delete
-     */
-    where?: SensorAccessStateWhereInput
-  }
-
-  /**
-   * SensorAccessState without action
-   */
-  export type SensorAccessStateDefaultArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = {
-    /**
-     * Select specific fields to fetch from the SensorAccessState
-     */
-    select?: SensorAccessStateSelect<ExtArgs> | null
   }
 
 
@@ -22781,6 +18841,8 @@ export namespace Prisma {
     likeCount: bigint | null
     commentCount: bigint | null
     shareCount: bigint | null
+    agentReasoning: string | null
+    scheduledAt: Date | null
     createdAt: Date | null
   }
 
@@ -22796,6 +18858,8 @@ export namespace Prisma {
     likeCount: bigint | null
     commentCount: bigint | null
     shareCount: bigint | null
+    agentReasoning: string | null
+    scheduledAt: Date | null
     createdAt: Date | null
   }
 
@@ -22811,6 +18875,8 @@ export namespace Prisma {
     likeCount: number
     commentCount: number
     shareCount: number
+    agentReasoning: number
+    scheduledAt: number
     createdAt: number
     _all: number
   }
@@ -22842,6 +18908,8 @@ export namespace Prisma {
     likeCount?: true
     commentCount?: true
     shareCount?: true
+    agentReasoning?: true
+    scheduledAt?: true
     createdAt?: true
   }
 
@@ -22857,6 +18925,8 @@ export namespace Prisma {
     likeCount?: true
     commentCount?: true
     shareCount?: true
+    agentReasoning?: true
+    scheduledAt?: true
     createdAt?: true
   }
 
@@ -22872,6 +18942,8 @@ export namespace Prisma {
     likeCount?: true
     commentCount?: true
     shareCount?: true
+    agentReasoning?: true
+    scheduledAt?: true
     createdAt?: true
     _all?: true
   }
@@ -22974,6 +19046,8 @@ export namespace Prisma {
     likeCount: bigint | null
     commentCount: bigint | null
     shareCount: bigint | null
+    agentReasoning: string | null
+    scheduledAt: Date | null
     createdAt: Date
     _count: TiktokPostCountAggregateOutputType | null
     _avg: TiktokPostAvgAggregateOutputType | null
@@ -23008,6 +19082,8 @@ export namespace Prisma {
     likeCount?: boolean
     commentCount?: boolean
     shareCount?: boolean
+    agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
     hookCandidate?: boolean | TiktokPost$hookCandidateArgs<ExtArgs>
   }, ExtArgs["result"]["tiktokPost"]>
@@ -23024,6 +19100,8 @@ export namespace Prisma {
     likeCount?: boolean
     commentCount?: boolean
     shareCount?: boolean
+    agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
     hookCandidate?: boolean | TiktokPost$hookCandidateArgs<ExtArgs>
   }, ExtArgs["result"]["tiktokPost"]>
@@ -23040,6 +19118,8 @@ export namespace Prisma {
     likeCount?: boolean
     commentCount?: boolean
     shareCount?: boolean
+    agentReasoning?: boolean
+    scheduledAt?: boolean
     createdAt?: boolean
   }
 
@@ -23067,6 +19147,8 @@ export namespace Prisma {
       likeCount: bigint | null
       commentCount: bigint | null
       shareCount: bigint | null
+      agentReasoning: string | null
+      scheduledAt: Date | null
       createdAt: Date
     }, ExtArgs["result"]["tiktokPost"]>
     composites: {}
@@ -23473,6 +19555,8 @@ export namespace Prisma {
     readonly likeCount: FieldRef<"TiktokPost", 'BigInt'>
     readonly commentCount: FieldRef<"TiktokPost", 'BigInt'>
     readonly shareCount: FieldRef<"TiktokPost", 'BigInt'>
+    readonly agentReasoning: FieldRef<"TiktokPost", 'String'>
+    readonly scheduledAt: FieldRef<"TiktokPost", 'DateTime'>
     readonly createdAt: FieldRef<"TiktokPost", 'DateTime'>
   }
     
@@ -24878,15 +20962,6 @@ export namespace Prisma {
   export type MobileProfileScalarFieldEnum = (typeof MobileProfileScalarFieldEnum)[keyof typeof MobileProfileScalarFieldEnum]
 
 
-  export const MobileVoipTokenScalarFieldEnum: {
-    userId: 'userId',
-    deviceToken: 'deviceToken',
-    updatedAt: 'updatedAt'
-  };
-
-  export type MobileVoipTokenScalarFieldEnum = (typeof MobileVoipTokenScalarFieldEnum)[keyof typeof MobileVoipTokenScalarFieldEnum]
-
-
   export const UserSubscriptionScalarFieldEnum: {
     userId: 'userId',
     plan: 'plan',
@@ -24906,16 +20981,6 @@ export namespace Prisma {
   export type UserSubscriptionScalarFieldEnum = (typeof UserSubscriptionScalarFieldEnum)[keyof typeof UserSubscriptionScalarFieldEnum]
 
 
-  export const RealtimeUsageDailyScalarFieldEnum: {
-    userId: 'userId',
-    usageDate: 'usageDate',
-    count: 'count',
-    updatedAt: 'updatedAt'
-  };
-
-  export type RealtimeUsageDailyScalarFieldEnum = (typeof RealtimeUsageDailyScalarFieldEnum)[keyof typeof RealtimeUsageDailyScalarFieldEnum]
-
-
   export const SubscriptionEventScalarFieldEnum: {
     eventId: 'eventId',
     userId: 'userId',
@@ -24926,32 +20991,6 @@ export namespace Prisma {
   };
 
   export type SubscriptionEventScalarFieldEnum = (typeof SubscriptionEventScalarFieldEnum)[keyof typeof SubscriptionEventScalarFieldEnum]
-
-
-  export const UsageSessionScalarFieldEnum: {
-    sessionId: 'sessionId',
-    userId: 'userId',
-    startedAt: 'startedAt',
-    endedAt: 'endedAt',
-    billedSeconds: 'billedSeconds',
-    billedMinutes: 'billedMinutes',
-    source: 'source',
-    updatedAt: 'updatedAt'
-  };
-
-  export type UsageSessionScalarFieldEnum = (typeof UsageSessionScalarFieldEnum)[keyof typeof UsageSessionScalarFieldEnum]
-
-
-  export const SensorAccessStateScalarFieldEnum: {
-    userId: 'userId',
-    screenTimeEnabled: 'screenTimeEnabled',
-    sleepEnabled: 'sleepEnabled',
-    stepsEnabled: 'stepsEnabled',
-    motionEnabled: 'motionEnabled',
-    updatedAt: 'updatedAt'
-  };
-
-  export type SensorAccessStateScalarFieldEnum = (typeof SensorAccessStateScalarFieldEnum)[keyof typeof SensorAccessStateScalarFieldEnum]
 
 
   export const MonthlyVcGrantScalarFieldEnum: {
@@ -25146,6 +21185,8 @@ export namespace Prisma {
     likeCount: 'likeCount',
     commentCount: 'commentCount',
     shareCount: 'shareCount',
+    agentReasoning: 'agentReasoning',
+    scheduledAt: 'scheduledAt',
     createdAt: 'createdAt'
   };
 
@@ -25552,49 +21593,6 @@ export namespace Prisma {
     createdAt?: DateTimeNullableWithAggregatesFilter<"MobileProfile"> | Date | string | null
   }
 
-  export type MobileVoipTokenWhereInput = {
-    AND?: MobileVoipTokenWhereInput | MobileVoipTokenWhereInput[]
-    OR?: MobileVoipTokenWhereInput[]
-    NOT?: MobileVoipTokenWhereInput | MobileVoipTokenWhereInput[]
-    userId?: StringFilter<"MobileVoipToken"> | string
-    deviceToken?: StringFilter<"MobileVoipToken"> | string
-    updatedAt?: DateTimeFilter<"MobileVoipToken"> | Date | string
-  }
-
-  export type MobileVoipTokenOrderByWithRelationInput = {
-    userId?: SortOrder
-    deviceToken?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type MobileVoipTokenWhereUniqueInput = Prisma.AtLeast<{
-    userId_deviceToken?: MobileVoipTokenUserIdDeviceTokenCompoundUniqueInput
-    AND?: MobileVoipTokenWhereInput | MobileVoipTokenWhereInput[]
-    OR?: MobileVoipTokenWhereInput[]
-    NOT?: MobileVoipTokenWhereInput | MobileVoipTokenWhereInput[]
-    userId?: StringFilter<"MobileVoipToken"> | string
-    deviceToken?: StringFilter<"MobileVoipToken"> | string
-    updatedAt?: DateTimeFilter<"MobileVoipToken"> | Date | string
-  }, "userId_deviceToken">
-
-  export type MobileVoipTokenOrderByWithAggregationInput = {
-    userId?: SortOrder
-    deviceToken?: SortOrder
-    updatedAt?: SortOrder
-    _count?: MobileVoipTokenCountOrderByAggregateInput
-    _max?: MobileVoipTokenMaxOrderByAggregateInput
-    _min?: MobileVoipTokenMinOrderByAggregateInput
-  }
-
-  export type MobileVoipTokenScalarWhereWithAggregatesInput = {
-    AND?: MobileVoipTokenScalarWhereWithAggregatesInput | MobileVoipTokenScalarWhereWithAggregatesInput[]
-    OR?: MobileVoipTokenScalarWhereWithAggregatesInput[]
-    NOT?: MobileVoipTokenScalarWhereWithAggregatesInput | MobileVoipTokenScalarWhereWithAggregatesInput[]
-    userId?: StringWithAggregatesFilter<"MobileVoipToken"> | string
-    deviceToken?: StringWithAggregatesFilter<"MobileVoipToken"> | string
-    updatedAt?: DateTimeWithAggregatesFilter<"MobileVoipToken"> | Date | string
-  }
-
   export type UserSubscriptionWhereInput = {
     AND?: UserSubscriptionWhereInput | UserSubscriptionWhereInput[]
     OR?: UserSubscriptionWhereInput[]
@@ -25687,56 +21685,6 @@ export namespace Prisma {
     updatedAt?: DateTimeWithAggregatesFilter<"UserSubscription"> | Date | string
   }
 
-  export type RealtimeUsageDailyWhereInput = {
-    AND?: RealtimeUsageDailyWhereInput | RealtimeUsageDailyWhereInput[]
-    OR?: RealtimeUsageDailyWhereInput[]
-    NOT?: RealtimeUsageDailyWhereInput | RealtimeUsageDailyWhereInput[]
-    userId?: StringFilter<"RealtimeUsageDaily"> | string
-    usageDate?: DateTimeFilter<"RealtimeUsageDaily"> | Date | string
-    count?: IntFilter<"RealtimeUsageDaily"> | number
-    updatedAt?: DateTimeFilter<"RealtimeUsageDaily"> | Date | string
-  }
-
-  export type RealtimeUsageDailyOrderByWithRelationInput = {
-    userId?: SortOrder
-    usageDate?: SortOrder
-    count?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RealtimeUsageDailyWhereUniqueInput = Prisma.AtLeast<{
-    userId_usageDate?: RealtimeUsageDailyUserIdUsageDateCompoundUniqueInput
-    AND?: RealtimeUsageDailyWhereInput | RealtimeUsageDailyWhereInput[]
-    OR?: RealtimeUsageDailyWhereInput[]
-    NOT?: RealtimeUsageDailyWhereInput | RealtimeUsageDailyWhereInput[]
-    userId?: StringFilter<"RealtimeUsageDaily"> | string
-    usageDate?: DateTimeFilter<"RealtimeUsageDaily"> | Date | string
-    count?: IntFilter<"RealtimeUsageDaily"> | number
-    updatedAt?: DateTimeFilter<"RealtimeUsageDaily"> | Date | string
-  }, "userId_usageDate">
-
-  export type RealtimeUsageDailyOrderByWithAggregationInput = {
-    userId?: SortOrder
-    usageDate?: SortOrder
-    count?: SortOrder
-    updatedAt?: SortOrder
-    _count?: RealtimeUsageDailyCountOrderByAggregateInput
-    _avg?: RealtimeUsageDailyAvgOrderByAggregateInput
-    _max?: RealtimeUsageDailyMaxOrderByAggregateInput
-    _min?: RealtimeUsageDailyMinOrderByAggregateInput
-    _sum?: RealtimeUsageDailySumOrderByAggregateInput
-  }
-
-  export type RealtimeUsageDailyScalarWhereWithAggregatesInput = {
-    AND?: RealtimeUsageDailyScalarWhereWithAggregatesInput | RealtimeUsageDailyScalarWhereWithAggregatesInput[]
-    OR?: RealtimeUsageDailyScalarWhereWithAggregatesInput[]
-    NOT?: RealtimeUsageDailyScalarWhereWithAggregatesInput | RealtimeUsageDailyScalarWhereWithAggregatesInput[]
-    userId?: StringWithAggregatesFilter<"RealtimeUsageDaily"> | string
-    usageDate?: DateTimeWithAggregatesFilter<"RealtimeUsageDaily"> | Date | string
-    count?: IntWithAggregatesFilter<"RealtimeUsageDaily"> | number
-    updatedAt?: DateTimeWithAggregatesFilter<"RealtimeUsageDaily"> | Date | string
-  }
-
   export type SubscriptionEventWhereInput = {
     AND?: SubscriptionEventWhereInput | SubscriptionEventWhereInput[]
     OR?: SubscriptionEventWhereInput[]
@@ -25792,132 +21740,6 @@ export namespace Prisma {
     provider?: StringWithAggregatesFilter<"SubscriptionEvent"> | string
     payload?: JsonNullableWithAggregatesFilter<"SubscriptionEvent">
     createdAt?: DateTimeWithAggregatesFilter<"SubscriptionEvent"> | Date | string
-  }
-
-  export type UsageSessionWhereInput = {
-    AND?: UsageSessionWhereInput | UsageSessionWhereInput[]
-    OR?: UsageSessionWhereInput[]
-    NOT?: UsageSessionWhereInput | UsageSessionWhereInput[]
-    sessionId?: StringFilter<"UsageSession"> | string
-    userId?: StringFilter<"UsageSession"> | string
-    startedAt?: DateTimeFilter<"UsageSession"> | Date | string
-    endedAt?: DateTimeNullableFilter<"UsageSession"> | Date | string | null
-    billedSeconds?: IntFilter<"UsageSession"> | number
-    billedMinutes?: IntFilter<"UsageSession"> | number
-    source?: StringFilter<"UsageSession"> | string
-    updatedAt?: DateTimeFilter<"UsageSession"> | Date | string
-  }
-
-  export type UsageSessionOrderByWithRelationInput = {
-    sessionId?: SortOrder
-    userId?: SortOrder
-    startedAt?: SortOrder
-    endedAt?: SortOrderInput | SortOrder
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-    source?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type UsageSessionWhereUniqueInput = Prisma.AtLeast<{
-    sessionId?: string
-    AND?: UsageSessionWhereInput | UsageSessionWhereInput[]
-    OR?: UsageSessionWhereInput[]
-    NOT?: UsageSessionWhereInput | UsageSessionWhereInput[]
-    userId?: StringFilter<"UsageSession"> | string
-    startedAt?: DateTimeFilter<"UsageSession"> | Date | string
-    endedAt?: DateTimeNullableFilter<"UsageSession"> | Date | string | null
-    billedSeconds?: IntFilter<"UsageSession"> | number
-    billedMinutes?: IntFilter<"UsageSession"> | number
-    source?: StringFilter<"UsageSession"> | string
-    updatedAt?: DateTimeFilter<"UsageSession"> | Date | string
-  }, "sessionId">
-
-  export type UsageSessionOrderByWithAggregationInput = {
-    sessionId?: SortOrder
-    userId?: SortOrder
-    startedAt?: SortOrder
-    endedAt?: SortOrderInput | SortOrder
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-    source?: SortOrder
-    updatedAt?: SortOrder
-    _count?: UsageSessionCountOrderByAggregateInput
-    _avg?: UsageSessionAvgOrderByAggregateInput
-    _max?: UsageSessionMaxOrderByAggregateInput
-    _min?: UsageSessionMinOrderByAggregateInput
-    _sum?: UsageSessionSumOrderByAggregateInput
-  }
-
-  export type UsageSessionScalarWhereWithAggregatesInput = {
-    AND?: UsageSessionScalarWhereWithAggregatesInput | UsageSessionScalarWhereWithAggregatesInput[]
-    OR?: UsageSessionScalarWhereWithAggregatesInput[]
-    NOT?: UsageSessionScalarWhereWithAggregatesInput | UsageSessionScalarWhereWithAggregatesInput[]
-    sessionId?: StringWithAggregatesFilter<"UsageSession"> | string
-    userId?: StringWithAggregatesFilter<"UsageSession"> | string
-    startedAt?: DateTimeWithAggregatesFilter<"UsageSession"> | Date | string
-    endedAt?: DateTimeNullableWithAggregatesFilter<"UsageSession"> | Date | string | null
-    billedSeconds?: IntWithAggregatesFilter<"UsageSession"> | number
-    billedMinutes?: IntWithAggregatesFilter<"UsageSession"> | number
-    source?: StringWithAggregatesFilter<"UsageSession"> | string
-    updatedAt?: DateTimeWithAggregatesFilter<"UsageSession"> | Date | string
-  }
-
-  export type SensorAccessStateWhereInput = {
-    AND?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
-    OR?: SensorAccessStateWhereInput[]
-    NOT?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
-    userId?: UuidFilter<"SensorAccessState"> | string
-    screenTimeEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    sleepEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    stepsEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    motionEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    updatedAt?: DateTimeFilter<"SensorAccessState"> | Date | string
-  }
-
-  export type SensorAccessStateOrderByWithRelationInput = {
-    userId?: SortOrder
-    screenTimeEnabled?: SortOrder
-    sleepEnabled?: SortOrder
-    stepsEnabled?: SortOrder
-    motionEnabled?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type SensorAccessStateWhereUniqueInput = Prisma.AtLeast<{
-    userId?: string
-    AND?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
-    OR?: SensorAccessStateWhereInput[]
-    NOT?: SensorAccessStateWhereInput | SensorAccessStateWhereInput[]
-    screenTimeEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    sleepEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    stepsEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    motionEnabled?: BoolFilter<"SensorAccessState"> | boolean
-    updatedAt?: DateTimeFilter<"SensorAccessState"> | Date | string
-  }, "userId">
-
-  export type SensorAccessStateOrderByWithAggregationInput = {
-    userId?: SortOrder
-    screenTimeEnabled?: SortOrder
-    sleepEnabled?: SortOrder
-    stepsEnabled?: SortOrder
-    motionEnabled?: SortOrder
-    updatedAt?: SortOrder
-    _count?: SensorAccessStateCountOrderByAggregateInput
-    _max?: SensorAccessStateMaxOrderByAggregateInput
-    _min?: SensorAccessStateMinOrderByAggregateInput
-  }
-
-  export type SensorAccessStateScalarWhereWithAggregatesInput = {
-    AND?: SensorAccessStateScalarWhereWithAggregatesInput | SensorAccessStateScalarWhereWithAggregatesInput[]
-    OR?: SensorAccessStateScalarWhereWithAggregatesInput[]
-    NOT?: SensorAccessStateScalarWhereWithAggregatesInput | SensorAccessStateScalarWhereWithAggregatesInput[]
-    userId?: UuidWithAggregatesFilter<"SensorAccessState"> | string
-    screenTimeEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
-    sleepEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
-    stepsEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
-    motionEnabled?: BoolWithAggregatesFilter<"SensorAccessState"> | boolean
-    updatedAt?: DateTimeWithAggregatesFilter<"SensorAccessState"> | Date | string
   }
 
   export type MonthlyVcGrantWhereInput = {
@@ -26839,6 +22661,8 @@ export namespace Prisma {
     likeCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     commentCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
+    agentReasoning?: StringNullableFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeFilter<"TiktokPost"> | Date | string
     hookCandidate?: XOR<HookCandidateNullableRelationFilter, HookCandidateWhereInput> | null
   }
@@ -26855,6 +22679,8 @@ export namespace Prisma {
     likeCount?: SortOrderInput | SortOrder
     commentCount?: SortOrderInput | SortOrder
     shareCount?: SortOrderInput | SortOrder
+    agentReasoning?: SortOrderInput | SortOrder
+    scheduledAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     hookCandidate?: HookCandidateOrderByWithRelationInput
   }
@@ -26874,6 +22700,8 @@ export namespace Prisma {
     likeCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     commentCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
+    agentReasoning?: StringNullableFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeFilter<"TiktokPost"> | Date | string
     hookCandidate?: XOR<HookCandidateNullableRelationFilter, HookCandidateWhereInput> | null
   }, "id" | "tiktokVideoId">
@@ -26890,6 +22718,8 @@ export namespace Prisma {
     likeCount?: SortOrderInput | SortOrder
     commentCount?: SortOrderInput | SortOrder
     shareCount?: SortOrderInput | SortOrder
+    agentReasoning?: SortOrderInput | SortOrder
+    scheduledAt?: SortOrderInput | SortOrder
     createdAt?: SortOrder
     _count?: TiktokPostCountOrderByAggregateInput
     _avg?: TiktokPostAvgOrderByAggregateInput
@@ -26913,6 +22743,8 @@ export namespace Prisma {
     likeCount?: BigIntNullableWithAggregatesFilter<"TiktokPost"> | bigint | number | null
     commentCount?: BigIntNullableWithAggregatesFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableWithAggregatesFilter<"TiktokPost"> | bigint | number | null
+    agentReasoning?: StringNullableWithAggregatesFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableWithAggregatesFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeWithAggregatesFilter<"TiktokPost"> | Date | string
   }
 
@@ -26953,10 +22785,10 @@ export namespace Prisma {
 
   export type WisdomPatternWhereUniqueInput = Prisma.AtLeast<{
     id?: string
+    patternName?: string
     AND?: WisdomPatternWhereInput | WisdomPatternWhereInput[]
     OR?: WisdomPatternWhereInput[]
     NOT?: WisdomPatternWhereInput | WisdomPatternWhereInput[]
-    patternName?: StringFilter<"WisdomPattern"> | string
     description?: StringNullableFilter<"WisdomPattern"> | string | null
     targetUserTypes?: StringNullableListFilter<"WisdomPattern">
     effectiveTone?: StringNullableFilter<"WisdomPattern"> | string | null
@@ -26968,7 +22800,7 @@ export namespace Prisma {
     verifiedAt?: DateTimeNullableFilter<"WisdomPattern"> | Date | string | null
     createdAt?: DateTimeFilter<"WisdomPattern"> | Date | string
     updatedAt?: DateTimeFilter<"WisdomPattern"> | Date | string
-  }, "id">
+  }, "id" | "patternName">
 
   export type WisdomPatternOrderByWithAggregationInput = {
     id?: SortOrder
@@ -27276,48 +23108,6 @@ export namespace Prisma {
     createdAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
   }
 
-  export type MobileVoipTokenCreateInput = {
-    userId: string
-    deviceToken: string
-    updatedAt?: Date | string
-  }
-
-  export type MobileVoipTokenUncheckedCreateInput = {
-    userId: string
-    deviceToken: string
-    updatedAt?: Date | string
-  }
-
-  export type MobileVoipTokenUpdateInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    deviceToken?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MobileVoipTokenUncheckedUpdateInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    deviceToken?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MobileVoipTokenCreateManyInput = {
-    userId: string
-    deviceToken: string
-    updatedAt?: Date | string
-  }
-
-  export type MobileVoipTokenUpdateManyMutationInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    deviceToken?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type MobileVoipTokenUncheckedUpdateManyInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    deviceToken?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type UserSubscriptionCreateInput = {
     userId: string
     plan?: string
@@ -27430,55 +23220,6 @@ export namespace Prisma {
     updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
-  export type RealtimeUsageDailyCreateInput = {
-    userId: string
-    usageDate: Date | string
-    count?: number
-    updatedAt?: Date | string
-  }
-
-  export type RealtimeUsageDailyUncheckedCreateInput = {
-    userId: string
-    usageDate: Date | string
-    count?: number
-    updatedAt?: Date | string
-  }
-
-  export type RealtimeUsageDailyUpdateInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    usageDate?: DateTimeFieldUpdateOperationsInput | Date | string
-    count?: IntFieldUpdateOperationsInput | number
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RealtimeUsageDailyUncheckedUpdateInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    usageDate?: DateTimeFieldUpdateOperationsInput | Date | string
-    count?: IntFieldUpdateOperationsInput | number
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RealtimeUsageDailyCreateManyInput = {
-    userId: string
-    usageDate: Date | string
-    count?: number
-    updatedAt?: Date | string
-  }
-
-  export type RealtimeUsageDailyUpdateManyMutationInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    usageDate?: DateTimeFieldUpdateOperationsInput | Date | string
-    count?: IntFieldUpdateOperationsInput | number
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type RealtimeUsageDailyUncheckedUpdateManyInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    usageDate?: DateTimeFieldUpdateOperationsInput | Date | string
-    count?: IntFieldUpdateOperationsInput | number
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
   export type SubscriptionEventCreateInput = {
     eventId: string
     userId?: string | null
@@ -27540,146 +23281,6 @@ export namespace Prisma {
     provider?: StringFieldUpdateOperationsInput | string
     payload?: NullableJsonNullValueInput | InputJsonValue
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type UsageSessionCreateInput = {
-    sessionId: string
-    userId: string
-    startedAt?: Date | string
-    endedAt?: Date | string | null
-    billedSeconds?: number
-    billedMinutes?: number
-    source?: string
-    updatedAt?: Date | string
-  }
-
-  export type UsageSessionUncheckedCreateInput = {
-    sessionId: string
-    userId: string
-    startedAt?: Date | string
-    endedAt?: Date | string | null
-    billedSeconds?: number
-    billedMinutes?: number
-    source?: string
-    updatedAt?: Date | string
-  }
-
-  export type UsageSessionUpdateInput = {
-    sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
-    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    billedSeconds?: IntFieldUpdateOperationsInput | number
-    billedMinutes?: IntFieldUpdateOperationsInput | number
-    source?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type UsageSessionUncheckedUpdateInput = {
-    sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
-    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    billedSeconds?: IntFieldUpdateOperationsInput | number
-    billedMinutes?: IntFieldUpdateOperationsInput | number
-    source?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type UsageSessionCreateManyInput = {
-    sessionId: string
-    userId: string
-    startedAt?: Date | string
-    endedAt?: Date | string | null
-    billedSeconds?: number
-    billedMinutes?: number
-    source?: string
-    updatedAt?: Date | string
-  }
-
-  export type UsageSessionUpdateManyMutationInput = {
-    sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
-    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    billedSeconds?: IntFieldUpdateOperationsInput | number
-    billedMinutes?: IntFieldUpdateOperationsInput | number
-    source?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type UsageSessionUncheckedUpdateManyInput = {
-    sessionId?: StringFieldUpdateOperationsInput | string
-    userId?: StringFieldUpdateOperationsInput | string
-    startedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-    endedAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
-    billedSeconds?: IntFieldUpdateOperationsInput | number
-    billedMinutes?: IntFieldUpdateOperationsInput | number
-    source?: StringFieldUpdateOperationsInput | string
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type SensorAccessStateCreateInput = {
-    userId: string
-    screenTimeEnabled?: boolean
-    sleepEnabled?: boolean
-    stepsEnabled?: boolean
-    motionEnabled?: boolean
-    updatedAt?: Date | string
-  }
-
-  export type SensorAccessStateUncheckedCreateInput = {
-    userId: string
-    screenTimeEnabled?: boolean
-    sleepEnabled?: boolean
-    stepsEnabled?: boolean
-    motionEnabled?: boolean
-    updatedAt?: Date | string
-  }
-
-  export type SensorAccessStateUpdateInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
-    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
-    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
-    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type SensorAccessStateUncheckedUpdateInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
-    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
-    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
-    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type SensorAccessStateCreateManyInput = {
-    userId: string
-    screenTimeEnabled?: boolean
-    sleepEnabled?: boolean
-    stepsEnabled?: boolean
-    motionEnabled?: boolean
-    updatedAt?: Date | string
-  }
-
-  export type SensorAccessStateUpdateManyMutationInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
-    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
-    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
-    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
-  }
-
-  export type SensorAccessStateUncheckedUpdateManyInput = {
-    userId?: StringFieldUpdateOperationsInput | string
-    screenTimeEnabled?: BoolFieldUpdateOperationsInput | boolean
-    sleepEnabled?: BoolFieldUpdateOperationsInput | boolean
-    stepsEnabled?: BoolFieldUpdateOperationsInput | boolean
-    motionEnabled?: BoolFieldUpdateOperationsInput | boolean
-    updatedAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
   export type MonthlyVcGrantCreateInput = {
@@ -28714,6 +24315,8 @@ export namespace Prisma {
     likeCount?: bigint | number | null
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
+    agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
     hookCandidate?: HookCandidateCreateNestedOneWithoutTiktokPostsInput
   }
@@ -28730,6 +24333,8 @@ export namespace Prisma {
     likeCount?: bigint | number | null
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
+    agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -28744,6 +24349,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
     hookCandidate?: HookCandidateUpdateOneWithoutTiktokPostsNestedInput
   }
@@ -28760,6 +24367,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28775,6 +24384,8 @@ export namespace Prisma {
     likeCount?: bigint | number | null
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
+    agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -28789,6 +24400,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -28804,6 +24417,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -29314,29 +24929,6 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type MobileVoipTokenUserIdDeviceTokenCompoundUniqueInput = {
-    userId: string
-    deviceToken: string
-  }
-
-  export type MobileVoipTokenCountOrderByAggregateInput = {
-    userId?: SortOrder
-    deviceToken?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type MobileVoipTokenMaxOrderByAggregateInput = {
-    userId?: SortOrder
-    deviceToken?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type MobileVoipTokenMinOrderByAggregateInput = {
-    userId?: SortOrder
-    deviceToken?: SortOrder
-    updatedAt?: SortOrder
-  }
-
   export type UserSubscriptionCountOrderByAggregateInput = {
     userId?: SortOrder
     plan?: SortOrder
@@ -29381,67 +24973,6 @@ export namespace Prisma {
     updatedAt?: SortOrder
   }
 
-  export type IntFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntFilter<$PrismaModel> | number
-  }
-
-  export type RealtimeUsageDailyUserIdUsageDateCompoundUniqueInput = {
-    userId: string
-    usageDate: Date | string
-  }
-
-  export type RealtimeUsageDailyCountOrderByAggregateInput = {
-    userId?: SortOrder
-    usageDate?: SortOrder
-    count?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RealtimeUsageDailyAvgOrderByAggregateInput = {
-    count?: SortOrder
-  }
-
-  export type RealtimeUsageDailyMaxOrderByAggregateInput = {
-    userId?: SortOrder
-    usageDate?: SortOrder
-    count?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RealtimeUsageDailyMinOrderByAggregateInput = {
-    userId?: SortOrder
-    usageDate?: SortOrder
-    count?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type RealtimeUsageDailySumOrderByAggregateInput = {
-    count?: SortOrder
-  }
-
-  export type IntWithAggregatesFilter<$PrismaModel = never> = {
-    equals?: number | IntFieldRefInput<$PrismaModel>
-    in?: number[] | ListIntFieldRefInput<$PrismaModel>
-    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
-    lt?: number | IntFieldRefInput<$PrismaModel>
-    lte?: number | IntFieldRefInput<$PrismaModel>
-    gt?: number | IntFieldRefInput<$PrismaModel>
-    gte?: number | IntFieldRefInput<$PrismaModel>
-    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
-    _count?: NestedIntFilter<$PrismaModel>
-    _avg?: NestedFloatFilter<$PrismaModel>
-    _sum?: NestedIntFilter<$PrismaModel>
-    _min?: NestedIntFilter<$PrismaModel>
-    _max?: NestedIntFilter<$PrismaModel>
-  }
-
   export type SubscriptionEventCountOrderByAggregateInput = {
     eventId?: SortOrder
     userId?: SortOrder
@@ -29467,74 +24998,15 @@ export namespace Prisma {
     createdAt?: SortOrder
   }
 
-  export type UsageSessionCountOrderByAggregateInput = {
-    sessionId?: SortOrder
-    userId?: SortOrder
-    startedAt?: SortOrder
-    endedAt?: SortOrder
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-    source?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type UsageSessionAvgOrderByAggregateInput = {
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-  }
-
-  export type UsageSessionMaxOrderByAggregateInput = {
-    sessionId?: SortOrder
-    userId?: SortOrder
-    startedAt?: SortOrder
-    endedAt?: SortOrder
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-    source?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type UsageSessionMinOrderByAggregateInput = {
-    sessionId?: SortOrder
-    userId?: SortOrder
-    startedAt?: SortOrder
-    endedAt?: SortOrder
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-    source?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type UsageSessionSumOrderByAggregateInput = {
-    billedSeconds?: SortOrder
-    billedMinutes?: SortOrder
-  }
-
-  export type SensorAccessStateCountOrderByAggregateInput = {
-    userId?: SortOrder
-    screenTimeEnabled?: SortOrder
-    sleepEnabled?: SortOrder
-    stepsEnabled?: SortOrder
-    motionEnabled?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type SensorAccessStateMaxOrderByAggregateInput = {
-    userId?: SortOrder
-    screenTimeEnabled?: SortOrder
-    sleepEnabled?: SortOrder
-    stepsEnabled?: SortOrder
-    motionEnabled?: SortOrder
-    updatedAt?: SortOrder
-  }
-
-  export type SensorAccessStateMinOrderByAggregateInput = {
-    userId?: SortOrder
-    screenTimeEnabled?: SortOrder
-    sleepEnabled?: SortOrder
-    stepsEnabled?: SortOrder
-    motionEnabled?: SortOrder
-    updatedAt?: SortOrder
+  export type IntFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntFilter<$PrismaModel> | number
   }
 
   export type MonthlyVcGrantUserIdGrantMonthReasonCompoundUniqueInput = {
@@ -29573,6 +25045,22 @@ export namespace Prisma {
 
   export type MonthlyVcGrantSumOrderByAggregateInput = {
     minutes?: SortOrder
+  }
+
+  export type IntWithAggregatesFilter<$PrismaModel = never> = {
+    equals?: number | IntFieldRefInput<$PrismaModel>
+    in?: number[] | ListIntFieldRefInput<$PrismaModel>
+    notIn?: number[] | ListIntFieldRefInput<$PrismaModel>
+    lt?: number | IntFieldRefInput<$PrismaModel>
+    lte?: number | IntFieldRefInput<$PrismaModel>
+    gt?: number | IntFieldRefInput<$PrismaModel>
+    gte?: number | IntFieldRefInput<$PrismaModel>
+    not?: NestedIntWithAggregatesFilter<$PrismaModel> | number
+    _count?: NestedIntFilter<$PrismaModel>
+    _avg?: NestedFloatFilter<$PrismaModel>
+    _sum?: NestedIntFilter<$PrismaModel>
+    _min?: NestedIntFilter<$PrismaModel>
+    _max?: NestedIntFilter<$PrismaModel>
   }
 
   export type UserSettingNullableRelationFilter = {
@@ -30234,6 +25722,8 @@ export namespace Prisma {
     likeCount?: SortOrder
     commentCount?: SortOrder
     shareCount?: SortOrder
+    agentReasoning?: SortOrder
+    scheduledAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -30256,6 +25746,8 @@ export namespace Prisma {
     likeCount?: SortOrder
     commentCount?: SortOrder
     shareCount?: SortOrder
+    agentReasoning?: SortOrder
+    scheduledAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -30271,6 +25763,8 @@ export namespace Prisma {
     likeCount?: SortOrder
     commentCount?: SortOrder
     shareCount?: SortOrder
+    agentReasoning?: SortOrder
+    scheduledAt?: SortOrder
     createdAt?: SortOrder
   }
 
@@ -31424,6 +26918,8 @@ export namespace Prisma {
     likeCount?: bigint | number | null
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
+    agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -31438,6 +26934,8 @@ export namespace Prisma {
     likeCount?: bigint | number | null
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
+    agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -31482,6 +26980,8 @@ export namespace Prisma {
     likeCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     commentCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
     shareCount?: BigIntNullableFilter<"TiktokPost"> | bigint | number | null
+    agentReasoning?: StringNullableFilter<"TiktokPost"> | string | null
+    scheduledAt?: DateTimeNullableFilter<"TiktokPost"> | Date | string | null
     createdAt?: DateTimeFilter<"TiktokPost"> | Date | string
   }
 
@@ -31624,6 +27124,8 @@ export namespace Prisma {
     likeCount?: bigint | number | null
     commentCount?: bigint | number | null
     shareCount?: bigint | number | null
+    agentReasoning?: string | null
+    scheduledAt?: Date | string | null
     createdAt?: Date | string
   }
 
@@ -31638,6 +27140,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -31652,6 +27156,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -31666,6 +27172,8 @@ export namespace Prisma {
     likeCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     commentCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
     shareCount?: NullableBigIntFieldUpdateOperationsInput | bigint | number | null
+    agentReasoning?: NullableStringFieldUpdateOperationsInput | string | null
+    scheduledAt?: NullableDateTimeFieldUpdateOperationsInput | Date | string | null
     createdAt?: DateTimeFieldUpdateOperationsInput | Date | string
   }
 
@@ -31695,29 +27203,13 @@ export namespace Prisma {
      */
     export type MobileProfileArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MobileProfileDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use MobileVoipTokenDefaultArgs instead
-     */
-    export type MobileVoipTokenArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = MobileVoipTokenDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use UserSubscriptionDefaultArgs instead
      */
     export type UserSubscriptionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UserSubscriptionDefaultArgs<ExtArgs>
     /**
-     * @deprecated Use RealtimeUsageDailyDefaultArgs instead
-     */
-    export type RealtimeUsageDailyArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = RealtimeUsageDailyDefaultArgs<ExtArgs>
-    /**
      * @deprecated Use SubscriptionEventDefaultArgs instead
      */
     export type SubscriptionEventArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SubscriptionEventDefaultArgs<ExtArgs>
-    /**
-     * @deprecated Use UsageSessionDefaultArgs instead
-     */
-    export type UsageSessionArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = UsageSessionDefaultArgs<ExtArgs>
-    /**
-     * @deprecated Use SensorAccessStateDefaultArgs instead
-     */
-    export type SensorAccessStateArgs<ExtArgs extends $Extensions.InternalArgs = $Extensions.DefaultArgs> = SensorAccessStateDefaultArgs<ExtArgs>
     /**
      * @deprecated Use MonthlyVcGrantDefaultArgs instead
      */

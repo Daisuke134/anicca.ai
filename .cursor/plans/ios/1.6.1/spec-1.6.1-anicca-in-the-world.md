@@ -70,12 +70,21 @@
 
 ### 3.2 Skills
 
-| Skill | 役割 |
-|-------|------|
-| **moltbook-responder** | 苦しみ投稿を検出 → `/api/agent/nudge` → 返信 |
-| **slack-reminder** | 月曜12:30にラボミーティングリマインダー送信 |
-| **feedback-fetch** | Moltbook upvotes / Slack reactions を収集 |
-| **x-poster** | X/Twitter にコンテンツ投稿 |
+| Skill | 役割 | ソース |
+|-------|------|--------|
+| **moltbook-responder** | 苦しみ投稿を検出 → `/api/agent/nudge` → 返信 | 自前実装 |
+| **slack-reminder** | 月曜12:30にラボミーティングリマインダー送信 | 自前実装 |
+| **feedback-fetch** | Moltbook upvotes / Slack reactions を収集 | 自前実装 |
+| **x-poster** | X/Twitter にコンテンツ投稿 | 自前実装 |
+| **moltbook/late-api** | Moltbook API クライアント | ClawHub（allowlist） |
+
+#### ClawHub Skill ポリシー
+
+| ルール | 詳細 |
+|--------|------|
+| **allowlist 方式** | `SOUL.md` に許可リストを定義。リスト外の ClawHub Skill は自動拒否 |
+| **コミットハッシュ固定** | `clawhub install moltbook/late-api@abc1234` のように特定バージョンを固定 |
+| **更新時はレビュー必須** | Skill 更新時は diff を確認してからハッシュを更新 |
 
 ### 3.3 Railway API
 
@@ -85,6 +94,32 @@
 | `/api/agent/wisdom` | GET | Wisdom取得 |
 | `/api/agent/feedback` | POST | フィードバック保存 |
 | `/api/agent/content` | POST | プラットフォーム別コンテンツ生成 |
+
+#### AgentFeedbackRequest バリデーション
+
+```typescript
+interface AgentFeedbackRequest {
+  agentPostId?: string;       // UUID（これ OR 下の2つで特定）
+  platform?: string;          // optional（agentPostId があれば不要）
+  externalPostId?: string;    // optional（agentPostId があれば不要）
+  upvotes?: number;
+  reactions?: Record<string, number>;
+  views?: number;
+  likes?: number;
+  shares?: number;
+  comments?: number;
+}
+```
+
+**5ステップ バリデーションルール:**
+
+| # | ルール | 失敗時 |
+|---|--------|--------|
+| 1 | `agentPostId` OR (`platform` + `externalPostId`) のいずれかが必須 | 400 Bad Request |
+| 2 | `agentPostId` 指定時 → DB に存在するか確認 | 404 Not Found |
+| 3 | `platform` + `externalPostId` 指定時 → DB に存在するか確認 | 404 Not Found |
+| 4 | 数値フィールドは非負整数（`upvotes`, `views`, `likes`, `shares`, `comments`） | 400 Bad Request |
+| 5 | `reactions` は `Record<string, number>` 形式（emoji → count） | 400 Bad Request |
 
 ---
 
@@ -107,7 +142,7 @@
 | AC-13 | Z-Score 正規化が5チャネル統合で動作 | `unifiedScore()` に moltbookZ + slackZ が反映 | 自動 | #9, #12 |
 | AC-14 | agent_posts から hook_candidates への昇格が動作 | upvotes ≥ 5 の投稿 → hook_candidates INSERT | 自動 | #10, #11 |
 | AC-15 | VPS セキュリティ（fail2ban + ufw + 専用APIキー） | `ufw status` = active, fail2ban running, 本番APIキー未使用 | 手動（SSH）+ 自動 | #5, #6 |
-| AC-16 | X/Twitter オーナー認証投稿（ユーザー作業） | 投稿確認 → Moltbook 認証済み | 手動（ユーザー） | — |
+| AC-16 | Moltbook claim URL をクリックして認証完了（ユーザー作業） | claim_url アクセス → Moltbook プロフィール表示 | 手動（ユーザー） | — |
 | AC-17 | Railway API `/api/agent/content` が正常動作 | POST → 200 + `{ hook, content, tone, formats: { short, medium, long, hashtags } }` を含む JSON | 自動 | #19 |
 | AC-18 | `/api/agent/content` の formats.short が 280文字以内 | short フォーマットの文字数検証 | 自動 | #20, #21 |
 | AC-19 | feedback-fetch Skill が Moltbook upvotes を収集して Railway API に送信 | Heartbeat 後 → agent_posts.upvotes が更新される | 自動 | #26 |
@@ -208,6 +243,15 @@ END IF
 
 ## 7. セキュリティ
 
+### Railway Agent API セキュリティ
+
+| 項目 | 設定 |
+|------|------|
+| 認証 | `ANICCA_AGENT_TOKEN`（`INTERNAL_API_TOKEN` とは完全分離） |
+| 許可メソッド | **GET**（`/wisdom`）+ **POST**（`/nudge`, `/feedback`, `/content`） |
+| スコープ | Nudge生成 + Wisdom取得 + フィードバック保存 + コンテンツ生成のみ。ユーザーデータ・課金・設定変更は不可 |
+| レート制限 | 60 req/min per token |
+
 ### VPS セキュリティ
 
 | 項目 | 設定 |
@@ -215,7 +259,6 @@ END IF
 | ファイアウォール | ufw（22, 443のみ許可） |
 | ブルートフォース対策 | fail2ban |
 | SSH | 公開鍵認証のみ |
-| API認証 | `ANICCA_AGENT_TOKEN`（本番トークンと分離） |
 
 ### Prompt Injection 対策
 
@@ -248,13 +291,22 @@ END IF
 
 ## 9. ユーザー作業（GUI / 手動）
 
+**ほぼ全自動。ユーザーが手動でやるのは1つだけ。**
+
+### エージェントが自動でやること（CLI）
+
+| # | タスク | 方法 |
+|---|--------|------|
+| 1 | Moltbook エージェント登録 | `curl -X POST https://www.moltbook.com/api/v1/agents/register` → api_key + claim_url 取得 |
+| 2 | s/sangha Submolt 作成 | Moltbook API 経由 |
+| 3 | Hetzner VPS セットアップ | CLI / Terraform |
+| 4 | Slack 連携 | **設定済み**（OAuth + Bot Token + `#agents` チャンネル + 12+ ツール） |
+
+### ユーザーが手動でやること
+
 | # | タイミング | タスク | 手順 | 理由 |
 |---|-----------|--------|------|------|
-| 1 | 初期セットアップ | Hetzner VPS 契約 | Hetzner Cloud → CPX11 (月€5) → Ubuntu 22.04 | VPSホスティング |
-| 2 | 初期セットアップ | Moltbook アカウント作成 | moltbook.com → サインアップ | エージェント登録 |
-| 3 | 初期セットアップ | s/sangha Submolt 作成 | Moltbook → Create Submolt → s/sangha | コミュニティ作成 |
-| 4 | 初期セットアップ | Slack App 作成 | Slack API → Create App → Bot Token 取得 | Slack連携 |
-| 5 | 初期セットアップ | X/Twitter オーナー認証 | Moltbook → Settings → Connect X | クロスポスト認証 |
+| 1 | Moltbook 登録後 | claim URL をクリック | エージェントが出力した `claim_url` をブラウザで開く | Moltbook がオーナー認証に人間のクリックを要求するため |
 
 ---
 

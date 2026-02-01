@@ -68,3 +68,40 @@ Before marking work complete:
 - [ ] No console.log statements
 - [ ] No hardcoded values
 - [ ] No mutation (immutable patterns used)
+
+## Refactoring Policy (未使用コード)
+
+**原則: 容赦なく削除する（例外なし）**
+
+根拠: [Avanderlee - Refactoring Swift Best Practices](https://www.avanderlee.com/optimization/refactoring-swift-best-practices/)
+> 「シンプルだが非常に価値のあるアクションは、未使用コードを容赦なく削除すること」
+
+**ルール:**
+1. **今使っていないコード** → 完全削除
+2. **将来使うかもしれないコード** → 削除（git historyから復元可能）
+3. **`// UNUSED`コメント付きで残す** → 禁止（レガシーコードの混乱を招く）
+4. **UIパターンとして参考になる** → MDファイルに記録してから削除
+
+**記録先:**
+- `.cursor/plans/future/` - 将来実装予定の機能パターン
+- `.cursor/plans/ui-patterns/` - 再利用可能なUIパターン
+
+## FK Constraint Safety Pattern (P2003)
+
+**Prisma upsert で FK 先のレコードが存在しない場合、P2003 エラーでクラッシュする。**
+
+| ルール | 詳細 |
+|--------|------|
+| FK依存 upsert の前に存在チェック | `findUnique({ where: { id }, select: { id: true } })` |
+| 存在しない場合 | warn ログを出して早期 return（throw しない） |
+| 該当箇所 | `userTypeService.js:classifyAndSave()`, `profileService` 等 |
+
+```javascript
+// 必須パターン: FK依存 upsert の前
+const exists = await prisma.targetTable.findUnique({ where: { id }, select: { id: true } });
+if (!exists) {
+  logger.warn(`Record not found, skipping FK-dependent operation`);
+  return;
+}
+await prisma.dependentTable.upsert({ ... });
+```

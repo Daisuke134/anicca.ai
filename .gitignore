@@ -133,7 +133,6 @@ examples/openai-realtime-agents/
 examples/openai-agents-js-latest/
 examples/slack-mcp-server/
 examples/composio/
-apps/api/.npmrc
 
 examples/app_assistant_voice_agents.ipynb
 

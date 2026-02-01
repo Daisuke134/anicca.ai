@@ -22,7 +22,7 @@ RUN apt-get update -qq && \
 
 # Install node modules
 COPY package-lock.json package.json ./
-RUN npm ci --legacy-peer-deps
+RUN npm ci
 
 # Copy Prisma schema and generate client
 COPY prisma ./prisma

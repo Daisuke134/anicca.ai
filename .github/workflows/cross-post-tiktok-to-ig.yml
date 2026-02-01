@@ -73,7 +73,7 @@ jobs:
             ARGS="$ARGS --force"
           fi
           if [ -n "${{ github.event.inputs.schedule_times }}" ]; then
-            ARGS="$ARGS --schedule-times '${{ github.event.inputs.schedule_times }}'"
+            ARGS="$ARGS --schedule-times ${{ github.event.inputs.schedule_times }}"
           fi
           python cross_post_tiktok_to_ig.py $ARGS
 

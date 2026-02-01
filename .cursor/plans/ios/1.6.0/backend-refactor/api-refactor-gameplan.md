@@ -1,6 +1,6 @@
-# API リファクタリング ゲームプラン v6
+# API リファクタリング ゲームプラン v7
 
-**日付**: 2026-01-29（2026-02-01 v6 — iOS Config.swift 完全監査 + dead mobile routes/modules 追加削除）
+**日付**: 2026-01-29（2026-02-02 v7 — KEEP リスト全件監査、追加10件 DEAD 発見）
 **対象**: `apps/api/src/` + `apps/landing/`
 **ステータス**: 計画中（GATE 1 レビュー待ち）
 **ブランチ**: dev → feature/backend-cleanup ワークツリーで実装
@@ -23,13 +23,16 @@
 
 | カテゴリ | ファイル数 | 状態 |
 |---------|----------|------|
-| iOS アクティブ（mobile/, nudge/, auth/apple, billing/revenuecat等） | ~20 | ✅ KEEP |
+| iOS アクティブ（mobile/, auth/apple+refresh, billing/revenuecat等） | ~15 | ✅ KEEP |
 | Admin/TikTok Agent（admin/tiktok, admin/hookCandidates, admin/xposts） | 3 | ✅ KEEP |
 | Agents（commander, crossPlatformLearning, groundingCollectors等） | 6+5テスト | ✅ KEEP |
 | Jobs アクティブ（generateNudges, monthlyCredits, aggregateTypeStats, syncCrossPlatform） | 5 | ✅ KEEP |
 | Modules アクティブ（nudge, memory） | ~7 | ✅ KEEP |
 | **Dead Mobile Routes（iOS Config.swift 監査で発覚）** | 3 | ❌ DELETE |
 | **Dead Modules（behavior.js 連鎖で孤児化）** | 4 | ❌ DELETE |
+| **Dead Auth/Nudge Routes（v7 KEEP 全件監査で発覚）** | 4 | ❌ DELETE |
+| **Dead Bandit Policy（v7 import ゼロ確認）** | 3 | ❌ DELETE |
+| **Dead Jobs/Services（v7 エントリポイントなし確認）** | 3 | ❌ DELETE |
 | **Stripe Desktop 残骸** | 7+ | ❌ DELETE |
 | **Google OAuth Desktop 残骸** | 4 | ❌ DELETE |
 | **MCP GCal 孤児** | 6 | ❌ DELETE |
@@ -285,10 +288,10 @@ import/require ゼロ。
 
 | # | ファイル | 理由 |
 |---|---------|------|
-| 1-7 | `src/services/parallel-sdk/core/` (3ファイル) + `IPCProtocol.js` + `prompts/` (2ファイル) + `utils/PreviewManager.js` | Desktop Agent — import ゼロ |
-| 8-17 | `src/services/parallel-sdk/config/instructions/` (5ファイル) + `config/profiles/` (5ファイル) | Worker 設定 |
+| 1-8 | `src/services/parallel-sdk/core/` (4ファイル: BaseWorker.js, Worker.js, ParentAgent.js, index.js) + `IPCProtocol.js` + `prompts/` (2ファイル) + `utils/PreviewManager.js` | Desktop Agent — import ゼロ |
+| 9-18 | `src/services/parallel-sdk/config/instructions/` (5ファイル) + `config/profiles/` (5ファイル) | Worker 設定 |
 
-**ディレクトリ全体を削除（17ファイル）**: `rm -rf src/services/parallel-sdk/`
+**ディレクトリ全体を削除（18ファイル）**: `rm -rf src/services/parallel-sdk/`
 
 ### A-8: Claude services 削除（parallel-sdk 依存で死亡）
 
@@ -447,6 +450,43 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 
 **ディレクトリ確認**: `src/modules/simulation/` が空 → ディレクトリ削除。`src/modules/insights/` が空 → ディレクトリ削除。`src/modules/metrics/` から stateBuilder.js 削除後、nudge 用 stateBuilder（`modules/nudge/features/stateBuilder.js`）は別ファイルなので影響なし。`src/modules/realtime/` は contextSnapshot.js 削除で空 → ディレクトリ削除。
 
+### A-19: Dead Auth/Nudge Routes 削除（v7 KEEP 全件監査で発覚）
+
+| # | ファイル | エンドポイント | DEAD 理由 |
+|---|---------|-------------|----------|
+| 1 | `src/routes/auth/entitlement.js` | POST `/auth/entitlement` | iOS は `/mobile/entitlement` を使う。`/auth/entitlement` は呼ばれない |
+| 2 | `src/api/auth/entitlement.js` | — (ハンドラ) | ↑ のルートが DEAD → ハンドラも DEAD |
+| 3 | `src/routes/auth/logout.js` | POST `/auth/logout` | iOS は `Purchases.shared.logOut()`（RevenueCat ネイティブ）を使う。バックエンド logout は呼ばれない |
+| 4 | `src/routes/nudge/generate.js` | POST `/nudge/generate` + GET `/nudge/today` | POST: Railway cron は `node src/jobs/generateNudges.js` を直接実行（HTTP 不要）。GET: iOS は `/mobile/nudge/today`（routes/mobile/nudge.js）を使用 |
+
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 5 | `src/routes/index.js` | auth/entitlement, auth/logout, nudge/generate マウント削除 |
+
+**注意**: `services/auth/refreshService.js` は routes/auth/logout.js 削除後も ALIVE（routes/auth/refresh.js と routes/mobile/account.js が使用）
+
+### A-20: Dead Bandit Policy 削除（v7 import ゼロ確認）
+
+| # | ファイル | DEAD 理由 |
+|---|---------|----------|
+| 1 | `src/modules/nudge/policy/mentalBandit.js` | import ゼロ。どこからも使われていない |
+| 2 | `src/modules/nudge/policy/wakeBandit.js` | import ゼロ。どこからも使われていない |
+| 3 | `src/modules/nudge/policy/linTS.js` | importer は mentalBandit.js と wakeBandit.js のみ → 両方 DEAD で連鎖的に孤児化 |
+
+**ディレクトリ確認**: `src/modules/nudge/policy/` が空 → ディレクトリ削除
+
+### A-21: Dead Jobs/Agents/Services 削除（v7 エントリポイントなし確認）
+
+| # | ファイル | DEAD 理由 |
+|---|---------|----------|
+| 1 | `src/jobs/aggregateTypeStats.js` | エントリポイントなし。Railway cron にも server.js にも参照なし。完全孤児 |
+| 2 | `src/agents/dayCycling.js` | import ゼロ確定。v5 では「要別途確認」だったが、v7 で DEAD 確定 |
+| 3 | `src/services/guestSessions.js` | consumer: desktopSession.js（A-6 削除）+ api/auth/entitlement.js（A-19 削除）→ consumer ゼロ |
+
+**agents/dayCycling テスト**: `src/agents/__tests__/dayCycling.test.js` も本体削除と同時に削除。
+
 ### A-Landing: Landing Page クリーンアップ
 
 #### Desktop 参照修正
@@ -531,8 +571,8 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 
 | ステップ | 作業 | 受け入れ条件 |
 |---------|------|-------------|
-| 1 | Phase A-1〜A-18（API Dead Code 大量削除 + routes/index.js 同時修正） | `npm test` 全 PASS。routes/index.js に削除対象マウントなし |
-| 2 | A-17（npm パッケージ削除） | `npm install` 成功。`npm test` PASS |
+| 1 | Phase A-1〜A-16, A-18〜A-21（API Dead Code 大量削除 + routes/index.js 同時修正） | `npm test` 全 PASS。routes/index.js に削除対象マウントなし |
+| 2 | A-17（npm パッケージ削除 — コード削除完了後に実施） | `npm install` 成功。`npm test` PASS |
 | 3 | A-Landing（Landing クリーンアップ） | `cd apps/landing && npm run build` 成功 |
 | 4 | Phase B（Desktop 参照除去） | `npm test` PASS。`grep -r "DESKTOP_MODE\|STRIPE_SECRET\|platform.*desktop" src/` = 0件 |
 | 5 | Phase C（Prisma 精査） | `npx prisma generate` 成功。`npm test` PASS |
@@ -549,9 +589,7 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 |---------|------------|---------|
 | `routes/index.js` | 全ルートのマウント | Express 起動に必須 |
 | `routes/auth/apple.js` | Apple Sign-in 認証 | 旧ユーザーのログイン |
-| `routes/auth/entitlement.js` | 匿名/認証済みユーザーの entitlement チェック | 新ユーザー（匿名）+ 旧ユーザー |
-| `routes/auth/refresh.js` | JWT リフレッシュ | トークン更新 |
-| `routes/auth/logout.js` | ログアウト | アカウント管理 |
+| `routes/auth/refresh.js` | JWT リフレッシュ | NetworkSessionManager.swift L53 で呼び出し確認済み |
 | `routes/billing/index.js` | RevenueCat webhook + sync のマウント | iOS 課金 |
 | `routes/billing/revenuecat-sync.js` | RC 手動同期 | 課金状態修正 |
 | `routes/billing/webhook/revenuecat.js` | RC webhook | サブスク変更検知 |
@@ -561,7 +599,6 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | `routes/mobile/preReminder.js` | Notification Extension からの事前リマインダー | `AniccaNotificationService/NotificationService.swift:86` で呼び出し確認済み |
 | `routes/mobile/profile.js` | プロフィール CRUD | iOS ユーザー設定 |
 | `routes/mobile/index.js` | mobile ルートマウント | Express 構造 |
-| `routes/nudge/generate.js` | LLM Nudge 生成（cron） | Railway cron job |
 | `routes/admin/tiktok.js` | TikTok 投稿管理 | GitHub Actions TikTok Agent |
 | `routes/admin/hookCandidates.js` | Hook 候補選定 | GitHub Actions |
 | `routes/admin/xposts.js` | X（Twitter）投稿管理（/admin/x にマウント） | GitHub Actions |
@@ -570,7 +607,6 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 
 | ファイル | 何をしている | なぜ必要 |
 |---------|------------|---------|
-| `api/auth/entitlement.js` | entitlement ハンドラ | routes/auth/entitlement.js から呼ばれる |
 | `api/billing/revenuecatSync.js` | RC sync ハンドラ | routes/billing から呼ばれる |
 | `api/billing/webhookRevenueCat.js` | RC webhook ハンドラ | routes/billing から呼ばれる |
 
@@ -585,8 +621,7 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | `agents/groundingCollectors.js` | Nudge 生成用のグラウンディングデータ収集 | jobs/generateNudges.js から使用 |
 | `agents/reasoningLogger.js` | Commander の決定ログ + Slack 通知 | jobs/generateNudges.js から使用 |
 | `agents/scheduleMap.js` | Nudge スケジュール定義 + スロットテーブル | jobs/nudgeHelpers.js から使用 |
-| `agents/dayCycling.js` | 日付サイクル管理 | ⚠️ 現時点で import ゼロ（テストあり）。1.5.0 で追加されたが未統合の可能性。KEEP して別途確認 |
-| `agents/__tests__/` (5ファイル) | commander, crossPlatformLearning, dayCycling, reasoningLogger, scheduleMap のテスト | テストスイート |
+| `agents/__tests__/` (4ファイル) | commander, crossPlatformLearning, reasoningLogger, scheduleMap のテスト | テストスイート |
 
 ### services/
 
@@ -601,7 +636,6 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | `services/revenuecat/webhookHandler.js` | RC webhook 処理 | サブスク変更処理 |
 | `services/revenuecat/virtualCurrency.js` | 仮想通貨（分単位）管理 | 月次クレジット付与 |
 | `services/users/profileStore.js` | 外部ID → 内部UUID マッピング | Apple/Anonymous ユーザー作成 |
-| `services/guestSessions.js` | 匿名ゲストセッション管理（30ターン、24h TTL） | 新ユーザー（匿名認証） |
 | `services/hookSelector.js` | Thompson Sampling で Hook A/B テスト | TikTok Agent |
 | `services/wisdomExtractor.js` | 高パフォーマンス Hook パターン抽出 | TikTok Agent |
 | `services/userTypeService.js` | ユーザータイプ分類（T1-T4） | iOS + Nudge 生成 |
@@ -612,11 +646,8 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | ファイル | 何をしている | なぜ必要 |
 |---------|------------|---------|
 | `modules/memory/mem0Client.js` | Mem0 AI メモリ管理 | nudge.js, preReminder.js で使用（iOS Nudge パーソナライズ） |
-| `modules/nudge/features/stateBuilder.js` | Bandit モデル用特徴量エンコーディング | Nudge 選択 |
-| `modules/nudge/policy/linTS.js` | Linear Thompson Sampling アルゴリズム | Nudge 最適化コア |
-| `modules/nudge/policy/mentalBandit.js` | メンタル系 Nudge バンディット | Nudge 選択 |
-| `modules/nudge/policy/wakeBandit.js` | 睡眠/起床系 Nudge バンディット | Nudge 選択 |
-| `modules/nudge/reward/rewardCalculator.js` | Nudge 報酬計算 | バンディット学習 |
+| `modules/nudge/features/stateBuilder.js` | Bandit モデル用特徴量エンコーディング | routes/mobile/nudge.js L10 で import |
+| `modules/nudge/reward/rewardCalculator.js` | Nudge 報酬計算 | routes/mobile/nudge.js で import |
 
 ### jobs/
 
@@ -625,7 +656,6 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | `jobs/generateNudges.js` | 日次 LLM Nudge 生成 | Railway cron（CRON_MODE=nudges） |
 | `jobs/monthlyCredits.js` | 月次仮想通貨付与 | server.js setInterval |
 | `jobs/nudgeHelpers.js` | Nudge 生成ヘルパー | generateNudges から使用 |
-| `jobs/aggregateTypeStats.js` | ユーザータイプ別 Nudge 統計集計 | Railway cron（CRON_MODE=aggregate_type_stats） |
 | `jobs/syncCrossPlatform.js` | TikTok ↔ iOS 間の学習データ同期 | generateNudges.js L13 で import |
 
 ### middleware/
@@ -634,7 +664,7 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 |---------|------------|---------|
 | `middleware/extractUserId.js` | Bearer JWT からユーザーID抽出 | 全 mobile ルートで使用 |
 | `middleware/requireAuth.js` | JWT 署名検証（member + guest 対応） | 認証必須エンドポイント |
-| `middleware/requireInternalAuth.js` | INTERNAL_API_TOKEN 検証（timing-safe） | admin + nudge/generate |
+| `middleware/requireInternalAuth.js` | INTERNAL_API_TOKEN 検証（timing-safe） | admin ルート（tiktok, hookCandidates, xposts） |
 
 ### utils/
 
@@ -642,7 +672,7 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 |---------|------------|---------|
 | `utils/logger.js` | 統一ログシステム（レベル、色、タイムスタンプ、コンテキスト） | 18+ファイルから使用 |
 | `utils/timezone.js` | タイムゾーンユーティリティ（Intl.DateTimeFormat） | Nudge/メトリクス計算 |
-| `utils/jwt.js` | JWT HS256 署名 | auth/entitlement, refreshService, apple |
+| `utils/jwt.js` | JWT HS256 署名 | refreshService, apple, mobile/entitlement |
 
 ### lib/
 
@@ -662,8 +692,8 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 
 | ディレクトリ | ファイル数 | 内容 | なぜ必要 |
 |------------|----------|------|---------|
-| `agents/__tests__/` | 5 | commander, crossPlatformLearning, dayCycling, reasoningLogger, scheduleMap | agents/ テスト |
-| `jobs/__tests__/` | 3 | generateNudges, nudgeHelpers, syncCrossPlatform | jobs/ テスト |
+| `agents/__tests__/` | 4 | commander, crossPlatformLearning, reasoningLogger, scheduleMap | agents/ テスト |
+| `jobs/__tests__/` | 2 | generateNudges, nudgeHelpers | jobs/ テスト（syncCrossPlatform テスト有無は実装時確認） |
 | `routes/admin/__tests__/` | 2 | tiktok, xposts | admin ルートテスト |
 | `services/__tests__/` | 3 | hookSelector, userTypeService, wisdomExtractor | services/ テスト |
 
@@ -685,7 +715,6 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | 上記「残すファイル一覧」の変更（Phase B/C のクリーンアップ対象を除く） | 全て iOS/Admin/Cron アクティブ |
 | `apps/landing/` の構造変更 | テキスト修正 + 未使用コンポーネント削除のみ |
 | 本番 DB のテーブル/カラム削除 | schema.prisma 編集 + generate のみ |
-| `agents/dayCycling.js` の削除 | import ゼロだが 1.5.0 新規追加。テストあり。別途確認 |
 | `services/userTypeService.js` の削除 | ルート（userType.js）は削除するがサービスは `generateNudges.js` cron が使用中 |
 
 ---
@@ -700,6 +729,21 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | `stripe` | 削除 | 不使用 | なし |
 
 **マージ順序**: backend-cleanup → one-buddha。削除を先に。
+
+---
+
+## v6 → v7 変更点サマリー（KEEP リスト全件監査）
+
+| # | 変更 | 理由 |
+|---|------|------|
+| 1 | `routes/auth/entitlement.js` + `api/auth/entitlement.js` を KEEP → A-19 削除に移動 | iOS は `/mobile/entitlement` を使う。`/auth/entitlement` は呼ばれない |
+| 2 | `routes/auth/logout.js` を KEEP → A-19 削除に移動 | iOS は RevenueCat ネイティブ `logOut()` を使う |
+| 3 | `routes/nudge/generate.js` を KEEP → A-19 削除に移動 | POST: cron は JS 直接実行。GET: iOS は `/mobile/nudge/today` を使用。両方 DEAD |
+| 4 | `modules/nudge/policy/` 全3ファイル（linTS, mentalBandit, wakeBandit）を KEEP → A-20 削除に移動 | 全て import ゼロ。linTS は mentalBandit/wakeBandit のみが使用、両方 DEAD |
+| 5 | `jobs/aggregateTypeStats.js` を KEEP → A-21 削除に移動 | エントリポイントなし。Railway cron にも server.js にも参照なし |
+| 6 | `agents/dayCycling.js` + テスト を KEEP → A-21 削除に移動 | v5 「要別途確認」→ v7 で DEAD 確定（import ゼロ） |
+| 7 | `services/guestSessions.js` を KEEP → A-21 削除に移動 | consumer: desktopSession（A-6 削除）+ auth/entitlement（A-19 削除）→ ゼロ |
+| 8 | 合計削除量を ~80 → ~90 ファイル、~8,800 → ~11,000 行に更新 | A-19〜A-21 の追加分 |
 
 ---
 
@@ -752,11 +796,14 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | A-7〜A-12 (Desktop Agent 系) | ~40+ | ~3,500+ |
 | A-13〜A-16 (Dead utils/scripts) | ~5 | ~400 |
 | A-18 (Dead mobile routes/modules) | 6 | ~800 |
+| A-19 (Dead auth/nudge routes) | 4 | ~600 |
+| A-20 (Dead bandit policy) | 3 | ~500 |
+| A-21 (Dead jobs/agents/services) | 3+1テスト | ~400 |
 | A-17 (npm packages) | — | package.json |
 | A-Landing | 4削除 + 3修正 | ~200 |
 | Phase B | 2ファイル修正 | ~300 |
 | Phase C (Prisma) | 8モデル/フィールド | ~100 |
-| **合計** | **~80+ファイル削除 + ~6修正** | **~8,800+行** |
+| **合計** | **~90+ファイル削除 + ~6修正** | **~11,000+行** |
 
 ---
 
@@ -773,6 +820,10 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 | agents/ 誤削除 | generateNudges.js 等が使用確認済み。KEEP リストに明記 |
 | openai 誤削除 | @openai/agents の peer dep。KEEP に明記 |
 | npm パッケージ誤削除 | ⚠️ マークは実装時 grep 必須 |
+| auth/logout 削除で refreshService 破壊 | refreshService は refresh.js + account.js も使用。logout 削除で孤児化しない |
+| guestSessions 削除 | consumer 全て削除済み（desktopSession A-6, auth/entitlement A-19） |
+| bandit policy 削除で nudge 破壊 | nudge.js は mentalBandit/wakeBandit を import しない。stateBuilder + rewardCalculator のみ使用 |
+| nudge/generate.js 削除で LLM Nudge 破壊 | cron は jobs/generateNudges.js を直接実行。iOS は /mobile/nudge/today を使用。別系統 |
 | Prisma モデル削除 | generate のみ。DB カラム残置 |
 
 ### ロールバック・監視
@@ -781,6 +832,6 @@ iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep 
 |------|------|
 | ロールバック | `git revert` Phase 単位。Railway 自動再デプロイ |
 | 監視: API 5xx | Railway ログ 30 分間 |
-| 監視: iOS | `/mobile/*`, `/auth/apple/*`, `/billing/revenuecat/*`, `/nudge/generate` 正常応答確認 |
+| 監視: iOS | `/mobile/*`, `/auth/apple/*`, `/billing/revenuecat/*` 正常応答確認 |
 | 監視: Landing | Netlify 主要ページ 404 確認 |
 | 判断基準 | 5xx 1% 超 → 即 revert |

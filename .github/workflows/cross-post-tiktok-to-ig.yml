@@ -1,0 +1,50 @@
+name: Cross-Post TikTok to Instagram
+
+on:
+  schedule:
+    - cron: '0 6 * * *'    # 15:00 JST
+    - cron: '0 16 * * *'   # 01:00 JST (next day)
+  workflow_dispatch: {}      # Manual trigger
+
+concurrency:
+  group: cross-post-tiktok-ig
+  cancel-in-progress: false
+
+env:
+  BLOTATO_API_KEY: ${{ secrets.BLOTATO_API_KEY }}
+  APIFY_API_TOKEN: ${{ secrets.APIFY_API_TOKEN }}
+  SLACK_METRICS_WEBHOOK_URL: ${{ secrets.SLACK_METRICS_WEBHOOK_URL }}
+
+jobs:
+  cross-post:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install -r scripts/cross-poster/requirements.txt
+
+      - name: Restore processed IDs cache
+        uses: actions/cache/restore@v4
+        with:
+          path: scripts/cross-poster/processed_ids.json
+          key: cross-post-processed-ids-${{ github.run_id }}
+          restore-keys: |
+            cross-post-processed-ids-
+
+      - name: Run cross-poster
+        working-directory: scripts/cross-poster
+        run: python cross_post_tiktok_to_ig.py
+
+      - name: Save processed IDs cache
+        if: always()
+        uses: actions/cache/save@v4
+        with:
+          path: scripts/cross-poster/processed_ids.json
+          key: cross-post-processed-ids-${{ github.run_id }}

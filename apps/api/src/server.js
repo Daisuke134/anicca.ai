@@ -3,7 +3,6 @@ process.env.MEM0_TELEMETRY = 'false';
 
 import express from 'express';
 import cors from 'cors';
-import { initDatabase } from './services/tokens/slackTokens.supabase.js';
 import { runMigrationsOnce } from './lib/migrate.js';
 import apiRouter from './routes/index.js';
 import { pool } from './lib/db.js';
@@ -17,9 +16,8 @@ if (process.env.NODE_ENV !== 'production') {
 async function initializeServer() {
   // マイグレーション（初回のみ実行）
   await runMigrationsOnce();
-  await initDatabase();
-  console.log('✅ Database initialized. VoIP dispatcher disabled.');
-  
+  console.log('✅ Database initialized.');
+
   // 月次クレジットジョブ（UTC 00:05 付近で起動、当月未付与のみ実行）
   const { runMonthlyCredits } = await import('./jobs/monthlyCredits.js');
   setInterval(async () => {
@@ -53,7 +51,6 @@ process.on('unhandledRejection', (reason, promise) => {
       reason?.stack?.includes('captureEvent') ||
       reason?.cause?.code === 'ETIMEDOUT' ||
       (reason?.cause?.errors && Array.isArray(reason.cause.errors))) {
-    // テレメトリーエラーは無視（アプリ動作に影響なし）
     return;
   }
   console.error('Unhandled Rejection:', reason);
@@ -67,19 +64,17 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const stripeWebhookPath = '/api/billing/webhook/stripe';
 const revenuecatWebhookPath = '/api/billing/webhook/revenuecat';
-app.use(stripeWebhookPath, express.raw({ type: 'application/json' }));
 app.use(revenuecatWebhookPath, express.raw({ type: 'application/json' }));
 
 const jsonParser = express.json({ limit: '50mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '50mb' });
 app.use((req, res, next) => {
-  if (req.originalUrl === stripeWebhookPath || req.originalUrl === revenuecatWebhookPath) return next();
+  if (req.originalUrl === revenuecatWebhookPath) return next();
   return jsonParser(req, res, next);
 });
 app.use((req, res, next) => {
-  if (req.originalUrl === stripeWebhookPath || req.originalUrl === revenuecatWebhookPath) return next();
+  if (req.originalUrl === revenuecatWebhookPath) return next();
   return urlencodedParser(req, res, next);
 });
 
@@ -110,7 +105,7 @@ if (missingVars.length > 0) {
 
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Anicca Proxy Server running on port ${PORT}`);
+  console.log(`🚀 Anicca API Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

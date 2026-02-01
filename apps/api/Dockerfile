@@ -26,7 +26,7 @@ RUN npm ci
 
 # Copy Prisma schema and generate client
 COPY prisma ./prisma
-RUN npx prisma generate
+RUN npx prisma@6 generate
 
 # Copy only required application files to reduce build context
 COPY src ./src

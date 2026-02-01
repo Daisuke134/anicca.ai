@@ -1,6 +1,6 @@
-# API リファクタリング ゲームプラン v4
+# API リファクタリング ゲームプラン v6
 
-**日付**: 2026-01-29（2026-02-01 深層監査 v4 — 全ファイル完全調査反映）
+**日付**: 2026-01-29（2026-02-01 v6 — iOS Config.swift 完全監査 + dead mobile routes/modules 追加削除）
 **対象**: `apps/api/src/` + `apps/landing/`
 **ステータス**: 計画中（GATE 1 レビュー待ち）
 **ブランチ**: dev → feature/backend-cleanup ワークツリーで実装
@@ -9,11 +9,13 @@
 
 ## 調査方法
 
-サブエージェント計15並列で `apps/api/src/` 内の全ファイルを調査。各ファイルについて:
-1. 何をしているか
-2. 誰が import しているか（完全な呼び出しチェーン）
-3. iOS アプリが実際にそのコードパスを呼ぶか
-4. DEAD / ALIVE の判定と証拠
+サブエージェント計18並列（v4: 15 + v5: 3追加検証）+ v6 iOS Config.swift 完全監査で調査。
+
+**v6 の追加監査方法**:
+1. iOS `Config.swift` の全エンドポイント定義を抽出
+2. `aniccaios/aniccaios/` + `aniccaios/AniccaNotificationService/` 全体を grep して実際の API 呼び出しを網羅
+3. バックエンド `routes/index.js` → 各ルートファイル → 全55エンドポイントを列挙
+4. iOS 呼び出しリスト × バックエンドルートリストをクロスリファレンス → iOS が呼ばないルートを特定
 
 ---
 
@@ -21,10 +23,13 @@
 
 | カテゴリ | ファイル数 | 状態 |
 |---------|----------|------|
-| iOS アクティブ（mobile/, nudge/, auth/apple, billing/revenuecat等） | ~25 | ✅ KEEP |
-| Admin/TikTok Agent（admin/tiktok, admin/hookCandidates） | 2 | ✅ KEEP |
-| Jobs アクティブ（generateNudges, monthlyCredits, aggregateTypeStats） | 4 | ✅ KEEP |
-| Modules アクティブ（nudge, memory, insights, metrics, simulation） | ~10 | ✅ KEEP |
+| iOS アクティブ（mobile/, nudge/, auth/apple, billing/revenuecat等） | ~20 | ✅ KEEP |
+| Admin/TikTok Agent（admin/tiktok, admin/hookCandidates, admin/xposts） | 3 | ✅ KEEP |
+| Agents（commander, crossPlatformLearning, groundingCollectors等） | 6+5テスト | ✅ KEEP |
+| Jobs アクティブ（generateNudges, monthlyCredits, aggregateTypeStats, syncCrossPlatform） | 5 | ✅ KEEP |
+| Modules アクティブ（nudge, memory） | ~7 | ✅ KEEP |
+| **Dead Mobile Routes（iOS Config.swift 監査で発覚）** | 3 | ❌ DELETE |
+| **Dead Modules（behavior.js 連鎖で孤児化）** | 4 | ❌ DELETE |
 | **Stripe Desktop 残骸** | 7+ | ❌ DELETE |
 | **Google OAuth Desktop 残骸** | 4 | ❌ DELETE |
 | **MCP GCal 孤児** | 6 | ❌ DELETE |
@@ -36,17 +41,17 @@
 | **proxy/claude（Desktop Agent 専用）** | 2 | ❌ DELETE |
 | **preview/app（Desktop Agent プレビュー）** | 3 | ❌ DELETE |
 | **Slack 全コード（iOS 未使用）** | 4+ | ❌ DELETE |
-| **OpenAI Realtime 全コード（iOS Voice 削除済み）** | 3+ | ❌ DELETE |
-| **Desktop/Web Realtime セッション** | 3+ | ❌ DELETE |
+| **OpenAI Realtime コード（iOS Voice 削除済み）** | 2 | ❌ DELETE |
+| **Desktop/Web Realtime セッション** | 5 | ❌ DELETE |
 | **workerMemory（parallel-sdk 専用）** | 1 | ❌ DELETE |
 | **envelope crypto（gcal 削除で孤児化）** | 1 | ❌ DELETE |
-| **Dead utils** | 2 | ❌ DELETE |
+| **Dead utils** | 3 | ❌ DELETE |
 | **One-time scripts** | 2 | ❌ DELETE |
-| **未使用 npm パッケージ** | 13+ | ❌ DELETE |
-| Desktop 参照混在ファイル（config, subscriptionStore 等） | 3 | ⚠️ CLEAN |
+| **未使用 npm パッケージ** | 15+ | ❌ DELETE |
+| Desktop 参照混在ファイル（config, subscriptionStore, server.js 等） | 3 | ⚠️ CLEAN |
 | Landing Desktop 残骸 | 4修正 + 3削除 | ⚠️ CLEAN/DELETE |
 
-**合計削除**: ~70ファイル以上 + ~7,000行以上
+**合計削除**: ~75ファイル以上 + ~8,000行以上
 
 ---
 
@@ -87,6 +92,72 @@
 | iOS Config.swift | URL 定義だけ孤児として残存（呼び出しコードなし） |
 | 結論 | サーバー側 realtime コードは完全に孤児。iOS クライアントが存在しない |
 
+### contextSnapshot.js は DEAD（v6 修正 — v5 ALIVE 判定を撤回）
+
+| 証拠 | 詳細 |
+|------|------|
+| v5 時点の判定 | behavior.js L4 で import → ALIVE |
+| v6 での発見 | **behavior.js 自体が DEAD**（iOS Config.swift に `/mobile/behavior/summary` なし） |
+| consumer 一覧 | 1. behavior.js（DEAD）、2. realtime.js（DEAD） → consumer ゼロ |
+| 結論 | **削除対象に変更**（A-18 で削除） |
+
+### iOS Config.swift 完全監査（v6 新規）
+
+iOS が実際に呼ぶエンドポイントを `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep で確定。
+
+**iOS が呼ぶ10エンドポイント（確定）:**
+
+| # | エンドポイント | iOS ファイル |
+|---|--------------|-------------|
+| 1 | POST `/auth/apple` | AuthCoordinator.swift |
+| 2 | GET `/auth/apple/health` | AuthHealthCheck.swift |
+| 3 | POST `/auth/refresh` | NetworkSessionManager.swift |
+| 4 | GET/PUT `/mobile/profile` | AppState.swift / ProfileSyncService.swift |
+| 5 | DELETE `/mobile/account` | MyPathTabView.swift |
+| 6 | GET `/mobile/entitlement` | SubscriptionManager.swift |
+| 7 | POST `/billing/revenuecat/sync` | SubscriptionManager.swift |
+| 8 | POST `/mobile/nudge/trigger` | NudgeTriggerService.swift |
+| 9 | POST `/mobile/nudge/feedback` | NudgeFeedbackService.swift |
+| 10 | GET `/mobile/nudge/today` | LLMNudgeService.swift |
+
+**+ Notification Service Extension が呼ぶ1エンドポイント:**
+
+| # | エンドポイント | iOS ファイル |
+|---|--------------|-------------|
+| 11 | POST `/mobile/nudge/pre-reminder` | AniccaNotificationService/NotificationService.swift:86 |
+
+**バックエンドに存在するが iOS が呼ばない mobile ルート（DEAD）:**
+
+| ルート | ファイル | 理由 |
+|--------|---------|------|
+| GET `/mobile/behavior/summary` | behavior.js | Config.swift に不在。iOS コード 0件 |
+| GET `/mobile/user-type` | userType.js | Config.swift に不在。iOS コード 0件 |
+| GET `/mobile/realtime/session` + 5 endpoints | realtime.js | Config.swift に URL 定義あるが呼び出しコードなし（VoiceSessionController 削除済み） |
+
+**Config.swift に定義あるが呼び出しなし（孤児 URL）:**
+
+| URL | 状態 |
+|-----|------|
+| `realtimeSessionURL` | 呼び出しコードなし（VoiceSessionController 削除済み） |
+| `realtimeSessionStopURL` | 同上 |
+| `feelingStartURL` | 呼び出しコードなし、バックエンドにもハンドラなし |
+| `feelingEndURL` | 同上 |
+
+### openai npm パッケージは直接使われていないが KEEP（v5 修正）
+
+| 証拠 | 詳細 |
+|------|------|
+| `from 'openai'` / `require('openai')` | grep 0件。直接 import なし |
+| `@openai/agents` | commander.js 等で使用。peer dependency として `openai` が必要 |
+| 結論 | `openai` は `@openai/agents` の peer dep として **残す** |
+
+### Phase D feeling バグは存在しない（v5 修正）
+
+| 証拠 | 詳細 |
+|------|------|
+| `routes/mobile/index.js` | grep "feeling" = 0件。feelingRouter 参照なし |
+| 結論 | 過去のコミットで既に修正済み。Phase D 削除 |
+
 ### @composio/*, @vercel/mcp-adapter は全て未使用（確定）
 
 import/require ゼロ。
@@ -94,6 +165,15 @@ import/require ゼロ。
 ### /mcp/gcal は完全に孤児（確定・ユーザー確認済み）
 
 呼び出し元ゼロ。
+
+---
+
+## ⚠️ 重要: routes/index.js アトミック修正ルール
+
+**Phase A の各削除ステップで、対応する `routes/index.js` の `app.use()` マウントを同時に削除すること。**
+
+ファイル削除だけして routes/index.js を後回しにするとサーバーが起動時にクラッシュする。
+各 A-X の「同時修正」セクションに routes/index.js の修正を明記。
 
 ---
 
@@ -109,14 +189,17 @@ import/require ゼロ。
 | 4 | `src/routes/billing/checkout-session.js` | ルートマウント |
 | 5 | `src/routes/billing/portal-session.js` | ルートマウント |
 | 6 | `src/routes/billing/webhook/stripe.js` | ルートマウント |
-| 7 | `src/services/stripe/` (全ファイル) | Stripe サービス層 |
+| 7 | `src/services/stripe/` (全3ファイル: checkout.js, client.js, webhookHandler.js) | Stripe サービス層 |
+
+**⚠️ A-1 は必ず1コミットで実施**（#7 stripe/ 削除と #9 subscriptionStore.js クリーンアップを分離すると ESM static import が解決できずサーバークラッシュ）
 
 **同時修正（サーバークラッシュ防止）**:
 
 | # | ファイル | 作業 |
 |---|---------|------|
 | 8 | `src/routes/billing/index.js` | checkout-session, portal-session, webhook/stripe の import/マウント削除。RC のみ残す |
-| 9 | `src/services/subscriptionStore.js` | `./stripe/client.js` import 削除、`ensureStripeCustomer()` / `recordStripeEvent()` / `updateSubscriptionFromStripe()` 削除、SQL 内 stripe 参照削除、`ENTITLEMENT_SOURCE.STRIPE` 削除 |
+| 9 | `src/services/subscriptionStore.js` | **Stripe 関連**: L2 `./stripe/client.js` import 削除、`ensureStripeCustomer()` / `recordStripeEvent()` / `updateSubscriptionFromStripe()` / `clearSubscription()` 削除、`ENTITLEMENT_SOURCE.STRIPE` 削除、L244 `getEntitlementState()` の fallback を `ENTITLEMENT_SOURCE.STRIPE` → `'revenuecat'` に変更（null entitlement_source の既存ユーザー保護）、`normalizeStatus()` の Stripe ブランチ（L102-113: trialing/past_due/incomplete 等）削除。**Realtime 関連**: `getTodayUsage()` / `startUsageSession()` / `finishUsageSessionAndBill()` / `canUseRealtime()` / `getMonthlyUsage()` / `resolveMonthlyLimit()` 削除、`getEntitlementState()` 内の usage 計算フィールド削除（Realtime 削除後は無意味） |
+| 10 | `src/server.js` | Stripe webhook 参照削除（L70 `stripeWebhookPath` 定義、L72 `express.raw()` ミドルウェア、L78/L82 の条件分岐） |
 
 ### A-2: Google OAuth Desktop 残骸削除
 
@@ -125,15 +208,27 @@ import/require ゼロ。
 | 1 | `src/api/auth/google/oauth.js` | Desktop 専用 |
 | 2 | `src/api/auth/google/callback.js` | Desktop 専用 |
 | 3 | `src/api/auth/google/refresh.js` | Desktop 専用 |
-| 4 | `src/routes/auth/google.js` | ルートマウント |
+| 4 | `src/routes/auth/google/index.js` | ルートマウント（ディレクトリごと削除） |
+
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 5 | `src/routes/index.js` | auth/google マウント削除 |
 
 ### A-3: MCP GCal 孤児削除
 
 | # | ファイル | 理由 |
 |---|---------|------|
-| 1 | `src/api/mcp/gcal/` (全ファイル) | 呼び出し元ゼロ |
+| 1 | `src/api/mcp/gcal/` (4ファイル: callback.js, disconnect.js, oauth-url.js, status.js) | 呼び出し元ゼロ |
 | 2 | `src/routes/mcp/gcal/index.js` | ルートマウント |
 | 3 | `src/services/googleTokens.js` | gcal 専用（自己参照のみ） |
+
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 4 | `src/routes/index.js` | mcp/gcal マウント削除 |
 
 ### A-4: Slack 全コード削除（iOS 未使用）
 
@@ -150,21 +245,23 @@ import/require ゼロ。
 | # | ファイル | 作業 |
 |---|---------|------|
 | 6 | `src/server.js` | slackTokens import と `initDatabase()` 呼び出し削除 |
+| 7 | `src/routes/index.js` | auth/slack マウント削除 |
 
-### A-5: OpenAI Realtime 全コード削除（iOS Voice 機能削除済み）
+### A-5: OpenAI Realtime コード削除（iOS Voice 機能削除済み）
 
 | # | ファイル | 理由 |
 |---|---------|------|
 | 1 | `src/services/openaiRealtimeService.js` | iOS の VoiceSessionController は 2026-01-20 に削除。呼び出し元なし |
 | 2 | `src/routes/mobile/realtime.js` | 6エンドポイント全て iOS から呼ばれない（Config.swift に URL だけ残存、呼び出しコードなし） |
-| 3 | `src/modules/realtime/contextSnapshot.js` | realtime.js と desktop proxy のみ使用 → 両方削除で孤児化 |
+
+**⚠️ contextSnapshot.js は A-18 で別途削除**: behavior.js 自体が DEAD と判明（v6）。consumer ゼロ。
 
 **同時修正**:
 
 | # | ファイル | 作業 |
 |---|---------|------|
-| 4 | `src/routes/mobile/index.js` | realtime ルートの import/マウント削除 |
-| 5 | iOS: `aniccaios/Config.swift` | 孤児 URL 定義（realtimeSessionURL, realtimeSessionStopURL）削除 |
+| 3 | `src/routes/mobile/index.js` | realtime ルートの import/マウント削除 |
+| 4 | iOS: `aniccaios/Config.swift` | 孤児 URL 定義（realtimeSessionURL, realtimeSessionStopURL, feelingStartURL, feelingEndURL）削除 |
 
 ### A-6: Desktop/Web Realtime セッション削除
 
@@ -173,7 +270,14 @@ import/require ゼロ。
 | 1 | `src/routes/realtime/desktop.js` | Desktop リアルタイムセッション — iOS 未使用 |
 | 2 | `src/routes/realtime/web.js` | Web リアルタイムセッション — iOS 未使用 |
 | 3 | `src/api/proxy/realtime/desktopSession.js` | Desktop セッションプロキシ — iOS 未使用 |
-| 4 | `src/api/proxy/realtime/webSession.js` | Web セッションプロキシ — iOS 未使用 |
+| 4 | `src/api/proxy/realtime/desktopStop.js` | Desktop セッション停止 — iOS 未使用 |
+| 5 | `src/api/proxy/realtime/webSession.js` | Web セッションプロキシ — iOS 未使用 |
+
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 6 | `src/routes/index.js` | realtime/desktop, realtime/web マウント削除 |
 
 **ディレクトリ確認**: `src/routes/realtime/` と `src/api/proxy/realtime/` が空になったらディレクトリごと削除。
 
@@ -202,6 +306,12 @@ import/require ゼロ。
 | 1-6 | `src/routes/tools/` (6ファイル: news, search_exa, claude_code, slack, playwright, transcribe) | Worker のみ |
 | 7-12 | `src/api/tools/` (web/news, web/search, web/browser, web/slack, sdk/claude-code, transcribe) | Worker のみ |
 
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 13 | `src/routes/index.js` | tools/* マウント全削除 |
+
 **ディレクトリ全体を削除**: `rm -rf src/routes/tools/ src/api/tools/`
 
 ### A-10: MCP clients + server 削除
@@ -211,7 +321,9 @@ import/require ゼロ。
 | 1-2 | `src/mcp/clients/` (exaClient, playwrightClient) | tools/ のみ使用 |
 | 3-4 | `src/services/mcp-clients/` (exaClient, playwrightClient) | 同上（重複パス） |
 | 5 | `src/mcp/servers/http/index.js` | Desktop Agent MCP サーバー |
-| 6 | `src/api/mcp/config.js` | 空オブジェクト返すだけ（ルートファイルは存在しない） |
+| 6 | `src/api/mcp/config.js` | 空オブジェクト返すだけ |
+
+**routes/index.js**: mcp マウントは `/mcp/gcal` のみ（A-3 で削除済み）。A-10 での routes/index.js 修正は不要。
 
 **ディレクトリ確認**: gcal + clients + servers + config.js 削除で `src/mcp/` が空 → ディレクトリごと削除。
 
@@ -222,6 +334,12 @@ import/require ゼロ。
 | 1 | `src/routes/proxy/claude.js` | Claude API プロキシ — Desktop のみ |
 | 2 | `src/api/proxy/claude.js` | 同上 |
 
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 3 | `src/routes/index.js` | proxy/claude マウント削除 |
+
 **注意**: A-6 の realtime proxy 削除と合わせて `src/api/proxy/` と `src/routes/proxy/` が空になったらディレクトリごと削除。
 
 ### A-12: preview/app 削除（Desktop Agent プレビュー）
@@ -231,6 +349,12 @@ import/require ゼロ。
 | 1 | `src/routes/preview/app.js` | Desktop Agent のみ |
 | 2 | `src/api/static/preview-app.js` | 同上 |
 | 3 | `src/api/static/preview/[...path].js` | 同上 |
+
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 4 | `src/routes/index.js` | preview/* マウント削除 |
 
 **ディレクトリ全体を削除**: `rm -rf src/routes/preview/ src/api/static/`
 
@@ -271,15 +395,57 @@ import/require ゼロ。
 | 4 | `stripe` | Stripe 全コード削除 | ✅ 確定 |
 | 5 | `@anthropic-ai/claude-code` | claude services + tools/claude_code 削除で不要 | ⚠️ grep |
 | 6 | `@modelcontextprotocol/sdk` | mcp/ 全削除で不要 | ⚠️ grep |
-| 7 | `playwright` | playwright MCP client 削除で不要 | ⚠️ grep |
-| 8 | `@google-cloud/kms` | envelope.js のみ使用 → A-14 削除で不要 | ⚠️ grep |
-| 9 | `exa-mcp-server` | mcp-clients/exaClient のみ使用 → A-10 削除で不要 | ⚠️ grep |
-| 10 | `busboy` | tools/transcribe のみ使用 → A-9 削除で不要 | ⚠️ grep |
-| 11 | `form-data` | tools/transcribe のみ使用 → A-9 削除で不要 | ⚠️ grep |
-| 12 | `mime-types` | api/static/preview のみ使用 → A-12 削除で不要 | ⚠️ grep |
-| 13 | `openai` | openaiRealtimeService 削除で不要かも | ⚠️ grep（generateNudges 等で使用の可能性） |
+| 7 | `@google-cloud/kms` | envelope.js のみ使用 → A-14 削除で不要 | ⚠️ grep |
+| 8 | `exa-mcp-server` | mcp-clients/exaClient のみ使用 → A-10 削除で不要 | ⚠️ grep |
+| 9 | `busboy` | tools/transcribe のみ使用 → A-9 削除で不要 | ⚠️ grep |
+| 10 | `form-data` | tools/transcribe のみ使用 → A-9 削除で不要 | ⚠️ grep |
+| 11 | `mime-types` | api/static/preview のみ使用 → A-12 削除で不要 | ⚠️ grep |
+| 12 | `@slack/web-api` | Slack 全コード削除（A-4） | ⚠️ grep |
+| 13 | `@google-cloud/text-to-speech` | tools/transcribe のみ使用 → A-9 削除で不要 | ⚠️ grep |
+| 14 | `node-cron` | parallel-sdk/core/Worker.js のみ使用 → A-7 削除で不要 | ⚠️ grep |
+| 15 | `axios` | api/auth/slack/oauth-callback.js のみ使用 → A-4 削除で不要 | ⚠️ grep |
+| 16 | `uuid` | parallel-sdk + api/tools/sdk のみ使用 → A-7/A-9 削除で不要 | ⚠️ grep |
+| 17 | `@js-temporal/polyfill` | import ゼロ。完全未使用 | ✅ 確定 |
+| 18 | `vercel` (devDependencies) | Desktop-era デプロイ用。Railway 移行後は不要 | ⚠️ grep |
+
+**KEEP（削除禁止）**:
+
+| パッケージ | 理由 |
+|-----------|------|
+| `openai` | `@openai/agents` の peer dependency。直接 import はないが必要 |
+| `@openai/agents` | agents/commander.js 等で使用（1.5.0 Cross-User Learning） |
 
 **注意**: ⚠️ は実装時に grep 確認必須。
+
+### A-18: Dead Mobile Routes & Modules 削除（v6 iOS Config.swift 監査で発覚）
+
+iOS `Config.swift` + `aniccaios/` + `AniccaNotificationService/` 全体の grep でクロスリファレンスした結果、以下のルート/モジュールは iOS から一切呼ばれていないと確定。
+
+#### Dead Routes
+
+| # | ファイル | エンドポイント | DEAD 理由 |
+|---|---------|-------------|----------|
+| 1 | `src/routes/mobile/behavior.js` | GET `/mobile/behavior/summary` | iOS Config.swift に不在。iOS コード grep 0件 |
+| 2 | `src/routes/mobile/userType.js` | GET `/mobile/user-type` | iOS Config.swift に不在。iOS コード grep 0件 |
+
+**注意**: `services/userTypeService.js` は **削除しない**。`jobs/generateNudges.js` L17 で `classifyUserType()` を import（cron 使用）。ルートファイル（userType.js）のみ削除。
+
+#### Dead Modules（behavior.js 連鎖で孤児化）
+
+| # | ファイル | 唯一の consumer | consumer の状態 |
+|---|---------|----------------|---------------|
+| 3 | `src/modules/simulation/futureScenario.js` | behavior.js | DEAD |
+| 4 | `src/modules/insights/generateTodayInsight.js` | behavior.js | DEAD |
+| 5 | `src/modules/metrics/stateBuilder.js` | behavior.js | DEAD |
+| 6 | `src/modules/realtime/contextSnapshot.js` | behavior.js + realtime.js | 両方 DEAD |
+
+**同時修正**:
+
+| # | ファイル | 作業 |
+|---|---------|------|
+| 7 | `src/routes/mobile/index.js` | behavior, userType ルートの import/マウント削除 |
+
+**ディレクトリ確認**: `src/modules/simulation/` が空 → ディレクトリ削除。`src/modules/insights/` が空 → ディレクトリ削除。`src/modules/metrics/` から stateBuilder.js 削除後、nudge 用 stateBuilder（`modules/nudge/features/stateBuilder.js`）は別ファイルなので影響なし。`src/modules/realtime/` は contextSnapshot.js 削除で空 → ディレクトリ削除。
 
 ### A-Landing: Landing Page クリーンアップ
 
@@ -322,27 +488,21 @@ import/require ゼロ。
 | 7 | `validateEnvironment()` | Stripe 関連警告削除 |
 | 8 | `logEnvironment()` | Stripe/Desktop ログ行削除 |
 
-### B-2: routes/index.js クリーンアップ
+### B-2: server.js 追加クリーンアップ
 
 | # | 作業 |
 |---|------|
-| 1 | 削除ルートの `app.use()` マウント全除去（auth/google, auth/slack, tools/*, mcp/*, billing/stripe系, proxy/*, preview/*, realtime/desktop, realtime/web） |
-| 2 | Desktop/Web 関連コメント削除 |
-| 3 | 最終確認: 残るマウントが全て iOS/Admin/Cron アクティブ |
+| 1 | Desktop/Agent 関連の起動ロジックがあれば削除 |
+| 2 | slackTokens/Stripe は Phase A で削除済み。残存がないか最終確認 |
 
-### B-3: server.js クリーンアップ
-
-| # | 作業 |
-|---|------|
-| 1 | slackTokens import/init 削除 |
-| 2 | Desktop/Agent 関連の起動ロジックがあれば削除 |
-
-### B-4: package.json 整理
+### B-3: package.json 整理
 
 | # | 作業 |
 |---|------|
 | 1 | 削除パッケージの残存参照確認 |
-| 2 | scripts セクションの Desktop 関連コマンド削除 |
+| 2 | scripts セクションの Desktop 関連コマンド削除（`dev`: `vercel dev`、`deploy`: `vercel --prod`） |
+| 3 | `description` 更新（"Proxy server for ANICCA AI Screen Narrator" → iOS API 用に更新） |
+| 4 | `keywords` 更新（"proxy", "gemini", "claude" 等 Desktop-era 用語削除） |
 
 ---
 
@@ -367,31 +527,17 @@ import/require ゼロ。
 
 ---
 
-## Phase D: バグ修正（調査で発見）
-
-### D-1: feeling.js ルート BROKEN
-
-| 項目 | 詳細 |
-|------|------|
-| 問題 | `routes/mobile/index.js` で `feelingRouter` を参照しているが、`routes/mobile/feeling.js` が存在しない |
-| iOS 側 | Config.swift で `/mobile/feeling/start` と `/mobile/feeling/end` を定義 |
-| 影響 | iOS が feeling エンドポイントを呼ぶとサーバーエラー |
-| 対応 | 調査: iOS アプリが実際にこのエンドポイントを呼んでいるか確認。呼んでいなければ参照削除。呼んでいれば実装が必要（別チケット） |
-
----
-
 ## 実行順序と受け入れ条件
 
 | ステップ | 作業 | 受け入れ条件 |
 |---------|------|-------------|
-| 1 | Phase A-1〜A-16（API Dead Code 大量削除） | `npm test` 全 PASS。routes/index.js に削除対象マウントなし |
+| 1 | Phase A-1〜A-18（API Dead Code 大量削除 + routes/index.js 同時修正） | `npm test` 全 PASS。routes/index.js に削除対象マウントなし |
 | 2 | A-17（npm パッケージ削除） | `npm install` 成功。`npm test` PASS |
 | 3 | A-Landing（Landing クリーンアップ） | `cd apps/landing && npm run build` 成功 |
 | 4 | Phase B（Desktop 参照除去） | `npm test` PASS。`grep -r "DESKTOP_MODE\|STRIPE_SECRET\|platform.*desktop" src/` = 0件 |
 | 5 | Phase C（Prisma 精査） | `npx prisma generate` 成功。`npm test` PASS |
-| 6 | Phase D（バグ修正） | feeling ルート問題解決 |
-| 7 | レビュー | サブエージェント並列レビュー ok |
-| 8 | push | — |
+| 6 | レビュー | サブエージェント並列レビュー ok |
+| 7 | push | — |
 
 ---
 
@@ -410,16 +556,37 @@ import/require ゼロ。
 | `routes/billing/revenuecat-sync.js` | RC 手動同期 | 課金状態修正 |
 | `routes/billing/webhook/revenuecat.js` | RC webhook | サブスク変更検知 |
 | `routes/mobile/account.js` | アカウント削除 | GDPR 対応 |
-| `routes/mobile/behavior.js` | 行動サマリー | iOS Behavior タブ |
 | `routes/mobile/entitlement.js` | サブスク状態確認 | iOS 課金チェック |
 | `routes/mobile/nudge.js` | Nudge trigger/feedback/today | iOS Nudge 通知コア |
-| `routes/mobile/preReminder.js` | Notification Extension からの事前リマインダー | iOS 通知拡張 |
+| `routes/mobile/preReminder.js` | Notification Extension からの事前リマインダー | `AniccaNotificationService/NotificationService.swift:86` で呼び出し確認済み |
 | `routes/mobile/profile.js` | プロフィール CRUD | iOS ユーザー設定 |
-| `routes/mobile/userType.js` | ユーザータイプ（T1-T4）取得 | iOS パーソナライズ |
 | `routes/mobile/index.js` | mobile ルートマウント | Express 構造 |
 | `routes/nudge/generate.js` | LLM Nudge 生成（cron） | Railway cron job |
 | `routes/admin/tiktok.js` | TikTok 投稿管理 | GitHub Actions TikTok Agent |
 | `routes/admin/hookCandidates.js` | Hook 候補選定 | GitHub Actions |
+| `routes/admin/xposts.js` | X（Twitter）投稿管理（/admin/x にマウント） | GitHub Actions |
+
+### api/ ハンドラ層
+
+| ファイル | 何をしている | なぜ必要 |
+|---------|------------|---------|
+| `api/auth/entitlement.js` | entitlement ハンドラ | routes/auth/entitlement.js から呼ばれる |
+| `api/billing/revenuecatSync.js` | RC sync ハンドラ | routes/billing から呼ばれる |
+| `api/billing/webhookRevenueCat.js` | RC webhook ハンドラ | routes/billing から呼ばれる |
+
+**注意**: `api/auth/apple/` ディレクトリは存在しない。Apple Sign-in ロジックは routes/auth/apple.js に直接実装されている。api/ 層の正確なファイル一覧は実装時に確認。
+
+### agents/ （1.5.0 Cross-User Learning で追加）
+
+| ファイル | 何をしている | なぜ必要 |
+|---------|------------|---------|
+| `agents/commander.js` | OpenAI Agents SDK で Nudge 生成を統括 | jobs/generateNudges.js から使用 |
+| `agents/crossPlatformLearning.js` | TikTok ↔ iOS 間の学習データ同期 | jobs/syncCrossPlatform.js から使用 |
+| `agents/groundingCollectors.js` | Nudge 生成用のグラウンディングデータ収集 | jobs/generateNudges.js から使用 |
+| `agents/reasoningLogger.js` | Commander の決定ログ + Slack 通知 | jobs/generateNudges.js から使用 |
+| `agents/scheduleMap.js` | Nudge スケジュール定義 + スロットテーブル | jobs/nudgeHelpers.js から使用 |
+| `agents/dayCycling.js` | 日付サイクル管理 | ⚠️ 現時点で import ゼロ（テストあり）。1.5.0 で追加されたが未統合の可能性。KEEP して別途確認 |
+| `agents/__tests__/` (5ファイル) | commander, crossPlatformLearning, dayCycling, reasoningLogger, scheduleMap のテスト | テストスイート |
 
 ### services/
 
@@ -438,21 +605,18 @@ import/require ゼロ。
 | `services/hookSelector.js` | Thompson Sampling で Hook A/B テスト | TikTok Agent |
 | `services/wisdomExtractor.js` | 高パフォーマンス Hook パターン抽出 | TikTok Agent |
 | `services/userTypeService.js` | ユーザータイプ分類（T1-T4） | iOS + Nudge 生成 |
-| `services/subscriptionStore.js` | サブスク状態管理（Stripe 参照は Phase B で除去） | iOS 課金確認 |
+| `services/subscriptionStore.js` | サブスク状態管理（Stripe + Realtime 関数は A-1 で除去） | iOS 課金確認 |
 
 ### modules/
 
 | ファイル | 何をしている | なぜ必要 |
 |---------|------------|---------|
-| `modules/insights/generateTodayInsight.js` | GPT で日次インサイト生成 | iOS Behavior タブ |
-| `modules/memory/mem0Client.js` | Mem0 AI メモリ管理 | Nudge パーソナライズ |
-| `modules/metrics/stateBuilder.js` | 行動メトリクスサマリー構築 | iOS Behavior タブ |
+| `modules/memory/mem0Client.js` | Mem0 AI メモリ管理 | nudge.js, preReminder.js で使用（iOS Nudge パーソナライズ） |
 | `modules/nudge/features/stateBuilder.js` | Bandit モデル用特徴量エンコーディング | Nudge 選択 |
 | `modules/nudge/policy/linTS.js` | Linear Thompson Sampling アルゴリズム | Nudge 最適化コア |
 | `modules/nudge/policy/mentalBandit.js` | メンタル系 Nudge バンディット | Nudge 選択 |
 | `modules/nudge/policy/wakeBandit.js` | 睡眠/起床系 Nudge バンディット | Nudge 選択 |
 | `modules/nudge/reward/rewardCalculator.js` | Nudge 報酬計算 | バンディット学習 |
-| `modules/simulation/futureScenario.js` | 未来シナリオ生成 | iOS Behavior タブ |
 
 ### jobs/
 
@@ -462,6 +626,7 @@ import/require ゼロ。
 | `jobs/monthlyCredits.js` | 月次仮想通貨付与 | server.js setInterval |
 | `jobs/nudgeHelpers.js` | Nudge 生成ヘルパー | generateNudges から使用 |
 | `jobs/aggregateTypeStats.js` | ユーザータイプ別 Nudge 統計集計 | Railway cron（CRON_MODE=aggregate_type_stats） |
+| `jobs/syncCrossPlatform.js` | TikTok ↔ iOS 間の学習データ同期 | generateNudges.js L13 で import |
 
 ### middleware/
 
@@ -493,7 +658,18 @@ import/require ゼロ。
 |---------|------------|---------|
 | `config/environment.js` | 環境変数一元管理（Phase B でクリーンアップ） | 全体基盤 |
 
-### その他
+### テスト
+
+| ディレクトリ | ファイル数 | 内容 | なぜ必要 |
+|------------|----------|------|---------|
+| `agents/__tests__/` | 5 | commander, crossPlatformLearning, dayCycling, reasoningLogger, scheduleMap | agents/ テスト |
+| `jobs/__tests__/` | 3 | generateNudges, nudgeHelpers, syncCrossPlatform | jobs/ テスト |
+| `routes/admin/__tests__/` | 2 | tiktok, xposts | admin ルートテスト |
+| `services/__tests__/` | 3 | hookSelector, userTypeService, wisdomExtractor | services/ テスト |
+
+**注意**: `src/generated/prisma/` は `prisma generate` の自動生成ファイル（~30ファイル）。手動管理対象外。
+
+### エントリポイント
 
 | ファイル | 何をしている | なぜ必要 |
 |---------|------------|---------|
@@ -509,6 +685,8 @@ import/require ゼロ。
 | 上記「残すファイル一覧」の変更（Phase B/C のクリーンアップ対象を除く） | 全て iOS/Admin/Cron アクティブ |
 | `apps/landing/` の構造変更 | テキスト修正 + 未使用コンポーネント削除のみ |
 | 本番 DB のテーブル/カラム削除 | schema.prisma 編集 + generate のみ |
+| `agents/dayCycling.js` の削除 | import ゼロだが 1.5.0 新規追加。テストあり。別途確認 |
+| `services/userTypeService.js` の削除 | ルート（userType.js）は削除するがサービスは `generateNudges.js` cron が使用中 |
 
 ---
 
@@ -516,12 +694,51 @@ import/require ゼロ。
 
 | パッケージ | backend-cleanup | one-buddha | 衝突 |
 |-----------|----------------|------------|------|
-| `@openai/agents` | — | ^0.4.4 | なし |
-| `openai` | 削除かも | ^6.17.0 | ⚠️ grep 確認（generateNudges で使用の可能性） |
+| `@openai/agents` | KEEP | ^0.4.4 | なし |
+| `openai` | **KEEP**（peer dep） | ^6.17.0 | なし |
 | `@composio/*` | 削除 | 不使用 | なし |
 | `stripe` | 削除 | 不使用 | なし |
 
 **マージ順序**: backend-cleanup → one-buddha。削除を先に。
+
+---
+
+## v5 → v6 変更点サマリー（iOS Config.swift 完全監査）
+
+| # | 変更 | 理由 |
+|---|------|------|
+| 1 | contextSnapshot.js を ALIVE → DEAD に変更 | behavior.js（唯一の live consumer）が DEAD と判明。consumer ゼロ |
+| 2 | `routes/mobile/behavior.js` を KEEP → A-18 削除に移動 | iOS Config.swift に `/mobile/behavior/summary` 不在。iOS コード grep 0件 |
+| 3 | `routes/mobile/userType.js` を KEEP → A-18 削除に移動 | iOS Config.swift に `/mobile/user-type` 不在。iOS コード grep 0件。ただし `userTypeService.js` は cron が使用 → KEEP |
+| 4 | `modules/simulation/futureScenario.js` を KEEP → A-18 削除に移動 | behavior.js 専用 → behavior.js DEAD で孤児化 |
+| 5 | `modules/insights/generateTodayInsight.js` を KEEP → A-18 削除に移動 | 同上 |
+| 6 | `modules/metrics/stateBuilder.js` を KEEP → A-18 削除に移動 | 同上 |
+| 7 | `modules/realtime/contextSnapshot.js` を KEEP → A-18 削除に移動 | 同上 |
+| 8 | preReminder.js の KEEP 根拠を強化 | `AniccaNotificationService/NotificationService.swift:86` で呼び出し確認 |
+| 9 | iOS Config.swift 孤児 URL に feeling（start/end）を追加 | バックエンドにハンドラなし、iOS にも呼び出しなし |
+| 10 | 合計削除量を ~75 → ~80 ファイル、~8,000 → ~8,800 行に更新 | A-18 の6ファイル追加分 |
+
+---
+
+## v4 → v5 変更点サマリー
+
+| # | 変更 | 理由 |
+|---|------|------|
+| 1 | contextSnapshot.js を A-5 削除リストから除外 | behavior.js L4 で import。iOS Behavior タブで使用 |
+| 2 | desktopStop.js を A-6 に追加 | 存在していたが v4 で漏れ |
+| 3 | agents/ (6ソース+5テスト) を KEEP リストに追加 | 1.5.0 Cross-User Learning の新サブシステム |
+| 4 | jobs/syncCrossPlatform.js を KEEP リストに追加 | generateNudges.js から import |
+| 5 | routes/admin/xposts.js を KEEP リストに追加 | /admin/x にマウント済み |
+| 6 | routes/index.js 修正を各 Phase A に統合 | ファイル削除と同時でないとサーバークラッシュ |
+| 7 | server.js Stripe 参照（L70,72,78,82）を A-1 に追加 | stripeWebhookPath 定義が残存 |
+| 8 | subscriptionStore.js Realtime 関数を A-1 に追加 | A-5/A-6 削除後に孤児化する4関数 |
+| 9 | Phase D 削除 | feeling バグは存在しない（grep 0件） |
+| 10 | openai npm を KEEP に変更 | @openai/agents の peer dependency |
+| 11 | @slack/web-api を A-17 に追加 | Slack 全削除（A-4）で不要 |
+| 12 | @google-cloud/text-to-speech を A-17 に追加 | tools/transcribe 削除で不要 |
+| 13 | api/ ハンドラ層を KEEP リストに追加 | routes/ から呼ばれるハンドラ |
+| 14 | テストディレクトリを KEEP リストに追加 | テストスイート |
+| 15 | dayCycling.js を「削除禁止」に明記 | import ゼロだが新規追加、要別途確認 |
 
 ---
 
@@ -534,11 +751,12 @@ import/require ゼロ。
 | A-5〜A-6 (Realtime) | ~7 | ~1,200 |
 | A-7〜A-12 (Desktop Agent 系) | ~40+ | ~3,500+ |
 | A-13〜A-16 (Dead utils/scripts) | ~5 | ~400 |
+| A-18 (Dead mobile routes/modules) | 6 | ~800 |
 | A-17 (npm packages) | — | package.json |
 | A-Landing | 4削除 + 3修正 | ~200 |
-| Phase B | 3ファイル修正 | ~300 |
+| Phase B | 2ファイル修正 | ~300 |
 | Phase C (Prisma) | 8モデル/フィールド | ~100 |
-| **合計** | **~70+ファイル削除 + ~6修正** | **~8,000+行** |
+| **合計** | **~80+ファイル削除 + ~6修正** | **~8,800+行** |
 
 ---
 
@@ -546,9 +764,14 @@ import/require ゼロ。
 
 | リスク | 対策 |
 |--------|------|
-| Stripe 削除でクラッシュ | subscriptionStore.js + billing/index.js を同時修正（A-1 で明記） |
+| Stripe 削除でクラッシュ | subscriptionStore.js + billing/index.js + server.js を同時修正（A-1 で明記） |
+| routes/index.js 不整合 | 各 Phase A で同時修正（アトミックルール適用） |
 | Slack 削除で Worker 破壊 | parallel-sdk 自体が死コード。Worker は存在しない |
 | Realtime 削除で iOS 破壊 | iOS VoiceSessionController は 2026-01-20 に削除済み。Config.swift の孤児 URL も同時削除 |
+| behavior.js 削除で preReminder.js 破壊 | preReminder.js は behavior.js を import しない。独立（mem0Client のみ共有） |
+| contextSnapshot.js 誤 KEEP | v6 で DEAD 確定。consumer（behavior.js + realtime.js）両方 DEAD |
+| agents/ 誤削除 | generateNudges.js 等が使用確認済み。KEEP リストに明記 |
+| openai 誤削除 | @openai/agents の peer dep。KEEP に明記 |
 | npm パッケージ誤削除 | ⚠️ マークは実装時 grep 必須 |
 | Prisma モデル削除 | generate のみ。DB カラム残置 |
 

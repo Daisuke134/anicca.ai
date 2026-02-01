@@ -67,19 +67,17 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 
-const stripeWebhookPath = '/api/billing/webhook/stripe';
 const revenuecatWebhookPath = '/api/billing/webhook/revenuecat';
-app.use(stripeWebhookPath, express.raw({ type: 'application/json' }));
 app.use(revenuecatWebhookPath, express.raw({ type: 'application/json' }));
 
 const jsonParser = express.json({ limit: '50mb' });
 const urlencodedParser = express.urlencoded({ extended: true, limit: '50mb' });
 app.use((req, res, next) => {
-  if (req.originalUrl === stripeWebhookPath || req.originalUrl === revenuecatWebhookPath) return next();
+  if (req.originalUrl === revenuecatWebhookPath) return next();
   return jsonParser(req, res, next);
 });
 app.use((req, res, next) => {
-  if (req.originalUrl === stripeWebhookPath || req.originalUrl === revenuecatWebhookPath) return next();
+  if (req.originalUrl === revenuecatWebhookPath) return next();
   return urlencodedParser(req, res, next);
 });
 

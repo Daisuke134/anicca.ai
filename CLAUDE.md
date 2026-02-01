@@ -1875,7 +1875,7 @@ await prisma.dependentTable.upsert({ ... });
 |---|------|---------|
 | 1 | Secret 一覧確認 | `gh secret list -R Daisuke134/anicca.ai` |
 | 2 | **URL が正しいか確認** | `anicca-proxy-production`（`anicca-api-production` ではない） |
-| 3 | 手動実行 | `gh workflow run "Name" --ref dev`（**mainにマージ不要。`--ref dev`で実行可能**） |
+| 3 | 手動実行 | `gh workflow run "Name" --ref dev`（**詳細は `.cursor/plans/gha-workflow-dispatch.md` 参照**） |
 | 4 | 結果確認 | `gh run list --workflow "Name" -L 3` |
 
 ### Prisma マイグレーション（既存DB）

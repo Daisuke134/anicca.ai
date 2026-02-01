@@ -66,12 +66,26 @@ async function runBackfill() {
         const batch = batchResult.rows;
         if (batch.length === 0) break;
 
+        // Filter out users without a profiles record (FK dependency)
+        const userIds = batch.map(u => u.user_id);
+        const profileCheck = await client.query(
+          `SELECT id FROM profiles WHERE id = ANY($1::uuid[])`,
+          [userIds]
+        );
+        const profileIdSet = new Set(profileCheck.rows.map(r => r.id));
+
         // Prepare batch UPSERT values
         const values = [];
         const placeholders = [];
         let paramIdx = 1;
 
         for (const user of batch) {
+          if (!profileIdSet.has(user.user_id)) {
+            console.warn(`[backfill] Skipping user ${user.user_id}: no profile record (FK dependency)`);
+            totalSkipped++;
+            totalProcessed++;
+            continue;
+          }
           const problems = Array.isArray(user.problems) ? user.problems : JSON.parse(user.problems || '[]');
           const result = classifyUserType(problems);
 

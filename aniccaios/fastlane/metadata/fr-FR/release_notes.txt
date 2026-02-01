@@ -1,0 +1,4 @@
+- Notifications plus intelligentes : nudges personnalisés par IA dès le Jour 2
+- Correction des notifications arrivant à 2-3h du matin
+- Refonte du timing des notifications pour éviter les doublons
+- Amélioration de la variété du contenu des notifications

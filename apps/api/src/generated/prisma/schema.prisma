@@ -64,31 +64,6 @@ model MobileProfile {
   @@map("mobile_profiles")
 }
 
-model MobileVoipToken {
-  userId      String   @map("user_id")
-  deviceToken String   @map("device_token")
-  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@id([userId, deviceToken])
-  @@map("mobile_voip_tokens")
-}
-
-// 注意: `mobile_alarm_schedules.id` は過去マイグレーションが UUID/TEXT で揺れている。
-// v0.3 の主要機能では必須ではないため、現DBの型に合わせて必要なら @db.Uuid/@db.Text を調整する。
-model MobileAlarmSchedule {
-  id         String    @id @map("id")
-  userId     String    @map("user_id")
-  habitType  String    @map("habit_type")
-  fireTime   DateTime  @map("fire_time") @db.Timestamptz
-  timezone   String
-  repeatRule String    @default("daily") @map("repeat_rule")
-  nextFireAt DateTime  @map("next_fire_at") @db.Timestamptz
-  createdAt  DateTime? @map("created_at") @db.Timestamptz
-  updatedAt  DateTime? @map("updated_at") @db.Timestamptz
-
-  @@map("mobile_alarm_schedules")
-}
-
 model UserSubscription {
   userId                          String    @id @map("user_id")
   plan                            String    @default("free")
@@ -117,17 +92,6 @@ model RealtimeUsageDaily {
   @@map("realtime_usage_daily")
 }
 
-model SubscriptionEvent {
-  eventId   String   @id @map("event_id")
-  userId    String?  @map("user_id")
-  type      String
-  provider  String   @default("revenuecat")
-  payload   Json?    @db.JsonB
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("subscription_events")
-}
-
 model UsageSession {
   sessionId     String    @id @map("session_id")
   userId        String    @map("user_id")
@@ -139,17 +103,6 @@ model UsageSession {
   updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
 
   @@map("usage_sessions")
-}
-
-model SensorAccessState {
-  userId            String   @id @map("user_id") @db.Uuid
-  screenTimeEnabled Boolean  @default(false) @map("screen_time_enabled")
-  sleepEnabled      Boolean  @default(false) @map("sleep_enabled")
-  stepsEnabled      Boolean  @default(false) @map("steps_enabled")
-  motionEnabled     Boolean  @default(false) @map("motion_enabled")
-  updatedAt         DateTime @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@map("sensor_access_state")
 }
 
 model MonthlyVcGrant {
@@ -209,26 +162,6 @@ model UserTrait {
   @@map("user_traits")
 }
 
-model DailyMetric {
-  userId           String    @map("user_id") @db.Uuid
-  date             DateTime  @db.Date
-  sleepDurationMin Int?      @map("sleep_duration_min")
-  sleepStartAt     DateTime? @map("sleep_start_at") @db.Timestamptz
-  wakeAt           DateTime? @map("wake_at") @db.Timestamptz
-  snsMinutesTotal  Int       @default(0) @map("sns_minutes_total")
-  snsMinutesNight  Int       @default(0) @map("sns_minutes_night")
-  steps            Int       @default(0)
-  sedentaryMinutes Int       @default(0) @map("sedentary_minutes")
-  activitySummary  Json      @default("{}") @map("activity_summary") @db.JsonB
-  mindSummary      Json      @default("{}") @map("mind_summary") @db.JsonB
-  insights         Json      @default("{}") @db.JsonB
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@id([userId, date])
-  @@map("daily_metrics")
-}
-
 model NudgeEvent {
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @map("user_id") @db.Uuid
@@ -258,35 +191,6 @@ model NudgeOutcome {
   event NudgeEvent @relation(fields: [nudgeEventId], references: [id], onDelete: Cascade)
 
   @@map("nudge_outcomes")
-}
-
-model FeelingSession {
-  id             String    @id @default(uuid()) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  feelingId      String    @map("feeling_id")
-  topic          String?
-  actionTemplate String?   @map("action_template")
-  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz
-  endedAt        DateTime? @map("ended_at") @db.Timestamptz
-  emaBetter      Boolean?  @map("ema_better")
-  summary        String?   @db.Text
-  transcript     Json?     @db.JsonB
-  context        Json      @default("{}") @db.JsonB
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("feeling_sessions")
-}
-
-model HabitLog {
-  id         String   @id @default(uuid()) @db.Uuid
-  userId     String   @map("user_id") @db.Uuid
-  habitId    String   @map("habit_id")
-  occurredOn DateTime @map("occurred_on") @db.Date
-  status     String
-  payload    Json     @default("{}") @db.JsonB
-  createdAt  DateTime @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("habit_logs")
 }
 
 model BanditModel {

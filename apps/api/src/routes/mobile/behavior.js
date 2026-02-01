@@ -5,8 +5,6 @@ import { buildContextSnapshot } from '../../modules/realtime/contextSnapshot.js'
 import { buildHighlights, buildTimeline, pickTodayInsight, getInsightFallback } from '../../modules/metrics/stateBuilder.js';  // ★ getInsightFallback 追加
 import { generateFutureScenario } from '../../modules/simulation/futureScenario.js';
 import { generateTodayInsight } from '../../modules/insights/generateTodayInsight.js';  // ★ 追加
-import prisma from '../../lib/prisma.js';
-
 const router = express.Router();
 const logger = baseLogger.withContext('MobileBehavior');
 
@@ -20,7 +18,7 @@ router.get('/summary', async (req, res) => {
     const snapshot = await buildContextSnapshot({ userId, deviceId });
     const tz = snapshot?.timezone || 'UTC';
     const lang = snapshot?.language || 'en';
-    const today = snapshot?.today_stats || await fetchLatestDailyMetric(snapshot?.profile_id);
+    const today = snapshot?.today_stats || null;
     const profileId = snapshot?.profile_id || null;
     const localDate = snapshot?.local_date || null;
 
@@ -33,16 +31,6 @@ router.get('/summary', async (req, res) => {
         traits: snapshot?.traits,
         language: lang
       });
-      // 生成できた場合は daily_metrics.insights に保存して同日中の再生成を防ぐ
-      if (todayInsight && today && profileId && localDate) {
-        const startOfDay = new Date(`${localDate}T00:00:00Z`);
-        const mergedInsights = { ...(today?.insights || {}), todayInsight };
-        // best-effort: 保存失敗でもUXは崩さない
-        prisma.dailyMetric.update({
-          where: { userId_date: { userId: profileId, date: startOfDay } },
-          data: { insights: mergedInsights, updatedAt: new Date() }
-        }).catch(() => {});
-      }
       // 生成に失敗した場合はフォールバック
       if (!todayInsight) {
         todayInsight = getInsightFallback(lang);
@@ -63,7 +51,6 @@ router.get('/summary', async (req, res) => {
       now: new Date()
     });
 
-    // Calculate streaks from recent daily_metrics
     const streaks = await calculateStreaks(userId);
     
     return res.json({
@@ -101,74 +88,9 @@ router.get('/summary', async (req, res) => {
   }
 });
 
-async function calculateStreaks(userId) {
-  try {
-    // Get last 30 days of metrics
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    
-    const metrics = await prisma.dailyMetric.findMany({
-      where: {
-        userId,
-        date: { gte: thirtyDaysAgo }
-      },
-      orderBy: { date: 'desc' }
-    });
-    
-    // Calculate consecutive days for each category
-    let wake = 0, screen = 0, workout = 0, rumination = 0;
-    
-    for (const m of metrics) {
-      // Wake streak: has wakeAt recorded
-      if (m.wakeAt) wake++;
-      else break;
-    }
-    
-    // Reset and calculate screen streak
-    for (const m of metrics) {
-      if (m.snsMinutesTotal !== null && m.snsMinutesTotal < 180) screen++;
-      else break;
-    }
-    
-    // Workout streak: steps >= 5000
-    for (const m of metrics) {
-      if (m.steps !== null && m.steps >= 5000) workout++;
-      else break;
-    }
-    
-    // Rumination streak: check mindSummary for low rumination
-    for (const m of metrics) {
-      // mindSummary is JSON, extract rumination value if exists
-      const ruminationValue = m.mindSummary?.rumination;
-      if (typeof ruminationValue === 'number' && ruminationValue < 0.5) rumination++;
-      else break;
-    }
-    
-    return { wake, screen, workout, rumination };
-  } catch (e) {
-    logger.warn('Failed to calculate streaks', e);
-    return { wake: 0, screen: 0, workout: 0, rumination: 0 };
-  }
-}
-
-async function fetchLatestDailyMetric(profileId) {
-  if (!profileId) return null;
-  const latest = await prisma.dailyMetric.findFirst({
-    where: { userId: profileId },
-    orderBy: { date: 'desc' }
-  });
-  if (!latest) return null;
-  return {
-    sleepDurationMin: latest.sleepDurationMin ?? null,
-    sleepStartAt: latest.sleepStartAt ?? null,
-    wakeAt: latest.wakeAt ?? null,
-    snsMinutesTotal: latest.snsMinutesTotal ?? 0,
-    steps: latest.steps ?? 0,
-    sedentaryMinutes: latest.sedentaryMinutes ?? 0,
-    mindSummary: latest.mindSummary ?? {},
-    activitySummary: latest.activitySummary ?? {},
-    insights: latest.insights ?? {}
-  };
+async function calculateStreaks(_userId) {
+  // daily_metrics table is dead (iOS never writes). Return zero defaults.
+  return { wake: 0, screen: 0, workout: 0, rumination: 0 };
 }
 
 export default router;

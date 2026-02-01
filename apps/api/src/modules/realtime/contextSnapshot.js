@@ -52,42 +52,6 @@ async function getTraits(profileId) {
   };
 }
 
-async function getTodayMetrics(profileId, localDate) {
-  const r = await query(
-    `select user_id, date,
-            sleep_duration_min, sleep_start_at, wake_at,
-            sns_minutes_total, sns_minutes_night,
-            steps, sedentary_minutes,
-            activity_summary, mind_summary, insights
-       from daily_metrics
-      where user_id = $1::uuid and date = $2::date
-      limit 1`,
-    [profileId, localDate]
-  );
-  return r.rows?.[0] || null;
-}
-
-async function getLatestFeeling(profileId) {
-  const r = await query(
-    `select id, feeling_id, started_at, ended_at, ema_better, action_template
-       from feeling_sessions
-      where user_id = $1::uuid
-      order by started_at desc
-      limit 1`,
-    [profileId]
-  );
-  const row = r.rows?.[0];
-  if (!row) return null;
-  return {
-    id: row.id,
-    feelingId: row.feeling_id,
-    startedAt: row.started_at,
-    endedAt: row.ended_at,
-    emaBetter: row.ema_better,
-    actionTemplate: row.action_template
-  };
-}
-
 async function getMem0Buckets(profileId) {
   // Best-effort. Do not fail snapshot if mem0 is unavailable.
   try {
@@ -127,10 +91,8 @@ export async function buildContextSnapshot({ userId, deviceId, now = new Date() 
   const settings = await getUserSettings(profileId);
   const localDate = toLocalDateString(now, settings.timezone);
 
-  const [traits, today, feeling, mem0] = await Promise.all([
+  const [traits, mem0] = await Promise.all([
     getTraits(profileId),
-    getTodayMetrics(profileId, localDate),
-    getLatestFeeling(profileId),
     getMem0Buckets(profileId)
   ]);
 
@@ -141,20 +103,8 @@ export async function buildContextSnapshot({ userId, deviceId, now = new Date() 
     language: settings.language,
     local_date: localDate,
     traits,
-    today_stats: today
-      ? {
-          sleepDurationMin: today.sleep_duration_min ?? null,
-          sleepStartAt: today.sleep_start_at ?? null,  // ★ 追加: Timeline用
-          wakeAt: today.wake_at ?? null,
-          snsMinutesTotal: today.sns_minutes_total ?? 0,
-          steps: today.steps ?? 0,
-          sedentaryMinutes: today.sedentary_minutes ?? 0,
-          mindSummary: today.mind_summary ?? {},
-          activitySummary: today.activity_summary ?? {},
-          insights: today.insights ?? {}
-        }
-      : null,
-    recent_feeling: feeling,
+    today_stats: null,
+    recent_feeling: null,
     mem0
   };
 }

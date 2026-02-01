@@ -2,8 +2,8 @@ import { toLocalTimeHHMM } from '../../utils/timezone.js';
 import { calculateRuminationProxy } from '../nudge/features/stateBuilder.js';  // 追加
 
 /**
- * Build Behavior tab payload pieces from daily_metrics row.
- * This is a thin, deterministic mapper; richer insights may be generated upstream and stored into daily_metrics.insights.
+ * Build Behavior tab payload pieces from today stats.
+ * This is a thin, deterministic mapper.
  */
 export function buildHighlights({ todayStats, timezone, language = 'en', habitSchedules }) {
   const wakeAt = todayStats?.wakeAt ? new Date(todayStats.wakeAt) : null;
@@ -41,7 +41,7 @@ export function buildHighlights({ todayStats, timezone, language = 'en', habitSc
     ? (wakeDelta <= 10 ? 'on_track' : wakeDelta <= 60 ? 'warning' : 'missed')
     : 'warning';
 
-  // Minimal heuristics (v0.3): thresholds are placeholders until insights pipeline fills daily_metrics.insights.highlights
+  // Minimal heuristics (v0.3): thresholds are placeholders
   // ★ スクリーンタイム全体を使用（totalScreenTime優先）
   const screenStatus = totalScreenTime >= 180 ? 'warning' : totalScreenTime >= 120 ? 'ok' : 'on_track';
   const screenLabel = isJa 

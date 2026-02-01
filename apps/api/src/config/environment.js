@@ -61,12 +61,6 @@ const freeMonthlyLimitParsed = Number.parseInt(freeMonthlyLimitRaw, 10);
 
 // 課金関連設定
 export const BILLING_CONFIG = {
-  STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY || '',
-  STRIPE_PRICE_PRO_MONTHLY: process.env.STRIPE_PRICE_PRO_MONTHLY || '',
-  STRIPE_PRODUCT_PRO: process.env.STRIPE_PRODUCT_PRO || '',
-  STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET || '',
-  CHECKOUT_RETURN_URL: process.env.CHECKOUT_RETURN_URL || '',
-  PORTAL_RETURN_URL: process.env.PORTAL_RETURN_URL || '',
   FREE_DAILY_LIMIT: Number.isFinite(freeDailyLimitParsed) ? freeDailyLimitParsed : null,
   PRO_DAILY_LIMIT: Number.isFinite(proDailyLimitParsed) ? proDailyLimitParsed : null,
   FREE_MONTHLY_LIMIT: Number.isFinite(freeMonthlyLimitParsed) ? freeMonthlyLimitParsed : null,
@@ -125,15 +119,6 @@ export function validateEnvironment() {
     if (!API_KEYS.SLACK_CLIENT_ID || !API_KEYS.SLACK_CLIENT_SECRET) {
       warnings.push('Slack OAuth credentials are not set');
     }
-    if (!BILLING_CONFIG.STRIPE_SECRET_KEY) {
-      warnings.push('STRIPE_SECRET_KEY is not set');
-    }
-    if (!BILLING_CONFIG.STRIPE_PRICE_PRO_MONTHLY || !BILLING_CONFIG.STRIPE_PRODUCT_PRO) {
-      warnings.push('Stripe Product/Price IDs are not set');
-    }
-    if (!BILLING_CONFIG.STRIPE_WEBHOOK_SECRET) {
-      warnings.push('STRIPE_WEBHOOK_SECRET is not set');
-    }
     if (!BILLING_CONFIG.REVENUECAT_PROJECT_ID || !BILLING_CONFIG.REVENUECAT_REST_API_KEY) {
       warnings.push('RevenueCat project / REST API key are not set');
     }
@@ -142,9 +127,6 @@ export function validateEnvironment() {
     }
     if (!process.env.PROXY_GUEST_JWT_SECRET) {
       warnings.push('PROXY_GUEST_JWT_SECRET is not set');
-    }
-    if (!BILLING_CONFIG.CHECKOUT_RETURN_URL || !BILLING_CONFIG.PORTAL_RETURN_URL) {
-      warnings.push('Checkout/Portal return URLs are not set');
     }
   }
 
@@ -180,7 +162,6 @@ export function logEnvironment() {
   console.log(`  - DESKTOP_MODE: ${DESKTOP_MODE}`);
   console.log(`  - USE_PROXY: ${USE_PROXY}`);
   console.log(`  - Server: ${SERVER_CONFIG.IS_RAILWAY ? 'Railway' : SERVER_CONFIG.IS_VERCEL ? 'Vercel' : 'Local'}`);
-  console.log(`  - Stripe price: ${BILLING_CONFIG.STRIPE_PRICE_PRO_MONTHLY || 'unset'}`);
   console.log(`  - Free daily limit: ${BILLING_CONFIG.FREE_DAILY_LIMIT ?? 'unset'}`);
   console.log(`  - Pro daily limit: ${BILLING_CONFIG.PRO_DAILY_LIMIT ?? 'default(1000)'}`);
   console.log(`  - Free monthly limit: ${BILLING_CONFIG.FREE_MONTHLY_LIMIT ?? 'unset'}`);

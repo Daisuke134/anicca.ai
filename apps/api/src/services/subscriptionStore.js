@@ -1,10 +1,8 @@
 import { BILLING_CONFIG } from '../config/environment.js';
-import { getStripeClient } from './stripe/client.js';
 import { query } from '../lib/db.js';
 import { debitMinutes, VC_CURRENCY_CODE } from './revenuecat/virtualCurrency.js';
 
 export const ENTITLEMENT_SOURCE = {
-  STRIPE: 'stripe',
   REVENUECAT: 'revenuecat'
 };
 
@@ -32,59 +30,6 @@ export async function ensureSubscriptionRow(userId) {
   return r.rows[0];
 }
 
-export async function ensureStripeCustomer(userId, email) {
-  const stripe = getStripeClient();
-  const existing = await ensureSubscriptionRow(userId);
-  if (existing?.stripe_customer_id) {
-    try {
-      const current = await stripe.customers.retrieve(existing.stripe_customer_id);
-      if (!current?.deleted) {
-        return existing.stripe_customer_id;
-      }
-    } catch (error) {
-      if (error?.statusCode !== 404 && error?.code !== 'resource_missing') {
-        throw error;
-      }
-    }
-  }
-  const customer = await stripe.customers.create({
-    email: email || undefined,
-    metadata: { userId }
-  });
-  await query(
-    `insert into user_subscriptions (user_id, stripe_customer_id, updated_at)
-     values ($1, $2, timezone('utc', now()))
-     on conflict (user_id)
-     do update set stripe_customer_id = excluded.stripe_customer_id,
-                   updated_at = excluded.updated_at`,
-    [userId, customer.id]
-  );
-  return customer.id;
-}
-
-export async function recordStripeEvent(event) {
-  const metadataUserId = event?.data?.object?.metadata?.userId || null;
-  const resolvedUserId = metadataUserId || null;
-  const payload = {
-    event_id: event.id,
-    user_id: resolvedUserId,
-    type: event.type,
-    payload: event.data?.object || null,
-    created_at: new Date().toISOString()
-  };
-  try {
-    await query(
-      `insert into subscription_events (event_id, user_id, type, payload, created_at)
-       values ($1,$2,$3,$4, timezone('utc', now()))`,
-      [payload.event_id, payload.user_id, payload.type, payload.payload]
-    );
-    return true;
-  } catch (e) {
-    if (String(e.code) === '23505') return false;
-    throw e;
-  }
-}
-
 function normalizeStatus(provider, rawStatus) {
   if (provider === ENTITLEMENT_SOURCE.REVENUECAT) {
     switch (rawStatus) {
@@ -99,61 +44,7 @@ function normalizeStatus(provider, rawStatus) {
         return { plan: 'free', status: rawStatus || 'expired' };
     }
   }
-  switch (rawStatus) {
-    case 'active':
-    case 'trialing':
-      return { plan: 'pro', status: rawStatus };
-    case 'past_due':
-    case 'incomplete':
-    case 'incomplete_expired':
-    case 'unpaid':
-      return { plan: 'grace', status: rawStatus };
-    default:
-      return { plan: 'free', status: rawStatus || 'canceled' };
-  }
-}
-
-export async function updateSubscriptionFromStripe(userId, stripeCustomerId, subscription) {
-  const { plan, status } = normalizeStatus(ENTITLEMENT_SOURCE.STRIPE, subscription?.status);
-  const payload = {
-    user_id: userId,
-    stripe_customer_id: stripeCustomerId,
-    stripe_subscription_id: subscription?.id || null,
-    plan,
-    status,
-    current_period_end: subscription?.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null,
-    trial_end: subscription?.trial_end ? new Date(subscription.trial_end * 1000).toISOString() : null,
-    metadata: subscription?.metadata || {},
-    entitlement_source: ENTITLEMENT_SOURCE.STRIPE,
-    revenuecat_entitlement_id: null,
-    revenuecat_original_transaction_id: null,
-    updated_at: new Date().toISOString()
-  };
-  await query(
-    `insert into user_subscriptions
-     (user_id, stripe_customer_id, stripe_subscription_id, plan, status, current_period_end, trial_end, metadata, entitlement_source, revenuecat_entitlement_id, revenuecat_original_transaction_id, updated_at)
-     values ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11, timezone('utc', now()))
-     on conflict (user_id)
-     do update set
-       stripe_customer_id=excluded.stripe_customer_id,
-       stripe_subscription_id=excluded.stripe_subscription_id,
-       plan=excluded.plan,
-       status=excluded.status,
-       current_period_end=excluded.current_period_end,
-       trial_end=excluded.trial_end,
-       metadata=excluded.metadata,
-       entitlement_source=excluded.entitlement_source,
-       revenuecat_entitlement_id=excluded.revenuecat_entitlement_id,
-       revenuecat_original_transaction_id=excluded.revenuecat_original_transaction_id,
-       updated_at=excluded.updated_at`,
-    [
-      payload.user_id, payload.stripe_customer_id, payload.stripe_subscription_id,
-      payload.plan, payload.status, payload.current_period_end, payload.trial_end,
-      payload.metadata, payload.entitlement_source, payload.revenuecat_entitlement_id,
-      payload.revenuecat_original_transaction_id
-    ]
-  );
-  return payload;
+  return { plan: 'free', status: rawStatus || 'canceled' };
 }
 
 export async function clearSubscription(userId) {
@@ -165,7 +56,7 @@ export async function clearSubscription(userId) {
        plan='free', status='canceled', stripe_subscription_id=null,
        entitlement_source=$2, revenuecat_entitlement_id=null, revenuecat_original_transaction_id=null,
        updated_at=timezone('utc', now())`,
-    [userId, ENTITLEMENT_SOURCE.STRIPE]
+    [userId, ENTITLEMENT_SOURCE.REVENUECAT]
   );
 }
 
@@ -242,7 +133,7 @@ export async function getEntitlementState(userId) {
   
   // RevenueCatの場合、entitlement_payloadを直接確認
   let statusInfo = normalizeStatus(
-    subscription?.entitlement_source || ENTITLEMENT_SOURCE.STRIPE,
+    subscription?.entitlement_source || ENTITLEMENT_SOURCE.REVENUECAT,
     subscription?.status
   );
   
@@ -298,8 +189,8 @@ export async function getEntitlementState(userId) {
     usageCount: count,
     usageLimit: limit,
     usageRemaining: remaining,
-    stripeCustomerId: subscription?.stripe_customer_id || null,
-    stripeSubscriptionId: subscription?.stripe_subscription_id || null
+    stripeCustomerId: subscription?.stripe_customer_id || null,      // kept for DB column backward compat
+    stripeSubscriptionId: subscription?.stripe_subscription_id || null // kept for DB column backward compat
   };
 }
 

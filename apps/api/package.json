@@ -7,7 +7,7 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod",
-    "start": "npx prisma migrate deploy && npx prisma generate && node src/server.js",
+    "start": "npx prisma@6 migrate deploy && npx prisma@6 generate && node src/server.js",
     "dev:railway": "nodemon src/server.js",
     "prisma:generate": "prisma generate",
     "prisma:studio": "prisma studio",

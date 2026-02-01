@@ -594,20 +594,9 @@
 /* My Path Tab */
 "mypath_header_description" = "Aniccaはあなたの苦しみを理解し、適切なタイミングで寄り添います。";
 "mypath_section_current_struggles" = "今向き合っている課題";
-"mypath_section_tell_anicca" = "Aniccaに伝える";
 "mypath_empty_title" = "向き合いたい課題を追加してみましょう";
 "mypath_empty_action" = "課題を追加";
 "mypath_add_problem" = "課題を追加";
-"mypath_deepdive_save" = "保存";
-"mypath_deepdive_delete" = "この課題を削除";
-"mypath_deepdive_delete_confirm_title" = "この課題を削除しますか？";
-"mypath_deepdive_delete_confirm_message" = "関連する通知も停止されます。";
-
-/* Tell Anicca */
-"mypath_tell_struggling_with" = "今辛いのは...";
-"mypath_tell_my_goal_is" = "取り組んでいる目標は...";
-"mypath_tell_remember_that" = "覚えておいてほしいのは...";
-"mypath_tell_saved" = "覚えました";
 
 /* Add Problem Sheet */
 "mypath_add_problem_title" = "課題を追加";

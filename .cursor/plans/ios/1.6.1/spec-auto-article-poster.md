@@ -33,8 +33,9 @@ Aniccaが自律的にBuild in Public記事を生成し、note.comに下書き保
 **出力:**
 - SEO対策されたタイトル
 - ペルソナに合わせた本文
-- サムネイル画像（fal.ai生成）
 - note.comへ下書き保存
+
+**注:** サムネイル画像は手動で準備
 
 ---
 
@@ -52,18 +53,20 @@ Aniccaが自律的にBuild in Public記事を生成し、note.comに下書き保
 │  1. git diff / commit log からネタ抽出                   │
 │  2. SEOガイドでタイトル生成                               │
 │  3. テンプレートで本文生成                                │
-│  4. fal.ai で画像生成                                    │
 └─────────────────────┬───────────────────────────────────┘
                       │
                       ▼
 ┌─────────────────────────────────────────────────────────┐
 │              note.com投稿フェーズ                         │
 │  cursor-ide-browser MCP                                 │
-│  1. browser_navigate → note.com/post                    │
-│  2. browser_snapshot → フォーム構造取得                  │
-│  3. browser_fill → タイトル入力                          │
-│  4. browser_type → 本文入力                              │
-│  5. browser_click → 下書き保存                           │
+│  1. browser_tabs → 既存タブ確認                          │
+│  2. browser_navigate → note.com/post                    │
+│  3. browser_lock → 操作ロック                            │
+│  4. browser_snapshot → フォーム構造取得                  │
+│  5. browser_fill → タイトル入力                          │
+│  6. browser_type → 本文入力                              │
+│  7. browser_click → 下書き保存                           │
+│  8. browser_unlock → 操作解除                            │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -79,7 +82,7 @@ Aniccaが自律的にBuild in Public記事を生成し、note.comに下書き保
 └── tone-and-voice.md        # Aniccaのトーン＆ボイス定義
 ```
 
-**注:** 画像生成スクリプト（fal.ai連携）はP2として後日実装予定。現状は手動でサムネイルを準備する。
+**注:** 画像生成スクリプトはP2として後日実装予定。現状は手動でサムネイルを準備する。
 
 ---
 
@@ -235,7 +238,7 @@ Aniccaが自律的にBuild in Public記事を生成し、note.comに下書き保
 | 3 | `article-template.md` 作成 | P0 | ✅ 完了 |
 | 4 | `tone-and-voice.md` 作成 | P0 | ✅ 完了 |
 | 5 | note.com投稿フローをテスト | P0 | 未着手 |
-| 6 | fal.ai画像生成スクリプト | P2 | 未着手（後日） |
+| 6 | 画像生成スクリプト | P2 | 未着手（後日） |
 | 7 | 本番運用開始 | P1 | 未着手 |
 
 ---

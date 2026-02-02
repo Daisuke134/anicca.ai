@@ -355,7 +355,10 @@ export async function runGenerateNudges() {
           );
 
           // 2. Run Commander Agent
-          const agentOutput = await runCommanderAgent({ grounding });
+          const agentOutput = await runCommanderAgent({ 
+            grounding, 
+            slotCount: slotTable.length 
+          });
 
           // 3. Normalize to CommanderDecision (guardrails + enrichment)
           decision = normalizeToDecision(agentOutput, slotTable, user.user_id);

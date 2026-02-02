@@ -132,7 +132,7 @@ interface AgentFeedbackRequest {
 | AC-3 | Moltbook に Anicca エージェントが登録される | Moltbook プロフィールページが存在 | 手動（Moltbook） | — |
 | AC-4 | s/sangha Submolt が作成される | Moltbook 上で s/sangha にアクセス可能 | 手動（Moltbook） | — |
 | AC-5 | Moltbook の苦しみ投稿を検出してNudgeを返信できる | 苦しみキーワードを含む投稿 → Anicca の返信が表示される | 手動 + 自動 | #7 |
-| AC-6 | Railway API `/api/agent/nudge` が正常動作 | POST → 200 + hook/content/tone/reasoning/buddhismReference（任意）を含むJSON | 自動 | #1, #4, #17, #22 |
+| AC-6 | Railway API `/api/agent/nudge` が正常動作 | POST → 200 + hook/content/tone/reasoning/buddhismReference（任意）/agentPostId を含むJSON | 自動 | #1, #4, #17, #22 |
 | AC-7 | Railway API `/api/agent/wisdom` が正常動作 | GET → 200 + `{ hook, content, source, problemType, reasoning }` を含む JSON | 自動 | #2 |
 | AC-8 | Railway API `/api/agent/feedback` がフィードバックを保存 | POST → 200 + agent_posts 更新確認 | 自動 | #3, #23, #24, #25 |
 | AC-9 | Slack チャネルに接続される | OpenClaw → Slack メッセージ送信成功 | 手動（Slack） | — |
@@ -193,51 +193,105 @@ interface AgentFeedbackRequest {
 
 ## 6. データモデル
 
-### agent_posts テーブル
+### 6.1 agent_posts（Prisma model）
 
-```sql
-CREATE TABLE agent_posts (
-  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-  platform VARCHAR(50) NOT NULL,         -- 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
-  external_post_id VARCHAR(255),          -- プラットフォーム固有ID
-  hook TEXT,
-  content TEXT,
-  tone VARCHAR(50),
-  problem_type VARCHAR(100),
-  reasoning TEXT,
-  buddhism_reference TEXT,
-  
-  -- フィードバック
-  upvotes INTEGER DEFAULT 0,              -- Moltbook
-  reactions JSONB DEFAULT '{}',           -- Slack { "👍": 3, "❤️": 1 }
-  views INTEGER DEFAULT 0,                -- TikTok/X
-  likes INTEGER DEFAULT 0,                -- TikTok/X
-  shares INTEGER DEFAULT 0,               -- TikTok
-  comments INTEGER DEFAULT 0,             -- TikTok/X
-  
-  -- Z-Score
-  moltbook_z FLOAT,
-  slack_z FLOAT,
-  tiktok_z FLOAT,
-  x_z FLOAT,
-  instagram_z FLOAT,
-  unified_score FLOAT,                    -- 5チャネル統合スコア
-  
-  -- メタデータ
-  created_at TIMESTAMP DEFAULT NOW(),
-  updated_at TIMESTAMP DEFAULT NOW(),
-  promoted_to_hook_candidates BOOLEAN DEFAULT FALSE
-);
+```prisma
+model AgentPost {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform          String    @db.VarChar(50)        // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
+  externalPostId    String?   @map("external_post_id") @db.VarChar(255)
+  severity          String?   @db.VarChar(20)        // null | 'crisis'（危機検出時）
+  hook              String?
+  content           String?
+  tone              String?   @db.VarChar(50)
+  problemType       String?   @map("problem_type") @db.VarChar(100)
+  reasoning         String?
+  buddhismReference String?   @map("buddhism_reference")
+
+  // フィードバック
+  upvotes           Int       @default(0)
+  reactions         Json      @default("{}")          // Slack { "👍": 3, "❤️": 1 }
+  views             Int       @default(0)
+  likes             Int       @default(0)
+  shares            Int       @default(0)
+  comments          Int       @default(0)
+
+  // Z-Score
+  moltbookZ         Float?    @map("moltbook_z")
+  slackZ            Float?    @map("slack_z")
+  tiktokZ           Float?    @map("tiktok_z")
+  xZ                Float?    @map("x_z")
+  instagramZ        Float?    @map("instagram_z")
+  unifiedScore      Float?    @map("unified_score")
+
+  // メタデータ
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+  promotedToHookCandidates Boolean @default(false) @map("promoted_to_hook_candidates")
+
+  @@unique([platform, externalPostId])  // 重複防止（partial: NULL は複数許容）
+  @@map("agent_posts")
+}
 ```
 
-### 昇格条件
+### 6.2 hook_candidates 拡張カラム（Prisma migration）
+
+既存の `HookCandidate` model に以下を追加:
+
+```prisma
+// 既存の HookCandidate に追加するカラム
+moltbookUpvoteRate  Decimal?  @map("moltbook_upvote_rate") @db.Decimal(5, 4)
+moltbookSampleSize  Int?      @map("moltbook_sample_size")
+moltbookHighPerformer Boolean? @map("moltbook_high_performer")
+slackReactionRate   Decimal?  @map("slack_reaction_rate") @db.Decimal(5, 4)
+slackSampleSize     Int?      @map("slack_sample_size")
+slackHighPerformer  Boolean?  @map("slack_high_performer")
+```
+
+### 6.3 Z-Score 5チャネル統合
+
+**As-Is（1.6.0）:** 3チャネル（App, TikTok, X）
 
 ```
-IF upvotes >= 5 AND unified_score > 0.5 THEN
-  INSERT INTO hook_candidates (...)
-  UPDATE agent_posts SET promoted_to_hook_candidates = TRUE
-END IF
+unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ
+W_APP=0.5, W_TIK=0.3, W_X=0.2  (合計 1.0)
 ```
+
+**To-Be（1.6.1）:** 5チャネル
+
+```
+unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ + W_SLACK * slackZ
+```
+
+| チャネル | 重み | 理由 |
+|---------|------|------|
+| App (appZ) | 0.40 | コア。ユーザーの行動変容に最も直結 |
+| TikTok (tiktokZ) | 0.20 | リーチが大きい。like率が指標 |
+| X (xZ) | 0.15 | engagement率が指標 |
+| Moltbook (moltbookZ) | 0.15 | 苦しみターゲットに最も近い。upvote率が指標 |
+| Slack (slackZ) | 0.10 | 実験場。reaction数が指標 |
+
+**ベースライン（初期値）:**
+
+| チャネル | 指標 | 初期MEAN | 初期STDDEV | 最小サンプルサイズ |
+|---------|------|---------|-----------|-----------------|
+| Moltbook | upvotes / impressions | 0.05 | 0.03 | 10 |
+| Slack | total_reactions / messages | 0.10 | 0.05 | 5 |
+
+30日分のデータが溜まったら `refreshBaselines()` が実データで上書きする。
+
+### 6.4 昇格パイプライン
+
+**2つの昇格パスが共存する。干渉しない。**
+
+| パス | 条件 | 動作 | source |
+|------|------|------|--------|
+| **A: agent_posts → hook_candidates**（新規） | `upvotes >= 5 AND unified_score > 0.5` | 新規 INSERT | `agent_moltbook`, `agent_slack` 等 |
+| **B: 既存 cross-platform promotion** | X→TikTok: Z≥1.0, TikTok→App: unified≥1.5 | hook_candidates 内の `promoted` フラグ更新 | 既存の `tiktok`, `x` 等 |
+
+- パスA は外部プラットフォーム（Moltbook/Slack）からの「新規 hook 発見」
+- パスB は既存パイプライン内の「クロスプラットフォーム昇格」
+- `source` カラムで区別。既存ロジックに影響なし
 
 ---
 
@@ -263,9 +317,12 @@ END IF
 ### Prompt Injection 対策
 
 1. **URL除去**: HTTPリンクを削除
-2. **コードブロック除去**: ```...``` を削除
+2. **コードブロック除去**: ``` ``` ``` を削除
 3. **タグ封入**: ユーザー入力を `<user_post>...</user_post>` で囲む
 4. **既知パターンフィルタ**: `ignore previous`, `disregard`, `override` 等を検出
+5. **最大長制限**: context は 2000文字まで（超過は切り捨て）
+6. **Unicode制御文字除去**: U+200B-U+200F, U+202A-U+202E を除去
+7. **タグエスケープ**: ユーザー入力中の `<user_post>` `</user_post>` を除去
 
 ---
 
@@ -310,7 +367,84 @@ END IF
 
 ---
 
-## 10. TODO
+## 10. 境界（やらないこと）
+
+| やらないこと | 理由 |
+|-------------|------|
+| 既存の `/api/mobile/*` エンドポイントを変更しない | 後方互換。古いiOSクライアントが壊れる |
+| iOSクライアントコードを変更しない | 1.6.1 はバックエンド + VPS のみ |
+| 既存の TikTok/X の GHA ワークフローを変更しない | Strangler Fig: 1.6.1 では並行稼働、1.7.0 で段階移行 |
+| Commander Agent のロジックを変更しない | hook_candidates の読み取りのみ（新カラム追加は影響なし） |
+| 他ユーザーの Slack ワークスペースに接続しない | 1.6.1 はラボ実験（自分のワークスペースのみ） |
+
+### 触るファイル
+
+| ファイル | 変更内容 |
+|---------|----------|
+| `apps/api/prisma/schema.prisma` | AgentPost model 追加、HookCandidate 拡張 |
+| `apps/api/src/api/agent/` | 新規ディレクトリ: nudge, wisdom, feedback, content エンドポイント |
+| `apps/api/src/api/auth/` | agentAuth ミドルウェア追加 |
+| `apps/api/src/jobs/syncCrossPlatform.js` | unifiedScore() を 5ch に拡張、refreshBaselines() に Moltbook/Slack 追加 |
+
+### 触らないファイル
+
+| ファイル | 理由 |
+|---------|------|
+| `apps/api/src/api/mobile/*` | 既存モバイルAPI。後方互換 |
+| `apps/api/src/agents/commander.js` | hook_candidates を読むだけ。変更不要 |
+| `aniccaios/` | iOSクライアント。1.6.1 スコープ外 |
+| `.github/workflows/anicca-daily-post.yml` | 既存TikTok投稿。並行稼働 |
+| `.github/workflows/anicca-x-post.yml` | 既存X投稿。並行稼働 |
+
+## 11. Skill 実行スケジュール
+
+| Skill | 実行方式 | 間隔 |
+|-------|---------|------|
+| moltbook-responder | ポーリング | 5分間隔 |
+| feedback-fetch | ポーリング | 30分間隔 |
+| slack-reminder | Cron Skill | 月曜12:25にチェック開始 |
+| x-poster | Commander 連携 | Commander Agent のスケジュールに従う |
+
+### エラーハンドリング
+
+| 項目 | 設定 |
+|------|------|
+| リトライ | Exponential backoff（初回1分、最大30分） |
+| Circuit breaker | 5回連続失敗 → 10分停止 |
+| ログ | 1-2回失敗: warn、3回以上: error |
+
+## 12. 実行手順
+
+### テスト
+
+```bash
+cd apps/api && npm test
+```
+
+### VPS デプロイ
+
+```bash
+# 1. SSH で VPS に接続
+ssh anicca@<vps-ip>
+
+# 2. OpenClaw インストール・設定
+# (OpenClaw のデプロイ手順に従う)
+
+# 3. SOUL.md を配置
+scp SOUL.md anicca@<vps-ip>:~/openclaw/
+
+# 4. systemd サービス起動
+sudo systemctl enable openclaw && sudo systemctl start openclaw
+```
+
+### Railway デプロイ
+
+```bash
+# dev → main マージで自動デプロイ
+# migration は自動実行（Prisma migrate deploy）
+```
+
+## 13. TODO
 
 ### 高優先
 - [ ] Hetzner VPS セットアップ
@@ -335,3 +469,4 @@ END IF
 | 日付 | 内容 |
 |------|------|
 | 2026-02-02 | 初版作成（ターミナル出力から復元） |
+| 2026-02-02 | Blocking issue 6件修正: Crisis Protocol, UNIQUE制約, Z-Score 5ch重み, hook_candidates拡張, 昇格パイプライン明記, Prisma model化, 境界・実行手順追加 |

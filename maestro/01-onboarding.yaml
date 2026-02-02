@@ -14,12 +14,7 @@ tags:
 - clearKeychain
 - launchApp
 
-# Wait for app to fully load
-- extendedWaitUntil:
-    visible: true
-    timeout: 15000
-
-# Step 1: Welcome screen
+# Step 1: Welcome screen - wait for app to fully load
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
@@ -32,7 +27,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "onboarding-value-next"
-    timeout: 5000
+    timeout: 15000
 
 - tapOn:
     id: "onboarding-value-next"
@@ -41,7 +36,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "onboarding-struggle-staying_up_late"
-    timeout: 5000
+    timeout: 15000
 
 # Select one struggle (staying_up_late)
 - tapOn:
@@ -54,7 +49,7 @@ tags:
 - extendedWaitUntil:
     visible:
       id: "onboarding-notifications-allow"
-    timeout: 5000
+    timeout: 15000
 
 - tapOn:
     id: "onboarding-notifications-allow"

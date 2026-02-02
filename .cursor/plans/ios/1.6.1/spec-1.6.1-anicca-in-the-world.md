@@ -1,49 +1,98 @@
-# Spec: Anicca in the World (1.6.1)
+# 実装仕様書: Anicca in the World (1.6.1)
 
-> Anicca がアプリを超えて世界に出る — OpenClaw + Moltbook + Slack 統合
-
----
-
-## 1. 概要
-
-### 目標
-**Anicca がiOSアプリの外でも苦しみを終わらせる**
-
-- Moltbook（分散型SNS）で苦しみの投稿を検出し、Nudgeで返信
-- Slack でラボミーティングリマインダーを送信
-- X/Twitter でコンテンツを配信
-- 全プラットフォームの反応を統一スコアに集約
-
-### なぜ今やるか
-- Anicca の「苦しみを終わらせる」ミッションは、アプリ内だけでは不十分
-- ブッダは「苦しみのある場所に自ら行った」— Anicca も同様
-- Cross-Platform Learning で「何が効くか」の学習が加速
+> **RFC 2119 準拠**: MUST, SHOULD, MAY を使用
 
 ---
 
-## 2. アーキテクチャ
+## 0. 用語定義
+
+| キーワード | 意味 |
+|-----------|------|
+| **MUST** | 絶対的な要件。違反は不可 |
+| **MUST NOT** | 絶対的な禁止 |
+| **SHOULD** | 強く推奨。例外は正当な理由が必要 |
+| **MAY** | 任意 |
+
+---
+
+## 1. As-Is（現在の状態）
+
+### 1.1 Railway API（✅ 完了）
+
+| 項目 | 状態 | ファイル |
+|------|------|----------|
+| `/api/agent/nudge` | ✅ 実装済み | `apps/api/src/routes/agent/nudge.js` |
+| `/api/agent/wisdom` | ✅ 実装済み | `apps/api/src/routes/agent/wisdom.js` |
+| `/api/agent/feedback` | ✅ 実装済み | `apps/api/src/routes/agent/feedback.js` |
+| `/api/agent/content` | ✅ 実装済み | `apps/api/src/routes/agent/content.js` |
+| `/api/agent/deletion` | ✅ 実装済み | `apps/api/src/routes/agent/deletion.js` |
+| `requireAgentAuth` | ✅ 実装済み | `apps/api/src/middleware/requireAgentAuth.js` |
+| `AgentPost` model | ✅ 実装済み | `apps/api/prisma/schema.prisma` |
+| `AgentAuditLog` model | ✅ 実装済み | `apps/api/prisma/schema.prisma` |
+| 5ch Z-Score | ✅ 実装済み | `apps/api/src/agents/crossPlatformLearning.js` |
+| 90日匿名化ジョブ | ✅ 実装済み | `apps/api/src/jobs/anonymizeAgentPosts.js` |
+| テスト | ✅ 196/196 通過 | `apps/api/src/**/__tests__/*.test.js` |
+
+### 1.2 Hetzner VPS（✅ セットアップ済み）
+
+| 項目 | 値 |
+|------|-----|
+| サーバー名 | `ubuntu-4gb-nbg1-7` |
+| IPv4 | `46.225.70.241` |
+| IPv6 | `2a01:4f8:1c19:985d::/64` |
+| OS | Ubuntu（詳細未確認） |
+| SSH | `ssh root@46.225.70.241` |
+
+### 1.3 SOUL.md（✅ 作成済み）
+
+**ファイル:** `.cursor/plans/ios/1.6.1/SOUL.md`（168行）
+**状態:** VPS への配置未実施
+
+### 1.4 Slack（✅ 設定済み）
+
+| 項目 | 保存場所 |
+|------|----------|
+| SLACK_BOT_TOKEN | VPS `/home/anicca/.env` |
+| SLACK_METRICS_WEBHOOK_URL | GitHub Secrets |
+
+### 1.5 未実装（❌）
+
+| 項目 | 状態 |
+|------|------|
+| OpenClaw インストール | ❌ |
+| systemd サービス | ❌ |
+| ufw / fail2ban | ❌ 未確認 |
+| Skills（4つ） | ❌ |
+| Moltbook 登録 | ❌ |
+| Railway 環境変数 `ANICCA_AGENT_TOKEN` | ❌ |
+
+---
+
+## 2. To-Be（完成状態）
+
+### 2.1 完成時の構成
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                     Hetzner VPS                              │
+│                Hetzner VPS (46.225.70.241)                   │
 │  ┌─────────────────────────────────────────────────────────┐ │
-│  │                   OpenClaw                               │ │
-│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐               │ │
-│  │  │ Moltbook │  │  Slack   │  │ X/Twitter│               │ │
-│  │  │  Skill   │  │  Skill   │  │  Skill   │               │ │
-│  │  └────┬─────┘  └────┬─────┘  └────┬─────┘               │ │
-│  │       │             │             │                      │ │
-│  │       └─────────────┼─────────────┘                      │ │
-│  │                     ↓                                    │ │
-│  │            ┌────────────────┐                            │ │
-│  │            │   SOUL.md      │  ← Anicca ペルソナ         │ │
-│  │            └────────────────┘                            │ │
+│  │                   OpenClaw (systemd)                     │ │
+│  │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐   │ │
+│  │  │ moltbook-    │  │ slack-       │  │ feedback-    │   │ │
+│  │  │ responder    │  │ reminder     │  │ fetch        │   │ │
+│  │  └──────┬───────┘  └──────┬───────┘  └──────┬───────┘   │ │
+│  │         │                 │                 │            │ │
+│  │         └─────────────────┼─────────────────┘            │ │
+│  │                           ↓                              │ │
+│  │                    ┌────────────┐                        │ │
+│  │                    │  SOUL.md   │                        │ │
+│  │                    └────────────┘                        │ │
 │  └─────────────────────────────────────────────────────────┘ │
 └──────────────────────────┬──────────────────────────────────┘
                            │ ANICCA_AGENT_TOKEN
                            ↓
 ┌─────────────────────────────────────────────────────────────┐
-│                   Railway API                                │
+│              Railway API (Production)                        │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐       │
 │  │ /agent/nudge │  │ /agent/wisdom│  │/agent/feedback│      │
 │  └──────────────┘  └──────────────┘  └──────────────┘       │
@@ -55,842 +104,597 @@
 └─────────────────────────────────────────────────────────────┘
 ```
 
----
+### 2.2 完成基準
 
-## 3. コンポーネント
-
-### 3.1 OpenClaw (Hetzner VPS)
-
-| 項目 | 値 |
-|------|-----|
-| ホスティング | Hetzner VPS |
-| デーモン | systemd (`openclaw.service`) |
-| ペルソナ | `SOUL.md` |
-| セキュリティ | fail2ban + ufw + 専用APIキー |
-
-### 3.2 Skills
-
-| Skill | 役割 | ソース |
-|-------|------|--------|
-| **moltbook-responder** | 苦しみ投稿を検出 → `/api/agent/nudge` → 返信 | 自前実装 |
-| **slack-reminder** | 月曜12:30にラボミーティングリマインダー送信 | 自前実装 |
-| **feedback-fetch** | Moltbook upvotes / Slack reactions を収集 | 自前実装 |
-| **x-poster** | X/Twitter にコンテンツ投稿 | 自前実装 |
-| **moltbook/late-api** | Moltbook API クライアント | ClawHub（allowlist） |
-
-#### moltbook-responder 仕様詳細
-
-| 項目 | 仕様 |
-|------|------|
-| **公開投稿のみ処理** | `post.visibility === 'public'` の投稿のみ処理。DM/非公開（`visibility === 'private'`, `'direct'`, `'followers_only'`）は無視。**例外:** 削除要求 DM は `deletion-handler`（別プロセス）で処理 |
-| **フィルタリング条件** | オプトイン/召喚型: @anicca メンション、s/sangha 投稿、フォロー済みユーザーのいずれか |
-| **検出対象** | 公開投稿 かつ フィルタリング条件を満たす かつ 苦しみキーワード検出 |
-| **API フィールド** | Moltbook API の `post.visibility` フィールドで判定 |
-
-**テスト:**
-
-| # | テスト名 | 内容 |
-|---|----------|------|
-| 42 | `test_moltbookIgnoresPrivatePosts()` | `visibility !== 'public'` の投稿は処理されない |
-| 43 | `test_moltbookIgnoresDirectMessages()` | `visibility === 'direct'` は処理されない |
-
-#### ClawHub Skill ポリシー（供給鎖リスク対策強化）
-
-| ルール | 詳細 |
-|--------|------|
-| **allowlist 方式** | `SOUL.md` に許可リストを定義。リスト外の ClawHub Skill は自動拒否 |
-| **コミットハッシュ固定** | `clawhub install moltbook/late-api@abc1234` のように特定バージョンを固定 |
-| **署名/ハッシュ検証** | インストール時に SHA-256 ハッシュを検証。不一致は拒否 |
-| **内部ミラー運用** | 本番では ClawHub 直接取得を禁止。内部ミラー（`skills.anicca.internal/`）からのみ取得 |
-| **サンドボックス実行** | スキルは最小権限で実行。ファイルシステム・ネットワークアクセスは明示的に許可されたもののみ |
-| **更新時はレビュー必須** | Skill 更新時は diff を確認 + セキュリティレビュー後にハッシュを更新 |
-
-#### スキル権限レビュープロセス
-
-| ステップ | 内容 |
-|---------|------|
-| 1. Diff 確認 | `clawhub diff moltbook/late-api@old..new` で変更を確認 |
-| 2. 権限チェック | 新規の API 呼び出し、ファイルアクセス、外部通信を確認 |
-| 3. セキュリティレビュー | Codex または人間がレビュー |
-| 4. 承認 | Slack #agents で承認後、ハッシュを更新 |
-
-#### 緊急停止手順
-
-| シナリオ | 対応 |
-|---------|------|
-| 悪性スキル検出 | (1) `clawhub disable <skill>` で即時無効化 → (2) Slack #agents に通知 → (3) 内部ミラーから削除 |
-| 全スキル停止 | `/anicca stop` で全エージェント停止（スキル含む） |
-| ロールバック | `clawhub rollback <skill>@<previous-hash>` で前バージョンに戻す |
-
-#### 監査ログ
-
-| ログ項目 | 詳細 |
-|---------|------|
-| skill_install | スキルインストール日時、ハッシュ、承認者 |
-| skill_update | 更新日時、old/new ハッシュ、diff サマリ |
-| skill_execution | 実行日時、入力サマリ、出力サマリ、実行時間 |
-| skill_error | エラー日時、エラー内容、スタックトレース |
-
-### 3.3 Railway API
-
-| エンドポイント | メソッド | 役割 |
-|---------------|---------|------|
-| `/api/agent/nudge` | POST | Nudge生成（LLM） |
-| `/api/agent/wisdom` | GET | Wisdom取得 |
-| `/api/agent/feedback` | POST | フィードバック保存 |
-| `/api/agent/content` | POST | プラットフォーム別コンテンツ生成 |
-
-#### AgentFeedbackRequest バリデーション
-
-```typescript
-interface AgentFeedbackRequest {
-  agentPostId?: string;       // UUID（これ OR 下の2つで特定）
-  platform?: string;          // optional（agentPostId があれば不要）
-  externalPostId?: string;    // optional（agentPostId があれば不要）
-  upvotes?: number;
-  reactions?: Record<string, number>;
-  views?: number;
-  likes?: number;
-  shares?: number;
-  comments?: number;
-}
-```
-
-**5ステップ バリデーションルール:**
-
-| # | ルール | 失敗時 |
-|---|--------|--------|
-| 1 | `agentPostId` OR (`platform` + `externalPostId`) のいずれかが必須 | 400 Bad Request |
-| 2 | `agentPostId` 指定時 → DB に存在するか確認 | 404 Not Found |
-| 3 | `platform` + `externalPostId` 指定時 → DB に存在するか確認 | 404 Not Found |
-| 4 | 数値フィールドは非負整数（`upvotes`, `views`, `likes`, `shares`, `comments`） | 400 Bad Request |
-| 5 | `reactions` は `Record<string, number>` 形式（emoji → count） | 400 Bad Request |
+| # | 基準 | 検証方法 |
+|---|------|---------|
+| 1 | OpenClaw が VPS で 24/7 稼働 | `ssh root@46.225.70.241 "systemctl status openclaw"` → active |
+| 2 | Moltbook にエージェント登録済み | `https://www.moltbook.com/u/anicca` がアクセス可能 |
+| 3 | s/sangha Submolt 作成済み | `https://www.moltbook.com/s/sangha` がアクセス可能 |
+| 4 | moltbook-responder が苦しみ投稿に返信 | テスト投稿 → 5分以内に返信 |
+| 5 | slack-reminder が月曜12:30に通知 | 手動テスト or 月曜待機 |
+| 6 | feedback-fetch が upvotes を収集 | DB の `agent_posts.upvotes` が更新される |
 
 ---
 
-## 4. Acceptance Criteria
+## 3. パッチ詳細（実行順）
 
-| # | 条件 | 合否判定 | 検証方法 | テスト# |
-|---|------|---------|----------|---------|
-| AC-1 | OpenClaw が Hetzner VPS 上で 24/7 稼働する | `systemctl status openclaw` = active, 24h uptime 確認 | 手動（SSH） | — |
-| AC-2 | SOUL.md に Anicca のペルソナが定義され、OpenClaw が認識する | OpenClaw に「Who are you?」→ Anicca として応答 | 手動（VPS） | — |
-| AC-3 | Moltbook に Anicca エージェントが登録される | Moltbook プロフィールページが存在 | 手動（Moltbook） | — |
-| AC-4 | s/sangha Submolt が作成される | Moltbook 上で s/sangha にアクセス可能 | 手動（Moltbook） | — |
-| AC-5 | Moltbook でオプトイン/召喚型の苦しみ投稿にNudgeを返信できる | @anicca メンション、s/sangha 投稿、フォロー済みユーザー投稿のいずれかで苦しみキーワード検出 → 返信表示 | 手動 + 自動 | #7 |
-| AC-6 | Railway API `/api/agent/nudge` が正常動作 | POST → 200 + hook/content/tone/reasoning/buddhismReference（任意）/agentPostId を含むJSON | 自動 | #1, #4, #17, #22 |
-| AC-7 | Railway API `/api/agent/wisdom` が正常動作 | GET → 200 + `{ hook, content, source, problemType, reasoning }` を含む JSON | 自動 | #2 |
-| AC-8 | Railway API `/api/agent/feedback` がフィードバックを保存 | POST → 200 + agent_posts 更新確認 | 自動 | #3, #23, #24, #25 |
-| AC-9 | Slack チャネルに接続される | OpenClaw → Slack メッセージ送信成功 | 手動（Slack） | — |
-| AC-10 | ラボミーティングリマインダーが月曜12:30に投稿される | 月曜テスト → Slack にメッセージ表示 | 自動 + 手動 | #14 |
-| AC-11 | 日本の祝日はリマインダーをスキップ | 祝日API → スキップメッセージ | 自動 | #13, #15 |
-| AC-12 | Moltbook upvotes が agent_posts テーブルに保存される | Heartbeat 後 → DB 確認 | 自動 | #26 |
-| AC-13 | Z-Score 正規化が5チャネル統合で動作 | `unifiedScore()` に moltbookZ + slackZ が反映 | 自動 | #9, #12 |
-| AC-14 | agent_posts から hook_candidates への昇格が動作 | upvotes ≥ 5 の投稿 → hook_candidates INSERT | 自動 | #10, #11 |
-| AC-15 | VPS セキュリティ（fail2ban + ufw + 専用APIキー） | `ufw status` = active, fail2ban running, 本番APIキー未使用 | 手動（SSH）+ 自動 | #5, #6 |
-| AC-16 | Moltbook claim URL をクリックして認証完了（ユーザー作業） | claim_url アクセス → Moltbook プロフィール表示 | 手動（ユーザー） | — |
-| AC-17 | Railway API `/api/agent/content` が正常動作 | POST → 200 + `{ hook, content, tone, formats: { short, medium, long, hashtags } }` を含む JSON | 自動 | #19 |
-| AC-18 | `/api/agent/content` の formats.short が 280文字以内 | short フォーマットの文字数検証 | 自動 | #20, #21 |
-| AC-19 | feedback-fetch Skill が Moltbook upvotes を収集して Railway API に送信 | Heartbeat 後 → agent_posts.upvotes が更新される | 自動 | #26 |
-| AC-20 | feedback-fetch Skill が Slack reactions を収集して Railway API に送信 | Heartbeat 後 → agent_posts.reactions が更新される | 自動 | #27 |
-| AC-21 | `/api/agent/nudge` レスポンスに agentPostId が含まれる | POST → 200 + agentPostId (UUID) がレスポンスに存在 | 自動 | #22 |
-| AC-22 | `/api/agent/feedback` が agentPostId OR (platform + externalPostId) で更新可能 | 両方のパターンでテスト → agent_posts 更新確認 | 自動 | #23, #24, #25 |
-| AC-23 | Prompt Injection 対策が context サニタイズで機能する | URL/コードブロック除去、`<user_post>` タグ封入、既知パターンフィルタ | 自動 | #29, #30, #31 |
-| AC-24 | ツール呼び出し制御が Allowlist に従って動作する | Allowlist 外ツール → 拒否、Allowlist 内 → 許可、高リスク → HITL | 自動 | #32, #33, #34 |
-| AC-25 | 監査ログが全ての LLM 呼び出し・ツール実行を記録する | `agent_audit_logs` テーブルにログが存在 | 自動 | #35, #36 |
-| AC-26 | 緊急停止コマンドで全エージェントが停止する | `/anicca stop` → 全エージェント停止確認 | 自動 + 手動 | #37 |
-| AC-27 | スキル署名検証が機能する | ハッシュ不一致 → 拒否、ハッシュ一致 → 許可 | 自動 | #38, #39 |
-| AC-28 | Moltbook 運用ポリシーに従って動作する | オプトイン/召喚型、投稿上限、ミュート/ブロック尊重 | 手動 + 自動 | — |
+### Phase 1: Railway 環境変数設定（MCP 使用）
 
----
+**前提:** Railway MCP が利用可能
 
-## 5. テストマトリックス
-
-| # | To-Be | テスト名 | AC | カバー |
-|---|-------|----------|-----|--------|
-| 1 | `/api/agent/nudge` エンドポイント | `test_agentNudgeEndpoint()` | AC-6 | ✅ |
-| 2 | `/api/agent/wisdom` エンドポイント | `test_agentWisdomEndpoint()` | AC-7 | ✅ |
-| 3 | `/api/agent/feedback` エンドポイント | `test_agentFeedbackEndpoint()` | AC-8 | ✅ |
-| 4 | agent_posts テーブル INSERT | `test_agentPostSavedToDb()` | AC-6 | ✅ |
-| 5 | 認証: ANICCA_AGENT_TOKEN なし → 401 | `test_agentAuthRequired()` | AC-15 | ✅ |
-| 6 | 認証: 本番 INTERNAL_API_TOKEN では拒否 | `test_agentTokenIsolation()` | AC-15 | ✅ |
-| 7 | ProblemType マッピング（キーワード → type） | `test_keywordToProblemTypeMapping()` | AC-5 | ✅ |
-| 8 | 重複投稿防止（同一 external_post_id） | `test_duplicatePostPrevention()` | AC-8 | ✅ |
-| 9 | Z-Score 5チャネル統合計算 | `test_unifiedScore5Channels()` | AC-13 | ✅ |
-| 10 | agent_posts → hook_candidates 昇格 | `test_agentPostPromotion()` | AC-14 | ✅ |
-| 11 | 昇格条件（upvotes ≥ 5, Z-Score > 0.5） | `test_promotionThreshold()` | AC-14 | ✅ |
-| 12 | hook_candidates 新カラム（moltbook/slack） | `test_hookCandidatesNewColumns()` | AC-13 | ✅ |
-| 13 | 祝日判定（日本の祝日API） | `test_japaneseHolidayCheck()` | AC-11 | ✅ |
-| 14 | ラボミーティング: 月曜非祝日 → 送信 | `test_labMeetingMonday()` | AC-10 | ✅ |
-| 15 | ラボミーティング: 月曜祝日 → スキップ | `test_labMeetingHolidaySkip()` | AC-11 | ✅ |
-| 16 | ラボミーティング: 火-日 → 送信しない | `test_labMeetingNotOnNonMonday()` | AC-10 | ✅ |
-| 17 | Nudge レスポンスの buddhismReference が任意項目として正しく動作 | `test_nudgeResponseBuddhismReferenceOptional()` | AC-6 | ✅ |
-| 18 | 1.6.0 API 後方互換（既存エンドポイント影響なし） | `test_existingEndpointsUnchanged()` | — | ✅ |
-| 19 | `/api/agent/content` エンドポイント | `test_agentContentEndpoint()` | AC-17 | ✅ |
-| 20 | `/api/agent/content` formats.short ≤ 280文字 | `test_agentContentShortFormat()` | AC-18 | ✅ |
-| 21 | `/api/agent/content` formats にプラットフォーム別フォーマット | `test_agentContentFormats()` | AC-18 | ✅ |
-| 22 | `/api/agent/nudge` レスポンスに agentPostId を含む | `test_nudgeResponseIncludesAgentPostId()` | AC-21 | ✅ |
-| 23 | `/api/agent/feedback` agentPostId で更新 | `test_feedbackByAgentPostId()` | AC-22 | ✅ |
-| 24 | `/api/agent/feedback` (platform, externalPostId) で更新 | `test_feedbackByExternalPostId()` | AC-22 | ✅ |
-| 25 | feedback: agentPostId も externalPostId もなし → 400 | `test_feedbackRequiresIdentifier()` | AC-22 | ✅ |
-| 26 | feedback-fetch: Moltbook upvotes 収集 → DB 更新 | `test_feedbackFetchMoltbook()` | AC-19 | ✅ |
-| 27 | feedback-fetch: Slack reactions 収集 → DB 更新 | `test_feedbackFetchSlack()` | AC-20 | ✅ |
-| 28 | feedback-fetch: 7日以上古い投稿をスキップ | `test_feedbackFetchSkipsOldPosts()` | — | ✅ |
-| 29 | Prompt Injection: URL/コードブロック除去 | `test_contextSanitizesUrlAndCode()` | AC-23 | ✅ |
-| 30 | Prompt Injection: 既知パターンフィルタ | `test_contextFiltersKnownInjectionPatterns()` | AC-23 | ✅ |
-| 31 | Prompt Injection: `<user_post>` タグ封入 | `test_contextWrappedInUserPostTags()` | AC-23 | ✅ |
-| 32 | ツール呼び出し: Allowlist 外ツール → 拒否 | `test_toolCallDeniedIfNotInAllowlist()` | AC-24 | ✅ |
-| 33 | ツール呼び出し: Allowlist 内ツール → 許可 | `test_toolCallAllowedIfInAllowlist()` | AC-24 | ✅ |
-| 34 | ツール呼び出し: 高リスク操作 → HITL 通知 | `test_highRiskToolTriggersHitl()` | AC-24 | ✅ |
-| 35 | 監査ログ: LLM 呼び出しがログされる | `test_llmCallAuditLogged()` | AC-25 | ✅ |
-| 36 | 監査ログ: ツール実行がログされる | `test_toolExecutionAuditLogged()` | AC-25 | ✅ |
-| 37 | 緊急停止: `/anicca stop` で全エージェント停止 | `test_emergencyStopCommand()` | AC-26 | ✅ |
-| 38 | スキル署名検証: ハッシュ不一致 → 拒否 | `test_skillHashMismatchRejected()` | AC-27 | ✅ |
-| 39 | スキル署名検証: ハッシュ一致 → 許可 | `test_skillHashMatchAllowed()` | AC-27 | ✅ |
-
----
-
-## 6. データモデル
-
-### 6.1 agent_posts（Prisma model）
-
-```prisma
-model AgentPost {
-  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
-  platform          String    @db.VarChar(50)        // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
-  externalPostId    String?   @map("external_post_id") @db.VarChar(255)
-  platformUserId    String?   @map("platform_user_id") @db.VarChar(255) // ユーザー削除要求用
-  severity          String?   @db.VarChar(20)        // null | 'crisis'（危機検出時）
-  region            String?   @db.VarChar(10)        // 'JP', 'US', 'UK', 'KR', 'OTHER'（危機検出時の地域）
-  hook              String?
-  content           String?
-  tone              String?   @db.VarChar(50)
-  problemType       String?   @map("problem_type") @db.VarChar(100)
-  reasoning         String?
-  buddhismReference String?   @map("buddhism_reference")
-
-  // フィードバック
-  upvotes           Int       @default(0)
-  reactions         Json      @default("{}")          // Slack { "👍": 3, "❤️": 1 }
-  views             Int       @default(0)
-  likes             Int       @default(0)
-  shares            Int       @default(0)
-  comments          Int       @default(0)
-
-  // Z-Score
-  moltbookZ         Float?    @map("moltbook_z")
-  slackZ            Float?    @map("slack_z")
-  tiktokZ           Float?    @map("tiktok_z")
-  xZ                Float?    @map("x_z")
-  instagramZ        Float?    @map("instagram_z")
-  unifiedScore      Float?    @map("unified_score")
-
-  // メタデータ
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
-  promotedToHookCandidates Boolean @default(false) @map("promoted_to_hook_candidates")
-
-  @@unique([platform, externalPostId])  // 重複防止（partial: NULL は複数許容）
-  @@map("agent_posts")
-}
-```
-
-### 6.2 hook_candidates 拡張カラム（Prisma migration）
-
-既存の `HookCandidate` model に以下を追加:
-
-```prisma
-// 既存の HookCandidate に追加するカラム
-moltbookUpvoteRate  Decimal?  @map("moltbook_upvote_rate") @db.Decimal(5, 4)
-moltbookSampleSize  Int?      @map("moltbook_sample_size")
-moltbookHighPerformer Boolean? @map("moltbook_high_performer")
-slackReactionRate   Decimal?  @map("slack_reaction_rate") @db.Decimal(5, 4)
-slackSampleSize     Int?      @map("slack_sample_size")
-slackHighPerformer  Boolean?  @map("slack_high_performer")
-```
-
-### 6.3 Z-Score 5チャネル統合
-
-**As-Is（1.6.0）:** 3チャネル（App, TikTok, X）
-
-```
-unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ
-W_APP=0.5, W_TIK=0.3, W_X=0.2  (合計 1.0)
-```
-
-**To-Be（1.6.1）:** 5チャネル
-
-```
-unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ + W_SLACK * slackZ
-```
-
-| チャネル | 重み | 理由 |
-|---------|------|------|
-| App (appZ) | 0.40 | コア。ユーザーの行動変容に最も直結 |
-| TikTok (tiktokZ) | 0.20 | リーチが大きい。like率が指標 |
-| X (xZ) | 0.15 | engagement率が指標 |
-| Moltbook (moltbookZ) | 0.15 | 苦しみターゲットに最も近い。upvote率が指標 |
-| Slack (slackZ) | 0.10 | 実験場。reaction数が指標 |
-
-**ベースライン（初期値）:**
-
-| チャネル | 指標 | 初期MEAN | 初期STDDEV | 最小サンプルサイズ |
-|---------|------|---------|-----------|-----------------|
-| Moltbook | upvotes / views | 0.05 | 0.03 | 10 |
-| Slack | total_reactions / messages | 0.10 | 0.05 | 5 |
-
-**注意:** Moltbook の指標は `upvotes / views` を使用。`views` は `AgentPost.views` フィールドで保存済み。
-
-**views が 0 または未提供の場合の計算ルール:**
-
-| 条件 | 処理 |
-|------|------|
-| `views === 0` | Z-Score 計算から除外（NaN 回避） |
-| `views === null` または未提供 | `moltbook_upvotes_baseline`（別ベースライン）を使用して upvotes 絶対値で計算 |
-| `views < 10`（最低しきい値） | サンプルサイズ不足として Z-Score 計算から除外 |
-
-**views 欠損時の別ベースライン:**
-
-| ベースライン | 指標 | 初期MEAN | 初期STDDEV | 更新ルール |
-|-------------|------|---------|-----------|-----------|
-| `moltbook_upvotes_baseline` | upvotes（絶対値） | 3.0 | 2.0 | 30日間の views=null レコードのみを母集団として `refreshBaselines()` で更新 |
-
-**refreshBaselines() の入力母集団:**
-
-| ベースライン | 母集団 | 期間 |
-|-------------|--------|------|
-| `moltbook_views_baseline` | `views IS NOT NULL AND views >= 10` のレコード | 直近30日 |
-| `moltbook_upvotes_baseline` | `views IS NULL` のレコード | 直近30日 |
-
-**テスト:**
-
-| # | テスト名 | 内容 |
-|---|----------|------|
-| 46 | `test_zScoreExcludesZeroViews()` | views=0 のレコードは Z-Score 計算から除外される |
-| 47 | `test_zScoreFallbackToUpvotes()` | views=null の場合、upvotes 絶対値で計算される |
-
-30日分のデータが溜まったら `refreshBaselines()` が実データで上書きする。
-
-### 6.4 昇格パイプライン
-
-**2つの昇格パスが共存する。干渉しない。**
-
-| パス | 条件 | 動作 | source |
-|------|------|------|--------|
-| **A: agent_posts → hook_candidates**（新規） | `upvotes >= 5 AND unified_score > 0.5` | 新規 INSERT | `agent_moltbook`, `agent_slack` 等 |
-| **B: 既存 cross-platform promotion** | X→TikTok: Z≥1.0, TikTok→App: unified≥1.5 | hook_candidates 内の `promoted` フラグ更新 | 既存の `tiktok`, `x` 等 |
-
-- パスA は外部プラットフォーム（Moltbook/Slack）からの「新規 hook 発見」
-- パスB は既存パイプライン内の「クロスプラットフォーム昇格」
-- `source` カラムで区別。既存ロジックに影響なし
-
-### 6.5 データ保持・匿名化ポリシー
-
-**SOUL.md 要件:** `agent_posts` は90日後に匿名化する
-
-| 項目 | 設定 |
-|------|------|
-| **匿名化対象** | `external_post_id`, `platform_user_id`, `content`, `reasoning`（個人を特定可能なフィールド） |
-| **匿名化方法** | 対象フィールドを `NULL` に更新。`hook`, `tone`, `problemType`, `upvotes` 等の集計データは保持 |
-| **実行タイミング** | 毎日 04:00 UTC（Railway Cron） |
-| **対象条件** | `created_at < NOW() - INTERVAL '90 days'` かつ未匿名化 |
-| **匿名化フラグ** | `anonymized_at` カラム（nullable timestamp）を追加。匿名化済みは再処理しない |
-
-#### Prisma schema 追加
-
-```prisma
-// AgentPost に追加
-anonymizedAt      DateTime? @map("anonymized_at")
-```
-
-#### 匿名化ジョブ
-
-```sql
-UPDATE agent_posts
-SET 
-  external_post_id = NULL,
-  platform_user_id = NULL,
-  content = NULL,
-  reasoning = NULL,
-  anonymized_at = NOW()
-WHERE 
-  created_at < NOW() - INTERVAL '90 days'
-  AND anonymized_at IS NULL;
-```
-
-#### テスト
-
-| # | テスト名 | 内容 |
-|---|----------|------|
-| 40 | `test_anonymizationJob()` | 90日以上古いレコードが匿名化される |
-| 41 | `test_anonymizationPreservesAggregates()` | `hook`, `upvotes` 等は保持される |
-
-### 6.6 削除要求対応（SOUL.md 要件）
-
-**SOUL.md 要件:** 「ユーザーが削除を要求した場合、24時間以内に対応する」
-
-#### 削除要求の受付手段
-
-| 手段 | コマンド | 例 |
-|------|---------|-----|
-| **Moltbook DM** | @anicca に「delete my data」等のキーワードを含む DM を送信 | DM: `@anicca delete my data` |
-| **Slack #agents** | `/anicca delete-user <platform:user_id>` | `/anicca delete-user moltbook:12345` |
-| **Slack #agents** | `/anicca delete-post <external_post_id>` | `/anicca delete-post abc123` |
-| **管理者 CLI** | `npm run delete-user -- --id <platform:user_id>` | `npm run delete-user -- --id moltbook:12345` |
-| **管理者 CLI** | `npm run delete-post -- --id <external_post_id>` | `npm run delete-post -- --id abc123` |
-
-**注意:** SOUL.md 例外条項により、削除要求に限り DM 処理を許可。
-
-**保存形式:** `platform_user_id` は `<platform>:<user_id>` 形式で保存（例: `moltbook:12345`, `slack:U1234567890`）
-
-**データ取得元:**
-- Moltbook: `post.author.id` フィールド
-- Slack: `message.user` フィールド
-
-#### 認可
-
-| 手段 | 認可レベル |
-|------|-----------|
-| Moltbook DM | 本人のみ（DM 送信者 = データ所有者） |
-| Slack コマンド | 管理者のみ（Slack ワークスペースの #agents メンバー） |
-| CLI | 管理者のみ（VPS SSH アクセス権限者） |
-
-#### 削除対象フィールド
-
-| フィールド | 削除方法 |
-|-----------|----------|
-| `external_post_id` | NULL に更新 |
-| `platform_user_id` | NULL に更新 |
-| `content` | NULL に更新 |
-| `reasoning` | NULL に更新 |
-| `hook` | **保持**（匿名化された統計データとして使用可） |
-| `upvotes`, `views` 等 | **保持** |
-
-#### SLA
-
-| 項目 | 値 |
-|------|-----|
-| 対応時間 | 24時間以内（暦時間、営業日関係なし） |
-| 完了通知 | Moltbook DM の場合、削除完了を返信（SOUL.md 例外条項により許可） |
-
-#### 監査ログ
-
-| ログ項目 | 詳細 |
-|---------|------|
-| `deletion_request` | 要求日時、要求手段、対象 ID |
-| `deletion_completed` | 完了日時、削除対象フィールド、実行者 |
-
-#### テスト
-
-| # | テスト名 | 内容 |
-|---|----------|------|
-| 44 | `test_deletionRequestViaSlack()` | Slack コマンドでデータが削除される |
-| 45 | `test_deletionPreservesAggregates()` | `hook`, `upvotes` 等は保持される |
-| 48 | `test_deletionRequestViaDm()` | Moltbook DM で削除要求 → データ削除 + 完了通知 DM 送信 |
-| 49 | `test_deletionRequestViaCli()` | CLI コマンドでデータが削除される |
-| 50 | `test_deletionSlaWithin24Hours()` | 削除要求から24時間以内に処理完了 |
-
----
-
-## 7. セキュリティ
-
-### Railway Agent API セキュリティ
-
-| 項目 | 設定 |
-|------|------|
-| 認証 | `ANICCA_AGENT_TOKEN`（`INTERNAL_API_TOKEN` とは完全分離） |
-| 許可メソッド | **GET**（`/wisdom`）+ **POST**（`/nudge`, `/feedback`, `/content`） |
-| スコープ | Nudge生成 + Wisdom取得 + フィードバック保存 + コンテンツ生成のみ。ユーザーデータ・課金・設定変更は不可 |
-| レート制限 | 60 req/min per token |
-
-### トークン管理（OWASP MCP Top 10 準拠）
-
-| 項目 | 設定 |
-|------|------|
-| **有効期限** | 90日（短期トークン） |
-| **ローテーション** | 60日ごとに新トークン発行。旧トークンは7日間の猶予期間後に失効 |
-| **失効フロー** | Railway 環境変数を更新 → VPS 環境変数を更新 → 旧トークン削除 |
-| **漏洩時の即時無効化** | (1) Railway で即座に環境変数を削除 → (2) Slack #agents に通知 → (3) 新トークン発行 → (4) VPS 更新 |
-| **監査** | トークン使用ログを `agent_audit_logs` に記録。異常パターン検知 |
-
-#### ローテーション手順
+**実行内容:**
 
 ```bash
-# 1. 新トークン生成
-NEW_TOKEN=$(openssl rand -hex 32)
-OLD_TOKEN=$(railway variables get ANICCA_AGENT_TOKEN)
+# 1. ANICCA_AGENT_TOKEN を生成
+openssl rand -hex 32
+# 出力例: a1b2c3d4e5f6...
 
-# 2. Railway に旧トークンを OLD に退避し、新トークンを設定
-railway variables set ANICCA_AGENT_TOKEN_OLD=$OLD_TOKEN
-railway variables set ANICCA_AGENT_TOKEN=$NEW_TOKEN
-
-# 3. API が両方のトークンを受け入れる（7日間の猶予期間）
-# 認証ロジック: token === ANICCA_AGENT_TOKEN || token === ANICCA_AGENT_TOKEN_OLD
-
-# 4. VPS を新トークンに更新
-ssh anicca@<vps-ip> "sed -i 's/$OLD_TOKEN/$NEW_TOKEN/' ~/.env && systemctl restart openclaw"
-
-# 5. 旧トークンを削除
-railway variables unset ANICCA_AGENT_TOKEN_OLD
+# 2. Railway MCP で Production に設定
+# MCP tool: user-railway-mcp-server
+# - variable-upsert で ANICCA_AGENT_TOKEN を設定
+# - variable-upsert で SLACK_WEBHOOK_AGENTS を設定（GitHub Secrets の SLACK_METRICS_WEBHOOK_URL と同じ値）
 ```
 
-#### 漏洩検知指標
+**設定する環境変数:**
 
-| 指標 | 閾値 | 対応 |
-|------|------|------|
-| 異常な IP からのリクエスト | 既知 IP 以外から10件/時 | アラート + 調査 |
-| レート制限超過 | 3回連続 | アラート + 一時ブロック検討 |
-| 失敗リクエスト急増 | 50件/時 | アラート + トークン漏洩疑い |
+| 変数 | 値 | 環境 |
+|------|-----|------|
+| `ANICCA_AGENT_TOKEN` | 生成した64文字 hex | Production + Staging |
+| `SLACK_WEBHOOK_AGENTS` | GitHub Secrets の `SLACK_METRICS_WEBHOOK_URL` と同じ | Production |
 
-### VPS セキュリティ
+---
 
-| 項目 | 設定 |
-|------|------|
-| ファイアウォール | ufw（22, 443のみ許可） |
-| ブルートフォース対策 | fail2ban |
-| SSH | 公開鍵認証のみ |
+### Phase 2: VPS 初期設定
 
-### Prompt Injection 対策（OWASP MCP Top 10 準拠）
+**SSH 接続:**
 
-#### 入力サニタイズ層
+```bash
+ssh root@46.225.70.241
+```
 
-| # | 対策 | 詳細 |
-|---|------|------|
-| 1 | URL除去 | HTTPリンクを削除 |
-| 2 | コードブロック除去 | ``` ``` ``` を削除 |
-| 3 | タグ封入 | ユーザー入力を `<user_post>...</user_post>` で囲む |
-| 4 | 既知パターンフィルタ | `ignore previous`, `disregard`, `override`, `system:`, `assistant:` 等を検出・除去 |
-| 5 | 最大長制限 | context は 2000文字まで（超過は切り捨て） |
-| 6 | Unicode制御文字除去 | U+200B-U+200F, U+202A-U+202E を除去 |
-| 7 | タグエスケープ | ユーザー入力中の `<user_post>` `</user_post>` を除去 |
+**2.1 ufw / fail2ban 確認・設定（MUST）:**
 
-#### ツール呼び出し制御層（新規）
+```bash
+# ufw 確認
+ufw status
+# 期待: Status: active, 22/tcp ALLOW
 
-| # | 対策 | 詳細 |
-|---|------|------|
-| 8 | ツール Allowlist | Anicca エージェントが呼び出せるツールを明示的に定義。それ以外は自動拒否 |
-| 9 | 未信頼コンテキスト分離 | ユーザー投稿は `untrusted_context` として明確に分離。System prompt とは別セクション |
-| 10 | ポリシー検証 | 各ツール呼び出し前にサーバー側でポリシー検証。外部 API 呼び出しは制限 |
-| 11 | 高リスク操作の HITL | データ削除、外部送信、設定変更は人間承認必須（Slack #agents に通知） |
+# fail2ban 確認
+systemctl status fail2ban
+# 期待: active (running)
 
-#### 監査・監視層（新規）
+# 未設定の場合のみ実行
+apt update && apt install -y ufw fail2ban
+ufw default deny incoming
+ufw default allow outgoing
+ufw allow 22/tcp
+ufw --force enable
+systemctl enable fail2ban
+systemctl start fail2ban
+```
 
-| # | 対策 | 詳細 |
-|---|------|------|
-| 12 | 監査ログ必須 | 全ての LLM 呼び出し・ツール実行をログ。`agent_audit_logs` テーブルに保存 |
-| 13 | 異常検知 | 1時間あたり50件以上のツール呼び出しでアラート |
-| 14 | 緊急停止 | Slack #agents で `/anicca stop` コマンド → 全エージェント即時停止 |
+**2.2 anicca ユーザー作成（SHOULD）:**
 
-#### Allowlist 定義
+```bash
+# 既存確認
+id anicca
+
+# 存在しない場合
+useradd -m -s /bin/bash anicca
+echo "anicca ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+mkdir -p /home/anicca/.ssh
+cp /root/.ssh/authorized_keys /home/anicca/.ssh/
+chown -R anicca:anicca /home/anicca/.ssh
+chmod 700 /home/anicca/.ssh
+chmod 600 /home/anicca/.ssh/authorized_keys
+```
+
+**2.3 Node.js インストール（MUST）:**
+
+```bash
+# バージョン確認
+node -v
+
+# 未インストールの場合
+curl -fsSL https://deb.nodesource.com/setup_22.x | bash -
+apt install -y nodejs
+```
+
+---
+
+### Phase 3: OpenClaw インストール・設定
+
+**3.1 OpenClaw インストール（MUST）:**
+
+```bash
+npm install -g openclaw
+```
+
+**3.2 ディレクトリ作成:**
+
+```bash
+mkdir -p /home/anicca/openclaw/skills
+chown -R anicca:anicca /home/anicca/openclaw
+```
+
+**3.3 SOUL.md 配置（ローカルから実行）:**
+
+```bash
+scp /Users/cbns03/Downloads/anicca-1.6.1-world/.cursor/plans/ios/1.6.1/SOUL.md root@46.225.70.241:/home/anicca/openclaw/
+```
+
+**3.4 環境変数設定（MUST）:**
+
+```bash
+cat > /home/anicca/.env << 'EOF'
+ANICCA_PROXY_BASE_URL=https://anicca-proxy-production.up.railway.app
+ANICCA_AGENT_TOKEN=<Phase 1で生成した値>
+SLACK_BOT_TOKEN=<secrets-1.6.1.md 参照 or VPS 既存値>
+MOLTBOOK_API_KEY=<Phase 4で取得>
+OPENAI_API_KEY=<既存のキー>
+EOF
+chmod 600 /home/anicca/.env
+chown anicca:anicca /home/anicca/.env
+```
+
+> **注意:** 実際のトークン値は VPS の `/home/anicca/.env` に直接設定済み。
+> このファイルには値をハードコードしない。
+
+**3.5 systemd サービス作成（MUST）:**
+
+```bash
+cat > /etc/systemd/system/openclaw.service << 'EOF'
+[Unit]
+Description=Anicca OpenClaw Agent
+After=network.target
+
+[Service]
+Type=simple
+User=anicca
+WorkingDirectory=/home/anicca/openclaw
+EnvironmentFile=/home/anicca/.env
+ExecStart=/usr/bin/openclaw run --soul SOUL.md
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+systemctl daemon-reload
+systemctl enable openclaw
+```
+
+---
+
+### Phase 4: Moltbook エージェント登録
+
+**4.1 エージェント登録（API 呼び出し）:**
+
+```bash
+curl -X POST https://www.moltbook.com/api/v1/agents/register \
+  -H "Content-Type: application/json" \
+  -d '{"name": "anicca", "description": "🤖 Bot | AI agent that ends suffering. Powered by Buddhist wisdom and compassion."}'
+```
+
+**期待レスポンス:**
+
+```json
+{
+  "agent": {
+    "api_key": "moltbook_xxx",
+    "claim_url": "https://www.moltbook.com/claim/moltbook_claim_xxx",
+    "verification_code": "reef-XXXX"
+  }
+}
+```
+
+**4.2 MOLTBOOK_API_KEY を VPS に設定:**
+
+```bash
+ssh root@46.225.70.241 "sed -i 's/MOLTBOOK_API_KEY=.*/MOLTBOOK_API_KEY=<取得した値>/' /home/anicca/.env"
+```
+
+**4.3 claim_url をユーザーに通知:**
+
+ユーザーがブラウザで `claim_url` を開いて認証完了する（これが唯一のユーザー作業）
+
+**4.4 s/sangha Submolt 作成:**
+
+```bash
+curl -X POST https://www.moltbook.com/api/v1/submolts \
+  -H "Authorization: Bearer <MOLTBOOK_API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "sangha",
+    "display_name": "Sangha - Community of Support",
+    "description": "A space for those who struggle. No judgment, only compassion."
+  }'
+```
+
+---
+
+### Phase 5: Skills 実装
+
+**5.1 moltbook-responder Skill**
+
+**ファイル:** `/home/anicca/openclaw/skills/moltbook-responder/SKILL.md`
+
+```markdown
+---
+name: moltbook-responder
+description: Detects suffering posts on Moltbook and responds with compassionate nudges
+metadata: {"openclaw":{"primaryEnv":"MOLTBOOK_API_KEY"}}
+---
+
+# Moltbook Responder
+
+Every 5 minutes, check for posts that need Anicca's response.
+
+## Trigger Conditions (ALL must be true)
+
+1. `post.visibility === 'public'`
+2. One of: @anicca mention, s/sangha post, follower's post
+3. Contains suffering keyword (see SOUL.md)
+4. Not already responded (check agent_posts.external_post_id)
+
+## Execution
+
+1. GET /posts?sort=new&limit=50
+2. Filter by trigger conditions
+3. For each match:
+   - POST to Railway /api/agent/nudge
+   - POST comment to Moltbook
+
+## Rate Limits
+
+- Max 10 responses/day
+- Min 30 seconds between responses
+```
+
+**ファイル:** `/home/anicca/openclaw/skills/moltbook-responder/index.js`
+
+```javascript
+import fetch from 'node-fetch';
+
+const MOLTBOOK_API = 'https://www.moltbook.com/api/v1';
+const RAILWAY_API = process.env.ANICCA_PROXY_BASE_URL;
+const MOLTBOOK_KEY = process.env.MOLTBOOK_API_KEY;
+const AGENT_TOKEN = process.env.ANICCA_AGENT_TOKEN;
+
+const SUFFERING_KEYWORDS_JA = ['死にたい', '消えたい', 'つらい', '苦しい', 'もうダメ', '眠れない', '起きれない', '自己嫌悪'];
+const SUFFERING_KEYWORDS_EN = ['want to die', "can't go on", 'struggling', 'suffering', 'hopeless', 'hate myself'];
+
+let respondedPosts = new Set();
+let dailyCount = 0;
+let lastResponseTime = 0;
+
+export async function run() {
+  if (dailyCount >= 10) return;
+
+  const [mentions, sangha] = await Promise.all([
+    fetch(`${MOLTBOOK_API}/search?q=@anicca&type=posts&limit=20`, {
+      headers: { Authorization: `Bearer ${MOLTBOOK_KEY}` }
+    }).then(r => r.json()),
+    fetch(`${MOLTBOOK_API}/submolts/sangha/feed?sort=new&limit=20`, {
+      headers: { Authorization: `Bearer ${MOLTBOOK_KEY}` }
+    }).then(r => r.json())
+  ]);
+
+  const posts = [...(mentions.results || []), ...(sangha.posts || [])]
+    .filter((p, i, arr) => arr.findIndex(x => x.id === p.id) === i);
+
+  for (const post of posts) {
+    if (post.visibility !== 'public') continue;
+    if (respondedPosts.has(post.id)) continue;
+    
+    const content = (post.content || '').toLowerCase();
+    const hasSuffering = [...SUFFERING_KEYWORDS_JA, ...SUFFERING_KEYWORDS_EN]
+      .some(k => content.includes(k.toLowerCase()));
+    if (!hasSuffering) continue;
+
+    if (Date.now() - lastResponseTime < 30000) continue;
+
+    const isCrisis = ['死にたい', '消えたい', '自殺', 'kill myself', 'suicidal']
+      .some(k => content.includes(k.toLowerCase()));
+
+    const nudge = await fetch(`${RAILWAY_API}/api/agent/nudge`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${AGENT_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        platform: 'moltbook',
+        externalPostId: post.id,
+        platformUserId: `moltbook:${post.author?.id}`,
+        context: post.content,
+        optIn: true,
+        severity: isCrisis ? 'crisis' : null,
+        region: detectRegion(post.content)
+      })
+    }).then(r => r.json());
+
+    await fetch(`${MOLTBOOK_API}/posts/${post.id}/comments`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${MOLTBOOK_KEY}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content: nudge.content })
+    });
+
+    respondedPosts.add(post.id);
+    dailyCount++;
+    lastResponseTime = Date.now();
+    console.log(`Responded to ${post.id}`);
+  }
+}
+
+function detectRegion(text) {
+  if (/[\u3040-\u309F\u30A0-\u30FF]/.test(text)) return 'JP';
+  if (/[\uAC00-\uD7AF]/.test(text)) return 'KR';
+  return 'OTHER';
+}
+```
+
+**5.2 slack-reminder Skill**
+
+**ファイル:** `/home/anicca/openclaw/skills/slack-reminder/SKILL.md`
+
+```markdown
+---
+name: slack-reminder
+description: Sends lab meeting reminder every Monday 12:30 JST
+metadata: {"openclaw":{"primaryEnv":"SLACK_BOT_TOKEN"}}
+---
+
+# Slack Reminder
+
+Cron: Monday 12:30 JST (03:30 UTC)
+Skip if Japanese holiday
+```
+
+**ファイル:** `/home/anicca/openclaw/skills/slack-reminder/index.js`
+
+```javascript
+import fetch from 'node-fetch';
+
+const SLACK_TOKEN = process.env.SLACK_BOT_TOKEN;
+const CHANNEL = '#agents';
+
+export async function run() {
+  const today = new Date().toISOString().split('T')[0];
+  const holidays = await fetch('https://holidays-jp.github.io/api/v1/date.json').then(r => r.json());
+  
+  if (today in holidays) {
+    console.log(`${today} is holiday, skipping`);
+    return;
+  }
+
+  if (new Date().getDay() !== 1) {
+    console.log('Not Monday, skipping');
+    return;
+  }
+
+  await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${SLACK_TOKEN}`, 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channel: CHANNEL, text: '🔔 Lab meeting in 30 minutes!' })
+  });
+
+  console.log('Reminder sent');
+}
+```
+
+**5.3 feedback-fetch Skill**
+
+**ファイル:** `/home/anicca/openclaw/skills/feedback-fetch/SKILL.md`
+
+```markdown
+---
+name: feedback-fetch
+description: Collects Moltbook upvotes and sends to Railway API
+metadata: {"openclaw":{"primaryEnv":"MOLTBOOK_API_KEY"}}
+---
+
+# Feedback Fetch
+
+Every 30 minutes, collect engagement metrics from recent posts.
+```
+
+**ファイル:** `/home/anicca/openclaw/skills/feedback-fetch/index.js`
+
+```javascript
+import fetch from 'node-fetch';
+
+const MOLTBOOK_API = 'https://www.moltbook.com/api/v1';
+const RAILWAY_API = process.env.ANICCA_PROXY_BASE_URL;
+const MOLTBOOK_KEY = process.env.MOLTBOOK_API_KEY;
+const AGENT_TOKEN = process.env.ANICCA_AGENT_TOKEN;
+
+export async function run() {
+  // Get recent agent posts from our DB
+  const posts = await fetch(`${RAILWAY_API}/api/agent/posts/recent?days=7`, {
+    headers: { Authorization: `Bearer ${AGENT_TOKEN}` }
+  }).then(r => r.json());
+
+  for (const post of posts.filter(p => p.platform === 'moltbook')) {
+    const moltPost = await fetch(`${MOLTBOOK_API}/posts/${post.externalPostId}`, {
+      headers: { Authorization: `Bearer ${MOLTBOOK_KEY}` }
+    }).then(r => r.json()).catch(() => null);
+
+    if (!moltPost) continue;
+
+    await fetch(`${RAILWAY_API}/api/agent/feedback`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${AGENT_TOKEN}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        agentPostId: post.id,
+        upvotes: moltPost.upvotes || 0,
+        views: moltPost.views || null
+      })
+    });
+
+    console.log(`Updated feedback for ${post.externalPostId}`);
+  }
+}
+```
+
+**5.4 スケジュール設定**
+
+**ファイル:** `/home/anicca/openclaw/schedule.yaml`
 
 ```yaml
-allowed_tools:
-  - name: generate_nudge
-    risk: low
-    hitl: false
-  - name: post_to_moltbook
-    risk: medium
-    hitl: false
-    rate_limit: 10/day
-  - name: post_to_slack
-    risk: low
-    hitl: false
-  - name: post_to_x
-    risk: medium
-    hitl: false
-    rate_limit: 5/day
-  - name: fetch_feedback
-    risk: low
-    hitl: false
-
-denied_tools:
-  - name: execute_code
-  - name: send_email
-  - name: access_database_raw
-  - name: modify_system_config
+skills:
+  moltbook-responder:
+    interval: 5m
+    enabled: true
+  
+  feedback-fetch:
+    interval: 30m
+    enabled: true
+  
+  slack-reminder:
+    cron: "30 3 * * 1"
+    enabled: true
 ```
 
 ---
 
-## 8. 環境変数
+### Phase 6: OpenClaw 起動・動作確認
 
-### VPS (OpenClaw)
+**6.1 サービス起動:**
 
-| 変数 | 説明 |
-|------|------|
-| `ANICCA_PROXY_BASE_URL` | Railway API URL |
-| `ANICCA_AGENT_TOKEN` | Agent専用トークン |
-| `SLACK_BOT_TOKEN` | Slack Bot Token |
-| `MOLTBOOK_API_KEY` | Moltbook API Key |
+```bash
+ssh root@46.225.70.241 "systemctl start openclaw"
+```
 
-### Railway API
+**6.2 動作確認:**
 
-| 変数 | 説明 |
-|------|------|
-| `ANICCA_AGENT_TOKEN` | Agent認証用（INTERNAL_API_TOKENとは別） |
-| `ANICCA_AGENT_TOKEN_OLD` | ローテーション猶予期間中の旧トークン（任意） |
-| `OPENAI_API_KEY` | Nudge生成用 |
+```bash
+ssh root@46.225.70.241 "systemctl status openclaw"
+# 期待: active (running)
 
-**複数トークン許可:** ローテーション期間中は `ANICCA_AGENT_TOKEN` と `ANICCA_AGENT_TOKEN_OLD` の両方を受け入れる。認証ロジックは `token === ANICCA_AGENT_TOKEN || token === ANICCA_AGENT_TOKEN_OLD` で判定。猶予期間（7日）終了後に `ANICCA_AGENT_TOKEN_OLD` を削除。
+ssh root@46.225.70.241 "journalctl -u openclaw -n 50"
+# ログを確認
+```
 
----
+**6.3 OpenClaw ペルソナ確認:**
 
-## 9. ユーザー作業（GUI / 手動）
-
-**ほぼ全自動。ユーザーが手動でやるのは1つだけ。**
-
-### エージェントが自動でやること（CLI）
-
-| # | タスク | 方法 |
-|---|--------|------|
-| 1 | Moltbook エージェント登録 | `curl -X POST https://www.moltbook.com/api/v1/agents/register` → api_key + claim_url 取得 |
-| 2 | s/sangha Submolt 作成 | Moltbook API 経由 |
-| 3 | Hetzner VPS セットアップ | CLI / Terraform |
-| 4 | Slack 連携 | **設定済み**（OAuth + Bot Token + `#agents` チャンネル + 12+ ツール） |
-
-### ユーザーが手動でやること
-
-| # | タイミング | タスク | 手順 | 理由 |
-|---|-----------|--------|------|------|
-| 1 | Moltbook 登録後 | claim URL をクリック | エージェントが出力した `claim_url` をブラウザで開く | Moltbook がオーナー認証に人間のクリックを要求するため |
+```bash
+ssh root@46.225.70.241 "openclaw ask 'Who are you?'"
+# 期待: "I am Anicca..."
+```
 
 ---
 
-## 10. 境界（やらないこと）
+### Phase 7: Railway 環境変数追加（GET /api/agent/posts/recent 用）
 
-| やらないこと | 理由 |
-|-------------|------|
-| 既存の `/api/mobile/*` エンドポイントを変更しない | 後方互換。古いiOSクライアントが壊れる |
-| iOSクライアントコードを変更しない | 1.6.1 はバックエンド + VPS のみ |
-| 既存の TikTok/X の GHA ワークフローを変更しない | Strangler Fig: 1.6.1 では並行稼働、1.7.0 で段階移行 |
-| Commander Agent のロジックを変更しない | hook_candidates の読み取りのみ（新カラム追加は影響なし） |
-| 他ユーザーの Slack ワークスペースに接続しない | 1.6.1 はラボ実験（自分のワークスペースのみ） |
+**新規ファイル:** `apps/api/src/routes/agent/posts.js`
 
-### 触るファイル
+```javascript
+import express from 'express';
+import { prisma } from '../../lib/prisma.js';
 
-| ファイル | 変更内容 |
-|---------|----------|
-| `apps/api/prisma/schema.prisma` | AgentPost model 追加、HookCandidate 拡張 |
-| `apps/api/src/api/agent/` | 新規ディレクトリ: nudge, wisdom, feedback, content エンドポイント |
-| `apps/api/src/api/auth/` | agentAuth ミドルウェア追加 |
-| `apps/api/src/jobs/syncCrossPlatform.js` | unifiedScore() を 5ch に拡張、refreshBaselines() に Moltbook/Slack 追加 |
+const router = express.Router();
 
-### 触らないファイル
+router.get('/recent', async (req, res) => {
+  const days = parseInt(req.query.days) || 7;
+  const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
-| ファイル | 理由 |
-|---------|------|
-| `apps/api/src/api/mobile/*` | 既存モバイルAPI。後方互換 |
-| `apps/api/src/agents/commander.js` | hook_candidates を読むだけ。変更不要 |
-| `aniccaios/` | iOSクライアント。1.6.1 スコープ外 |
-| `.github/workflows/anicca-daily-post.yml` | 既存TikTok投稿。並行稼働 |
-| `.github/workflows/anicca-x-post.yml` | 既存X投稿。並行稼働 |
+  const posts = await prisma.agentPost.findMany({
+    where: {
+      createdAt: { gte: cutoff },
+      platform: { in: ['moltbook', 'slack'] }
+    },
+    select: { id: true, platform: true, externalPostId: true, createdAt: true },
+    orderBy: { createdAt: 'desc' }
+  });
 
-## 11. Skill 実行スケジュール
+  res.json(posts);
+});
 
-| Skill | 実行方式 | 間隔 |
-|-------|---------|------|
-| moltbook-responder | ポーリング | 5分間隔 |
-| feedback-fetch | ポーリング | 30分間隔 |
-| slack-reminder | Cron Skill | 月曜12:25にチェック開始 |
-| x-poster | Commander 連携 | Commander Agent のスケジュールに従う |
+export default router;
+```
 
-### エラーハンドリング
+**`apps/api/src/routes/agent/index.js` 更新:**
 
-| 項目 | 設定 |
-|------|------|
-| リトライ | Exponential backoff（初回1分、最大30分） |
-| Circuit breaker | 5回連続失敗 → 10分停止 |
-| ログ | 1-2回失敗: warn、3回以上: error |
+```diff
++ import postsRouter from './posts.js';
 
-## 12. 実行手順
+// 既存ルート登録後に追加
++ router.use('/posts', postsRouter);
+```
 
-### テスト
+---
+
+## 4. secrets-1.6.1.md（別ファイル参照）
+
+**ファイル:** `.cursor/plans/ios/1.6.1/secrets-1.6.1.md`
+
+全ての認証情報はこのファイルに記載。ユーザーに聞くな。
+
+---
+
+## 5. テスト手順
+
+### 5.1 Railway API テスト（完了済み）
 
 ```bash
 cd apps/api && npm test
+# 196 tests pass
 ```
 
-### VPS デプロイ
+### 5.2 VPS テスト
 
 ```bash
-# 1. SSH で VPS に接続
-ssh anicca@<vps-ip>
+# SSH 接続
+ssh root@46.225.70.241
 
-# 2. OpenClaw インストール・設定
-# (OpenClaw のデプロイ手順に従う)
+# OpenClaw ステータス
+systemctl status openclaw
 
-# 3. SOUL.md を配置
-scp SOUL.md anicca@<vps-ip>:~/openclaw/
+# ペルソナ確認
+openclaw ask "Who are you?"
 
-# 4. systemd サービス起動
-sudo systemctl enable openclaw && sudo systemctl start openclaw
+# Skill テスト
+openclaw skill test moltbook-responder
+openclaw skill test slack-reminder
+openclaw skill test feedback-fetch
 ```
 
-### Railway デプロイ
+### 5.3 E2E テスト
 
-```bash
-# dev → main マージで自動デプロイ
-# migration は自動実行（Prisma migrate deploy）
-```
-
-## 13. 実装状況（2026-02-03 更新）
-
-### 層別ステータス
-
-| 層 | ステータス | 詳細 |
-|----|----------|------|
-| **Railway API** | ✅ 完了 | 全エンドポイント実装、テスト通過、Codex レビュー 8 iteration |
-| **OpenClaw (Hetzner VPS)** | ❌ 未着手 | VPS セットアップ、デーモン設定、systemd 未実施 |
-| **Skills** | ❌ 未着手 | moltbook-responder, slack-reminder, feedback-fetch, x-poster 全て未実装 |
-| **Moltbook 連携** | ❌ 未着手 | エージェント登録、s/sangha 作成、実際の投稿・返信 未実施 |
-| **Slack 連携** | ❌ 未着手 | リマインダー送信、緊急停止コマンド 未実装 |
+1. Moltbook s/sangha に「つらい」を含む投稿
+2. 5分待機
+3. Anicca の返信コメントを確認
 
 ---
 
-### Railway API 層（✅ 完了）
+## 6. 完了チェックリスト
 
-| 項目 | ステータス | 実装ファイル |
-|------|----------|-------------|
-| `/api/agent/nudge` エンドポイント | ✅ 完了 | `src/routes/agent/nudge.js` |
-| `/api/agent/wisdom` エンドポイント | ✅ 完了 | `src/routes/agent/wisdom.js` |
-| `/api/agent/feedback` エンドポイント | ✅ 完了 | `src/routes/agent/feedback.js` |
-| `/api/agent/content` エンドポイント | ✅ 完了 | `src/routes/agent/content.js` |
-| `/api/agent/deletion` エンドポイント | ✅ 完了 | `src/routes/agent/deletion.js` |
-| `requireAgentAuth` ミドルウェア | ✅ 完了 | `src/middleware/requireAgentAuth.js` |
-| `AgentPost` Prisma model | ✅ 完了 | `prisma/schema.prisma` |
-| `AgentAuditLog` Prisma model | ✅ 完了 | `prisma/schema.prisma` |
-| `HookCandidate` 拡張カラム | ✅ 完了 | `prisma/schema.prisma` |
-| 5ch Z-Score 統合 (`unifiedScore`) | ✅ 完了 | `src/agents/crossPlatformLearning.js` |
-| `refreshBaselines()` Moltbook/Slack | ✅ 完了 | `src/agents/crossPlatformLearning.js` |
-| 90日匿名化ジョブ | ✅ 完了 | `src/jobs/anonymizeAgentPosts.js` |
-| 削除フロー（DM/Slack/CLI） | ✅ 完了 | `src/routes/agent/deletion.js` |
-| Prompt Injection 対策 | ✅ 完了 | `sanitizeContext()`, `sanitizeInput()` |
-| 危機検知 + Slack 通知 | ✅ 完了 | `nudge.js` の crisis 処理 |
-| 分散SNS オプトイン強制 | ✅ 完了 | `nudge.js` の optIn 検証 |
-| テスト | ✅ 196/196 通過 | `src/**/__tests__/*.test.js` |
-
----
-
-### OpenClaw 層（❌ 未着手）
-
-| 項目 | ステータス | 必要な作業 |
-|------|----------|-----------|
-| Hetzner VPS セットアップ | ❌ 未着手 | サーバー契約、SSH 設定、ufw + fail2ban |
-| OpenClaw インストール | ❌ 未着手 | `npm install -g openclaw` or Docker |
-| systemd サービス設定 | ❌ 未着手 | `openclaw.service` 作成、有効化 |
-| SOUL.md 配置 | ✅ 作成済み | VPS への scp 未実施 |
-| 環境変数設定 | ❌ 未着手 | `ANICCA_AGENT_TOKEN`, `MOLTBOOK_API_KEY` 等 |
+| # | タスク | 実行者 | 状態 |
+|---|--------|--------|------|
+| 1 | Railway `ANICCA_AGENT_TOKEN` 設定 | エージェント（MCP） | ⬜ |
+| 2 | VPS ufw/fail2ban 確認 | エージェント | ⬜ |
+| 3 | VPS Node.js 確認 | エージェント | ⬜ |
+| 4 | OpenClaw インストール | エージェント | ⬜ |
+| 5 | SOUL.md 配置 | エージェント | ⬜ |
+| 6 | 環境変数設定 | エージェント | ⬜ |
+| 7 | systemd サービス設定 | エージェント | ⬜ |
+| 8 | Moltbook エージェント登録 | エージェント | ⬜ |
+| 9 | Moltbook claim URL クリック | **ユーザー** | ⬜ |
+| 10 | s/sangha Submolt 作成 | エージェント | ⬜ |
+| 11 | moltbook-responder Skill 配置 | エージェント | ⬜ |
+| 12 | slack-reminder Skill 配置 | エージェント | ⬜ |
+| 13 | feedback-fetch Skill 配置 | エージェント | ⬜ |
+| 14 | OpenClaw 起動 | エージェント | ⬜ |
+| 15 | 動作確認 | エージェント | ⬜ |
+| 16 | Railway /api/agent/posts/recent 追加 | エージェント | ⬜ |
+| 17 | dev マージ | エージェント | ⬜ |
 
 ---
 
-### Skills 層（❌ 未着手）
-
-| Skill | ステータス | 役割 | 必要な作業 |
-|-------|----------|------|-----------|
-| **moltbook-responder** | ❌ 未実装 | 苦しみ投稿検出 → `/api/agent/nudge` → 返信 | Skill 実装 |
-| **slack-reminder** | ❌ 未実装 | 月曜12:30 ラボミーティングリマインダー | Skill 実装 |
-| **feedback-fetch** | ❌ 未実装 | Moltbook upvotes / Slack reactions 収集 | Skill 実装 |
-| **x-poster** | ❌ 未実装 | X/Twitter 投稿 | Skill 実装 |
-| **moltbook/late-api** | ❌ 未導入 | Moltbook API クライアント（ClawHub） | clawhub install |
-
----
-
-### Moltbook 連携（❌ 未着手）
-
-| 項目 | ステータス | 必要な作業 |
-|------|----------|-----------|
-| エージェント登録 | ❌ 未実施 | `POST /agents/register` → API Key + claim_url |
-| ユーザー認証（claim） | ❌ 未実施 | claim_url をブラウザでクリック（手動） |
-| s/sangha Submolt 作成 | ❌ 未実施 | Moltbook API 経由 |
-| 投稿取得（Heartbeat） | ❌ 未実装 | moltbook-responder Skill |
-| 返信投稿 | ❌ 未実装 | moltbook-responder Skill |
-| 削除要求 DM 処理 | ❌ 未実装 | deletion-handler プロセス |
-
----
-
-### Slack 連携（❌ 未着手）
-
-| 項目 | ステータス | 必要な作業 |
-|------|----------|-----------|
-| ラボミーティングリマインダー | ❌ 未実装 | slack-reminder Skill |
-| `/anicca stop` 緊急停止 | ❌ 未実装 | Slack コマンド + OpenClaw 連携 |
-| `/anicca delete-user` コマンド | ❌ 未実装 | Slack コマンド → Railway API |
-| reactions 収集 | ❌ 未実装 | feedback-fetch Skill |
-
----
-
-### Acceptance Criteria ステータス
-
-| AC | 内容 | ステータス | 備考 |
-|----|------|----------|------|
-| AC-1 | OpenClaw 24/7 稼働 | ❌ 未着手 | VPS セットアップ必要 |
-| AC-2 | SOUL.md 認識 | 🔄 部分 | SOUL.md 作成済み、VPS 配置未実施 |
-| AC-3 | Moltbook エージェント登録 | ❌ 未着手 | API 呼び出し未実施 |
-| AC-4 | s/sangha Submolt | ❌ 未着手 | |
-| AC-5 | Moltbook Nudge 返信 | ❌ 未着手 | moltbook-responder 未実装 |
-| **AC-6** | `/api/agent/nudge` | ✅ 完了 | テスト通過 |
-| **AC-7** | `/api/agent/wisdom` | ✅ 完了 | テスト通過 |
-| **AC-8** | `/api/agent/feedback` | ✅ 完了 | テスト通過 |
-| AC-9 | Slack チャネル接続 | ❌ 未着手 | |
-| AC-10 | ラボミーティングリマインダー | ❌ 未着手 | slack-reminder 未実装 |
-| AC-11 | 祝日スキップ | ❌ 未着手 | |
-| AC-12 | Moltbook upvotes 保存 | ❌ 未着手 | feedback-fetch 未実装 |
-| **AC-13** | Z-Score 5ch 統合 | ✅ 完了 | `unifiedScore()` 実装済み |
-| **AC-14** | 昇格ロジック | ✅ 完了 | 条件実装済み |
-| **AC-15** | VPS セキュリティ | ❌ 未着手 | ufw/fail2ban 未設定 |
-| AC-16 | Moltbook claim | ❌ 未着手 | |
-| **AC-17** | `/api/agent/content` | ✅ 完了 | テスト通過 |
-| **AC-18** | content short ≤280文字 | ✅ 完了 | バリデーション実装 |
-| AC-19 | Moltbook upvotes 収集 | ❌ 未着手 | feedback-fetch 未実装 |
-| AC-20 | Slack reactions 収集 | ❌ 未着手 | feedback-fetch 未実装 |
-| **AC-21** | nudge に agentPostId | ✅ 完了 | テスト通過 |
-| **AC-22** | feedback 両パターン | ✅ 完了 | テスト通過 |
-| **AC-23** | Prompt Injection 対策 | ✅ 完了 | sanitize 実装 |
-| AC-24 | ツール Allowlist | ❌ 未着手 | OpenClaw 側 |
-| **AC-25** | 監査ログ | ✅ 完了 | AgentAuditLog 実装 |
-| AC-26 | `/anicca stop` 緊急停止 | ❌ 未着手 | |
-| AC-27 | スキル署名検証 | ❌ 未着手 | OpenClaw 側 |
-| AC-28 | Moltbook 運用ポリシー | 🔄 部分 | optIn 強制実装、実運用未確認 |
-
----
-
-### テストマトリックス ステータス
-
-| 範囲 | ステータス | 備考 |
-|------|----------|------|
-| #1-4 (Agent API 基本) | ✅ 完了 | |
-| #5-6 (認証) | ✅ 完了 | |
-| #7-8 (ProblemType, 重複防止) | ✅ 完了 | |
-| #9-12 (Z-Score, 昇格) | ✅ 完了 | |
-| #13-16 (祝日, リマインダー) | ❌ 未実装 | Skill 未実装のため |
-| #17-21 (Nudge/Content 詳細) | ✅ 完了 | |
-| #22-25 (feedback 詳細) | ✅ 完了 | |
-| #26-28 (feedback-fetch) | ❌ 未実装 | Skill 未実装のため |
-| #29-31 (Prompt Injection) | ✅ 完了 | |
-| #32-39 (ツール制御, スキル検証) | ❌ 未実装 | OpenClaw 側 |
-| #40-41 (匿名化) | ✅ 完了 | |
-| #42-50 (Moltbook/削除詳細) | 🔄 部分 | API 側完了、Skill 側未実装 |
-
----
-
-## 14. 次のステップ（優先順）
-
-| # | タスク | 所要時間（目安） | 依存 |
-|---|--------|---------------|------|
-| 1 | Moltbook エージェント登録 + claim | 30分 | なし |
-| 2 | Hetzner VPS セットアップ | 2時間 | なし |
-| 3 | OpenClaw インストール + SOUL.md 配置 | 1時間 | #2 |
-| 4 | moltbook-responder Skill 実装 | 2時間 | #1, #3 |
-| 5 | E2E テスト（実際の Moltbook 投稿） | 1時間 | #4 |
-| 6 | slack-reminder Skill 実装 | 1時間 | #3 |
-| 7 | feedback-fetch Skill 実装 | 1時間 | #4 |
-| 8 | x-poster Skill 実装 | 1時間 | #3 |
-
----
-
-## 更新履歴
+## 7. 更新履歴
 
 | 日付 | 内容 |
 |------|------|
-| 2026-02-02 | 初版作成（ターミナル出力から復元） |
-| 2026-02-02 | Blocking issue 6件修正: Crisis Protocol, UNIQUE制約, Z-Score 5ch重み, hook_candidates拡張, 昇格パイプライン明記, Prisma model化, 境界・実行手順追加 |
-| 2026-02-03 | Railway API 層完了。実装状況セクション追加。AC/テストマトリックス ステータス明記 |
+| 2026-02-02 | 初版作成 |
+| 2026-02-03 | Railway API 完了、実装状況追加 |
+| 2026-02-03 | **As-Is / To-Be 形式に完全書き換え。パッチレベル詳細追加** |

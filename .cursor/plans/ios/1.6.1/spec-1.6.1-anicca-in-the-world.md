@@ -389,7 +389,7 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 
 | 項目 | 設定 |
 |------|------|
-| **匿名化対象** | `external_post_id`, `content`, `reasoning`（個人を特定可能なフィールド） |
+| **匿名化対象** | `external_post_id`, `platform_user_id`, `content`, `reasoning`（個人を特定可能なフィールド） |
 | **匿名化方法** | 対象フィールドを `NULL` に更新。`hook`, `tone`, `problemType`, `upvotes` 等の集計データは保持 |
 | **実行タイミング** | 毎日 04:00 UTC（Railway Cron） |
 | **対象条件** | `created_at < NOW() - INTERVAL '90 days'` かつ未匿名化 |
@@ -408,6 +408,7 @@ anonymizedAt      DateTime? @map("anonymized_at")
 UPDATE agent_posts
 SET 
   external_post_id = NULL,
+  platform_user_id = NULL,
   content = NULL,
   reasoning = NULL,
   anonymized_at = NOW()
@@ -435,7 +436,16 @@ WHERE
 | **Slack #agents** | 管理者が `/anicca delete-user --platform-user-id <platform>:<user_id>` または `/anicca delete-post --external-post-id <id>` コマンドを実行 |
 | **管理者 CLI** | `npm run delete-user -- --platform moltbook --platform-user-id <id>` または `npm run delete-post -- --external-post-id <id>` |
 
-**注意:** `platform_user_id` は `AgentPost.platformUserId` フィールドに保存。Moltbook API から取得した投稿者 ID を収集・保存する。
+**注意:** `platform_user_id` は `AgentPost.platformUserId` フィールドに保存。
+
+**保存形式:** `<platform>:<user_id>`（例: `moltbook:12345`, `slack:U1234567890`）
+
+Moltbook API の `post.author.id` フィールドから取得。Slack は `message.user` フィールドから取得。
+
+**コマンド仕様（統一）:**
+- Slack: `/anicca delete-user moltbook:12345`（platform:user_id 形式）
+- CLI: `npm run delete-user -- --platform-user-id moltbook:12345`（platform:user_id 形式）
+- 投稿単位削除: `/anicca delete-post <external_post_id>` / `npm run delete-post -- --external-post-id <id>`
 
 #### 認可
 
@@ -450,6 +460,7 @@ WHERE
 | フィールド | 削除方法 |
 |-----------|----------|
 | `external_post_id` | NULL に更新 |
+| `platform_user_id` | NULL に更新 |
 | `content` | NULL に更新 |
 | `reasoning` | NULL に更新 |
 | `hook` | **保持**（匿名化された統計データとして使用可） |
@@ -459,8 +470,8 @@ WHERE
 
 | 項目 | 値 |
 |------|-----|
-| 対応時間 | 24時間以内（営業日） |
-| 完了通知 | Moltbook DM の場合、削除完了を返信 |
+| 対応時間 | 24時間以内（暦時間、営業日関係なし） |
+| 完了通知 | Moltbook DM の場合、削除完了を返信（SOUL.md 例外条項により許可） |
 
 #### 監査ログ
 

@@ -42,6 +42,9 @@ import adminTiktokRouter from './admin/tiktok.js';
 import adminHookCandidatesRouter from './admin/hookCandidates.js';
 import adminXPostsRouter from './admin/xposts.js';
 
+// 1.6.1: Agent API (OpenClaw/VPS)
+import agentRouter from './agent/index.js';
+
 
 const router = express.Router();
 
@@ -79,5 +82,9 @@ const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 router.use('/admin/tiktok', adminLimiter, adminTiktokRouter);
 router.use('/admin/hook-candidates', adminLimiter, adminHookCandidatesRouter);
 router.use('/admin/x', adminLimiter, adminXPostsRouter);
+
+// 1.6.1: Agent API (60 req/min rate limit)
+const agentLimiter = rateLimit({ windowMs: 60 * 1000, max: 60 });
+router.use('/agent', agentLimiter, agentRouter);
 
 export default router;

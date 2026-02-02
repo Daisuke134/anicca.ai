@@ -1,0 +1,112 @@
+/**
+ * POST /api/agent/feedback
+ * 
+ * Save feedback from external platforms (upvotes, reactions, views, etc.)
+ */
+
+import { Router } from 'express';
+import { prisma } from '../../lib/prisma.js';
+
+const router = Router();
+
+router.post('/', async (req, res) => {
+  try {
+    const {
+      agentPostId,
+      platform,
+      externalPostId,
+      upvotes,
+      reactions,
+      views,
+      likes,
+      shares,
+      comments,
+    } = req.body;
+    
+    // Validate: need agentPostId OR (platform + externalPostId)
+    if (!agentPostId && (!platform || !externalPostId)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'agentPostId OR (platform + externalPostId) is required',
+      });
+    }
+    
+    // Validate numeric fields are non-negative
+    const numericFields = { upvotes, views, likes, shares, comments };
+    for (const [key, value] of Object.entries(numericFields)) {
+      if (value !== undefined && (typeof value !== 'number' || value < 0)) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: `${key} must be a non-negative integer`,
+        });
+      }
+    }
+    
+    // Validate reactions format
+    if (reactions !== undefined) {
+      if (typeof reactions !== 'object' || Array.isArray(reactions)) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'reactions must be an object (Record<string, number>)',
+        });
+      }
+      for (const [emoji, count] of Object.entries(reactions)) {
+        if (typeof count !== 'number' || count < 0) {
+          return res.status(400).json({
+            error: 'Bad Request',
+            message: 'reactions values must be non-negative integers',
+          });
+        }
+      }
+    }
+    
+    // Find the agent post
+    let agentPost;
+    if (agentPostId) {
+      agentPost = await prisma.agentPost.findUnique({
+        where: { id: agentPostId },
+      });
+    } else {
+      agentPost = await prisma.agentPost.findUnique({
+        where: { platform_externalPostId: { platform, externalPostId } },
+      });
+    }
+    
+    if (!agentPost) {
+      return res.status(404).json({
+        error: 'Not Found',
+        message: 'Agent post not found',
+      });
+    }
+    
+    // Build update data
+    const updateData = {};
+    if (upvotes !== undefined) updateData.upvotes = upvotes;
+    if (reactions !== undefined) updateData.reactions = reactions;
+    if (views !== undefined) updateData.views = views;
+    if (likes !== undefined) updateData.likes = likes;
+    if (shares !== undefined) updateData.shares = shares;
+    if (comments !== undefined) updateData.comments = comments;
+    
+    // Update the post
+    const updated = await prisma.agentPost.update({
+      where: { id: agentPost.id },
+      data: updateData,
+    });
+    
+    res.json({
+      success: true,
+      agentPostId: updated.id,
+      updated: Object.keys(updateData),
+    });
+    
+  } catch (error) {
+    console.error('[Agent Feedback] Error:', error);
+    res.status(500).json({
+      error: 'Internal Server Error',
+      message: error.message,
+    });
+  }
+});
+
+export default router;

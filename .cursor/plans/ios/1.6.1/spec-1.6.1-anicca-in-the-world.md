@@ -78,13 +78,42 @@
 | **x-poster** | X/Twitter にコンテンツ投稿 | 自前実装 |
 | **moltbook/late-api** | Moltbook API クライアント | ClawHub（allowlist） |
 
-#### ClawHub Skill ポリシー
+#### ClawHub Skill ポリシー（供給鎖リスク対策強化）
 
 | ルール | 詳細 |
 |--------|------|
 | **allowlist 方式** | `SOUL.md` に許可リストを定義。リスト外の ClawHub Skill は自動拒否 |
 | **コミットハッシュ固定** | `clawhub install moltbook/late-api@abc1234` のように特定バージョンを固定 |
-| **更新時はレビュー必須** | Skill 更新時は diff を確認してからハッシュを更新 |
+| **署名/ハッシュ検証** | インストール時に SHA-256 ハッシュを検証。不一致は拒否 |
+| **内部ミラー運用** | 本番では ClawHub 直接取得を禁止。内部ミラー（`skills.anicca.internal/`）からのみ取得 |
+| **サンドボックス実行** | スキルは最小権限で実行。ファイルシステム・ネットワークアクセスは明示的に許可されたもののみ |
+| **更新時はレビュー必須** | Skill 更新時は diff を確認 + セキュリティレビュー後にハッシュを更新 |
+
+#### スキル権限レビュープロセス
+
+| ステップ | 内容 |
+|---------|------|
+| 1. Diff 確認 | `clawhub diff moltbook/late-api@old..new` で変更を確認 |
+| 2. 権限チェック | 新規の API 呼び出し、ファイルアクセス、外部通信を確認 |
+| 3. セキュリティレビュー | Codex または人間がレビュー |
+| 4. 承認 | Slack #agents で承認後、ハッシュを更新 |
+
+#### 緊急停止手順
+
+| シナリオ | 対応 |
+|---------|------|
+| 悪性スキル検出 | (1) `clawhub disable <skill>` で即時無効化 → (2) Slack #agents に通知 → (3) 内部ミラーから削除 |
+| 全スキル停止 | `/anicca stop-skills` で全スキル停止 |
+| ロールバック | `clawhub rollback <skill>@<previous-hash>` で前バージョンに戻す |
+
+#### 監査ログ
+
+| ログ項目 | 詳細 |
+|---------|------|
+| skill_install | スキルインストール日時、ハッシュ、承認者 |
+| skill_update | 更新日時、old/new ハッシュ、diff サマリ |
+| skill_execution | 実行日時、入力サマリ、出力サマリ、実行時間 |
+| skill_error | エラー日時、エラー内容、スタックトレース |
 
 ### 3.3 Railway API
 
@@ -150,6 +179,11 @@ interface AgentFeedbackRequest {
 | AC-21 | `/api/agent/nudge` レスポンスに agentPostId が含まれる | POST → 200 + agentPostId (UUID) がレスポンスに存在 | 自動 | #22 |
 | AC-22 | `/api/agent/feedback` が agentPostId OR (platform + externalPostId) で更新可能 | 両方のパターンでテスト → agent_posts 更新確認 | 自動 | #23, #24, #25 |
 | AC-23 | Prompt Injection 対策が context サニタイズで機能する | URL/コードブロック除去、`<user_post>` タグ封入、既知パターンフィルタ | 自動 | #29, #30, #31 |
+| AC-24 | ツール呼び出し制御が Allowlist に従って動作する | Allowlist 外ツール → 拒否、Allowlist 内 → 許可、高リスク → HITL | 自動 | #32, #33, #34 |
+| AC-25 | 監査ログが全ての LLM 呼び出し・ツール実行を記録する | `agent_audit_logs` テーブルにログが存在 | 自動 | #35, #36 |
+| AC-26 | 緊急停止コマンドで全エージェントが停止する | `/anicca stop` → 全エージェント停止確認 | 自動 + 手動 | #37 |
+| AC-27 | スキル署名検証が機能する | ハッシュ不一致 → 拒否、ハッシュ一致 → 許可 | 自動 | #38, #39 |
+| AC-28 | Moltbook 運用ポリシーに従って動作する | オプトイン/召喚型、投稿上限、ミュート/ブロック尊重 | 手動 + 自動 | — |
 
 ---
 
@@ -188,6 +222,14 @@ interface AgentFeedbackRequest {
 | 29 | Prompt Injection: URL/コードブロック除去 | `test_contextSanitizesUrlAndCode()` | AC-23 | ✅ |
 | 30 | Prompt Injection: 既知パターンフィルタ | `test_contextFiltersKnownInjectionPatterns()` | AC-23 | ✅ |
 | 31 | Prompt Injection: `<user_post>` タグ封入 | `test_contextWrappedInUserPostTags()` | AC-23 | ✅ |
+| 32 | ツール呼び出し: Allowlist 外ツール → 拒否 | `test_toolCallDeniedIfNotInAllowlist()` | AC-24 | ✅ |
+| 33 | ツール呼び出し: Allowlist 内ツール → 許可 | `test_toolCallAllowedIfInAllowlist()` | AC-24 | ✅ |
+| 34 | ツール呼び出し: 高リスク操作 → HITL 通知 | `test_highRiskToolTriggersHitl()` | AC-24 | ✅ |
+| 35 | 監査ログ: LLM 呼び出しがログされる | `test_llmCallAuditLogged()` | AC-25 | ✅ |
+| 36 | 監査ログ: ツール実行がログされる | `test_toolExecutionAuditLogged()` | AC-25 | ✅ |
+| 37 | 緊急停止: `/anicca stop` で全エージェント停止 | `test_emergencyStopCommand()` | AC-26 | ✅ |
+| 38 | スキル署名検証: ハッシュ不一致 → 拒否 | `test_skillHashMismatchRejected()` | AC-27 | ✅ |
+| 39 | スキル署名検証: ハッシュ一致 → 許可 | `test_skillHashMatchAllowed()` | AC-27 | ✅ |
 
 ---
 
@@ -275,8 +317,10 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 
 | チャネル | 指標 | 初期MEAN | 初期STDDEV | 最小サンプルサイズ |
 |---------|------|---------|-----------|-----------------|
-| Moltbook | upvotes / impressions | 0.05 | 0.03 | 10 |
+| Moltbook | upvotes / views | 0.05 | 0.03 | 10 |
 | Slack | total_reactions / messages | 0.10 | 0.05 | 5 |
+
+**注意:** Moltbook の指標は `upvotes / views` を使用。`views` は `AgentPost.views` フィールドで保存済み。Moltbook API が views を返さない場合は `upvotes` の絶対値で代替し、ベースラインを再計算する。
 
 30日分のデータが溜まったら `refreshBaselines()` が実データで上書きする。
 
@@ -306,6 +350,43 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 | スコープ | Nudge生成 + Wisdom取得 + フィードバック保存 + コンテンツ生成のみ。ユーザーデータ・課金・設定変更は不可 |
 | レート制限 | 60 req/min per token |
 
+### トークン管理（OWASP MCP Top 10 準拠）
+
+| 項目 | 設定 |
+|------|------|
+| **有効期限** | 90日（短期トークン） |
+| **ローテーション** | 60日ごとに新トークン発行。旧トークンは7日間の猶予期間後に失効 |
+| **失効フロー** | Railway 環境変数を更新 → VPS 環境変数を更新 → 旧トークン削除 |
+| **漏洩時の即時無効化** | (1) Railway で即座に環境変数を削除 → (2) Slack #agents に通知 → (3) 新トークン発行 → (4) VPS 更新 |
+| **監査** | トークン使用ログを `agent_audit_logs` に記録。異常パターン検知 |
+
+#### ローテーション手順
+
+```bash
+# 1. 新トークン生成
+NEW_TOKEN=$(openssl rand -hex 32)
+
+# 2. Railway に新トークンを追加（旧トークンも維持）
+railway variables set ANICCA_AGENT_TOKEN_NEW=$NEW_TOKEN
+
+# 3. API を更新して両方のトークンを受け入れ
+# (7日間の猶予期間)
+
+# 4. VPS を新トークンに更新
+ssh anicca@<vps-ip> "sed -i 's/OLD_TOKEN/NEW_TOKEN/' ~/.env && systemctl restart openclaw"
+
+# 5. 旧トークンを削除
+railway variables unset ANICCA_AGENT_TOKEN_OLD
+```
+
+#### 漏洩検知指標
+
+| 指標 | 閾値 | 対応 |
+|------|------|------|
+| 異常な IP からのリクエスト | 既知 IP 以外から10件/時 | アラート + 調査 |
+| レート制限超過 | 3回連続 | アラート + 一時ブロック検討 |
+| 失敗リクエスト急増 | 50件/時 | アラート + トークン漏洩疑い |
+
 ### VPS セキュリティ
 
 | 項目 | 設定 |
@@ -314,15 +395,61 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 | ブルートフォース対策 | fail2ban |
 | SSH | 公開鍵認証のみ |
 
-### Prompt Injection 対策
+### Prompt Injection 対策（OWASP MCP Top 10 準拠）
 
-1. **URL除去**: HTTPリンクを削除
-2. **コードブロック除去**: ``` ``` ``` を削除
-3. **タグ封入**: ユーザー入力を `<user_post>...</user_post>` で囲む
-4. **既知パターンフィルタ**: `ignore previous`, `disregard`, `override` 等を検出
-5. **最大長制限**: context は 2000文字まで（超過は切り捨て）
-6. **Unicode制御文字除去**: U+200B-U+200F, U+202A-U+202E を除去
-7. **タグエスケープ**: ユーザー入力中の `<user_post>` `</user_post>` を除去
+#### 入力サニタイズ層
+
+| # | 対策 | 詳細 |
+|---|------|------|
+| 1 | URL除去 | HTTPリンクを削除 |
+| 2 | コードブロック除去 | ``` ``` ``` を削除 |
+| 3 | タグ封入 | ユーザー入力を `<user_post>...</user_post>` で囲む |
+| 4 | 既知パターンフィルタ | `ignore previous`, `disregard`, `override`, `system:`, `assistant:` 等を検出・除去 |
+| 5 | 最大長制限 | context は 2000文字まで（超過は切り捨て） |
+| 6 | Unicode制御文字除去 | U+200B-U+200F, U+202A-U+202E を除去 |
+| 7 | タグエスケープ | ユーザー入力中の `<user_post>` `</user_post>` を除去 |
+
+#### ツール呼び出し制御層（新規）
+
+| # | 対策 | 詳細 |
+|---|------|------|
+| 8 | ツール Allowlist | Anicca エージェントが呼び出せるツールを明示的に定義。それ以外は自動拒否 |
+| 9 | 未信頼コンテキスト分離 | ユーザー投稿は `untrusted_context` として明確に分離。System prompt とは別セクション |
+| 10 | ポリシー検証 | 各ツール呼び出し前にサーバー側でポリシー検証。外部 API 呼び出しは制限 |
+| 11 | 高リスク操作の HITL | データ削除、外部送信、設定変更は人間承認必須（Slack #agents に通知） |
+
+#### 監査・監視層（新規）
+
+| # | 対策 | 詳細 |
+|---|------|------|
+| 12 | 監査ログ必須 | 全ての LLM 呼び出し・ツール実行をログ。`agent_audit_logs` テーブルに保存 |
+| 13 | 異常検知 | 1時間あたり50件以上のツール呼び出しでアラート |
+| 14 | 緊急停止 | Slack #agents で `/anicca stop` コマンド → 全エージェント即時停止 |
+
+#### Allowlist 定義
+
+```yaml
+allowed_tools:
+  - name: generate_nudge
+    risk: low
+    hitl: false
+  - name: post_to_moltbook
+    risk: medium
+    hitl: false
+    rate_limit: 10/day
+  - name: post_to_slack
+    risk: low
+    hitl: false
+  - name: fetch_feedback
+    risk: low
+    hitl: false
+
+denied_tools:
+  - name: execute_code
+  - name: send_email
+  - name: access_database_raw
+  - name: modify_system_config
+```
 
 ---
 

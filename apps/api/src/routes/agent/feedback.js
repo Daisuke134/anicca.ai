@@ -52,14 +52,16 @@ router.post('/', async (req, res) => {
       }
     }
     
-    // Validate numeric fields are non-negative
+    // Validate numeric fields are non-negative integers
     const numericFields = { upvotes, views, likes, shares, comments };
     for (const [key, value] of Object.entries(numericFields)) {
-      if (value !== undefined && (typeof value !== 'number' || value < 0)) {
-        return res.status(400).json({
-          error: 'Bad Request',
-          message: `${key} must be a non-negative integer`,
-        });
+      if (value !== undefined) {
+        if (!Number.isFinite(value) || !Number.isInteger(value) || value < 0) {
+          return res.status(400).json({
+            error: 'Bad Request',
+            message: `${key} must be a non-negative integer`,
+          });
+        }
       }
     }
     
@@ -72,7 +74,7 @@ router.post('/', async (req, res) => {
         });
       }
       for (const [emoji, count] of Object.entries(reactions)) {
-        if (typeof count !== 'number' || count < 0) {
+        if (!Number.isFinite(count) || !Number.isInteger(count) || count < 0) {
           return res.status(400).json({
             error: 'Bad Request',
             message: 'reactions values must be non-negative integers',

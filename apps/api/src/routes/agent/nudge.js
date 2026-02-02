@@ -113,6 +113,16 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Validate platformUserId format if provided (must be <platform>:<user_id>)
+    if (platformUserId !== undefined && platformUserId !== null) {
+      if (typeof platformUserId !== 'string' || !/^[a-z0-9_]+:.+$/.test(platformUserId)) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'platformUserId must be in format <platform>:<user_id>',
+        });
+      }
+    }
+    
     // Validate severity if provided
     if (severity !== null && severity !== 'crisis') {
       return res.status(400).json({

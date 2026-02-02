@@ -123,8 +123,11 @@ function toOpenAIJsonSchema(zodSchema, name) {
   return ensureAdditionalPropertiesFalse(schema);
 }
 
+// Model max_tokens limits (gpt-4o-2024-08-06 supports 16384 output tokens)
+const MODEL_MAX_TOKENS = 16384;
+
 /**
- * Estimate max_tokens based on slot count.
+ * Estimate max_tokens based on slot count, capped at model limit.
  * 1 Nudge ≈ 150 tokens, base overhead ≈ 500 tokens
  */
 function estimateMaxTokens(slotCount, attempt = 0) {
@@ -133,7 +136,32 @@ function estimateMaxTokens(slotCount, attempt = 0) {
   const tiktokXTokens = 400; // 2 TikTok + 2 X posts
   const buffer = 1.3 + (attempt * 0.2); // Increase buffer on retry
   
-  return Math.ceil((baseTokens + (slotCount * tokensPerNudge) + tiktokXTokens) * buffer);
+  const estimated = Math.ceil((baseTokens + (slotCount * tokensPerNudge) + tiktokXTokens) * buffer);
+  return Math.min(estimated, MODEL_MAX_TOKENS);
+}
+
+/**
+ * Validate appNudges slotIndex uniqueness and range.
+ * Ensures all slotIndexes are in [0, slotCount-1] and unique.
+ */
+function validateAppNudgesSlotIndexes(appNudges, slotCount) {
+  const slotIndexSet = new Set();
+  for (const nudge of appNudges) {
+    const idx = nudge.slotIndex;
+    if (idx < 0 || idx >= slotCount) {
+      throw new Error(`slotIndex ${idx} out of range [0, ${slotCount - 1}]`);
+    }
+    if (slotIndexSet.has(idx)) {
+      throw new Error(`Duplicate slotIndex: ${idx}`);
+    }
+    slotIndexSet.add(idx);
+  }
+  // Ensure all expected slotIndexes are present
+  for (let i = 0; i < slotCount; i++) {
+    if (!slotIndexSet.has(i)) {
+      throw new Error(`Missing slotIndex: ${i}`);
+    }
+  }
 }
 
 // ===== Post-parse validation (not in Zod schema — OpenAI rejects superRefine) =====
@@ -370,6 +398,9 @@ export async function runCommanderAgent({ grounding, model = 'gpt-4o-2024-08-06'
           `Expected ${slotCount} nudges, got ${output.appNudges.length}`
         );
       }
+      
+      // Validate slotIndex uniqueness and range
+      validateAppNudgesSlotIndexes(output.appNudges, slotCount);
       
       validateSlotUniqueness(output);
       return output;

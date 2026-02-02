@@ -152,10 +152,10 @@ router.post('/', async (req, res) => {
       });
     }
     
-    // Check for duplicate
+    // Check for duplicate (use normalized platform)
     if (externalPostId) {
       const existing = await prisma.agentPost.findUnique({
-        where: { platform_externalPostId: { platform, externalPostId } },
+        where: { platform_externalPostId: { platform: normalizedPlatform, externalPostId } },
       });
       if (existing) {
         return res.status(409).json({

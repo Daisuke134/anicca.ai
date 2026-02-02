@@ -20,14 +20,16 @@ actor LLMNudgeService {
 
     /// 今日生成されたNudgeを取得
     func fetchTodaysNudges() async throws -> [LLMGeneratedNudge] {
-        let url = await MainActor.run { AppConfig.nudgeTodayURL }
+        let (url, appVersion) = await MainActor.run { (AppConfig.nudgeTodayURL, AppConfig.appVersion) }
         let deviceId = await AppState.shared.resolveDeviceId()
-        logger.info("🔄 [LLM] Requesting: \(url.absoluteString) with deviceId: \(deviceId)")
+        logger.info("🔄 [LLM] Requesting: \(url.absoluteString) with deviceId: \(deviceId), v\(appVersion)")
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.setValue("application/json", forHTTPHeaderField: "Content-Type")
         request.setValue(deviceId, forHTTPHeaderField: "device-id")
         request.setValue(deviceId, forHTTPHeaderField: "user-id")
+        // v1.6.0: Send app version for schedule map selection
+        request.setValue(appVersion, forHTTPHeaderField: "X-App-Version")
 
         do {
             let (data, response) = try await session.data(for: request)

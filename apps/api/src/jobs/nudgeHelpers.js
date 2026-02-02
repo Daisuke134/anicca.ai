@@ -12,6 +12,7 @@
  */
 
 import { fetch } from 'undici';
+import { SCHEDULE_MAP, NUDGE_TONES, buildFlattenedSlotTable, trimSlots, getScheduleMap } from '../agents/scheduleMap.js';
 
 // ============================================================================
 // Day 1 Detection
@@ -390,7 +391,7 @@ export function validateMinimumInterval(schedule) {
  * @returns {Array} Fixed schedule with adjusted times
  */
 /**
- * Log warnings for nudges closer than 60 minutes apart.
+ * Log warnings for nudges closer than 30 minutes apart.
  * Does NOT reject or modify the schedule — just logs for monitoring.
  * If warnings are frequent, fix the prompt to improve LLM compliance.
  * @param {Array} schedule - Array of schedule items
@@ -406,7 +407,7 @@ export function logIntervalWarnings(schedule) {
     const prev = timeToMinutes(sorted[i - 1].scheduledTime);
     const curr = timeToMinutes(sorted[i].scheduledTime);
 
-    if (curr - prev < 60) {
+    if (curr - prev < 30) {
       console.log(`⚠️ [IntervalWarning] ${sorted[i - 1].scheduledTime} → ${sorted[i].scheduledTime} (${curr - prev}min apart) | ${sorted[i].problemType}: "${sorted[i].hook}"`);
     }
   }
@@ -448,13 +449,17 @@ export async function generateWithFallback(prompt, openaiApiKey, preferredLangua
         },
         body: JSON.stringify({
           model: 'gpt-4o-mini',
-          messages: [{ role: 'user', content: currentPrompt }],
+          messages: [
+            { role: 'system', content: 'You are a behavioral nudge generation assistant. Always output valid JSON.' },
+            { role: 'user', content: currentPrompt }
+          ],
           response_format: { type: 'json_object' }
         })
       });
 
       if (!response.ok) {
-        throw new Error(`OpenAI API error: ${response.status}`);
+        const errorText = await response.text();
+        throw new Error(`OpenAI API error: ${response.status} ${errorText}`);
       }
 
       const data = await response.json();
@@ -664,7 +669,7 @@ For each problem type, follow these evidence-based guidelines:
 - DO: "Text one person right now. Even just an emoji." Validate the courage it takes
 
 ## Nudge Frequency Rules
-- Minimum interval: 60 minutes between nudges (EXCEPT cant_wake_up wake window 06:00-06:30: 15 min allowed)
+- Minimum interval: 30 minutes between nudges for different problems, 60 minutes for the same problem (EXCEPT cant_wake_up wake window 06:00-06:30: 15 min allowed)
 - Guideline: 4-8 nudges per day
 - Strategy mix: ~40% preventive (before peak), ~40% intervention (during peak), ~20% reflection (after/next morning)
 - Base schedule on peak times from behavioral science AND user's actual response patterns
@@ -687,9 +692,14 @@ Return JSON in this exact format:
   "overallStrategy": "Your overall strategy for today"
 }
 
+## DON'T
+- Never schedule two nudges for the same time slot
+- Maintain at least 30 minutes between nudges for different problems
+- Maintain at least 60 minutes between nudges for the same problem
+
 ## Critical Rules
 1. Learn from the story. Repeat what worked, avoid what failed.
-2. Minimum 60 minutes between nudges.
+2. Minimum 30 minutes between nudges for different problems, 60 minutes for same problem.
 3. Character limits: Hook ≤ ${limits.hook}, Content ≤ ${limits.content}.
 4. ${languageInstruction}
 5. Every schedule item MUST have all required fields.`;
@@ -703,88 +713,76 @@ Return JSON in this exact format:
  * Generate rule-based nudges for Day 1 or fallback
  * @param {string[]} problems - Array of problem types
  * @param {string} preferredLanguage - 'ja' or 'en'
+ * @param {string} [appVersion] - Client app version for schedule map selection (v1.6.0+)
  * @returns {Object} Rule-based schedule
  */
-export function generateRuleBasedNudges(problems, preferredLanguage = 'en') {
-  const scheduleMap = {
-    staying_up_late: [
-      { hour: 21, minute: 0 },
-      { hour: 22, minute: 30 }
-    ],
-    cant_wake_up: [
-      { hour: 6, minute: 0 },
-      { hour: 6, minute: 30 }
-    ],
-    self_loathing: [{ hour: 7, minute: 0 }],
-    rumination: [{ hour: 7, minute: 0 }],
-    procrastination: [
-      { hour: 9, minute: 0 },
-      { hour: 14, minute: 0 }
-    ],
-    anxiety: [{ hour: 7, minute: 0 }],
-    lying: [{ hour: 8, minute: 0 }],
-    bad_mouthing: [{ hour: 8, minute: 0 }],
-    porn_addiction: [{ hour: 22, minute: 0 }],
-    alcohol_dependency: [{ hour: 18, minute: 0 }],
-    anger: [{ hour: 9, minute: 0 }],
-    obsessive: [{ hour: 9, minute: 0 }],
-    loneliness: [{ hour: 12, minute: 0 }]
-  };
-
+export function generateRuleBasedNudges(problems, preferredLanguage = 'en', appVersion = null) {
   const contentJa = {
     staying_up_late: [
-      { hook: 'スクロールより呼吸', content: '今夜は早めに。明日の自分が感謝する。', tone: 'gentle' },
-      { hook: 'まだ起きてる？', content: 'あと30分で布団に入ろう。', tone: 'strict' }
+      { hook: 'スクロールより呼吸', content: '今夜は早めに。明日の自分が感謝する。' },
+      { hook: 'まだ起きてる？', content: 'あと30分で布団に入ろう。' }
     ],
     cant_wake_up: [
-      { hook: 'まだ布団の中？', content: '5秒で立て。それだけでいい。', tone: 'strict' },
-      { hook: '新しい1日', content: '起きたら、今日はちょっと違う。', tone: 'gentle' }
+      { hook: 'まだ布団の中？', content: '5秒で立て。それだけでいい。' },
+      { hook: '新しい1日', content: '起きたら、今日はちょっと違う。' }
     ],
     procrastination: [
-      { hook: '今、何してる？', content: '5分だけ始めてみよう。', tone: 'gentle' },
-      { hook: 'まだ先延ばし？', content: '完璧より完了。今すぐ手を動かせ。', tone: 'strict' }
+      { hook: '今、何してる？', content: '5分だけ始めてみよう。' },
+      { hook: 'まだ先延ばし？', content: '完璧より完了。今すぐ手を動かせ。' }
     ]
   };
 
   const contentEn = {
     staying_up_late: [
-      { hook: 'Still scrolling?', content: 'Put the phone down. Tomorrow-you will thank you.', tone: 'gentle' },
-      { hook: 'Still awake?', content: 'Get to bed in 30 minutes.', tone: 'strict' }
+      { hook: 'Still scrolling?', content: 'Put the phone down. Tomorrow-you will thank you.' },
+      { hook: 'Still awake?', content: 'Get to bed in 30 minutes.' }
     ],
     cant_wake_up: [
-      { hook: 'Still in bed?', content: 'Get up in 5 seconds. Just that.', tone: 'strict' },
-      { hook: 'New day', content: 'Once you\'re up, today will be different.', tone: 'gentle' }
+      { hook: 'Still in bed?', content: 'Get up in 5 seconds. Just that.' },
+      { hook: 'New day', content: 'Once you\'re up, today will be different.' }
     ],
     procrastination: [
-      { hook: 'What are you doing?', content: 'Just start for 5 minutes.', tone: 'gentle' },
-      { hook: 'Still delaying?', content: 'Done beats perfect. Move now.', tone: 'strict' }
+      { hook: 'What are you doing?', content: 'Just start for 5 minutes.' },
+      { hook: 'Still delaying?', content: 'Done beats perfect. Move now.' }
     ]
   };
 
   const content = preferredLanguage === 'ja' ? contentJa : contentEn;
   const defaultContent = preferredLanguage === 'ja'
-    ? { hook: '今日も前に進もう', content: '小さな一歩から始めよう。', tone: 'gentle' }
-    : { hook: 'Keep moving forward', content: 'Start with a small step.', tone: 'gentle' };
+    ? { hook: '今日も前に進もう', content: '小さな一歩から始めよう。' }
+    : { hook: 'Keep moving forward', content: 'Start with a small step.' };
 
-  const schedule = [];
+  // Use canonical SCHEDULE_MAP + buildFlattenedSlotTable for iOS slotIndex consistency
+  // v1.6.0: appVersionに応じたスケジュールマップを使用
+  const scheduleMap = getScheduleMap(appVersion);
+  const rawSlots = buildFlattenedSlotTable(problems, scheduleMap);
+  const slotTable = trimSlots(rawSlots, problems);
 
-  for (const problem of problems) {
-    const times = scheduleMap[problem] || [{ hour: 9, minute: 0 }];
-    const problemContent = content[problem] || [defaultContent];
+  // Night curfew: 23:00-05:59 slots disabled for non-exempt problems
+  const NIGHT_EXEMPT = new Set(['staying_up_late', 'cant_wake_up', 'porn_addiction']);
+  const isNightHour = (h) => h >= 23 || h < 6;
 
-    times.forEach((time, index) => {
-      const c = problemContent[index % problemContent.length];
-      schedule.push({
-        scheduledTime: `${String(time.hour).padStart(2, '0')}:${String(time.minute).padStart(2, '0')}`,
-        problemType: problem,
-        hook: c.hook,
-        content: c.content,
-        tone: c.tone,
-        reasoning: 'Rule-based (Day 1 or fallback)',
-        rootCauseHypothesis: null
-      });
-    });
-  }
+  // Track per-problemType index for content/tone cycling
+  const problemIndexMap = new Map();
+  const schedule = slotTable.map((slot) => {
+    const ptIdx = problemIndexMap.get(slot.problemType) || 0;
+    problemIndexMap.set(slot.problemType, ptIdx + 1);
+
+    const problemContent = content[slot.problemType] || [defaultContent];
+    const c = problemContent[ptIdx % problemContent.length];
+    const nightDisabled = isNightHour(slot.scheduledHour) && !NIGHT_EXEMPT.has(slot.problemType);
+    return {
+      scheduledTime: slot.scheduledTime,
+      problemType: slot.problemType,
+      hook: c.hook,
+      content: c.content,
+      tone: NUDGE_TONES[ptIdx % NUDGE_TONES.length],
+      reasoning: nightDisabled ? 'Night curfew (23:00-05:59)' : 'Rule-based (Day 1 or fallback)',
+      rootCauseHypothesis: null,
+      slotIndex: slot.slotIndex,
+      enabled: !nightDisabled,
+    };
+  });
 
   return {
     schedule,

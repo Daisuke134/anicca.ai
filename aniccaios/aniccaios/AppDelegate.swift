@@ -1,3 +1,4 @@
+// v1.6.0 — Phase 5 Learning Loop
 import UIKit
 import UserNotifications
 import OSLog
@@ -21,7 +22,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
         AnalyticsManager.shared.configure()
-        SuperwallManager.shared.configure()
         SingularManager.shared.configure(launchOptions: launchOptions)
         SingularManager.shared.trackAppLaunch()
 

@@ -131,6 +131,15 @@ final class AppState: ObservableObject {
                 LLMNudgeCache.shared.setNudges(nudges)
             }
             logger.info("✅ [LLM] Fetched and cached \(nudges.count) nudges")
+
+            // P1 hotfix: LLM fetch完了後、通知を再スケジュールしてLLMコンテンツを反映
+            if LLMNudgeCache.shared.count > 0 {
+                let problems = self.userProfile.struggles
+                if !problems.isEmpty {
+                    logger.info("🔄 [LLM] Rescheduling notifications with \(LLMNudgeCache.shared.count) LLM nudges")
+                    await ProblemNotificationScheduler.shared.scheduleNotifications(for: problems)
+                }
+            }
         } catch {
             logger.error("❌ [LLM] Fetch failed: \(error.localizedDescription)")
         }
@@ -204,9 +213,6 @@ final class AppState: ObservableObject {
         // Mixpanel: ユーザー識別
         AnalyticsManager.shared.identify(userId: credentials.userId)
         
-        // Superwall: ユーザー識別
-        SuperwallManager.shared.identify(userId: credentials.userId)
-        
         // Phase 6: LLM生成Nudgeを取得
         Task {
             await fetchTodaysLLMNudges()
@@ -246,9 +252,6 @@ final class AppState: ObservableObject {
         // Mixpanel: リセット
         AnalyticsManager.shared.reset()
         
-        // Superwall: リセット
-        SuperwallManager.shared.reset()
-        
         // オンボーディングはサインアウト時に戻す
         isOnboardingComplete = false
         defaults.removeObject(forKey: onboardingKey)
@@ -279,9 +282,6 @@ final class AppState: ObservableObject {
 
         // Mixpanel: リセット
         AnalyticsManager.shared.reset()
-
-        // Superwall: リセット
-        SuperwallManager.shared.reset()
 
         // オンボーディング状態をリセット
         isOnboardingComplete = false
@@ -365,7 +365,9 @@ final class AppState: ObservableObject {
             "keywords": profile.keywords,
             "summary": profile.summary,
             "nudgeIntensity": profile.nudgeIntensity.rawValue,
-            "stickyMode": profile.stickyMode
+            "stickyMode": profile.stickyMode,
+            // v1.6.0: スケジュール分岐用
+            "appVersion": AppConfig.appVersion
             // NOTE: v1.5.0でScreenTime Extension削除。screenTimeEnabled=falseへの移行は
             // サーバー側バックフィル（UPDATE sensor_access_state SET screen_time_enabled=false）で対応予定。
             // profileSyncPayloadに部分sensorAccessを含めると他フラグが消えるため、ここでは送信しない。

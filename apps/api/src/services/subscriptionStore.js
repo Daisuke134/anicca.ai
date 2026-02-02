@@ -40,7 +40,7 @@ function normalizeStatus(provider, rawStatus) {
         return { plan: 'free', status: rawStatus || 'expired' };
     }
   }
-  return { plan: 'free', status: rawStatus || 'canceled' };
+      return { plan: 'free', status: rawStatus || 'canceled' };
 }
 
 export async function getEntitlementState(userId) {
@@ -91,7 +91,7 @@ export async function getEntitlementState(userId) {
   return {
     plan: statusInfo.plan,
     status: statusInfo.status,
-    currentPeriodEnd,
+    currentPeriodEnd
   };
 }
 

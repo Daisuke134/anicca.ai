@@ -7,8 +7,6 @@ import extractUserId from '../../middleware/extractUserId.js';
 import { query } from '../../lib/db.js';
 import { resolveProfileId } from '../../services/mobile/userIdResolver.js';
 import { getMem0Client } from '../../modules/memory/mem0Client.js';
-import prisma from '../../lib/prisma.js';
-
 const router = express.Router();
 const logger = baseLogger.withContext('PreReminder');
 
@@ -223,29 +221,8 @@ async function generatePersonalizedMessage({ profileId, habitType, habitName, sc
     logger.warn('mem0 search failed, continuing without memories', e);
   }
 
-  // 3. 今日のメトリクスを取得
-  let todayStats = null;
-  try {
-    const today = new Date();
-    const startOfDay = new Date(today.toISOString().split('T')[0] + 'T00:00:00Z');
-    const metrics = await prisma.dailyMetric.findUnique({
-      where: {
-        userId_date: {
-          userId: profileId,
-          date: startOfDay
-        }
-      }
-    });
-    if (metrics) {
-      todayStats = {
-        steps: metrics.steps,
-        sleepDurationMin: metrics.sleepDurationMin,
-        snsMinutesTotal: metrics.snsMinutesTotal
-      };
-    }
-  } catch (e) {
-    logger.warn('Failed to fetch today metrics', e);
-  }
+  // daily_metrics table is dead (iOS never writes). Skip fetch.
+  const todayStats = null;
 
   // 4. 現在時刻
   const now = new Date();

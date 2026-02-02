@@ -154,7 +154,7 @@ TOOL_DEFINITIONS = [
         "type": "function",
         "function": {
             "name": "post_to_tiktok",
-            "description": "Post image to TikTok via Blotato API. The posting date is always TODAY (auto-set by code). You only provide the time.",
+            "description": "Post image to TikTok via Blotato API immediately (no scheduling).",
             "parameters": {
                 "type": "object",
                 "properties": {
@@ -167,10 +167,10 @@ TOOL_DEFINITIONS = [
                     },
                     "posting_time": {
                         "type": "string",
-                        "description": "Time to post in HH:MM format (24-hour JST). Example: '22:00', '10:00'. The date is always today.",
+                        "description": "Optional. Time in HH:MM format (24-hour JST). If omitted, posts immediately.",
                     },
                 },
-                "required": ["image_url", "caption", "posting_time"],
+                "required": ["image_url", "caption"],
             },
         },
     },
@@ -187,8 +187,9 @@ TOOL_DEFINITIONS = [
                     "caption": {"type": "string", "description": "The posted caption text"},
                     "agent_reasoning": {"type": "string", "description": "2-3 sentences explaining why this hook and approach were chosen"},
                     "posting_time": {"type": "string", "description": "The posting time in HH:MM format (24-hour JST) decided by the agent"},
+                    "slot": {"type": "string", "enum": ["morning", "evening"], "description": "The time slot for this post (morning or evening). Read from POST_SLOT env."},
                 },
-                "required": ["blotato_post_id", "caption", "agent_reasoning"],
+                "required": ["blotato_post_id", "caption", "agent_reasoning", "slot"],
             },
         },
     },
@@ -309,7 +310,9 @@ def generate_image(**kwargs):
 
         return json.dumps({"error": "Image generation timed out", "image_url": ""})
     except requests.exceptions.RequestException as e:
-        return json.dumps({"error": f"Fal.ai API request failed: {type(e).__name__}", "image_url": ""})
+        status_code = getattr(getattr(e, 'response', None), 'status_code', 'N/A')
+        body = getattr(getattr(e, 'response', None), 'text', '')[:300]
+        return json.dumps({"error": f"Fal.ai HTTP {status_code}: {type(e).__name__} - {body}", "image_url": ""})
     except Exception as e:
         return json.dumps({"error": f"Unexpected error: {type(e).__name__}", "image_url": ""})
 
@@ -453,6 +456,7 @@ def save_post_record(**kwargs):
             hook_candidate_id=hook_candidate_id,
             agent_reasoning=kwargs.get("agent_reasoning"),
             scheduled_time=scheduled_time_iso,
+            slot=kwargs.get("slot"),
         )
         return json.dumps(result)
     except Exception as e:

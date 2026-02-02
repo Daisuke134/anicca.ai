@@ -38,81 +38,55 @@ platform :ios do
   
   desc "Build and install on connected device"
   lane :build_for_device do |options|
-    retry_count = options[:retry_count] || 0
-    max_retries = 3
-    
-    begin
-      # 実機用Developmentビルド
-      build_app(
-        scheme: SCHEME,
-        export_method: "development",
-        export_options: {
-          method: "development",
-          teamID: TEAM_ID
-        },
-        clean: true,
-        output_directory: "./build",
-        buildlog_path: "./build/logs"
-      )
-      
-      # 実機にインストール
-      install_on_device(
-        ipa: lane_context[SharedValues::IPA_OUTPUT_PATH]
-      )
-      
-      # アプリを起動（TikTok見てても自動遷移、デバイスロック解除必須）
-      begin
-        json_output = sh("xcrun devicectl list devices --json-output /dev/stdout 2>/dev/null", log: false)
-        require 'json'
-        devices_data = JSON.parse(json_output)
-        connected_devices = devices_data.dig("result", "devices")&.select { |d| d.dig("connectionProperties", "tunnelState") == "connected" }
-        if connected_devices && !connected_devices.empty?
-          device_id = connected_devices.first["identifier"]
-          UI.message("📱 Launching app on device: #{device_id}")
-          sh("xcrun devicectl device process launch --device '#{device_id}' #{BUNDLE_ID} || true")
-        else
-          UI.message("⚠️ No connected device found for auto-launch. Please open the app manually.")
-        end
-      rescue => e
-        UI.message("⚠️ Could not auto-launch app: #{e.message}")
-      end
-      
-      UI.success("✅ Build completed, installed, and launched on device!")
-      
-      # macOS通知
-      notification(
-        title: "Anicca iOS",
-        message: "Build installed and launched!",
-        sound: "default"
-      )
-      
-    rescue => ex
-      UI.error("❌ Build failed: #{ex.message}")
-      
-      # ビルドログを解析
-      log_path = lane_context[SharedValues::XCODEBUILD_BUILDLOG_PATH] || "./build/logs"
-      if Dir.exist?(log_path)
-        latest_log = Dir.glob("#{log_path}/**/*.log").max_by { |f| File.mtime(f) }
-        if latest_log
-          UI.important("📋 Analyzing build log: #{latest_log}")
-          # ログからエラーを抽出して表示
-          error_summary = extract_build_errors(latest_log)
-          if error_summary && !error_summary[:errors].empty?
-            display_error_analysis(error_summary)
-            suggest_fixes(error_summary)
-          end
-        end
-      end
-      
-      # リトライ可能なエラーの場合は再試行
-      if retry_count < max_retries && retryable_error?(ex)
-        UI.important("🔄 Retrying build (attempt #{retry_count + 1}/#{max_retries})...")
-        sleep(2)
-        build_for_device(retry_count: retry_count + 1)
-      else
-        UI.user_error!("Build failed after #{retry_count + 1} attempts. Please check the errors above.")
-      end
-    end
+    selected_scheme = options[:scheme] || SCHEME
+    project_path = File.expand_path("../aniccaios.xcodeproj", __dir__)
+    derived_data = File.expand_path("./build/DerivedData")
+
+    # 接続デバイスを検出（xctrace の UDID を使用 — xcodebuild と互換性あり）
+    device_lines = sh("xcrun xctrace list devices 2>&1", log: false)
+      .split("\n")
+      .select { |l| l.include?("(") && !l.include?("Simulator") && !l.include?("MacBook") && !l.include?("== ") }
+      .reject { |l| l.strip.empty? }
+    UI.user_error!("❌ No connected device found. Please connect your iPhone.") if device_lines.empty?
+    # フォーマット: "Device Name  (OS) (UDID)"
+    match = device_lines.first.match(/^(.+?)\s+\([\d.]+\)\s+\(([A-F0-9\-]+)\)$/i)
+    UI.user_error!("❌ Could not parse device info: #{device_lines.first}") unless match
+    device_name = match[1].strip
+    device_id = match[2]
+    UI.important("📱 Target device: #{device_name} (#{device_id})")
+
+    # xcodebuild build で直接デバイス向けにビルド（Xcode 26 対応: archive+export を回避）
+    UI.important("🔨 Building #{selected_scheme} for device...")
+    build_log = "#{derived_data}/build_for_device.log"
+    FileUtils.mkdir_p(derived_data)
+    sh(
+      "xcodebuild build " \
+      "-scheme '#{selected_scheme}' " \
+      "-project '#{project_path}' " \
+      "-destination 'platform=iOS,id=#{device_id}' " \
+      "-derivedDataPath '#{derived_data}' " \
+      "-allowProvisioningUpdates " \
+      "ONLY_ACTIVE_ARCH=YES " \
+      "2>&1 | tee '#{build_log}' | xcpretty"
+    )
+
+    # ビルド成果物の .app を探す
+    app_path = Dir.glob("#{derived_data}/Build/Products/*-iphoneos/#{PROJECT_NAME}.app").first
+    UI.user_error!("❌ Could not find .app bundle in #{derived_data}") unless app_path
+    UI.message("📦 Built app: #{app_path}")
+
+    # ios-deploy でインストール & 起動
+    UI.important("📲 Installing on device...")
+    sh("ios-deploy --bundle '#{app_path}' --justlaunch --no-wifi 2>&1 || true")
+
+    UI.success("✅ Build completed, installed, and launched on device!")
+
+    # macOS通知
+    notification(
+      title: "Anicca iOS",
+      message: "Build installed and launched on #{device_name}!",
+      sound: "default"
+    )
   end
   
   # ビルドエラーを抽出
@@ -263,7 +237,9 @@ platform :ios do
       ipa: ipa_path,
       skip_metadata: true,
       skip_screenshots: true,
-      force: true
+      force: true,
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false
     )
     
     UI.success("✅ Upload completed! Build will appear in App Store Connect within a few minutes.")
@@ -291,7 +267,7 @@ platform :ios do
     current_build = options[:build_number]
     unless current_build
       # 最新のTestFlightビルド番号を取得して1を足す
-      current_build = latest_testflight_build_number(api_key: api_key).to_i
+      current_build = latest_testflight_build_number(api_key: api_key, app_identifier: BUNDLE_ID).to_i
     end
     
     UI.important("⏳ Waiting for build #{current_build} to finish processing...")
@@ -349,21 +325,25 @@ platform :ios do
     api_key = get_api_key
     
     # 最新のビルド番号を取得
-    build_number = options[:build_number] || latest_testflight_build_number(api_key: api_key)
+    build_number = options[:build_number] || latest_testflight_build_number(api_key: api_key, app_identifier: BUNDLE_ID)
     version = options[:version] || get_version_number(target: PROJECT_NAME)
-    
+
     UI.important("📤 Submitting build #{build_number} (v#{version}) for App Store review...")
-    
+
     deliver(
       api_key: api_key,
       app_identifier: BUNDLE_ID,
-      skip_metadata: true,
+      skip_metadata: false,
       skip_screenshots: true,
       skip_binary_upload: true,
       build_number: build_number.to_s,
       submit_for_review: true,
       automatic_release: true,
       force: true,
+      run_precheck_before_submit: false,
+      precheck_include_in_app_purchases: false,
+      overwrite_screenshots: false,
+      ignore_language_directory_validation: true,
       submission_information: {
         add_id_info_serves_ads: false,
         add_id_info_tracks_action: false,

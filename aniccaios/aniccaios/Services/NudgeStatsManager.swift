@@ -80,13 +80,14 @@ final class NudgeStatsManager {
     // MARK: - Public API
 
     /// 通知スケジュール成功時に記録
-    func recordScheduled(problemType: String, variantIndex: Int, scheduledHour: Int, isAIGenerated: Bool = false, llmNudgeId: String? = nil) {
+    /// - Parameter fireDate: 通知の実際の配信予定時刻。`Date()` ではなく配信時刻を渡すこと。
+    func recordScheduled(problemType: String, variantIndex: Int, scheduledHour: Int, isAIGenerated: Bool = false, llmNudgeId: String? = nil, fireDate: Date? = nil) {
         let key = "\(problemType)_\(variantIndex)_\(scheduledHour)"
         let nudge = ScheduledNudge(
             problemType: problemType,
             variantIndex: variantIndex,
             scheduledHour: scheduledHour,
-            scheduledDate: Date()
+            scheduledDate: fireDate ?? Date()
         )
         scheduledNudges[key] = nudge
 
@@ -224,6 +225,16 @@ final class NudgeStatsManager {
         return hourStats.map { $0.consecutiveIgnoredDays }.max() ?? 0
     }
     
+    // MARK: - Day 1 Detection
+
+    /// Day1判定: この問題タイプに対するインタラクション記録が一切ない
+    /// (scheduledだけでなく、tap/ignoredも0 → まだ1日目)
+    func isDay1(for problemType: String) -> Bool {
+        let problemStats = stats.values.filter { $0.problemType == problemType }
+        // 統計レコード自体がないか、全レコードの totalSamples が 0
+        return problemStats.allSatisfy { $0.totalSamples == 0 }
+    }
+
     // MARK: - Phase 5: Unresponsive User Handling
     
     /// 完全無反応ユーザー判定

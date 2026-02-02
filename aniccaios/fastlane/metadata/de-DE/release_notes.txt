@@ -1,0 +1,4 @@
+- Intelligentere Benachrichtigungen: KI-personalisierte Nudges ab Tag 2
+- Behebung von Benachrichtigungen, die um 2-3 Uhr morgens ankamen
+- Neugestaltung des Benachrichtigungs-Timings zur Vermeidung von Duplikaten
+- Verbesserte Vielfalt der Benachrichtigungsinhalte

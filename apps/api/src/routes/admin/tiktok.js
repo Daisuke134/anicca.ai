@@ -10,6 +10,83 @@ router.use(requireInternalAuth);
 
 const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+function normalizeScheduleOutput(raw) {
+  // tiktokPost（単数）→ tiktokPosts（複数）
+  let tiktokPosts = raw?.tiktokPosts;
+  if (!tiktokPosts && raw?.tiktokPost) {
+    tiktokPosts = [{ ...raw.tiktokPost, slot: 'morning' }];
+  }
+
+  // tiktokPosts に slot がない場合のフォールバック（件数は増やさない）
+  if (tiktokPosts) {
+    tiktokPosts = tiktokPosts.map((post, i) => ({
+      ...post,
+      slot: post.slot || (i === 0 ? 'morning' : 'evening'),
+    }));
+  }
+
+  // xPosts に slot がない場合のフォールバック（件数は増やさない）
+  let xPosts = Array.isArray(raw?.xPosts) ? raw.xPosts : [];
+  xPosts = xPosts.map((post, i) => ({
+    ...post,
+    slot: post.slot || (i === 0 ? 'morning' : 'evening'),
+  }));
+
+  return { tiktokPosts: tiktokPosts || [], xPosts };
+}
+
+// =============================================================================
+// EP-0: GET /api/admin/tiktok/pending
+// Fetch today's Commander-generated tiktokPosts from notification_schedules
+// Used by: TikTok Agent GHA to get content to post
+// =============================================================================
+router.get('/pending', async (req, res) => {
+  try {
+    const { slot } = req.query;
+
+    const schedules = await prisma.notificationSchedule.findMany({
+      where: {
+        createdAt: { gte: new Date(Date.now() - 24 * 60 * 60 * 1000) },
+      },
+      orderBy: { createdAt: 'desc' },
+      take: 5,
+    });
+
+    const tiktokPosts = [];
+    for (const s of schedules) {
+      const raw = s.agentRawOutput;
+      const normalized = normalizeScheduleOutput(raw || {});
+      const candidates = normalized.tiktokPosts || [];
+      for (const tp of candidates) {
+        if (slot && tp.slot !== slot) continue;
+        tiktokPosts.push({
+          caption: tp.caption,
+          hashtags: tp.hashtags || [],
+          tone: tp.tone,
+          reasoning: tp.reasoning,
+          slot: tp.slot,
+          sourceUserId: s.userId,
+          scheduleId: s.id,
+        });
+      }
+    }
+
+    // Deduplicate by caption + slot
+    const seen = new Set();
+    const unique = tiktokPosts.filter((p) => {
+      const key = `${p.slot || 'any'}::${p.caption}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+
+    res.json({ tiktokPosts: unique.slice(0, 10) });
+  } catch (error) {
+    logger.error('Failed to fetch pending tiktok posts', error);
+    res.status(500).json({ error: 'Failed to fetch pending tiktok posts' });
+  }
+});
+
 // =============================================================================
 // EP-1: GET /api/admin/tiktok/recent-posts
 // Agent tool: get_yesterday_performance
@@ -62,7 +139,7 @@ router.get('/recent-posts', async (req, res) => {
 // =============================================================================
 router.post('/posts', async (req, res) => {
   try {
-    const { hook_candidate_id, blotato_post_id, caption, agent_reasoning, scheduled_time } = req.body;
+    const { hook_candidate_id, blotato_post_id, caption, agent_reasoning, scheduled_time, slot } = req.body;
 
     if (!blotato_post_id || typeof blotato_post_id !== 'string') {
       return res.status(400).json({ error: 'blotato_post_id is required' });
@@ -82,6 +159,9 @@ router.post('/posts', async (req, res) => {
     if (hook_candidate_id && !UUID_RE.test(hook_candidate_id)) {
       return res.status(400).json({ error: 'hook_candidate_id must be a valid UUID' });
     }
+    if (slot && !['morning', 'evening'].includes(slot)) {
+      return res.status(400).json({ error: 'slot must be "morning" or "evening"' });
+    }
     if (scheduled_time) {
       const parsed = new Date(scheduled_time);
       if (isNaN(parsed.getTime())) {
@@ -96,17 +176,17 @@ router.post('/posts', async (req, res) => {
       }
     }
 
-    // Duplicate guard: 1 post per day
-    const todayStart = new Date();
-    todayStart.setUTCHours(0, 0, 0, 0);
-    const existingToday = await prisma.tiktokPost.findFirst({
-      where: { postedAt: { gte: todayStart } },
-    });
-    if (existingToday) {
-      return res.status(409).json({
-        error: 'Already posted today',
-        existing_post_id: existingToday.id,
+    // Duplicate guard: same blotato_post_id only (allow 2 posts/day for morning+evening slots)
+    if (blotato_post_id) {
+      const existing = await prisma.tiktokPost.findFirst({
+        where: { blotatoPostId: blotato_post_id },
       });
+      if (existing) {
+        return res.status(409).json({
+          error: 'Duplicate blotato_post_id',
+          existing_post_id: existing.id,
+        });
+      }
     }
 
     const post = await prisma.tiktokPost.create({
@@ -115,6 +195,7 @@ router.post('/posts', async (req, res) => {
         blotatoPostId: blotato_post_id,
         caption,
         agentReasoning: agent_reasoning || null,
+        slot: slot || null,
         scheduledAt: scheduled_time ? new Date(scheduled_time) : null,
         postedAt: new Date(),
       },
@@ -123,9 +204,9 @@ router.post('/posts', async (req, res) => {
     logger.info(`TikTok post saved: ${post.id}`);
     res.json({ success: true, record_id: post.id });
   } catch (error) {
-    // P2002 = unique constraint violation (one-post-per-day DB index)
+    // P2002 = unique constraint violation
     if (error.code === 'P2002') {
-      return res.status(409).json({ error: 'Already posted today (DB constraint)' });
+      return res.status(409).json({ error: 'Duplicate post (DB constraint)' });
     }
     logger.error('Failed to save post record', error);
     res.status(500).json({ error: 'Failed to save post record' });

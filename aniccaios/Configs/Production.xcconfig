@@ -15,10 +15,6 @@ INFOPLIST_KEY_RESET_ON_LAUNCH = $(RESET_ON_LAUNCH)
 MIXPANEL_TOKEN = 96835bddc4fd0f2613e805d98c5915cd
 INFOPLIST_KEY_MIXPANEL_TOKEN = $(MIXPANEL_TOKEN)
 
-// Superwall Paywall Management
-SUPERWALL_API_KEY = pk_GrCSGORQuLAESnuuPl70W
-INFOPLIST_KEY_SUPERWALL_API_KEY = $(SUPERWALL_API_KEY)
-
 // AlarmKit Usage Description (iOS 26+)
 INFOPLIST_KEY_NSAlarmKitUsageDescription = Aniccaは、習慣のリマインダーをフルスクリーンアラームとして表示し、確実に行動を促すために使用します。
 

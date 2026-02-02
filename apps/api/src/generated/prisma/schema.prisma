@@ -64,10 +64,37 @@ model MobileProfile {
   @@map("mobile_profiles")
 }
 
+model MobileVoipToken {
+  userId      String   @map("user_id")
+  deviceToken String   @map("device_token")
+  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@id([userId, deviceToken])
+  @@map("mobile_voip_tokens")
+}
+
+// 注意: `mobile_alarm_schedules.id` は過去マイグレーションが UUID/TEXT で揺れている。
+// v0.3 の主要機能では必須ではないため、現DBの型に合わせて必要なら @db.Uuid/@db.Text を調整する。
+model MobileAlarmSchedule {
+  id         String    @id @map("id")
+  userId     String    @map("user_id")
+  habitType  String    @map("habit_type")
+  fireTime   DateTime  @map("fire_time") @db.Timestamptz
+  timezone   String
+  repeatRule String    @default("daily") @map("repeat_rule")
+  nextFireAt DateTime  @map("next_fire_at") @db.Timestamptz
+  createdAt  DateTime? @map("created_at") @db.Timestamptz
+  updatedAt  DateTime? @map("updated_at") @db.Timestamptz
+
+  @@map("mobile_alarm_schedules")
+}
+
 model UserSubscription {
   userId                          String    @id @map("user_id")
   plan                            String    @default("free")
   status                          String    @default("free")
+  stripeCustomerId                String?   @map("stripe_customer_id")
+  stripeSubscriptionId            String?   @map("stripe_subscription_id")
   entitlementSource               String    @default("revenuecat") @map("entitlement_source")
   revenuecatEntitlementId         String?   @map("revenuecat_entitlement_id")
   revenuecatOriginalTransactionId String?   @map("revenuecat_original_transaction_id")
@@ -80,15 +107,27 @@ model UserSubscription {
   @@map("user_subscriptions")
 }
 
-model SubscriptionEvent {
-  eventId   String   @id @map("event_id")
-  userId    String?  @map("user_id")
-  type      String
-  provider  String   @default("revenuecat")
-  payload   Json?    @db.JsonB
-  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
+model RealtimeUsageDaily {
+  userId    String   @map("user_id")
+  usageDate DateTime @map("usage_date") @db.Date
+  count     Int      @default(0)
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
 
-  @@map("subscription_events")
+  @@id([userId, usageDate])
+  @@map("realtime_usage_daily")
+}
+
+model UsageSession {
+  sessionId     String    @id @map("session_id")
+  userId        String    @map("user_id")
+  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  endedAt       DateTime? @map("ended_at") @db.Timestamptz
+  billedSeconds Int       @default(0) @map("billed_seconds")
+  billedMinutes Int       @default(0) @map("billed_minutes")
+  source        String    @default("realtime")
+  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
+
+  @@map("usage_sessions")
 }
 
 model MonthlyVcGrant {
@@ -148,26 +187,6 @@ model UserTrait {
   @@map("user_traits")
 }
 
-model DailyMetric {
-  userId           String    @map("user_id") @db.Uuid
-  date             DateTime  @db.Date
-  sleepDurationMin Int?      @map("sleep_duration_min")
-  sleepStartAt     DateTime? @map("sleep_start_at") @db.Timestamptz
-  wakeAt           DateTime? @map("wake_at") @db.Timestamptz
-  snsMinutesTotal  Int       @default(0) @map("sns_minutes_total")
-  snsMinutesNight  Int       @default(0) @map("sns_minutes_night")
-  steps            Int       @default(0)
-  sedentaryMinutes Int       @default(0) @map("sedentary_minutes")
-  activitySummary  Json      @default("{}") @map("activity_summary") @db.JsonB
-  mindSummary      Json      @default("{}") @map("mind_summary") @db.JsonB
-  insights         Json      @default("{}") @db.JsonB
-  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
-  updatedAt        DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@id([userId, date])
-  @@map("daily_metrics")
-}
-
 model NudgeEvent {
   id             String   @id @default(uuid()) @db.Uuid
   userId         String   @map("user_id") @db.Uuid
@@ -197,23 +216,6 @@ model NudgeOutcome {
   event NudgeEvent @relation(fields: [nudgeEventId], references: [id], onDelete: Cascade)
 
   @@map("nudge_outcomes")
-}
-
-model FeelingSession {
-  id             String    @id @default(uuid()) @db.Uuid
-  userId         String    @map("user_id") @db.Uuid
-  feelingId      String    @map("feeling_id")
-  topic          String?
-  actionTemplate String?   @map("action_template")
-  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz
-  endedAt        DateTime? @map("ended_at") @db.Timestamptz
-  emaBetter      Boolean?  @map("ema_better")
-  summary        String?   @db.Text
-  transcript     Json?     @db.JsonB
-  context        Json      @default("{}") @db.JsonB
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
-
-  @@map("feeling_sessions")
 }
 
 model BanditModel {
@@ -282,10 +284,21 @@ model HookCandidate {
   createdAt           DateTime @default(now()) @map("created_at") @db.Timestamptz
   updatedAt           DateTime @default(now()) @map("updated_at") @db.Timestamptz
 
+  // 1.6.0 Phase 3: Hook Storage → TS Loop
+  source             String  @default("manual") @db.VarChar(20) // 'manual', 'llm_nudge', 'x_agent', 'tiktok_agent'
+  generatedForUserId String? @map("generated_for_user_id") @db.Uuid
+  promoted           Boolean @default(false)
+  // 1.6.0 Phase 5: X metrics
+  xEngagementRate    Decimal @default(0) @map("x_engagement_rate") @db.Decimal(5, 4)
+  xSampleSize        Int     @default(0) @map("x_sample_size")
+  xHighPerformer     Boolean @default(false) @map("x_high_performer")
+
   tiktokPosts TiktokPost[]
+  xPosts      XPost[]
 
   @@unique([text, tone])
   @@index([tone])
+  @@index([source])
   @@map("hook_candidates")
 }
 
@@ -293,7 +306,7 @@ model TiktokPost {
   id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   hookCandidateId  String?   @map("hook_candidate_id") @db.Uuid
   tiktokVideoId    String?   @unique @map("tiktok_video_id") @db.VarChar(100)
-  blotatoPostId    String?   @map("blotato_post_id") @db.VarChar(100)
+  blotatoPostId    String?   @unique @map("blotato_post_id") @db.VarChar(100)
   caption          String?   @db.Text
   postedAt         DateTime  @default(now()) @map("posted_at") @db.Timestamptz
   metricsFetchedAt DateTime? @map("metrics_fetched_at") @db.Timestamptz
@@ -302,6 +315,7 @@ model TiktokPost {
   commentCount     BigInt?   @map("comment_count")
   shareCount       BigInt?   @map("share_count")
   agentReasoning   String?   @map("agent_reasoning") @db.Text
+  slot             String?   @map("slot") @db.VarChar(20)
   scheduledAt      DateTime? @map("scheduled_at") @db.Timestamptz
   createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
 
@@ -328,4 +342,40 @@ model WisdomPattern {
   updatedAt              DateTime  @default(now()) @map("updated_at") @db.Timestamptz
 
   @@map("wisdom_patterns")
+}
+
+// 1.6.0 Phase 4: X/Twitter posts
+model XPost {
+  id               String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  hookCandidateId  String?   @map("hook_candidate_id") @db.Uuid
+  xPostId          String?   @unique @map("x_post_id") @db.VarChar(100)
+  blotatoPostId    String?   @unique @map("blotato_post_id") @db.VarChar(100)
+  text             String    @db.Text
+  slot             String?   @map("slot") @db.VarChar(20)
+  postedAt         DateTime? @map("posted_at") @db.Timestamptz
+  metricsFetchedAt DateTime? @map("metrics_fetched_at") @db.Timestamptz
+  impressionCount  BigInt    @default(0) @map("impression_count")
+  likeCount        BigInt    @default(0) @map("like_count")
+  retweetCount     BigInt    @default(0) @map("retweet_count")
+  replyCount       BigInt    @default(0) @map("reply_count")
+  engagementRate   Decimal   @default(0) @map("engagement_rate") @db.Decimal(7, 6)
+  agentReasoning   String?   @map("agent_reasoning") @db.Text
+  createdAt        DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  hookCandidate HookCandidate? @relation(fields: [hookCandidateId], references: [id])
+
+  @@index([hookCandidateId])
+  @@index([postedAt(sort: Desc)])
+  @@map("x_posts")
+}
+
+// 1.6.0 Phase 7: Notification Schedules (Commander Decision 保存)
+model NotificationSchedule {
+  id             String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  userId         String   @unique @map("user_id") @db.Uuid
+  schedule       Json     @db.JsonB // CommanderDecision (正規化後)
+  agentRawOutput Json?    @map("agent_raw_output") @db.JsonB // AgentRawOutput (監査用)
+  createdAt      DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("notification_schedules")
 }

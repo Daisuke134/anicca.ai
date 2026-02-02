@@ -62,80 +62,74 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
             guard let problem = ProblemType(rawValue: problemRaw) else { continue }
 
             for time in problem.notificationSchedule {
-                var adjustedHour = time.hour
-                var adjustedMinute = time.minute
-
-                // v1.5.0: LLMキャッシュの有無を事前判定 — LLM Nudgeにはshiftを適用しない
-                let hasLLMContent = await MainActor.run {
-                    LLMNudgeCache.shared.hasNudge(for: problem, hour: time.hour, minute: time.minute)
-                }
-
-                if !hasLLMContent {
-                    // ルールベースのみ: タイミング最適化（2日連続ignoredならシフト）
-                    let consecutiveIgnored = await MainActor.run {
-                        NudgeStatsManager.shared.getConsecutiveIgnoredDays(problemType: problemRaw, hour: time.hour)
-                    }
-
-                    let currentShift = getCurrentShiftMinutes(problemType: problemRaw, originalHour: time.hour)
-                    let newShift = calculateNewShift(currentShift: currentShift, consecutiveIgnored: consecutiveIgnored)
-
-                    if newShift > currentShift {
-                        let totalMinutes = time.hour * 60 + time.minute + newShift
-                        adjustedHour = (totalMinutes / 60) % 24
-                        adjustedMinute = totalMinutes % 60
-                        recordShift(problemType: problemRaw, originalHour: time.hour, shiftMinutes: newShift)
-                        logger.info("Shifted \(problemRaw) from \(time.hour):\(time.minute) to \(adjustedHour):\(adjustedMinute) (total shift: \(newShift)min, max: \(self.maxShiftMinutes)min)")
-                    } else if currentShift > 0 {
-                        let totalMinutes = time.hour * 60 + time.minute + currentShift
-                        adjustedHour = (totalMinutes / 60) % 24
-                        adjustedMinute = totalMinutes % 60
-                        logger.info("Keeping existing shift for \(problemRaw) at \(time.hour):\(time.minute), shift: \(currentShift)min")
-                    }
-                }
-                // LLM Nudge → shiftスキップ（LLMが最適タイミングを判断済み）
-
-                allSchedules.append((time: (adjustedHour, adjustedMinute), problem: problem))
+                allSchedules.append((time: (time.hour, time.minute), problem: problem))
             }
         }
 
-        // 時刻でソート
-        allSchedules.sort { $0.time.hour * 60 + $0.time.minute < $1.time.hour * 60 + $1.time.minute }
+        // Sort by time (midnight-crossing slots treated as next day)
+        allSchedules.sort { lhs, rhs in
+            let lhsMin = lhs.time.hour < 6 ? lhs.time.hour * 60 + lhs.time.minute + 1440 : lhs.time.hour * 60 + lhs.time.minute
+            let rhsMin = rhs.time.hour < 6 ? rhs.time.hour * 60 + rhs.time.minute + 1440 : rhs.time.hour * 60 + rhs.time.minute
+            return lhsMin < rhsMin
+        }
 
-        // 最小間隔以内に被る場合は間隔分ずらしてスケジュール
-        var lastScheduledMinutes: Int?
+        // iOS limits pending notifications to 64. With 2-day window each slot uses up to 2.
+        // Trim excess slots (latest chronological slots dropped first).
+        let maxPendingNotifications = 64
+        let maxSlots = maxPendingNotifications / 2  // 32 slots × 2 days = 64
+        if allSchedules.count > maxSlots {
+            logger.warning("Trimming \(allSchedules.count) slots to \(maxSlots) (iOS 64 limit)")
+            allSchedules = Array(allSchedules.prefix(maxSlots))
+        }
+
+        // P4: usedVariants重複排除 / P5: Day1決定論的割り当て
+        var usedVariantsPerProblem: [ProblemType: Set<Int>] = [:]
+        var slotIndexPerProblem: [ProblemType: Int] = [:]
         var scheduledCount = 0
 
+        // Day1判定（問題ごと）をMainActorで事前取得
+        var isDay1PerProblem: [ProblemType: Bool] = [:]
         for schedule in allSchedules {
-            var hour = schedule.time.hour
-            var minute = schedule.time.minute
-            var currentMinutes = hour * 60 + minute
-
-            if let last = lastScheduledMinutes {
-                let interval = isWakeWindow(problem: schedule.problem, hour: hour, minute: minute) ? wakeWindowIntervalMinutes : minimumIntervalMinutes
-                if currentMinutes < last + interval {
-                    currentMinutes = last + interval
-                    hour = (currentMinutes / 60) % 24
-                    minute = currentMinutes % 60
-                    logger.info("Shifted \(schedule.problem.rawValue) to \(hour):\(minute) to avoid collision")
+            let problem = schedule.problem
+            if isDay1PerProblem[problem] == nil {
+                isDay1PerProblem[problem] = await MainActor.run {
+                    NudgeStatsManager.shared.isDay1(for: problem.rawValue)
                 }
             }
+        }
 
-            guard schedule.problem.isValidTime(hour: hour, minute: minute) else {
-                logger.info("Skipped \(schedule.problem.rawValue) at \(hour):\(minute) - outside valid time range")
+        for schedule in allSchedules {
+            let hour = schedule.time.hour
+            let minute = schedule.time.minute
+            let problem = schedule.problem
+
+            guard problem.isValidTime(hour: hour, minute: minute) else {
+                logger.info("Skipped \(problem.rawValue) at \(hour):\(minute) - outside valid time range")
                 continue
             }
 
-            await scheduleNotification(
-                for: schedule.problem,
+            let slotIndex = slotIndexPerProblem[problem, default: 0]
+            let usedVariants = usedVariantsPerProblem[problem, default: []]
+            let isDay1 = isDay1PerProblem[problem] ?? false
+
+            let variantIndex = await scheduleNotification(
+                for: problem,
                 hour: hour,
-                minute: minute
+                minute: minute,
+                slotIndex: slotIndex,
+                usedVariants: usedVariants,
+                isDay1: isDay1
             )
 
-            lastScheduledMinutes = currentMinutes
+            // Track used variants for dedup
+            if let idx = variantIndex {
+                usedVariantsPerProblem[problem, default: []].insert(idx)
+            }
+            slotIndexPerProblem[problem] = slotIndex + 1
             scheduledCount += 1
         }
 
-        logger.info("Scheduled \(scheduledCount) problem notifications")
+        logger.info("Scheduled \(scheduledCount) problem notifications (2-day window)")
     }
 
     /// すべての問題通知をキャンセル
@@ -199,10 +193,26 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
 
     // MARK: - Private Methods
 
-    private func scheduleNotification(for problem: ProblemType, hour: Int, minute: Int) async {
-        // NudgeContentSelectorでバリアント選択（Phase 6: LLM生成対応）
+    /// v1.5.1: 2-day window + usedVariants + Day1 対応
+    /// - Returns: 選択されたvariantIndex（usedVariantsトラッキング用）。LLMの場合はnil
+    @discardableResult
+    private func scheduleNotification(
+        for problem: ProblemType,
+        hour: Int,
+        minute: Int,
+        slotIndex: Int,
+        usedVariants: Set<Int>,
+        isDay1: Bool
+    ) async -> Int? {
+        // NudgeContentSelectorでバリアント選択（P4: usedVariants / P5: Day1）
         let selection = await MainActor.run {
-            NudgeContentSelector.shared.selectVariant(for: problem, scheduledHour: hour)
+            NudgeContentSelector.shared.selectVariant(
+                for: problem,
+                scheduledHour: hour,
+                slotIndex: slotIndex,
+                usedVariants: usedVariants,
+                isDay1: isDay1
+            )
         }
 
         let notificationContent = UNMutableNotificationContent()
@@ -244,41 +254,58 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
             notificationContent.interruptionLevel = (settings.timeSensitiveSetting == .enabled) ? .timeSensitive : .active
         }
 
-        var dateComponents = DateComponents()
-        dateComponents.hour = hour
-        dateComponents.minute = minute
-        let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: true)
+        // P1: 2-day window — schedule for today (if not passed) and tomorrow
+        let calendar = Calendar.current
+        let now = Date()
 
-        let identifier = "PROBLEM_\(problem.rawValue)_\(hour)_\(minute)"
-        let request = UNNotificationRequest(
-            identifier: identifier,
-            content: notificationContent,
-            trigger: trigger
-        )
+        for dayOffset in 0...1 {
+            guard let targetDay = calendar.date(byAdding: .day, value: dayOffset, to: now) else { continue }
 
-        do {
-            try await center.add(request)
-            logger.info("Scheduled problem notification: \(problem.rawValue) at \(hour):\(minute) variant:\(selection.variantIndex) isAIGenerated:\(selection.isAIGenerated)")
+            var dateComponents = calendar.dateComponents([.year, .month, .day], from: targetDay)
+            dateComponents.hour = hour
+            dateComponents.minute = minute
 
-            // スケジュール成功時にNudgeStatsに記録
-            await MainActor.run {
-                NudgeStatsManager.shared.recordScheduled(
-                    problemType: problem.rawValue,
-                    variantIndex: selection.variantIndex,
-                    scheduledHour: hour,
-                    isAIGenerated: selection.isAIGenerated,
-                    llmNudgeId: selection.content?.id
-                )
+            // Skip if this time has already passed
+            if let scheduledDate = calendar.date(from: dateComponents), scheduledDate <= now {
+                continue
             }
 
-            // Phase 7+8: LLM生成Nudgeの場合、scheduledNudgesに保存（ignored判定用）
-            if let llmNudgeId = selection.content?.id {
-                let scheduledDate = calculateScheduledDate(hour: hour, minute: minute)
-                await NudgeFeedbackService.shared.saveScheduledNudge(nudgeId: llmNudgeId, scheduledDate: scheduledDate)
+            let trigger = UNCalendarNotificationTrigger(dateMatching: dateComponents, repeats: false)
+            let identifier = "PROBLEM_\(problem.rawValue)_\(hour)_\(minute)_d\(dayOffset)"
+            let request = UNNotificationRequest(
+                identifier: identifier,
+                content: notificationContent,
+                trigger: trigger
+            )
+
+            do {
+                try await center.add(request)
+                logger.info("Scheduled \(problem.rawValue) at \(hour):\(minute) d\(dayOffset) variant:\(selection.variantIndex) ai:\(selection.isAIGenerated)")
+            } catch {
+                logger.error("Failed to schedule \(problem.rawValue) d\(dayOffset): \(error.localizedDescription)")
             }
-        } catch {
-            logger.error("Failed to schedule problem notification: \(error.localizedDescription)")
         }
+
+        // スケジュール成功時にNudgeStatsに記録（実際の配信時刻を渡す）
+        let fireDate = calculateScheduledDate(hour: hour, minute: minute)
+        await MainActor.run {
+            NudgeStatsManager.shared.recordScheduled(
+                problemType: problem.rawValue,
+                variantIndex: selection.variantIndex,
+                scheduledHour: hour,
+                isAIGenerated: selection.isAIGenerated,
+                llmNudgeId: selection.content?.id,
+                fireDate: fireDate
+            )
+        }
+
+        // Phase 7+8: LLM生成Nudgeの場合、scheduledNudgesに保存（ignored判定用）
+        if let llmNudgeId = selection.content?.id {
+            let scheduledDate = calculateScheduledDate(hour: hour, minute: minute)
+            await NudgeFeedbackService.shared.saveScheduledNudge(nudgeId: llmNudgeId, scheduledDate: scheduledDate)
+        }
+
+        return selection.isAIGenerated ? nil : selection.variantIndex
     }
 
     private func removeAllProblemNotifications() async {

@@ -44,8 +44,6 @@
 	<string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
 	<key>MIXPANEL_TOKEN</key>
 	<string>$(INFOPLIST_KEY_MIXPANEL_TOKEN)</string>
-	<key>SUPERWALL_API_KEY</key>
-	<string>$(INFOPLIST_KEY_SUPERWALL_API_KEY)</string>
 	<key>SINGULAR_SDK_KEY</key>
 	<string>$(INFOPLIST_KEY_SINGULAR_SDK_KEY)</string>
 	<key>SINGULAR_SDK_SECRET</key>
@@ -109,6 +107,17 @@
 		<string>remote-notification</string>
 		<string>processing</string>
 	</array>
+	<key>BGTaskSchedulerPermittedIdentifiers</key>
+	<array>
+		<string>ai.anicca.app.ios.refresh</string>
+		<string>ai.anicca.app.ios.nudge-fetch</string>
+	</array>
+	<key>NSHealthShareUsageDescription</key>
+	<string>Anicca uses health data to understand your sleep patterns and provide personalized nudges.</string>
+	<key>NSHealthUpdateUsageDescription</key>
+	<string>Anicca may record your wellness activities to track your behavioral progress.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Anicca may use the microphone for voice-based interactions in future updates.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

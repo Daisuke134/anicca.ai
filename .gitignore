@@ -133,7 +133,6 @@ examples/openai-realtime-agents/
 examples/openai-agents-js-latest/
 examples/slack-mcp-server/
 examples/composio/
-apps/api/.npmrc
 
 examples/app_assistant_voice_agents.ipynb
 
@@ -141,7 +140,10 @@ examples/app_assistant_voice_agents.ipynb
 generated/
 scripts/sns-poster/.venv/
 .claude/skills/supabase-agent-skills/
-AuthKey_646Y27MJ8C.p8
+AuthKey_*.p8
+__pycache__/
+*.xlsx
+aniccaios/fastlane/build/
 
-# Research/thesis project
-dpo/
+# Masters thesis (formerly dpo/)
+masters-thesis/

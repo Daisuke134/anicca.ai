@@ -47,29 +47,52 @@ function pickTemplate({ domain, eventType, intensity }) {
   return 'do_nothing';
 }
 
-function renderMessage(templateId, lang) {
-  const ja = lang === 'ja';
-  switch (templateId) {
-    case 'gentle_sns_break':
-      return ja
-        ? '少しスクロールが続いてるみたい。1分だけ、目と心を休めよう。'
-        : "You've been scrolling for a while. How about a one-minute pause to let your eyes and mind breathe?";
-    case 'direct_sns_stop':
-      return ja
-        ? 'ここで一度切ろう。スマホを伏せて、次の数分を取り戻そう。'
-        : "Let's cut it here. Put the phone face-down and reclaim the next few minutes.";
-    case 'short_break':
-      return ja
-        ? '座りっぱなしが続いてるよ。立って、伸びて、数歩だけ。'
-        : "You've been still for a while. Stand up, stretch, take a few steps—just one minute.";
-    case 'walk_invite':
-      return ja
-        ? '今、5分だけ歩こう。体が動くと、気分も少し変わるよ。'
-        : "Let's walk for five minutes. When the body moves, the mind often shifts too.";
-    default:
-      // do_nothing は通知を出さない（iOS側は message が空なら提示しない）
-      return '';
+const TRIGGER_MESSAGES = {
+  gentle_sns_break: {
+    en: "You've been scrolling for a while. How about a one-minute pause to let your eyes and mind breathe?",
+    ja: '少しスクロールが続いてるみたい。1分だけ、目と心を休めよう。',
+    es: 'Llevas un rato deslizando. ¿Qué tal una pausa de un minuto para descansar los ojos y la mente?',
+    fr: 'Tu scrolles depuis un moment. Et si tu faisais une pause d\'une minute pour reposer tes yeux et ton esprit ?',
+    de: 'Du scrollst schon eine Weile. Wie wäre es mit einer einminütigen Pause für Augen und Geist?',
+    pt: 'Você está rolando há um tempo. Que tal uma pausa de um minuto para descansar os olhos e a mente?'
+  },
+  direct_sns_stop: {
+    en: "Let's cut it here. Put the phone face-down and reclaim the next few minutes.",
+    ja: 'ここで一度切ろう。スマホを伏せて、次の数分を取り戻そう。',
+    es: 'Cortemos aquí. Pon el teléfono boca abajo y recupera los próximos minutos.',
+    fr: 'Coupons ici. Pose le téléphone face cachée et récupère les prochaines minutes.',
+    de: 'Lass uns hier aufhören. Leg das Handy mit dem Display nach unten und nimm dir die nächsten Minuten zurück.',
+    pt: 'Vamos parar aqui. Coloque o celular virado para baixo e recupere os próximos minutos.'
+  },
+  short_break: {
+    en: "You've been still for a while. Stand up, stretch, take a few steps—just one minute.",
+    ja: '座りっぱなしが続いてるよ。立って、伸びて、数歩だけ。',
+    es: 'Llevas un rato quieto. Levántate, estírate, da unos pasos—solo un minuto.',
+    fr: 'Tu es resté immobile un moment. Lève-toi, étire-toi, fais quelques pas—juste une minute.',
+    de: 'Du sitzt schon eine Weile still. Steh auf, streck dich, mach ein paar Schritte—nur eine Minute.',
+    pt: 'Você está parado há um tempo. Levante-se, alongue-se, dê alguns passos—só um minuto.'
+  },
+  walk_invite: {
+    en: "Let's walk for five minutes. When the body moves, the mind often shifts too.",
+    ja: '今、5分だけ歩こう。体が動くと、気分も少し変わるよ。',
+    es: 'Caminemos cinco minutos. Cuando el cuerpo se mueve, la mente también cambia.',
+    fr: 'Marchons cinq minutes. Quand le corps bouge, l\'esprit suit souvent.',
+    de: 'Lass uns fünf Minuten gehen. Wenn der Körper sich bewegt, verändert sich oft auch der Geist.',
+    pt: 'Vamos caminhar cinco minutos. Quando o corpo se move, a mente também muda.'
   }
+};
+
+function normalizeLangKey(lang) {
+  if (!lang) return 'en';
+  const l = String(lang).toLowerCase().slice(0, 2);
+  if (TRIGGER_MESSAGES.gentle_sns_break[l]) return l;
+  return 'en';
+}
+
+function renderMessage(templateId, lang) {
+  const msgs = TRIGGER_MESSAGES[templateId];
+  if (!msgs) return '';
+  return msgs[normalizeLangKey(lang)] || msgs.en;
 }
 
 function classifyDomain(eventType) {
@@ -236,27 +259,33 @@ router.get('/today', async (req, res) => {
     // Phase 7+8: overallStrategyを取得（最初のレコードから）
     const overallStrategy = result.rows[0]?.state?.overallStrategy || null;
 
-    // LLMGeneratedNudge形式に変換（Phase 7+8対応）
-    const nudges = result.rows.map(row => ({
-      id: row.state.id,
-      problemType: row.subtype,
-      // Phase 7+8: scheduledTime (HH:MM) を追加
-      scheduledTime: row.state.scheduledTime || `${String(row.state.scheduledHour || 9).padStart(2, '0')}:00`,
-      // 後方互換: scheduledHour も返す
-      scheduledHour: row.state.scheduledHour || parseInt((row.state.scheduledTime || '09:00').split(':')[0]),
-      hook: row.state.hook,
-      content: row.state.content,
-      tone: row.state.tone,
-      reasoning: row.state.reasoning,
-      // Phase 7+8: rootCauseHypothesis を追加
-      rootCauseHypothesis: row.state.rootCauseHypothesis || null,
-      createdAt: row.created_at.toISOString()
-    }));
+    // LLMGeneratedNudge形式に変換（1.6.0: slotIndex + enabled 追加）
+    const nudges = result.rows.map(row => {
+      const scheduledTime = row.state.scheduledTime || `${String(row.state.scheduledHour || 9).padStart(2, '0')}:00`;
+      const [h, m] = scheduledTime.split(':').map(Number);
+      return {
+        id: row.state.id,
+        problemType: row.subtype,
+        scheduledTime,
+        scheduledHour: h,
+        scheduledMinute: m,
+        // 1.6.0: slotIndex（フラット化テーブルのインデックス、iOS完全一致マッチ用）
+        slotIndex: row.state.slotIndex ?? null,
+        // 1.6.0: enabled（Phase 7 Dynamic Frequency用、デフォルトtrue）
+        enabled: row.state.enabled ?? true,
+        hook: row.state.hook,
+        content: row.state.content,
+        tone: row.state.tone,
+        reasoning: row.state.reasoning,
+        rootCauseHypothesis: row.state.rootCauseHypothesis || null,
+        createdAt: row.created_at.toISOString(),
+      };
+    });
 
     return res.json({
       nudges,
-      overallStrategy,  // Phase 7+8
-      version: '2'      // APIバージョン
+      overallStrategy,
+      version: '3',  // 1.6.0: slotIndex + enabled
     });
   } catch (e) {
     logger.error('Failed to fetch today\'s nudges', e);

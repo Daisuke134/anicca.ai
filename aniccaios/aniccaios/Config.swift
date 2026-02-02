@@ -8,7 +8,6 @@ enum AppConfig {
     private static let revenueCatPaywallKey = "REVENUECAT_PAYWALL_ID"
     private static let revenueCatCustomerCenterKey = "REVENUECAT_CUSTOMER_CENTER_ID"
     private static let mixpanelTokenKey = "MIXPANEL_TOKEN"
-    private static let superwallAPIKeyKey = "SUPERWALL_API_KEY"
     private static let singularSDKKeyKey = "SINGULAR_SDK_KEY"
     private static let singularSDKSecretKey = "SINGULAR_SDK_SECRET"
     private static let logger = Logger(subsystem: "com.anicca.ios", category: "AppConfig")
@@ -57,7 +56,6 @@ enum AppConfig {
     static var revenueCatPaywallId: String { infoValue(for: revenueCatPaywallKey) }
     static var revenueCatCustomerCenterId: String { infoValue(for: revenueCatCustomerCenterKey) }
     static var mixpanelToken: String { infoValue(for: mixpanelTokenKey) }
-    static var superwallAPIKey: String { infoValue(for: superwallAPIKeyKey) }
     static var singularSDKKey: String { infoValue(for: singularSDKKeyKey) }
     static var singularSDKSecret: String { infoValue(for: singularSDKSecretKey) }
     static var entitlementSyncURL: URL {
@@ -84,5 +82,10 @@ enum AppConfig {
     // Phase 6: LLM生成Nudge
     static var nudgeTodayURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/nudge/today")
+    }
+
+    // v1.6.0: App version for schedule map selection
+    static var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
     }
 }

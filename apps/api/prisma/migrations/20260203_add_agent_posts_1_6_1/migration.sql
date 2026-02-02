@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS agent_posts (
   buddhism_reference TEXT,
   upvotes INTEGER NOT NULL DEFAULT 0,
   reactions JSONB NOT NULL DEFAULT '{}',
-  views INTEGER NOT NULL DEFAULT 0,
+  views INTEGER,  -- nullable: null = unknown/not available (for Moltbook Z-Score fallback)
   likes INTEGER NOT NULL DEFAULT 0,
   shares INTEGER NOT NULL DEFAULT 0,
   comments INTEGER NOT NULL DEFAULT 0,

@@ -411,7 +411,7 @@ model AgentPost {
   // フィードバック
   upvotes           Int       @default(0)
   reactions         Json      @default("{}") @db.JsonB  // Slack { "👍": 3, "❤️": 1 }
-  views             Int       @default(0)
+  views             Int?      // null = unknown/not available (for Moltbook Z-Score fallback)
   likes             Int       @default(0)
   shares            Int       @default(0)
   comments          Int       @default(0)

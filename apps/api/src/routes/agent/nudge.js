@@ -75,13 +75,40 @@ router.post('/', async (req, res) => {
   const startTime = Date.now();
   
   try {
-    const { platform, externalPostId, platformUserId, context, language = 'ja' } = req.body;
+    const { 
+      platform, 
+      externalPostId, 
+      platformUserId, 
+      context, 
+      language = 'ja',
+      // Crisis detection fields (from caller, e.g., OpenClaw)
+      severity = null,  // null | 'crisis'
+      region = null,    // 'JP', 'US', 'UK', 'KR', 'OTHER'
+      optIn = false,    // User initiated contact (Mastodon.bot policy)
+    } = req.body;
     
     // Validate required fields
     if (!platform || !context) {
       return res.status(400).json({
         error: 'Bad Request',
         message: 'platform and context are required',
+      });
+    }
+    
+    // Validate severity if provided
+    if (severity !== null && severity !== 'crisis') {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'severity must be null or "crisis"',
+      });
+    }
+    
+    // Validate region if provided
+    const validRegions = ['JP', 'US', 'UK', 'KR', 'OTHER'];
+    if (region !== null && !validRegions.includes(region)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: `region must be one of: ${validRegions.join(', ')}`,
       });
     }
     
@@ -138,12 +165,14 @@ Respond in JSON format only.`;
 
     const generated = JSON.parse(completion.choices[0].message.content);
     
-    // Create AgentPost record
+    // Create AgentPost record (including crisis fields)
     const agentPost = await prisma.agentPost.create({
       data: {
         platform,
         externalPostId,
         platformUserId,
+        severity,
+        region,
         hook: generated.hook,
         content: generated.content,
         tone: generated.tone,
@@ -152,6 +181,24 @@ Respond in JSON format only.`;
         buddhismReference: generated.buddhismReference,
       },
     });
+    
+    // Crisis event: special audit log + notification trigger
+    if (severity === 'crisis') {
+      await prisma.agentAuditLog.create({
+        data: {
+          eventType: 'crisis_detected',
+          agentPostId: agentPost.id,
+          platform,
+          requestPayload: { 
+            region, 
+            contextLength: context.length,
+            optIn,
+          },
+          executedBy: 'system',
+        },
+      });
+      // TODO: Send Slack notification to #agents for human review
+    }
     
     // Audit log
     await prisma.agentAuditLog.create({

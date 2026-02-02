@@ -69,11 +69,12 @@ router.post('/', async (req, res) => {
       },
     });
 
-    // Execute deletion
+    // Execute deletion (must NULL all PII including platform_user_id)
     const result = await prisma.$executeRaw`
       UPDATE agent_posts
       SET 
         external_post_id = NULL,
+        platform_user_id = NULL,
         content = NULL,
         reasoning = NULL,
         anonymized_at = NOW()

@@ -1,5 +1,25 @@
-MAX_ITERATIONS=20
-TIMEOUT_MINUTES=60
-CIRCUIT_BREAKER_MAX_REPEATED=3
-COOLDOWN_SECONDS=30
-LOG_LEVEL=info
+# .ralphrc - Ralph project configuration
+# Security-hardened version per spec
+
+# Project identification
+PROJECT_NAME="anicca"
+PROJECT_TYPE="swift"
+
+# Loop settings
+MAX_CALLS_PER_HOUR=100
+CLAUDE_TIMEOUT_MINUTES=15
+CLAUDE_OUTPUT_FORMAT="json"
+
+# Tool permissions (security-hardened: specific subcommands only)
+# No Bash(git *) — each git subcommand is explicitly whitelisted
+# No Bash(rm *), Bash(curl *), Bash(wget *) — not permitted
+# No git push --force, git remote add — not permitted
+ALLOWED_TOOLS="Write,Read,Edit,Bash(git status),Bash(git add *),Bash(git commit *),Bash(git push origin *),Bash(git pull),Bash(git checkout *),Bash(git branch *),Bash(git diff *),Bash(git log *),Bash(cd *),Bash(ls *),Bash(fastlane *),Bash(xcodebuild test *),Bash(xcodebuild build *),Bash(swift *),Bash(npm test *)"
+
+# Session management
+SESSION_CONTINUITY=true
+SESSION_EXPIRY_HOURS=24
+
+# Circuit breaker thresholds
+CB_NO_PROGRESS_THRESHOLD=3
+CB_SAME_ERROR_THRESHOLD=5

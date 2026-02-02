@@ -10,11 +10,12 @@ concurrency:
 
 jobs:
   autofix:
-    # 条件: CIが失敗 AND dev/mainブランチではない AND PRからのCI失敗のみ
+    # 条件: CIが失敗 AND feature/* ブランチのみ（B2: セキュリティ対策）
     if: |
       github.event.workflow_run.conclusion == 'failure' &&
       github.event.workflow_run.head_branch != 'main' &&
-      github.event.workflow_run.head_branch != 'dev'
+      github.event.workflow_run.head_branch != 'dev' &&
+      startsWith(github.event.workflow_run.head_branch, 'feature/')
     runs-on: ubuntu-latest
     permissions:
       contents: write

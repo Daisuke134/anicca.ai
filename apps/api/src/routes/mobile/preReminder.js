@@ -208,7 +208,7 @@ async function generatePersonalizedMessage({ profileId, habitType, habitName, sc
   // 2. mem0から関連記憶を検索
   let memories = '';
   try {
-    const mem0 = getMem0Client();
+    const mem0 = await getMem0Client();
     const searchResult = await mem0.search({
       userId: profileId,
       query: habitType === 'custom' ? habitName : habitType,

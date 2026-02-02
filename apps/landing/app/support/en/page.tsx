@@ -62,7 +62,7 @@ export default function SupportEN() {
             <h3 className="font-semibold text-foreground">Can I use Anicca on multiple devices?</h3>
             <p className="mt-2 text-muted-foreground">
               Yes. Your profile and preferences sync across devices via your account. 
-              You can use Anicca on both iOS and desktop (Mac) devices with the same account.
+              You can use Anicca on iOS devices with the same account.
             </p>
           </div>
         </div>

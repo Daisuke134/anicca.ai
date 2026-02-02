@@ -1,6 +1,6 @@
 export const metadata = {
   title: '特定商取引法に基づく表記 | Anicca',
-  description: '音声アシスタントサービス「Anicca」の有料プランに関する法的開示情報です。'
+  description: '行動変容サポートサービス「Anicca」の有料プランに関する法的開示情報です。'
 };
 
 export default function TokushohoPage() {
@@ -8,7 +8,7 @@ export default function TokushohoPage() {
     <main className="container mx-auto max-w-3xl px-4 py-24">
       <h1 className="text-3xl font-bold text-foreground">特定商取引法に基づく表記</h1>
       <p className="mt-6 text-muted-foreground">
-        本ページは、音声アシスタントサービス「Anicca」の有料プランに関する法定表示です。
+        本ページは、行動変容サポートサービス「Anicca」の有料プランに関する法定表示です。
       </p>
       <dl className="mt-10 space-y-6">
         <div>
@@ -39,16 +39,16 @@ export default function TokushohoPage() {
         </div>
         <div>
           <dt className="font-semibold text-foreground">サービス名称</dt>
-          <dd className="mt-1 text-muted-foreground">Anicca（AI音声アシスタント・macOSデスクトップアプリ）</dd>
+          <dd className="mt-1 text-muted-foreground">Anicca（AI行動変容サポート・iOSアプリ）</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">提供形態</dt>
-          <dd className="mt-1 text-muted-foreground">ダウンロード提供（Apple Silicon搭載macOS向けアプリケーション）</dd>
+          <dd className="mt-1 text-muted-foreground">ダウンロード提供（iOS向けアプリケーション）</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">販売価格</dt>
           <dd className="mt-1 text-muted-foreground">
-            Anicca Pro プラン：月額 5米ドル（Stripe価格ID: price_1S93SrEeDsUAcaLSNXvHMwPL）。決済時に各カード会社の為替レートで日本円換算されます。無料プランも提供しています。
+            Anicca Pro プラン：月額 9.99米ドル（App Store / RevenueCat 経由）。決済時に各カード会社の為替レートで日本円換算されます。1週間の無料トライアルがあります。
           </dd>
         </div>
         <div>
@@ -61,7 +61,7 @@ export default function TokushohoPage() {
         </div>
         <div>
           <dt className="font-semibold text-foreground">お支払い方法</dt>
-          <dd className="mt-1 text-muted-foreground">Stripeを通じたクレジットカード決済（Visa、Mastercard、American Express など Stripe がサポートするブランド）。</dd>
+          <dd className="mt-1 text-muted-foreground">Apple App Store 内課金（Apple ID に紐づく決済方法）。</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">お支払い時期</dt>
@@ -69,15 +69,15 @@ export default function TokushohoPage() {
         </div>
         <div>
           <dt className="font-semibold text-foreground">サービス提供時期</dt>
-          <dd className="mt-1 text-muted-foreground">Stripe Checkout完了後すぐに有料機能が有効化され、Desktopアプリで即時反映されます。</dd>
+          <dd className="mt-1 text-muted-foreground">購入完了後すぐに有料機能が有効化され、iOSアプリで即時反映されます。</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">動作環境</dt>
-          <dd className="mt-1 text-muted-foreground">Apple Silicon（arm64）搭載のmacOS。常時インターネット接続とマイクが必要です。</dd>
+          <dd className="mt-1 text-muted-foreground">iOS 17以降のiPhone。常時インターネット接続が必要です。</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">解約方法</dt>
-          <dd className="mt-1 text-muted-foreground">Desktopアプリ「Upgrade to Pro」からStripe Customer Portalを開き、「プランをキャンセル」を選択してください。解約後も当該請求期間の終了までは利用できます。</dd>
+          <dd className="mt-1 text-muted-foreground">iOSの「設定」→ Apple ID →「サブスクリプション」から Anicca を選択し、「サブスクリプションをキャンセル」を選択してください。解約後も当該請求期間の終了までは利用できます。</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">返品・返金</dt>

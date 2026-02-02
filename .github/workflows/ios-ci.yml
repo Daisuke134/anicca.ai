@@ -100,7 +100,7 @@ jobs:
 
       - name: Run Maestro Tests
         run: |
-          maestro test maestro/ --include-tags smokeTest,phase6
+          maestro test aniccaios/maestro/ --include-tags smokeTest,phase6
 
       - name: Upload Test Results
         if: failure()

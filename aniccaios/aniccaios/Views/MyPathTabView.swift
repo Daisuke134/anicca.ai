@@ -330,8 +330,7 @@ struct MyPathTabView: View {
             .accessibilityIdentifier("debug_set_pro")
 
             Button {
-                appState.setAuthStatus(.signedOut)
-                appState.updateSubscriptionInfo(.free)
+                appState.signOutPreservingSensorAccess()
             } label: {
                 Text("Reset to Free + Signed Out")
                     .font(.subheadline)

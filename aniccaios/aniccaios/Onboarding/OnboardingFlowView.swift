@@ -79,10 +79,14 @@ struct OnboardingFlowView: View {
         AnalyticsManager.shared.track(.onboardingCompleted)
 
         // 既存Proユーザー（再インストール等）→ Paywall スキップ
+        #if DEBUG
+        // DEBUG: 常にPaywallを表示して確認可能にする
+        #else
         if appState.subscriptionInfo.isEntitled {
             appState.markOnboardingComplete()
             return
         }
+        #endif
 
         // 未課金 → Paywall を表示（markOnboardingComplete() は呼ばない）
         showPaywall = true

@@ -101,8 +101,10 @@ struct OnboardingFlowView: View {
     private func paywallContent(displayCloseButton: Bool) -> some View {
         if let offering = appState.cachedOffering {
             PaywallView(offering: offering, displayCloseButton: displayCloseButton)
+                .applyDebugIntroEligibility()
         } else {
             PaywallView(displayCloseButton: displayCloseButton)
+                .applyDebugIntroEligibility()
         }
     }
 }

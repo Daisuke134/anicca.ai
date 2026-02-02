@@ -169,8 +169,10 @@ struct MyPathTabView: View {
     private var paywallContent: some View {
         if let offering = appState.cachedOffering {
             PaywallView(offering: offering)
+                .applyDebugIntroEligibility()
         } else {
             PaywallView()
+                .applyDebugIntroEligibility()
         }
     }
 

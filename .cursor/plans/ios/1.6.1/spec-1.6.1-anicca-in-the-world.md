@@ -78,6 +78,22 @@
 | **x-poster** | X/Twitter にコンテンツ投稿 | 自前実装 |
 | **moltbook/late-api** | Moltbook API クライアント | ClawHub（allowlist） |
 
+#### moltbook-responder 仕様詳細
+
+| 項目 | 仕様 |
+|------|------|
+| **公開投稿のみ処理** | `post.visibility === 'public'` の投稿のみ処理。DM/非公開（`visibility === 'private'`, `'direct'`, `'followers_only'`）は無視 |
+| **フィルタリング条件** | オプトイン/召喚型: @anicca メンション、s/sangha 投稿、フォロー済みユーザーのいずれか |
+| **検出対象** | 公開投稿 かつ フィルタリング条件を満たす かつ 苦しみキーワード検出 |
+| **API フィールド** | Moltbook API の `post.visibility` フィールドで判定 |
+
+**テスト:**
+
+| # | テスト名 | 内容 |
+|---|----------|------|
+| 42 | `test_moltbookIgnoresPrivatePosts()` | `visibility !== 'public'` の投稿は処理されない |
+| 43 | `test_moltbookIgnoresDirectMessages()` | `visibility === 'direct'` は処理されない |
+
 #### ClawHub Skill ポリシー（供給鎖リスク対策強化）
 
 | ルール | 詳細 |
@@ -321,7 +337,22 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 | Moltbook | upvotes / views | 0.05 | 0.03 | 10 |
 | Slack | total_reactions / messages | 0.10 | 0.05 | 5 |
 
-**注意:** Moltbook の指標は `upvotes / views` を使用。`views` は `AgentPost.views` フィールドで保存済み。Moltbook API が views を返さない場合は `upvotes` の絶対値で代替し、ベースラインを再計算する。
+**注意:** Moltbook の指標は `upvotes / views` を使用。`views` は `AgentPost.views` フィールドで保存済み。
+
+**views が 0 または未提供の場合の計算ルール:**
+
+| 条件 | 処理 |
+|------|------|
+| `views === 0` | Z-Score 計算から除外（NaN 回避） |
+| `views === null` または未提供 | Moltbook API が views を返さない場合、`upvotes` の絶対値を使用し、ベースラインを再計算 |
+| `views < 10`（最低しきい値） | サンプルサイズ不足として Z-Score 計算から除外 |
+
+**テスト:**
+
+| # | テスト名 | 内容 |
+|---|----------|------|
+| 46 | `test_zScoreExcludesZeroViews()` | views=0 のレコードは Z-Score 計算から除外される |
+| 47 | `test_zScoreFallbackToUpvotes()` | views=null の場合、upvotes 絶対値で計算される |
 
 30日分のデータが溜まったら `refreshBaselines()` が実データで上書きする。
 
@@ -378,6 +409,57 @@ WHERE
 | 40 | `test_anonymizationJob()` | 90日以上古いレコードが匿名化される |
 | 41 | `test_anonymizationPreservesAggregates()` | `hook`, `upvotes` 等は保持される |
 
+### 6.6 削除要求対応（SOUL.md 要件）
+
+**SOUL.md 要件:** 「ユーザーが削除を要求した場合、即座に対応する」
+
+#### 削除要求の受付手段
+
+| 手段 | 詳細 |
+|------|------|
+| **Moltbook DM** | @anicca に「delete my data」「データを削除して」等のキーワードを含む DM を送信 |
+| **Slack #agents** | 管理者が `/anicca delete-user <external_post_id or platform:user_id>` コマンドを実行 |
+| **管理者 CLI** | `npm run delete-user -- --platform moltbook --user-id <id>` |
+
+#### 認可
+
+| 手段 | 認可レベル |
+|------|-----------|
+| Moltbook DM | 本人のみ（DM 送信者 = データ所有者） |
+| Slack コマンド | 管理者のみ（Slack ワークスペースの #agents メンバー） |
+| CLI | 管理者のみ（VPS SSH アクセス権限者） |
+
+#### 削除対象フィールド
+
+| フィールド | 削除方法 |
+|-----------|----------|
+| `external_post_id` | NULL に更新 |
+| `content` | NULL に更新 |
+| `reasoning` | NULL に更新 |
+| `hook` | **保持**（匿名化された統計データとして使用可） |
+| `upvotes`, `views` 等 | **保持** |
+
+#### SLA
+
+| 項目 | 値 |
+|------|-----|
+| 対応時間 | 24時間以内（営業日） |
+| 完了通知 | Moltbook DM の場合、削除完了を返信 |
+
+#### 監査ログ
+
+| ログ項目 | 詳細 |
+|---------|------|
+| `deletion_request` | 要求日時、要求手段、対象 ID |
+| `deletion_completed` | 完了日時、削除対象フィールド、実行者 |
+
+#### テスト
+
+| # | テスト名 | 内容 |
+|---|----------|------|
+| 44 | `test_deletionRequestViaSlack()` | Slack コマンドでデータが削除される |
+| 45 | `test_deletionPreservesAggregates()` | `hook`, `upvotes` 等は保持される |
+
 ---
 
 ## 7. セキュリティ
@@ -406,15 +488,17 @@ WHERE
 ```bash
 # 1. 新トークン生成
 NEW_TOKEN=$(openssl rand -hex 32)
+OLD_TOKEN=$(railway variables get ANICCA_AGENT_TOKEN)
 
-# 2. Railway に新トークンを追加（旧トークンも維持）
-railway variables set ANICCA_AGENT_TOKEN_NEW=$NEW_TOKEN
+# 2. Railway に旧トークンを OLD に退避し、新トークンを設定
+railway variables set ANICCA_AGENT_TOKEN_OLD=$OLD_TOKEN
+railway variables set ANICCA_AGENT_TOKEN=$NEW_TOKEN
 
-# 3. API を更新して両方のトークンを受け入れ
-# (7日間の猶予期間)
+# 3. API が両方のトークンを受け入れる（7日間の猶予期間）
+# 認証ロジック: token === ANICCA_AGENT_TOKEN || token === ANICCA_AGENT_TOKEN_OLD
 
 # 4. VPS を新トークンに更新
-ssh anicca@<vps-ip> "sed -i 's/OLD_TOKEN/NEW_TOKEN/' ~/.env && systemctl restart openclaw"
+ssh anicca@<vps-ip> "sed -i 's/$OLD_TOKEN/$NEW_TOKEN/' ~/.env && systemctl restart openclaw"
 
 # 5. 旧トークンを削除
 railway variables unset ANICCA_AGENT_TOKEN_OLD

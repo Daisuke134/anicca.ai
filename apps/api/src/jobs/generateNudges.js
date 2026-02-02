@@ -291,7 +291,7 @@ function validateLLMOutput(output) {
 }
 
 // メイン処理 (Phase 7+8)
-async function runGenerateNudges() {
+export async function runGenerateNudges() {
   console.log('✅ [GenerateNudges] Starting Phase 7+8 nudge generation cron job');
 
   // Step 0: Cross-Platform Learning — 前日のメトリクスを処理
@@ -476,15 +476,17 @@ async function runGenerateNudges() {
   }
 }
 
-// 実行
-runGenerateNudges()
-  .then(async () => {
-    console.log('✅ [GenerateNudges] Cron job finished successfully');
-    await pool.end();
-    process.exit(0);
-  })
-  .catch(async (error) => {
-    console.error('❌ [GenerateNudges] Cron job failed:', error.message);
-    await pool.end();
-    process.exit(1);
-  });
+// Cron モードの場合のみ自動実行（HTTP経由ではimportのみ）
+if (process.env.CRON_MODE) {
+  runGenerateNudges()
+    .then(async () => {
+      console.log('✅ [GenerateNudges] Cron job finished successfully');
+      await pool.end();
+      process.exit(0);
+    })
+    .catch(async (error) => {
+      console.error('❌ [GenerateNudges] Cron job failed:', error.message);
+      await pool.end();
+      process.exit(1);
+    });
+}

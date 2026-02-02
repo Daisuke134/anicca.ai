@@ -258,6 +258,7 @@ model AgentPost {
   id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
   platform          String    @db.VarChar(50)        // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
   externalPostId    String?   @map("external_post_id") @db.VarChar(255)
+  platformUserId    String?   @map("platform_user_id") @db.VarChar(255) // ユーザー削除要求用
   severity          String?   @db.VarChar(20)        // null | 'crisis'（危機検出時）
   region            String?   @db.VarChar(10)        // 'JP', 'US', 'UK', 'KR', 'OTHER'（危機検出時の地域）
   hook              String?
@@ -344,8 +345,21 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 | 条件 | 処理 |
 |------|------|
 | `views === 0` | Z-Score 計算から除外（NaN 回避） |
-| `views === null` または未提供 | Moltbook API が views を返さない場合、`upvotes` の絶対値を使用し、ベースラインを再計算 |
+| `views === null` または未提供 | `moltbook_upvotes_baseline`（別ベースライン）を使用して upvotes 絶対値で計算 |
 | `views < 10`（最低しきい値） | サンプルサイズ不足として Z-Score 計算から除外 |
+
+**views 欠損時の別ベースライン:**
+
+| ベースライン | 指標 | 初期MEAN | 初期STDDEV | 更新ルール |
+|-------------|------|---------|-----------|-----------|
+| `moltbook_upvotes_baseline` | upvotes（絶対値） | 3.0 | 2.0 | 30日間の views=null レコードのみを母集団として `refreshBaselines()` で更新 |
+
+**refreshBaselines() の入力母集団:**
+
+| ベースライン | 母集団 | 期間 |
+|-------------|--------|------|
+| `moltbook_views_baseline` | `views IS NOT NULL AND views >= 10` のレコード | 直近30日 |
+| `moltbook_upvotes_baseline` | `views IS NULL` のレコード | 直近30日 |
 
 **テスト:**
 
@@ -411,15 +425,17 @@ WHERE
 
 ### 6.6 削除要求対応（SOUL.md 要件）
 
-**SOUL.md 要件:** 「ユーザーが削除を要求した場合、即座に対応する」
+**SOUL.md 要件:** 「ユーザーが削除を要求した場合、24時間以内に対応する」
 
 #### 削除要求の受付手段
 
 | 手段 | 詳細 |
 |------|------|
-| **Moltbook DM** | @anicca に「delete my data」「データを削除して」等のキーワードを含む DM を送信 |
-| **Slack #agents** | 管理者が `/anicca delete-user <external_post_id or platform:user_id>` コマンドを実行 |
-| **管理者 CLI** | `npm run delete-user -- --platform moltbook --user-id <id>` |
+| **Moltbook DM** | @anicca に「delete my data」「データを削除して」等のキーワードを含む DM を送信（SOUL.md 例外条項により DM 処理を許可） |
+| **Slack #agents** | 管理者が `/anicca delete-user --platform-user-id <platform>:<user_id>` または `/anicca delete-post --external-post-id <id>` コマンドを実行 |
+| **管理者 CLI** | `npm run delete-user -- --platform moltbook --platform-user-id <id>` または `npm run delete-post -- --external-post-id <id>` |
+
+**注意:** `platform_user_id` は `AgentPost.platformUserId` フィールドに保存。Moltbook API から取得した投稿者 ID を収集・保存する。
 
 #### 認可
 

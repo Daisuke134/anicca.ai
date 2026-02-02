@@ -41,6 +41,7 @@ import previewAppRouter from './preview/app.js';
 import adminTiktokRouter from './admin/tiktok.js';
 import adminHookCandidatesRouter from './admin/hookCandidates.js';
 import adminXPostsRouter from './admin/xposts.js';
+import adminTriggerNudgesRouter from './admin/triggerNudges.js';
 
 
 const router = express.Router();
@@ -79,5 +80,6 @@ const adminLimiter = rateLimit({ windowMs: 60 * 1000, max: 30 });
 router.use('/admin/tiktok', adminLimiter, adminTiktokRouter);
 router.use('/admin/hook-candidates', adminLimiter, adminHookCandidatesRouter);
 router.use('/admin/x', adminLimiter, adminXPostsRouter);
+router.use('/admin/trigger-nudges', adminLimiter, adminTriggerNudgesRouter);
 
 export default router;

@@ -16,27 +16,28 @@ concurrency:
 jobs:
   trigger:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 15
     steps:
-      - name: Trigger Commander Agent
+      - name: Trigger generateNudges via admin endpoint
         run: |
           if [ "${{ inputs.environment }}" = "staging" ]; then
             BASE_URL="https://anicca-proxy-staging.up.railway.app"
           else
             BASE_URL="${API_BASE_URL}"
           fi
-          echo "=== Triggering Commander Agent on ${{ inputs.environment }} ==="
-          echo "URL: ${BASE_URL}/api/nudge/generate"
+          echo "=== Triggering generateNudges on ${{ inputs.environment }} ==="
+          echo "URL: ${BASE_URL}/api/admin/trigger-nudges"
           STATUS=$(curl -s -o response.json -w "%{http_code}" \
-            -X POST "${BASE_URL}/api/nudge/generate" \
+            -X POST "${BASE_URL}/api/admin/trigger-nudges" \
             -H "Authorization: Bearer $API_AUTH_TOKEN" \
             -H "Content-Type: application/json")
           echo "HTTP Status: $STATUS"
           cat response.json
           if [ "$STATUS" -ge 400 ]; then
-            echo "::error::Commander Agent trigger failed with status $STATUS"
+            echo "::error::Trigger failed with status $STATUS"
             exit 1
           fi
+          echo "✅ generateNudges triggered. Check Railway logs for results."
         env:
           API_BASE_URL: ${{ secrets.API_BASE_URL }}
           API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}

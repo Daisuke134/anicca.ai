@@ -132,6 +132,14 @@
 
 **xcodebuild 直接実行は禁止。** 必ず `cd aniccaios && fastlane <lane>` を使う。詳細: `.claude/rules/tool-usage.md`
 
+### Maestro E2Eテスト（絶対ルール）
+
+**Maestroテストを書く・修正する前に、必ずスキルを読む:** `.claude/skills/maestro-ui-testing/SKILL.md`
+
+- `id:` セレクター優先（`point:` 禁止）
+- `optional: true` はシステムダイアログのみ
+- タップ → 遷移待ち → 確認の流れ
+
 ---
 
 ## プロジェクト概要
@@ -282,4 +290,4 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 
 ---
 
-最終更新: 2026年2月1日
+最終更新: 2026年2月2日

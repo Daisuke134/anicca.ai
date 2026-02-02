@@ -14,6 +14,7 @@ import nudgeRouter from './nudge.js';
 import wisdomRouter from './wisdom.js';
 import feedbackRouter from './feedback.js';
 import contentRouter from './content.js';
+import deletionRouter from './deletion.js';
 
 const router = Router();
 
@@ -25,5 +26,6 @@ router.use('/nudge', nudgeRouter);
 router.use('/wisdom', wisdomRouter);
 router.use('/feedback', feedbackRouter);
 router.use('/content', contentRouter);
+router.use('/deletion', deletionRouter);
 
 export default router;

@@ -47,12 +47,21 @@ def api_post(path, data):
 
 
 def blotato_post(text):
-    """Post to X via Blotato API (immediate)."""
-    url = f"{BLOTATO_BASE_URL}/post"
-    headers = {"Authorization": f"Bearer {BLOTATO_API_KEY}", "Content-Type": "application/json"}
+    """Post to X via Blotato API v2 (immediate)."""
+    url = f"{BLOTATO_BASE_URL}/posts"
+    headers = {"blotato-api-key": BLOTATO_API_KEY, "Content-Type": "application/json"}
     payload = {
-        "accountId": int(X_ACCOUNT_ID),
-        "text": text,
+        "post": {
+            "accountId": X_ACCOUNT_ID,
+            "content": {
+                "text": text,
+                "mediaUrls": [],
+                "platform": "twitter",
+            },
+            "target": {
+                "targetType": "twitter",
+            },
+        },
     }
     resp = requests.post(url, headers=headers, json=payload, timeout=30)
     resp.raise_for_status()
@@ -88,7 +97,7 @@ def main():
             print(f"  Text: {text[:80]}...")
 
             result = blotato_post(text)
-            blotato_id = str(result.get("id", result.get("postId", "")))
+            blotato_id = str(result.get("postSubmissionId", result.get("id", result.get("postId", ""))))
 
             print(f"  Blotato ID: {blotato_id}")
 

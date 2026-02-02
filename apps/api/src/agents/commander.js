@@ -227,6 +227,7 @@ export async function runCommanderAgent({ grounding, model = 'gpt-4o', maxRetrie
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
       const result = await run(commanderAgent, userPrompt);
+      validateSlotUniqueness(result.finalOutput);
       return result.finalOutput;
     } catch (error) {
       lastError = error;

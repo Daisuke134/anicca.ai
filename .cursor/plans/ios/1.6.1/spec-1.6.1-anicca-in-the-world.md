@@ -82,7 +82,7 @@
 
 | 項目 | 仕様 |
 |------|------|
-| **公開投稿のみ処理** | `post.visibility === 'public'` の投稿のみ処理。DM/非公開（`visibility === 'private'`, `'direct'`, `'followers_only'`）は無視 |
+| **公開投稿のみ処理** | `post.visibility === 'public'` の投稿のみ処理。DM/非公開（`visibility === 'private'`, `'direct'`, `'followers_only'`）は無視。**例外:** 削除要求 DM は `deletion-handler`（別プロセス）で処理 |
 | **フィルタリング条件** | オプトイン/召喚型: @anicca メンション、s/sangha 投稿、フォロー済みユーザーのいずれか |
 | **検出対象** | 公開投稿 かつ フィルタリング条件を満たす かつ 苦しみキーワード検出 |
 | **API フィールド** | Moltbook API の `post.visibility` フィールドで判定 |

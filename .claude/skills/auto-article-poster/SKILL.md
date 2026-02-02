@@ -88,7 +88,7 @@ git diff --stat HEAD~10
 
 ### Step 4: note.com投稿（MCPブラウザ操作）
 
-**重要: 以下の順序を必ず守る**
+**重要: 以下の順序を必ず守る（cursor-ide-browser MCP仕様に準拠）**
 
 ```
 1. browser_tabs (action: "list")
@@ -96,25 +96,36 @@ git diff --stat HEAD~10
 
 2. browser_navigate (url: "https://note.com/post")
    → 投稿画面に遷移
+   → 2-3秒待機（ページ読み込み完了まで）
 
 3. browser_lock
-   → 操作をロック
+   → 操作をロック（※既存タブがないとエラー）
 
 4. browser_snapshot
-   → フォーム構造を取得（セレクター確認）
+   → フォーム構造を取得（element refを確認）
 
-5. browser_fill (ref: タイトル入力欄, value: "記事タイトル")
-   → タイトルを入力
+5. browser_fill
+   → element: "タイトル入力欄"
+   → ref: [snapshotで取得したref]
+   → value: "記事タイトル"
 
-6. browser_type (ref: 本文入力欄, value: "本文...")
-   → 本文を入力
+6. browser_type
+   → element: "本文入力欄"
+   → ref: [snapshotで取得したref]
+   → value: "本文..."
 
-7. browser_click (ref: 下書き保存ボタン)
-   → 下書き保存
+7. browser_click
+   → element: "下書き保存ボタン"
+   → ref: [snapshotで取得したref]
 
 8. browser_unlock
    → 操作を解除
 ```
+
+**API引数の注意:**
+- `browser_fill` / `browser_type` / `browser_click` は `element`（説明）と `ref`（snapshot参照）の両方が必須
+- `ref` は `browser_snapshot` の結果から取得する
+- `selector` は `browser_snapshot` のオプション絞り込み用（操作ツールでは使わない）
 
 ### Step 5: 完了報告
 

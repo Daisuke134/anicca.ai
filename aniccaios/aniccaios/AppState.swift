@@ -365,7 +365,9 @@ final class AppState: ObservableObject {
             "keywords": profile.keywords,
             "summary": profile.summary,
             "nudgeIntensity": profile.nudgeIntensity.rawValue,
-            "stickyMode": profile.stickyMode
+            "stickyMode": profile.stickyMode,
+            // v1.6.0: スケジュール分岐用
+            "appVersion": AppConfig.appVersion
             // NOTE: v1.5.0でScreenTime Extension削除。screenTimeEnabled=falseへの移行は
             // サーバー側バックフィル（UPDATE sensor_access_state SET screen_time_enabled=false）で対応予定。
             // profileSyncPayloadに部分sensorAccessを含めると他フラグが消えるため、ここでは送信しない。

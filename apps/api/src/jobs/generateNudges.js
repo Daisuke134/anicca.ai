@@ -407,14 +407,14 @@ export async function runGenerateNudges() {
             overallStrategy: decision.overallStrategy,
           };
         } else {
-          // Fallback: rule-based
-          scheduleResult = generateRuleBasedNudges(problems, preferredLanguage);
+          // Fallback: rule-based (v1.6.0: appVersion渡し)
+          scheduleResult = generateRuleBasedNudges(problems, preferredLanguage, appVersion);
           totalRuleBased++;
         }
       } else {
-        // Day 1: ルールベース
-        console.log(`📋 [GenerateNudges] User ${user.user_id}: Day 1 → Rule-based mode`);
-        scheduleResult = generateRuleBasedNudges(problems, preferredLanguage);
+        // Day 1: ルールベース (v1.6.0: appVersion渡し)
+        console.log(`📋 [GenerateNudges] User ${user.user_id}: Day 1 → Rule-based mode (v${appVersion})`);
+        scheduleResult = generateRuleBasedNudges(problems, preferredLanguage, appVersion);
         totalRuleBased++;
       }
 

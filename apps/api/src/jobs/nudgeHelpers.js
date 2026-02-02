@@ -12,7 +12,7 @@
  */
 
 import { fetch } from 'undici';
-import { SCHEDULE_MAP, NUDGE_TONES, buildFlattenedSlotTable, trimSlots } from '../agents/scheduleMap.js';
+import { SCHEDULE_MAP, NUDGE_TONES, buildFlattenedSlotTable, trimSlots, getScheduleMap } from '../agents/scheduleMap.js';
 
 // ============================================================================
 // Day 1 Detection
@@ -713,9 +713,10 @@ Return JSON in this exact format:
  * Generate rule-based nudges for Day 1 or fallback
  * @param {string[]} problems - Array of problem types
  * @param {string} preferredLanguage - 'ja' or 'en'
+ * @param {string} [appVersion] - Client app version for schedule map selection (v1.6.0+)
  * @returns {Object} Rule-based schedule
  */
-export function generateRuleBasedNudges(problems, preferredLanguage = 'en') {
+export function generateRuleBasedNudges(problems, preferredLanguage = 'en', appVersion = null) {
   const contentJa = {
     staying_up_late: [
       { hook: 'スクロールより呼吸', content: '今夜は早めに。明日の自分が感謝する。' },
@@ -752,7 +753,9 @@ export function generateRuleBasedNudges(problems, preferredLanguage = 'en') {
     : { hook: 'Keep moving forward', content: 'Start with a small step.' };
 
   // Use canonical SCHEDULE_MAP + buildFlattenedSlotTable for iOS slotIndex consistency
-  const rawSlots = buildFlattenedSlotTable(problems);
+  // v1.6.0: appVersionに応じたスケジュールマップを使用
+  const scheduleMap = getScheduleMap(appVersion);
+  const rawSlots = buildFlattenedSlotTable(problems, scheduleMap);
   const slotTable = trimSlots(rawSlots, problems);
 
   // Night curfew: 23:00-05:59 slots disabled for non-exempt problems

@@ -1,5 +1,12 @@
 import { describe, it, expect } from 'vitest';
-import { applyGuardrails, normalizeToDecision, AgentRawOutputSchema } from '../commander.js';
+import { 
+  applyGuardrails, 
+  normalizeToDecision, 
+  AgentRawOutputSchema,
+  validateAppNudgesSlotIndexes,
+  estimateMaxTokens,
+  MODEL_MAX_TOKENS,
+} from '../commander.js';
 
 // ===== Test fixtures =====
 
@@ -440,5 +447,85 @@ describe('buildCommanderPrompt', () => {
     expect(result.tiktokPosts[1].slot).toBe('evening');
     expect(result.xPosts[0].slot).toBe('morning');
     expect(result.xPosts[1].slot).toBe('evening');
+  });
+});
+
+// ===== validateAppNudgesSlotIndexes =====
+
+describe('validateAppNudgesSlotIndexes', () => {
+  it('passes for valid sequential slotIndexes', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).not.toThrow();
+  });
+
+  it('throws for duplicate slotIndex', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // duplicate
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).toThrow('Duplicate slotIndex: 0');
+  });
+
+  it('throws for slotIndex out of range (too high)', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 5, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // out of range
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).toThrow('slotIndex 5 out of range');
+  });
+
+  it('throws for slotIndex out of range (negative)', () => {
+    const appNudges = [
+      { slotIndex: -1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // negative
+      { slotIndex: 1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).toThrow('slotIndex -1 out of range');
+  });
+
+  it('throws for missing slotIndex', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 3, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // skipped 1
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 4)).toThrow('Missing slotIndex: 1');
+  });
+});
+
+// ===== estimateMaxTokens =====
+
+describe('estimateMaxTokens', () => {
+  it('returns estimated tokens for small slotCount', () => {
+    const result = estimateMaxTokens(3, 0);
+    // base(500) + 3*150 + 400 = 1350, * 1.3 = 1755
+    expect(result).toBe(1755);
+  });
+
+  it('increases buffer on retry', () => {
+    const attempt0 = estimateMaxTokens(5, 0);
+    const attempt1 = estimateMaxTokens(5, 1);
+    const attempt2 = estimateMaxTokens(5, 2);
+    expect(attempt1).toBeGreaterThan(attempt0);
+    expect(attempt2).toBeGreaterThan(attempt1);
+  });
+
+  it('clips at MODEL_MAX_TOKENS for large slotCount', () => {
+    // Extreme case: 200 slots would exceed limit
+    const result = estimateMaxTokens(200, 5);
+    expect(result).toBe(MODEL_MAX_TOKENS);
+    expect(result).toBe(16384);
+  });
+
+  it('clips at MODEL_MAX_TOKENS on high retry attempts', () => {
+    // 100 slots with high retry buffer
+    const result = estimateMaxTokens(100, 10);
+    expect(result).toBe(MODEL_MAX_TOKENS);
   });
 });

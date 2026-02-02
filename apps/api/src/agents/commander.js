@@ -673,4 +673,6 @@ export {
   toOpenAIJsonSchema, 
   estimateMaxTokens,
   validateSlotUniqueness,
+  validateAppNudgesSlotIndexes,
+  MODEL_MAX_TOKENS,
 };

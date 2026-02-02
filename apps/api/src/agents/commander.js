@@ -331,10 +331,16 @@ TikTok と X、それぞれ2投稿を生成せよ:
  * @param {number} [params.maxRetries=2] - Max retries on failure
  * @returns {Promise<z.infer<typeof AgentRawOutputSchema>>} Validated agent output
  */
+// Maximum slots per user per day (aligned with guardrails in prompt)
+const MAX_SLOTS_PER_DAY = 32;
+
 export async function runCommanderAgent({ grounding, model = 'gpt-4o-2024-08-06', slotCount, maxRetries = 2 }) {
   // Validate slotCount at entry
   if (typeof slotCount !== 'number' || !Number.isInteger(slotCount) || slotCount < 1) {
     throw new Error(`slotCount must be a positive integer, got: ${slotCount}`);
+  }
+  if (slotCount > MAX_SLOTS_PER_DAY) {
+    throw new Error(`slotCount exceeds maximum ${MAX_SLOTS_PER_DAY}, got: ${slotCount}`);
   }
   
   const schema = createAgentOutputSchema(slotCount);
@@ -680,4 +686,5 @@ export {
   validateSlotUniqueness,
   validateAppNudgesSlotIndexes,
   MODEL_MAX_TOKENS,
+  MAX_SLOTS_PER_DAY,
 };

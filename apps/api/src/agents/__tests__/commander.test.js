@@ -6,6 +6,7 @@ import {
   validateAppNudgesSlotIndexes,
   estimateMaxTokens,
   MODEL_MAX_TOKENS,
+  MAX_SLOTS_PER_DAY,
   runCommanderAgent,
 } from '../commander.js';
 
@@ -562,5 +563,23 @@ describe('runCommanderAgent input validation', () => {
     const grounding = { problems: 'test' };
     await expect(runCommanderAgent({ grounding, slotCount: '5' }))
       .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for slotCount exceeding MAX_SLOTS_PER_DAY', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: MAX_SLOTS_PER_DAY + 1 }))
+      .rejects.toThrow(`slotCount exceeds maximum ${MAX_SLOTS_PER_DAY}`);
+  });
+
+  it('accepts slotCount at MAX_SLOTS_PER_DAY boundary', async () => {
+    // This will fail later (no OpenAI key in test), but should pass slotCount validation
+    const grounding = { problems: 'test' };
+    // We can't fully test this without mocking OpenAI, but we can verify the error is NOT about slotCount
+    try {
+      await runCommanderAgent({ grounding, slotCount: MAX_SLOTS_PER_DAY });
+    } catch (error) {
+      // Should fail for OpenAI reasons, not slotCount validation
+      expect(error.message).not.toContain('slotCount');
+    }
   });
 });

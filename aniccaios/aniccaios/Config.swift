@@ -83,4 +83,9 @@ enum AppConfig {
     static var nudgeTodayURL: URL {
         proxyBaseURL.appendingPathComponent("mobile/nudge/today")
     }
+
+    // v1.6.0: App version for schedule map selection
+    static var appVersion: String {
+        Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0.0"
+    }
 }

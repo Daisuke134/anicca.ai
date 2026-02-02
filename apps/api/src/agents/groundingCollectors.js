@@ -12,7 +12,7 @@
  *   behavioralScienceGuidelines: hardcoded, user-selected problems only
  */
 
-import { buildFlattenedSlotTable, trimSlots } from './scheduleMap.js';
+import { buildFlattenedSlotTable, trimSlots, getScheduleMap } from './scheduleMap.js';
 
 // ===== userState =====
 
@@ -325,10 +325,12 @@ export async function collectCrossPlatformData(query) {
  * Build flattenedSlotTable as markdown for prompt injection.
  *
  * @param {string[]} problemTypes
+ * @param {string} [appVersion] - Client app version for schedule map selection
  * @returns {{ table: string, slots: Array }}
  */
-export function collectFlattenedSlotTable(problemTypes) {
-  const allSlots = buildFlattenedSlotTable(problemTypes);
+export function collectFlattenedSlotTable(problemTypes, appVersion = null) {
+  const scheduleMap = getScheduleMap(appVersion);
+  const allSlots = buildFlattenedSlotTable(problemTypes, scheduleMap);
   const trimmed = trimSlots(allSlots, problemTypes, 32);
 
   let table = '| slotIndex | Time  | Problem          |\n';
@@ -441,9 +443,10 @@ export function collectBehavioralScienceGuidelines(problemTypes) {
  * @param {string} userId
  * @param {string[]} problems
  * @param {string} preferredLanguage
+ * @param {string} [appVersion] - Client app version for schedule map selection (v1.6.0+)
  * @returns {Promise<{ grounding: object, slotTable: Array }>}
  */
-export async function collectAllGrounding(query, userId, problems, preferredLanguage) {
+export async function collectAllGrounding(query, userId, problems, preferredLanguage, appVersion = null) {
   // Parallel collection (independent queries)
   const [
     userState,
@@ -459,8 +462,8 @@ export async function collectAllGrounding(query, userId, problems, preferredLang
     collectCrossPlatformData(query),
   ]);
 
-  // Sync collection
-  const { table: flattenedSlotTable, slots: slotTable } = collectFlattenedSlotTable(problems);
+  // Sync collection (v1.6.0: pass appVersion for schedule map selection)
+  const { table: flattenedSlotTable, slots: slotTable } = collectFlattenedSlotTable(problems, appVersion);
   const behavioralScienceGuidelines = collectBehavioralScienceGuidelines(problems);
 
   return {

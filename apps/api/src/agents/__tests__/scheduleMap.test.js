@@ -6,19 +6,38 @@ import {
   timeSortKey,
   buildFlattenedSlotTable,
   trimSlots,
+  getScheduleMap,
 } from '../scheduleMap.js';
 
-// ===== SCHEDULE_MAP =====
+// ===== v1.6.0 iOS一致検証用データ =====
+const IOS_EXPECTED = {
+  staying_up_late:     ['20:00', '22:00', '23:30', '00:00', '01:00'],  // 5スロット
+  cant_wake_up:        ['06:00', '06:45', '07:15'],
+  self_loathing:       ['08:00', '13:00', '19:00'],
+  rumination:          ['08:30', '14:00', '21:00'],
+  procrastination:     ['09:15', '13:30', '17:00'],
+  anxiety:             ['07:30', '12:15', '18:45'],
+  lying:               ['08:15', '13:15', '18:15'],
+  bad_mouthing:        ['09:30', '14:30', '19:30'],
+  porn_addiction:      ['20:30', '22:30', '23:45'],  // 3スロット
+  alcohol_dependency:  ['16:00', '18:00', '20:15'],
+  anger:               ['07:45', '12:30', '17:30'],
+  obsessive:           ['09:00', '13:45', '18:30'],
+  loneliness:          ['10:00', '15:00', '19:45'],
+};
+
+// ===== SCHEDULE_MAP (v1.6.0) =====
 
 describe('SCHEDULE_MAP', () => {
   it('has 13 problem types', () => {
     expect(Object.keys(SCHEDULE_MAP)).toHaveLength(13);
   });
 
-  it('each problem has 5-6 time slots', () => {
+  it('v1.6.0: staying_up_late has 5 slots, others have 3', () => {
+    expect(SCHEDULE_MAP.staying_up_late).toHaveLength(5);
     for (const [pt, times] of Object.entries(SCHEDULE_MAP)) {
-      expect(times.length).toBeGreaterThanOrEqual(5);
-      expect(times.length).toBeLessThanOrEqual(6);
+      if (pt === 'staying_up_late') continue;
+      expect(times).toHaveLength(3);
     }
   });
 
@@ -28,6 +47,78 @@ describe('SCHEDULE_MAP', () => {
         expect(t).toMatch(/^\d{2}:\d{2}$/);
       }
     }
+  });
+
+  it('matches iOS ProblemType.notificationSchedule', () => {
+    for (const [problem, times] of Object.entries(IOS_EXPECTED)) {
+      expect(SCHEDULE_MAP[problem]).toEqual(times);
+    }
+  });
+});
+
+// ===== getScheduleMap (v1.6.0 バージョン分岐) =====
+
+describe('getScheduleMap', () => {
+  it('returns OLD schedule for version 1.5.0', () => {
+    const map = getScheduleMap('1.5.0');
+    // 旧スケジュールは6スロット
+    expect(map.staying_up_late).toHaveLength(6);
+    expect(map.staying_up_late).toEqual(['20:00', '21:00', '22:00', '23:00', '00:00', '01:00']);
+  });
+
+  it('returns NEW schedule for version 1.6.0', () => {
+    const map = getScheduleMap('1.6.0');
+    // 新スケジュールは5スロット
+    expect(map.staying_up_late).toHaveLength(5);
+    expect(map.staying_up_late).toEqual(['20:00', '22:00', '23:30', '00:00', '01:00']);
+  });
+
+  it('returns NEW schedule for version 1.7.0', () => {
+    const map = getScheduleMap('1.7.0');
+    expect(map.staying_up_late).toHaveLength(5);
+  });
+
+  it('returns OLD schedule for null/undefined version', () => {
+    const map1 = getScheduleMap(null);
+    const map2 = getScheduleMap(undefined);
+    const map3 = getScheduleMap('');
+    expect(map1.staying_up_late).toHaveLength(6);
+    expect(map2.staying_up_late).toHaveLength(6);
+    expect(map3.staying_up_late).toHaveLength(6);
+  });
+
+  it('returns OLD schedule for invalid version string', () => {
+    const map = getScheduleMap('invalid');
+    expect(map.staying_up_late).toHaveLength(6);
+  });
+
+  it('handles version with build number (e.g., 1.6.0.1)', () => {
+    const map = getScheduleMap('1.6.0.1');
+    expect(map.staying_up_late).toHaveLength(5);
+  });
+});
+
+// ===== v1.6.0: 間隔検証テスト =====
+
+describe('slot intervals', () => {
+  it('all slots have at least 15 minutes interval', () => {
+    const allProblems = Object.keys(SCHEDULE_MAP);
+    const slots = buildFlattenedSlotTable(allProblems);
+
+    for (let i = 1; i < slots.length; i++) {
+      const prev = slots[i - 1];
+      const curr = slots[i];
+      const prevMin = (prev.scheduledHour < 6 ? prev.scheduledHour + 24 : prev.scheduledHour) * 60 + prev.scheduledMinute;
+      const currMin = (curr.scheduledHour < 6 ? curr.scheduledHour + 24 : curr.scheduledHour) * 60 + curr.scheduledMinute;
+      const diff = currMin - prevMin;
+      expect(diff).toBeGreaterThanOrEqual(15);
+    }
+  });
+
+  it('total slot count is 41 (5 + 3*12)', () => {
+    const allProblems = Object.keys(SCHEDULE_MAP);
+    const slots = buildFlattenedSlotTable(allProblems);
+    expect(slots).toHaveLength(41);
   });
 });
 
@@ -97,11 +188,11 @@ describe('buildFlattenedSlotTable', () => {
     expect(buildFlattenedSlotTable(['unknown_type'])).toEqual([]);
   });
 
-  it('single problem returns sorted slots with sequential slotIndex', () => {
+  it('v1.6.0: single problem returns sorted slots with sequential slotIndex (3 slots)', () => {
     const slots = buildFlattenedSlotTable(['procrastination']);
-    expect(slots).toHaveLength(5);
+    expect(slots).toHaveLength(3);
     expect(slots[0].slotIndex).toBe(0);
-    expect(slots[4].slotIndex).toBe(4);
+    expect(slots[2].slotIndex).toBe(2);
     // All should be procrastination
     for (const s of slots) {
       expect(s.problemType).toBe('procrastination');
@@ -110,8 +201,8 @@ describe('buildFlattenedSlotTable', () => {
 
   it('two problems are sorted by time then alphabetical', () => {
     const slots = buildFlattenedSlotTable(['staying_up_late', 'procrastination']);
-    // First slot should be earliest time
-    expect(slots[0].scheduledTime).toBe('09:00');
+    // First slot should be earliest time (v1.6.0: procrastination 09:15)
+    expect(slots[0].scheduledTime).toBe('09:15');
     expect(slots[0].problemType).toBe('procrastination');
 
     // slotIndex is sequential
@@ -120,36 +211,36 @@ describe('buildFlattenedSlotTable', () => {
     }
   });
 
-  it('date boundary: staying_up_late 23:00 < 00:00 < 01:00', () => {
+  it('v1.6.0: date boundary: staying_up_late 23:30 < 00:00 < 01:00', () => {
     const slots = buildFlattenedSlotTable(['staying_up_late']);
     const times = slots.map(s => s.scheduledTime);
-    // Should be: 20:00, 21:00, 22:00, 23:00, 00:00, 01:00
-    expect(times).toEqual(['20:00', '21:00', '22:00', '23:00', '00:00', '01:00']);
+    // v1.6.0: Should be: 20:00, 22:00, 23:30, 00:00, 01:00
+    expect(times).toEqual(['20:00', '22:00', '23:30', '00:00', '01:00']);
   });
 
-  it('same-time slots are alphabetically ordered by problemType', () => {
-    // obsessive has 08:00, cant_wake_up has 08:00
-    const slots = buildFlattenedSlotTable(['obsessive', 'cant_wake_up']);
-    const at0800 = slots.filter(s => s.scheduledTime === '08:00');
-    expect(at0800).toHaveLength(2);
-    expect(at0800[0].problemType).toBe('cant_wake_up'); // alphabetical
-    expect(at0800[1].problemType).toBe('obsessive');
+  it('accepts optional scheduleMap parameter', () => {
+    const customMap = { test_problem: ['10:00', '15:00'] };
+    const slots = buildFlattenedSlotTable(['test_problem'], customMap);
+    expect(slots).toHaveLength(2);
+    expect(slots[0].scheduledTime).toBe('10:00');
+    expect(slots[1].scheduledTime).toBe('15:00');
   });
 });
 
 // ===== trimSlots =====
 
 describe('trimSlots', () => {
-  it('returns all slots when under maxSlots', () => {
+  it('v1.6.0: returns all slots when under maxSlots (3 slots)', () => {
     const slots = buildFlattenedSlotTable(['procrastination']);
     const trimmed = trimSlots(slots, ['procrastination'], 32);
-    expect(trimmed).toHaveLength(5);
+    expect(trimmed).toHaveLength(3);
   });
 
-  it('trims to maxSlots with equal distribution', () => {
-    // 13 problems × 5-6 slots = 67 total > 32
+  it('v1.6.0: trims to maxSlots with equal distribution (41 total > 32)', () => {
+    // v1.6.0: 5 + 3*12 = 41 total > 32
     const allProblems = Object.keys(SCHEDULE_MAP);
     const slots = buildFlattenedSlotTable(allProblems);
+    expect(slots.length).toBe(41);
     expect(slots.length).toBeGreaterThan(32);
 
     const trimmed = trimSlots(slots, allProblems, 32);
@@ -181,6 +272,7 @@ describe('trimSlots', () => {
   it('trimmed slots are still sorted by time', () => {
     const problems = ['staying_up_late', 'procrastination', 'anxiety'];
     const slots = buildFlattenedSlotTable(problems);
+    // v1.6.0: 5 + 3 + 3 = 11 slots total, trim to 9
     const trimmed = trimSlots(slots, problems, 9);
 
     for (let i = 1; i < trimmed.length; i++) {

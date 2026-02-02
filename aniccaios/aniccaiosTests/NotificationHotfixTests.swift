@@ -1,12 +1,12 @@
 import XCTest
 @testable import aniccaios
 
-/// v1.5.1 通知システム修正テスト
-/// P2: validTimeRange, P3: タイムスロット再設計, P5: Day 1 決定論的割り当て, P6: staying_up_late スケジュール
+/// v1.6.0 通知頻度リデザインテスト
+/// 1問題あたり3回/日（夜更かしのみ5回）、最低15分間隔
 @MainActor
 final class NotificationHotfixTests: XCTestCase {
 
-    // MARK: - P3: 全67スロットがユニーク（バッティングゼロ）
+    // MARK: - v1.6.0: 全41スロットがユニーク（バッティングゼロ）
 
     func test_allTimeSlotsAreUnique() {
         // 全13問題のスロットを収集
@@ -31,18 +31,19 @@ final class NotificationHotfixTests: XCTestCase {
         XCTAssertTrue(duplicates.isEmpty, "Duplicate time slots found: \(duplicates.joined(separator: ", "))")
     }
 
-    func test_totalSlotCountIs67() {
+    func test_totalSlotCountIs41() {
+        // v1.6.0: 5 + 3*12 = 41スロット
         let total = ProblemType.allCases.reduce(0) { $0 + $1.notificationSchedule.count }
-        XCTAssertEqual(total, 67, "Total slots should be 67 (5×11 + 6×2)")
+        XCTAssertEqual(total, 41, "Total slots should be 41 (5 + 3×12)")
     }
 
-    // MARK: - P3: スロット間の最低間隔（15分以上）
+    // MARK: - v1.6.0: スロット間の最低間隔（15分以上）
 
     func test_minimumGapBetweenSlots_is15minutes() {
         var allSlots: [(minutes: Int, problem: String)] = []
         for problem in ProblemType.allCases {
             for slot in problem.notificationSchedule {
-                // 翌日スロット（0:00-1:30）は +1440 で計算
+                // 翌日スロット（0:00-5:59）は +1440 で計算
                 let mins = slot.hour < 6 ? slot.hour * 60 + slot.minute + 1440 : slot.hour * 60 + slot.minute
                 allSlots.append((minutes: mins, problem: problem.rawValue))
             }
@@ -56,7 +57,7 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P3: 同一問題内の最低間隔（30分以上、cantWakeUp wake window除く）
+    // MARK: - v1.6.0: 同一問題内の最低間隔（30分以上、cantWakeUp wake window除く）
 
     func test_sameProblemGap_minimum30minutes() {
         for problem in ProblemType.allCases {
@@ -66,9 +67,9 @@ final class NotificationHotfixTests: XCTestCase {
 
             for i in 1..<slots.count {
                 let gap = slots[i] - slots[i-1]
-                // cantWakeUp wake window (6:00-6:30) は15分間隔許可
-                if problem == .cantWakeUp && slots[i-1] >= 360 && slots[i] <= 390 {
-                    XCTAssertGreaterThanOrEqual(gap, 15,
+                // cantWakeUp wake window (6:00-7:15) は30分未満許可
+                if problem == .cantWakeUp && slots[i-1] >= 360 && slots[i] <= 435 {
+                    XCTAssertGreaterThanOrEqual(gap, 30,
                         "\(problem.rawValue): gap between slots \(slots[i-1]) and \(slots[i]) is \(gap)min")
                 } else {
                     XCTAssertGreaterThanOrEqual(gap, 30,
@@ -156,44 +157,38 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P6: staying_up_late の新スケジュール
+    // MARK: - v1.6.0: staying_up_late の新スケジュール（5スロット）
 
     func test_stayingUpLate_hasCorrectSlots() {
         let slots = ProblemType.stayingUpLate.notificationSchedule
-        XCTAssertEqual(slots.count, 6, "staying_up_late should have 6 slots")
+        XCTAssertEqual(slots.count, 5, "staying_up_late should have 5 slots (v1.6.0)")
 
-        let expected = [(20, 0), (21, 0), (22, 0), (23, 0), (0, 0), (1, 0)]
+        let expected = [(20, 0), (22, 0), (23, 30), (0, 0), (1, 0)]
         for (i, exp) in expected.enumerated() {
             XCTAssertEqual(slots[i].hour, exp.0, "Slot \(i+1) hour")
             XCTAssertEqual(slots[i].minute, exp.1, "Slot \(i+1) minute")
         }
     }
 
-    func test_stayingUpLate_noMoreSevenThirtyAM() {
-        let slots = ProblemType.stayingUpLate.notificationSchedule
-        let hasMorning = slots.contains { $0.hour == 7 && $0.minute == 30 }
-        XCTAssertFalse(hasMorning, "staying_up_late should not have 7:30 AM slot")
-    }
-
-    // MARK: - P6: porn_addiction の新スケジュール
+    // MARK: - v1.6.0: porn_addiction の新スケジュール（3スロット）
 
     func test_pornAddiction_hasCorrectSlots() {
         let slots = ProblemType.pornAddiction.notificationSchedule
-        XCTAssertEqual(slots.count, 6, "porn_addiction should have 6 slots")
+        XCTAssertEqual(slots.count, 3, "porn_addiction should have 3 slots (v1.6.0)")
 
-        let expected = [(20, 30), (21, 30), (22, 30), (23, 30), (0, 30), (1, 30)]
+        let expected = [(20, 30), (22, 30), (23, 45)]
         for (i, exp) in expected.enumerated() {
             XCTAssertEqual(slots[i].hour, exp.0, "Slot \(i+1) hour")
             XCTAssertEqual(slots[i].minute, exp.1, "Slot \(i+1) minute")
         }
     }
 
-    // MARK: - P3: 各問題タイプの正確なスロット
+    // MARK: - v1.6.0: 各問題タイプの正確なスロット（3スロット）
 
     func test_cantWakeUp_hasCorrectSlots() {
         let slots = ProblemType.cantWakeUp.notificationSchedule
-        XCTAssertEqual(slots.count, 5)
-        let expected = [(6, 0), (6, 15), (6, 30), (8, 0), (22, 15)]
+        XCTAssertEqual(slots.count, 3)
+        let expected = [(6, 0), (6, 45), (7, 15)]
         for (i, exp) in expected.enumerated() {
             XCTAssertEqual(slots[i].hour, exp.0, "cantWakeUp slot \(i+1) hour")
             XCTAssertEqual(slots[i].minute, exp.1, "cantWakeUp slot \(i+1) minute")
@@ -202,8 +197,8 @@ final class NotificationHotfixTests: XCTestCase {
 
     func test_selfLoathing_hasCorrectSlots() {
         let slots = ProblemType.selfLoathing.notificationSchedule
-        XCTAssertEqual(slots.count, 5)
-        let expected = [(7, 0), (12, 0), (14, 45), (17, 0), (19, 0)]
+        XCTAssertEqual(slots.count, 3)
+        let expected = [(8, 0), (13, 0), (19, 0)]
         for (i, exp) in expected.enumerated() {
             XCTAssertEqual(slots[i].hour, exp.0, "selfLoathing slot \(i+1) hour")
             XCTAssertEqual(slots[i].minute, exp.1, "selfLoathing slot \(i+1) minute")
@@ -212,8 +207,8 @@ final class NotificationHotfixTests: XCTestCase {
 
     func test_obsessive_hasCorrectSlots() {
         let slots = ProblemType.obsessive.notificationSchedule
-        XCTAssertEqual(slots.count, 5)
-        let expected = [(8, 45), (10, 30), (12, 15), (14, 15), (17, 45)]
+        XCTAssertEqual(slots.count, 3)
+        let expected = [(9, 0), (13, 45), (18, 30)]
         for (i, exp) in expected.enumerated() {
             XCTAssertEqual(slots[i].hour, exp.0, "obsessive slot \(i+1) hour")
             XCTAssertEqual(slots[i].minute, exp.1, "obsessive slot \(i+1) minute")
@@ -237,12 +232,12 @@ final class NotificationHotfixTests: XCTestCase {
     // MARK: - P5: Day 1 決定論的バリアント割り当て
 
     func test_day1DeterministicVariant_sequentialAssignment() {
-        // Day 1: スロット順にバリアント 0,1,2,3,4 を割り当て
+        // Day 1: スロット順にバリアント 0,1,2 を割り当て（v1.6.0: 3スロット）
         // slotIndex 0 → variant 0, slotIndex 1 → variant 1, etc.
         let selector = NudgeContentSelector.shared
 
-        // anxiety (5スロット) — Day 1
-        for slotIndex in 0..<5 {
+        // anxiety (3スロット) — Day 1
+        for slotIndex in 0..<3 {
             let variant = selector.day1VariantIndex(for: .anxiety, slotIndex: slotIndex)
             XCTAssertEqual(variant, slotIndex, "anxiety Day 1 slot \(slotIndex) should be variant \(slotIndex)")
         }
@@ -251,13 +246,14 @@ final class NotificationHotfixTests: XCTestCase {
     func test_day1DeterministicVariant_stayingUpLate_timeAwareMapping() {
         let selector = NudgeContentSelector.shared
 
-        // staying_up_late: スロット0-2は順番(0,1,2)、スロット3-5は時間対応(5,3,4)
+        // v1.6.0: staying_up_late は5スロット
+        // スロット0-2は順番(0,1,2)、スロット3-4はtimeAwareMapping(slot-3 → [5,3,4])
+        // 既存のday1VariantIndexロジック維持
         XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 0), 0) // 20:00
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 1), 1) // 21:00
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 2), 2) // 22:00
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 3), 5) // 23:00 → "Put down your phone"
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 4), 3) // 0:00 → "It's past midnight"
-        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 5), 4) // 1:00 → "It's 1 AM"
+        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 1), 1) // 22:00
+        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 2), 2) // 23:30
+        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 3), 5) // 0:00 → timeAwareMapping[0]
+        XCTAssertEqual(selector.day1VariantIndex(for: .stayingUpLate, slotIndex: 4), 3) // 1:00 → timeAwareMapping[1]
     }
 
     func test_day1_noDuplicateVariants() {

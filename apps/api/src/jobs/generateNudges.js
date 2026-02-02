@@ -303,13 +303,14 @@ export async function runGenerateNudges() {
     console.warn(`⚠️ [GenerateNudges] Cross-platform learning failed (non-fatal): ${err?.message || err}`);
   }
 
-  // 1. 全アクティブユーザーを取得
+  // 1. 全アクティブユーザーを取得（v1.6.0: app_version追加）
   const usersResult = await query(`
     SELECT DISTINCT
       mp.device_id as profile_id,
       mp.user_id,
       COALESCE(mp.profile->'struggles', mp.profile->'problems', '[]'::jsonb) as problems,
-      COALESCE(mp.profile->>'preferredLanguage', 'en') as preferred_language
+      COALESCE(mp.profile->>'preferredLanguage', 'en') as preferred_language,
+      COALESCE(mp.profile->>'appVersion', '1.0.0') as app_version
     FROM mobile_profiles mp
     WHERE (
       (mp.profile->'struggles' IS NOT NULL AND jsonb_array_length(mp.profile->'struggles') > 0)
@@ -329,6 +330,7 @@ export async function runGenerateNudges() {
   for (const user of users) {
     const problems = user.problems || [];
     const preferredLanguage = user.preferred_language || 'en';
+    const appVersion = user.app_version || '1.0.0';  // v1.6.0: バージョン分岐用
     const limits = CHAR_LIMITS[preferredLanguage] || CHAR_LIMITS.en;
 
     try {
@@ -342,13 +344,14 @@ export async function runGenerateNudges() {
 
       if (useLLM) {
         // Day 2+: Commander Agent（1.6.0）
-        console.log(`🪷 [GenerateNudges] User ${user.user_id}: Day 2+ → Commander Agent`);
+        console.log(`🪷 [GenerateNudges] User ${user.user_id}: Day 2+ → Commander Agent (v${appVersion})`);
 
         let decision = null;
         try {
           // 1. Collect all grounding variables (parallel DB queries)
+          // v1.6.0: pass appVersion for schedule map selection
           const { grounding, slotTable } = await collectAllGrounding(
-            query, user.user_id, problems, preferredLanguage
+            query, user.user_id, problems, preferredLanguage, appVersion
           );
 
           // 2. Run Commander Agent

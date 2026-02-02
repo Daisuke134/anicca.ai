@@ -30,7 +30,7 @@ const XPostSlot = z.enum(['morning', 'evening']);
 const TiktokPostSchema = z.object({
   slot: TiktokPostSlot,
   caption: z.string().max(2200),
-  hashtags: z.array(z.string()).max(5).optional(),
+  hashtags: z.array(z.string()).max(5),
   tone: z.string(),
   reasoning: z.string(),
 });
@@ -48,15 +48,18 @@ const AgentRawOutputSchema = z.object({
   appNudges: z.array(AppNudgeSchema),
   tiktokPosts: z.array(TiktokPostSchema).length(2),
   xPosts: z.array(XPostSchema).length(2),
-}).superRefine((data, ctx) => {
-  // slot 一意性保証: morning + evening が各1件ずつであること
-  for (const [field, arr] of [['tiktokPosts', data.tiktokPosts], ['xPosts', data.xPosts]]) {
-    const slots = arr.map(p => p.slot);
+});
+
+// ===== Post-parse validation (not in Zod schema — OpenAI rejects superRefine) =====
+
+function validateSlotUniqueness(output) {
+  for (const field of ['tiktokPosts', 'xPosts']) {
+    const slots = output[field].map(p => p.slot);
     if (!slots.includes('morning') || !slots.includes('evening')) {
-      ctx.addIssue({ code: 'custom', message: `${field} must have exactly one morning and one evening slot` });
+      throw new Error(`${field} must have exactly one morning and one evening slot`);
     }
   }
-});
+}
 
 // ===== Prompt Template =====
 

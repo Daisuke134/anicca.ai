@@ -38,7 +38,10 @@ function sanitizeInput(input) {
   // 4. Remove Unicode control characters
   sanitized = sanitized.replace(/[\u200B-\u200F\u202A-\u202E]/g, '');
   
-  // 5. Limit length
+  // 5. Remove XML-like tags (prevent prompt structure manipulation)
+  sanitized = sanitized.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*>/g, '');
+  
+  // 6. Limit length
   if (sanitized.length > 500) {
     sanitized = sanitized.slice(0, 500);
   }
@@ -48,6 +51,7 @@ function sanitizeInput(input) {
 
 // Validate tone
 const VALID_TONES = ['gentle', 'understanding', 'encouraging', 'empathetic', 'playful'];
+const VALID_LANGUAGES = ['ja', 'en'];
 
 router.post('/', async (req, res) => {
   const startTime = Date.now();
@@ -66,6 +70,7 @@ router.post('/', async (req, res) => {
     const sanitizedTopic = sanitizeInput(topic);
     const sanitizedProblemType = problemType ? sanitizeInput(problemType) : null;
     const validTone = VALID_TONES.includes(tone) ? tone : 'gentle';
+    const validLanguage = VALID_LANGUAGES.includes(language) ? language : 'ja';
     
     if (!sanitizedTopic) {
       return res.status(400).json({
@@ -82,7 +87,7 @@ CRITICAL RULES:
 - Offer hope through Buddhist wisdom
 - Be authentic and human
 
-Generate content in ${language === 'ja' ? 'Japanese' : 'English'}.`;
+Generate content in ${validLanguage === 'ja' ? 'Japanese' : 'English'}.`;
 
     const userPrompt = `<topic>${sanitizedTopic}</topic>
 ${sanitizedProblemType ? `<problem_type>${sanitizedProblemType}</problem_type>` : ''}
@@ -124,7 +129,7 @@ Generate JSON with:
           topicLength: topic.length,
           problemType: sanitizedProblemType,
           tone: validTone,
-          language,
+          language: validLanguage,
         },
         responsePayload: { 
           model: 'gpt-4o-mini', 

@@ -46,11 +46,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    // Validate platformUserId format
-    if (!platformUserId.includes(':')) {
+    // Validate platformUserId format (strict regex validation)
+    const PLATFORM_USER_ID_REGEX = /^[a-z0-9_]+:.+$/;
+    if (!PLATFORM_USER_ID_REGEX.test(platformUserId)) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'platformUserId must be in format <platform>:<user_id>',
+        message: 'platformUserId must be in format <platform>:<user_id> (lowercase platform, non-empty user_id)',
       });
     }
 

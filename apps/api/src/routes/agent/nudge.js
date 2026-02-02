@@ -121,6 +121,15 @@ router.post('/', async (req, res) => {
           message: 'platformUserId must be in format <platform>:<user_id>',
         });
       }
+      
+      // Ensure platformUserId prefix matches the normalized platform
+      const platformPrefix = platformUserId.split(':')[0];
+      if (platformPrefix !== normalizedPlatform) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: `platformUserId prefix (${platformPrefix}) must match platform (${normalizedPlatform})`,
+        });
+      }
     }
     
     // Validate severity if provided

@@ -48,12 +48,12 @@ export default function TokushohoPage() {
         <div>
           <dt className="font-semibold text-foreground">販売価格</dt>
           <dd className="mt-1 text-muted-foreground">
-            Anicca Pro プラン：月額 9.99米ドル（App Store / RevenueCat 経由）。決済時に各カード会社の為替レートで日本円換算されます。1週間の無料トライアルがあります。
+            Anicca Pro プラン：月額 $9.99（税込・App Store 内課金）。価格は App Store の表示通貨で表示されます。初回 1週間の無料トライアルがあります。
           </dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">消費税等</dt>
-          <dd className="mt-1 text-muted-foreground">海外通貨決済のため表示価格は税抜です。適用法令に基づき決済事業者およびカード会社が税額を算定します。</dd>
+          <dd className="mt-1 text-muted-foreground">App Store 内課金のため、表示価格は税込です。Apple が各国の税法に基づき税額を算定・徴収します。</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">追加手数料</dt>
@@ -81,7 +81,7 @@ export default function TokushohoPage() {
         </div>
         <div>
           <dt className="font-semibold text-foreground">返品・返金</dt>
-          <dd className="mt-1 text-muted-foreground">デジタルサービスの特性上、提供開始後の返金は原則として承っておりません。重大な不具合が確認された場合はメールで個別対応いたします。</dd>
+          <dd className="mt-1 text-muted-foreground">App Store 内課金のため、返金は Apple のポリシーに従います。返金をご希望の場合は Apple サポート（reportaproblem.apple.com）にお問い合わせください。</dd>
         </div>
         <div>
           <dt className="font-semibold text-foreground">販売数量・申込期限</dt>
@@ -92,7 +92,7 @@ export default function TokushohoPage() {
           <dd className="mt-1 text-muted-foreground">メールサポートのみ。原則2営業日以内に回答いたします。</dd>
         </div>
       </dl>
-      <p className="mt-12 text-right text-sm text-muted-foreground">最終更新日: 2025年2月21日</p>
+      <p className="mt-12 text-right text-sm text-muted-foreground">最終更新日: 2026年2月2日</p>
     </main>
   );
 }

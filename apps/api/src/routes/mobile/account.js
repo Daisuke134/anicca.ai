@@ -59,6 +59,13 @@ router.delete('/', async (req, res, next) => {
       if (await tableExists('tokens')) {
         await client.query('DELETE FROM tokens WHERE user_id = $1', [userId]);
       }
+      // レガシーテーブルが残存している場合の安全な削除
+      if (await tableExists('usage_sessions')) {
+        await client.query('DELETE FROM usage_sessions WHERE user_id = $1', [userId]);
+      }
+      if (await tableExists('mobile_voip_tokens')) {
+        await client.query('DELETE FROM mobile_voip_tokens WHERE user_id = $1', [userId]);
+      }
       
       // profilesテーブルの削除: userIdがUUID形式かどうかを確認
       // UUID形式の場合は直接削除、そうでない場合はapple_user_idで検索

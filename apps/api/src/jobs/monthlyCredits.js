@@ -1,14 +1,9 @@
 import { query } from '../lib/db.js';
 import baseLogger from '../utils/logger.js';
 import { grantMinutes, VC_CURRENCY_CODE } from '../services/revenuecat/virtualCurrency.js';
-import { BILLING_CONFIG } from '../config/environment.js';
-
 const logger = baseLogger.withContext('MonthlyCredits');
-// 環境変数から読み込み、0またはnull/undefinedの場合はデフォルト値を使用
-// 0は許可しない（無意味なため）
-const FREE_MIN = (BILLING_CONFIG.FREE_MONTHLY_LIMIT != null && BILLING_CONFIG.FREE_MONTHLY_LIMIT > 0) ? BILLING_CONFIG.FREE_MONTHLY_LIMIT : 30;
-// 環境変数から読み込み、0またはnull/undefinedの場合はデフォルト値を使用
-const PRO_MIN = (BILLING_CONFIG.PRO_MONTHLY_LIMIT != null && BILLING_CONFIG.PRO_MONTHLY_LIMIT > 0) ? BILLING_CONFIG.PRO_MONTHLY_LIMIT : 300;
+const FREE_MIN = 30;
+const PRO_MIN = 300;
 
 function monthStartUTC(d = new Date()) {
   const y = d.getUTCFullYear();

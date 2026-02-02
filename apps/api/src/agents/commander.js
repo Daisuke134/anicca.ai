@@ -30,7 +30,7 @@ const XPostSlot = z.enum(['morning', 'evening']);
 const TiktokPostSchema = z.object({
   slot: TiktokPostSlot,
   caption: z.string().max(2200),
-  hashtags: z.array(z.string()).max(5),
+  hashtags: z.array(z.string()).max(5).optional(),
   tone: z.string(),
   reasoning: z.string(),
 });
@@ -48,17 +48,15 @@ const AgentRawOutputSchema = z.object({
   appNudges: z.array(AppNudgeSchema),
   tiktokPosts: z.array(TiktokPostSchema).length(2),
   xPosts: z.array(XPostSchema).length(2),
-});
-
-// Post-parse validation (moved out of .superRefine to avoid JSON Schema conversion issues)
-function validateSlotUniqueness(data) {
+}).superRefine((data, ctx) => {
+  // slot 一意性保証: morning + evening が各1件ずつであること
   for (const [field, arr] of [['tiktokPosts', data.tiktokPosts], ['xPosts', data.xPosts]]) {
     const slots = arr.map(p => p.slot);
     if (!slots.includes('morning') || !slots.includes('evening')) {
-      throw new Error(`${field} must have exactly one morning and one evening slot`);
+      ctx.addIssue({ code: 'custom', message: `${field} must have exactly one morning and one evening slot` });
     }
   }
-}
+});
 
 // ===== Prompt Template =====
 

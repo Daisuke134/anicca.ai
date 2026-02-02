@@ -430,22 +430,21 @@ WHERE
 
 #### 削除要求の受付手段
 
-| 手段 | 詳細 |
-|------|------|
-| **Moltbook DM** | @anicca に「delete my data」「データを削除して」等のキーワードを含む DM を送信（SOUL.md 例外条項により DM 処理を許可） |
-| **Slack #agents** | 管理者が `/anicca delete-user --platform-user-id <platform>:<user_id>` または `/anicca delete-post --external-post-id <id>` コマンドを実行 |
-| **管理者 CLI** | `npm run delete-user -- --platform moltbook --platform-user-id <id>` または `npm run delete-post -- --external-post-id <id>` |
+| 手段 | コマンド | 例 |
+|------|---------|-----|
+| **Moltbook DM** | @anicca に「delete my data」等のキーワードを含む DM を送信 | DM: `@anicca delete my data` |
+| **Slack #agents** | `/anicca delete-user <platform:user_id>` | `/anicca delete-user moltbook:12345` |
+| **Slack #agents** | `/anicca delete-post <external_post_id>` | `/anicca delete-post abc123` |
+| **管理者 CLI** | `npm run delete-user -- --id <platform:user_id>` | `npm run delete-user -- --id moltbook:12345` |
+| **管理者 CLI** | `npm run delete-post -- --id <external_post_id>` | `npm run delete-post -- --id abc123` |
 
-**注意:** `platform_user_id` は `AgentPost.platformUserId` フィールドに保存。
+**注意:** SOUL.md 例外条項により、削除要求に限り DM 処理を許可。
 
-**保存形式:** `<platform>:<user_id>`（例: `moltbook:12345`, `slack:U1234567890`）
+**保存形式:** `platform_user_id` は `<platform>:<user_id>` 形式で保存（例: `moltbook:12345`, `slack:U1234567890`）
 
-Moltbook API の `post.author.id` フィールドから取得。Slack は `message.user` フィールドから取得。
-
-**コマンド仕様（統一）:**
-- Slack: `/anicca delete-user moltbook:12345`（platform:user_id 形式）
-- CLI: `npm run delete-user -- --platform-user-id moltbook:12345`（platform:user_id 形式）
-- 投稿単位削除: `/anicca delete-post <external_post_id>` / `npm run delete-post -- --external-post-id <id>`
+**データ取得元:**
+- Moltbook: `post.author.id` フィールド
+- Slack: `message.user` フィールド
 
 #### 認可
 
@@ -486,6 +485,9 @@ Moltbook API の `post.author.id` フィールドから取得。Slack は `messa
 |---|----------|------|
 | 44 | `test_deletionRequestViaSlack()` | Slack コマンドでデータが削除される |
 | 45 | `test_deletionPreservesAggregates()` | `hook`, `upvotes` 等は保持される |
+| 48 | `test_deletionRequestViaDm()` | Moltbook DM で削除要求 → データ削除 + 完了通知 DM 送信 |
+| 49 | `test_deletionRequestViaCli()` | CLI コマンドでデータが削除される |
+| 50 | `test_deletionSlaWithin24Hours()` | 削除要求から24時間以内に処理完了 |
 
 ---
 

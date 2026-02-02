@@ -112,6 +112,28 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Enforce opt-in policy for decentralized SNS (Moltbook, Mastodon)
+    const decentralizedPlatforms = ['moltbook', 'mastodon', 'pleroma', 'misskey'];
+    if (decentralizedPlatforms.includes(platform.toLowerCase()) && !optIn) {
+      // Audit the rejection
+      await prisma.agentAuditLog.create({
+        data: {
+          eventType: 'optin_policy_violation',
+          platform,
+          requestPayload: { 
+            reason: 'optIn=false for decentralized SNS',
+            externalPostId,
+          },
+          executedBy: 'system',
+        },
+      });
+      
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'optIn must be true for decentralized SNS platforms (user must initiate contact first)',
+      });
+    }
+    
     // Check for duplicate
     if (externalPostId) {
       const existing = await prisma.agentPost.findUnique({
@@ -182,22 +204,65 @@ Respond in JSON format only.`;
       },
     });
     
-    // Crisis event: special audit log + notification trigger
+    // Crisis event: special audit log + Slack notification
     if (severity === 'crisis') {
+      const crisisPayload = {
+        region,
+        contextLength: context.length,
+        optIn,
+        agentPostId: agentPost.id,
+        platform,
+      };
+      
       await prisma.agentAuditLog.create({
         data: {
           eventType: 'crisis_detected',
           agentPostId: agentPost.id,
           platform,
-          requestPayload: { 
-            region, 
-            contextLength: context.length,
-            optIn,
-          },
+          requestPayload: crisisPayload,
           executedBy: 'system',
         },
       });
-      // TODO: Send Slack notification to #agents for human review
+      
+      // Send Slack notification to #agents for human review
+      try {
+        const slackWebhookUrl = process.env.SLACK_WEBHOOK_AGENTS;
+        if (slackWebhookUrl) {
+          await fetch(slackWebhookUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              text: `🚨 *Crisis Detected*\nPlatform: ${platform}\nRegion: ${region || 'unknown'}\nPost ID: ${agentPost.id}\n\nRequires human review.`,
+              channel: '#agents',
+            }),
+          });
+          
+          // Log successful notification
+          await prisma.agentAuditLog.create({
+            data: {
+              eventType: 'crisis_notification_sent',
+              agentPostId: agentPost.id,
+              platform,
+              requestPayload: crisisPayload,
+              executedBy: 'system',
+            },
+          });
+        } else {
+          console.warn('[Agent Nudge] SLACK_WEBHOOK_AGENTS not configured, crisis notification skipped');
+        }
+      } catch (notifyError) {
+        // Log notification failure but don't fail the request
+        console.error('[Agent Nudge] Crisis notification failed:', notifyError);
+        await prisma.agentAuditLog.create({
+          data: {
+            eventType: 'crisis_notification_failed',
+            agentPostId: agentPost.id,
+            platform,
+            requestPayload: { ...crisisPayload, error: notifyError.message },
+            executedBy: 'system',
+          },
+        });
+      }
     }
     
     // Audit log

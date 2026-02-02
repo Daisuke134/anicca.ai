@@ -204,19 +204,21 @@ export async function refreshBaselines(query) {
     // agent_posts may not exist yet
   }
 
-  // 1.6.1: Slack baselines
+  // 1.6.1: Slack baselines (COALESCE all reaction types to handle NULL)
   try {
     const slackResult = await query(`
       SELECT
         AVG(
-          (reactions->>'👍')::int + 
-          (reactions->>'❤️')::int + 
-          COALESCE((reactions->>'🙏')::int, 0)
+          COALESCE((reactions->>'👍')::int, 0) + 
+          COALESCE((reactions->>'❤️')::int, 0) + 
+          COALESCE((reactions->>'🙏')::int, 0) +
+          COALESCE((reactions->>'🔥')::int, 0)
         ) as mean_reactions,
         STDDEV_POP(
-          (reactions->>'👍')::int + 
-          (reactions->>'❤️')::int + 
-          COALESCE((reactions->>'🙏')::int, 0)
+          COALESCE((reactions->>'👍')::int, 0) + 
+          COALESCE((reactions->>'❤️')::int, 0) + 
+          COALESCE((reactions->>'🙏')::int, 0) +
+          COALESCE((reactions->>'🔥')::int, 0)
         ) as stddev_reactions
       FROM agent_posts
       WHERE platform = 'slack'

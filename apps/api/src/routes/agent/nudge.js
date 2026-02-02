@@ -87,11 +87,18 @@ router.post('/', async (req, res) => {
       optIn = false,    // User initiated contact (Mastodon.bot policy)
     } = req.body;
     
-    // Validate required fields
-    if (!platform || !context) {
+    // Validate required fields and types
+    if (!platform || typeof platform !== 'string') {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'platform and context are required',
+        message: 'platform is required and must be a string',
+      });
+    }
+    
+    if (!context || typeof context !== 'string') {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'context is required and must be a string',
       });
     }
     
@@ -228,7 +235,7 @@ Respond in JSON format only.`;
       try {
         const slackWebhookUrl = process.env.SLACK_WEBHOOK_AGENTS;
         if (slackWebhookUrl) {
-          await fetch(slackWebhookUrl, {
+          const response = await fetch(slackWebhookUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
@@ -237,21 +244,41 @@ Respond in JSON format only.`;
             }),
           });
           
-          // Log successful notification
-          await prisma.agentAuditLog.create({
-            data: {
-              eventType: 'crisis_notification_sent',
-              agentPostId: agentPost.id,
-              platform,
-              requestPayload: crisisPayload,
-              executedBy: 'system',
-            },
-          });
+          if (!response.ok) {
+            // HTTP non-2xx: treat as failure
+            const responseBody = await response.text().catch(() => 'unknown');
+            await prisma.agentAuditLog.create({
+              data: {
+                eventType: 'crisis_notification_failed',
+                agentPostId: agentPost.id,
+                platform,
+                requestPayload: { 
+                  ...crisisPayload, 
+                  error: `HTTP ${response.status}`,
+                  responseStatus: response.status,
+                  responseBody: responseBody.slice(0, 500),
+                },
+                executedBy: 'system',
+              },
+            });
+            console.error(`[Agent Nudge] Crisis notification failed: HTTP ${response.status}`);
+          } else {
+            // Log successful notification
+            await prisma.agentAuditLog.create({
+              data: {
+                eventType: 'crisis_notification_sent',
+                agentPostId: agentPost.id,
+                platform,
+                requestPayload: crisisPayload,
+                executedBy: 'system',
+              },
+            });
+          }
         } else {
           console.warn('[Agent Nudge] SLACK_WEBHOOK_AGENTS not configured, crisis notification skipped');
         }
       } catch (notifyError) {
-        // Log notification failure but don't fail the request
+        // Log notification failure (network error, timeout, etc.)
         console.error('[Agent Nudge] Crisis notification failed:', notifyError);
         await prisma.agentAuditLog.create({
           data: {

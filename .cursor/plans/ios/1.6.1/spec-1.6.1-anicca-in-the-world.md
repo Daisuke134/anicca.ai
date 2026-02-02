@@ -732,23 +732,158 @@ sudo systemctl enable openclaw && sudo systemctl start openclaw
 # migration は自動実行（Prisma migrate deploy）
 ```
 
-## 13. TODO
+## 13. 実装状況（2026-02-03 更新）
 
-### 高優先
-- [ ] Hetzner VPS セットアップ
-- [ ] OpenClaw デプロイ
-- [ ] SOUL.md 作成
-- [ ] Railway `/api/agent/*` エンドポイント実装
-- [ ] moltbook-responder Skill 実装
+### 層別ステータス
 
-### 中優先
-- [ ] slack-reminder Skill 実装
-- [ ] feedback-fetch Skill 実装
-- [ ] Z-Score 5チャネル統合
+| 層 | ステータス | 詳細 |
+|----|----------|------|
+| **Railway API** | ✅ 完了 | 全エンドポイント実装、テスト通過、Codex レビュー 8 iteration |
+| **OpenClaw (Hetzner VPS)** | ❌ 未着手 | VPS セットアップ、デーモン設定、systemd 未実施 |
+| **Skills** | ❌ 未着手 | moltbook-responder, slack-reminder, feedback-fetch, x-poster 全て未実装 |
+| **Moltbook 連携** | ❌ 未着手 | エージェント登録、s/sangha 作成、実際の投稿・返信 未実施 |
+| **Slack 連携** | ❌ 未着手 | リマインダー送信、緊急停止コマンド 未実装 |
 
-### 低優先
-- [ ] x-poster Skill 実装
-- [ ] 昇格ロジック実装
+---
+
+### Railway API 層（✅ 完了）
+
+| 項目 | ステータス | 実装ファイル |
+|------|----------|-------------|
+| `/api/agent/nudge` エンドポイント | ✅ 完了 | `src/routes/agent/nudge.js` |
+| `/api/agent/wisdom` エンドポイント | ✅ 完了 | `src/routes/agent/wisdom.js` |
+| `/api/agent/feedback` エンドポイント | ✅ 完了 | `src/routes/agent/feedback.js` |
+| `/api/agent/content` エンドポイント | ✅ 完了 | `src/routes/agent/content.js` |
+| `/api/agent/deletion` エンドポイント | ✅ 完了 | `src/routes/agent/deletion.js` |
+| `requireAgentAuth` ミドルウェア | ✅ 完了 | `src/middleware/requireAgentAuth.js` |
+| `AgentPost` Prisma model | ✅ 完了 | `prisma/schema.prisma` |
+| `AgentAuditLog` Prisma model | ✅ 完了 | `prisma/schema.prisma` |
+| `HookCandidate` 拡張カラム | ✅ 完了 | `prisma/schema.prisma` |
+| 5ch Z-Score 統合 (`unifiedScore`) | ✅ 完了 | `src/agents/crossPlatformLearning.js` |
+| `refreshBaselines()` Moltbook/Slack | ✅ 完了 | `src/agents/crossPlatformLearning.js` |
+| 90日匿名化ジョブ | ✅ 完了 | `src/jobs/anonymizeAgentPosts.js` |
+| 削除フロー（DM/Slack/CLI） | ✅ 完了 | `src/routes/agent/deletion.js` |
+| Prompt Injection 対策 | ✅ 完了 | `sanitizeContext()`, `sanitizeInput()` |
+| 危機検知 + Slack 通知 | ✅ 完了 | `nudge.js` の crisis 処理 |
+| 分散SNS オプトイン強制 | ✅ 完了 | `nudge.js` の optIn 検証 |
+| テスト | ✅ 196/196 通過 | `src/**/__tests__/*.test.js` |
+
+---
+
+### OpenClaw 層（❌ 未着手）
+
+| 項目 | ステータス | 必要な作業 |
+|------|----------|-----------|
+| Hetzner VPS セットアップ | ❌ 未着手 | サーバー契約、SSH 設定、ufw + fail2ban |
+| OpenClaw インストール | ❌ 未着手 | `npm install -g openclaw` or Docker |
+| systemd サービス設定 | ❌ 未着手 | `openclaw.service` 作成、有効化 |
+| SOUL.md 配置 | ✅ 作成済み | VPS への scp 未実施 |
+| 環境変数設定 | ❌ 未着手 | `ANICCA_AGENT_TOKEN`, `MOLTBOOK_API_KEY` 等 |
+
+---
+
+### Skills 層（❌ 未着手）
+
+| Skill | ステータス | 役割 | 必要な作業 |
+|-------|----------|------|-----------|
+| **moltbook-responder** | ❌ 未実装 | 苦しみ投稿検出 → `/api/agent/nudge` → 返信 | Skill 実装 |
+| **slack-reminder** | ❌ 未実装 | 月曜12:30 ラボミーティングリマインダー | Skill 実装 |
+| **feedback-fetch** | ❌ 未実装 | Moltbook upvotes / Slack reactions 収集 | Skill 実装 |
+| **x-poster** | ❌ 未実装 | X/Twitter 投稿 | Skill 実装 |
+| **moltbook/late-api** | ❌ 未導入 | Moltbook API クライアント（ClawHub） | clawhub install |
+
+---
+
+### Moltbook 連携（❌ 未着手）
+
+| 項目 | ステータス | 必要な作業 |
+|------|----------|-----------|
+| エージェント登録 | ❌ 未実施 | `POST /agents/register` → API Key + claim_url |
+| ユーザー認証（claim） | ❌ 未実施 | claim_url をブラウザでクリック（手動） |
+| s/sangha Submolt 作成 | ❌ 未実施 | Moltbook API 経由 |
+| 投稿取得（Heartbeat） | ❌ 未実装 | moltbook-responder Skill |
+| 返信投稿 | ❌ 未実装 | moltbook-responder Skill |
+| 削除要求 DM 処理 | ❌ 未実装 | deletion-handler プロセス |
+
+---
+
+### Slack 連携（❌ 未着手）
+
+| 項目 | ステータス | 必要な作業 |
+|------|----------|-----------|
+| ラボミーティングリマインダー | ❌ 未実装 | slack-reminder Skill |
+| `/anicca stop` 緊急停止 | ❌ 未実装 | Slack コマンド + OpenClaw 連携 |
+| `/anicca delete-user` コマンド | ❌ 未実装 | Slack コマンド → Railway API |
+| reactions 収集 | ❌ 未実装 | feedback-fetch Skill |
+
+---
+
+### Acceptance Criteria ステータス
+
+| AC | 内容 | ステータス | 備考 |
+|----|------|----------|------|
+| AC-1 | OpenClaw 24/7 稼働 | ❌ 未着手 | VPS セットアップ必要 |
+| AC-2 | SOUL.md 認識 | 🔄 部分 | SOUL.md 作成済み、VPS 配置未実施 |
+| AC-3 | Moltbook エージェント登録 | ❌ 未着手 | API 呼び出し未実施 |
+| AC-4 | s/sangha Submolt | ❌ 未着手 | |
+| AC-5 | Moltbook Nudge 返信 | ❌ 未着手 | moltbook-responder 未実装 |
+| **AC-6** | `/api/agent/nudge` | ✅ 完了 | テスト通過 |
+| **AC-7** | `/api/agent/wisdom` | ✅ 完了 | テスト通過 |
+| **AC-8** | `/api/agent/feedback` | ✅ 完了 | テスト通過 |
+| AC-9 | Slack チャネル接続 | ❌ 未着手 | |
+| AC-10 | ラボミーティングリマインダー | ❌ 未着手 | slack-reminder 未実装 |
+| AC-11 | 祝日スキップ | ❌ 未着手 | |
+| AC-12 | Moltbook upvotes 保存 | ❌ 未着手 | feedback-fetch 未実装 |
+| **AC-13** | Z-Score 5ch 統合 | ✅ 完了 | `unifiedScore()` 実装済み |
+| **AC-14** | 昇格ロジック | ✅ 完了 | 条件実装済み |
+| **AC-15** | VPS セキュリティ | ❌ 未着手 | ufw/fail2ban 未設定 |
+| AC-16 | Moltbook claim | ❌ 未着手 | |
+| **AC-17** | `/api/agent/content` | ✅ 完了 | テスト通過 |
+| **AC-18** | content short ≤280文字 | ✅ 完了 | バリデーション実装 |
+| AC-19 | Moltbook upvotes 収集 | ❌ 未着手 | feedback-fetch 未実装 |
+| AC-20 | Slack reactions 収集 | ❌ 未着手 | feedback-fetch 未実装 |
+| **AC-21** | nudge に agentPostId | ✅ 完了 | テスト通過 |
+| **AC-22** | feedback 両パターン | ✅ 完了 | テスト通過 |
+| **AC-23** | Prompt Injection 対策 | ✅ 完了 | sanitize 実装 |
+| AC-24 | ツール Allowlist | ❌ 未着手 | OpenClaw 側 |
+| **AC-25** | 監査ログ | ✅ 完了 | AgentAuditLog 実装 |
+| AC-26 | `/anicca stop` 緊急停止 | ❌ 未着手 | |
+| AC-27 | スキル署名検証 | ❌ 未着手 | OpenClaw 側 |
+| AC-28 | Moltbook 運用ポリシー | 🔄 部分 | optIn 強制実装、実運用未確認 |
+
+---
+
+### テストマトリックス ステータス
+
+| 範囲 | ステータス | 備考 |
+|------|----------|------|
+| #1-4 (Agent API 基本) | ✅ 完了 | |
+| #5-6 (認証) | ✅ 完了 | |
+| #7-8 (ProblemType, 重複防止) | ✅ 完了 | |
+| #9-12 (Z-Score, 昇格) | ✅ 完了 | |
+| #13-16 (祝日, リマインダー) | ❌ 未実装 | Skill 未実装のため |
+| #17-21 (Nudge/Content 詳細) | ✅ 完了 | |
+| #22-25 (feedback 詳細) | ✅ 完了 | |
+| #26-28 (feedback-fetch) | ❌ 未実装 | Skill 未実装のため |
+| #29-31 (Prompt Injection) | ✅ 完了 | |
+| #32-39 (ツール制御, スキル検証) | ❌ 未実装 | OpenClaw 側 |
+| #40-41 (匿名化) | ✅ 完了 | |
+| #42-50 (Moltbook/削除詳細) | 🔄 部分 | API 側完了、Skill 側未実装 |
+
+---
+
+## 14. 次のステップ（優先順）
+
+| # | タスク | 所要時間（目安） | 依存 |
+|---|--------|---------------|------|
+| 1 | Moltbook エージェント登録 + claim | 30分 | なし |
+| 2 | Hetzner VPS セットアップ | 2時間 | なし |
+| 3 | OpenClaw インストール + SOUL.md 配置 | 1時間 | #2 |
+| 4 | moltbook-responder Skill 実装 | 2時間 | #1, #3 |
+| 5 | E2E テスト（実際の Moltbook 投稿） | 1時間 | #4 |
+| 6 | slack-reminder Skill 実装 | 1時間 | #3 |
+| 7 | feedback-fetch Skill 実装 | 1時間 | #4 |
+| 8 | x-poster Skill 実装 | 1時間 | #3 |
 
 ---
 
@@ -758,3 +893,4 @@ sudo systemctl enable openclaw && sudo systemctl start openclaw
 |------|------|
 | 2026-02-02 | 初版作成（ターミナル出力から復元） |
 | 2026-02-02 | Blocking issue 6件修正: Crisis Protocol, UNIQUE制約, Z-Score 5ch重み, hook_candidates拡張, 昇格パイプライン明記, Prisma model化, 境界・実行手順追加 |
+| 2026-02-03 | Railway API 層完了。実装状況セクション追加。AC/テストマトリックス ステータス明記 |

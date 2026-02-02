@@ -60,6 +60,8 @@ router.get('/pending', async (req, res) => {
       const candidates = normalized.xPosts || [];
       for (const xp of candidates) {
         if (slot && xp.slot !== slot) continue;
+        // Filter out enabled=false (fallback posts); undefined=true for legacy data
+        if (xp.enabled === false) continue;
         xPosts.push({
           text: xp.text,
           reasoning: xp.reasoning,

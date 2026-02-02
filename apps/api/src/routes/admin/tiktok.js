@@ -59,6 +59,8 @@ router.get('/pending', async (req, res) => {
       const candidates = normalized.tiktokPosts || [];
       for (const tp of candidates) {
         if (slot && tp.slot !== slot) continue;
+        // Filter out enabled=false (fallback posts); undefined=true for legacy data
+        if (tp.enabled === false) continue;
         tiktokPosts.push({
           caption: tp.caption,
           hashtags: tp.hashtags || [],

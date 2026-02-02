@@ -102,6 +102,17 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Normalize and validate platform (allowlist)
+    const ALLOWED_PLATFORMS = ['moltbook', 'mastodon', 'pleroma', 'misskey', 'slack', 'x', 'tiktok', 'instagram'];
+    const normalizedPlatform = platform.trim().toLowerCase();
+    
+    if (!ALLOWED_PLATFORMS.includes(normalizedPlatform)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: `platform must be one of: ${ALLOWED_PLATFORMS.join(', ')}`,
+      });
+    }
+    
     // Validate severity if provided
     if (severity !== null && severity !== 'crisis') {
       return res.status(400).json({
@@ -121,12 +132,12 @@ router.post('/', async (req, res) => {
     
     // Enforce opt-in policy for decentralized SNS (Moltbook, Mastodon)
     const decentralizedPlatforms = ['moltbook', 'mastodon', 'pleroma', 'misskey'];
-    if (decentralizedPlatforms.includes(platform.toLowerCase()) && !optIn) {
+    if (decentralizedPlatforms.includes(normalizedPlatform) && !optIn) {
       // Audit the rejection
       await prisma.agentAuditLog.create({
         data: {
           eventType: 'optin_policy_violation',
-          platform,
+          platform: normalizedPlatform,
           requestPayload: { 
             reason: 'optIn=false for decentralized SNS',
             externalPostId,
@@ -197,7 +208,7 @@ Respond in JSON format only.`;
     // Create AgentPost record (including crisis fields)
     const agentPost = await prisma.agentPost.create({
       data: {
-        platform,
+        platform: normalizedPlatform,
         externalPostId,
         platformUserId,
         severity,
@@ -218,14 +229,14 @@ Respond in JSON format only.`;
         contextLength: context.length,
         optIn,
         agentPostId: agentPost.id,
-        platform,
+        platform: normalizedPlatform,
       };
       
       await prisma.agentAuditLog.create({
         data: {
           eventType: 'crisis_detected',
           agentPostId: agentPost.id,
-          platform,
+          platform: normalizedPlatform,
           requestPayload: crisisPayload,
           executedBy: 'system',
         },
@@ -251,7 +262,7 @@ Respond in JSON format only.`;
               data: {
                 eventType: 'crisis_notification_failed',
                 agentPostId: agentPost.id,
-                platform,
+                platform: normalizedPlatform,
                 requestPayload: { 
                   ...crisisPayload, 
                   error: `HTTP ${response.status}`,
@@ -268,7 +279,7 @@ Respond in JSON format only.`;
               data: {
                 eventType: 'crisis_notification_sent',
                 agentPostId: agentPost.id,
-                platform,
+                platform: normalizedPlatform,
                 requestPayload: crisisPayload,
                 executedBy: 'system',
               },
@@ -284,7 +295,7 @@ Respond in JSON format only.`;
           data: {
             eventType: 'crisis_notification_failed',
             agentPostId: agentPost.id,
-            platform,
+            platform: normalizedPlatform,
             requestPayload: { ...crisisPayload, error: notifyError.message },
             executedBy: 'system',
           },
@@ -297,7 +308,7 @@ Respond in JSON format only.`;
       data: {
         eventType: 'llm_call',
         agentPostId: agentPost.id,
-        platform,
+        platform: normalizedPlatform,
         requestPayload: { contextLength: context.length, language },
         responsePayload: { model: 'gpt-4o-mini', tokensUsed: completion.usage?.total_tokens },
         durationMs: Date.now() - startTime,

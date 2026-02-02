@@ -31,6 +31,27 @@ router.post('/', async (req, res) => {
       });
     }
     
+    // Normalize and validate platform if provided
+    const ALLOWED_PLATFORMS = ['moltbook', 'mastodon', 'pleroma', 'misskey', 'slack', 'x', 'tiktok', 'instagram'];
+    let normalizedPlatform = null;
+    
+    if (platform) {
+      if (typeof platform !== 'string') {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: 'platform must be a string',
+        });
+      }
+      normalizedPlatform = platform.trim().toLowerCase();
+      
+      if (!ALLOWED_PLATFORMS.includes(normalizedPlatform)) {
+        return res.status(400).json({
+          error: 'Bad Request',
+          message: `platform must be one of: ${ALLOWED_PLATFORMS.join(', ')}`,
+        });
+      }
+    }
+    
     // Validate numeric fields are non-negative
     const numericFields = { upvotes, views, likes, shares, comments };
     for (const [key, value] of Object.entries(numericFields)) {
@@ -68,7 +89,7 @@ router.post('/', async (req, res) => {
       });
     } else {
       agentPost = await prisma.agentPost.findUnique({
-        where: { platform_externalPostId: { platform, externalPostId } },
+        where: { platform_externalPostId: { platform: normalizedPlatform, externalPostId } },
       });
     }
     

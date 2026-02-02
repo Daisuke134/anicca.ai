@@ -37,10 +37,12 @@ router.post('/', async (req, res) => {
       });
     }
 
-    if (!requestedBy) {
+    // Validate requestedBy with strict allowlist
+    const ALLOWED_REQUESTED_BY = ['moltbook_dm', 'slack_command', 'admin_cli'];
+    if (!requestedBy || !ALLOWED_REQUESTED_BY.includes(requestedBy)) {
       return res.status(400).json({
         error: 'Bad Request',
-        message: 'requestedBy is required (moltbook_dm, slack_command, admin_cli)',
+        message: `requestedBy must be one of: ${ALLOWED_REQUESTED_BY.join(', ')}`,
       });
     }
 

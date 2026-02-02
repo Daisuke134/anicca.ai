@@ -60,7 +60,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const corsOptions = {
   origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'anthropic-version', 'anthropic-beta', 'user-id', 'device-id']
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'user-id', 'device-id']
 };
 app.use(cors(corsOptions));
 
@@ -93,15 +93,6 @@ app.use('/api', apiRouter);
 app.get('/', (req, res) => {
   res.redirect('/health');
 });
-
-// Check required environment variables
-const requiredEnvVars = [];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars);
-  console.error('Please set these variables in Railway or your environment');
-}
 
 // Start server
 const server = app.listen(PORT, () => {

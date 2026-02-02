@@ -164,8 +164,6 @@ exports.Prisma.UserSubscriptionScalarFieldEnum = {
   userId: 'userId',
   plan: 'plan',
   status: 'status',
-  stripeCustomerId: 'stripeCustomerId',
-  stripeSubscriptionId: 'stripeSubscriptionId',
   entitlementSource: 'entitlementSource',
   revenuecatEntitlementId: 'revenuecatEntitlementId',
   revenuecatOriginalTransactionId: 'revenuecatOriginalTransactionId',

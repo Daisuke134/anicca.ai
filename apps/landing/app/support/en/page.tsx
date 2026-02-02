@@ -1,6 +1,6 @@
 export const metadata = {
   title: 'Support | Anicca',
-  description: 'Get help with Anicca - your voice-powered habit formation coach'
+  description: 'Get help with Anicca - your AI-powered behavior change coach'
 };
 
 export default function SupportEN() {
@@ -35,17 +35,17 @@ export default function SupportEN() {
           <div>
             <h3 className="font-semibold text-foreground">How does Anicca work?</h3>
             <p className="mt-2 text-muted-foreground">
-              Anicca is a voice-powered habit formation coach that guides you through real-time conversations. 
-              Set your wake-up time, training schedule, and bedtime habits. Anicca will remind you at scheduled times 
-              and engage in voice conversations to help you build good habits and break bad ones.
+              Anicca is an AI-powered behavior change coach that sends proactive nudges based on your struggles.
+              Select the habits you want to change, and Anicca will send personalized notifications
+              at the right moments to help you build better habits and break bad ones.
             </p>
           </div>
 
           <div>
             <h3 className="font-semibold text-foreground">What permissions does Anicca need?</h3>
             <p className="mt-2 text-muted-foreground">
-              Anicca requires microphone access for voice conversations and notification permissions 
-              to send you reminders at scheduled times. All permissions are requested during onboarding.
+              Anicca requires notification permissions to send you nudges at the right times.
+              Permissions are requested during onboarding.
             </p>
           </div>
 

@@ -68,8 +68,6 @@ model UserSubscription {
   userId                          String    @id @map("user_id")
   plan                            String    @default("free")
   status                          String    @default("free")
-  stripeCustomerId                String?   @map("stripe_customer_id")
-  stripeSubscriptionId            String?   @map("stripe_subscription_id")
   entitlementSource               String    @default("revenuecat") @map("entitlement_source")
   revenuecatEntitlementId         String?   @map("revenuecat_entitlement_id")
   revenuecatOriginalTransactionId String?   @map("revenuecat_original_transaction_id")

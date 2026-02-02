@@ -49,6 +49,7 @@ router.delete('/', async (req, res, next) => {
     try {
       await client.query('BEGIN');
       // 関連データを削除（外部キー制約の順序に注意）
+      await client.query('DELETE FROM user_subscriptions WHERE user_id = $1', [userId]);
       await client.query('DELETE FROM mobile_profiles WHERE user_id = $1', [userId]);
       // テーブル存在チェックの上で安全に削除
       const tableExists = async (name) => {

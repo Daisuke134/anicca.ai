@@ -5256,8 +5256,6 @@ export namespace Prisma {
     userId: string | null
     plan: string | null
     status: string | null
-    stripeCustomerId: string | null
-    stripeSubscriptionId: string | null
     entitlementSource: string | null
     revenuecatEntitlementId: string | null
     revenuecatOriginalTransactionId: string | null
@@ -5270,8 +5268,6 @@ export namespace Prisma {
     userId: string | null
     plan: string | null
     status: string | null
-    stripeCustomerId: string | null
-    stripeSubscriptionId: string | null
     entitlementSource: string | null
     revenuecatEntitlementId: string | null
     revenuecatOriginalTransactionId: string | null
@@ -5284,8 +5280,6 @@ export namespace Prisma {
     userId: number
     plan: number
     status: number
-    stripeCustomerId: number
-    stripeSubscriptionId: number
     entitlementSource: number
     revenuecatEntitlementId: number
     revenuecatOriginalTransactionId: number
@@ -5302,8 +5296,6 @@ export namespace Prisma {
     userId?: true
     plan?: true
     status?: true
-    stripeCustomerId?: true
-    stripeSubscriptionId?: true
     entitlementSource?: true
     revenuecatEntitlementId?: true
     revenuecatOriginalTransactionId?: true
@@ -5316,8 +5308,6 @@ export namespace Prisma {
     userId?: true
     plan?: true
     status?: true
-    stripeCustomerId?: true
-    stripeSubscriptionId?: true
     entitlementSource?: true
     revenuecatEntitlementId?: true
     revenuecatOriginalTransactionId?: true
@@ -5330,8 +5320,6 @@ export namespace Prisma {
     userId?: true
     plan?: true
     status?: true
-    stripeCustomerId?: true
-    stripeSubscriptionId?: true
     entitlementSource?: true
     revenuecatEntitlementId?: true
     revenuecatOriginalTransactionId?: true
@@ -5419,8 +5407,6 @@ export namespace Prisma {
     userId: string
     plan: string
     status: string
-    stripeCustomerId: string | null
-    stripeSubscriptionId: string | null
     entitlementSource: string
     revenuecatEntitlementId: string | null
     revenuecatOriginalTransactionId: string | null
@@ -5452,8 +5438,6 @@ export namespace Prisma {
     userId?: boolean
     plan?: boolean
     status?: boolean
-    stripeCustomerId?: boolean
-    stripeSubscriptionId?: boolean
     entitlementSource?: boolean
     revenuecatEntitlementId?: boolean
     revenuecatOriginalTransactionId?: boolean
@@ -5468,8 +5452,6 @@ export namespace Prisma {
     userId?: boolean
     plan?: boolean
     status?: boolean
-    stripeCustomerId?: boolean
-    stripeSubscriptionId?: boolean
     entitlementSource?: boolean
     revenuecatEntitlementId?: boolean
     revenuecatOriginalTransactionId?: boolean
@@ -5484,8 +5466,6 @@ export namespace Prisma {
     userId?: boolean
     plan?: boolean
     status?: boolean
-    stripeCustomerId?: boolean
-    stripeSubscriptionId?: boolean
     entitlementSource?: boolean
     revenuecatEntitlementId?: boolean
     revenuecatOriginalTransactionId?: boolean
@@ -5504,8 +5484,6 @@ export namespace Prisma {
       userId: string
       plan: string
       status: string
-      stripeCustomerId: string | null
-      stripeSubscriptionId: string | null
       entitlementSource: string
       revenuecatEntitlementId: string | null
       revenuecatOriginalTransactionId: string | null
@@ -5910,8 +5888,6 @@ export namespace Prisma {
     readonly userId: FieldRef<"UserSubscription", 'String'>
     readonly plan: FieldRef<"UserSubscription", 'String'>
     readonly status: FieldRef<"UserSubscription", 'String'>
-    readonly stripeCustomerId: FieldRef<"UserSubscription", 'String'>
-    readonly stripeSubscriptionId: FieldRef<"UserSubscription", 'String'>
     readonly entitlementSource: FieldRef<"UserSubscription", 'String'>
     readonly revenuecatEntitlementId: FieldRef<"UserSubscription", 'String'>
     readonly revenuecatOriginalTransactionId: FieldRef<"UserSubscription", 'String'>
@@ -20966,8 +20942,6 @@ export namespace Prisma {
     userId: 'userId',
     plan: 'plan',
     status: 'status',
-    stripeCustomerId: 'stripeCustomerId',
-    stripeSubscriptionId: 'stripeSubscriptionId',
     entitlementSource: 'entitlementSource',
     revenuecatEntitlementId: 'revenuecatEntitlementId',
     revenuecatOriginalTransactionId: 'revenuecatOriginalTransactionId',
@@ -21600,8 +21574,6 @@ export namespace Prisma {
     userId?: StringFilter<"UserSubscription"> | string
     plan?: StringFilter<"UserSubscription"> | string
     status?: StringFilter<"UserSubscription"> | string
-    stripeCustomerId?: StringNullableFilter<"UserSubscription"> | string | null
-    stripeSubscriptionId?: StringNullableFilter<"UserSubscription"> | string | null
     entitlementSource?: StringFilter<"UserSubscription"> | string
     revenuecatEntitlementId?: StringNullableFilter<"UserSubscription"> | string | null
     revenuecatOriginalTransactionId?: StringNullableFilter<"UserSubscription"> | string | null
@@ -21616,8 +21588,6 @@ export namespace Prisma {
     userId?: SortOrder
     plan?: SortOrder
     status?: SortOrder
-    stripeCustomerId?: SortOrderInput | SortOrder
-    stripeSubscriptionId?: SortOrderInput | SortOrder
     entitlementSource?: SortOrder
     revenuecatEntitlementId?: SortOrderInput | SortOrder
     revenuecatOriginalTransactionId?: SortOrderInput | SortOrder
@@ -21635,8 +21605,6 @@ export namespace Prisma {
     NOT?: UserSubscriptionWhereInput | UserSubscriptionWhereInput[]
     plan?: StringFilter<"UserSubscription"> | string
     status?: StringFilter<"UserSubscription"> | string
-    stripeCustomerId?: StringNullableFilter<"UserSubscription"> | string | null
-    stripeSubscriptionId?: StringNullableFilter<"UserSubscription"> | string | null
     entitlementSource?: StringFilter<"UserSubscription"> | string
     revenuecatEntitlementId?: StringNullableFilter<"UserSubscription"> | string | null
     revenuecatOriginalTransactionId?: StringNullableFilter<"UserSubscription"> | string | null
@@ -21651,8 +21619,6 @@ export namespace Prisma {
     userId?: SortOrder
     plan?: SortOrder
     status?: SortOrder
-    stripeCustomerId?: SortOrderInput | SortOrder
-    stripeSubscriptionId?: SortOrderInput | SortOrder
     entitlementSource?: SortOrder
     revenuecatEntitlementId?: SortOrderInput | SortOrder
     revenuecatOriginalTransactionId?: SortOrderInput | SortOrder
@@ -21673,8 +21639,6 @@ export namespace Prisma {
     userId?: StringWithAggregatesFilter<"UserSubscription"> | string
     plan?: StringWithAggregatesFilter<"UserSubscription"> | string
     status?: StringWithAggregatesFilter<"UserSubscription"> | string
-    stripeCustomerId?: StringNullableWithAggregatesFilter<"UserSubscription"> | string | null
-    stripeSubscriptionId?: StringNullableWithAggregatesFilter<"UserSubscription"> | string | null
     entitlementSource?: StringWithAggregatesFilter<"UserSubscription"> | string
     revenuecatEntitlementId?: StringNullableWithAggregatesFilter<"UserSubscription"> | string | null
     revenuecatOriginalTransactionId?: StringNullableWithAggregatesFilter<"UserSubscription"> | string | null
@@ -23112,8 +23076,6 @@ export namespace Prisma {
     userId: string
     plan?: string
     status?: string
-    stripeCustomerId?: string | null
-    stripeSubscriptionId?: string | null
     entitlementSource?: string
     revenuecatEntitlementId?: string | null
     revenuecatOriginalTransactionId?: string | null
@@ -23128,8 +23090,6 @@ export namespace Prisma {
     userId: string
     plan?: string
     status?: string
-    stripeCustomerId?: string | null
-    stripeSubscriptionId?: string | null
     entitlementSource?: string
     revenuecatEntitlementId?: string | null
     revenuecatOriginalTransactionId?: string | null
@@ -23144,8 +23104,6 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     plan?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
-    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     entitlementSource?: StringFieldUpdateOperationsInput | string
     revenuecatEntitlementId?: NullableStringFieldUpdateOperationsInput | string | null
     revenuecatOriginalTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23160,8 +23118,6 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     plan?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
-    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     entitlementSource?: StringFieldUpdateOperationsInput | string
     revenuecatEntitlementId?: NullableStringFieldUpdateOperationsInput | string | null
     revenuecatOriginalTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23176,8 +23132,6 @@ export namespace Prisma {
     userId: string
     plan?: string
     status?: string
-    stripeCustomerId?: string | null
-    stripeSubscriptionId?: string | null
     entitlementSource?: string
     revenuecatEntitlementId?: string | null
     revenuecatOriginalTransactionId?: string | null
@@ -23192,8 +23146,6 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     plan?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
-    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     entitlementSource?: StringFieldUpdateOperationsInput | string
     revenuecatEntitlementId?: NullableStringFieldUpdateOperationsInput | string | null
     revenuecatOriginalTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -23208,8 +23160,6 @@ export namespace Prisma {
     userId?: StringFieldUpdateOperationsInput | string
     plan?: StringFieldUpdateOperationsInput | string
     status?: StringFieldUpdateOperationsInput | string
-    stripeCustomerId?: NullableStringFieldUpdateOperationsInput | string | null
-    stripeSubscriptionId?: NullableStringFieldUpdateOperationsInput | string | null
     entitlementSource?: StringFieldUpdateOperationsInput | string
     revenuecatEntitlementId?: NullableStringFieldUpdateOperationsInput | string | null
     revenuecatOriginalTransactionId?: NullableStringFieldUpdateOperationsInput | string | null
@@ -24933,8 +24883,6 @@ export namespace Prisma {
     userId?: SortOrder
     plan?: SortOrder
     status?: SortOrder
-    stripeCustomerId?: SortOrder
-    stripeSubscriptionId?: SortOrder
     entitlementSource?: SortOrder
     revenuecatEntitlementId?: SortOrder
     revenuecatOriginalTransactionId?: SortOrder
@@ -24949,8 +24897,6 @@ export namespace Prisma {
     userId?: SortOrder
     plan?: SortOrder
     status?: SortOrder
-    stripeCustomerId?: SortOrder
-    stripeSubscriptionId?: SortOrder
     entitlementSource?: SortOrder
     revenuecatEntitlementId?: SortOrder
     revenuecatOriginalTransactionId?: SortOrder
@@ -24963,8 +24909,6 @@ export namespace Prisma {
     userId?: SortOrder
     plan?: SortOrder
     status?: SortOrder
-    stripeCustomerId?: SortOrder
-    stripeSubscriptionId?: SortOrder
     entitlementSource?: SortOrder
     revenuecatEntitlementId?: SortOrder
     revenuecatOriginalTransactionId?: SortOrder

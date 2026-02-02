@@ -92,8 +92,6 @@ export async function getEntitlementState(userId) {
     plan: statusInfo.plan,
     status: statusInfo.status,
     currentPeriodEnd,
-    stripeCustomerId: subscription?.stripe_customer_id || null,
-    stripeSubscriptionId: subscription?.stripe_subscription_id || null
   };
 }
 

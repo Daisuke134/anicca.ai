@@ -215,17 +215,17 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P3: notificationVariantCount は全問題8以上（staying_up_late は10）
+    // MARK: - P3: notificationVariantCount - v1.6.1拡張（stayingUpLate: 21, others: 14）
 
     func test_variantCount_allProblems() {
-        XCTAssertEqual(ProblemType.stayingUpLate.notificationVariantCount, 10)
-        XCTAssertEqual(ProblemType.pornAddiction.notificationVariantCount, 8)
+        // v1.6.1: 2週間新鮮体験のため拡張
+        XCTAssertEqual(ProblemType.stayingUpLate.notificationVariantCount, 21) // 5回/日 × 4.2日
 
-        let eightVariantProblems: [ProblemType] = [.cantWakeUp, .selfLoathing, .rumination,
-            .procrastination, .anxiety, .lying, .badMouthing, .alcoholDependency,
+        let fourteenVariantProblems: [ProblemType] = [.cantWakeUp, .selfLoathing, .rumination,
+            .procrastination, .anxiety, .lying, .badMouthing, .pornAddiction, .alcoholDependency,
             .anger, .obsessive, .loneliness]
-        for problem in eightVariantProblems {
-            XCTAssertEqual(problem.notificationVariantCount, 8, "\(problem.rawValue) should have 8 variants")
+        for problem in fourteenVariantProblems {
+            XCTAssertEqual(problem.notificationVariantCount, 14, "\(problem.rawValue) should have 14 variants") // 3回/日 × 4.67日
         }
     }
 
@@ -283,19 +283,19 @@ final class NotificationHotfixTests: XCTestCase {
     func test_selectVariant_respectsUsedVariants() {
         let selector = NudgeContentSelector.shared
 
-        // usedVariants に variant 0 を入れると、別のバリアントが選ばれるはず
-        // Thompson Sampling でも usedVariants を除外する
-        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [0, 1, 2, 3, 4, 5, 6])
-        // 全部使用済みだと唯一残りの variant 7 が返るはず
-        XCTAssertEqual(result1, 7, "With variants 0-6 used, should select 7")
+        // usedVariants に variant 0-12 を入れると、唯一残りの variant 13 が選ばれるはず
+        // v1.6.1: anxiety は14バリアント
+        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: Set(0..<13))
+        XCTAssertEqual(result1, 13, "With variants 0-12 used, should select 13")
     }
 
     func test_selectVariant_allUsed_returnsFirst() {
         let selector = NudgeContentSelector.shared
 
         // 全バリアント使用済み → usedVariants クリアしてフォールバック
-        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: Set(0..<8))
+        // v1.6.1: anxiety は14バリアント
+        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: Set(0..<14))
         // 全部使用済みの場合は Thompson Sampling がリセットして選択
-        XCTAssertTrue((0..<8).contains(result), "Should still return a valid variant index")
+        XCTAssertTrue((0..<14).contains(result), "Should still return a valid variant index")
     }
 }

@@ -104,19 +104,20 @@ final class NudgeContentSelectorTests: XCTestCase {
     // MARK: - Existing Variant Selection Tests
 
     /// 初回呼び出しで有効なバリアントを返すこと (stayingUpLate)
+    /// v1.6.1: stayingUpLate は21バリアント
     func test_selectVariant_returns_valid_variant_for_stayingUpLate() {
         // 乱数を高めに設定して既存ロジックを使用
         selector.randomProvider = { 0.9 }
 
         let result = selector.selectVariant(for: .stayingUpLate, scheduledHour: 22)
 
-        // stayingUpLate の汎用バリアントは [0, 1, 2, 5, 6, 7, 8, 9]
-        let validVariants = [0, 1, 2, 5, 6, 7, 8, 9]
-        XCTAssertTrue(validVariants.contains(result.variantIndex), "Variant \(result.variantIndex) should be in \(validVariants)")
+        // v1.6.1: stayingUpLate は21バリアント (0-20)
+        XCTAssertTrue((0..<21).contains(result.variantIndex), "Variant \(result.variantIndex) should be in 0-20")
         XCTAssertFalse(result.isAIGenerated)
     }
 
-    /// 他の問題タイプでは 0〜7 のバリアントを返すこと
+    /// 他の問題タイプでは 0〜13 のバリアントを返すこと
+    /// v1.6.1: 他の問題タイプは14バリアント
     func test_selectVariant_returns_valid_variant_for_other_problems() {
         // 乱数を高めに設定して既存ロジックを使用
         selector.randomProvider = { 0.9 }
@@ -126,26 +127,26 @@ final class NudgeContentSelectorTests: XCTestCase {
         for problem in problems {
             let result = selector.selectVariant(for: problem, scheduledHour: 9)
             XCTAssertGreaterThanOrEqual(result.variantIndex, 0)
-            XCTAssertLessThanOrEqual(result.variantIndex, 7)
+            XCTAssertLessThanOrEqual(result.variantIndex, 13) // v1.6.1: 14バリアント (0-13)
             XCTAssertFalse(result.isAIGenerated)
         }
     }
 
-    /// v1.5.1: time-specific variant は廃止。全10バリアントが汎用
+    /// v1.6.1: 全21バリアントが汎用（stayingUpLate）
     func test_selectVariant_stayingUpLate_allVariantsAreGeneric() {
         selector.randomProvider = { 0.9 }
 
-        // 0時でも汎用バリアント (0-9) から Thompson Sampling で選択
+        // 0時でも汎用バリアント (0-20) から Thompson Sampling で選択
         let result0 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 0)
-        XCTAssertTrue((0..<10).contains(result0.variantIndex), "At 00:00, should select from all 10 variants")
+        XCTAssertTrue((0..<21).contains(result0.variantIndex), "At 00:00, should select from all 21 variants")
 
         // 1時も同様
         let result1 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 1)
-        XCTAssertTrue((0..<10).contains(result1.variantIndex), "At 01:00, should select from all 10 variants")
+        XCTAssertTrue((0..<21).contains(result1.variantIndex), "At 01:00, should select from all 21 variants")
 
-        // 22時も同様（全10バリアントが候補）
+        // 22時も同様（全21バリアントが候補）
         let result22 = selector.selectVariant(for: .stayingUpLate, scheduledHour: 22)
-        XCTAssertTrue((0..<10).contains(result22.variantIndex), "At 22:00, should select from all 10 variants")
+        XCTAssertTrue((0..<21).contains(result22.variantIndex), "At 22:00, should select from all 21 variants")
     }
 
     // MARK: - Thompson Sampling Tests

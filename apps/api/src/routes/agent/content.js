@@ -38,8 +38,9 @@ function sanitizeInput(input) {
   // 4. Remove Unicode control characters
   sanitized = sanitized.replace(/[\u200B-\u200F\u202A-\u202E]/g, '');
   
-  // 5. Remove XML-like tags (prevent prompt structure manipulation)
-  sanitized = sanitized.replace(/<\/?[a-zA-Z_][a-zA-Z0-9_]*>/g, '');
+  // 5. Remove all angle brackets (prevent prompt structure manipulation)
+  // Escape or strip ALL < and > to prevent any form of tag injection
+  sanitized = sanitized.replace(/[<>]/g, '');
   
   // 6. Limit length
   if (sanitized.length > 500) {

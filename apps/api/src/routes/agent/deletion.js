@@ -118,6 +118,15 @@ router.post('/', async (req, res) => {
 router.get('/status/:platformUserId', async (req, res) => {
   try {
     const { platformUserId } = req.params;
+    
+    // Validate platformUserId format (same as POST endpoint)
+    const PLATFORM_USER_ID_REGEX = /^[a-z0-9_]+:.+$/;
+    if (!PLATFORM_USER_ID_REGEX.test(platformUserId)) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'platformUserId must be in format <platform>:<user_id> (lowercase platform, non-empty user_id)',
+      });
+    }
 
     // Count remaining non-anonymized posts
     const remaining = await prisma.agentPost.count({

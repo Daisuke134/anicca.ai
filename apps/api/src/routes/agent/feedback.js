@@ -23,6 +23,22 @@ router.post('/', async (req, res) => {
       comments,
     } = req.body;
     
+    // Validate agentPostId type if provided
+    if (agentPostId !== undefined && (typeof agentPostId !== 'string' || agentPostId.trim() === '')) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'agentPostId must be a non-empty string',
+      });
+    }
+    
+    // Validate externalPostId type if provided
+    if (externalPostId !== undefined && (typeof externalPostId !== 'string' || externalPostId.trim() === '')) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'externalPostId must be a non-empty string',
+      });
+    }
+    
     // Validate: need agentPostId OR (platform + externalPostId)
     if (!agentPostId && (!platform || !externalPostId)) {
       return res.status(400).json({
@@ -110,6 +126,14 @@ router.post('/', async (req, res) => {
     if (likes !== undefined) updateData.likes = likes;
     if (shares !== undefined) updateData.shares = shares;
     if (comments !== undefined) updateData.comments = comments;
+    
+    // Reject empty updates
+    if (Object.keys(updateData).length === 0) {
+      return res.status(400).json({
+        error: 'Bad Request',
+        message: 'At least one feedback field (upvotes, reactions, views, likes, shares, comments) is required',
+      });
+    }
     
     // Update the post
     const updated = await prisma.agentPost.update({

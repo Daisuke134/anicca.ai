@@ -115,10 +115,10 @@ describe('verify7DayUniqueness', () => {
     expect(result.unique).toBe(true); // unique because seen.size === variants.length
   });
 
-  it('staying_up_late with 42 variants covers 7 days', () => {
-    const variants = Array.from({ length: 42 }, (_, i) => ({ hook: `h${i}`, content: `c${i}`, tone: 'strict' }));
+  it('staying_up_late with 35 variants covers 7 days', () => {
+    const variants = Array.from({ length: 35 }, (_, i) => ({ hook: `h${i}`, content: `c${i}`, tone: 'strict' }));
     const result = verify7DayUniqueness('staying_up_late', variants, 7);
     expect(result.unique).toBe(true);
-    expect(result.totalSlots).toBe(42); // 6 slots * 7 days
+    expect(result.totalSlots).toBe(35); // 5 slots * 7 days (v1.6.0 schedule)
   });
 });

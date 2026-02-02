@@ -82,11 +82,13 @@ var notificationVariantCount: Int {
 }
 ```
 
-### 2. Localizable.strings 更新（6言語）
+### 2. Localizable.strings 更新（1.6.1では日本語+英語のみ）
 
-**対象ファイル**:
+**対象ファイル（1.6.1）**:
 - `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings`
 - `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings`
+
+**1.6.2で追加予定**:
 - `aniccaios/aniccaios/Resources/es.lproj/Localizable.strings`
 - `aniccaios/aniccaios/Resources/fr.lproj/Localizable.strings`
 - `aniccaios/aniccaios/Resources/de.lproj/Localizable.strings`
@@ -109,16 +111,17 @@ var notificationVariantCount: Int {
 
 **変更理由**: 「衝動に勝て」は曖昧。より直接的な表現に変更。
 
-| 言語 | Before | After | 変更済み |
-|------|--------|-------|---------|
-| 日本語 | 衝動に勝て | **性欲に勝て** | ✅ |
-| English | Beat the Urge | **Beat Your Lust** | ✅ |
-| Español | Beat the Urge | **Vence Tu Lujuria** | ✅ |
-| Français | Beat the Urge | **Maîtrise Ton Désir** | ✅ |
-| Deutsch | Beat the Urge | **Besiege Deine Lust** | ✅ |
-| Português | Beat the Urge | **Vença Sua Luxúria** | ✅ |
+| 言語 | Before | After | 対応バージョン |
+|------|--------|-------|---------------|
+| 日本語 | 衝動に勝て | **性欲に勝て** | 1.6.1 |
+| English | Beat the Urge | **Beat Your Lust** | 1.6.1 |
+| Español | Beat the Urge | **Vence Tu Lujuria** | 1.6.2 |
+| Français | Beat the Urge | **Maîtrise Ton Désir** | 1.6.2 |
+| Deutsch | Beat the Urge | **Besiege Deine Lust** | 1.6.2 |
+| Português | Beat the Urge | **Vença Sua Luxúria** | 1.6.2 |
 
-**対象キー**: `problem_porn_addiction_notification_title`（全6言語で変更完了）
+**対象キー**: `problem_porn_addiction_notification_title`
+**注意**: 1.6.1では日本語と英語のみ変更。他言語は1.6.2で対応。
 
 ---
 
@@ -126,11 +129,18 @@ var notificationVariantCount: Int {
 
 ### コンテンツ設計原則
 
-**Tone配分**: 各ProblemTypeの新規6バリアントは以下のバランスで作成:
+**Tone配分（6バリアント追加の場合）**: 各ProblemTypeの新規6バリアントは以下のバランスで作成:
 - strict: 2個（命令口調）
 - gentle: 1個（優しく寄り添う）
 - empathetic: 1個（共感的）
 - analytical: 1個（論理的・データ的）
+- playful: 1個（軽やかで親しみやすい）
+
+**Tone配分（staying_up_late: 11バリアント追加の場合）**: 以下のバランスで作成:
+- strict: 4個（命令口調）
+- gentle: 2個（優しく寄り添う）
+- empathetic: 2個（共感的）
+- analytical: 2個（論理的・データ的）
 - playful: 1個（軽やかで親しみやすい）
 
 **Detail要件**: 各Detailは**必ず1つ以上の具体的アクション**を含む:
@@ -141,7 +151,8 @@ var notificationVariantCount: Int {
 **別紙**: `nudge-content-variants-ja.md`
 - 日本語 + 英語の全バリアント（9-14、staying_up_lateは11-21）
 - Toneラベル付き
-- 他言語（es, fr, de, pt-BR）は英語をベースに翻訳
+
+**注意**: 1.6.1では日本語と英語のみ実装。他言語（es, fr, de, pt-BR）は1.6.2で英語をベースに翻訳予定。
 
 ---
 
@@ -159,15 +170,16 @@ var notificationVariantCount: Int {
 | `NudgeContent.detailMessages(for: .stayingUpLate).count` | 21 |
 | `NudgeContent.detailMessages(for: .pornAddiction).count` | 14 |
 
-### ローカライズテスト（iOS）
+### ローカライズテスト（iOS）- 1.6.1はJA/ENのみ
 
 | テスト | 期待結果 |
 |-------|---------|
-| 全言語で `nudge_*_notification_1` 〜 `_14` が存在 | Pass |
-| 全言語で `nudge_*_detail_1` 〜 `_14` が存在 | Pass |
-| staying_up_late は `_1` 〜 `_21` が存在 | Pass |
-| `problem_porn_addiction_notification_title` が全6言語で存在 | Pass |
-| `problem_porn_addiction_notification_title` が「性欲に勝て」「Beat Your Lust」等に変更済み | Pass |
+| JA/ENで `nudge_*_notification_1` 〜 `_14` が存在 | Pass |
+| JA/ENで `nudge_*_detail_1` 〜 `_14` が存在 | Pass |
+| JA/ENでstaying_up_late は `_1` 〜 `_21` が存在 | Pass |
+| JA/ENで `problem_porn_addiction_notification_title` が「性欲に勝て」「Beat Your Lust」に変更済み | Pass |
+
+**注意**: 他言語（es/fr/de/pt-BR）のテストは1.6.2で実施。
 
 ### Backendテスト
 
@@ -204,18 +216,23 @@ it('staying_up_late with 35 variants covers 7 days', () => {
 
 ---
 
-## 影響範囲
+## 影響範囲（1.6.1）
 
 | ファイル | 変更内容 | 状態 |
 |---------|---------|------|
 | `aniccaios/Models/ProblemType.swift` | notificationVariantCount 更新 | 未着手 |
-| `aniccaios/Resources/ja.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | タイトルのみ完了 |
-| `aniccaios/Resources/en.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | タイトルのみ完了 |
-| `aniccaios/Resources/es.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | タイトルのみ完了 |
-| `aniccaios/Resources/fr.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | タイトルのみ完了 |
-| `aniccaios/Resources/de.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | タイトルのみ完了 |
-| `aniccaios/Resources/pt-BR.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | タイトルのみ完了 |
+| `aniccaios/Resources/ja.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | 未着手 |
+| `aniccaios/Resources/en.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | 未着手 |
 | `apps/api/src/agents/__tests__/dayCycling.test.js` | 期待値修正（42→35） | ✅ 完了 |
+
+## 影響範囲（1.6.2 - 他言語対応）
+
+| ファイル | 変更内容 | 状態 |
+|---------|---------|------|
+| `aniccaios/Resources/es.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | 1.6.2で対応 |
+| `aniccaios/Resources/fr.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | 1.6.2で対応 |
+| `aniccaios/Resources/de.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | 1.6.2で対応 |
+| `aniccaios/Resources/pt-BR.lproj/Localizable.strings` | 新バリアント追加 + タイトル変更 | 1.6.2で対応 |
 
 ---
 
@@ -231,9 +248,11 @@ it('staying_up_late with 35 variants covers 7 days', () => {
 
 | Phase | 内容 |
 |-------|------|
-| 1.6.1 | 14バリアント拡張（本Spec） |
-| 1.6.3 | 追加言語のバリアント翻訳（es, fr, de, pt-BR） |
+| 1.6.1 | 14バリアント拡張 - 日本語 + 英語のみ（本Spec） |
+| 1.6.2 | 他言語のバリアント翻訳（es, fr, de, pt-BR）- 英語ベースで翻訳 |
 | 1.7.x | LLM生成が安定したらルールベースをフォールバック専用に |
+
+**注意**: 1.6.1では日本語と英語のみ実装。他言語（es, fr, de, pt-BR）は既存の1-8バリアントのまま。1.6.2で追加翻訳を実施。
 
 ---
 

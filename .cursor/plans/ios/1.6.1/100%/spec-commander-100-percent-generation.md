@@ -50,10 +50,11 @@ OpenAIの `strict: true` + `minItems/maxItems` を使用し、さらに`finish_r
 ```
 [修正後のフロー]
 JSON Schema「appNudges: minItems=15, maxItems=15」
-  → LLM生成
+  → LLM生成（max_tokens動的設定）
   → finish_reason検査（refusal/length/content_filterをチェック）
   → 正常: スキーマ検証 → 成功
-  → 異常: 再試行 or フォールバック
+  → length中断: max_tokens増加して再試行
+  → 他の異常: 再試行 or フォールバック
 ```
 
 ### 重要な制限事項
@@ -74,6 +75,87 @@ OpenAI Structured Outputsは以下の場合にスキーマ準拠が保証され�
 | **異常検出** | finish_reason + refusal検査 | 必須 |
 | **コンテンツ決定** | Commander Agent | 生成必須 |
 | **ON/OFF決定** | Commander Agent | `enabled: true/false`で制御 |
+
+---
+
+## スキーマ定義（必須フィールド一覧）
+
+### トップレベルスキーマ（AgentRawOutputSchema）
+
+| フィールド | 型 | 必須/任意 | 説明 |
+|-----------|------|---------|------|
+| rootCauseHypothesis | string | 必須 | 根本原因仮説 |
+| overallStrategy | string | 必須 | 全体戦略 |
+| frequencyReasoning | string | 必須 | 頻度設定理由 |
+| appNudges | array | 必須 | アプリNudge配列（長さ=slotCount） |
+| tiktokPosts | array | 必須 | TikTok投稿配列（長さ=2） |
+| xPosts | array | 必須 | X投稿配列（長さ=2） |
+
+### AppNudgeSchema
+
+| フィールド | 型 | 必須/任意 | 説明 |
+|-----------|------|---------|------|
+| slotIndex | number | 必須 | スロット番号（0以上の整数） |
+| hook | string | 必須 | 通知タイトル |
+| content | string | 必須 | 詳細内容 |
+| tone | enum | 必須 | 'strict'/'gentle'/'empathetic'/'analytical'/'playful' |
+| enabled | boolean | 必須 | 有効/無効フラグ |
+| reasoning | string | 必須 | 生成理由 |
+
+### TiktokPostSchema
+
+| フィールド | 型 | 必須/任意 | 説明 |
+|-----------|------|---------|------|
+| slot | enum | 必須 | 'morning'/'evening' |
+| caption | string | 必須 | キャプション（最大2200文字） |
+| hashtags | array | 必須 | ハッシュタグ配列（最大5件） |
+| tone | string | 必須 | トーン |
+| reasoning | string | 必須 | 生成理由 |
+| enabled | boolean | **必須** | 有効/無効フラグ **← 本仕様で追加** |
+
+### XPostSchema
+
+| フィールド | 型 | 必須/任意 | 説明 |
+|-----------|------|---------|------|
+| slot | enum | 必須 | 'morning'/'evening' |
+| text | string | 必須 | ツイートテキスト（最大280文字） |
+| reasoning | string | 必須 | 生成理由 |
+| enabled | boolean | **必須** | 有効/無効フラグ **← 本仕様で追加** |
+
+---
+
+## 下流利用箇所とバリデーション
+
+### tiktokPosts の下流
+
+| 利用箇所 | ファイル | 処理内容 | enabled参照 |
+|---------|---------|---------|-------------|
+| TikTok Agent GHA | `routes/admin/tiktok.js` | `/api/admin/tiktok/pending` でpending投稿取得 | **フィルタ追加（本仕様）** |
+| notification_schedules保存 | `jobs/generateNudges.js` | `agentRawOutput`に格納 | なし（そのまま保存） |
+
+**利用フィールド**: `caption`, `hashtags`, `tone`, `reasoning`, `slot`, `enabled`
+
+### xPosts の下流
+
+| 利用箇所 | ファイル | 処理内容 | enabled参照 |
+|---------|---------|---------|-------------|
+| X Agent GHA | `routes/admin/xposts.js` | `/api/admin/x/pending` でpending投稿取得 | **フィルタ追加（本仕様）** |
+| notification_schedules保存 | `jobs/generateNudges.js` | `agentRawOutput`に格納 | なし（そのまま保存） |
+
+**利用フィールド**: `text`, `reasoning`, `slot`, `enabled`
+
+### フォールバック出力の契約
+
+| フィールド | 件数 | enabled | 理由 |
+|-----------|------|---------|------|
+| appNudges | slotTable.length | **true** | アプリ通知は必ず配信 |
+| tiktokPosts | 2 | **false** | スキーマ準拠だが投稿しない |
+| xPosts | 2 | **false** | スキーマ準拠だが投稿しない |
+
+**投稿抑止の仕組み**:
+1. フォールバック時は `tiktokPosts[*].enabled = false`、`xPosts[*].enabled = false` を設定
+2. `/api/admin/tiktok/pending` と `/api/admin/x/pending` で `enabled !== false` をフィルタ
+3. GHAは `enabled=false` のポストを取得しないため、投稿されない
 
 ---
 
@@ -100,6 +182,24 @@ function createAgentOutputSchema(slotCount) {
   });
 }
 
+// ✅ TiktokPostSchema にenabled追加（必須フィールド）
+const TiktokPostSchema = z.object({
+  slot: TiktokPostSlot,
+  caption: z.string().max(2200),
+  hashtags: z.array(z.string()).max(5),
+  tone: z.string(),
+  reasoning: z.string(),
+  enabled: z.boolean(),  // ✅ 必須（OpenAI strict mode要件）
+});
+
+// ✅ XPostSchema にenabled追加（必須フィールド）
+const XPostSchema = z.object({
+  slot: XPostSlot,
+  text: z.string().max(280),
+  reasoning: z.string(),
+  enabled: z.boolean(),  // ✅ 必須（OpenAI strict mode要件）
+});
+
 /**
  * ZodスキーマをOpenAI互換JSON Schemaに変換
  * OpenAIのサブセット制限に適合することを確認
@@ -109,9 +209,22 @@ function toOpenAIJsonSchema(zodSchema, name) {
   // additionalProperties: false を全オブジェクトに設定（OpenAI要件）
   return ensureAdditionalPropertiesFalse(jsonSchema);
 }
+
+/**
+ * スロット数に基づくmax_tokensの推定
+ * 1 Nudge ≈ 150 tokens、基本オーバーヘッド ≈ 500 tokens
+ */
+function estimateMaxTokens(slotCount, attempt = 0) {
+  const baseTokens = 500;
+  const tokensPerNudge = 150;
+  const tiktokXTokens = 400;  // 2 TikTok + 2 X posts
+  const buffer = 1.3 + (attempt * 0.2);  // 再試行ごとにバッファ増加
+  
+  return Math.ceil((baseTokens + (slotCount * tokensPerNudge) + tiktokXTokens) * buffer);
+}
 ```
 
-### 2. OpenAI API呼び出し + finish_reason検査
+### 2. OpenAI API呼び出し + finish_reason検査 + max_tokens動的調整
 
 **ファイル**: `apps/api/src/agents/commander.js`
 
@@ -129,9 +242,13 @@ export async function runCommanderAgent({
   
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
+      // ✅ 再試行ごとにmax_tokensを増加
+      const maxTokens = estimateMaxTokens(slotCount, attempt);
+      
       const response = await openai.chat.completions.create({
         model,
         messages: buildMessages(grounding),
+        max_tokens: maxTokens,  // ✅ 動的設定
         response_format: {
           type: "json_schema",
           json_schema: {
@@ -145,10 +262,23 @@ export async function runCommanderAgent({
       const choice = response.choices[0];
       
       // ✅ finish_reason検査
+      if (choice.finish_reason === 'length') {
+        throw new Error(
+          `Output truncated (finish_reason=length). ` +
+          `max_tokens=${maxTokens} was insufficient. Will retry with higher limit.`
+        );
+      }
+      
+      if (choice.finish_reason === 'content_filter') {
+        throw new Error(
+          `Content filtered (finish_reason=content_filter). ` +
+          `Generation was halted by content moderation.`
+        );
+      }
+      
       if (choice.finish_reason !== 'stop') {
         throw new Error(
-          `Unexpected finish_reason: ${choice.finish_reason}. ` +
-          `Expected 'stop' for complete structured output.`
+          `Unexpected finish_reason: ${choice.finish_reason}. Expected 'stop'.`
         );
       }
       
@@ -175,8 +305,8 @@ export async function runCommanderAgent({
       console.warn(`Commander attempt ${attempt + 1}/${maxRetries + 1} failed:`, error.message);
       
       if (attempt < maxRetries) {
-        // 再試行前に少し待機
-        await new Promise(resolve => setTimeout(resolve, 1000 * (attempt + 1)));
+        // 再試行前に待機（エクスポネンシャルバックオフ）
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
       }
     }
   }
@@ -208,14 +338,17 @@ try {
 }
 ```
 
-### 4. ルールベースフォールバック
+### 4. ルールベースフォールバック（スキーマ完全準拠）
 
 **ファイル**: `apps/api/src/agents/commander.js`
 
 ```javascript
 /**
  * Commander失敗時のルールベースフォールバック
- * 全スロットをenabled=trueで埋める
+ * スキーマ完全準拠:
+ * - appNudges: slotTable.length件、enabled=true
+ * - tiktokPosts: 2件、enabled=false（投稿しない）
+ * - xPosts: 2件、enabled=false（投稿しない）
  */
 export function generateRuleBasedFallback(slotTable, preferredLanguage) {
   const isJa = preferredLanguage === 'ja';
@@ -224,18 +357,106 @@ export function generateRuleBasedFallback(slotTable, preferredLanguage) {
     rootCauseHypothesis: 'Fallback mode - LLM generation failed',
     overallStrategy: 'Using rule-based content',
     frequencyReasoning: 'Maintaining scheduled frequency',
-    appNudges: slotTable.map((slot, index) => ({
+    
+    // appNudges: スキーマ準拠（slotTable.length件、enabled=true）
+    appNudges: slotTable.map((slot) => ({
       slotIndex: slot.slotIndex,
       hook: isJa ? '今日も前に進もう' : 'Keep moving forward',
       content: isJa ? '小さな一歩から始めよう。' : 'Start with a small step.',
       tone: 'gentle',
-      enabled: true,  // ✅ フォールバックはenabled
+      enabled: true,  // ✅ アプリ通知は配信する
       reasoning: 'Rule-based fallback due to LLM failure',
     })),
-    tiktokPosts: [],
-    xPosts: [],
+    
+    // tiktokPosts: スキーマ準拠（2件、enabled=false）
+    tiktokPosts: [
+      {
+        slot: 'morning',
+        caption: isJa ? '変わりたいなら今日から' : 'Change starts today',
+        hashtags: ['#mindfulness', '#growth'],
+        tone: 'gentle',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,  // ✅ フォールバック時は投稿しない
+      },
+      {
+        slot: 'evening',
+        caption: isJa ? '自分を責めないで' : "Don't blame yourself",
+        hashtags: ['#selfcare', '#mentalhealth'],
+        tone: 'gentle',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+    ],
+    
+    // xPosts: スキーマ準拠（2件、enabled=false）
+    xPosts: [
+      {
+        slot: 'morning',
+        text: isJa ? '今日も一歩前へ' : 'One step forward today',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,  // ✅ フォールバック時は投稿しない
+      },
+      {
+        slot: 'evening',
+        text: isJa ? '深呼吸しよう' : 'Take a deep breath',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+    ],
   };
 }
+```
+
+### 5. 下流pendingエンドポイントにenabledフィルタ追加
+
+**ファイル**: `apps/api/src/routes/admin/tiktok.js`
+
+```javascript
+// /api/admin/tiktok/pending
+router.get('/pending', async (req, res) => {
+  // ... existing code ...
+  
+  for (const tp of candidates) {
+    if (slot && tp.slot !== slot) continue;
+    // ✅ enabled=false をフィルタ（フォールバックポストを除外）
+    if (tp.enabled === false) continue;
+    
+    tiktokPosts.push({
+      caption: tp.caption,
+      hashtags: tp.hashtags || [],
+      tone: tp.tone,
+      reasoning: tp.reasoning,
+      slot: tp.slot,
+      sourceUserId: s.userId,
+      scheduleId: s.id,
+    });
+  }
+  // ...
+});
+```
+
+**ファイル**: `apps/api/src/routes/admin/xposts.js`
+
+```javascript
+// /api/admin/x/pending
+router.get('/pending', async (req, res) => {
+  // ... existing code ...
+  
+  for (const xp of candidates) {
+    if (slot && xp.slot !== slot) continue;
+    // ✅ enabled=false をフィルタ（フォールバックポストを除外）
+    if (xp.enabled === false) continue;
+    
+    xPosts.push({
+      text: xp.text,
+      reasoning: xp.reasoning,
+      slot: xp.slot,
+      sourceUserId: s.userId,
+      scheduleId: s.id,
+    });
+  }
+  // ...
+});
 ```
 
 ---
@@ -268,8 +489,34 @@ export function generateRuleBasedFallback(slotTable, preferredLanguage) {
 | `createAgentOutputSchema(5)` のJSONスキーマにminItems=5, maxItems=5が含まれる | Pass |
 | 生成されたJSONスキーマがOpenAIサブセット制限に適合 | Pass |
 | finish_reason='length'でエラーをthrow | Pass |
+| finish_reason='content_filter'でエラーをthrow | Pass |
 | refusal検出でエラーをthrow | Pass |
 | 3回失敗後にフォールバックが呼ばれる | Pass |
+| `estimateMaxTokens(15, 0)` が適切な値を返す | Pass |
+| `estimateMaxTokens(15, 2)` が attempt=0 より大きい値を返す | Pass |
+
+### フォールバック検証テスト
+
+| テスト | 期待結果 |
+|-------|---------|
+| フォールバック出力の `appNudges.length` が `slotTable.length` と一致 | Pass |
+| フォールバック出力の `tiktokPosts.length` が 2 | Pass |
+| フォールバック出力の `xPosts.length` が 2 | Pass |
+| フォールバック出力が通常スキーマ `createAgentOutputSchema(N)` でparse可能 | Pass |
+| フォールバックの `appNudges[*].enabled` が true | Pass |
+| フォールバックの `tiktokPosts[*].enabled` が false | Pass |
+| フォールバックの `xPosts[*].enabled` が false | Pass |
+| フォールバックの `tiktokPosts[*].slot` が 'morning'/'evening' | Pass |
+| フォールバックの `xPosts[*].slot` が 'morning'/'evening' | Pass |
+
+### 下流フィルタテスト
+
+| テスト | 期待結果 |
+|-------|---------|
+| `/api/admin/tiktok/pending` で enabled=false のポストが除外される | Pass |
+| `/api/admin/x/pending` で enabled=false のポストが除外される | Pass |
+| `/api/admin/tiktok/pending` で enabled=true または enabled未定義のポストが含まれる | Pass |
+| `/api/admin/x/pending` で enabled=true または enabled未定義のポストが含まれる | Pass |
 
 ### 統合テスト
 
@@ -277,6 +524,10 @@ export function generateRuleBasedFallback(slotTable, preferredLanguage) {
 |-------|---------|
 | 15スロットのユーザーでgenerateNudges実行 | 15件のnudge生成 or フォールバック |
 | OpenAI APIモックでrefusal返却 | フォールバックに移行 |
+| OpenAI APIモックでfinish_reason='length'返却 | max_tokens増加して再試行 |
+| OpenAI APIモックでfinish_reason='content_filter'返却 | 再試行後フォールバック |
+| フォールバック時にtiktok/pending が空を返す | Pass |
+| フォールバック時にx/pending が空を返す | Pass |
 
 ### スキーマ適合テスト
 
@@ -286,7 +537,6 @@ it('schema is accepted by OpenAI', async () => {
   const schema = createAgentOutputSchema(5);
   const jsonSchema = toOpenAIJsonSchema(schema, 'test');
   
-  // 空のプロンプトでスキーマだけ検証
   const response = await openai.chat.completions.create({
     model: 'gpt-4o-2024-08-06',
     messages: [{ role: 'user', content: 'Generate test output' }],
@@ -294,11 +544,25 @@ it('schema is accepted by OpenAI', async () => {
       type: 'json_schema',
       json_schema: { name: 'test', strict: true, schema: jsonSchema }
     },
-    max_tokens: 10  // 最小限で検証
+    max_tokens: 10
   });
   
-  // エラーなく完了すればスキーマは有効
   expect(response.choices[0].finish_reason).toBeDefined();
+});
+
+// フォールバックがスキーマ準拠
+it('fallback output conforms to schema', () => {
+  const slotTable = [{ slotIndex: 0 }, { slotIndex: 1 }];
+  const fallback = generateRuleBasedFallback(slotTable, 'en');
+  const schema = createAgentOutputSchema(2);
+  
+  expect(() => schema.parse(fallback)).not.toThrow();
+  expect(fallback.appNudges).toHaveLength(2);
+  expect(fallback.tiktokPosts).toHaveLength(2);
+  expect(fallback.xPosts).toHaveLength(2);
+  expect(fallback.appNudges.every(n => n.enabled === true)).toBe(true);
+  expect(fallback.tiktokPosts.every(p => p.enabled === false)).toBe(true);
+  expect(fallback.xPosts.every(p => p.enabled === false)).toBe(true);
 });
 ```
 
@@ -308,9 +572,13 @@ it('schema is accepted by OpenAI', async () => {
 
 | ファイル | 変更内容 |
 |---------|---------|
-| `apps/api/src/agents/commander.js` | 動的スキーマ生成、finish_reason検査、再試行ロジック |
+| `apps/api/src/agents/commander.js` | 動的スキーマ生成、finish_reason検査、max_tokens動的調整、再試行ロジック、enabled追加 |
 | `apps/api/src/jobs/generateNudges.js` | フォールバック呼び出し追加 |
-| `apps/api/src/agents/__tests__/commander.test.js` | スキーマ検証テスト、finish_reasonテスト追加 |
+| `apps/api/src/routes/admin/tiktok.js` | enabled=falseフィルタ追加 |
+| `apps/api/src/routes/admin/xposts.js` | enabled=falseフィルタ追加 |
+| `apps/api/src/agents/__tests__/commander.test.js` | スキーマ検証テスト、finish_reasonテスト、フォールバックテスト追加 |
+| `apps/api/src/routes/admin/__tests__/tiktok.test.js` | enabledフィルタテスト追加 |
+| `apps/api/src/routes/admin/__tests__/xposts.test.js` | enabledフィルタテスト追加 |
 
 ---
 
@@ -321,9 +589,12 @@ it('schema is accepted by OpenAI', async () => {
 | 配列長制約 | なし（プロンプトのみ） | JSON Schema minItems/maxItems |
 | 信頼性 | 40%以下 | 高い信頼性 + エッジケース対応 |
 | finish_reason検査 | なし | 必須（refusal/length/content_filter検出） |
-| 再試行 | maxRetries=2 | maxRetries=2（維持） |
+| max_tokens | 固定 or なし | 動的設定 + 再試行時増加 |
+| 再試行 | maxRetries=2 | maxRetries=2 + エクスポネンシャルバックオフ |
 | スキーマ検証 | なし | schema.parse必須 |
-| フォールバック | enabled=false | enabled=true（安全フォールバック） |
+| フォールバック appNudges | enabled=false | enabled=true（アプリ通知は配信） |
+| フォールバック tiktok/x | 空配列 | 2件ずつ、enabled=false（投稿しない） |
+| tiktok/x pendingフィルタ | なし | enabled=falseを除外 |
 
 ---
 
@@ -332,8 +603,9 @@ it('schema is accepted by OpenAI', async () => {
 | リスク | 対策 |
 |-------|------|
 | OpenAIのサブセット制限でスキーマ拒否 | スキーマ適合テストで事前検証 |
-| refusal/length中断 | finish_reason検査 + 再試行 + フォールバック |
+| refusal/length/content_filter中断 | finish_reason検査 + max_tokens増加 + 再試行 + フォールバック |
 | zod-to-json-schemaの非互換 | OpenAI SDKヘルパーまたは`openai-zod-to-json-schema`検討 |
+| フォールバックの下流互換性 | スキーマ完全準拠 + enabled=falseフィルタで投稿防止 |
 
 ---
 
@@ -343,6 +615,7 @@ it('schema is accepted by OpenAI', async () => {
 2. dev → Staging テスト
 3. main → Production デプロイ
 4. Cronログで「0 nudges」が発生しないことを確認
+5. フォールバック発生時にTikTok/X投稿が行われないことを確認
 
 ---
 

@@ -332,6 +332,11 @@ TikTok と X、それぞれ2投稿を生成せよ:
  * @returns {Promise<z.infer<typeof AgentRawOutputSchema>>} Validated agent output
  */
 export async function runCommanderAgent({ grounding, model = 'gpt-4o-2024-08-06', slotCount, maxRetries = 2 }) {
+  // Validate slotCount at entry
+  if (typeof slotCount !== 'number' || !Number.isInteger(slotCount) || slotCount < 1) {
+    throw new Error(`slotCount must be a positive integer, got: ${slotCount}`);
+  }
+  
   const schema = createAgentOutputSchema(slotCount);
   const jsonSchema = toOpenAIJsonSchema(schema, 'commander_output');
   

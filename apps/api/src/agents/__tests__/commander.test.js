@@ -6,6 +6,7 @@ import {
   validateAppNudgesSlotIndexes,
   estimateMaxTokens,
   MODEL_MAX_TOKENS,
+  runCommanderAgent,
 } from '../commander.js';
 
 // ===== Test fixtures =====
@@ -527,5 +528,39 @@ describe('estimateMaxTokens', () => {
     // 100 slots with high retry buffer
     const result = estimateMaxTokens(100, 10);
     expect(result).toBe(MODEL_MAX_TOKENS);
+  });
+});
+
+// ===== runCommanderAgent input validation =====
+
+describe('runCommanderAgent input validation', () => {
+  it('throws for undefined slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for zero slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: 0 }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for negative slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: -5 }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for non-integer slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: 3.5 }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for string slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: '5' }))
+      .rejects.toThrow('slotCount must be a positive integer');
   });
 });

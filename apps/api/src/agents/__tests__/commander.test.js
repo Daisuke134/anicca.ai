@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { applyGuardrails, normalizeToDecision, AgentRawOutputSchema } from '../commander.js';
+import { 
+  applyGuardrails, 
+  normalizeToDecision, 
+  AgentRawOutputSchema,
+  validateAppNudgesSlotIndexes,
+  estimateMaxTokens,
+  MODEL_MAX_TOKENS,
+  MAX_SLOTS_PER_DAY,
+  runCommanderAgent,
+} from '../commander.js';
 
 // ===== Test fixtures =====
 
@@ -39,12 +48,12 @@ describe('AgentRawOutputSchema', () => {
         { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
       ],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: ['#test'], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: ['#test'], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 'tweet1', reasoning: 'r' },
-        { slot: 'evening', text: 'tweet2', reasoning: 'r' },
+        { slot: 'morning', text: 'tweet1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 'tweet2', reasoning: 'r', enabled: true },
       ],
     };
     expect(() => AgentRawOutputSchema.parse(valid)).not.toThrow();
@@ -69,12 +78,12 @@ describe('AgentRawOutputSchema', () => {
       frequencyReasoning: 'test',
       appNudges: [],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', hashtags: ['anicca'], tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: ['#anicca'], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: ['#test'], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 'tweet1', reasoning: 'r' },
-        { slot: 'evening', text: 'tweet2', reasoning: 'r' },
+        { slot: 'morning', text: 'tweet1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 'tweet2', reasoning: 'r', enabled: true },
       ],
     };
     expect(() => AgentRawOutputSchema.parse(withPosts)).not.toThrow();
@@ -86,8 +95,8 @@ describe('AgentRawOutputSchema', () => {
       overallStrategy: 'test',
       frequencyReasoning: 'test',
       appNudges: [],
-      tiktokPosts: [{ slot: 'morning', caption: 'c', tone: 't', reasoning: 'r' }],
-      xPosts: [{ slot: 'noon', text: 'tweet', reasoning: 'r' }],
+      tiktokPosts: [{ slot: 'morning', caption: 'c', hashtags: [], tone: 't', reasoning: 'r', enabled: true }],
+      xPosts: [{ slot: 'noon', text: 'tweet', reasoning: 'r', enabled: true }],
     };
     expect(() => AgentRawOutputSchema.parse(invalid)).toThrow();
   });
@@ -202,12 +211,12 @@ describe('normalizeToDecision', () => {
         { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
       ],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 't1', reasoning: 'r' },
-        { slot: 'evening', text: 't2', reasoning: 'r' },
+        { slot: 'morning', text: 't1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 't2', reasoning: 'r', enabled: true },
       ],
     };
     const slotTable = [
@@ -234,12 +243,12 @@ describe('normalizeToDecision', () => {
         { slotIndex: 2, hook: 'h', content: 'c', tone: 'playful', enabled: true, reasoning: 'r' },
       ],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 't1', reasoning: 'r' },
-        { slot: 'evening', text: 't2', reasoning: 'r' },
+        { slot: 'morning', text: 't1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 't2', reasoning: 'r', enabled: true },
       ],
     };
     const slotTable = [
@@ -324,12 +333,12 @@ describe('normalizeToDecision', () => {
       frequencyReasoning: 'f',
       appNudges: [],
       tiktokPosts: [
-        { slot: 'morning', caption: 'cap1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'cap2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'cap1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'cap2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 'tweet1', reasoning: 'r' },
-        { slot: 'evening', text: 'tweet2', reasoning: 'r' },
+        { slot: 'morning', text: 'tweet1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 'tweet2', reasoning: 'r', enabled: true },
       ],
     };
 
@@ -353,48 +362,59 @@ describe('AgentRawOutputSchema - additional', () => {
       frequencyReasoning: 'test',
       appNudges: [],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
-      xPosts: [{ slot: 'morning', text: 'tweet1', reasoning: 'r' }],
+      xPosts: [{ slot: 'morning', text: 'tweet1', reasoning: 'r', enabled: true }],
     };
     expect(() => AgentRawOutputSchema.parse(withOneXPost)).toThrow();
   });
 
-  it('requires xPosts morning+evening slots (#20)', () => {
+  // Note: The Zod schema allows duplicate slots (length=2 only).
+  // Slot uniqueness is validated by validateSlotUniqueness() post-parse.
+  // These tests verify that schema parsing passes but post-parse validation catches duplicates.
+  it('schema accepts duplicate xPosts slots but validateSlotUniqueness rejects (#20)', async () => {
+    const { validateSlotUniqueness } = await import('../commander.js');
     const duplicateMorning = {
       rootCauseHypothesis: 'test',
       overallStrategy: 'test',
       frequencyReasoning: 'test',
       appNudges: [],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 'tweet1', reasoning: 'r' },
-        { slot: 'morning', text: 'tweet2', reasoning: 'r' },
+        { slot: 'morning', text: 'tweet1', reasoning: 'r', enabled: true },
+        { slot: 'morning', text: 'tweet2', reasoning: 'r', enabled: true },
       ],
     };
-    expect(() => AgentRawOutputSchema.parse(duplicateMorning)).toThrow();
+    // Schema parsing passes (only checks length=2)
+    const parsed = AgentRawOutputSchema.parse(duplicateMorning);
+    // But post-parse validation should fail
+    expect(() => validateSlotUniqueness(parsed)).toThrow();
   });
 
-  it('rejects duplicate slots in tiktokPosts (#23)', () => {
+  it('schema accepts duplicate tiktokPosts slots but validateSlotUniqueness rejects (#23)', async () => {
+    const { validateSlotUniqueness } = await import('../commander.js');
     const duplicateEvening = {
       rootCauseHypothesis: 'test',
       overallStrategy: 'test',
       frequencyReasoning: 'test',
       appNudges: [],
       tiktokPosts: [
-        { slot: 'evening', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'evening', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 'tweet1', reasoning: 'r' },
-        { slot: 'evening', text: 'tweet2', reasoning: 'r' },
+        { slot: 'morning', text: 'tweet1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 'tweet2', reasoning: 'r', enabled: true },
       ],
     };
-    expect(() => AgentRawOutputSchema.parse(duplicateEvening)).toThrow();
+    // Schema parsing passes (only checks length=2)
+    const parsed = AgentRawOutputSchema.parse(duplicateEvening);
+    // But post-parse validation should fail
+    expect(() => validateSlotUniqueness(parsed)).toThrow();
   });
 });
 
@@ -416,12 +436,12 @@ describe('buildCommanderPrompt', () => {
       frequencyReasoning: 'test',
       appNudges: [],
       tiktokPosts: [
-        { slot: 'morning', caption: 'c1', tone: 't', reasoning: 'r' },
-        { slot: 'evening', caption: 'c2', tone: 't', reasoning: 'r' },
+        { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
+        { slot: 'evening', caption: 'c2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
       ],
       xPosts: [
-        { slot: 'morning', text: 't1', reasoning: 'r' },
-        { slot: 'evening', text: 't2', reasoning: 'r' },
+        { slot: 'morning', text: 't1', reasoning: 'r', enabled: true },
+        { slot: 'evening', text: 't2', reasoning: 'r', enabled: true },
       ],
     };
     const result = AgentRawOutputSchema.parse(valid);
@@ -429,5 +449,137 @@ describe('buildCommanderPrompt', () => {
     expect(result.tiktokPosts[1].slot).toBe('evening');
     expect(result.xPosts[0].slot).toBe('morning');
     expect(result.xPosts[1].slot).toBe('evening');
+  });
+});
+
+// ===== validateAppNudgesSlotIndexes =====
+
+describe('validateAppNudgesSlotIndexes', () => {
+  it('passes for valid sequential slotIndexes', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).not.toThrow();
+  });
+
+  it('throws for duplicate slotIndex', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // duplicate
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).toThrow('Duplicate slotIndex: 0');
+  });
+
+  it('throws for slotIndex out of range (too high)', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 5, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // out of range
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).toThrow('slotIndex 5 out of range');
+  });
+
+  it('throws for slotIndex out of range (negative)', () => {
+    const appNudges = [
+      { slotIndex: -1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // negative
+      { slotIndex: 1, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 3)).toThrow('slotIndex -1 out of range');
+  });
+
+  it('throws for missing slotIndex', () => {
+    const appNudges = [
+      { slotIndex: 0, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 2, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' },
+      { slotIndex: 3, hook: 'h', content: 'c', tone: 't', enabled: true, reasoning: 'r' }, // skipped 1
+    ];
+    expect(() => validateAppNudgesSlotIndexes(appNudges, 4)).toThrow('Missing slotIndex: 1');
+  });
+});
+
+// ===== estimateMaxTokens =====
+
+describe('estimateMaxTokens', () => {
+  it('returns estimated tokens for small slotCount', () => {
+    const result = estimateMaxTokens(3, 0);
+    // base(500) + 3*150 + 400 = 1350, * 1.3 = 1755
+    expect(result).toBe(1755);
+  });
+
+  it('increases buffer on retry', () => {
+    const attempt0 = estimateMaxTokens(5, 0);
+    const attempt1 = estimateMaxTokens(5, 1);
+    const attempt2 = estimateMaxTokens(5, 2);
+    expect(attempt1).toBeGreaterThan(attempt0);
+    expect(attempt2).toBeGreaterThan(attempt1);
+  });
+
+  it('clips at MODEL_MAX_TOKENS for large slotCount', () => {
+    // Extreme case: 200 slots would exceed limit
+    const result = estimateMaxTokens(200, 5);
+    expect(result).toBe(MODEL_MAX_TOKENS);
+    expect(result).toBe(16384);
+  });
+
+  it('clips at MODEL_MAX_TOKENS on high retry attempts', () => {
+    // 100 slots with high retry buffer
+    const result = estimateMaxTokens(100, 10);
+    expect(result).toBe(MODEL_MAX_TOKENS);
+  });
+});
+
+// ===== runCommanderAgent input validation =====
+
+describe('runCommanderAgent input validation', () => {
+  it('throws for undefined slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for zero slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: 0 }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for negative slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: -5 }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for non-integer slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: 3.5 }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for string slotCount', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: '5' }))
+      .rejects.toThrow('slotCount must be a positive integer');
+  });
+
+  it('throws for slotCount exceeding MAX_SLOTS_PER_DAY', async () => {
+    const grounding = { problems: 'test' };
+    await expect(runCommanderAgent({ grounding, slotCount: MAX_SLOTS_PER_DAY + 1 }))
+      .rejects.toThrow(`slotCount exceeds maximum ${MAX_SLOTS_PER_DAY}`);
+  });
+
+  it('accepts slotCount at MAX_SLOTS_PER_DAY boundary', async () => {
+    // This will fail later (no OpenAI key in test), but should pass slotCount validation
+    const grounding = { problems: 'test' };
+    // We can't fully test this without mocking OpenAI, but we can verify the error is NOT about slotCount
+    try {
+      await runCommanderAgent({ grounding, slotCount: MAX_SLOTS_PER_DAY });
+    } catch (error) {
+      // Should fail for OpenAI reasons, not slotCount validation
+      expect(error.message).not.toContain('slotCount');
+    }
   });
 });

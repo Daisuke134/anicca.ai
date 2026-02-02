@@ -1,15 +1,25 @@
 /**
- * Commander Agent — OpenAI Agents SDK
+ * Commander Agent — OpenAI Structured Outputs
  *
  * 1ユーザーの1日分の全チャネル判断を一括生成。
- * TS Action 選択 → LLM コンテンツ生成のハイブリッド。
+ * JSON Schema minItems/maxItems で配列長を強制し、信頼性を担保。
  *
  * 出力: AgentRawOutput（spec L302-325）
  */
 
-import { Agent, run } from '@openai/agents';
+import OpenAI from 'openai';
 import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { NUDGE_TONES } from './scheduleMap.js';
+
+// Lazy initialization to avoid errors during testing
+let _openai = null;
+function getOpenAI() {
+  if (!_openai) {
+    _openai = new OpenAI();
+  }
+  return _openai;
+}
 
 // ===== Zod Schema: AgentRawOutput =====
 
@@ -33,12 +43,14 @@ const TiktokPostSchema = z.object({
   hashtags: z.array(z.string()).max(5),
   tone: z.string(),
   reasoning: z.string(),
+  enabled: z.boolean(),  // Required for OpenAI strict mode
 });
 
 const XPostSchema = z.object({
   slot: XPostSlot,
   text: z.string().max(280),
   reasoning: z.string(),
+  enabled: z.boolean(),  // Required for OpenAI strict mode
 });
 
 const AgentRawOutputSchema = z.object({
@@ -49,6 +61,108 @@ const AgentRawOutputSchema = z.object({
   tiktokPosts: z.array(TiktokPostSchema).length(2),
   xPosts: z.array(XPostSchema).length(2),
 });
+
+// ===== Dynamic Schema Generation for OpenAI Structured Outputs =====
+
+/**
+ * Create a dynamic schema with exact appNudges count.
+ * @param {number} slotCount - Required number of nudges
+ * @returns {z.ZodObject} Schema with minItems/maxItems enforced
+ */
+function createAgentOutputSchema(slotCount) {
+  return z.object({
+    rootCauseHypothesis: z.string(),
+    overallStrategy: z.string(),
+    frequencyReasoning: z.string(),
+    appNudges: z.array(AppNudgeSchema).min(slotCount).max(slotCount),
+    tiktokPosts: z.array(TiktokPostSchema).length(2),
+    xPosts: z.array(XPostSchema).length(2),
+  });
+}
+
+/**
+ * Recursively add additionalProperties: false to all objects.
+ * Required for OpenAI strict mode.
+ */
+function ensureAdditionalPropertiesFalse(schema) {
+  if (typeof schema !== 'object' || schema === null) return schema;
+  
+  if (schema.type === 'object' && schema.properties) {
+    schema.additionalProperties = false;
+    for (const key of Object.keys(schema.properties)) {
+      schema.properties[key] = ensureAdditionalPropertiesFalse(schema.properties[key]);
+    }
+  }
+  
+  if (schema.type === 'array' && schema.items) {
+    schema.items = ensureAdditionalPropertiesFalse(schema.items);
+  }
+  
+  if (schema.definitions) {
+    for (const key of Object.keys(schema.definitions)) {
+      schema.definitions[key] = ensureAdditionalPropertiesFalse(schema.definitions[key]);
+    }
+  }
+  
+  if (schema.$defs) {
+    for (const key of Object.keys(schema.$defs)) {
+      schema.$defs[key] = ensureAdditionalPropertiesFalse(schema.$defs[key]);
+    }
+  }
+  
+  return schema;
+}
+
+/**
+ * Convert Zod schema to OpenAI-compatible JSON Schema.
+ */
+function toOpenAIJsonSchema(zodSchema, name) {
+  const converted = zodToJsonSchema(zodSchema, { name, $refStrategy: 'none' });
+  // Extract the actual schema (not the wrapper)
+  const schema = converted.definitions?.[name] || converted;
+  return ensureAdditionalPropertiesFalse(schema);
+}
+
+// Model max_tokens limits (gpt-4o-2024-08-06 supports 16384 output tokens)
+const MODEL_MAX_TOKENS = 16384;
+
+/**
+ * Estimate max_tokens based on slot count, capped at model limit.
+ * 1 Nudge ≈ 150 tokens, base overhead ≈ 500 tokens
+ */
+function estimateMaxTokens(slotCount, attempt = 0) {
+  const baseTokens = 500;
+  const tokensPerNudge = 150;
+  const tiktokXTokens = 400; // 2 TikTok + 2 X posts
+  const buffer = 1.3 + (attempt * 0.2); // Increase buffer on retry
+  
+  const estimated = Math.ceil((baseTokens + (slotCount * tokensPerNudge) + tiktokXTokens) * buffer);
+  return Math.min(estimated, MODEL_MAX_TOKENS);
+}
+
+/**
+ * Validate appNudges slotIndex uniqueness and range.
+ * Ensures all slotIndexes are in [0, slotCount-1] and unique.
+ */
+function validateAppNudgesSlotIndexes(appNudges, slotCount) {
+  const slotIndexSet = new Set();
+  for (const nudge of appNudges) {
+    const idx = nudge.slotIndex;
+    if (idx < 0 || idx >= slotCount) {
+      throw new Error(`slotIndex ${idx} out of range [0, ${slotCount - 1}]`);
+    }
+    if (slotIndexSet.has(idx)) {
+      throw new Error(`Duplicate slotIndex: ${idx}`);
+    }
+    slotIndexSet.add(idx);
+  }
+  // Ensure all expected slotIndexes are present
+  for (let i = 0; i < slotCount; i++) {
+    if (!slotIndexSet.has(i)) {
+      throw new Error(`Missing slotIndex: ${i}`);
+    }
+  }
+}
 
 // ===== Post-parse validation (not in Zod schema — OpenAI rejects superRefine) =====
 
@@ -208,40 +322,173 @@ TikTok と X、それぞれ2投稿を生成せよ:
 // ===== Commander Agent =====
 
 /**
- * Run Commander Agent for a single user.
+ * Run Commander Agent for a single user using OpenAI Structured Outputs.
  *
  * @param {object} params
  * @param {object} params.grounding - All grounding variables (strings)
- * @param {string} [params.model='gpt-4o'] - Model to use
+ * @param {string} [params.model='gpt-4o-2024-08-06'] - Model to use (must support Structured Outputs)
+ * @param {number} params.slotCount - Required number of nudges
  * @param {number} [params.maxRetries=2] - Max retries on failure
  * @returns {Promise<z.infer<typeof AgentRawOutputSchema>>} Validated agent output
  */
-export async function runCommanderAgent({ grounding, model = 'gpt-4o', maxRetries = 2 }) {
-  const commanderAgent = new Agent({
-    name: 'Anicca Commander',
-    instructions: SYSTEM_PROMPT,
-    model,
-    outputType: AgentRawOutputSchema,
-  });
+// Maximum slots per user per day (aligned with guardrails in prompt)
+const MAX_SLOTS_PER_DAY = 32;
 
+export async function runCommanderAgent({ grounding, model = 'gpt-4o-2024-08-06', slotCount, maxRetries = 2 }) {
+  // Validate slotCount at entry
+  if (typeof slotCount !== 'number' || !Number.isInteger(slotCount) || slotCount < 1) {
+    throw new Error(`slotCount must be a positive integer, got: ${slotCount}`);
+  }
+  if (slotCount > MAX_SLOTS_PER_DAY) {
+    throw new Error(`slotCount exceeds maximum ${MAX_SLOTS_PER_DAY}, got: ${slotCount}`);
+  }
+  
+  const schema = createAgentOutputSchema(slotCount);
+  const jsonSchema = toOpenAIJsonSchema(schema, 'commander_output');
+  
   const userPrompt = buildCommanderPrompt(grounding);
-
+  
   let lastError = null;
+  
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const result = await run(commanderAgent, userPrompt);
-      validateSlotUniqueness(result.finalOutput);
-      return result.finalOutput;
+      const maxTokens = estimateMaxTokens(slotCount, attempt);
+      
+      const response = await getOpenAI().chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: maxTokens,
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'commander_output',
+            strict: true,
+            schema: jsonSchema,
+          },
+        },
+      });
+      
+      const choice = response.choices[0];
+      
+      // Check finish_reason
+      if (choice.finish_reason === 'length') {
+        throw new Error(
+          `Output truncated (finish_reason=length). ` +
+          `max_tokens=${maxTokens} was insufficient. Will retry with higher limit.`
+        );
+      }
+      
+      if (choice.finish_reason === 'content_filter') {
+        throw new Error(
+          `Content filtered (finish_reason=content_filter). ` +
+          `Generation was halted by content moderation.`
+        );
+      }
+      
+      if (choice.finish_reason !== 'stop') {
+        throw new Error(
+          `Unexpected finish_reason: ${choice.finish_reason}. Expected 'stop'.`
+        );
+      }
+      
+      // Check refusal
+      if (choice.message.refusal) {
+        throw new Error(`Model refused: ${choice.message.refusal}`);
+      }
+      
+      // Parse and validate
+      const content = JSON.parse(choice.message.content);
+      const output = schema.parse(content);
+      
+      // Final array length check
+      if (output.appNudges.length !== slotCount) {
+        throw new Error(
+          `Expected ${slotCount} nudges, got ${output.appNudges.length}`
+        );
+      }
+      
+      // Validate slotIndex uniqueness and range
+      validateAppNudgesSlotIndexes(output.appNudges, slotCount);
+      
+      validateSlotUniqueness(output);
+      return output;
+      
     } catch (error) {
       lastError = error;
-      console.error(`Commander Agent attempt ${attempt + 1} failed:`, error.message);
+      console.warn(`Commander attempt ${attempt + 1}/${maxRetries + 1} failed:`, error.message);
+      
       if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, Math.pow(2, attempt + 1) * 1000));
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
       }
     }
   }
+  
+  throw new Error(`Commander failed after ${maxRetries + 1} attempts: ${lastError?.message}`);
+}
 
-  throw new Error(`Commander Agent failed after ${maxRetries + 1} attempts: ${lastError?.message}`);
+/**
+ * Generate rule-based fallback when Commander fails.
+ * Schema-compliant: all required fields are populated.
+ *
+ * @param {Array} slotTable - Slot table with slotIndex
+ * @param {string} preferredLanguage - 'ja' or 'en'
+ * @returns {object} Schema-compliant fallback output
+ */
+export function generateRuleBasedFallback(slotTable, preferredLanguage) {
+  const isJa = preferredLanguage === 'ja';
+  
+  return {
+    rootCauseHypothesis: 'Fallback mode - LLM generation failed',
+    overallStrategy: 'Using rule-based content',
+    frequencyReasoning: 'Maintaining scheduled frequency',
+    
+    appNudges: slotTable.map((slot) => ({
+      slotIndex: slot.slotIndex,
+      hook: isJa ? '今日も前に進もう' : 'Keep moving forward',
+      content: isJa ? '小さな一歩から始めよう。' : 'Start with a small step.',
+      tone: 'gentle',
+      enabled: true,
+      reasoning: 'Rule-based fallback due to LLM failure',
+    })),
+    
+    tiktokPosts: [
+      {
+        slot: 'morning',
+        caption: isJa ? '変わりたいなら今日から' : 'Change starts today',
+        hashtags: ['#mindfulness', '#growth'],
+        tone: 'gentle',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+      {
+        slot: 'evening',
+        caption: isJa ? '自分を責めないで' : "Don't blame yourself",
+        hashtags: ['#selfcare', '#mentalhealth'],
+        tone: 'gentle',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+    ],
+    
+    xPosts: [
+      {
+        slot: 'morning',
+        text: isJa ? '今日も一歩前へ' : 'One step forward today',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+      {
+        slot: 'evening',
+        text: isJa ? '深呼吸しよう' : 'Take a deep breath',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+    ],
+  };
 }
 
 // ===== Guardrails (post-processing) =====
@@ -430,5 +677,14 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
   };
 }
 
-// Export schema for testing
-export { AgentRawOutputSchema };
+// Export schema and functions for testing
+export { 
+  AgentRawOutputSchema, 
+  createAgentOutputSchema, 
+  toOpenAIJsonSchema, 
+  estimateMaxTokens,
+  validateSlotUniqueness,
+  validateAppNudgesSlotIndexes,
+  MODEL_MAX_TOKENS,
+  MAX_SLOTS_PER_DAY,
+};

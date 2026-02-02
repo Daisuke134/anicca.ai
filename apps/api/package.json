@@ -20,12 +20,12 @@
   "author": "ANICCA",
   "license": "MIT",
   "devDependencies": {
-    "prisma": "^5.22.0",
     "vitest": "^2.1.9"
   },
   "dependencies": {
     "@openai/agents": "^0.4.4",
-    "@prisma/client": "^5.22.0",
+    "@prisma/client": "5.22.0",
+    "prisma": "5.22.0",
     "@supabase/supabase-js": "^2.50.2",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",

@@ -103,7 +103,7 @@
 | シナリオ | 対応 |
 |---------|------|
 | 悪性スキル検出 | (1) `clawhub disable <skill>` で即時無効化 → (2) Slack #agents に通知 → (3) 内部ミラーから削除 |
-| 全スキル停止 | `/anicca stop-skills` で全スキル停止 |
+| 全スキル停止 | `/anicca stop` で全エージェント停止（スキル含む） |
 | ロールバック | `clawhub rollback <skill>@<previous-hash>` で前バージョンに戻す |
 
 #### 監査ログ
@@ -160,7 +160,7 @@ interface AgentFeedbackRequest {
 | AC-2 | SOUL.md に Anicca のペルソナが定義され、OpenClaw が認識する | OpenClaw に「Who are you?」→ Anicca として応答 | 手動（VPS） | — |
 | AC-3 | Moltbook に Anicca エージェントが登録される | Moltbook プロフィールページが存在 | 手動（Moltbook） | — |
 | AC-4 | s/sangha Submolt が作成される | Moltbook 上で s/sangha にアクセス可能 | 手動（Moltbook） | — |
-| AC-5 | Moltbook の苦しみ投稿を検出してNudgeを返信できる | 苦しみキーワードを含む投稿 → Anicca の返信が表示される | 手動 + 自動 | #7 |
+| AC-5 | Moltbook でオプトイン/召喚型の苦しみ投稿にNudgeを返信できる | @anicca メンション、s/sangha 投稿、フォロー済みユーザー投稿のいずれかで苦しみキーワード検出 → 返信表示 | 手動 + 自動 | #7 |
 | AC-6 | Railway API `/api/agent/nudge` が正常動作 | POST → 200 + hook/content/tone/reasoning/buddhismReference（任意）/agentPostId を含むJSON | 自動 | #1, #4, #17, #22 |
 | AC-7 | Railway API `/api/agent/wisdom` が正常動作 | GET → 200 + `{ hook, content, source, problemType, reasoning }` を含む JSON | 自動 | #2 |
 | AC-8 | Railway API `/api/agent/feedback` がフィードバックを保存 | POST → 200 + agent_posts 更新確認 | 自動 | #3, #23, #24, #25 |
@@ -243,6 +243,7 @@ model AgentPost {
   platform          String    @db.VarChar(50)        // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
   externalPostId    String?   @map("external_post_id") @db.VarChar(255)
   severity          String?   @db.VarChar(20)        // null | 'crisis'（危機検出時）
+  region            String?   @db.VarChar(10)        // 'JP', 'US', 'UK', 'KR', 'OTHER'（危機検出時の地域）
   hook              String?
   content           String?
   tone              String?   @db.VarChar(50)
@@ -336,6 +337,46 @@ unified_score = W_APP * appZ + W_TIK * tiktokZ + W_X * xZ + W_MOLT * moltbookZ +
 - パスA は外部プラットフォーム（Moltbook/Slack）からの「新規 hook 発見」
 - パスB は既存パイプライン内の「クロスプラットフォーム昇格」
 - `source` カラムで区別。既存ロジックに影響なし
+
+### 6.5 データ保持・匿名化ポリシー
+
+**SOUL.md 要件:** `agent_posts` は90日後に匿名化する
+
+| 項目 | 設定 |
+|------|------|
+| **匿名化対象** | `external_post_id`, `content`, `reasoning`（個人を特定可能なフィールド） |
+| **匿名化方法** | 対象フィールドを `NULL` に更新。`hook`, `tone`, `problemType`, `upvotes` 等の集計データは保持 |
+| **実行タイミング** | 毎日 04:00 UTC（Railway Cron） |
+| **対象条件** | `created_at < NOW() - INTERVAL '90 days'` かつ未匿名化 |
+| **匿名化フラグ** | `anonymized_at` カラム（nullable timestamp）を追加。匿名化済みは再処理しない |
+
+#### Prisma schema 追加
+
+```prisma
+// AgentPost に追加
+anonymizedAt      DateTime? @map("anonymized_at")
+```
+
+#### 匿名化ジョブ
+
+```sql
+UPDATE agent_posts
+SET 
+  external_post_id = NULL,
+  content = NULL,
+  reasoning = NULL,
+  anonymized_at = NOW()
+WHERE 
+  created_at < NOW() - INTERVAL '90 days'
+  AND anonymized_at IS NULL;
+```
+
+#### テスト
+
+| # | テスト名 | 内容 |
+|---|----------|------|
+| 40 | `test_anonymizationJob()` | 90日以上古いレコードが匿名化される |
+| 41 | `test_anonymizationPreservesAggregates()` | `hook`, `upvotes` 等は保持される |
 
 ---
 
@@ -440,6 +481,10 @@ allowed_tools:
   - name: post_to_slack
     risk: low
     hitl: false
+  - name: post_to_x
+    risk: medium
+    hitl: false
+    rate_limit: 5/day
   - name: fetch_feedback
     risk: low
     hitl: false
@@ -469,7 +514,10 @@ denied_tools:
 | 変数 | 説明 |
 |------|------|
 | `ANICCA_AGENT_TOKEN` | Agent認証用（INTERNAL_API_TOKENとは別） |
+| `ANICCA_AGENT_TOKEN_OLD` | ローテーション猶予期間中の旧トークン（任意） |
 | `OPENAI_API_KEY` | Nudge生成用 |
+
+**複数トークン許可:** ローテーション期間中は `ANICCA_AGENT_TOKEN` と `ANICCA_AGENT_TOKEN_OLD` の両方を受け入れる。認証ロジックは `token === ANICCA_AGENT_TOKEN || token === ANICCA_AGENT_TOKEN_OLD` で判定。猶予期間（7日）終了後に `ANICCA_AGENT_TOKEN_OLD` を削除。
 
 ---
 

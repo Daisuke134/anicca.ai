@@ -1,6 +1,15 @@
 name: Trigger Commander Agent
 on:
-  workflow_dispatch: {}
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target environment'
+        required: false
+        default: 'production'
+        type: choice
+        options:
+          - production
+          - staging
 concurrency:
   group: trigger-commander
   cancel-in-progress: false
@@ -9,11 +18,17 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Trigger Commander Agent on Staging
+      - name: Trigger Commander Agent
         run: |
-          echo "=== Triggering Commander Agent ==="
+          if [ "${{ inputs.environment }}" = "staging" ]; then
+            BASE_URL="https://anicca-proxy-staging.up.railway.app"
+          else
+            BASE_URL="${API_BASE_URL}"
+          fi
+          echo "=== Triggering Commander Agent on ${{ inputs.environment }} ==="
+          echo "URL: ${BASE_URL}/api/nudge/generate"
           STATUS=$(curl -s -o response.json -w "%{http_code}" \
-            -X POST "$API_BASE_URL/api/nudge/generate" \
+            -X POST "${BASE_URL}/api/nudge/generate" \
             -H "Authorization: Bearer $API_AUTH_TOKEN" \
             -H "Content-Type: application/json")
           echo "HTTP Status: $STATUS"
@@ -23,5 +38,5 @@ jobs:
             exit 1
           fi
         env:
-          API_BASE_URL: https://anicca-proxy-staging.up.railway.app
+          API_BASE_URL: ${{ secrets.API_BASE_URL }}
           API_AUTH_TOKEN: ${{ secrets.API_AUTH_TOKEN }}

@@ -5,6 +5,18 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
+
+// Set env before importing
+process.env.ANICCA_AGENT_TOKEN = 'test-token-12345';
+
+// Mock auth middleware
+vi.mock('../../../middleware/requireAgentAuth.js', () => ({
+  requireAgentAuth: (req, res, next) => {
+    req.agentAuth = { tokenType: 'current' };
+    next();
+  },
+}));
+
 import deletionRouter from '../deletion.js';
 
 // Mock Prisma
@@ -23,13 +35,6 @@ vi.mock('../../../lib/prisma.js', () => ({
 
 const app = express();
 app.use(express.json());
-
-// Mock auth
-app.use((req, res, next) => {
-  req.agentAuth = { tokenType: 'current' };
-  next();
-});
-
 app.use('/api/agent/deletion', deletionRouter);
 
 describe('Deletion API', () => {

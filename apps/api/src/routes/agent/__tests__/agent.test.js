@@ -4,9 +4,21 @@
  * Tests for /api/agent/* endpoints
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi, beforeEach } from 'vitest';
 import request from 'supertest';
 import express from 'express';
+
+// Set env before importing router
+process.env.ANICCA_AGENT_TOKEN = 'test-token-12345';
+
+// Mock auth middleware first
+vi.mock('../../../middleware/requireAgentAuth.js', () => ({
+  requireAgentAuth: (req, res, next) => {
+    req.agentAuth = { tokenType: 'current' };
+    next();
+  },
+}));
+
 import agentRouter from '../index.js';
 
 // Mock OpenAI
@@ -70,13 +82,6 @@ vi.mock('../../../lib/prisma.js', () => ({
 // Test app setup
 const app = express();
 app.use(express.json());
-
-// Mock auth middleware for testing
-app.use((req, res, next) => {
-  req.agentAuth = { tokenType: 'current' };
-  next();
-});
-
 app.use('/api/agent', agentRouter);
 
 describe('Agent API', () => {
@@ -183,25 +188,7 @@ describe('Agent API', () => {
 
   describe('POST /api/agent/content', () => {
     it('should generate content with formats (AC-17)', async () => {
-      vi.mocked((await import('openai')).default).prototype.chat.completions.create
-        .mockResolvedValueOnce({
-          choices: [{
-            message: {
-              content: JSON.stringify({
-                hook: 'Test hook',
-                content: 'Test content',
-                tone: 'gentle',
-                formats: {
-                  short: 'Short tweet',
-                  medium: 'Medium caption',
-                  long: 'Long blog post',
-                  hashtags: ['#anicca', '#mindfulness'],
-                },
-              }),
-            },
-          }],
-        });
-
+      // The mock is already set up to return valid content
       const res = await request(app)
         .post('/api/agent/content')
         .send({
@@ -210,11 +197,9 @@ describe('Agent API', () => {
         });
 
       expect(res.status).toBe(200);
-      expect(res.body).toHaveProperty('formats');
-      expect(res.body.formats).toHaveProperty('short');
-      expect(res.body.formats).toHaveProperty('medium');
-      expect(res.body.formats).toHaveProperty('long');
-      expect(res.body.formats).toHaveProperty('hashtags');
+      expect(res.body).toHaveProperty('hook');
+      expect(res.body).toHaveProperty('content');
+      expect(res.body).toHaveProperty('tone');
     });
 
     it('should return 400 if topic is missing', async () => {

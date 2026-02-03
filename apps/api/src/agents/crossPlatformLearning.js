@@ -1,8 +1,8 @@
 /**
- * Cross-Platform Learning Module (Phase 5)
+ * Cross-Platform Learning Module (Phase 5 + 1.6.1 Extension)
  *
- * Z-Score normalization across App, TikTok, and X platforms.
- * Promotion pipeline: X → TikTok → App Nudge.
+ * Z-Score normalization across 5 platforms: App, TikTok, X, Moltbook, Slack.
+ * Promotion pipeline: X → TikTok → App Nudge + Agent → HookCandidates.
  */
 
 // ── Z-Score Constants ───────────────────────────────────────────────────────
@@ -14,24 +14,39 @@ let TIK_STDDEV = 0.03;
 let X_MEAN = 0.02;     // avg X engagement rate
 let X_STDDEV = 0.015;
 
+// 1.6.1: Moltbook and Slack baselines
+let MOLTBOOK_VIEWS_MEAN = 0.05;   // upvotes / views
+let MOLTBOOK_VIEWS_STDDEV = 0.03;
+let MOLTBOOK_UPVOTES_MEAN = 3.0;  // absolute upvotes (for views=null)
+let MOLTBOOK_UPVOTES_STDDEV = 2.0;
+let SLACK_MEAN = 0.10;  // reactions / messages
+let SLACK_STDDEV = 0.05;
+
 // Minimum sample sizes for statistical significance
 const MIN_APP_SAMPLES = 5;
 const MIN_TIKTOK_SAMPLES = 3;
 const MIN_X_SAMPLES = 10;
+const MIN_MOLTBOOK_SAMPLES = 10;
+const MIN_MOLTBOOK_VIEWS = 10;  // minimum views to use views-based calculation
+const MIN_SLACK_SAMPLES = 5;
 
-// Weights: App (most reliable signal) > TikTok > X
-const W_APP = 0.5;
-const W_TIK = 0.3;
-const W_X = 0.2;
+// 1.6.1: 5-channel weights (spec: App=0.40, TikTok=0.20, X=0.15, Moltbook=0.15, Slack=0.10)
+const W_APP = 0.40;
+const W_TIK = 0.20;
+const W_X = 0.15;
+const W_MOLT = 0.15;
+const W_SLACK = 0.10;
 
 // Promotion thresholds
 const X_TO_TIKTOK_THRESHOLD = 1.0;
 const TIKTOK_TO_APP_THRESHOLD = 1.5;
+const AGENT_PROMOTION_UPVOTES = 5;
+const AGENT_PROMOTION_UNIFIED_SCORE = 0.5;
 
 // ── Z-Score Calculation ─────────────────────────────────────────────────────
 
 /**
- * Calculate unified Z-Score for a hook candidate.
+ * Calculate unified Z-Score for a hook candidate (5 channels).
  *
  * @param {object} hook
  * @param {number} hook.appTapRate - App tap rate (0-1)
@@ -40,6 +55,11 @@ const TIKTOK_TO_APP_THRESHOLD = 1.5;
  * @param {number} hook.tiktokSampleSize - Number of TikTok posts
  * @param {number} hook.xEngagementRate - X engagement rate (0-1)
  * @param {number} hook.xSampleSize - Number of X posts
+ * @param {number} [hook.moltbookUpvotes] - Moltbook upvotes
+ * @param {number} [hook.moltbookViews] - Moltbook views
+ * @param {number} [hook.moltbookSampleSize] - Number of Moltbook posts
+ * @param {number} [hook.slackReactions] - Slack total reactions
+ * @param {number} [hook.slackSampleSize] - Number of Slack messages
  * @returns {number} Unified Z-Score
  */
 export function unifiedScore(hook) {
@@ -50,7 +70,28 @@ export function unifiedScore(hook) {
   const xZ = hook.xSampleSize >= MIN_X_SAMPLES
     ? (hook.xEngagementRate - X_MEAN) / (X_STDDEV || 1) : 0;
 
-  return W_APP * appZ + W_TIK * tikZ + W_X * xZ;
+  // 1.6.1: Moltbook Z-Score
+  let moltZ = 0;
+  if (hook.moltbookSampleSize >= MIN_MOLTBOOK_SAMPLES) {
+    if (hook.moltbookViews != null && hook.moltbookViews >= MIN_MOLTBOOK_VIEWS) {
+      // Use upvotes/views ratio
+      const rate = hook.moltbookUpvotes / hook.moltbookViews;
+      moltZ = (rate - MOLTBOOK_VIEWS_MEAN) / (MOLTBOOK_VIEWS_STDDEV || 1);
+    } else if (hook.moltbookViews === null || hook.moltbookViews === undefined) {
+      // Fallback: use absolute upvotes with separate baseline
+      moltZ = (hook.moltbookUpvotes - MOLTBOOK_UPVOTES_MEAN) / (MOLTBOOK_UPVOTES_STDDEV || 1);
+    }
+    // If views === 0, exclude from calculation (moltZ stays 0)
+  }
+
+  // 1.6.1: Slack Z-Score
+  let slackZ = 0;
+  if (hook.slackSampleSize >= MIN_SLACK_SAMPLES && hook.slackReactions != null) {
+    const rate = hook.slackReactions / hook.slackSampleSize;
+    slackZ = (rate - SLACK_MEAN) / (SLACK_STDDEV || 1);
+  }
+
+  return W_APP * appZ + W_TIK * tikZ + W_X * xZ + W_MOLT * moltZ + W_SLACK * slackZ;
 }
 
 /**
@@ -120,6 +161,77 @@ export async function refreshBaselines(query) {
     }
   } catch {
     // x_posts table may not exist yet
+  }
+
+  // 1.6.1: Moltbook baselines (views-based)
+  try {
+    const moltViewsResult = await query(`
+      SELECT
+        AVG(upvotes::float / NULLIF(views, 0)) as mean_rate,
+        STDDEV_POP(upvotes::float / NULLIF(views, 0)) as stddev_rate
+      FROM agent_posts
+      WHERE platform = 'moltbook'
+        AND views IS NOT NULL
+        AND views >= $1
+        AND created_at >= NOW() - INTERVAL '30 days'
+    `, [MIN_MOLTBOOK_VIEWS]);
+
+    if (moltViewsResult.rows[0]?.mean_rate != null) {
+      MOLTBOOK_VIEWS_MEAN = Number(moltViewsResult.rows[0].mean_rate);
+      MOLTBOOK_VIEWS_STDDEV = Math.max(Number(moltViewsResult.rows[0].stddev_rate) || 0.03, 0.001);
+    }
+  } catch {
+    // agent_posts may not exist yet
+  }
+
+  // 1.6.1: Moltbook baselines (upvotes-only, for views=null)
+  try {
+    const moltUpvotesResult = await query(`
+      SELECT
+        AVG(upvotes) as mean_upvotes,
+        STDDEV_POP(upvotes) as stddev_upvotes
+      FROM agent_posts
+      WHERE platform = 'moltbook'
+        AND views IS NULL
+        AND created_at >= NOW() - INTERVAL '30 days'
+    `);
+
+    if (moltUpvotesResult.rows[0]?.mean_upvotes != null) {
+      MOLTBOOK_UPVOTES_MEAN = Number(moltUpvotesResult.rows[0].mean_upvotes);
+      MOLTBOOK_UPVOTES_STDDEV = Math.max(Number(moltUpvotesResult.rows[0].stddev_upvotes) || 2.0, 0.1);
+    }
+  } catch {
+    // agent_posts may not exist yet
+  }
+
+  // 1.6.1: Slack baselines (COALESCE all reaction types to handle NULL)
+  try {
+    const slackResult = await query(`
+      SELECT
+        AVG(
+          COALESCE((reactions->>'👍')::int, 0) + 
+          COALESCE((reactions->>'❤️')::int, 0) + 
+          COALESCE((reactions->>'🙏')::int, 0) +
+          COALESCE((reactions->>'🔥')::int, 0)
+        ) as mean_reactions,
+        STDDEV_POP(
+          COALESCE((reactions->>'👍')::int, 0) + 
+          COALESCE((reactions->>'❤️')::int, 0) + 
+          COALESCE((reactions->>'🙏')::int, 0) +
+          COALESCE((reactions->>'🔥')::int, 0)
+        ) as stddev_reactions
+      FROM agent_posts
+      WHERE platform = 'slack'
+        AND reactions != '{}'
+        AND created_at >= NOW() - INTERVAL '30 days'
+    `);
+
+    if (slackResult.rows[0]?.mean_reactions != null) {
+      SLACK_MEAN = Number(slackResult.rows[0].mean_reactions);
+      SLACK_STDDEV = Math.max(Number(slackResult.rows[0].stddev_reactions) || 0.05, 0.01);
+    }
+  } catch {
+    // agent_posts may not exist yet
   }
 }
 
@@ -233,25 +345,49 @@ export async function syncXMetricsToHookCandidates(query) {
 // ── Exports for testing ─────────────────────────────────────────────────────
 
 export function _getBaselines() {
-  return { APP_MEAN, APP_STDDEV, TIK_MEAN, TIK_STDDEV, X_MEAN, X_STDDEV };
+  return { 
+    APP_MEAN, APP_STDDEV, 
+    TIK_MEAN, TIK_STDDEV, 
+    X_MEAN, X_STDDEV,
+    MOLTBOOK_VIEWS_MEAN, MOLTBOOK_VIEWS_STDDEV,
+    MOLTBOOK_UPVOTES_MEAN, MOLTBOOK_UPVOTES_STDDEV,
+    SLACK_MEAN, SLACK_STDDEV,
+  };
 }
 
-export function _setBaselines({ appMean, appStddev, tikMean, tikStddev, xMean, xStddev }) {
+export function _setBaselines({ 
+  appMean, appStddev, tikMean, tikStddev, xMean, xStddev,
+  moltViewsMean, moltViewsStddev, moltUpvotesMean, moltUpvotesStddev,
+  slackMean, slackStddev,
+}) {
   if (appMean != null) APP_MEAN = appMean;
   if (appStddev != null) APP_STDDEV = appStddev;
   if (tikMean != null) TIK_MEAN = tikMean;
   if (tikStddev != null) TIK_STDDEV = tikStddev;
   if (xMean != null) X_MEAN = xMean;
   if (xStddev != null) X_STDDEV = xStddev;
+  if (moltViewsMean != null) MOLTBOOK_VIEWS_MEAN = moltViewsMean;
+  if (moltViewsStddev != null) MOLTBOOK_VIEWS_STDDEV = moltViewsStddev;
+  if (moltUpvotesMean != null) MOLTBOOK_UPVOTES_MEAN = moltUpvotesMean;
+  if (moltUpvotesStddev != null) MOLTBOOK_UPVOTES_STDDEV = moltUpvotesStddev;
+  if (slackMean != null) SLACK_MEAN = slackMean;
+  if (slackStddev != null) SLACK_STDDEV = slackStddev;
 }
 
 export {
   X_TO_TIKTOK_THRESHOLD,
   TIKTOK_TO_APP_THRESHOLD,
+  AGENT_PROMOTION_UPVOTES,
+  AGENT_PROMOTION_UNIFIED_SCORE,
   MIN_APP_SAMPLES,
   MIN_TIKTOK_SAMPLES,
   MIN_X_SAMPLES,
+  MIN_MOLTBOOK_SAMPLES,
+  MIN_MOLTBOOK_VIEWS,
+  MIN_SLACK_SAMPLES,
   W_APP,
   W_TIK,
   W_X,
+  W_MOLT,
+  W_SLACK,
 };

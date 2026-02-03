@@ -271,6 +271,16 @@ model HookCandidate {
   xSampleSize       Int       @default(0) @map("x_sample_size")
   xHighPerformer    Boolean   @default(false) @map("x_high_performer")
 
+  // 1.6.1: Moltbook metrics
+  moltbookUpvoteRate    Decimal?  @db.Decimal(5,4) @map("moltbook_upvote_rate")
+  moltbookSampleSize    Int?      @map("moltbook_sample_size")
+  moltbookHighPerformer Boolean?  @map("moltbook_high_performer")
+
+  // 1.6.1: Slack metrics
+  slackReactionRate     Decimal?  @db.Decimal(5,4) @map("slack_reaction_rate")
+  slackSampleSize       Int?      @map("slack_sample_size")
+  slackHighPerformer    Boolean?  @map("slack_high_performer")
+
   tiktokPosts TiktokPost[]
   xPosts      XPost[]
 
@@ -357,4 +367,73 @@ model NotificationSchedule {
 
   @@map("notification_schedules")
 }
+
+// -----------------------------
+// 1.6.1 Anicca in the World
+// -----------------------------
+
+model AgentPost {
+  id                String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform          String    @db.VarChar(50)        // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
+  externalPostId    String?   @map("external_post_id") @db.VarChar(255)
+  platformUserId    String?   @map("platform_user_id") @db.VarChar(255) // <platform>:<user_id> 形式
+  severity          String?   @db.VarChar(20)        // null | 'crisis'
+  region            String?   @db.VarChar(10)        // 'JP', 'US', 'UK', 'KR', 'OTHER'
+  hook              String?
+  content           String?
+  tone              String?   @db.VarChar(50)
+  problemType       String?   @map("problem_type") @db.VarChar(100)
+  reasoning         String?
+  buddhismReference String?   @map("buddhism_reference")
+
+  // フィードバック
+  upvotes           Int       @default(0)
+  reactions         Json      @default("{}") @db.JsonB  // Slack { "👍": 3, "❤️": 1 }
+  views             Int?      // null = unknown/not available (for Moltbook Z-Score fallback)
+  likes             Int       @default(0)
+  shares            Int       @default(0)
+  comments          Int       @default(0)
+
+  // Z-Score
+  moltbookZ         Float?    @map("moltbook_z")
+  slackZ            Float?    @map("slack_z")
+  tiktokZ           Float?    @map("tiktok_z")
+  xZ                Float?    @map("x_z")
+  instagramZ        Float?    @map("instagram_z")
+  unifiedScore      Float?    @map("unified_score")
+
+  // メタデータ
+  createdAt                  DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                  DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  promotedToHookCandidates   Boolean   @default(false) @map("promoted_to_hook_candidates")
+  anonymizedAt               DateTime? @map("anonymized_at") @db.Timestamptz
+
+  @@unique([platform, externalPostId])
+  @@index([platform])
+  @@index([createdAt(sort: Desc)])
+  @@index([platformUserId])
+  @@map("agent_posts")
+}
+
+model AgentAuditLog {
+  id              String    @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType       String    @map("event_type") @db.VarChar(50)  // 'llm_call', 'tool_execution', 'deletion_request', 'deletion_completed'
+  agentPostId     String?   @db.Uuid @map("agent_post_id")
+  platform        String?   @db.VarChar(50)
+  requestPayload  Json?     @db.JsonB @map("request_payload")
+  responsePayload Json?     @db.JsonB @map("response_payload")
+  executedBy      String?   @db.VarChar(100) @map("executed_by")  // 'system', 'admin:<id>', 'user:<id>'
+  durationMs      Int?      @map("duration_ms")
+  createdAt       DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([eventType])
+  @@index([createdAt(sort: Desc)])
+  @@index([agentPostId])
+  @@map("agent_audit_logs")
+}
+
+// 1.6.1 HookCandidate 拡張カラム（既存 HookCandidate に追加）
+// Note: 既存の HookCandidate model に以下のカラムを追加済み:
+// - moltbookUpvoteRate, moltbookSampleSize, moltbookHighPerformer
+// - slackReactionRate, slackSampleSize, slackHighPerformer
 

@@ -64,37 +64,10 @@ model MobileProfile {
   @@map("mobile_profiles")
 }
 
-model MobileVoipToken {
-  userId      String   @map("user_id")
-  deviceToken String   @map("device_token")
-  updatedAt   DateTime @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@id([userId, deviceToken])
-  @@map("mobile_voip_tokens")
-}
-
-// 注意: `mobile_alarm_schedules.id` は過去マイグレーションが UUID/TEXT で揺れている。
-// v0.3 の主要機能では必須ではないため、現DBの型に合わせて必要なら @db.Uuid/@db.Text を調整する。
-model MobileAlarmSchedule {
-  id         String    @id @map("id")
-  userId     String    @map("user_id")
-  habitType  String    @map("habit_type")
-  fireTime   DateTime  @map("fire_time") @db.Timestamptz
-  timezone   String
-  repeatRule String    @default("daily") @map("repeat_rule")
-  nextFireAt DateTime  @map("next_fire_at") @db.Timestamptz
-  createdAt  DateTime? @map("created_at") @db.Timestamptz
-  updatedAt  DateTime? @map("updated_at") @db.Timestamptz
-
-  @@map("mobile_alarm_schedules")
-}
-
 model UserSubscription {
   userId                          String    @id @map("user_id")
   plan                            String    @default("free")
   status                          String    @default("free")
-  stripeCustomerId                String?   @map("stripe_customer_id")
-  stripeSubscriptionId            String?   @map("stripe_subscription_id")
   entitlementSource               String    @default("revenuecat") @map("entitlement_source")
   revenuecatEntitlementId         String?   @map("revenuecat_entitlement_id")
   revenuecatOriginalTransactionId String?   @map("revenuecat_original_transaction_id")
@@ -107,27 +80,15 @@ model UserSubscription {
   @@map("user_subscriptions")
 }
 
-model RealtimeUsageDaily {
-  userId    String   @map("user_id")
-  usageDate DateTime @map("usage_date") @db.Date
-  count     Int      @default(0)
-  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz
+model SubscriptionEvent {
+  eventId   String   @id @map("event_id")
+  userId    String?  @map("user_id")
+  type      String
+  provider  String   @default("revenuecat")
+  payload   Json?    @db.JsonB
+  createdAt DateTime @default(now()) @map("created_at") @db.Timestamptz
 
-  @@id([userId, usageDate])
-  @@map("realtime_usage_daily")
-}
-
-model UsageSession {
-  sessionId     String    @id @map("session_id")
-  userId        String    @map("user_id")
-  startedAt     DateTime  @default(now()) @map("started_at") @db.Timestamptz
-  endedAt       DateTime? @map("ended_at") @db.Timestamptz
-  billedSeconds Int       @default(0) @map("billed_seconds")
-  billedMinutes Int       @default(0) @map("billed_minutes")
-  source        String    @default("realtime")
-  updatedAt     DateTime  @default(now()) @map("updated_at") @db.Timestamptz
-
-  @@map("usage_sessions")
+  @@map("subscription_events")
 }
 
 model MonthlyVcGrant {
@@ -218,6 +179,23 @@ model NudgeOutcome {
   @@map("nudge_outcomes")
 }
 
+model FeelingSession {
+  id             String    @id @default(uuid()) @db.Uuid
+  userId         String    @map("user_id") @db.Uuid
+  feelingId      String    @map("feeling_id")
+  topic          String?
+  actionTemplate String?   @map("action_template")
+  startedAt      DateTime  @default(now()) @map("started_at") @db.Timestamptz
+  endedAt        DateTime? @map("ended_at") @db.Timestamptz
+  emaBetter      Boolean?  @map("ema_better")
+  summary        String?   @db.Text
+  transcript     Json?     @db.JsonB
+  context        Json      @default("{}") @db.JsonB
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz
+
+  @@map("feeling_sessions")
+}
+
 model BanditModel {
   id         String   @id @default(uuid()) @db.Uuid
   domain     String
@@ -292,6 +270,16 @@ model HookCandidate {
   xEngagementRate    Decimal @default(0) @map("x_engagement_rate") @db.Decimal(5, 4)
   xSampleSize        Int     @default(0) @map("x_sample_size")
   xHighPerformer     Boolean @default(false) @map("x_high_performer")
+
+  // 1.6.1: Moltbook metrics
+  moltbookUpvoteRate    Decimal? @map("moltbook_upvote_rate") @db.Decimal(5, 4)
+  moltbookSampleSize    Int?     @map("moltbook_sample_size")
+  moltbookHighPerformer Boolean? @map("moltbook_high_performer")
+
+  // 1.6.1: Slack metrics
+  slackReactionRate  Decimal? @map("slack_reaction_rate") @db.Decimal(5, 4)
+  slackSampleSize    Int?     @map("slack_sample_size")
+  slackHighPerformer Boolean? @map("slack_high_performer")
 
   tiktokPosts TiktokPost[]
   xPosts      XPost[]
@@ -379,3 +367,72 @@ model NotificationSchedule {
 
   @@map("notification_schedules")
 }
+
+// -----------------------------
+// 1.6.1 Anicca in the World
+// -----------------------------
+
+model AgentPost {
+  id                String  @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  platform          String  @db.VarChar(50) // 'moltbook', 'slack', 'x', 'tiktok', 'instagram'
+  externalPostId    String? @map("external_post_id") @db.VarChar(255)
+  platformUserId    String? @map("platform_user_id") @db.VarChar(255) // <platform>:<user_id> 形式
+  severity          String? @db.VarChar(20) // null | 'crisis'
+  region            String? @db.VarChar(10) // 'JP', 'US', 'UK', 'KR', 'OTHER'
+  hook              String?
+  content           String?
+  tone              String? @db.VarChar(50)
+  problemType       String? @map("problem_type") @db.VarChar(100)
+  reasoning         String?
+  buddhismReference String? @map("buddhism_reference")
+
+  // フィードバック
+  upvotes   Int  @default(0)
+  reactions Json @default("{}") @db.JsonB // Slack { "👍": 3, "❤️": 1 }
+  views     Int? // null = unknown/not available (for Moltbook Z-Score fallback)
+  likes     Int  @default(0)
+  shares    Int  @default(0)
+  comments  Int  @default(0)
+
+  // Z-Score
+  moltbookZ    Float? @map("moltbook_z")
+  slackZ       Float? @map("slack_z")
+  tiktokZ      Float? @map("tiktok_z")
+  xZ           Float? @map("x_z")
+  instagramZ   Float? @map("instagram_z")
+  unifiedScore Float? @map("unified_score")
+
+  // メタデータ
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz
+  updatedAt                DateTime  @updatedAt @map("updated_at") @db.Timestamptz
+  promotedToHookCandidates Boolean   @default(false) @map("promoted_to_hook_candidates")
+  anonymizedAt             DateTime? @map("anonymized_at") @db.Timestamptz
+
+  @@unique([platform, externalPostId])
+  @@index([platform])
+  @@index([createdAt(sort: Desc)])
+  @@index([platformUserId])
+  @@map("agent_posts")
+}
+
+model AgentAuditLog {
+  id              String   @id @default(dbgenerated("gen_random_uuid()")) @db.Uuid
+  eventType       String   @map("event_type") @db.VarChar(50) // 'llm_call', 'tool_execution', 'deletion_request', 'deletion_completed'
+  agentPostId     String?  @map("agent_post_id") @db.Uuid
+  platform        String?  @db.VarChar(50)
+  requestPayload  Json?    @map("request_payload") @db.JsonB
+  responsePayload Json?    @map("response_payload") @db.JsonB
+  executedBy      String?  @map("executed_by") @db.VarChar(100) // 'system', 'admin:<id>', 'user:<id>'
+  durationMs      Int?     @map("duration_ms")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamptz
+
+  @@index([eventType])
+  @@index([createdAt(sort: Desc)])
+  @@index([agentPostId])
+  @@map("agent_audit_logs")
+}
+
+// 1.6.1 HookCandidate 拡張カラム（既存 HookCandidate に追加）
+// Note: 既存の HookCandidate model に以下のカラムを追加済み:
+// - moltbookUpvoteRate, moltbookSampleSize, moltbookHighPerformer
+// - slackReactionRate, slackSampleSize, slackHighPerformer

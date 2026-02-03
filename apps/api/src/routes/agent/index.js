@@ -15,6 +15,7 @@ import wisdomRouter from './wisdom.js';
 import feedbackRouter from './feedback.js';
 import contentRouter from './content.js';
 import deletionRouter from './deletion.js';
+import postsRouter from './posts.js';
 
 const router = Router();
 
@@ -27,5 +28,6 @@ router.use('/wisdom', wisdomRouter);
 router.use('/feedback', feedbackRouter);
 router.use('/content', contentRouter);
 router.use('/deletion', deletionRouter);
+router.use('/posts', postsRouter);
 
 export default router;

@@ -1,7 +1,7 @@
 # 実装仕様書: Anicca in the World (1.6.1)
 
 > **RFC 2119 準拠**: MUST, SHOULD, MAY を使用
-> **最終更新**: 2026-02-03 09:30 JST
+> **最終更新**: 2026-02-03 11:40 JST
 
 ---
 
@@ -87,7 +87,7 @@
 │  │           │                                                           │   │
 │  │           ↓                                                           │   │
 │  │  [3. 反応を収集]                                                      │   │
-│  │   - Moltbook: upvotes, views, karma                                   │   │
+│  │   - Moltbook: upvotes, karma                                          │   │
 │  │   - TikTok: likes, shares, comments                                   │   │
 │  │   - X: engagement                                                     │   │
 │  │   - アプリ: 👍👎 フィードバック                                        │   │
@@ -130,45 +130,176 @@
 
 ---
 
-## 3. Moltbook データ活用
+## 3. Moltbook API 仕様（検証結果）
 
-### 3.1 取得可能なデータ
+### 3.1 API ドキュメント調査結果
 
-| データ | API | 用途 |
-|--------|-----|------|
-| **upvotes** | `GET /api/v1/posts/{post_id}` → `upvotes` | Nudge の効果測定 |
-| **views** | `GET /api/v1/posts/{post_id}` → `views` | リーチ測定 |
-| **karma** | `GET /api/v1/agents/status` → `karma` | Anicca の信頼度（善行の累積） |
+| エンドポイント | 存在 | 取得可能データ |
+|---------------|------|----------------|
+| `POST /api/v1/agents/verify-identity` | ✅ 確認済み | karma, posts count, comments count, follower_count |
+| `GET /api/v1/posts/{post_id}` | ⚠️ 未確認（ドキュメントなし） | upvotes, views（推定） |
+| `GET /api/v1/agents/status` | ⚠️ 未確認（ドキュメントなし） | karma（推定） |
 
-### 3.2 学習への活用
+**現状:** Moltbook API は Early Access で、公式ドキュメントには `verify-identity` のみ記載。投稿取得 API は存在が推定されるが未確認。
 
-```
-upvotes / views = 反応率
-       ↓
-Z-Score = (反応率 - 平均) / 標準偏差
-       ↓
-高 Z-Score → hook_candidates に昇格
-       ↓
-hook_candidates → アプリ内 Nudge に展開
-       ↓
-より多くの人の苦しみが軽減される
-```
+### 3.2 フォールバック戦略（MUST 実装）
 
-### 3.3 karma の意味
+| 取得不可データ | フォールバック |
+|---------------|---------------|
+| `views` | `views = null` → Z-Score 計算時は `upvotes` のみで計算（反応率の分母を 1 とする） |
+| `karma` | `karma = null` → 学習指標から除外（スコア補正なし） |
+| `upvotes` | **取得不可なら Moltbook 学習全体をスキップ**（他プラットフォームのみで学習継続） |
 
-| karma | 意味 |
-|-------|------|
-| 低 | 新規エージェント、まだ信頼されていない |
-| 中 | 一定の善行を積んでいる |
-| 高 | 信頼されるエージェント、コミュニティに貢献 |
+### 3.3 karma の保存と利用
 
-**Moltbook は AI エージェントの SNS。エージェント同士が苦しみを減らし合い、karma を積む。ブッダの思想と合致。**
+| 項目 | 仕様 |
+|------|------|
+| **保存先** | `agent_posts` テーブルの新規カラム `agent_karma_at_post INT` |
+| **更新周期** | 投稿時に同期（`verify-identity` 呼び出し） |
+| **利用用途** | 1.6.1 では記録のみ。1.7.0 以降で信頼度スコアとして活用予定 |
 
 ---
 
-## 4. As-Is（現在の状態: 2026-02-03 09:30 JST）
+## 4. Moltbook 運用ポリシー（SOUL.md 準拠）
 
-### 4.1 Railway API（✅ 完了）
+### 4.1 オプトイン制約（MUST）
+
+moltbook-responder MUST は以下の条件を満たす投稿のみ返信する：
+
+| 条件 | 説明 |
+|------|------|
+| **@anicca-wisdom メンション** | 明示的にメンションされた場合 |
+| **s/sangha 投稿** | 自分の Submolt への投稿 |
+| **フォロワーの投稿** | Anicca を明示的にフォローしているユーザー |
+
+**禁止:** 無差別キーワード走査による返信（全投稿を監視してキーワードで反応することは MUST NOT）
+
+### 4.2 レート制限（MUST）
+
+| 制限 | 値 |
+|------|-----|
+| 1日最大返信数 | 10 |
+| 連続返信間隔 | 最低 30 秒 |
+| 超過時の動作 | 翌日にキュー（即時返信しない） |
+
+### 4.3 ミュート/ブロック尊重（MUST）
+
+| ルール | 実装 |
+|--------|------|
+| ブロックされたユーザー | `muted_users` テーブルで管理、絶対に返信しない |
+| ミュートされたユーザー | 同上 |
+| 確認タイミング | 返信前に毎回チェック |
+
+---
+
+## 5. Slack 通知仕様（SOUL.md 準拠）
+
+### 5.1 チャンネル
+
+| チャンネル | 用途 |
+|-----------|------|
+| **#meeting** | ラボミーティング通知のみ |
+| **#agents** | 危機検出アラート、監査ログ |
+
+### 5.2 ラボミーティング通知（#meeting）
+
+| タイミング | メッセージ | スケジュール |
+|-----------|-----------|-------------|
+| **前日 21:00 JST** | `We will have a lab meeting tomorrow from 12:45-13:30` | 日曜 21:00 JST |
+| **当日 12:25 JST** | `🔔 Lab meeting in 20 minutes!` | 月曜 12:25 JST |
+
+### 5.3 祝日スキップ（MUST）
+
+| 項目 | 仕様 |
+|------|------|
+| 祝日判定ソース | `https://holidays-jp.github.io/api/v1/date.json` |
+| タイムゾーン | JST 固定（`Asia/Tokyo`） |
+| DST 対応 | 日本は DST なし。UTC+9 固定 |
+
+### 5.4 スケジューラ実装
+
+| 方式 | 詳細 |
+|------|------|
+| OpenClaw `schedule.yaml` | cron 式でスケジュール |
+| 前日通知 | `0 12 * * 0` (UTC) = 日曜 21:00 JST |
+| 当日通知 | `25 3 * * 1` (UTC) = 月曜 12:25 JST |
+
+---
+
+## 6. GET /api/agent/posts/recent 仕様（MUST 実装）
+
+### 6.1 概要
+
+| 項目 | 値 |
+|------|-----|
+| メソッド | GET |
+| パス | `/api/agent/posts/recent` |
+| 認証 | `requireAgentAuth`（`Authorization: Bearer <ANICCA_AGENT_TOKEN>`） |
+| 用途 | feedback-fetch skill が最近の投稿を取得し、フィードバックを更新するため |
+
+### 6.2 クエリパラメータ
+
+| パラメータ | 型 | 必須 | デフォルト | 説明 |
+|-----------|-----|------|-----------|------|
+| `platform` | string | MAY | all | `moltbook`, `slack`, `x`, `tiktok` のいずれか |
+| `days` | number | MAY | 7 | 何日前までの投稿を取得するか（最大 30） |
+| `limit` | number | MAY | 50 | 取得件数（最大 100） |
+| `cursor` | string | MAY | null | ページネーション用カーソル（`id` ベース） |
+
+### 6.3 レスポンス
+
+```json
+{
+  "posts": [
+    {
+      "id": "uuid",
+      "platform": "moltbook",
+      "externalPostId": "moltbook_post_123",
+      "content": "Nudge 本文...",
+      "upvotes": 5,
+      "views": null,
+      "likes": 0,
+      "shares": 0,
+      "createdAt": "2026-02-01T12:00:00Z"
+    }
+  ],
+  "nextCursor": "uuid_of_last_post",
+  "hasMore": true
+}
+```
+
+### 6.4 エラーレスポンス
+
+| ステータス | コード | メッセージ |
+|-----------|--------|-----------|
+| 401 | `UNAUTHORIZED` | `Agent token required` |
+| 400 | `INVALID_PLATFORM` | `Invalid platform: {value}` |
+| 400 | `INVALID_DAYS` | `days must be between 1 and 30` |
+
+### 6.5 実装ファイル
+
+| ファイル | 内容 |
+|---------|------|
+| `apps/api/src/routes/agent/posts.js` | ルーター実装 |
+| `apps/api/src/routes/agent/index.js` | `postsRouter` を登録 |
+| `apps/api/src/routes/agent/__tests__/posts.test.js` | テスト |
+
+### 6.6 テストケース（MUST）
+
+| ケース | 期待結果 |
+|--------|---------|
+| 認証なし | 401 UNAUTHORIZED |
+| 有効なトークン、デフォルトパラメータ | 200 + 最新50件 |
+| `platform=moltbook` | 200 + Moltbook のみ |
+| `days=30` | 200 + 30日分 |
+| `days=31` | 400 INVALID_DAYS |
+| ページネーション | `nextCursor` で次ページ取得可能 |
+
+---
+
+## 7. As-Is（現在の状態: 2026-02-03 11:40 JST）
+
+### 7.1 Railway API
 
 | 項目 | 状態 | ファイル |
 |------|------|----------|
@@ -177,19 +308,19 @@ hook_candidates → アプリ内 Nudge に展開
 | `/api/agent/feedback` | ✅ 実装済み | `apps/api/src/routes/agent/feedback.js` |
 | `/api/agent/content` | ✅ 実装済み | `apps/api/src/routes/agent/content.js` |
 | `/api/agent/deletion` | ✅ 実装済み | `apps/api/src/routes/agent/deletion.js` |
-| `/api/agent/posts/recent` | ❌ **未実装** | 新規作成必要 |
+| `/api/agent/posts/recent` | ❌ **未実装** | セクション6で仕様定義済み |
 | `requireAgentAuth` | ✅ 実装済み | `apps/api/src/middleware/requireAgentAuth.js` |
 | `AgentPost` model | ✅ 実装済み | `apps/api/prisma/schema.prisma` |
 | 5ch Z-Score | ✅ 実装済み | `apps/api/src/agents/crossPlatformLearning.js` |
 | テスト | ✅ 196/196 通過 | `apps/api/src/**/__tests__/*.test.js` |
 
-### 4.2 Railway 環境変数
+### 7.2 Railway 環境変数
 
 | 変数 | Production | Staging |
 |------|------------|---------|
 | `ANICCA_AGENT_TOKEN` | ✅ 設定済み | ❌ **未設定** |
 
-### 4.3 Hetzner VPS（✅ セットアップ済み）
+### 7.3 Hetzner VPS（✅ セットアップ済み）
 
 | 項目 | 状態 | 値 |
 |------|------|-----|
@@ -200,7 +331,7 @@ hook_candidates → アプリ内 Nudge に展開
 | fail2ban | ✅ 稼働中 | active |
 | Node.js | ✅ | v22.22.0 |
 
-### 4.4 OpenClaw（✅ 稼働中）
+### 7.4 OpenClaw（✅ 稼働中）
 
 | 項目 | 状態 | 詳細 |
 |------|------|------|
@@ -209,7 +340,7 @@ hook_candidates → アプリ内 Nudge に展開
 | SOUL.md | ✅ 配置済み | `/home/anicca/openclaw/SOUL.md` |
 | 環境変数 | ✅ 設定済み | `/home/anicca/.env` |
 
-### 4.5 Skills（✅ 配置済み）
+### 7.5 Skills（✅ 配置済み）
 
 | Skill | 状態 | パス |
 |-------|------|------|
@@ -217,7 +348,7 @@ hook_candidates → アプリ内 Nudge に展開
 | slack-reminder | ✅ | `/home/anicca/openclaw/skills/slack-reminder/` |
 | feedback-fetch | ✅ | `/home/anicca/openclaw/skills/feedback-fetch/` |
 
-### 4.6 Moltbook（✅ 認証完了）
+### 7.6 Moltbook（✅ 認証完了）
 
 | 項目 | 状態 | 詳細 |
 |------|------|------|
@@ -226,23 +357,29 @@ hook_candidates → アプリ内 Nudge に展開
 | API Key | ✅ VPS 保存済み | `/home/anicca/.env` |
 | s/sangha Submolt | ❌ **未作成** | 作成必要 |
 
-### 4.7 Slack
+### 7.7 Slack
 
 | 項目 | 状態 | 詳細 |
 |------|------|------|
 | SLACK_BOT_TOKEN | ✅ VPS 保存済み | `/home/anicca/.env` |
-| 通知設定 | ❌ **修正必要** | 前日21時 + 当日12:25 に変更 |
+| slack-reminder | ❌ **修正必要** | 前日21時 + 当日12:25、#meeting に変更 |
 
 ---
 
-## 5. To-Be（完成状態）
+## 8. To-Be（完成状態）
 
-### 5.1 実現する体験
+### 8.1 実現する体験
 
 ```
-[Moltbook で「つらい」と投稿]
+[Moltbook で「@anicca-wisdom つらい」と投稿]  ← オプトイン（メンション）
        ↓ (5分以内)
-[Anicca が自律的に苦しみを検出]
+[Anicca が自律的に検出]
+       ↓
+[オプトイン条件を確認]  ← MUST: @mention / s/sangha / フォロワー のみ
+       ↓
+[ミュート/ブロック確認]  ← MUST: muted_users テーブルで確認
+       ↓
+[レート制限確認]  ← MUST: 1日10件以内、30秒間隔
        ↓
 [Railway API で Nudge 生成]
        ↓
@@ -253,7 +390,11 @@ hook_candidates → アプリ内 Nudge に展開
        ↓
 [upvotes がつく → karma 増加]
        ↓
-[反応を収集 → Z-Score → hook_candidates に昇格]
+[feedback-fetch が反応を収集]
+       ↓
+[Z-Score 計算]  ← views 未取得時は upvotes のみで計算
+       ↓
+[hook_candidates に昇格]  ← upvotes >= 5 AND unified_score > 0.5
        ↓
 [高評価 Nudge がアプリ内にも展開]
        ↓
@@ -262,52 +403,27 @@ hook_candidates → アプリ内 Nudge に展開
 [苦しみ検出に戻る（循環）]
 ```
 
-### 5.2 完成基準
+### 8.2 完成基準
 
 | # | 基準 | 検証方法 | 状態 |
 |---|------|---------|------|
 | 1 | OpenClaw が VPS で 24/7 稼働 | `systemctl status openclaw` → active | ✅ |
 | 2 | Moltbook にエージェント認証済み | プロフィールページアクセス可能 | ✅ |
 | 3 | s/sangha Submolt 作成済み | `moltbook.com/s/sangha` アクセス可能 | ❌ |
-| 4 | moltbook-responder が苦しみ投稿に返信 | **実際にテスト投稿 → 返信を目視確認** | ❌ |
-| 5 | slack-reminder が通知 | **#meeting に実際に投稿されたことを目視確認** | ❌ |
-| 6 | feedback-fetch が upvotes を収集 | DB の `agent_posts.upvotes` が更新 | ❌ |
-| 7 | Railway Staging にも TOKEN 設定 | 環境変数確認 | ❌ |
+| 4 | moltbook-responder がオプトイン投稿に返信 | **テスト投稿 → 返信を目視確認** | ❌ |
+| 5 | moltbook-responder がレート制限を守る | 11件目の投稿は翌日キュー | ❌ |
+| 6 | slack-reminder が #meeting に通知 | **実際に投稿されたことを目視確認** | ❌ |
+| 7 | feedback-fetch が upvotes を収集 | DB の `agent_posts.upvotes` が更新 | ❌ |
+| 8 | /api/agent/posts/recent が動作 | API テスト通過 | ❌ |
+| 9 | Railway Staging にも TOKEN 設定 | 環境変数確認 | ❌ |
 
 ---
 
-## 6. Slack 通知仕様
-
-### 6.1 チャンネル
-
-| チャンネル | 用途 |
-|-----------|------|
-| **#meeting** | ラボミーティング通知のみ |
-| **#agents** | 日々の進捗、危機検出アラート、監査ログ |
-
-### 6.2 ラボミーティング通知（#meeting）
-
-| タイミング | メッセージ |
-|-----------|-----------|
-| **前日21時 JST** | `We will have a lab meeting tomorrow from 12:45-13:30` |
-| **当日12:25 JST** | `🔔 Lab meeting in 20 minutes!` |
-
-### 6.3 slack-reminder Skill 修正内容
-
-**現在:** 月曜12:30のみ、#agents に通知
-
-**修正後:**
-- 日曜21時 JST: 前日通知
-- 月曜12:25 JST: 当日通知
-- 通知先: #meeting
-
----
-
-## 7. 動作確認テスト（具体的手順）
+## 9. 動作確認テスト（具体的手順）
 
 **「API を叩いて確認」ではなく「実際に投稿されたことを目視確認」が完了条件。**
 
-### 7.1 Moltbook 投稿テスト
+### 9.1 Moltbook オプトイン投稿テスト
 
 | 手順 | 内容 |
 |------|------|
@@ -316,7 +432,15 @@ hook_candidates → アプリ内 Nudge に展開
 | 3 | **Anicca の返信コメントが表示されていることを目視確認** |
 | 4 | `agent_posts` テーブルにレコードが作成されていることを確認 |
 
-### 7.2 危機検出テスト
+### 9.2 Moltbook 非オプトイン拒否テスト
+
+| 手順 | 内容 |
+|------|------|
+| 1 | s/sangha 以外の Submolt に「つらい」と投稿（@anicca-wisdom なし） |
+| 2 | 5分待機 |
+| 3 | **Anicca の返信がないことを確認**（オプトイン制約が動作） |
+
+### 9.3 危機検出テスト
 
 | 手順 | 内容 |
 |------|------|
@@ -325,27 +449,42 @@ hook_candidates → アプリ内 Nudge に展開
 | 3 | **返信に地域別リソース（いのちの電話等）が含まれていることを確認** |
 | 4 | #agents に監査ログが投稿されていることを確認 |
 
-### 7.3 Slack 通知テスト
+### 9.4 Slack 通知テスト
 
 | 手順 | 内容 |
 |------|------|
-| 1 | VPS で `openclaw skill run slack-reminder` を手動実行 |
+| 1 | VPS で `openclaw skill run slack-reminder --test` を手動実行 |
 | 2 | **#meeting にメッセージが投稿されていることを目視確認** |
 
-### 7.4 feedback-fetch テスト
+### 9.5 feedback-fetch テスト
 
 | 手順 | 内容 |
 |------|------|
 | 1 | VPS で `openclaw skill run feedback-fetch` を手動実行 |
 | 2 | DB の `agent_posts.upvotes` が更新されていることを確認 |
 
+### 9.6 /api/agent/posts/recent テスト
+
+| 手順 | 内容 |
+|------|------|
+| 1 | `curl -H "Authorization: Bearer $TOKEN" https://anicca-proxy-production.up.railway.app/api/agent/posts/recent` |
+| 2 | 200 + JSON レスポンスを確認 |
+
+### 9.7 Z-Score 計算・hook_candidates 昇格テスト
+
+| 手順 | 内容 |
+|------|------|
+| 1 | `agent_posts` に upvotes >= 5 のレコードを作成（またはテストで達成） |
+| 2 | crossPlatformLearning.js の `unifiedScore` 計算を実行 |
+| 3 | `unified_score > 0.5` の場合、`hook_candidates` に昇格することを確認 |
+
 ---
 
-## 8. 外部ファイル参照
+## 10. 外部ファイル参照
 
 | ファイル | パス | 内容 |
 |---------|------|------|
-| **SOUL.md** | `.cursor/plans/ios/1.6.1/SOUL.md` | Anicca のペルソナ、危機対応、苦しみキーワード（168行） |
+| **SOUL.md** | `.cursor/plans/ios/1.6.1/SOUL.md` | Anicca のペルソナ、危機対応、Moltbook 運用ポリシー |
 | **secrets-1.6.1.md** | `.cursor/plans/ios/1.6.1/secrets-1.6.1.md` | VPS IP、認証情報の参照先 |
 | **moltbook-responder** | VPS `/home/anicca/openclaw/skills/moltbook-responder/` | SKILL.md + index.js |
 | **slack-reminder** | VPS `/home/anicca/openclaw/skills/slack-reminder/` | SKILL.md + index.js |
@@ -353,21 +492,22 @@ hook_candidates → アプリ内 Nudge に展開
 
 ---
 
-## 9. 残りタスク
+## 11. 残りタスク
 
 | # | タスク | 意図 | 状態 |
 |---|--------|------|------|
-| **0** | **Codex レビュー** | **To-Be 実現に不足している実装・パッチがあれば指摘してもらう。漏れを防ぐ。** | ❌ |
+| **0** | **Codex レビュー（反復中）** | **To-Be 実現に不足がないか確認。ok: true まで反復** | 🔄 |
 | 1 | Railway Staging に ANICCA_AGENT_TOKEN 設定 | Staging でテスト可能に | ❌ |
 | 2 | s/sangha Submolt 作成 | 苦しみを共有する場所 | ❌ |
-| 3 | slack-reminder を修正（前日21時 + 当日12:25、#meeting） | 正しい通知 | ❌ |
+| 3 | slack-reminder を修正（前日21時 + 当日12:25、#meeting） | SOUL.md と整合 | ❌ |
 | 4 | GET /api/agent/posts/recent 実装 | feedback-fetch が動作するため | ❌ |
-| 5 | 動作確認テスト（実際に投稿して目視確認） | 全体フローの確認 | ❌ |
-| 6 | dev マージ | 本番デプロイ | ❌ |
+| 5 | moltbook-responder にオプトイン制約を追加 | SOUL.md 準拠 | ❌ |
+| 6 | 動作確認テスト（実際に投稿して目視確認） | 全体フローの確認 | ❌ |
+| 7 | dev マージ | 本番デプロイ | ❌ |
 
 ---
 
-## 10. Codex レビュー指示
+## 12. Codex レビュー指示
 
 Codex にレビューを依頼する際、以下を明確に伝える：
 
@@ -386,7 +526,7 @@ Codex にレビューを依頼する際、以下を明確に伝える：
 
 ---
 
-## 11. 完了チェックリスト
+## 13. 完了チェックリスト
 
 | # | タスク | 実行者 | 状態 |
 |---|--------|--------|------|
@@ -401,17 +541,18 @@ Codex にレビューを依頼する際、以下を明確に伝える：
 | 9 | Moltbook claim | ユーザー | ✅ |
 | 10 | s/sangha Submolt 作成 | エージェント | ❌ |
 | 11 | moltbook-responder 配置 | エージェント | ✅ |
-| 12 | slack-reminder 配置 | エージェント | ✅ |
-| 13 | slack-reminder 修正（#meeting + 前日通知） | エージェント | ❌ |
-| 14 | feedback-fetch 配置 | エージェント | ✅ |
-| 15 | GET /api/agent/posts/recent 実装 | エージェント | ❌ |
-| 16 | **動作確認テスト（目視確認）** | エージェント | ❌ |
-| 17 | **Codex レビュー** | エージェント | ❌ |
-| 18 | dev マージ | ユーザー承認後 | ❌ |
+| 12 | moltbook-responder オプトイン制約追加 | エージェント | ❌ |
+| 13 | slack-reminder 配置 | エージェント | ✅ |
+| 14 | slack-reminder 修正（#meeting + 前日通知） | エージェント | ❌ |
+| 15 | feedback-fetch 配置 | エージェント | ✅ |
+| 16 | GET /api/agent/posts/recent 実装 | エージェント | ❌ |
+| 17 | **動作確認テスト（目視確認）** | エージェント | ❌ |
+| 18 | **Codex レビュー ok: true** | エージェント | ❌ |
+| 19 | dev マージ | ユーザー承認後 | ❌ |
 
 ---
 
-## 12. 更新履歴
+## 14. 更新履歴
 
 | 日付 | 内容 |
 |------|------|
@@ -419,4 +560,5 @@ Codex にレビューを依頼する際、以下を明確に伝える：
 | 2026-02-03 | Railway API 完了 |
 | 2026-02-03 | As-Is / To-Be 形式に書き換え |
 | 2026-02-03 09:15 | VPS セットアップ完了、Moltbook claim 完了 |
-| 2026-02-03 09:30 | **ロードマップ追加、知恵の生成プロセス追加、Moltbook データ活用追加、動作確認テスト具体化、Codex レビュー指示追加** |
+| 2026-02-03 09:30 | ロードマップ追加、知恵の生成プロセス追加 |
+| 2026-02-03 11:40 | **Codex レビュー対応: Moltbook API 仕様・フォールバック追加、/api/agent/posts/recent 仕様追加、Slack 通知仕様詳細化、Moltbook 運用ポリシー追加、karma 保存仕様追加、テスト手順拡張** |

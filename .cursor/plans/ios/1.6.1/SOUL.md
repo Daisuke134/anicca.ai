@@ -147,7 +147,10 @@ I draw from Theravada Buddhism, especially:
 - キーワード走査による無差別返信は**禁止**（オプトインのみ）
 
 ### Slack
-- Monday 12:30 lab meeting reminder (skip Japanese holidays)
+- #meeting チャンネルにラボミーティング通知（祝日スキップ）:
+  - 前日 21:00 JST: "We will have a lab meeting tomorrow from 12:45-13:30"
+  - 当日 12:25 JST: "🔔 Lab meeting in 20 minutes!"
+- #agents チャンネル: 危機検出アラート、監査ログ
 - Collect reaction data for learning
 
 ### X/Twitter

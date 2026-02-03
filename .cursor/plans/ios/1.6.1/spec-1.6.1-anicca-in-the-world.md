@@ -671,23 +671,38 @@ openclaw skill test feedback-fetch
 
 | # | タスク | 実行者 | 状態 |
 |---|--------|--------|------|
-| 1 | Railway `ANICCA_AGENT_TOKEN` 設定 | エージェント（MCP） | ⬜ |
-| 2 | VPS ufw/fail2ban 確認 | エージェント | ⬜ |
-| 3 | VPS Node.js 確認 | エージェント | ⬜ |
-| 4 | OpenClaw インストール | エージェント | ⬜ |
-| 5 | SOUL.md 配置 | エージェント | ⬜ |
-| 6 | 環境変数設定 | エージェント | ⬜ |
-| 7 | systemd サービス設定 | エージェント | ⬜ |
-| 8 | Moltbook エージェント登録 | エージェント | ⬜ |
-| 9 | Moltbook claim URL クリック | **ユーザー** | ⬜ |
-| 10 | s/sangha Submolt 作成 | エージェント | ⬜ |
-| 11 | moltbook-responder Skill 配置 | エージェント | ⬜ |
-| 12 | slack-reminder Skill 配置 | エージェント | ⬜ |
-| 13 | feedback-fetch Skill 配置 | エージェント | ⬜ |
-| 14 | OpenClaw 起動 | エージェント | ⬜ |
-| 15 | 動作確認 | エージェント | ⬜ |
+| 1 | Railway `ANICCA_AGENT_TOKEN` 設定 | エージェント（MCP） | ✅ |
+| 2 | VPS ufw/fail2ban 確認 | エージェント | ✅ |
+| 3 | VPS Node.js 確認 | エージェント | ✅ |
+| 4 | OpenClaw インストール | エージェント | ✅ |
+| 5 | SOUL.md 配置 | エージェント | ✅ |
+| 6 | 環境変数設定 | エージェント | ✅ |
+| 7 | systemd サービス設定 | エージェント | ✅ |
+| 8 | Moltbook エージェント登録 | エージェント | ✅ (`anicca-wisdom`) |
+| 9 | Moltbook claim URL クリック | **ユーザー** | ⬜ **待ち** |
+| 10 | s/sangha Submolt 作成 | エージェント | ⬜ (claim 後) |
+| 11 | moltbook-responder Skill 配置 | エージェント | ✅ |
+| 12 | slack-reminder Skill 配置 | エージェント | ✅ |
+| 13 | feedback-fetch Skill 配置 | エージェント | ✅ |
+| 14 | OpenClaw 起動 | エージェント | ✅ (active) |
+| 15 | 動作確認 | エージェント | ⬜ (claim 後) |
 | 16 | Railway /api/agent/posts/recent 追加 | エージェント | ⬜ |
 | 17 | dev マージ | エージェント | ⬜ |
+
+---
+
+## 7. ユーザー待ち: Moltbook Claim
+
+**claim URL:** https://moltbook.com/claim/moltbook_claim_clrkUoy-dWNI8amd05rnIkrWWOp174id
+
+**手順:**
+1. 上記 URL をブラウザで開く
+2. Twitter で認証ツイートを投稿（verification code: `wave-AXRP`）
+3. 認証完了後、エージェントに通知
+
+**claim 完了後にエージェントがやること:**
+- s/sangha Submolt 作成
+- 動作確認テスト
 
 ---
 

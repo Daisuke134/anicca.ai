@@ -354,39 +354,53 @@ export async function runGenerateNudges() {
             query, user.user_id, problems, preferredLanguage, appVersion
           );
 
-          // 2. Run Commander Agent
-          const agentOutput = await runCommanderAgent({ 
-            grounding, 
-            slotCount: slotTable.length 
-          });
+          // Skip Commander if no slots (user has no problems selected)
+          if (slotTable.length === 0) {
+            console.log(`⚠️ [GenerateNudges] User ${user.user_id}: No slots (no problems selected), skipping`);
+            decision = {
+              userId: user.user_id,
+              appNudges: [],
+              tiktokPosts: [],
+              xPosts: [],
+              overallStrategy: 'No problems selected',
+              rootCauseHypothesis: null,
+              frequencyDecision: { count: 0, reasoning: 'No problems selected' },
+            };
+          } else {
+            // 2. Run Commander Agent
+            const agentOutput = await runCommanderAgent({ 
+              grounding, 
+              slotCount: slotTable.length 
+            });
 
-          // 3. Normalize to CommanderDecision (guardrails + enrichment)
-          decision = normalizeToDecision(agentOutput, slotTable, user.user_id);
+            // 3. Normalize to CommanderDecision (guardrails + enrichment)
+            decision = normalizeToDecision(agentOutput, slotTable, user.user_id);
 
-          // 4. Store raw agent output for audit (notification_schedules)
-          try {
-            await query(
-              `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
-               VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
-               ON CONFLICT (user_id) DO UPDATE SET
-                 schedule = EXCLUDED.schedule,
-                 agent_raw_output = EXCLUDED.agent_raw_output,
-                 created_at = EXCLUDED.created_at`,
-              [
-                crypto.randomUUID(),
-                user.user_id,
-                JSON.stringify(decision),
-                JSON.stringify(agentOutput),
-              ]
-            );
-          } catch (nsErr) {
-            // notification_schedules table may not exist yet — non-fatal
-            console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+            // 4. Store raw agent output for audit (notification_schedules)
+            try {
+              await query(
+                `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
+                 VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
+                 ON CONFLICT (user_id) DO UPDATE SET
+                   schedule = EXCLUDED.schedule,
+                   agent_raw_output = EXCLUDED.agent_raw_output,
+                   created_at = EXCLUDED.created_at`,
+                [
+                  crypto.randomUUID(),
+                  user.user_id,
+                  JSON.stringify(decision),
+                  JSON.stringify(agentOutput),
+                ]
+              );
+            } catch (nsErr) {
+              // notification_schedules table may not exist yet — non-fatal
+              console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+            }
+
+            // Phase 6: Log Commander decision
+            logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
+            nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
           }
-
-          // Phase 6: Log Commander decision
-          logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
-          nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
 
         } catch (agentErr) {
           console.warn(`⚠️ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${agentErr.message}`);

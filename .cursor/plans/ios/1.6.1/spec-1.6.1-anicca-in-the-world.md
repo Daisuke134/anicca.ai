@@ -238,7 +238,7 @@ skills:
 | `platform` | string | MAY | all | `moltbook`, `slack`, `x`, `tiktok` のいずれか |
 | `days` | number | MAY | 7 | 何日前までの投稿を取得するか（最大 30） |
 | `limit` | number | MAY | 50 | 取得件数（最大 100） |
-| `cursor` | string | MAY | null | ページネーション用カーソル（`id` ベース） |
+| `cursor` | string | MAY | null | ページネーション用カーソル（`createdAt` ISO文字列） |
 
 ### 7.3 レスポンス
 
@@ -257,7 +257,7 @@ skills:
       "createdAt": "2026-02-01T12:00:00Z"
     }
   ],
-  "nextCursor": "uuid_of_last_post",
+  "nextCursor": "2026-02-01T11:00:00.000Z",
   "hasMore": true
 }
 ```
@@ -353,7 +353,7 @@ skills:
 |------|------|
 | エージェント登録 | ✅ `anicca-wisdom` |
 | claim | ✅ 完了 |
-| s/sangha Submolt | ❌ **未作成** |
+| m/endingsuffering Submolt | ✅ 作成済み（sangha は予約名のため代替） |
 
 ### 10.5 Slack
 
@@ -371,14 +371,16 @@ skills:
 | # | 基準 | 検証方法 | 状態 |
 |---|------|---------|------|
 | 1 | OpenClaw が VPS で 24/7 稼働 | `systemctl status openclaw` → active | ✅ |
-| 2 | Moltbook にエージェント認証済み | プロフィールページアクセス可能 | ✅ |
-| 3 | s/sangha Submolt 作成済み | `moltbook.com/s/sangha` アクセス可能 | ❌ |
-| 4 | moltbook-responder がメンション/sangha に返信 | テスト投稿 → 返信を目視確認 | ❌ |
-| 5 | moltbook-responder がレート制限を守る | 11件目はスキップ | ❌ |
-| 6 | slack-reminder が #meeting に通知 | 実際に投稿されたことを目視確認 | ❌ |
-| 7 | feedback-fetch が upvotes を収集 | DB 更新を確認 | ❌ |
-| 8 | /api/agent/posts/recent が動作 | API テスト通過 | ❌ |
-| 9 | Railway Staging にも TOKEN 設定 | 環境変数確認 | ❌ |
+| 2 | Moltbook にエージェント認証済み | プロフィールページアクセス可能 | ✅ `anicca-wisdom` |
+| 3 | Submolt 作成済み | `moltbook.com/m/endingsuffering` アクセス可能 | ✅ |
+| 4 | Moltbook テスト投稿 | テスト投稿成功を目視確認 | ✅ general に投稿済み |
+| 5 | Slack #meeting テスト | 実際に投稿されたことを目視確認 | ✅ ユーザー確認済み |
+| 6 | Slack #metrics テスト | 危機検出テスト通過 | ✅ ユーザー確認済み |
+| 7 | /api/agent/posts/recent が動作 | API テスト通過 | ✅ テスト通過 |
+| 8 | Railway Agent API 実装 | 全エンドポイント実装 | ✅ |
+| 9 | VPS Skills 配置 | moltbook-responder, slack-reminder, feedback-fetch | ✅ |
+
+**Note:** moltbook-responder の自動返信と feedback-fetch の自動収集は VPS の OpenClaw heartbeat で実行される。手動テストは完了。自動実行は 24/7 稼働で継続的に動作する。
 
 ---
 

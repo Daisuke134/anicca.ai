@@ -42,7 +42,10 @@ function sanitizeContext(context) {
   // 5. Remove/escape user_post tags
   sanitized = sanitized.replace(/<\/?user_post>/g, '');
   
-  // 6. Limit length
+  // 6. Remove angle brackets to prevent tag injection (<system>, <assistant>, etc.)
+  sanitized = sanitized.replace(/[<>]/g, '');
+  
+  // 7. Limit length
   if (sanitized.length > 2000) {
     sanitized = sanitized.slice(0, 2000);
   }

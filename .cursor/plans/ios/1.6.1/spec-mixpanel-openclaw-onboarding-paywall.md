@@ -107,19 +107,18 @@ RevenueCat公式ドキュメントより:
 
 **Mixpanelのファネルを以下のイベントで構成:**
 
-| ステップ | イベント | ソース |
-|---------|---------|-------|
-| 1 | `app_opened` | iOS SDK |
-| 2 | `onboarding_started` | iOS SDK |
-| 3 | `onboarding_welcome_completed` | iOS SDK |
-| 4 | `onboarding_value_completed` | iOS SDK |
-| 5 | `onboarding_struggles_completed` | iOS SDK |
-| 6 | `onboarding_notifications_completed` | iOS SDK |
-| 7 | `onboarding_att_completed` | iOS SDK |
-| 8 | `onboarding_paywall_viewed` | iOS SDK |
-| 9 | `rc_trial_started_event` | **RevenueCat（正確）** |
+| ステップ | イベント | ソース | 備考 |
+|---------|---------|-------|------|
+| 1 | `first_app_opened` | iOS SDK | **初回起動のみ**（E-4で追加） |
+| 2 | `onboarding_started` | iOS SDK | - |
+| 3 | `onboarding_welcome_completed` | iOS SDK | - |
+| 4 | `onboarding_value_completed` | iOS SDK | - |
+| 5 | `onboarding_struggles_completed` | iOS SDK | - |
+| 6 | `onboarding_notifications_completed` | iOS SDK | - |
+| 7 | `onboarding_paywall_viewed` | iOS SDK | ATTスキップ（最近追加のため） |
+| 8 | `rc_trial_started_event` | **RevenueCat** | サーバーサイド（正確） |
 
-**注意:** ステップ8→9の変換率がPaywallの真の変換率。現在0%。
+**重要:** ファネル起点は`first_app_opened`を使用。`app_opened`は毎回発火するためファネル分析に不適。
 
 ---
 
@@ -322,7 +321,7 @@ openclaw cron add daily-metrics \
 - #meeting にラボミーティングリマインダー投稿
 ```
 
-### C-2: daily-metrics-reporter skill実装
+### C-4: daily-metrics-reporter skill実装
 
 **ディレクトリ構造:**
 ```
@@ -350,43 +349,46 @@ openclaw cron add daily-metrics \
 - Slack #metrics チャンネル
 ```
 
-**ファイル: `/home/anicca/openclaw/skills/daily-metrics-reporter/index.ts`**
-```typescript
-import { Slack } from '@openclaw/slack';
-import { MixpanelClient } from './mixpanel';
-import { RevenueCatClient } from './revenuecat';
+**実装方針:** OpenClawはMCPを通じてMixpanel/RevenueCat APIにアクセスする。専用クライアント実装は不要。
 
-export async function run() {
-  const funnel = await MixpanelClient.getFunnel('onboarding', { days: 7 });
-  const revenue = await RevenueCatClient.getOverview();
-  
-  const message = formatMetricsMessage(funnel, revenue);
-  
-  await Slack.postMessage({
-    channel: '#metrics',
-    text: message,
-  });
-}
+**ファイル: `/home/anicca/openclaw/skills/daily-metrics-reporter/SKILL.md`（実装詳細）**
+```markdown
+## 実装
 
-function formatMetricsMessage(funnel: FunnelData, revenue: RevenueData): string {
-  return `📊 Anicca Daily Metrics (${new Date().toISOString().split('T')[0]})
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+このスキルはOpenClawのMCP統合を使用してデータを取得する。
 
-💰 REVENUE (RevenueCat)
-  MRR: $${revenue.mrr}
-  Active Subs: ${revenue.activeSubs}
-  Active Trials: ${revenue.activeTrials}
+### 使用するMCPツール
 
-🔄 ONBOARDING FUNNEL (過去7日)
-${funnel.steps.map(s => `  ${s.name}: ${s.count} (${s.rate}%)`).join('\n')}
+1. **Mixpanel MCP** (`user-mixpanel`)
+   - `run_funnels_query`: ファネルデータ取得
+   - `run_segmentation_query`: イベントカウント
 
-⚠️ ALERTS
-${revenue.activeTrials === 0 ? '  🔴 No trials this week\n' : ''}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
-}
+2. **RevenueCat MCP** (`user-revenuecat`)
+   - `list_offerings`: Offering一覧
+   - RevenueCat Dashboard APIは直接HTTPで呼び出し
+
+3. **Slack** (OpenClaw組み込み)
+   - `Slack.postMessage`: メッセージ投稿
+
+### 環境変数（VPS .env）
+
+| 変数名 | 説明 |
+|-------|------|
+| `MIXPANEL_PROJECT_ID` | `3970220` |
+| `REVENUECAT_PROJECT_ID` | `projbb7b9d1b` |
+| `SLACK_BOT_TOKEN` | Anicca Bot Token |
+
+### 実行フロー
+
+1. Mixpanel MCPで`run_funnels_query`を呼び出し
+2. RevenueCat Dashboard API（HTTP）でMRR/Subs取得
+3. 結果をフォーマット
+4. Slack #metricsに投稿
 ```
 
-### C-3: GitHub Actions削除
+**注意:** Patch C/Dの完全な実装はVPS上で行う。この仕様書はiOSアプリ変更を優先し、OpenClaw skill実装の詳細はVPSセットアップ時に確定する。
+
+### C-5: GitHub Actions削除
 
 **ファイル**: `.github/workflows/daily-metrics.yml`
 
@@ -588,7 +590,8 @@ openclaw restart
 **対象ファイル:**
 - EN: `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings`
 - JA: `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings`
-- その他: `es.lproj/`, `fr.lproj/`, `de.lproj/`, `pt-BR.lproj/` も同様に更新
+
+**スコープ:** 1.6.1ではEN/JAのみ対象。es/fr/de/pt-BRは1.6.2で対応。
 
 ---
 
@@ -726,11 +729,10 @@ struct NotificationPreviewCard: View {
     
     var body: some View {
         HStack(spacing: 12) {
-            // アプリアイコン
-            Image("AppIconSmall")
-                .resizable()
-                .frame(width: 40, height: 40)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+            // アプリアイコン（SF Symbol使用、カスタムアセット不要）
+            Image(systemName: "heart.circle.fill")
+                .font(.system(size: 36))
+                .foregroundStyle(AppTheme.Colors.accent)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -745,7 +747,8 @@ struct NotificationPreviewCard: View {
             
             Spacer()
             
-            Text("now")
+            // ローカライズ済み
+            Text(String(localized: "notification_preview_time"))
                 .font(.system(size: 12))
                 .foregroundStyle(AppTheme.Colors.tertiaryLabel)
         }
@@ -764,6 +767,12 @@ struct NotificationPreviewCard: View {
     .padding()
 }
 ```
+
+**追加ローカライズキー（E-2に追加）:**
+
+| Key | EN | JA |
+|-----|-----|-----|
+| `notification_preview_time` | `now` | `たった今` |
 
 ### E-4: `app_opened`トラッキング修正
 
@@ -879,7 +888,7 @@ func configureRevenueCat() {
 }
 
 private func setDeveloperAttribute() {
-    Purchases.shared.attribution.setAttributes(["is_developer": "true"])
+    Purchases.shared.setAttributes(["is_developer": "true"])
     print("[SubscriptionManager] Developer mode enabled for analytics")
 }
 ```

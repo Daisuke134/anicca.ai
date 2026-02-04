@@ -278,24 +278,36 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P4: usedVariants 重複排除
+    // MARK: - P4: Day-Cycling（v1.6.1: usedVariants → Day-Cycling に変更）
 
-    func test_selectVariant_respectsUsedVariants() {
+    func test_selectVariant_dayCycling_usesDayAndSlot() {
+        // オンボーディング日をリセットしてDay 0から開始
+        NudgeStatsManager.shared.resetOnboardingDateForProblem(ProblemType.anxiety.rawValue)
+        
         let selector = NudgeContentSelector.shared
-
-        // usedVariants に variant 0-12 を入れると、唯一残りの variant 13 が選ばれるはず
-        // v1.6.1: anxiety は14バリアント
-        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: Set(0..<13))
-        XCTAssertEqual(result1, 13, "With variants 0-12 used, should select 13")
+        // Day-Cycling: Day 0, slot 0 → variant 0
+        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 0)
+        // リセット後はDay 0なので、slot 0 → variant 0
+        XCTAssertEqual(result, 0, "Day 0, slot 0 should return variant 0")
     }
 
-    func test_selectVariant_allUsed_returnsFirst() {
+    func test_selectVariant_dayCycling_differentSlots_differentVariants() {
+        // オンボーディング日をリセットしてDay 0から開始
+        NudgeStatsManager.shared.resetOnboardingDateForProblem(ProblemType.anxiety.rawValue)
+        
         let selector = NudgeContentSelector.shared
+        // 同日内で異なるスロットは異なるバリアントを返す
+        let result0 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 0)
+        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 1)
+        let result2 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 2)
 
-        // 全バリアント使用済み → usedVariants クリアしてフォールバック
-        // v1.6.1: anxiety は14バリアント
-        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: Set(0..<14))
-        // 全部使用済みの場合は Thompson Sampling がリセットして選択
-        XCTAssertTrue((0..<14).contains(result), "Should still return a valid variant index")
+        // Day 0: slot 0→0, slot 1→1, slot 2→2
+        XCTAssertEqual(result0, 0, "Day 0, slot 0 → variant 0")
+        XCTAssertEqual(result1, 1, "Day 0, slot 1 → variant 1")
+        XCTAssertEqual(result2, 2, "Day 0, slot 2 → variant 2")
+        
+        // 3つとも異なるはず（同日内重複なし）
+        let uniqueVariants = Set([result0, result1, result2])
+        XCTAssertEqual(uniqueVariants.count, 3, "Same day, different slots should return different variants")
     }
 }

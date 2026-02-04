@@ -15,8 +15,9 @@ import {
   generateRuleBasedNudges
 } from './nudgeHelpers.js';
 import { classifyUserType } from '../services/userTypeService.js';
-import { runCommanderAgent, normalizeToDecision } from '../agents/commander.js';
+import { runCommanderAgent, normalizeToDecision, generateRuleBasedFallback } from '../agents/commander.js';
 import { runCrossPlatformSync } from './syncCrossPlatform.js';
+import { runAggregateTypeStats } from './aggregateTypeStats.js';
 import { collectAllGrounding } from '../agents/groundingCollectors.js';
 import { logCommanderDecision, buildSlackNudgeSummary, sendSlackNotification } from '../agents/reasoningLogger.js';
 
@@ -294,7 +295,15 @@ function validateLLMOutput(output) {
 export async function runGenerateNudges() {
   console.log('✅ [GenerateNudges] Starting Phase 7+8 nudge generation cron job');
 
-  // Step 0: Cross-Platform Learning — 前日のメトリクスを処理
+  // Step 0a: Cross-user learning stats aggregation (optional, non-fatal)
+  try {
+    await runAggregateTypeStats(query);
+    console.log('✅ [GenerateNudges] type_stats aggregation completed');
+  } catch (err) {
+    console.warn(`⚠️ [GenerateNudges] type_stats aggregation failed (non-fatal): ${err.message}`);
+  }
+
+  // Step 0b: Cross-Platform Learning — 前日のメトリクスを処理
   try {
     console.log('🔁 [GenerateNudges] Running cross-platform learning pipeline...');
     await runCrossPlatformSync(query);
@@ -347,13 +356,15 @@ export async function runGenerateNudges() {
         console.log(`🪷 [GenerateNudges] User ${user.user_id}: Day 2+ → Commander Agent (v${appVersion})`);
 
         let decision = null;
+        let slotTable = null;
+        
+        // 1. Collect all grounding variables (parallel DB queries)
         try {
-          // 1. Collect all grounding variables (parallel DB queries)
-          // v1.6.0: pass appVersion for schedule map selection
-          const { grounding, slotTable } = await collectAllGrounding(
+          const groundingResult = await collectAllGrounding(
             query, user.user_id, problems, preferredLanguage, appVersion
           );
-
+          slotTable = groundingResult.slotTable;
+          
           // Skip Commander if no slots (user has no problems selected)
           if (slotTable.length === 0) {
             console.log(`⚠️ [GenerateNudges] User ${user.user_id}: No slots (no problems selected), skipping`);
@@ -368,43 +379,75 @@ export async function runGenerateNudges() {
             };
           } else {
             // 2. Run Commander Agent
-            const agentOutput = await runCommanderAgent({ 
-              grounding, 
-              slotCount: slotTable.length 
-            });
-
-            // 3. Normalize to CommanderDecision (guardrails + enrichment)
-            decision = normalizeToDecision(agentOutput, slotTable, user.user_id);
-
-            // 4. Store raw agent output for audit (notification_schedules)
             try {
-              await query(
-                `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
-                 VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
-                 ON CONFLICT (user_id) DO UPDATE SET
-                   schedule = EXCLUDED.schedule,
-                   agent_raw_output = EXCLUDED.agent_raw_output,
-                   created_at = EXCLUDED.created_at`,
-                [
-                  crypto.randomUUID(),
-                  user.user_id,
-                  JSON.stringify(decision),
-                  JSON.stringify(agentOutput),
-                ]
-              );
-            } catch (nsErr) {
-              // notification_schedules table may not exist yet — non-fatal
-              console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+              const agentOutput = await runCommanderAgent({ 
+                grounding: groundingResult.grounding, 
+                slotCount: slotTable.length 
+              });
+
+              // 3. Normalize to CommanderDecision (guardrails + enrichment)
+              decision = normalizeToDecision(agentOutput, slotTable, user.user_id);
+
+              // 4. Store raw agent output for audit (notification_schedules)
+              try {
+                await query(
+                  `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
+                   VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
+                   ON CONFLICT (user_id) DO UPDATE SET
+                     schedule = EXCLUDED.schedule,
+                     agent_raw_output = EXCLUDED.agent_raw_output,
+                     created_at = EXCLUDED.created_at`,
+                  [
+                    crypto.randomUUID(),
+                    user.user_id,
+                    JSON.stringify(decision),
+                    JSON.stringify(agentOutput),
+                  ]
+                );
+              } catch (nsErr) {
+                console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+              }
+
+              // Phase 6: Log Commander decision
+              logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
+              nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
+              
+            } catch (commanderErr) {
+              // Commander failed but we have slotTable → use generateRuleBasedFallback
+              console.error(`❌ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${commanderErr.message}`);
+              console.warn(`⚠️ [GenerateNudges] Using generateRuleBasedFallback (schema-compliant)`);
+              
+              const fallbackOutput = generateRuleBasedFallback(slotTable, preferredLanguage);
+              decision = normalizeToDecision(fallbackOutput, slotTable, user.user_id);
+              
+              // Store fallback output for audit
+              try {
+                await query(
+                  `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
+                   VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
+                   ON CONFLICT (user_id) DO UPDATE SET
+                     schedule = EXCLUDED.schedule,
+                     agent_raw_output = EXCLUDED.agent_raw_output,
+                     created_at = EXCLUDED.created_at`,
+                  [
+                    crypto.randomUUID(),
+                    user.user_id,
+                    JSON.stringify(decision),
+                    JSON.stringify({ ...fallbackOutput, fallbackReason: commanderErr.message }),
+                  ]
+                );
+              } catch (nsErr) {
+                console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+              }
+              
+              logCommanderDecision(user.user_id, decision, 'fallback', preferredLanguage);
+              nudgeResults.push({ userId: user.user_id, decision, mode: 'fallback' });
             }
-
-            // Phase 6: Log Commander decision
-            logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
-            nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
           }
-
-        } catch (agentErr) {
-          console.warn(`⚠️ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${agentErr.message}`);
-          console.warn(`⚠️ [GenerateNudges] Falling back to rule-based`);
+        } catch (groundingErr) {
+          // Grounding collection failed - no slotTable available, use legacy fallback
+          console.error(`❌ [GenerateNudges] Grounding collection failed for ${user.user_id}: ${groundingErr.message}`);
+          console.warn(`⚠️ [GenerateNudges] Falling back to legacy rule-based`);
         }
 
         if (decision) {
@@ -424,7 +467,7 @@ export async function runGenerateNudges() {
             overallStrategy: decision.overallStrategy,
           };
         } else {
-          // Fallback: rule-based (v1.6.0: appVersion渡し)
+          // Final fallback: legacy rule-based (when grounding failed)
           scheduleResult = generateRuleBasedNudges(problems, preferredLanguage, appVersion);
           totalRuleBased++;
         }

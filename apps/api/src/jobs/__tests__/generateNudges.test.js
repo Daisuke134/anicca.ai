@@ -43,4 +43,27 @@ describe('generateNudges integration', () => {
     const catchBlock = afterSync.substring(catchIndex, catchIndex + 200);
     expect(catchBlock).toContain('warn');
   });
+
+  it('imports and calls runAggregateTypeStats', () => {
+    expect(generaTeNudgesSource).toContain(
+      "import { runAggregateTypeStats } from './aggregateTypeStats.js'"
+    );
+    expect(generaTeNudgesSource).toContain('await runAggregateTypeStats(query)');
+  });
+
+  it('wraps runAggregateTypeStats in try/catch for graceful degradation', () => {
+    const syncCallIndex = generaTeNudgesSource.indexOf('await runAggregateTypeStats(query)');
+    expect(syncCallIndex).toBeGreaterThan(0);
+
+    const beforeSync = generaTeNudgesSource.substring(0, syncCallIndex);
+    const lastTry = beforeSync.lastIndexOf('try {');
+    expect(lastTry).toBeGreaterThan(0);
+
+    const afterSync = generaTeNudgesSource.substring(syncCallIndex);
+    const catchIndex = afterSync.indexOf('catch');
+    expect(catchIndex).toBeGreaterThan(0);
+
+    const catchBlock = afterSync.substring(catchIndex, catchIndex + 200);
+    expect(catchBlock).toContain('warn');
+  });
 });

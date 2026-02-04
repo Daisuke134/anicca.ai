@@ -41,9 +41,10 @@ final class NudgeContentSelector {
             return (variantIndex: -1, isAIGenerated: true, content: llmNudge)
         }
 
-        // Day 2+: Thompson Sampling with usedVariants重複排除
-        let selectedVariant = selectExistingVariant(for: problem, scheduledHour: scheduledHour, usedVariants: usedVariants)
-        logger.info("📋 Selected rule-based variant \(selectedVariant) for \(problem.rawValue) at hour \(scheduledHour)")
+        // Day 2+: Day-Cycling fallback（v1.6.1: Thompson Sampling → Day-Cycling に変更）
+        // NOTE: usedVariants パラメータはAPI互換性のため残すが、Day-Cyclingでは使用しない
+        let selectedVariant = dayCyclingVariant(for: problem, slotIndex: slotIndex)
+        logger.info("🔄 Day-Cycling fallback variant \(selectedVariant) for \(problem.rawValue) at hour \(scheduledHour)")
         return (variantIndex: selectedVariant, isAIGenerated: false, content: nil)
     }
 
@@ -58,8 +59,9 @@ final class NudgeContentSelector {
 
         // LLMキャッシュがなければルールベースにフォールバック
         logger.info("⚠️ [Debug] No LLM cache for \(problem.rawValue), using rule-based")
-        let selectedVariant = selectExistingVariant(for: problem, scheduledHour: 21)
-        logger.info("📋 [Debug] Selected rule-based variant \(selectedVariant) for \(problem.rawValue)")
+        // v1.6.1: Day-Cycling を使用（本番と同じ挙動）
+        let selectedVariant = dayCyclingVariant(for: problem, slotIndex: 0)
+        logger.info("🔄 [Debug] Day-Cycling variant \(selectedVariant) for \(problem.rawValue)")
         return (variantIndex: selectedVariant, isAIGenerated: false, content: nil)
     }
     #endif
@@ -119,18 +121,31 @@ final class NudgeContentSelector {
         return slotIndex % variantCount
     }
 
-    /// テスト可能なバリアント選択（usedVariants対応）
-    func selectExistingVariantTestable(for problem: ProblemType, scheduledHour: Int, usedVariants: Set<Int> = []) -> Int {
-        let allVariants = getGenericVariantIndices(for: problem)
-        let available = allVariants.filter { !usedVariants.contains($0) }
+    // MARK: - Day-Cycling (v1.6.1)
 
-        // All variants used → reset and use full set
-        let candidates = available.isEmpty ? allVariants : available
+    /// Day-Cycling: バリアントを順番に回す
+    /// - 毎日同じスロットで異なるバリアントを表示
+    /// - 周期: variantCount / gcd(variantCount, slotsPerDay) 日（anxiety: 14日、stayingUpLate: 21日）
+    /// - Parameters:
+    ///   - problem: 問題タイプ
+    ///   - slotIndex: 当日内のスロット順序（0-indexed）
+    /// - Returns: バリアントインデックス
+    func dayCyclingVariant(for problem: ProblemType, slotIndex: Int) -> Int {
+        let dayIndex = NudgeStatsManager.shared.getDaysSinceOnboarding(for: problem.rawValue)
+        let variantCount = problem.notificationVariantCount
+        let slotsPerDay = problem.notificationSchedule.count
 
-        guard !candidates.isEmpty else { return 0 }
+        // (dayIndex * slotsPerDay + slotIndex) % variantCount
+        let variant = (dayIndex * slotsPerDay + slotIndex) % variantCount
 
-        // Thompson Sampling on available candidates
-        return selectByThompsonSampling(variants: candidates, problem: problem, hour: scheduledHour)
+        logger.info("🔄 Day-Cycling: day=\(dayIndex) slot=\(slotIndex) → variant=\(variant) for \(problem.rawValue)")
+        return variant
+    }
+
+    /// テスト可能なバリアント選択（v1.6.1: Day-Cycling対応）
+    func selectExistingVariantTestable(for problem: ProblemType, scheduledHour: Int, usedVariants: Set<Int> = [], slotIndex: Int = 0) -> Int {
+        // v1.6.1: Day-Cycling を使用
+        return dayCyclingVariant(for: problem, slotIndex: slotIndex)
     }
 
     /// 後方互換: 既存コード用のselectVariant（Intを返す）

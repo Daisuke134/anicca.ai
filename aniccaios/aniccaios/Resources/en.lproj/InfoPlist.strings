@@ -4,6 +4,3 @@
 /* Notification permission description */
 "NSUserNotificationsUsageDescription" = "Anicca uses notifications to gently nudge you for waking up and routines.";
 
-/* App Tracking Transparency permission description */
-"NSUserTrackingUsageDescription" = "We use this to measure how you discovered Anicca and improve your experience. Your data is never sold.";
-

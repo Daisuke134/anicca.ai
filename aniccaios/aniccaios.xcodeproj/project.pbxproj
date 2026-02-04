@@ -17,9 +17,6 @@
 		840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AB2EC772EA005CDB8D /* RevenueCatUI */; };
 		840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AE2EC77316005CDB8D /* ComponentsKit */; };
 		840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3B12EC77325005CDB8D /* WebRTC */; };
-		84B4DEFA2F136632002BCC6A /* Singular in Frameworks */ = {isa = PBXBuildFile; productRef = 84B4DEF92F136632002BCC6A /* Singular */; };
-		84B4DEFC2F136C7C002BCC6A /* AdSupport.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */; };
-		84B4DEFE2F136C89002BCC6A /* AppTrackingTransparency.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */; };
 		84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = 84DE437E2F090BDA00198F6C /* Mixpanel */; };
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
@@ -80,8 +77,6 @@
 		8471B0792EB8D091002CECAA /* Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
 		8471B07B2EB8D0B0002CECAA /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
 		84A5279B2EEDDA2F008CAEA1 /* AniccaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AniccaWidgetExtension.entitlements; sourceTree = "<group>"; };
-		84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
-		84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppTrackingTransparency.framework; path = System/Library/Frameworks/AppTrackingTransparency.framework; sourceTree = SDKROOT; };
 		84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeStatsManagerTests.swift; sourceTree = "<group>"; };
 		8EB5063EEB22012F0836EE85 /* aniccaiosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -159,9 +154,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */,
-				84B4DEFC2F136C7C002BCC6A /* AdSupport.framework in Frameworks */,
-				84B4DEFA2F136632002BCC6A /* Singular in Frameworks */,
-				84B4DEFE2F136C89002BCC6A /* AppTrackingTransparency.framework in Frameworks */,
 				84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */,
 				840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */,
 				840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */,
@@ -190,8 +182,6 @@
 		8400344E2EE52C5100A2F44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */,
-				84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */,
 				8400344F2EE52C5100A2F44C /* WidgetKit.framework */,
 				840034512EE52C5200A2F44C /* SwiftUI.framework */,
 				D58F082AD20410C3202351BF /* iOS */,
@@ -306,7 +296,6 @@
 				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
 				840BA3B12EC77325005CDB8D /* WebRTC */,
 				84DE437E2F090BDA00198F6C /* Mixpanel */,
-				84B4DEF92F136632002BCC6A /* Singular */,
 			);
 			productName = aniccaios;
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
@@ -390,7 +379,6 @@
 				840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */,
 				840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */,
 				84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
-				84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
@@ -1397,14 +1385,6 @@
 				minimumVersion = 141.0.0;
 			};
 		};
-		84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/singular-labs/Singular-iOS-SDK";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 12.10.0;
-			};
-		};
 		84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/mixpanel/mixpanel-swift";
@@ -1435,11 +1415,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
-		};
-		84B4DEF92F136632002BCC6A /* Singular */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */;
-			productName = Singular;
 		};
 		84DE437E2F090BDA00198F6C /* Mixpanel */ = {
 			isa = XCSwiftPackageProductDependency;

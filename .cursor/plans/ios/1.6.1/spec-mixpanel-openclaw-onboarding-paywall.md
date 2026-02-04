@@ -54,6 +54,8 @@ RevenueCat公式ドキュメントより:
 
 ### 実データ（2026-01-04 〜 2026-02-04、1ヶ月間）
 
+> **注意:** このデータは現行の`app_opened`イベントを使用。E-4実装後は`first_app_opened`を起点として再計測する。
+
 | イベント | 1月 | 2月（4日まで） | 合計 | 変換率 |
 |---------|-----|--------------|------|-------|
 | `app_opened` | 568 | 99 | **667** | 100% |
@@ -677,6 +679,82 @@ VStack(spacing: 24) {
 }
 ```
 
+---
+
+#### P2対策: 進捗インジケーター追加
+
+**ファイル:** `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift`
+
+**目的:** ユーザーがオンボーディングの進捗を把握できるようにする（P2対策）
+
+**追加位置:** 各ステップの上部に追加
+
+```swift
+// OnboardingFlowView.swift のbody内、各ステップViewの前に追加
+OnboardingProgressIndicator(
+    currentStep: currentStepIndex,
+    totalSteps: 5  // welcome, value, struggles, notifications, paywall
+)
+.padding(.top, 16)
+```
+
+**新規コンポーネント: `OnboardingProgressIndicator.swift`**
+
+**ファイル（新規作成）:** `aniccaios/aniccaios/DesignSystem/Components/OnboardingProgressIndicator.swift`
+
+```swift
+import SwiftUI
+
+/// オンボーディング進捗インジケーター
+struct OnboardingProgressIndicator: View {
+    let currentStep: Int
+    let totalSteps: Int
+    
+    var body: some View {
+        HStack(spacing: 8) {
+            ForEach(0..<totalSteps, id: \.self) { index in
+                Capsule()
+                    .fill(index <= currentStep 
+                          ? AppTheme.Colors.accent 
+                          : AppTheme.Colors.borderLight)
+                    .frame(height: 4)
+            }
+        }
+        .padding(.horizontal, 24)
+    }
+}
+
+#Preview {
+    OnboardingProgressIndicator(currentStep: 2, totalSteps: 5)
+}
+```
+
+---
+
+#### P2対策: CTAボタン強調
+
+**ファイル:** `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift`
+
+**目的:** CTAボタンをより目立たせる（P2対策）
+
+**Before（現在のCTAボタン）:**
+```swift
+PrimaryButton(title: String(localized: "onboarding_welcome_cta")) {
+    onNext()
+}
+```
+
+**After（強調されたCTAボタン）:**
+```swift
+PrimaryButton(title: String(localized: "onboarding_welcome_cta"), style: .primary) {
+    onNext()
+}
+.padding(.horizontal, 24)
+.shadow(color: AppTheme.Colors.accent.opacity(0.3), radius: 8, x: 0, y: 4)
+```
+
+---
+
 #### ValueStepView.swift
 
 **Before (line 8-15):**
@@ -1128,6 +1206,7 @@ openclaw status
 | # | タスク | ファイル | 状態 |
 |---|--------|---------|------|
 | E-1 | WelcomeStepView改善 | `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift` | ⬜ |
+| E-1b | CTAボタン強調（P2対策） | `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift` | ⬜ |
 | E-2 | ValueStepView改善 | `aniccaios/aniccaios/Onboarding/ValueStepView.swift` | ⬜ |
 | E-3 | NotificationPermissionStepView改善 | `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift` | ⬜ |
 | E-4 | `app_opened`→`first_app_opened`修正 | `aniccaios/aniccaios/AppDelegate.swift` | ⬜ |
@@ -1136,7 +1215,9 @@ openclaw status
 | E-7 | Localizable.strings更新（EN） | `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings` | ⬜ |
 | E-8 | Localizable.strings更新（JA） | `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings` | ⬜ |
 | E-9 | NotificationPreviewCard作成 | `aniccaios/aniccaios/DesignSystem/Components/NotificationPreviewCard.swift` | ⬜ |
+| E-10 | OnboardingProgressIndicator作成（P2対策） | `aniccaios/aniccaios/DesignSystem/Components/OnboardingProgressIndicator.swift` | ⬜ |
+| E-11 | OnboardingFlowView進捗表示追加（P2対策） | `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift` | ⬜ |
 
 ---
 
-*Last updated: 2026-02-04*
+*Last updated: 2026-02-05*

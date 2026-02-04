@@ -20,6 +20,7 @@ import { runCrossPlatformSync } from './syncCrossPlatform.js';
 import { runAggregateTypeStats } from './aggregateTypeStats.js';
 import { collectAllGrounding } from '../agents/groundingCollectors.js';
 import { logCommanderDecision, buildSlackNudgeSummary, sendSlackNotification } from '../agents/reasoningLogger.js';
+import { replaceDuplicates } from './duplicateReplacement.js';
 
 const { Pool } = pg;
 
@@ -388,12 +389,23 @@ export async function runGenerateNudges() {
               // 3. Normalize to CommanderDecision (guardrails + enrichment)
               decision = normalizeToDecision(agentOutput, slotTable, user.user_id, preferredLanguage);
 
-              // 3.5 Validate no duplicate hooks/content (non-blocking warning only)
+              // ========== 重複チェック & 置換 (Patch 6-B) ==========
               const dupCheck = validateNoDuplicates(decision.appNudges || []);
               if (!dupCheck.valid) {
-                console.warn(`⚠️ [GenerateNudges] Duplicate content detected for ${user.user_id}:`);
+                console.warn(`⚠️ [GenerateNudges] Duplicate content detected for ${user.user_id}, replacing...`);
                 for (const dup of dupCheck.duplicates) {
                   console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}"`);
+                }
+
+                // Replace duplicates with unique fallbacks
+                decision.appNudges = replaceDuplicates(decision.appNudges, preferredLanguage);
+
+                // Final validation - should never fail after replacement
+                const finalCheck = validateNoDuplicates(decision.appNudges);
+                if (!finalCheck.valid) {
+                  console.error(`❌ [GenerateNudges] CRITICAL: Duplicates remain after replacement! Falling back to rule-based.`);
+                  // Fall through to rule-based fallback
+                  throw new Error('Duplicate replacement failed');
                 }
               }
 
@@ -429,12 +441,27 @@ export async function runGenerateNudges() {
               const fallbackOutput = generateRuleBasedFallback(slotTable, preferredLanguage);
               decision = normalizeToDecision(fallbackOutput, slotTable, user.user_id, preferredLanguage);
 
-              // Validate no duplicate hooks/content in fallback (non-blocking warning only)
+              // ========== 重複チェック & 置換 (Patch 6-B) - Fallback path ==========
               const dupCheckFallback = validateNoDuplicates(decision.appNudges || []);
               if (!dupCheckFallback.valid) {
-                console.warn(`⚠️ [GenerateNudges] Duplicate content in fallback for ${user.user_id}:`);
+                console.warn(`⚠️ [GenerateNudges] Duplicate in rule-based fallback for ${user.user_id}, replacing...`);
                 for (const dup of dupCheckFallback.duplicates) {
                   console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}"`);
+                }
+                decision.appNudges = replaceDuplicates(decision.appNudges, preferredLanguage);
+
+                // Final validation - log error but don't throw (no further fallback available)
+                const finalFallbackCheck = validateNoDuplicates(decision.appNudges);
+                if (!finalFallbackCheck.valid) {
+                  console.error(`❌ [GenerateNudges] CRITICAL: Duplicates remain in fallback after replacement for ${user.user_id}`);
+                  // Last resort: disable duplicate nudges to prevent user seeing same content
+                  for (const dup of finalFallbackCheck.duplicates) {
+                    const nudge = decision.appNudges.find(n => n.slotIndex === dup.slotIndex);
+                    if (nudge) {
+                      nudge.enabled = false;
+                      nudge.reasoning = (nudge.reasoning || '') + ' [guardrail: duplicate disabled]';
+                    }
+                  }
                 }
               }
               

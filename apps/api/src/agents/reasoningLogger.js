@@ -39,7 +39,14 @@ export function formatDailyTimetable(userId, decision, mode, language) {
     const time = n.scheduledTime || '??:??';
     const pt = (n.problemType || 'unknown').padEnd(18);
     const tone = `(${n.tone || '?'})`;
-    const flag = n.enabled ? '' : ' [OFF]';
+
+    // OFFの場合は理由も表示（guardrailタグから抽出）
+    let flag = '';
+    if (!n.enabled) {
+      const guardrailMatch = (n.reasoning || '').match(/\[guardrail:\s*([^\]]+)\]/i);
+      const reason = guardrailMatch ? guardrailMatch[1].trim() : 'unknown';
+      flag = ` [OFF: ${reason}]`;
+    }
 
     // Base line (always shown)
     lines.push(`${time} [${pt}] ${tone}${flag}`);

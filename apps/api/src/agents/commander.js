@@ -584,15 +584,16 @@ export function applyGuardrails(appNudges, slotTable) {
   // Start with a deep copy
   let result = appNudges.map(nudge => ({ ...nudge }));
 
-  // Rule 3: Night curfew (23:00-05:59) — disable non-exempt
+  // Rule 3: Night curfew (23:00-05:59) — WARNING ONLY (user wants all nudges delivered)
   for (const nudge of result) {
     const slot = slotLookup.get(nudge.slotIndex);
     if (!slot) continue;
     const { scheduledHour } = slot;
     const isNightTime = scheduledHour >= 23 || scheduledHour < 6;
     if (isNightTime && nudge.enabled && !NIGHT_EXEMPT_PROBLEMS.has(slot.problemType)) {
-      nudge.enabled = false;
-      nudge.reasoning += ' [guardrail: night curfew applied]';
+      // WARNING ONLY - do not disable. User wants all nudges delivered.
+      nudge.reasoning += ' [warning: night curfew zone]';
+      console.warn(`⚠️ [Guardrail] Nudge at ${slot.scheduledTime} is in night curfew zone (not disabled)`);
     }
   }
 
@@ -614,11 +615,12 @@ export function applyGuardrails(appNudges, slotTable) {
       const adjustedHour = slot.scheduledHour < 6 ? slot.scheduledHour + 24 : slot.scheduledHour;
       const currentMinutes = adjustedHour * 60 + slot.scheduledMinute;
       if (currentMinutes - lastMinutes < 30) {
-        nudge.enabled = false;
-        nudge.reasoning += ' [guardrail: <30min interval]';
-      } else {
-        lastMinutes = currentMinutes;
+        // WARNING ONLY - do not disable. User wants all nudges delivered.
+        nudge.reasoning += ' [warning: <30min interval]';
+        console.warn(`⚠️ [Guardrail] Nudge at ${slot.scheduledTime} is within 30min of previous (not disabled)`);
       }
+      // Always update lastMinutes to track all nudges (since we no longer skip disabled ones)
+      lastMinutes = currentMinutes;
     }
   }
 

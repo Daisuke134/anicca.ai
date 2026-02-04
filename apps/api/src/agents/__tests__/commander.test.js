@@ -106,16 +106,16 @@ describe('AgentRawOutputSchema', () => {
 // ===== applyGuardrails =====
 
 describe('applyGuardrails', () => {
-  it('disables non-exempt problems in night hours (23:00-05:59)', () => {
+  it('warns but does NOT disable non-exempt problems in night hours (23:00-05:59)', () => {
     const slotTable = makeSlotTable();
     const nudges = makeNudges();
 
     const result = applyGuardrails(nudges, slotTable);
 
-    // anxiety at 23:30 should be disabled (not exempt)
+    // anxiety at 23:30 should remain ENABLED (warning only, user wants all nudges delivered)
     const anxietyNight = result.find(n => n.slotIndex === 4);
-    expect(anxietyNight.enabled).toBe(false);
-    expect(anxietyNight.reasoning).toContain('night curfew');
+    expect(anxietyNight.enabled).toBe(true);
+    expect(anxietyNight.reasoning).toContain('warning: night curfew zone');
   });
 
   it('keeps exempt problems enabled at night', () => {
@@ -131,20 +131,21 @@ describe('applyGuardrails', () => {
     expect(sulMidnight.enabled).toBe(true);
   });
 
-  it('disables same-problem slots <30min apart', () => {
+  it('warns but does NOT disable same-problem slots <30min apart', () => {
     const slotTable = makeSlotTable();
     const nudges = makeNudges();
 
     const result = applyGuardrails(nudges, slotTable);
 
-    // procrastination: 09:00 (enabled), 09:15 (<30min, disabled), 11:00 (enabled)
+    // procrastination: 09:00 (enabled), 09:15 (<30min, warning but ENABLED), 11:00 (enabled)
+    // User wants all nudges delivered - warning only
     expect(result.find(n => n.slotIndex === 0).enabled).toBe(true);
-    expect(result.find(n => n.slotIndex === 1).enabled).toBe(false);
-    expect(result.find(n => n.slotIndex === 1).reasoning).toContain('<30min');
+    expect(result.find(n => n.slotIndex === 1).enabled).toBe(true);
+    expect(result.find(n => n.slotIndex === 1).reasoning).toContain('warning: <30min interval');
     expect(result.find(n => n.slotIndex === 2).enabled).toBe(true);
   });
 
-  it('does not re-enable night-curfewed non-exempt problems even for min-1 rule', () => {
+  it('keeps non-exempt problems enabled at night (warning only, no disable)', () => {
     const slotTable = [
       { slotIndex: 0, problemType: 'anxiety', scheduledTime: '23:30', scheduledHour: 23, scheduledMinute: 30 },
     ];
@@ -154,9 +155,9 @@ describe('applyGuardrails', () => {
 
     const result = applyGuardrails(nudges, slotTable);
 
-    // anxiety (non-exempt) at 23:30 stays disabled — night curfew takes precedence
-    expect(result[0].enabled).toBe(false);
-    expect(result[0].reasoning).toContain('night curfew');
+    // anxiety (non-exempt) at 23:30 stays ENABLED — user wants all nudges delivered
+    expect(result[0].enabled).toBe(true);
+    expect(result[0].reasoning).toContain('warning: night curfew zone');
   });
 
   it('re-enables exempt problems at night for min-1 rule', () => {

@@ -215,17 +215,17 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P3: notificationVariantCount は全問題8以上（staying_up_late は10）
+    // MARK: - P3: notificationVariantCount - v1.6.1拡張（stayingUpLate: 21, others: 14）
 
     func test_variantCount_allProblems() {
-        XCTAssertEqual(ProblemType.stayingUpLate.notificationVariantCount, 10)
-        XCTAssertEqual(ProblemType.pornAddiction.notificationVariantCount, 8)
+        // v1.6.1: 2週間新鮮体験のため拡張
+        XCTAssertEqual(ProblemType.stayingUpLate.notificationVariantCount, 21) // 5回/日 × 4.2日
 
-        let eightVariantProblems: [ProblemType] = [.cantWakeUp, .selfLoathing, .rumination,
-            .procrastination, .anxiety, .lying, .badMouthing, .alcoholDependency,
+        let fourteenVariantProblems: [ProblemType] = [.cantWakeUp, .selfLoathing, .rumination,
+            .procrastination, .anxiety, .lying, .badMouthing, .pornAddiction, .alcoholDependency,
             .anger, .obsessive, .loneliness]
-        for problem in eightVariantProblems {
-            XCTAssertEqual(problem.notificationVariantCount, 8, "\(problem.rawValue) should have 8 variants")
+        for problem in fourteenVariantProblems {
+            XCTAssertEqual(problem.notificationVariantCount, 14, "\(problem.rawValue) should have 14 variants") // 3回/日 × 4.67日
         }
     }
 
@@ -278,24 +278,36 @@ final class NotificationHotfixTests: XCTestCase {
         }
     }
 
-    // MARK: - P4: usedVariants 重複排除
+    // MARK: - P4: Day-Cycling（v1.6.1: usedVariants → Day-Cycling に変更）
 
-    func test_selectVariant_respectsUsedVariants() {
+    func test_selectVariant_dayCycling_usesDayAndSlot() {
+        // オンボーディング日をリセットしてDay 0から開始
+        NudgeStatsManager.shared.resetOnboardingDateForProblem(ProblemType.anxiety.rawValue)
+        
         let selector = NudgeContentSelector.shared
-
-        // usedVariants に variant 0 を入れると、別のバリアントが選ばれるはず
-        // Thompson Sampling でも usedVariants を除外する
-        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [0, 1, 2, 3, 4, 5, 6])
-        // 全部使用済みだと唯一残りの variant 7 が返るはず
-        XCTAssertEqual(result1, 7, "With variants 0-6 used, should select 7")
+        // Day-Cycling: Day 0, slot 0 → variant 0
+        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 0)
+        // リセット後はDay 0なので、slot 0 → variant 0
+        XCTAssertEqual(result, 0, "Day 0, slot 0 should return variant 0")
     }
 
-    func test_selectVariant_allUsed_returnsFirst() {
+    func test_selectVariant_dayCycling_differentSlots_differentVariants() {
+        // オンボーディング日をリセットしてDay 0から開始
+        NudgeStatsManager.shared.resetOnboardingDateForProblem(ProblemType.anxiety.rawValue)
+        
         let selector = NudgeContentSelector.shared
+        // 同日内で異なるスロットは異なるバリアントを返す
+        let result0 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 0)
+        let result1 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 1)
+        let result2 = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: [], slotIndex: 2)
 
-        // 全バリアント使用済み → usedVariants クリアしてフォールバック
-        let result = selector.selectExistingVariantTestable(for: .anxiety, scheduledHour: 10, usedVariants: Set(0..<8))
-        // 全部使用済みの場合は Thompson Sampling がリセットして選択
-        XCTAssertTrue((0..<8).contains(result), "Should still return a valid variant index")
+        // Day 0: slot 0→0, slot 1→1, slot 2→2
+        XCTAssertEqual(result0, 0, "Day 0, slot 0 → variant 0")
+        XCTAssertEqual(result1, 1, "Day 0, slot 1 → variant 1")
+        XCTAssertEqual(result2, 2, "Day 0, slot 2 → variant 2")
+        
+        // 3つとも異なるはず（同日内重複なし）
+        let uniqueVariants = Set([result0, result1, result2])
+        XCTAssertEqual(uniqueVariants.count, 3, "Same day, different slots should return different variants")
     }
 }

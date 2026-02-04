@@ -1,4 +1,4 @@
-import fetch from 'node-fetch';
+// Node.js 20+ native fetch (no node-fetch needed)
 import { BILLING_CONFIG } from '../../config/environment.js';
 import logger from '../../utils/logger.js';
 

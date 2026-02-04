@@ -227,11 +227,16 @@ final class NudgeStatsManager {
     
     // MARK: - Day 1 Detection
 
-    /// Day1判定: この問題タイプに対するインタラクション記録が一切ない
-    /// (scheduledだけでなく、tap/ignoredも0 → まだ1日目)
+    /// Day1判定: オンボーディングから0日目（v1.6.1: 日数ベースに統一）
+    /// Day-Cyclingと同じ基準を使用し、ユーザーの行動に依存しない
     func isDay1(for problemType: String) -> Bool {
+        return getDaysSinceOnboarding(for: problemType) == 0
+    }
+    
+    /// 旧Day1判定（後方互換性のため残す）: インタラクション記録がない
+    @available(*, deprecated, message: "Use isDay1(for:) which uses getDaysSinceOnboarding")
+    func isDay1ByInteraction(for problemType: String) -> Bool {
         let problemStats = stats.values.filter { $0.problemType == problemType }
-        // 統計レコード自体がないか、全レコードの totalSamples が 0
         return problemStats.allSatisfy { $0.totalSamples == 0 }
     }
 
@@ -284,6 +289,46 @@ final class NudgeStatsManager {
         stats.removeValue(forKey: key)
         saveToStorage()
         logger.info("Reset stats for \(key)")
+    }
+
+    // MARK: - Day-Cycling Support (v1.6.1)
+
+    private let onboardingDateKey = "com.anicca.onboardingDate"
+
+    /// オンボーディング完了日からの経過日数を取得
+    /// - Returns: 経過日数（0 = 今日がオンボーディング日）
+    func getDaysSinceOnboarding(for problemType: String) -> Int {
+        let key = "\(onboardingDateKey)_\(problemType)"
+        let defaults = UserDefaults.standard
+
+        guard let startDate = defaults.object(forKey: key) as? Date else {
+            // 初回: 今日を記録してDay 0を返す
+            defaults.set(Date(), forKey: key)
+            logger.info("Day-Cycling: First day for \(problemType), recording onboarding date")
+            return 0
+        }
+
+        let calendar = Calendar.current
+        let days = calendar.dateComponents([.day], from: calendar.startOfDay(for: startDate), to: calendar.startOfDay(for: Date())).day ?? 0
+        return max(0, days)
+    }
+    
+    /// Day-Cyclingのオンボーディング日をリセット（問題タイプ変更時）
+    /// - Parameter problemType: リセットする問題タイプ
+    func resetOnboardingDateForProblem(_ problemType: String) {
+        let key = "\(onboardingDateKey)_\(problemType)"
+        UserDefaults.standard.removeObject(forKey: key)
+        logger.info("Day-Cycling: Reset onboarding date for \(problemType)")
+    }
+    
+    /// 全問題タイプのオンボーディング日をリセット（ログアウト時）
+    func resetAllOnboardingDates() {
+        let defaults = UserDefaults.standard
+        for problem in ProblemType.allCases {
+            let key = "\(onboardingDateKey)_\(problem.rawValue)"
+            defaults.removeObject(forKey: key)
+        }
+        logger.info("Day-Cycling: Reset all onboarding dates")
     }
 
     // MARK: - Storage
@@ -340,6 +385,21 @@ final class NudgeStatsManager {
         stats[key] = stat
         saveToStorage()
         logger.info("DEBUG: Recorded \(count) ignored for \(problemType), consecutiveIgnoredDays: \(stat.consecutiveIgnoredDays)")
+    }
+
+    /// DEBUG用: オンボーディング日をリセット
+    func resetOnboardingDate(for problemType: String) {
+        let key = "\(onboardingDateKey)_\(problemType)"
+        UserDefaults.standard.removeObject(forKey: key)
+        logger.info("DEBUG: Reset onboarding date for \(problemType)")
+    }
+
+    /// DEBUG用: オンボーディング日を過去に設定
+    func setOnboardingDate(for problemType: String, daysAgo: Int) {
+        let key = "\(onboardingDateKey)_\(problemType)"
+        let pastDate = Calendar.current.date(byAdding: .day, value: -daysAgo, to: Date()) ?? Date()
+        UserDefaults.standard.set(pastDate, forKey: key)
+        logger.info("DEBUG: Set onboarding date for \(problemType) to \(daysAgo) days ago")
     }
     #endif
 }

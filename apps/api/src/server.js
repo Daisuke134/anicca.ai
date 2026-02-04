@@ -3,7 +3,6 @@ process.env.MEM0_TELEMETRY = 'false';
 
 import express from 'express';
 import cors from 'cors';
-import { initDatabase } from './services/tokens/slackTokens.supabase.js';
 import { runMigrationsOnce } from './lib/migrate.js';
 import apiRouter from './routes/index.js';
 import { pool } from './lib/db.js';
@@ -17,9 +16,8 @@ if (process.env.NODE_ENV !== 'production') {
 async function initializeServer() {
   // マイグレーション（初回のみ実行）
   await runMigrationsOnce();
-  await initDatabase();
-  console.log('✅ Database initialized. VoIP dispatcher disabled.');
-  
+  console.log('✅ Database initialized.');
+
   // 月次クレジットジョブ（UTC 00:05 付近で起動、当月未付与のみ実行）
   const { runMonthlyCredits } = await import('./jobs/monthlyCredits.js');
   setInterval(async () => {
@@ -53,7 +51,6 @@ process.on('unhandledRejection', (reason, promise) => {
       reason?.stack?.includes('captureEvent') ||
       reason?.cause?.code === 'ETIMEDOUT' ||
       (reason?.cause?.errors && Array.isArray(reason.cause.errors))) {
-    // テレメトリーエラーは無視（アプリ動作に影響なし）
     return;
   }
   console.error('Unhandled Rejection:', reason);
@@ -63,7 +60,7 @@ process.on('unhandledRejection', (reason, promise) => {
 const corsOptions = {
   origin: process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : '*',
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'anthropic-version', 'anthropic-beta', 'user-id', 'device-id']
+  allowedHeaders: ['Authorization', 'Content-Type', 'X-API-Key', 'user-id', 'device-id']
 };
 app.use(cors(corsOptions));
 
@@ -97,18 +94,9 @@ app.get('/', (req, res) => {
   res.redirect('/health');
 });
 
-// Check required environment variables
-const requiredEnvVars = [];
-const missingVars = requiredEnvVars.filter(varName => !process.env[varName]);
-
-if (missingVars.length > 0) {
-  console.error('❌ Missing required environment variables:', missingVars);
-  console.error('Please set these variables in Railway or your environment');
-}
-
 // Start server
 const server = app.listen(PORT, () => {
-  console.log(`🚀 Anicca Proxy Server running on port ${PORT}`);
+  console.log(`🚀 Anicca API Server running on port ${PORT}`);
   console.log(`📍 Health check: http://localhost:${PORT}/health`);
   console.log(`🌐 Environment: ${process.env.NODE_ENV || 'development'}`);
 });

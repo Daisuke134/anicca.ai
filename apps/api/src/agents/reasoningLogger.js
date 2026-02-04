@@ -26,20 +26,38 @@ export function formatDailyTimetable(userId, decision, mode, language) {
   const lines = [];
   lines.push('══════════════════════════════════════════════');
   lines.push(`User: ${userId.slice(0, 8)}... (Day ${decision.dayNumber || '?'}, ${mode}, ${language})`);
+  lines.push('══════════════════════════════════════════════');
+  
+  // RootCause at top for better visibility
+  if (decision.rootCauseHypothesis) {
+    lines.push(`RootCause: ${decision.rootCauseHypothesis.slice(0, 100)}`);
+  }
+  
   lines.push('──────────────────────────────────────────────');
 
   for (const n of nudges) {
     const time = n.scheduledTime || '??:??';
     const pt = (n.problemType || 'unknown').padEnd(18);
     const tone = `(${n.tone || '?'})`;
-    const flag = n.enabled ? '' : ' [OFF]';
 
+    // OFFの場合は理由も表示（guardrailタグから抽出）
+    let flag = '';
+    if (!n.enabled) {
+      const guardrailMatch = (n.reasoning || '').match(/\[guardrail:\s*([^\]]+)\]/i);
+      const reason = guardrailMatch ? guardrailMatch[1].trim() : 'unknown';
+      flag = ` [OFF: ${reason}]`;
+    }
+
+    // Base line (always shown)
+    lines.push(`${time} [${pt}] ${tone}${flag}`);
+    
+    // Detailed content only if SHOW_CONTENT=true
     if (SHOW_CONTENT) {
-      const hook = n.hook || '';
-      lines.push(`${time} [${pt}] "${hook.slice(0, 30)}" ${tone}${flag}`);
-    } else {
-      const hookLen = `hook=${(n.hook || '').length}chars`;
-      lines.push(`${time} [${pt}] ${tone} ${hookLen}${flag}`);
+      lines.push(`    Hook: "${n.hook || ''}"`);
+      lines.push(`    Body: "${n.content || ''}"`);
+      if (n.reasoning) {
+        lines.push(`    Why: ${n.reasoning.slice(0, 100)}`);
+      }
     }
   }
 

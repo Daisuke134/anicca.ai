@@ -14,11 +14,11 @@ export default function FaqPage() {
           </AccordionItem>
           <AccordionItem value="item-2">
             <AccordionTrigger>Which platforms are supported?</AccordionTrigger>
-            <AccordionContent>macOS 10.15+ (Apple Silicon recommended).</AccordionContent>
+            <AccordionContent>iOS 17 or later (iPhone).</AccordionContent>
           </AccordionItem>
           <AccordionItem value="item-3">
-            <AccordionTrigger>Does it work with Slack?</AccordionTrigger>
-            <AccordionContent>Yes. It prepares drafts at your set times.</AccordionContent>
+            <AccordionTrigger>How does Anicca help me?</AccordionTrigger>
+            <AccordionContent>Anicca sends proactive nudges based on your struggles to help you build better habits.</AccordionContent>
           </AccordionItem>
         </Accordion>
       </div>

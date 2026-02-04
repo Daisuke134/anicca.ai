@@ -15,10 +15,12 @@ import {
   generateRuleBasedNudges
 } from './nudgeHelpers.js';
 import { classifyUserType } from '../services/userTypeService.js';
-import { runCommanderAgent, normalizeToDecision } from '../agents/commander.js';
+import { runCommanderAgent, normalizeToDecision, generateRuleBasedFallback, validateNoDuplicates } from '../agents/commander.js';
 import { runCrossPlatformSync } from './syncCrossPlatform.js';
+import { runAggregateTypeStats } from './aggregateTypeStats.js';
 import { collectAllGrounding } from '../agents/groundingCollectors.js';
 import { logCommanderDecision, buildSlackNudgeSummary, sendSlackNotification } from '../agents/reasoningLogger.js';
+import { replaceDuplicates } from './duplicateReplacement.js';
 
 const { Pool } = pg;
 
@@ -148,8 +150,8 @@ async function getUserTypeForNudge(userId, problems) {
 // 1.5.0: Get cross-user patterns from type_stats (only if data exists)
 // 言語別の文字数制限
 const CHAR_LIMITS = {
-  ja: { hook: 12, content: 40 },
-  en: { hook: 25, content: 80 }
+  ja: { hook: 12, content: 45 },
+  en: { hook: 25, content: 100 }
 };
 
 // プロンプトを構築（パーソナライズ対応）
@@ -294,7 +296,15 @@ function validateLLMOutput(output) {
 export async function runGenerateNudges() {
   console.log('✅ [GenerateNudges] Starting Phase 7+8 nudge generation cron job');
 
-  // Step 0: Cross-Platform Learning — 前日のメトリクスを処理
+  // Step 0a: Cross-user learning stats aggregation (optional, non-fatal)
+  try {
+    await runAggregateTypeStats(query);
+    console.log('✅ [GenerateNudges] type_stats aggregation completed');
+  } catch (err) {
+    console.warn(`⚠️ [GenerateNudges] type_stats aggregation failed (non-fatal): ${err.message}`);
+  }
+
+  // Step 0b: Cross-Platform Learning — 前日のメトリクスを処理
   try {
     console.log('🔁 [GenerateNudges] Running cross-platform learning pipeline...');
     await runCrossPlatformSync(query);
@@ -347,47 +357,142 @@ export async function runGenerateNudges() {
         console.log(`🪷 [GenerateNudges] User ${user.user_id}: Day 2+ → Commander Agent (v${appVersion})`);
 
         let decision = null;
+        let slotTable = null;
+        
+        // 1. Collect all grounding variables (parallel DB queries)
         try {
-          // 1. Collect all grounding variables (parallel DB queries)
-          // v1.6.0: pass appVersion for schedule map selection
-          const { grounding, slotTable } = await collectAllGrounding(
+          const groundingResult = await collectAllGrounding(
             query, user.user_id, problems, preferredLanguage, appVersion
           );
+          slotTable = groundingResult.slotTable;
+          
+          // Skip Commander if no slots (user has no problems selected)
+          if (slotTable.length === 0) {
+            console.log(`⚠️ [GenerateNudges] User ${user.user_id}: No slots (no problems selected), skipping`);
+            decision = {
+              userId: user.user_id,
+              appNudges: [],
+              tiktokPosts: [],
+              xPosts: [],
+              overallStrategy: 'No problems selected',
+              rootCauseHypothesis: null,
+              frequencyDecision: { count: 0, reasoning: 'No problems selected' },
+            };
+          } else {
+            // 2. Run Commander Agent
+            try {
+              const agentOutput = await runCommanderAgent({ 
+                grounding: groundingResult.grounding, 
+                slotCount: slotTable.length 
+              });
 
-          // 2. Run Commander Agent
-          const agentOutput = await runCommanderAgent({ grounding });
+              // 3. Normalize to CommanderDecision (guardrails + enrichment)
+              decision = normalizeToDecision(agentOutput, slotTable, user.user_id, preferredLanguage);
 
-          // 3. Normalize to CommanderDecision (guardrails + enrichment)
-          decision = normalizeToDecision(agentOutput, slotTable, user.user_id);
+              // ========== 重複チェック & 置換 (Patch 6-B) ==========
+              const dupCheck = validateNoDuplicates(decision.appNudges || []);
+              if (!dupCheck.valid) {
+                console.warn(`⚠️ [GenerateNudges] Duplicate content detected for ${user.user_id}, replacing...`);
+                for (const dup of dupCheck.duplicates) {
+                  console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}"`);
+                }
 
-          // 4. Store raw agent output for audit (notification_schedules)
-          try {
-            await query(
-              `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
-               VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
-               ON CONFLICT (user_id) DO UPDATE SET
-                 schedule = EXCLUDED.schedule,
-                 agent_raw_output = EXCLUDED.agent_raw_output,
-                 created_at = EXCLUDED.created_at`,
-              [
-                crypto.randomUUID(),
-                user.user_id,
-                JSON.stringify(decision),
-                JSON.stringify(agentOutput),
-              ]
-            );
-          } catch (nsErr) {
-            // notification_schedules table may not exist yet — non-fatal
-            console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+                // Replace duplicates with unique fallbacks
+                decision.appNudges = replaceDuplicates(decision.appNudges, preferredLanguage);
+
+                // Final validation - should never fail after replacement
+                const finalCheck = validateNoDuplicates(decision.appNudges);
+                if (!finalCheck.valid) {
+                  console.error(`❌ [GenerateNudges] CRITICAL: Duplicates remain after replacement! Falling back to rule-based.`);
+                  // Fall through to rule-based fallback
+                  throw new Error('Duplicate replacement failed');
+                }
+              }
+
+              // 4. Store raw agent output for audit (notification_schedules)
+              try {
+                await query(
+                  `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
+                   VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
+                   ON CONFLICT (user_id) DO UPDATE SET
+                     schedule = EXCLUDED.schedule,
+                     agent_raw_output = EXCLUDED.agent_raw_output,
+                     created_at = EXCLUDED.created_at`,
+                  [
+                    crypto.randomUUID(),
+                    user.user_id,
+                    JSON.stringify(decision),
+                    JSON.stringify(agentOutput),
+                  ]
+                );
+              } catch (nsErr) {
+                console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+              }
+
+              // Phase 6: Log Commander decision
+              logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
+              nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
+              
+            } catch (commanderErr) {
+              // Commander failed but we have slotTable → use generateRuleBasedFallback
+              console.error(`❌ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${commanderErr.message}`);
+              console.warn(`⚠️ [GenerateNudges] Using generateRuleBasedFallback (schema-compliant)`);
+              
+              const fallbackOutput = generateRuleBasedFallback(slotTable, preferredLanguage);
+              decision = normalizeToDecision(fallbackOutput, slotTable, user.user_id, preferredLanguage);
+
+              // ========== 重複チェック & 置換 (Patch 6-B) - Fallback path ==========
+              const dupCheckFallback = validateNoDuplicates(decision.appNudges || []);
+              if (!dupCheckFallback.valid) {
+                console.warn(`⚠️ [GenerateNudges] Duplicate in rule-based fallback for ${user.user_id}, replacing...`);
+                for (const dup of dupCheckFallback.duplicates) {
+                  console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}"`);
+                }
+                decision.appNudges = replaceDuplicates(decision.appNudges, preferredLanguage);
+
+                // Final validation - log error but don't throw (no further fallback available)
+                const finalFallbackCheck = validateNoDuplicates(decision.appNudges);
+                if (!finalFallbackCheck.valid) {
+                  console.error(`❌ [GenerateNudges] CRITICAL: Duplicates remain in fallback after replacement for ${user.user_id}`);
+                  // Last resort: disable duplicate nudges to prevent user seeing same content
+                  for (const dup of finalFallbackCheck.duplicates) {
+                    const nudge = decision.appNudges.find(n => n.slotIndex === dup.slotIndex);
+                    if (nudge) {
+                      nudge.enabled = false;
+                      nudge.reasoning = (nudge.reasoning || '') + ' [guardrail: duplicate disabled]';
+                    }
+                  }
+                }
+              }
+              
+              // Store fallback output for audit
+              try {
+                await query(
+                  `INSERT INTO notification_schedules (id, user_id, schedule, agent_raw_output, created_at)
+                   VALUES ($1::uuid, $2::uuid, $3::jsonb, $4::jsonb, timezone('utc', now()))
+                   ON CONFLICT (user_id) DO UPDATE SET
+                     schedule = EXCLUDED.schedule,
+                     agent_raw_output = EXCLUDED.agent_raw_output,
+                     created_at = EXCLUDED.created_at`,
+                  [
+                    crypto.randomUUID(),
+                    user.user_id,
+                    JSON.stringify(decision),
+                    JSON.stringify({ ...fallbackOutput, fallbackReason: commanderErr.message }),
+                  ]
+                );
+              } catch (nsErr) {
+                console.warn(`⚠️ [GenerateNudges] notification_schedules save failed (non-fatal): ${nsErr.message}`);
+              }
+              
+              logCommanderDecision(user.user_id, decision, 'fallback', preferredLanguage);
+              nudgeResults.push({ userId: user.user_id, decision, mode: 'fallback' });
+            }
           }
-
-          // Phase 6: Log Commander decision
-          logCommanderDecision(user.user_id, decision, 'llm', preferredLanguage);
-          nudgeResults.push({ userId: user.user_id, decision, mode: 'llm' });
-
-        } catch (agentErr) {
-          console.warn(`⚠️ [GenerateNudges] Commander Agent failed for ${user.user_id}: ${agentErr.message}`);
-          console.warn(`⚠️ [GenerateNudges] Falling back to rule-based`);
+        } catch (groundingErr) {
+          // Grounding collection failed - no slotTable available, use legacy fallback
+          console.error(`❌ [GenerateNudges] Grounding collection failed for ${user.user_id}: ${groundingErr.message}`);
+          console.warn(`⚠️ [GenerateNudges] Falling back to legacy rule-based`);
         }
 
         if (decision) {
@@ -407,7 +512,7 @@ export async function runGenerateNudges() {
             overallStrategy: decision.overallStrategy,
           };
         } else {
-          // Fallback: rule-based (v1.6.0: appVersion渡し)
+          // Final fallback: legacy rule-based (when grounding failed)
           scheduleResult = generateRuleBasedNudges(problems, preferredLanguage, appVersion);
           totalRuleBased++;
         }

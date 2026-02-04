@@ -1,106 +1,84 @@
 /**
- * 1.5.0 Cross-User Learning: Aggregate Type Stats
+ * Cross-User Learning 統計集計ジョブ
  *
- * Daily cron job (0 21 * * * = 6:00 JST) that aggregates
- * nudge performance by user_type × tone into type_stats table.
- *
- * Only processes nudge_events where state->>'user_type' is recorded.
- * Uses pg_try_advisory_lock on a single client to prevent concurrent execution.
- *
- * Railway Cron Schedule: 0 21 * * *
- * Environment: CRON_MODE=aggregate_type_stats
+ * generateNudges.js から呼び出される。
+ * nudge_events から過去60日間のデータを集計し、type_stats を更新。
  */
 
-import pg from 'pg';
+/**
+ * type_stats テーブルを集計・更新
+ * @param {Function} query - DB query function (injected from caller)
+ */
+export async function runAggregateTypeStats(query) {
+  console.log('✅ [AggregateTypeStats] Starting type_stats aggregation');
 
-const { Pool } = pg;
-
-const DATABASE_URL = process.env.DATABASE_URL;
-if (!DATABASE_URL) {
-  console.error('❌ DATABASE_URL is not set');
-  process.exit(1);
-}
-
-const pool = new Pool({
-  connectionString: DATABASE_URL,
-  max: 5,
-  idleTimeoutMillis: 30_000,
-});
-
-const LOCK_ID = 150001;
-
-async function runAggregateTypeStats() {
-  console.log('✅ [AggregateTypeStats] Starting daily aggregation');
-
-  // Use a single dedicated client for advisory lock (session-scoped)
-  const client = await pool.connect();
   try {
-    // Advisory lock to prevent concurrent execution
-    const lockResult = await client.query('SELECT pg_try_advisory_lock($1)', [LOCK_ID]);
-    const acquired = lockResult.rows[0].pg_try_advisory_lock;
-    if (!acquired) {
-      console.log('⚠️ [AggregateTypeStats] Already running, skipping');
-      return;
-    }
-
-    try {
-      const result = await client.query(`
-        WITH aggregated AS (
-          SELECT
-            ne.state->>'user_type' AS type_id,
-            ne.state->>'tone' AS tone,
-            COUNT(*) AS total_events,
-            SUM(CASE WHEN no.signals->>'outcome' = 'tapped' THEN 1 ELSE 0 END) AS tapped,
-            SUM(CASE WHEN no.signals->>'outcome' IS NULL OR no.signals->>'outcome' != 'tapped' THEN 1 ELSE 0 END) AS ignored,
-            SUM(CASE WHEN no.signals->>'outcome' = 'tapped' AND no.signals->>'thumbsUp' = 'true' THEN 1 ELSE 0 END) AS thumbs_up,
-            SUM(CASE WHEN no.signals->>'outcome' = 'tapped' AND no.signals->>'thumbsDown' = 'true' THEN 1 ELSE 0 END) AS thumbs_down
-          FROM nudge_events ne
-          LEFT JOIN nudge_outcomes no ON no.nudge_event_id = ne.id
-          WHERE ne.domain = 'problem_nudge'
-            AND (ne.state->>'user_type') IS NOT NULL
-            AND (ne.state->>'user_type') IN ('T1', 'T2', 'T3', 'T4')
-            AND (ne.state->>'tone') IS NOT NULL
-            AND (ne.state->>'tone') IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
-          GROUP BY ne.state->>'user_type', ne.state->>'tone'
-        )
-        INSERT INTO type_stats (type_id, tone, tapped_count, ignored_count, thumbs_up_count, thumbs_down_count, sample_size, updated_at)
+    // 過去60日間の nudge_events を集計
+    const result = await query(`
+      WITH event_counts AS (
         SELECT
-          type_id,
-          tone,
-          tapped,
-          ignored,
-          thumbs_up,
-          thumbs_down,
-          tapped + ignored,
-          NOW()
-        FROM aggregated
-        ON CONFLICT (type_id, tone) DO UPDATE SET
-          tapped_count = EXCLUDED.tapped_count,
-          ignored_count = EXCLUDED.ignored_count,
-          thumbs_up_count = EXCLUDED.thumbs_up_count,
-          thumbs_down_count = EXCLUDED.thumbs_down_count,
-          sample_size = EXCLUDED.sample_size,
-          updated_at = NOW()
-      `);
+          ne.state->>'user_type' as type_id,
+          -- tone正規化: 許可リスト外はデフォルト'logical'にフォールバック
+          CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+               THEN ne.state->>'tone'
+               ELSE 'logical'
+          END as tone,
+          COUNT(*) as total_events,
+          COUNT(CASE WHEN no.signals->>'outcome' = 'tapped' THEN 1 END) as tapped,
+          COUNT(CASE WHEN no.signals->>'outcome' = 'tapped' AND no.signals->>'thumbsUp' = 'true' THEN 1 END) as thumbs_up,
+          COUNT(CASE WHEN no.signals->>'outcome' = 'tapped' AND no.signals->>'thumbsUp' = 'false' THEN 1 END) as thumbs_down
+        FROM nudge_events ne
+        LEFT JOIN nudge_outcomes no ON no.nudge_event_id = ne.id
+        WHERE ne.domain = 'problem_nudge'
+          AND ne.created_at >= NOW() - INTERVAL '60 days'
+          AND ne.state->>'user_type' IS NOT NULL
+          AND ne.state->>'user_type' IN ('T1', 'T2', 'T3', 'T4')
+        GROUP BY ne.state->>'user_type',
+                 CASE WHEN ne.state->>'tone' IN ('strict', 'gentle', 'logical', 'provocative', 'philosophical')
+                      THEN ne.state->>'tone'
+                      ELSE 'logical'
+                 END
+      )
+      INSERT INTO type_stats (type_id, tone, tapped_count, ignored_count, thumbs_up_count, thumbs_down_count, sample_size, updated_at)
+      SELECT
+        type_id,
+        tone,
+        tapped::BIGINT as tapped_count,
+        (total_events - tapped)::BIGINT as ignored_count,
+        thumbs_up::BIGINT as thumbs_up_count,
+        thumbs_down::BIGINT as thumbs_down_count,
+        total_events::BIGINT as sample_size,
+        NOW() as updated_at
+      FROM event_counts
+      ON CONFLICT (type_id, tone) DO UPDATE SET
+        tapped_count = EXCLUDED.tapped_count,
+        ignored_count = EXCLUDED.ignored_count,
+        thumbs_up_count = EXCLUDED.thumbs_up_count,
+        thumbs_down_count = EXCLUDED.thumbs_down_count,
+        sample_size = EXCLUDED.sample_size,
+        updated_at = EXCLUDED.updated_at
+    `);
 
-      console.log(`✅ [AggregateTypeStats] Aggregation complete: ${result.rowCount} type×tone combinations updated`);
-    } finally {
-      await client.query('SELECT pg_advisory_unlock($1)', [LOCK_ID]);
+    console.log(`✅ [AggregateTypeStats] Updated ${result.rowCount} type_stats rows`);
+
+    // 集計結果を確認
+    const statsResult = await query(`
+      SELECT type_id, tone, sample_size, tap_rate, thumbs_up_rate
+      FROM type_stats
+      ORDER BY sample_size DESC
+      LIMIT 10
+    `);
+
+    console.log('📊 [AggregateTypeStats] Top 10 stats:');
+    for (const row of statsResult.rows) {
+      const tapRate = Math.round(Number(row.tap_rate) * 100);
+      const thumbsRate = Math.round(Number(row.thumbs_up_rate) * 100);
+      console.log(`  ${row.type_id}/${row.tone}: sample=${row.sample_size}, tap=${tapRate}%, 👍=${thumbsRate}%`);
     }
-  } finally {
-    client.release();
+
+    return { success: true, rowCount: result.rowCount };
+  } catch (error) {
+    console.error('❌ [AggregateTypeStats] Failed:', error.message);
+    throw error;
   }
 }
-
-// Entry point
-runAggregateTypeStats()
-  .then(async () => {
-    console.log('✅ [AggregateTypeStats] Cron job finished successfully');
-    await pool.end();
-    process.exit(0);
-  })
-  .catch(async (error) => {
-    console.error('❌ [AggregateTypeStats] Cron job failed:', error.message);
-    await pool.end();
-    process.exit(1);
-  });

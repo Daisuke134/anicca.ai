@@ -1,76 +1,64 @@
-# ANICCA Proxy Server
+# Anicca iOS API Server
 
-Proxy server for ANICCA AI Screen Narrator to securely handle Gemini API requests.
+Backend API server for Anicca iOS app, deployed on Railway.
 
 ## Setup
 
-1. Clone this repository
-2. Install dependencies:
+1. Install dependencies:
    ```bash
    npm install
    ```
 
-3. Create `.env.local` file with your API keys:
+2. Create `.env` file:
    ```
-   # For Gemini API
-   GEMINI_API_KEY=your_actual_api_key_here
-   
-   # For GitHub Releases (DMG download)
-   GITHUB_TOKEN=your_github_personal_access_token
-   GITHUB_OWNER=Daisuke134
-   GITHUB_REPO=anicca.ai
-   RELEASE_TAG=v4.0.0
+   DATABASE_URL=postgresql://...
+   OPENAI_API_KEY=...
+   MEM0_API_KEY=...
+   REVENUECAT_REST_API_KEY=...
    ```
 
-4. Run locally:
+3. Run locally:
    ```bash
-   npm run dev
+   npm run dev:railway
    ```
 
-## Deployment
+## Deployment (Railway)
 
-1. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
+Railway auto-deploys from the `dev` branch.
 
-2. Deploy:
-   ```bash
-   vercel
-   ```
+### Prisma Migration (Important!)
 
-3. Set environment variables in Vercel dashboard:
-   - Go to Settings > Environment Variables
-   - Add `GEMINI_API_KEY` with your actual key
-   - Add `GITHUB_TOKEN` with your Personal Access Token
-   - Add other GitHub-related variables if needed
+For **existing databases**, run the following command before first deploy:
+
+```bash
+npx prisma migrate resolve --applied 0_init
+```
+
+This marks the baseline migration as already applied (since tables already exist).
+
+For **new databases**, migrations run automatically via `prisma migrate deploy`.
 
 ## API Endpoints
 
-### POST /api/gemini
-Proxies requests to Gemini API.
+### Mobile API (`/api/mobile/`)
+- `/profile` - User profile CRUD
+- `/entitlement` - Subscription status
+- `/account` - Account management (deletion)
+- `/nudge` - Nudge generation and feedback
 
-Request body:
-```json
-{
-  "endpoint": "/models/gemini-2.0-flash:generateContent",
-  "data": {
-    "contents": [...]
-  }
-}
-```
+### Admin API (`/api/admin/`)
+- `/tiktok` - TikTok post management
+- `/hook-candidates` - Hook candidate CRUD
+- `/trigger-nudges` - Manual cron trigger
 
-### GET /api/download
-Downloads the latest ANICCA DMG file from private GitHub releases.
+## Deprecated Endpoints (v1.6.0)
 
-Required environment variables:
-- `GITHUB_TOKEN`: Personal Access Token with `repo` scope
-- `GITHUB_OWNER`: Repository owner (default: Daisuke134)
-- `GITHUB_REPO`: Repository name (default: anicca.ai)
-- `RELEASE_TAG`: Release tag to download (default: v4.0.0)
+The following endpoints return `410 Gone`:
+- `/api/mobile/behavior`
+- `/api/mobile/feeling`
+- `/api/mobile/daily_metrics`
+- `/api/mobile/sensors`
+- `/api/mobile/user-type`
+- `/api/mobile/realtime`
 
-## Security
-
-- API key is stored only in Vercel environment variables
-- CORS is configured to accept requests from any origin (adjust for production)
-- All requests are logged for monitoring
+These were removed as they were not called by the iOS app.

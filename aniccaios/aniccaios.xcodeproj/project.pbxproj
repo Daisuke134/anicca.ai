@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5539993CAC07B523C82A078D /* DayCyclingTests.swift */; };
 		2FE5F42A07D6CA9CCE447F06 /* NudgeStatsManagerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */; };
 		3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */; };
 		840034502EE52C5200A2F44C /* WidgetKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8400344F2EE52C5100A2F44C /* WidgetKit.framework */; };
@@ -16,9 +17,6 @@
 		840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AB2EC772EA005CDB8D /* RevenueCatUI */; };
 		840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3AE2EC77316005CDB8D /* ComponentsKit */; };
 		840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */ = {isa = PBXBuildFile; productRef = 840BA3B12EC77325005CDB8D /* WebRTC */; };
-		84B4DEFA2F136632002BCC6A /* Singular in Frameworks */ = {isa = PBXBuildFile; productRef = 84B4DEF92F136632002BCC6A /* Singular */; };
-		84B4DEFC2F136C7C002BCC6A /* AdSupport.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */; };
-		84B4DEFE2F136C89002BCC6A /* AppTrackingTransparency.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */; };
 		84CC791A2EFAA90F005078AE /* AniccaNotificationService.appex in Embed Foundation Extensions */ = {isa = PBXBuildFile; fileRef = 84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */ = {isa = PBXBuildFile; productRef = 84DE437E2F090BDA00198F6C /* Mixpanel */; };
 		95CE51F76BE712E891E85F2A /* ProblemNotificationSchedulerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D79CF80F4A02460444C7B3A5 /* ProblemNotificationSchedulerTests.swift */; };
@@ -70,16 +68,15 @@
 
 /* Begin PBXFileReference section */
 		134D591FFF1E0B40CA405490 /* Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		5539993CAC07B523C82A078D /* DayCyclingTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = DayCyclingTests.swift; path = aniccaiosTests/DayCyclingTests.swift; sourceTree = "<group>"; };
 		76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationHotfixTests.swift; sourceTree = "<group>"; };
 		8400344D2EE52C5100A2F44C /* AniccaWidgetExtension.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaWidgetExtension.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		8400344F2EE52C5100A2F44C /* WidgetKit.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = WidgetKit.framework; path = System/Library/Frameworks/WidgetKit.framework; sourceTree = SDKROOT; };
 		840034512EE52C5200A2F44C /* SwiftUI.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = SwiftUI.framework; path = System/Library/Frameworks/SwiftUI.framework; sourceTree = SDKROOT; };
 		8471AE7B2EB783E1002CECAA /* aniccaios.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = aniccaios.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
-		8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
+		8471B0792EB8D091002CECAA /* Staging.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Staging.xcconfig; sourceTree = "<group>"; };
+		8471B07B2EB8D0B0002CECAA /* Production.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Configs/Production.xcconfig; sourceTree = "<group>"; };
 		84A5279B2EEDDA2F008CAEA1 /* AniccaWidgetExtension.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = AniccaWidgetExtension.entitlements; sourceTree = "<group>"; };
-		84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AdSupport.framework; path = System/Library/Frameworks/AdSupport.framework; sourceTree = SDKROOT; };
-		84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = AppTrackingTransparency.framework; path = System/Library/Frameworks/AppTrackingTransparency.framework; sourceTree = SDKROOT; };
 		84CC79132EFAA90F005078AE /* AniccaNotificationService.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = AniccaNotificationService.appex; sourceTree = BUILT_PRODUCTS_DIR; };
 		88497BECBC635C3BB2A4F5F9 /* NudgeStatsManagerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NudgeStatsManagerTests.swift; sourceTree = "<group>"; };
 		8EB5063EEB22012F0836EE85 /* aniccaiosTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = aniccaiosTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -157,9 +154,6 @@
 			buildActionMask = 2147483647;
 			files = (
 				840BA3AC2EC772EA005CDB8D /* RevenueCatUI in Frameworks */,
-				84B4DEFC2F136C7C002BCC6A /* AdSupport.framework in Frameworks */,
-				84B4DEFA2F136632002BCC6A /* Singular in Frameworks */,
-				84B4DEFE2F136C89002BCC6A /* AppTrackingTransparency.framework in Frameworks */,
 				84DE437F2F090BDA00198F6C /* Mixpanel in Frameworks */,
 				840BA3B22EC77325005CDB8D /* WebRTC in Frameworks */,
 				840BA3AF2EC77316005CDB8D /* ComponentsKit in Frameworks */,
@@ -188,8 +182,6 @@
 		8400344E2EE52C5100A2F44C /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
-				84B4DEFD2F136C89002BCC6A /* AppTrackingTransparency.framework */,
-				84B4DEFB2F136C7C002BCC6A /* AdSupport.framework */,
 				8400344F2EE52C5100A2F44C /* WidgetKit.framework */,
 				840034512EE52C5200A2F44C /* SwiftUI.framework */,
 				D58F082AD20410C3202351BF /* iOS */,
@@ -206,9 +198,9 @@
 				84CC79142EFAA90F005078AE /* AniccaNotificationService */,
 				8400344E2EE52C5100A2F44C /* Frameworks */,
 				8471AE7C2EB783E1002CECAA /* Products */,
-				8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */,
-				8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */,
-				8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */,
+				8471B0792EB8D091002CECAA /* Staging.xcconfig */,
+				8471B07B2EB8D0B0002CECAA /* Production.xcconfig */,
+				8471C1A22EC12345002CECAA /* WebRTCShims */,
 				D9FF005033DBB2BB16D6C884 /* aniccaiosTests */,
 			);
 			sourceTree = "<group>";
@@ -224,7 +216,7 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
-		8471C1A22EC12345002CECAA /* aniccaios/WebRTCShims */ = {
+		8471C1A22EC12345002CECAA /* WebRTCShims */ = {
 			isa = PBXGroup;
 			children = (
 			);
@@ -250,6 +242,7 @@
 				SUBINF9876543210FEDCBA /* SubscriptionInfoTests.swift */,
 				76CE63902F0DC6A555FFB103 /* NotificationHotfixTests.swift */,
 				E074536A7E39DB9F93036849 /* NudgeLocalizationTests.swift */,
+				5539993CAC07B523C82A078D /* DayCyclingTests.swift */,
 			);
 			path = aniccaiosTests;
 			sourceTree = "<group>";
@@ -303,7 +296,6 @@
 				840BA3AE2EC77316005CDB8D /* ComponentsKit */,
 				840BA3B12EC77325005CDB8D /* WebRTC */,
 				84DE437E2F090BDA00198F6C /* Mixpanel */,
-				84B4DEF92F136632002BCC6A /* Singular */,
 			);
 			productName = aniccaios;
 			productReference = 8471AE7B2EB783E1002CECAA /* aniccaios.app */;
@@ -387,7 +379,6 @@
 				840BA3AD2EC77316005CDB8D /* XCRemoteSwiftPackageReference "ComponentsKit" */,
 				840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */,
 				84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */,
-				84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 8471AE7C2EB783E1002CECAA /* Products */;
@@ -488,6 +479,7 @@
 				SUBINF1234567890ABCDEF /* SubscriptionInfoTests.swift in Sources */,
 				F29A0962172B02EC2AF48600 /* NotificationHotfixTests.swift in Sources */,
 				3762F96744B5E043FA73E510 /* NudgeLocalizationTests.swift in Sources */,
+				09624508B5E4DDDA28A62154 /* DayCyclingTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -651,7 +643,7 @@
 		};
 		8471AE842EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -719,7 +711,7 @@
 		};
 		8471AE852EB783E3002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Production.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -783,7 +775,7 @@
 		};
 		8471AE872EB783E3002CECAA /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -834,7 +826,7 @@
 		};
 		8471AE882EB783E3002CECAA /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Configs/Production.xcconfig */;
+			baseConfigurationReference = 8471B07B2EB8D0B0002CECAA /* Production.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-production.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -884,7 +876,7 @@
 		};
 		8471B0732EB8CD64002CECAA /* staging Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -952,7 +944,7 @@
 		};
 		8471B0742EB8CD64002CECAA /* staging Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -1001,7 +993,7 @@
 		};
 		8471B0762EB8CD69002CECAA /* staging Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
 			buildSettings = {
 				ALWAYS_SEARCH_USER_PATHS = NO;
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
@@ -1063,7 +1055,7 @@
 		};
 		8471B0772EB8CD69002CECAA /* staging Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Configs/Staging.xcconfig */;
+			baseConfigurationReference = 8471B0792EB8D091002CECAA /* Staging.xcconfig */;
 			buildSettings = {
 				ANICCA_PROXY_BASE_URL = "https://anicca-proxy-staging.up.railway.app/api";
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
@@ -1393,14 +1385,6 @@
 				minimumVersion = 141.0.0;
 			};
 		};
-		84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/singular-labs/Singular-iOS-SDK";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 12.10.0;
-			};
-		};
 		84DE437B2F08F5D000198F6C /* XCRemoteSwiftPackageReference "mixpanel-swift" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/mixpanel/mixpanel-swift";
@@ -1431,11 +1415,6 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 840BA3B02EC77325005CDB8D /* XCRemoteSwiftPackageReference "WebRTC" */;
 			productName = WebRTC;
-		};
-		84B4DEF92F136632002BCC6A /* Singular */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = 84B4DC742F13651D002BCC6A /* XCRemoteSwiftPackageReference "Singular-iOS-SDK" */;
-			productName = Singular;
 		};
 		84DE437E2F090BDA00198F6C /* Mixpanel */ = {
 			isa = XCSwiftPackageProductDependency;

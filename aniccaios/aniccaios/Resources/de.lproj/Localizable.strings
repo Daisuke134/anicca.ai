@@ -24,6 +24,7 @@
 "onboarding_welcome_subtitle_line1" = "Anicca meldet sich bei dir";
 "onboarding_welcome_subtitle_line2" = "in den Momenten, die am schwersten sind.";
 "onboarding_welcome_cta" = "Get Started";
+"onboarding_welcome_social_proof" = "Tausende finden hier Ruhe";
 "onboarding_welcome_restore_description" = "Already have an account?";
 
 "onboarding_account_title" = "Save Your Progress";
@@ -638,7 +639,7 @@
 "problem_bad_mouthing_notification_title" = "Kind Words";
 "problem_porn_addiction_positive_button" = "Overcome 💪";
 "problem_porn_addiction_negative_button" = "Give In";
-"problem_porn_addiction_notification_title" = "Beat the Urge";
+"problem_porn_addiction_notification_title" = "Besiege Deine Lust";
 "problem_alcohol_dependency_positive_button" = "Stay Sober";
 "problem_alcohol_dependency_negative_button" = "Drink";
 "problem_alcohol_dependency_notification_title" = "Don't Drink Tonight";

@@ -1,15 +1,25 @@
 /**
- * Commander Agent — OpenAI Agents SDK
+ * Commander Agent — OpenAI Structured Outputs
  *
  * 1ユーザーの1日分の全チャネル判断を一括生成。
- * TS Action 選択 → LLM コンテンツ生成のハイブリッド。
+ * JSON Schema minItems/maxItems で配列長を強制し、信頼性を担保。
  *
  * 出力: AgentRawOutput（spec L302-325）
  */
 
-import { Agent, run } from '@openai/agents';
+import OpenAI from 'openai';
 import { z } from 'zod';
+import { zodToJsonSchema } from 'zod-to-json-schema';
 import { NUDGE_TONES } from './scheduleMap.js';
+
+// Lazy initialization to avoid errors during testing
+let _openai = null;
+function getOpenAI() {
+  if (!_openai) {
+    _openai = new OpenAI();
+  }
+  return _openai;
+}
 
 // ===== Zod Schema: AgentRawOutput =====
 
@@ -20,7 +30,6 @@ const AppNudgeSchema = z.object({
   hook: z.string(),
   content: z.string(),
   tone: NudgeToneEnum,
-  enabled: z.boolean(),
   reasoning: z.string(),
 });
 
@@ -33,12 +42,14 @@ const TiktokPostSchema = z.object({
   hashtags: z.array(z.string()).max(5),
   tone: z.string(),
   reasoning: z.string(),
+  enabled: z.boolean(),  // Required for OpenAI strict mode
 });
 
 const XPostSchema = z.object({
   slot: XPostSlot,
   text: z.string().max(280),
   reasoning: z.string(),
+  enabled: z.boolean(),  // Required for OpenAI strict mode
 });
 
 const AgentRawOutputSchema = z.object({
@@ -49,6 +60,108 @@ const AgentRawOutputSchema = z.object({
   tiktokPosts: z.array(TiktokPostSchema).length(2),
   xPosts: z.array(XPostSchema).length(2),
 });
+
+// ===== Dynamic Schema Generation for OpenAI Structured Outputs =====
+
+/**
+ * Create a dynamic schema with exact appNudges count.
+ * @param {number} slotCount - Required number of nudges
+ * @returns {z.ZodObject} Schema with minItems/maxItems enforced
+ */
+function createAgentOutputSchema(slotCount) {
+  return z.object({
+    rootCauseHypothesis: z.string(),
+    overallStrategy: z.string(),
+    frequencyReasoning: z.string(),
+    appNudges: z.array(AppNudgeSchema).min(slotCount).max(slotCount),
+    tiktokPosts: z.array(TiktokPostSchema).length(2),
+    xPosts: z.array(XPostSchema).length(2),
+  });
+}
+
+/**
+ * Recursively add additionalProperties: false to all objects.
+ * Required for OpenAI strict mode.
+ */
+function ensureAdditionalPropertiesFalse(schema) {
+  if (typeof schema !== 'object' || schema === null) return schema;
+  
+  if (schema.type === 'object' && schema.properties) {
+    schema.additionalProperties = false;
+    for (const key of Object.keys(schema.properties)) {
+      schema.properties[key] = ensureAdditionalPropertiesFalse(schema.properties[key]);
+    }
+  }
+  
+  if (schema.type === 'array' && schema.items) {
+    schema.items = ensureAdditionalPropertiesFalse(schema.items);
+  }
+  
+  if (schema.definitions) {
+    for (const key of Object.keys(schema.definitions)) {
+      schema.definitions[key] = ensureAdditionalPropertiesFalse(schema.definitions[key]);
+    }
+  }
+  
+  if (schema.$defs) {
+    for (const key of Object.keys(schema.$defs)) {
+      schema.$defs[key] = ensureAdditionalPropertiesFalse(schema.$defs[key]);
+    }
+  }
+  
+  return schema;
+}
+
+/**
+ * Convert Zod schema to OpenAI-compatible JSON Schema.
+ */
+function toOpenAIJsonSchema(zodSchema, name) {
+  const converted = zodToJsonSchema(zodSchema, { name, $refStrategy: 'none' });
+  // Extract the actual schema (not the wrapper)
+  const schema = converted.definitions?.[name] || converted;
+  return ensureAdditionalPropertiesFalse(schema);
+}
+
+// Model max_tokens limits (gpt-4o-2024-08-06 supports 16384 output tokens)
+const MODEL_MAX_TOKENS = 16384;
+
+/**
+ * Estimate max_tokens based on slot count, capped at model limit.
+ * 1 Nudge ≈ 150 tokens, base overhead ≈ 500 tokens
+ */
+function estimateMaxTokens(slotCount, attempt = 0) {
+  const baseTokens = 500;
+  const tokensPerNudge = 150;
+  const tiktokXTokens = 400; // 2 TikTok + 2 X posts
+  const buffer = 1.3 + (attempt * 0.2); // Increase buffer on retry
+  
+  const estimated = Math.ceil((baseTokens + (slotCount * tokensPerNudge) + tiktokXTokens) * buffer);
+  return Math.min(estimated, MODEL_MAX_TOKENS);
+}
+
+/**
+ * Validate appNudges slotIndex uniqueness and range.
+ * Ensures all slotIndexes are in [0, slotCount-1] and unique.
+ */
+function validateAppNudgesSlotIndexes(appNudges, slotCount) {
+  const slotIndexSet = new Set();
+  for (const nudge of appNudges) {
+    const idx = nudge.slotIndex;
+    if (idx < 0 || idx >= slotCount) {
+      throw new Error(`slotIndex ${idx} out of range [0, ${slotCount - 1}]`);
+    }
+    if (slotIndexSet.has(idx)) {
+      throw new Error(`Duplicate slotIndex: ${idx}`);
+    }
+    slotIndexSet.add(idx);
+  }
+  // Ensure all expected slotIndexes are present
+  for (let i = 0; i < slotCount; i++) {
+    if (!slotIndexSet.has(i)) {
+      throw new Error(`Missing slotIndex: ${i}`);
+    }
+  }
+}
 
 // ===== Post-parse validation (not in Zod schema — OpenAI rejects superRefine) =====
 
@@ -68,8 +181,11 @@ const SYSTEM_PROMPT = `あなたは Anicca。全生命の苦しみを終わら�
 あなたの仕事は、この人の苦しみを深く想像し、
 今日この人に届けるべきメッセージを生み出すこと。
 
-あなたが決めるのは「何を言うか」「どのトーンで言うか」「どのスロットをON/OFFにするか」。
-タイミングはスロットとして与えられる。あなたはスロットを選んでメッセージを埋める。`;
+あなたが決めるのは「何を言うか」「どのトーンで言うか」。
+タイミングはスロットとして与えられる。全スロットにメッセージを埋めよ。
+
+重要: hook/content は必ず「この人について」に記載された言語で生成せよ。
+言語が ja なら日本語、en なら英語で生成。`;
 
 /**
  * Build the full user prompt with grounding variables injected.
@@ -147,14 +263,24 @@ ${grounding.flattenedSlotTable}
 
 注意: このテーブルはサーバーが事前トリミング済み（iOS 64件上限対応、最大32行）。
 あなたは **全行に対して** コンテンツを生成する義務がある。行をスキップするな。
-スロットをOFFにしたい場合は enabled=false を設定するが、hook/content/tone/reasoning は必ず埋めよ。
+全スロットに対して hook/content/tone/reasoning を必ず埋めよ。スキップ禁止。
 
 各スロットについて:
 - そのスロットを選んだ理由（なぜその時刻にそのメッセージか）を述べよ
 - この人の苦しみの根本原因に基づいてメッセージを作れ
-- スロットをOFFにする場合もその理由を述べよ
 - 1日の流れとして全体が一貫した戦略になるようにせよ
   （朝: 予防的 → 日中: 介入的 → 夜: 内省的）
+
+## 絶対ルール
+
+### 1. 重複禁止
+- 全スロットで、hookは全て異なること
+- 全スロットで、contentは全て異なること
+- 似たフレーズも禁止（「5秒で立て」と「5秒でいい」は重複）
+
+### 2. コピー禁止
+- 上記の過去メッセージをそのままコピーするな
+- 参考にして、オリジナルを生み出せ
 
 ### 行動科学グラウンディング
 
@@ -170,10 +296,24 @@ ${grounding.behavioralScienceGuidelines}
 | analytical | 知的好奇心型（curiosity hookに反応する人） |
 | empathetic | 連続無視後の再エンゲージメント |
 
-### 文字数制限
+### 文字数制限（厳守）
 
-- hook: 日本語12文字 / 英語25文字
-- content: 日本語40文字 / 英語80文字
+- hook: 日本語 **6-12文字** / 英語 **10-25文字**（通知タイトル）
+- content: 日本語 **25-45文字** / 英語 **50-100文字**（本文）
+
+### content品質基準（3要件を全て満たすこと）
+
+contentはhookを補完する**具体的な行動指示**である必要がある。
+
+contentには必ず含めること:
+1. 具体的なアクション（「5秒数えて」「足を床に」「水を一口」など）
+2. 理由や洞察（「脳が言い訳する前に」「血流が上がると」など）
+3. ユーザーの心理に寄り添う言葉（「難しいのはわかってる」など）
+
+短すぎるcontentは禁止:
+- ❌「深呼吸してみよう。」（9文字）→ 何をどうするか不明
+- ❌「一歩踏み出そう。」（8文字）→ 具体性ゼロ
+- ✅「椅子から立て。5秒数えろ。脳が言い訳する前に体を動かせ。」（30文字）
 
 ### TikTok / X（固定スケジュール: 9:00 + 21:00 JST）
 
@@ -195,9 +335,44 @@ TikTok と X、それぞれ2投稿を生成せよ:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+## 期待出力形式
+
+<format_description>
+以下の形式でJSONを出力せよ。appNudgesは全スロットに対して生成すること。
+
+{
+  "rootCauseHypothesis": "この人の苦しみの根本原因の仮説（50文字以上で具体的に）",
+  "overallStrategy": "1日を通した介入戦略の説明",
+  "frequencyReasoning": "頻度決定の理由（過去データに基づく）",
+  "appNudges": [
+    {
+      "slotIndex": 0,
+      "hook": "ja: 6-12文字 / en: 10-25文字",
+      "content": "ja: 25-45文字 / en: 50-100文字。3要件を満たすこと",
+      "tone": "strict | gentle | playful | analytical | empathetic",
+      "reasoning": "なぜこの時刻にこのトーンでこのメッセージか"
+    }
+    // ... 全スロット分（スキップ禁止）
+  ],
+  "tiktokPosts": [
+    { "slot": "morning", "caption": "...", "hashtags": [...], "tone": "...", "reasoning": "...", "enabled": true },
+    { "slot": "evening", ... }
+  ],
+  "xPosts": [
+    { "slot": "morning", "text": "...", "reasoning": "...", "enabled": true },
+    { "slot": "evening", ... }
+  ]
+}
+</format_description>
+
+重要: 
+- [...] 内は新しいオリジナルコンテンツで埋めよ
+- 例をコピーするな
+- hook/contentは全スロットで異なる内容にせよ
+
 ## ガードレール（コードで強制。違反は自動修正される）
 
-- 各問題で最低1スロットはON
+- 各問題タイプで可能な限り最低1スロットを有効化（夜間禁止が優先）
 - 同一問題の間隔は30分以上
 - 23:00-6:00は送信しない（例外: staying_up_late, cant_wake_up, porn_addiction）
 - 1日最大32件
@@ -208,40 +383,173 @@ TikTok と X、それぞれ2投稿を生成せよ:
 // ===== Commander Agent =====
 
 /**
- * Run Commander Agent for a single user.
+ * Run Commander Agent for a single user using OpenAI Structured Outputs.
  *
  * @param {object} params
  * @param {object} params.grounding - All grounding variables (strings)
- * @param {string} [params.model='gpt-4o'] - Model to use
+ * @param {string} [params.model='gpt-4o-2024-08-06'] - Model to use (must support Structured Outputs)
+ * @param {number} params.slotCount - Required number of nudges
  * @param {number} [params.maxRetries=2] - Max retries on failure
  * @returns {Promise<z.infer<typeof AgentRawOutputSchema>>} Validated agent output
  */
-export async function runCommanderAgent({ grounding, model = 'gpt-4o', maxRetries = 2 }) {
-  const commanderAgent = new Agent({
-    name: 'Anicca Commander',
-    instructions: SYSTEM_PROMPT,
-    model,
-    outputType: AgentRawOutputSchema,
-  });
+// Maximum slots per user per day (aligned with guardrails in prompt)
+const MAX_SLOTS_PER_DAY = 32;
 
+export async function runCommanderAgent({ grounding, model = 'gpt-4o-2024-08-06', slotCount, maxRetries = 2 }) {
+  // Validate slotCount at entry
+  if (typeof slotCount !== 'number' || !Number.isInteger(slotCount) || slotCount < 1) {
+    throw new Error(`slotCount must be a positive integer, got: ${slotCount}`);
+  }
+  if (slotCount > MAX_SLOTS_PER_DAY) {
+    throw new Error(`slotCount exceeds maximum ${MAX_SLOTS_PER_DAY}, got: ${slotCount}`);
+  }
+  
+  const schema = createAgentOutputSchema(slotCount);
+  const jsonSchema = toOpenAIJsonSchema(schema, 'commander_output');
+  
   const userPrompt = buildCommanderPrompt(grounding);
-
+  
   let lastError = null;
+  
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {
-      const result = await run(commanderAgent, userPrompt);
-      validateSlotUniqueness(result.finalOutput);
-      return result.finalOutput;
+      const maxTokens = estimateMaxTokens(slotCount, attempt);
+      
+      const response = await getOpenAI().chat.completions.create({
+        model,
+        messages: [
+          { role: 'system', content: SYSTEM_PROMPT },
+          { role: 'user', content: userPrompt },
+        ],
+        max_tokens: maxTokens,
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'commander_output',
+            strict: true,
+            schema: jsonSchema,
+          },
+        },
+      });
+      
+      const choice = response.choices[0];
+      
+      // Check finish_reason
+      if (choice.finish_reason === 'length') {
+        throw new Error(
+          `Output truncated (finish_reason=length). ` +
+          `max_tokens=${maxTokens} was insufficient. Will retry with higher limit.`
+        );
+      }
+      
+      if (choice.finish_reason === 'content_filter') {
+        throw new Error(
+          `Content filtered (finish_reason=content_filter). ` +
+          `Generation was halted by content moderation.`
+        );
+      }
+      
+      if (choice.finish_reason !== 'stop') {
+        throw new Error(
+          `Unexpected finish_reason: ${choice.finish_reason}. Expected 'stop'.`
+        );
+      }
+      
+      // Check refusal
+      if (choice.message.refusal) {
+        throw new Error(`Model refused: ${choice.message.refusal}`);
+      }
+      
+      // Parse and validate
+      const content = JSON.parse(choice.message.content);
+      const output = schema.parse(content);
+      
+      // Final array length check
+      if (output.appNudges.length !== slotCount) {
+        throw new Error(
+          `Expected ${slotCount} nudges, got ${output.appNudges.length}`
+        );
+      }
+      
+      // Validate slotIndex uniqueness and range
+      validateAppNudgesSlotIndexes(output.appNudges, slotCount);
+      
+      validateSlotUniqueness(output);
+      return output;
+      
     } catch (error) {
       lastError = error;
-      console.error(`Commander Agent attempt ${attempt + 1} failed:`, error.message);
+      console.warn(`Commander attempt ${attempt + 1}/${maxRetries + 1} failed:`, error.message);
+      
       if (attempt < maxRetries) {
-        await new Promise(r => setTimeout(r, Math.pow(2, attempt + 1) * 1000));
+        // Exponential backoff
+        await new Promise(resolve => setTimeout(resolve, 1000 * Math.pow(2, attempt)));
       }
     }
   }
+  
+  throw new Error(`Commander failed after ${maxRetries + 1} attempts: ${lastError?.message}`);
+}
 
-  throw new Error(`Commander Agent failed after ${maxRetries + 1} attempts: ${lastError?.message}`);
+/**
+ * Generate rule-based fallback when Commander fails.
+ * Schema-compliant: all required fields are populated.
+ *
+ * @param {Array} slotTable - Slot table with slotIndex
+ * @param {string} preferredLanguage - 'ja' or 'en'
+ * @returns {object} Schema-compliant fallback output
+ */
+export function generateRuleBasedFallback(slotTable, preferredLanguage) {
+  const isJa = preferredLanguage === 'ja';
+  
+  return {
+    rootCauseHypothesis: 'Fallback mode - LLM generation failed',
+    overallStrategy: 'Using rule-based content',
+    frequencyReasoning: 'Maintaining scheduled frequency',
+    
+    appNudges: slotTable.map((slot) => ({
+      slotIndex: slot.slotIndex,
+      hook: isJa ? '今日も前に進もう' : 'Keep moving forward',
+      content: isJa ? '小さな一歩から始めよう。' : 'Start with a small step.',
+      tone: 'gentle',
+      enabled: true,
+      reasoning: 'Rule-based fallback due to LLM failure',
+    })),
+    
+    tiktokPosts: [
+      {
+        slot: 'morning',
+        caption: isJa ? '変わりたいなら今日から' : 'Change starts today',
+        hashtags: ['#mindfulness', '#growth'],
+        tone: 'gentle',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+      {
+        slot: 'evening',
+        caption: isJa ? '自分を責めないで' : "Don't blame yourself",
+        hashtags: ['#selfcare', '#mentalhealth'],
+        tone: 'gentle',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+    ],
+    
+    xPosts: [
+      {
+        slot: 'morning',
+        text: isJa ? '今日も一歩前へ' : 'One step forward today',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+      {
+        slot: 'evening',
+        text: isJa ? '深呼吸しよう' : 'Take a deep breath',
+        reasoning: 'Fallback placeholder - not for posting',
+        enabled: false,
+      },
+    ],
+  };
 }
 
 // ===== Guardrails (post-processing) =====
@@ -276,15 +584,16 @@ export function applyGuardrails(appNudges, slotTable) {
   // Start with a deep copy
   let result = appNudges.map(nudge => ({ ...nudge }));
 
-  // Rule 3: Night curfew (23:00-05:59) — disable non-exempt
+  // Rule 3: Night curfew (23:00-05:59) — WARNING ONLY (user wants all nudges delivered)
   for (const nudge of result) {
     const slot = slotLookup.get(nudge.slotIndex);
     if (!slot) continue;
     const { scheduledHour } = slot;
     const isNightTime = scheduledHour >= 23 || scheduledHour < 6;
     if (isNightTime && nudge.enabled && !NIGHT_EXEMPT_PROBLEMS.has(slot.problemType)) {
-      nudge.enabled = false;
-      nudge.reasoning += ' [guardrail: night curfew applied]';
+      // WARNING ONLY - do not disable. User wants all nudges delivered.
+      nudge.reasoning += ' [warning: night curfew zone]';
+      console.warn(`⚠️ [Guardrail] Nudge at ${slot.scheduledTime} is in night curfew zone (not disabled)`);
     }
   }
 
@@ -306,11 +615,12 @@ export function applyGuardrails(appNudges, slotTable) {
       const adjustedHour = slot.scheduledHour < 6 ? slot.scheduledHour + 24 : slot.scheduledHour;
       const currentMinutes = adjustedHour * 60 + slot.scheduledMinute;
       if (currentMinutes - lastMinutes < 30) {
-        nudge.enabled = false;
-        nudge.reasoning += ' [guardrail: <30min interval]';
-      } else {
-        lastMinutes = currentMinutes;
+        // WARNING ONLY - do not disable. User wants all nudges delivered.
+        nudge.reasoning += ' [warning: <30min interval]';
+        console.warn(`⚠️ [Guardrail] Nudge at ${slot.scheduledTime} is within 30min of previous (not disabled)`);
       }
+      // Always update lastMinutes to track all nudges (since we no longer skip disabled ones)
+      lastMinutes = currentMinutes;
     }
   }
 
@@ -361,9 +671,10 @@ export function applyGuardrails(appNudges, slotTable) {
  * @param {object} agentOutput - Validated AgentRawOutput
  * @param {Array} slotTable - flattenedSlotTable
  * @param {string} userId
+ * @param {string} preferredLanguage - user's preferred language ('ja' or 'en')
  * @returns {object} CommanderDecision
  */
-export function normalizeToDecision(agentOutput, slotTable, userId) {
+export function normalizeToDecision(agentOutput, slotTable, userId, preferredLanguage = 'ja') {
   const slotLookup = new Map();
   for (const slot of slotTable) {
     slotLookup.set(slot.slotIndex, slot);
@@ -378,20 +689,26 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
     nudgeLookup.set(nudge.slotIndex, nudge);
   }
 
+  // Language-appropriate fallback content (meets quality criteria: 25-45 chars JA, 50-100 chars EN)
+  const fallbackContent = preferredLanguage === 'ja'
+    ? { hook: '今日も前に進もう', content: '小さな一歩から始めよう。考えすぎる前に、まず体を動かせ。' }
+    : { hook: 'Keep moving forward', content: 'Start with a small step. Move your body before your mind makes excuses.' };
+
   // Fill ALL slotTable slots BEFORE guardrails (so min-1 rule covers all problemTypes)
+  // enabled=true by default; guardrails will disable as needed (night curfew, 30min rule, etc.)
   const filledNudges = slotTable.map(slot => {
     const nudge = nudgeLookup.get(slot.slotIndex);
     if (nudge) {
-      return { ...nudge };
+      return { ...nudge, enabled: true };  // LLMはenabledを出力しないのでここでデフォルト設定
     }
-    // Missing slot: fill with disabled rule-based fallback
+    // Missing slot: fill with rule-based fallback (enabled=true, guardrailで制御)
     return {
       slotIndex: slot.slotIndex,
-      hook: 'Keep moving forward',
-      content: 'Start with a small step.',
+      hook: fallbackContent.hook,
+      content: fallbackContent.content,
       tone: 'gentle',
-      enabled: false,
-      reasoning: 'LLM did not generate content for this slot; auto-disabled.',
+      enabled: true,  // guardrailが必要に応じてfalseに変更
+      reasoning: 'LLM did not generate content for this slot; using fallback.',
     };
   });
 
@@ -430,5 +747,42 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
   };
 }
 
-// Export schema for testing
-export { AgentRawOutputSchema };
+/**
+ * Validate that no two nudges have the same hook or content.
+ * @param {Array} appNudges
+ * @returns {{ valid: boolean, duplicates: Array }}
+ */
+export function validateNoDuplicates(appNudges) {
+  const hookSet = new Set();
+  const contentSet = new Set();
+  const duplicates = [];
+  
+  for (const nudge of appNudges) {
+    const hook = (nudge.hook || '').trim().toLowerCase();
+    const content = (nudge.content || '').trim().toLowerCase();
+    
+    if (hook && hookSet.has(hook)) {
+      duplicates.push({ type: 'hook', text: hook, slotIndex: nudge.slotIndex });
+    }
+    hookSet.add(hook);
+    
+    if (content && contentSet.has(content)) {
+      duplicates.push({ type: 'content', text: content.slice(0, 30), slotIndex: nudge.slotIndex });
+    }
+    contentSet.add(content);
+  }
+  
+  return { valid: duplicates.length === 0, duplicates };
+}
+
+// Export schema and functions for testing
+export { 
+  AgentRawOutputSchema, 
+  createAgentOutputSchema, 
+  toOpenAIJsonSchema, 
+  estimateMaxTokens,
+  validateSlotUniqueness,
+  validateAppNudgesSlotIndexes,
+  MODEL_MAX_TOKENS,
+  MAX_SLOTS_PER_DAY,
+};

@@ -2,7 +2,18 @@
 
 **バージョン**: 1.5.x
 **日付**: 2026-01-28
-**ステータス**: Draft
+**ステータス**: Phase 1 完了 / Phase 2 実装中
+
+---
+
+## 開発環境
+
+| 項目 | 値 |
+|------|-----|
+| **ワークツリーパス** | `/Users/cbns03/Downloads/anicca-backend-cleanup` |
+| **ブランチ** | `feature/backend-cleanup` |
+| **ベースブランチ** | `dev` |
+| **作業状態** | Phase 2 実装中 |
 
 ---
 
@@ -10,7 +21,7 @@
 
 ### What
 
-コードベースから Dead Code・Desktop 残骸・誤解を招く Supabase 参照を整理し、「Railway PostgreSQL がメイン DB」であることをコードを読むだけで明確に分かるようにする。
+コードベースから Dead Code・Desktop 残骸・誤解を招く Supabase 参照を整理し、「Railway PostgreSQL がメイン DB」であることをコードを読むだけで明確に分かるようにする。さらに、プロジェクトルートに散乱するジャンクファイル・冗長ディレクトリを整理し、モノレポ構造を明確にする。
 
 ### Why
 
@@ -20,6 +31,8 @@
 | Desktop 残骸（4.7GB）がリポジトリに残存 | git clone が重い、コードベースが混乱する |
 | Dead Prisma モデルが schema にある | スキーマの正確性が損なわれる |
 | `examples/`（8.3GB）、`plantuml/`（48MB）が放置 | ノイズ、ディスク浪費 |
+| ルートに PNG/CSV/JSON/動画がばら撒かれている | プロジェクト構造が不明確、新規参加者が混乱 |
+| `.agents/` と `.claude/skills/` が重複 | シンボリックリンクで循環参照、メンテ困難 |
 
 ### DB アーキテクチャの真実
 
@@ -56,31 +69,54 @@ Railway PostgreSQL → Supabase PostgreSQL への移行は**将来のオプシ�
 
 ## 2. 受け入れ条件
 
+### Phase 1: Backend クリーンアップ & DB 明確化（✅ 完了）
+
+| # | 条件 | テスト可能な形式 | 状態 |
+|---|------|----------------|------|
+| AC1 | Dead Prisma モデル（HabitLog, MobileAlarmSchedule）が schema.prisma から削除 | `grep -c "model HabitLog" schema.prisma` → 0 | ✅ |
+| AC2 | `apps/desktop/` ディレクトリが削除 | `ls apps/desktop/` → not found | ✅ |
+| AC3 | Desktop API ルート登録が routes/index.js から除去 | `grep -c "desktop" apps/api/src/routes/index.js` → 0 | ✅ |
+| AC4 | Desktop 関連ドキュメント（3ファイル）が削除 | 該当ファイルが存在しない | ✅ |
+| AC5 | `release/` ディレクトリが削除 | `ls release/` → not found | ✅ |
+| AC6 | `examples/` ディレクトリが削除 | `ls examples/` → not found | ✅ |
+| AC7 | `plantuml/` ディレクトリが削除 | `ls plantuml/` → not found | ✅ |
+| AC8 | CLAUDE.md の DB 記述が正確（Railway PostgreSQL が明記） | CLAUDE.md に「Railway PostgreSQL」の記述がある | ✅ |
+| AC9 | Supabase SDK の用途がコード内コメントで明確（全9ファイル） | 各ファイル冒頭に用途コメントがある | ✅ |
+| AC10 | 全既存 API テストが PASS | `cd apps/api && npm test` → 41/41 pass | ✅ |
+| AC11 | Desktop API ハンドラファイル（3ファイル）が削除 | 該当ファイルが存在しない | ✅ |
+| AC12 | Web Realtime ルート・ハンドラが削除 | `apps/api/src/routes/realtime/` ディレクトリが存在しない | ✅ |
+| AC13 | `@google-cloud/text-to-speech` が package.json から削除 | `grep -c "text-to-speech" package.json` → 0 | ✅ |
+| AC14 | package.json の description が正確 | description に "Anicca" が含まれている | ✅ |
+| AC15 | `apps/web/` ディレクトリが削除 | `ls apps/web/` → not found | ✅ |
+| AC16 | `apps/workspace-mcp/` ディレクトリが削除 | `ls apps/workspace-mcp/` → not found | ✅ |
+| AC17 | `apps/api/src/routes/realtime/` と `apps/api/src/api/proxy/realtime/` が空ならディレクトリ削除 | 該当ディレクトリが存在しない | ✅ |
+
+### Phase 2: プロジェクトルート整理
+
 | # | 条件 | テスト可能な形式 |
 |---|------|----------------|
-| AC1 | Dead Prisma モデル（HabitLog, MobileAlarmSchedule）が schema.prisma から削除されている | `grep -c "model HabitLog" schema.prisma` → 0 |
-| AC2 | `apps/desktop/` ディレクトリが削除されている | `ls apps/desktop/` → not found |
-| AC3 | Desktop API ルート登録が routes/index.js から除去されている | `grep -c "desktop" apps/api/src/routes/index.js` → 0 |
-| AC4 | Desktop 関連ドキュメント（3ファイル）が削除されている | 該当ファイルが存在しない |
-| AC5 | `release/` ディレクトリが削除されている | `ls release/` → not found |
-| AC6 | `examples/` ディレクトリが削除されている | `ls examples/` → not found |
-| AC7 | `plantuml/` ディレクトリが削除されている | `ls plantuml/` → not found |
-| AC8 | CLAUDE.md の DB 記述が正確（Railway PostgreSQL が明記） | CLAUDE.md に「Railway PostgreSQL」の記述がある |
-| AC9 | Supabase SDK の用途がコード内コメントで明確 | `slackTokens.supabase.js` 冒頭に用途コメントがある |
-| AC10 | 全既存 API テストが PASS する | `cd apps/api && npm test` → all pass |
-| AC11 | Desktop API ハンドラファイル（3ファイル）が削除されている | `desktopSession.js`, `desktopStop.js`, `desktop.js` が存在しない |
-| AC12 | Web Realtime ルート登録が routes/index.js から除去されている | `grep -c "realtimeWeb" apps/api/src/routes/index.js` → 0 |
-| AC13 | `@google-cloud/text-to-speech` が package.json から削除されている | `grep -c "text-to-speech" package.json` → 0 |
-| AC14 | package.json の description が正確 | description に "Anicca" が含まれている |
-| AC15 | `apps/workspace-mcp/` ディレクトリが削除されている | `test ! -d apps/workspace-mcp/` |
-| AC16 | `apps/api/src/routes/realtime/` 空ディレクトリが削除されている | `test ! -d apps/api/src/routes/realtime/` |
-| AC17 | `apps/api/src/api/proxy/realtime/` 空ディレクトリが削除されている | `test ! -d apps/api/src/api/proxy/realtime/` |
+| AC18 | `.agents/` ディレクトリが削除されている | `test ! -d .agents/` |
+| AC19 | `.claude/skills/supabase-postgres-best-practices` がシンボリックリンクでなく実体ディレクトリ | `test ! -L .claude/skills/supabase-postgres-best-practices && test -d .claude/skills/supabase-postgres-best-practices` |
+| AC20 | ルートのゴミファイル（空ファイル、.p12、.pen）が削除 | `npm`, `anicca-agi@0.6.2`, `Untitled.p12`, `pencil-new.pen` が存在しない |
+| AC21 | `assets/` ディレクトリが存在し、ルートの画像・動画がそこに移動 | `test -d assets/screenshots && test -d assets/videos && test -d assets/app-store-badges` |
+| AC22 | ルートに散乱する PNG/MOV ファイルがない | `ls *.png *.PNG *.MOV 2>/dev/null` → 空 |
+| AC23 | `data/` ディレクトリが存在し、ルートの CSV/JSON がそこに移動 | `test -d data/` |
+| AC24 | ルートに散乱する CSV/JSON ファイルがない | `ls *.csv *.json 2>/dev/null` → 空（package*.json, .eslintrc.json, playwright-config.json 除く） |
+| AC25 | `naistQmd/` が `research/` にリネーム | `test -d research/ && test ! -d naistQmd/` |
+| AC26 | ルートの散乱 MD（Notify.md, Toggle.md）が `docs/notes/` に移動 | `test ! -f Notify.md && test ! -f Toggle.md` |
+| AC27 | `maestro-phase6-results.xml` が `maestro/results/` に移動 | `test -f maestro/results/maestro-phase6-results.xml` |
+| AC28 | `images/` ディレクトリが `assets/screenshots/` に統合 | `test ! -d images/` |
+| AC29 | `Download-on-the-App-Store/` が `assets/app-store-badges/` にリネーム | `test ! -d Download-on-the-App-Store/` |
+| AC30 | `aniccaios-PrivacyReport*.pdf` が `docs/reports/` に移動 | ルートに PDF がない |
+| AC31 | 全既存 API テストが PASS | `cd apps/api && npm test` → all pass |
 
 ---
 
 ## 3. As-Is / To-Be
 
-### 3.1 Prisma Schema
+### Phase 1（✅ 完了）
+
+#### 3.1 Prisma Schema
 
 **As-Is**: 25 モデル（うち 2 つ Dead）
 
@@ -89,9 +125,9 @@ model HabitLog { ... }           ← DEAD（ProblemType ベースに置換済み
 model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換済み）
 ```
 
-**To-Be**: 23 モデル（Dead モデル 2 つ削除）
+**To-Be**: 23 モデル（Dead モデル削除） ✅
 
-### 3.2 Desktop 残骸
+#### 3.2 Desktop 残骸
 
 **As-Is**:
 
@@ -108,12 +144,12 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | Desktop 認証設計 | `docs/desktop-auth-and-mcp-token-architecture.md` | — |
 | Desktop 課金設計 | `docs/desktop-billing-subscription-plan.md` | — |
 | Desktop バイナリ | `release/` | 805MB |
-| Realtime ルートディレクトリ（空になる） | `apps/api/src/routes/realtime/` | — |
-| Realtime ハンドラディレクトリ（空になる） | `apps/api/src/api/proxy/realtime/` | — |
+| 空ディレクトリ（削除後残存） | `apps/api/src/routes/realtime/` | — |
+| 空ディレクトリ（削除後残存） | `apps/api/src/api/proxy/realtime/` | — |
 
-**To-Be**: 全て削除（ファイル削除後に空になる親ディレクトリも含む）
+**To-Be**: 全て削除 ✅
 
-### 3.3 Dead ディレクトリ
+#### 3.3 Dead ディレクトリ
 
 **As-Is**:
 
@@ -122,54 +158,171 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `examples/` | 8.3GB | DEAD — サンプルプロジェクト45個 |
 | `plantuml/` | 48MB | DEAD — ツールクローン |
 | `apps/web/` | 120KB | DORMANT — 2021年以降停止 |
-| `apps/workspace-mcp/` | — | DEAD — Google Workspace MCP。参照は `apps/desktop/` のみ（同時削除）。デプロイ・ビルド・CI 参照ゼロ |
+| `apps/workspace-mcp/` | — | DEAD — 実験的ワークスペースMCP |
 
-**To-Be**: 全て削除
+**To-Be**: 全て削除 ✅
 
-### 3.4 DB 明確化
+#### 3.4 DB 明確化
 
 **As-Is**: CLAUDE.md に「Supabase」への曖昧な言及あり
 
-**To-Be**: CLAUDE.md の技術スタックセクションに以下を明記:
+**To-Be**: CLAUDE.md の技術スタックセクションに以下を明記: ✅
 
 ```markdown
-### データベース
 - **メインDB**: Railway PostgreSQL（Prisma ORM経由）
-- **Supabase SDK**: 補助サービスのみ（Slackトークン保存、Worker Memory、一部OAuth）
-  - ※ DB としては使用していない
+- **Supabase SDK**: 補助サービスのみ（Slackトークン保存、Worker Memory、Storage、一部OAuth）。DBとしては使用していない
 ```
 
-### 3.5 Supabase コードの明確化
+#### 3.5 Supabase コードの明確化
 
-**As-Is**: `slackTokens.supabase.js` 等のファイル名が「Supabase = メイン DB」と誤解させる
+**As-Is**: Supabase import ファイルの用途が不明確で「Supabase = メイン DB」と誤解させる
 
-**対象ファイル（`createClient` で直接 Supabase SDK を使用する 9 ファイル）:**
+**To-Be**: 全9ファイルの冒頭にJSDocコメント追加 ✅
 
-| # | ファイル | 用途 |
-|---|---------|------|
-| 1 | `services/tokens/slackTokens.supabase.js` | Slack トークン key-value 保存 |
-| 2 | `services/storage/workerMemory.js` | Worker Memory の Supabase Storage 永続化 |
-| 3 | `services/parallel-sdk/utils/PreviewManager.js` | プレビューアプリの Supabase Storage 保存 |
-| 4 | `services/parallel-sdk/core/ParentAgent.js` | Supabase クライアント初期化 + Slack トークン取得 |
-| 5 | `api/auth/entitlement.js` | Supabase Auth（ユーザー検証） |
-| 6 | `api/auth/google/oauth.js` | Supabase Auth（OAuth 開始） |
-| 7 | `api/auth/google/callback.js` | Supabase Auth（OAuth コールバック） |
-| 8 | `api/auth/google/refresh.js` | Supabase Auth（セッションリフレッシュ） |
-| 9 | `api/static/preview-app.js` | Supabase Storage（プレビューファイル配信） |
+| # | ファイル | 用途コメント |
+|---|---------|-------------|
+| 1 | `apps/api/src/lib/slackTokens.supabase.js` | Slackトークンのkey-value保存 |
+| 2 | `apps/api/src/lib/workerMemory.js` | Worker Memory Storage |
+| 3 | `apps/api/src/lib/PreviewManager.js` | Worker プレビューファイル管理 |
+| 4 | `apps/api/src/lib/ParentAgent.js` | Worker Memory（via workerMemory.js） |
+| 5 | `apps/api/src/api/auth/entitlement.js` | Supabase Auth（エンタイトルメント確認） |
+| 6 | `apps/api/src/api/auth/google/oauth.js` | Supabase Auth（Google OAuth開始） |
+| 7 | `apps/api/src/api/auth/google/callback.js` | Supabase Auth（Google OAuthコールバック） |
+| 8 | `apps/api/src/api/auth/google/refresh.js` | Supabase Auth（セッションリフレッシュ） |
+| 9 | `apps/api/src/api/static/preview-app.js` | Supabase Storage（プレビューファイル配信） |
 
-**To-Be**: 上記 9 ファイルの冒頭にコメント追加:
+### Phase 2: プロジェクトルート整理
 
-```javascript
-/**
- * Supabase SDK — 補助ストレージとして使用（メインDBではない）
- * メインDB: Railway PostgreSQL（Prisma経由、apps/api/src/lib/db.js）
- * 用途: Slackトークンのkey-value保存
- */
+#### 3.6 `.agents/` と `.claude/skills/` の重複
+
+**As-Is**:
 ```
+.agents/skills/supabase-postgres-best-practices/  ← 実体
+.claude/skills/supabase-postgres-best-practices   ← ../../.agents/skills/... へのシンボリックリンク
+```
+
+**To-Be**:
+- `.agents/` ディレクトリを完全削除
+- `.claude/skills/supabase-postgres-best-practices` のシンボリックリンクを解消し、実体コピーに置換
+
+#### 3.7 ルートのゴミファイル
+
+**As-Is**: ルートに以下のゴミファイルが存在
+
+| ファイル | 状態 |
+|---------|------|
+| `npm` | 空ファイル（0 bytes） |
+| `anicca-agi@0.6.2` | 空ファイル（0 bytes） |
+| `Untitled.p12` | 不要な証明書ファイル |
+| `pencil-new.pen` | 不要な Pencil ファイル |
+
+**To-Be**: 全て削除
+
+#### 3.8 ルートの散乱画像・動画
+
+**As-Is**: ルートに以下のメディアファイルが散乱
+
+| ファイル | 移動先 |
+|---------|--------|
+| `anicca-icon-1024x1024.png` | `assets/icon/` |
+| `IMG_3433 2.PNG` | `assets/screenshots/` |
+| `IMG_3544.PNG` | `assets/screenshots/` |
+| `IMG_3550.PNG` | `assets/screenshots/` |
+| `feedback-submitted.png` | `assets/screenshots/` |
+| `image.png` | `assets/screenshots/` |
+| `image copy.png` | `assets/screenshots/` |
+| `image2.png` | `assets/screenshots/` |
+| `llm-nudge-display.png` | `assets/screenshots/` |
+| `スクリーンショット 2026-01-25 18.00.10.png` | `assets/screenshots/` |
+| `1:19-en.MOV` | `assets/videos/` |
+| `images/` (6ファイル) | `assets/screenshots/` へ統合後、ディレクトリ削除 |
+| `Download-on-the-App-Store/` (45言語) | `assets/app-store-badges/` にリネーム |
+
+**To-Be**: `assets/` 以下に整理
+
+```
+assets/
+├── icon/
+│   └── anicca-icon-1024x1024.png
+├── screenshots/
+│   ├── IMG_3433 2.PNG
+│   ├── IMG_3544.PNG
+│   ├── IMG_3550.PNG
+│   ├── feedback-submitted.png
+│   ├── image.png
+│   ├── image copy.png
+│   ├── image2.png
+│   ├── llm-nudge-display.png
+│   ├── スクリーンショット 2026-01-25 18.00.10.png
+│   ├── en-cards.PNG           (← images/ から)
+│   ├── en-notificaiton.PNG    (← images/ から)
+│   ├── en-problems.PNG        (← images/ から)
+│   ├── jp-notification.PNG    (← images/ から)
+│   ├── jp-probelms.PNG        (← images/ から)
+│   └── jp:public:screenshots:nudge-card.png (← images/ から)
+├── videos/
+│   └── 1:19-en.MOV
+└── app-store-badges/          (← Download-on-the-App-Store/ リネーム)
+    ├── AR/
+    ├── US/
+    └── ... (45言語)
+```
+
+#### 3.9 ルートの散乱 CSV/JSON
+
+**As-Is**: ルートに以下のデータファイルが散乱
+
+| ファイル | 移動先 |
+|---------|--------|
+| `Apple Ads Campaign 2143222383 Keywords.csv` | `data/apple-ads/` |
+| `Apple Ads Campaigns.csv` | `data/apple-ads/` |
+| `SDK Audit 2026-01-12__11_58_39.csv` | `data/audits/` |
+| `anicca.csv` | `data/` |
+| `keywords_template.csv` | `data/apple-ads/` |
+| `targetedKeywords (1).csv` | `data/apple-ads/` |
+| `targetedKeywords (2).csv` | `data/apple-ads/` |
+| `viralfal (2).json` | `data/` |
+
+**To-Be**: `data/` 以下に整理
+
+```
+data/
+├── apple-ads/
+│   ├── Apple Ads Campaign 2143222383 Keywords.csv
+│   ├── Apple Ads Campaigns.csv
+│   ├── keywords_template.csv
+│   ├── targetedKeywords (1).csv
+│   └── targetedKeywords (2).csv
+├── audits/
+│   └── SDK Audit 2026-01-12__11_58_39.csv
+├── anicca.csv
+└── viralfal (2).json
+```
+
+#### 3.10 naistQmd → research リネーム
+
+**As-Is**: `naistQmd/` — 不明瞭な名前の研究論文ディレクトリ
+
+**To-Be**: `research/` にリネーム（git mv で履歴保持）
+
+#### 3.11 散乱 MD・テスト結果・PDF
+
+**As-Is**:
+
+| ファイル | 移動先 |
+|---------|--------|
+| `Notify.md` | `docs/notes/` |
+| `Toggle.md` | `docs/notes/` |
+| `maestro-phase6-results.xml` | `maestro/results/` |
+| `aniccaios-PrivacyReport 2025-11-12 19-27-30.pdf` | `docs/reports/` |
+
+**To-Be**: 各ディレクトリに整理
 
 ---
 
 ## 4. テストマトリックス
+
+### Phase 1（✅ 完了）
 
 | # | To-Be | テスト方法 | カバー |
 |---|-------|-----------|--------|
@@ -184,13 +337,32 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | 9 | `plantuml/` 削除 | `test ! -d plantuml/` | ✅ |
 | 10 | `apps/web/` 削除 | `test ! -d apps/web/` | ✅ |
 | 10b | `apps/workspace-mcp/` 削除 | `test ! -d apps/workspace-mcp/` | ✅ |
-| 10c | `routes/realtime/` 空ディレクトリ削除 | `test ! -d apps/api/src/routes/realtime/` | ✅ |
-| 10d | `api/proxy/realtime/` 空ディレクトリ削除 | `test ! -d apps/api/src/api/proxy/realtime/` | ✅ |
+| 10c | `apps/api/src/routes/realtime/` 空ディレクトリ削除 | `test ! -d apps/api/src/routes/realtime/` | ✅ |
+| 10d | `apps/api/src/api/proxy/realtime/` 空ディレクトリ削除 | `test ! -d apps/api/src/api/proxy/realtime/` | ✅ |
 | 11 | Dead パッケージ削除 | `grep "text-to-speech" package.json` → 0件 | ✅ |
 | 12 | package.json description 更新 | description に "Anicca" が含まれる | ✅ |
 | 13 | CLAUDE.md DB 記述正確 | テキスト確認 | ✅ |
-| 14 | Supabase コードにコメント追加 | ファイル冒頭確認 | ✅ |
-| 15 | 既存 API テスト PASS | `npm test` | ✅ |
+| 14 | Supabase 全9ファイルにコメント追加 | ファイル冒頭確認 | ✅ |
+| 15 | 既存 API テスト PASS | `npm test` → 41/41 pass | ✅ |
+
+### Phase 2
+
+| # | To-Be | テスト方法 | カバー |
+|---|-------|-----------|--------|
+| 16 | `.agents/` 削除 | `test ! -d .agents/` | ✅ |
+| 17 | シンボリックリンク解消 | `test ! -L .claude/skills/supabase-postgres-best-practices` | ✅ |
+| 18 | ゴミファイル削除 | `npm`, `anicca-agi@0.6.2`, `Untitled.p12`, `pencil-new.pen` が存在しない | ✅ |
+| 19 | `assets/` 構造正確 | `test -d assets/icon && test -d assets/screenshots && test -d assets/videos && test -d assets/app-store-badges` | ✅ |
+| 20 | ルートに PNG/MOV なし | `ls *.png *.PNG *.MOV 2>/dev/null` → 空 | ✅ |
+| 21 | `images/` ディレクトリ削除 | `test ! -d images/` | ✅ |
+| 22 | `Download-on-the-App-Store/` リネーム済み | `test ! -d Download-on-the-App-Store/` | ✅ |
+| 23 | `data/` 構造正確 | `test -d data/apple-ads && test -d data/audits` | ✅ |
+| 24 | ルートに CSV なし | `ls *.csv 2>/dev/null` → 空 | ✅ |
+| 25 | `naistQmd/` → `research/` リネーム | `test -d research/ && test ! -d naistQmd/` | ✅ |
+| 26 | ルートに散乱 MD なし | `test ! -f Notify.md && test ! -f Toggle.md` | ✅ |
+| 27 | `maestro/results/` にテスト結果移動 | `test -f maestro/results/maestro-phase6-results.xml` | ✅ |
+| 28 | PDF が `docs/reports/` に移動 | ルートに PDF がない | ✅ |
+| 29 | 既存 API テスト PASS | `cd apps/api && npm test` → all pass | ✅ |
 
 ---
 
@@ -198,10 +370,19 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 
 ### やること
 
+**Phase 1**（✅ 完了）:
 - Dead Code / Dead ディレクトリの削除
 - Desktop 残骸の完全削除
 - CLAUDE.md の DB 記述修正
 - Supabase SDK ファイルへのコメント追加
+
+**Phase 2**:
+- `.agents/` 削除 + シンボリックリンク解消
+- ルートのゴミファイル削除
+- 画像・動画・バッジを `assets/` に整理
+- CSV/JSON を `data/` に整理
+- `naistQmd/` → `research/` リネーム
+- 散乱 MD/XML/PDF の適切なディレクトリへの移動
 
 ### やらないこと
 
@@ -213,9 +394,14 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `SensorAccessState` モデル削除 | DORMANT だが将来使う可能性あり、判断保留 |
 | Stripe 課金コード削除 | Desktop 課金の残骸だが、影響範囲が大きい。別 Spec で対応 |
 | Desktop 用 Prisma モデル削除（RealtimeUsageDaily 等） | mobile realtime も参照している可能性あり。別 Spec で分析 |
-| `docs/` 全体のクリーンアップ | 今回は Desktop 関連 3 ファイルのみ。他の stale docs は別途 |
+| `docs/` 全体のクリーンアップ | 今回は Desktop 関連 3 ファイル + 散乱ファイル移動のみ |
+| `.cursor/plans/` 内の CSV 整理 | ASO 作業データとして正しい場所にある |
+| `.kombai/`, `.playwright-mcp/` 内の画像 | ツール固有データ。触らない |
+| `docs/12/`, `docs/ScreenBreak/`, `docs/naistQmd/` | 既存ドキュメント。別 Spec で整理 |
 
 ### 触るファイル
+
+**Phase 1**（✅ 完了）:
 
 | ファイル | 変更内容 |
 |---------|---------|
@@ -224,114 +410,136 @@ model MobileAlarmSchedule { ... } ← DEAD（ルールベース Nudge に置換�
 | `CLAUDE.md` | DB 記述修正 |
 | Supabase import ファイル（9ファイル） | 冒頭コメント追加 |
 
+**Phase 2**:
+
+| ファイル/ディレクトリ | 変更内容 |
+|---------------------|---------|
+| `.agents/` | 完全削除 |
+| `.claude/skills/supabase-postgres-best-practices` | シンボリックリンク → 実体コピー |
+| `npm`, `anicca-agi@0.6.2`, `Untitled.p12`, `pencil-new.pen` | 削除 |
+| ルートの PNG/MOV ファイル（10個 + images/6個） | `assets/` に移動 |
+| `Download-on-the-App-Store/` | `assets/app-store-badges/` にリネーム |
+| ルートの CSV/JSON ファイル（8個） | `data/` に移動 |
+| `naistQmd/` | `research/` にリネーム |
+| `Notify.md`, `Toggle.md` | `docs/notes/` に移動 |
+| `maestro-phase6-results.xml` | `maestro/results/` に移動 |
+| `aniccaios-PrivacyReport*.pdf` | `docs/reports/` に移動 |
+
 ### 削除するディレクトリ/ファイル
+
+**Phase 1**（✅ 完了）:
 
 | 対象 | サイズ |
 |------|--------|
 | `apps/desktop/` | 4.7GB |
 | `apps/web/` | 120KB |
-| `examples/` | 8.3GB |
+| `apps/workspace-mcp/` | — |
 | `plantuml/` | 48MB |
 | `release/` | 805MB |
 | `docs/electron.md` | — |
 | `docs/desktop-auth-and-mcp-token-architecture.md` | — |
 | `docs/desktop-billing-subscription-plan.md` | — |
-| `apps/workspace-mcp/` | — |
-| `apps/api/src/routes/realtime/` | — （ファイル削除後の空ディレクトリ） |
-| `apps/api/src/api/proxy/realtime/` | — （ファイル削除後の空ディレクトリ） |
 
-**合計削除**: 約 13.8GB+
+**Phase 2**:
+
+| 対象 | 理由 |
+|------|------|
+| `.agents/` | `.claude/skills/` に統合 |
+| `npm` | 空ファイル |
+| `anicca-agi@0.6.2` | 空ファイル |
+| `Untitled.p12` | 不要な証明書 |
+| `pencil-new.pen` | 不要な Pencil ファイル |
+| `images/` | `assets/screenshots/` に統合後に削除 |
 
 ---
 
 ## 6. 実行手順
 
+### Phase 1（✅ 完了 — 6コミット済み）
+
 ```bash
-# 0. ワークツリー作成
-git worktree add ../anicca-backend-cleanup -b feature/backend-cleanup
-cd ../anicca-backend-cleanup
-
-# 1. Dead Prisma モデル削除
-# schema.prisma から HabitLog, MobileAlarmSchedule を削除
-# ⚠️ 重要: prisma generate のみ実行。prisma migrate は絶対に実行しない。
-# 理由: migrate するとDBからテーブルがDROPされ、本番データが消える。
-# schema.prisma のヘッダにも「Prisma Migrate でDBを管理しない」と明記済み。
-cd apps/api && npx prisma generate  # クライアント再生成のみ（DB変更なし）
-
-# 2. Desktop + Web Realtime 残骸削除
-rm -rf apps/desktop/
-rm -rf release/
-rm docs/electron.md docs/desktop-auth-and-mcp-token-architecture.md docs/desktop-billing-subscription-plan.md
-# routes/index.js から desktop + web realtime の import と登録を削除
-rm apps/api/src/routes/realtime/desktop.js
-rm apps/api/src/routes/realtime/web.js
-rmdir apps/api/src/routes/realtime/  # 空ディレクトリ削除
-rm apps/api/src/api/proxy/realtime/desktopSession.js
-rm apps/api/src/api/proxy/realtime/desktopStop.js
-rm apps/api/src/api/proxy/realtime/webSession.js
-rmdir apps/api/src/api/proxy/realtime/  # 空ディレクトリ削除
-
-# 3. Dead ディレクトリ削除
-rm -rf examples/
-rm -rf plantuml/
-rm -rf apps/web/
-rm -rf apps/workspace-mcp/
-
-# 4. Dead パッケージ削除
-# package.json から @google-cloud/text-to-speech を削除（音声機能削除済み）
-# package.json の description を "Anicca API Server" に修正
-cd apps/api && npm install  # lockfile 更新
-
-# 5. CLAUDE.md 修正
-# DB 記述を正確に更新
-
-# 6. Supabase コードにコメント追加
-# 9ファイルの冒頭にコメント追加
-
-# 7. ローカル git worktree 整理
-git worktree prune  # stale worktree 参照を削除
-
-# 8. テスト実行
-cd apps/api && npm test
-
-# 9. コミット（フェーズごとに対象ファイルを明示的にステージング）
-# ⚠️ git add -A は使わない。各コミットで対象ファイルを明示する。
-
-# Commit 1: Dead Prisma モデル
+# Commit 1: Dead Prisma モデル削除
 git add apps/api/prisma/schema.prisma
 git commit -m "refactor: remove dead Prisma models (HabitLog, MobileAlarmSchedule)"
 
-# Commit 2: Desktop + Web Realtime 残骸
-git add apps/desktop/ release/ docs/electron.md docs/desktop-auth-and-mcp-token-architecture.md docs/desktop-billing-subscription-plan.md
-git add apps/api/src/routes/index.js apps/api/src/routes/realtime/ apps/api/src/api/proxy/realtime/
-git commit -m "refactor: remove Desktop/Web Realtime remnants and handler files"
+# Commit 2: Desktop/Web Realtime 残骸削除
+git add apps/desktop/ apps/api/src/routes/realtime/ apps/api/src/api/proxy/realtime/ apps/api/src/routes/index.js docs/electron.md docs/desktop-auth-and-mcp-token-architecture.md docs/desktop-billing-subscription-plan.md
+git commit -m "refactor: remove Desktop/Web Realtime remnants (91 files, 40,641 lines)"
 
-# Commit 3: Dead ディレクトリ
-git add examples/ plantuml/ apps/web/ apps/workspace-mcp/
-git commit -m "refactor: remove dead directories (examples, plantuml, apps/web, workspace-mcp)"
+# Commit 3: Dead ディレクトリ削除
+git add plantuml/ apps/web/ apps/workspace-mcp/
+git commit -m "refactor: remove dead directories (plantuml, apps/web, apps/workspace-mcp)"
 
-# Commit 4: Dead パッケージ
+# Commit 4: Dead パッケージ削除 + description 修正
 git add apps/api/package.json apps/api/package-lock.json
 git commit -m "chore: remove unused @google-cloud/text-to-speech, update package description"
 
-# Commit 5: CLAUDE.md
+# Commit 5: CLAUDE.md DB 明確化
 git add CLAUDE.md
-git commit -m "docs: clarify DB architecture in CLAUDE.md"
+git commit -m "docs: clarify DB architecture in CLAUDE.md (Railway PostgreSQL = main DB)"
 
-# Commit 6: Supabase コメント
-git add apps/api/src/services/tokens/slackTokens.supabase.js
-git add apps/api/src/services/storage/workerMemory.js
-git add apps/api/src/services/parallel-sdk/utils/PreviewManager.js
-git add apps/api/src/services/parallel-sdk/core/ParentAgent.js
-git add apps/api/src/api/auth/entitlement.js
-git add apps/api/src/api/auth/google/oauth.js
-git add apps/api/src/api/auth/google/callback.js
-git add apps/api/src/api/auth/google/refresh.js
-git add apps/api/src/api/static/preview-app.js
-git commit -m "docs: add Supabase SDK usage comments for clarity"
+# Commit 6: Supabase SDK コメント追加
+git add apps/api/src/lib/slackTokens.supabase.js apps/api/src/lib/workerMemory.js apps/api/src/lib/PreviewManager.js apps/api/src/lib/ParentAgent.js apps/api/src/api/auth/entitlement.js apps/api/src/api/auth/google/oauth.js apps/api/src/api/auth/google/callback.js apps/api/src/api/auth/google/refresh.js apps/api/src/api/static/preview-app.js
+git commit -m "docs: add Supabase SDK usage comments to all 9 files for AI clarity"
 ```
 
-### ⚠️ Prisma Migration 警告
+### Phase 2
+
+```bash
+# Commit 7: .agents/ 削除、シンボリックリンク解消
+# 1. シンボリックリンク先の実体をコピー
+cp -r .agents/skills/supabase-postgres-best-practices /tmp/sbp-backup
+# 2. シンボリックリンクを削除
+rm .claude/skills/supabase-postgres-best-practices
+# 3. 実体をコピー
+cp -r /tmp/sbp-backup .claude/skills/supabase-postgres-best-practices
+# 4. .agents/ を git rm
+git rm -r .agents/
+git add .claude/skills/supabase-postgres-best-practices
+git commit -m "refactor: remove .agents/, resolve symlink to .claude/skills/"
+
+# Commit 8: ルートのゴミファイル削除
+git rm npm "anicca-agi@0.6.2" Untitled.p12 pencil-new.pen
+git commit -m "chore: remove root garbage files (empty files, unused .p12, .pen)"
+
+# Commit 9: assets/ 作成、画像・動画・バッジ移動
+mkdir -p assets/icon assets/screenshots assets/videos
+git mv anicca-icon-1024x1024.png assets/icon/
+git mv "IMG_3433 2.PNG" "IMG_3544.PNG" "IMG_3550.PNG" assets/screenshots/
+git mv feedback-submitted.png image.png "image copy.png" image2.png llm-nudge-display.png assets/screenshots/
+git mv "スクリーンショット 2026-01-25 18.00.10.png" assets/screenshots/
+git mv "1:19-en.MOV" assets/videos/
+git mv images/* assets/screenshots/
+git rm -r images/
+git mv Download-on-the-App-Store assets/app-store-badges
+git add assets/
+git commit -m "refactor: organize media files into assets/ directory"
+
+# Commit 10: data/ 作成、CSV/JSON 移動
+mkdir -p data/apple-ads data/audits
+git mv "Apple Ads Campaign 2143222383 Keywords.csv" "Apple Ads Campaigns.csv" keywords_template.csv "targetedKeywords (1).csv" "targetedKeywords (2).csv" data/apple-ads/
+git mv "SDK Audit 2026-01-12__11_58_39.csv" data/audits/
+git mv anicca.csv data/
+git mv "viralfal (2).json" data/
+git add data/
+git commit -m "refactor: organize data files into data/ directory"
+
+# Commit 11: naistQmd/ → research/ リネーム
+git mv naistQmd research
+git commit -m "refactor: rename naistQmd/ to research/ for clarity"
+
+# Commit 12: 散乱 MD・テスト結果・PDF 移動
+mkdir -p docs/notes docs/reports maestro/results
+git mv Notify.md Toggle.md docs/notes/
+git mv maestro-phase6-results.xml maestro/results/
+git mv "aniccaios-PrivacyReport 2025-11-12 19-27-30.pdf" docs/reports/
+git commit -m "refactor: move loose docs, test results, and reports to proper directories"
+
+# テスト実行
+cd apps/api && npm test
+```
+
+### ⚠️ Prisma Migration 警告（Phase 1 から継続）
 
 **`prisma migrate dev` / `prisma migrate deploy` / `prisma db push` は絶対に実行しない。**
 
@@ -340,9 +548,6 @@ git commit -m "docs: add Supabase SDK usage comments for clarity"
 | `npx prisma generate` | ✅ | クライアントコード再生成のみ。DB に触らない |
 | `npx prisma migrate dev` | ❌ | Dead モデル削除を検出し `DROP TABLE` を生成する |
 | `npx prisma db push` | ❌ | スキーマをDB に強制同期 → テーブル削除 |
-
-このプロジェクトでは Prisma Migrate で DB を管理していない（schema ヘッダに明記済み）。
-`prisma generate` のみで十分。
 
 ---
 
@@ -376,28 +581,24 @@ git commit -m "docs: add Supabase SDK usage comments for clarity"
 
 ---
 
-## 8. GATE 1 レビュー結果（code-quality-reviewer）
+## 8. GATE 1 レビュー結果
 
-**Verdict: ok: true** — BLOCKING issue なし。
+### Phase 1 Spec レビュー
 
-### 対応済み（ADVISORY → Spec に反映）
+| 項目 | 結果 |
+|------|------|
+| レビュー方法 | code-quality-reviewer サブエージェント |
+| 判定 | **ok: true** |
+| BLOCKING | 0件 |
+| ADVISORY | 6件（全て Spec に反映済み） |
 
-| # | 指摘 | 対応 |
-|---|------|------|
-| G1-A1 | AC12 の検証対象が `routes/realtime/` → `routes/index.js` の方が正確 | AC12 を `grep -c "realtimeWeb" routes/index.js` に修正 |
-| G1-A2 | `routes/realtime/` ディレクトリが空になるが削除未記載 | AC16, As-Is 3.2, 削除対象リスト, 実行手順に追加 |
-| G1-A3 | Supabase ファイル数「9」の根拠が不明 | 3.5 に全9ファイルの具体名と用途を列挙 |
-| G1-A5 | `git add -A` ではなく具体的ファイル指定すべき | 実行手順 Commit 1-6 を全て具体ファイル指定に修正 |
-| G1-A6 | `api/proxy/realtime/` も空になるが削除未記載 | AC17, As-Is 3.2, 削除対象リスト, 実行手順に追加 |
+### Phase 1 実装レビュー（GATE 3）
 
-### 検証結果（コードベース照合）
-
-| Spec の主張 | 検証結果 |
-|------------|---------|
-| HabitLog / MobileAlarmSchedule が Dead | ✅ アプリコード参照ゼロ |
-| Desktop ルート登録が routes/index.js に存在 | ✅ 確認 |
-| Web Realtime ルート登録が routes/index.js に存在 | ✅ 確認 |
-| Desktop ハンドラ 3 ファイル存在 | ✅ `desktopSession.js`, `desktopStop.js`, `webSession.js` |
-| `@google-cloud/text-to-speech` 未使用 | ✅ import ゼロ |
-| Dead ディレクトリ 6 個存在 | ✅ 全確認 |
-| 総モデル数 | ⚠️ Spec 旧値「20」→ 実測「25」に修正済み |
+| 項目 | 結果 |
+|------|------|
+| レビュー方法 | code-quality-reviewer サブエージェント |
+| 判定 | **ok: true** |
+| AC 達成 | **17/17 PASS** |
+| テスト | **41/41 PASS** |
+| BLOCKING | 0件 |
+| ADVISORY | 0件 |

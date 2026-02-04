@@ -201,7 +201,7 @@ router.post('/feedback', async (req, res) => {
 
     // Save nudge_meta to mem0 (best-effort)
     try {
-      const mem0 = getMem0Client();
+      const mem0 = await getMem0Client();
       await mem0.addNudgeMeta({
         userId: profileId,
         content: `Nudge ${row.action_template} outcome=${parsed.data.outcome || ''} reward=${reward}`,

@@ -3,7 +3,8 @@
 
 import baseLogger from '../../utils/logger.js';
 import { MemoryClient } from 'mem0ai';
-import { Memory as OSSMemory } from 'mem0ai/oss';
+// OSS version is loaded dynamically to avoid peer dependency issues
+// (mem0ai/oss requires ollama, anthropic, etc. at import time)
 
 // mem0 SDK:
 // - OSS:      import { Memory } from "mem0ai/oss";
@@ -20,13 +21,13 @@ function getMode() {
   return process.env.MEM0_API_KEY ? 'platform' : 'oss';
 }
 
-export function getMem0Client() {
+export async function getMem0Client() {
   if (singleton) return singleton;
-  singleton = createMem0Client();
+  singleton = await createMem0Client();
   return singleton;
 }
 
-export function createMem0Client() {
+export async function createMem0Client() {
   const mode = getMode();
   if (mode === 'platform') {
     // Platform (hosted) - MemoryClient is default export
@@ -34,7 +35,8 @@ export function createMem0Client() {
     logger.info('Initialized mem0 platform client');
     return wrapPlatform(memory);
   }
-  // OSS fallback (local-friendly)
+  // OSS fallback (local-friendly) - dynamically import to avoid peer dep issues
+  const { Memory: OSSMemory } = await import('mem0ai/oss');
   const memory = new OSSMemory();
   logger.warn('MEM0_API_KEY is not set; using mem0 OSS mode (local storage)');
   return wrapOSS(memory);

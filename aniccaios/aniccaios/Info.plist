@@ -44,10 +44,6 @@
 	<string>$(INFOPLIST_KEY_REVENUECAT_PAYWALL_ID)</string>
 	<key>MIXPANEL_TOKEN</key>
 	<string>$(INFOPLIST_KEY_MIXPANEL_TOKEN)</string>
-	<key>SINGULAR_SDK_KEY</key>
-	<string>$(INFOPLIST_KEY_SINGULAR_SDK_KEY)</string>
-	<key>SINGULAR_SDK_SECRET</key>
-	<string>$(INFOPLIST_KEY_SINGULAR_SDK_SECRET)</string>
 	<key>SKAdNetworkItems</key>
 	<array>
 		<dict>

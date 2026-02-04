@@ -1,4 +1,4 @@
-// v1.6.0 — Phase 5 Learning Loop
+// v1.6.1 — ATT/Singular削除
 import UIKit
 import UserNotifications
 import OSLog
@@ -21,9 +21,9 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
         UNUserNotificationCenter.current().delegate = self
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
+
+        // Mixpanelは常に初期化（ファーストパーティAnalytics、IDFAを使用しない）
         AnalyticsManager.shared.configure()
-        SingularManager.shared.configure(launchOptions: launchOptions)
-        SingularManager.shared.trackAppLaunch()
 
         // ASA Attribution取得 → app_opened トラック（この順序が重要）
         Task {
@@ -31,7 +31,6 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             AnalyticsManager.shared.track(.appOpened)
         }
 
-        // Phase-7: register BGTask handlers
         Task {
             if AppState.shared.isOnboardingComplete {
                 _ = await NotificationScheduler.shared.requestAuthorizationIfNeeded()

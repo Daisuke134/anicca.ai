@@ -1,6 +1,7 @@
 import SwiftUI
 import RevenueCat
 import RevenueCatUI
+import UserNotifications
 
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
@@ -26,6 +27,21 @@ struct OnboardingFlowView: View {
         }
         .onAppear {
             step = appState.onboardingStep
+
+            // ATTステップから移行したユーザー: 通知許可が既に決定済みなら即完了
+            // .authorized, .denied, .provisional, .ephemeral は全て「決定済み」扱い
+            // .notDetermined のみ通知画面を表示
+            if step == .notifications {
+                Task {
+                    let settings = await UNUserNotificationCenter.current().notificationSettings()
+                    if settings.authorizationStatus != .notDetermined {
+                        await MainActor.run {
+                            completeOnboarding()
+                        }
+                        return
+                    }
+                }
+            }
 
             // Mixpanel: オンボーディング開始イベント
             if step == .welcome {

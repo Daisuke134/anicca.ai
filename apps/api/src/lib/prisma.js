@@ -8,4 +8,8 @@ import { PrismaClient } from '../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
 
+// Named export for { prisma } imports
+export { prisma };
+
+// Default export for backward compatibility
 export default prisma;

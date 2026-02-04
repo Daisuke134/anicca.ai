@@ -10,10 +10,14 @@ struct WelcomeStepView: View {
         VStack {
             Spacer()
 
-            VStack(spacing: 32) {
+            VStack(spacing: 24) {
+                Text(String(localized: "onboarding_welcome_social_proof"))
+                    .font(.system(size: 14, weight: .medium))
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+
                 Text(String(localized: "onboarding_welcome_title"))
-                    .font(.system(size: 52, weight: .bold))
-                    .lineLimit(2)
+                    .font(.system(size: 44, weight: .bold))
+                    .lineLimit(3)
                     .minimumScaleFactor(0.7)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(AppTheme.Colors.label)

@@ -24,6 +24,7 @@
 "onboarding_welcome_subtitle_line1" = "Aniccaは、あなたが一番つらいときに";
 "onboarding_welcome_subtitle_line2" = "そっと声をかけます。";
 "onboarding_welcome_cta" = "はじめる";
+"onboarding_welcome_social_proof" = "多くの人が安らぎを見つけています";
 "onboarding_welcome_restore_description" = "以前使っていた方はこちら";
 
 "onboarding_account_title" = "進捗を保存";

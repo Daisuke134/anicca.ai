@@ -1,5 +1,8 @@
 # Spec: ATT (App Tracking Transparency) 実装
 
+**ステータス: 中止（非採用）**  
+**理由:** `spec-remove-att-frontend.md` を正式採用し、ATT/Singular は削除方針に確定。
+
 ## 概要
 
 App Store Guideline 5.1.2 リジェクト対応。ATTダイアログをオンボーディングに追加し、ユーザーの許可を得てからトラッキングを開始する。

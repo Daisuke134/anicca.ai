@@ -1,5 +1,8 @@
 # Spec: Singular SDK + ATT 完全削除（プライバシーラベル変更対応）
 
+**ステータス: 採用（ATT削除が正）**  
+**補足:** `spec-att-implementation.md` は中止扱い。
+
 ## 概要
 
 App Store Guideline 5.1.2 リジェクト対応。Singular SDKを完全に削除し、ATTフロントエンドも削除。App Store Connectのプライバシーラベルを「Tracking: No」に変更。

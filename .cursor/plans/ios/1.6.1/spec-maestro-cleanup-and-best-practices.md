@@ -31,7 +31,7 @@
 | ゴール | 成功基準 |
 |--------|----------|
 | CIでMaestroテストが100%パス | `smokeTest` タグ付きテストが全て通る |
-| 1つのMaestroフォルダに統一 | `/maestro/` のみ存在 |
+| 1つのMaestroフォルダに統一 | `aniccaios/maestro/` のみ存在（CI参照先） |
 | ベストプラクティススキル導入 | エージェントが正しいテストを書ける |
 | 実際のUI操作を検証 | タップ→遷移→確認の流れ |
 
@@ -43,9 +43,9 @@
 
 | タスク | 詳細 |
 |--------|------|
-| `/aniccaios/maestro/` 削除 | 古い・使われていないフォルダ |
-| `/maestro/01-onboarding-fixed.yaml` 削除 | 古いバージョン |
-| `/maestro/01-onboarding.yaml` 修正 | `visible: true` バグ修正済み |
+| ルート `/maestro/` 削除 | ルートに存在する場合のみ削除 |
+| `aniccaios/maestro/01-onboarding-fixed.yaml` 削除 | 古いバージョン |
+| `aniccaios/maestro/01-onboarding.yaml` 修正 | `visible: true` バグ修正済み |
 | Maestro UIテストスキル作成 | `.claude/skills/maestro-ui-testing/SKILL.md` 作成済み |
 | タイムアウト増加 | 5000ms → 15000ms (CI安定性) |
 
@@ -65,9 +65,9 @@
 
 | # | タスク | ステータス |
 |---|--------|----------|
-| 1 | `/aniccaios/maestro/` フォルダ削除 | **完了** |
-| 2 | `/maestro/01-onboarding-fixed.yaml` 削除 | **完了** |
-| 3 | `/maestro/01-onboarding.yaml` の `visible: true` バグ修正 | **完了** |
+| 1 | ルート `/maestro/` フォルダ削除（存在する場合） | **未確認** |
+| 2 | `aniccaios/maestro/01-onboarding-fixed.yaml` 削除 | **未確認** |
+| 3 | `aniccaios/maestro/01-onboarding.yaml` の `visible: true` バグ修正 | **未確認** |
 | 4 | タイムアウトを15000msに増加 | **完了** |
 | 5 | Maestroスキル作成 | **完了** |
 
@@ -86,22 +86,16 @@
 ### 削除するファイル/フォルダ
 
 ```
-aniccaios/maestro/                     # フォルダ全体
-├── flows/
-│   └── skip-onboarding.yaml
-└── single-screen/
-    ├── 01-single-screen-layout.yaml
-    ├── 02-subscribe-button-free.yaml
-    ├── 03-account-section-signed-in.yaml
-    └── 04-cancel-subscription.yaml
+maestro/                               # ルートに存在する場合のみ削除対象
+maestro/01-onboarding-fixed.yaml       # ルートに存在する場合のみ削除対象
 
-maestro/01-onboarding-fixed.yaml       # 古いバージョン
+aniccaios/maestro/01-onboarding-fixed.yaml  # 古いバージョン
 ```
 
 ### 修正済みファイル
 
 ```
-maestro/01-onboarding.yaml             # visible: true バグ修正 + タイムアウト増加
+aniccaios/maestro/01-onboarding.yaml   # visible: true バグ修正 + タイムアウト増加
 ```
 
 ### 新規作成済みファイル
@@ -187,7 +181,7 @@ for i in {1..3}; do maestro test ../maestro/ --include-tags smokeTest; done
 
 | リスク | 対策 |
 |--------|------|
-| `/aniccaios/maestro/` 削除で何か壊れる | CIは `/maestro/` のみ参照、問題なし |
+| ルート `/maestro/` 削除で何か壊れる | CIは `aniccaios/maestro/` を参照、問題なし |
 | スキルが読み込まれない | `.claude/skills/` に正しく配置済み |
 | accessibilityIdentifier不足でテスト失敗 | 既存テストは既にID使用、今回スコープ外 |
 
@@ -195,9 +189,9 @@ for i in {1..3}; do maestro test ../maestro/ --include-tags smokeTest; done
 
 ## 完了条件
 
-- [x] `/aniccaios/maestro/` 削除完了
-- [x] `/maestro/01-onboarding-fixed.yaml` 削除完了
-- [ ] ローカルで `maestro test maestro/ --include-tags smokeTest` が通る
+- [ ] ルート `/maestro/` が存在しない（または削除済み）
+- [ ] `aniccaios/maestro/01-onboarding-fixed.yaml` が存在しない
+- [ ] ローカルで `maestro test aniccaios/maestro/ --include-tags smokeTest` が通る
 - [ ] CIの E2E Tests (Maestro) が成功
 
 ---

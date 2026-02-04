@@ -615,6 +615,7 @@ the problem is low CVR on install/subcription.
 2. paywall design. -> fixed 
 
 distribution: 100 downloads daily + 10% install CVR. 
+0. fixed current en slideshows from how i ... -> 4 things...
 1. started posting new video formats to tt. 
 2. started posting reelfarm meme videos with one new english account.  
 3. iterated anicca's tiktok nudges for more virality. 

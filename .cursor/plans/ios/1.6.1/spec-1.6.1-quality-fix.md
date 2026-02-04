@@ -584,4 +584,4 @@ Patch 10では`Total:`/`Strategy:`/`Frequency:`行を維持することで、既
 
 ---
 
-*Last updated: 2026-02-04 (Iteration 4)*
+*Last updated: 2026-02-04 (Iteration 5 - Codex Approved)*

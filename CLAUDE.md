@@ -302,4 +302,78 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 
 ---
 
-最終更新: 2026年2月2日
+## MCP（Model Context Protocol）使い方
+
+### プロジェクトID
+
+| サービス | ID | 用途 |
+|---------|---|------|
+| **Mixpanel** | `3970220` (integer) | 分析クエリ |
+| **RevenueCat** | `projbb7b9d1b` (string) | 課金・Offering管理 |
+
+### Mixpanel MCP
+
+```
+# イベント一覧取得
+user-mixpanel-get_events: {"project_id": 3970220}
+
+# セグメンテーションクエリ（イベント数取得）
+user-mixpanel-run_segmentation_query: {
+  "project_id": 3970220,
+  "event": "rc_trial_started_event",
+  "from_date": "2026-01-04",
+  "to_date": "2026-02-04",
+  "unit": "month"
+}
+
+# ファネルクエリ
+user-mixpanel-run_funnels_query: {"project_id": 3970220, ...}
+```
+
+### RevenueCat MCP
+
+```
+# Offering一覧
+user-revenuecat-mcp_RC_list_offerings: {"project_id": "projbb7b9d1b"}
+
+# 新Offering作成
+user-revenuecat-mcp_RC_create_offering: {
+  "project_id": "projbb7b9d1b",
+  "lookup_key": "anicca_treatment_a",
+  "display_name": "Anicca Treatment A"
+}
+
+# パッケージ作成
+user-revenuecat-mcp_RC_create_package: {
+  "project_id": "projbb7b9d1b",
+  "offering_id": "ofrng...",
+  "lookup_key": "$rc_monthly",
+  "display_name": "Monthly Plan"
+}
+
+# 商品紐付け
+user-revenuecat-mcp_RC_attach_products_to_package: {
+  "project_id": "projbb7b9d1b",
+  "package_id": "pkge...",
+  "products": [{"product_id": "prod...", "eligibility_criteria": "all"}]
+}
+```
+
+### 正しいデータソース
+
+| 目的 | 使うイベント | ソース |
+|-----|------------|-------|
+| トライアル開始数 | `rc_trial_started_event` | RevenueCat→Mixpanel（正確） |
+| Paywall表示数 | `onboarding_paywall_viewed` | iOS SDK |
+
+**注意:** `onboarding_paywall_purchased`は使わない（DEBUG/サンドボックス含む）
+
+### Slack Tokens（OpenClaw/Anicca用）
+
+**シークレットは `.env` ファイルに保存済み（gitignored）:**
+- `SLACK_BOT_TOKEN` - Anicca Bot Token
+- `SLACK_APP_TOKEN` - Socket Mode Token
+
+---
+
+最終更新: 2026年2月4日

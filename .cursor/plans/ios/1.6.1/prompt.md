@@ -608,9 +608,10 @@ Here's my previous Article you might wanna read to be prepare for future and bui
 
 Feb 4th. Day 33 of building anicca to 1k mrr. $18 mrr + 1 trial. 
 
-the problem is low CVR on install/subcription.
-1. app store metadata (screenshots) -> fixed 
-2. paywall design. -> fixed 
+the problem is low CVR on install/subcription. 1% and 0.01%. 
+1. app store metadata (screenshots) -> fixed and started AB testing.
+2. paywall design. -> iterated and started AB testing.
+3. iterated onboarding to show more value of anicca. 
 
 distribution: 100 downloads daily + 10% install CVR. 
 0. fixed current en slideshows from how i ... -> 4 things...

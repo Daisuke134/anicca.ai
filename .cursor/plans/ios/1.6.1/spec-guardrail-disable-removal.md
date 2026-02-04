@@ -138,11 +138,11 @@ Max-32 は iOS 通知制限のため維持。ただし、通常 32 を超える�
 
 | # | タスク | 状態 |
 |---|--------|------|
-| 1 | Night curfew: `enabled = false` 削除 | ⬜ |
-| 2 | <30min interval: `enabled = false` 削除 | ⬜ |
-| 3 | テスト更新 | ⬜ |
-| 4 | テスト実行 | ⬜ |
-| 5 | コミット & プッシュ | ⬜ |
+| 1 | Night curfew: `enabled = false` 削除 | ✅ |
+| 2 | <30min interval: `enabled = false` 削除 | ✅ |
+| 3 | テスト更新 | ✅ |
+| 4 | テスト実行 | ✅ (265 tests passed) |
+| 5 | コミット & プッシュ | ✅ (26dd5a49) |
 
 ---
 
@@ -160,4 +160,4 @@ Max-32 は iOS 通知制限のため維持。ただし、通常 32 を超える�
 
 | Version | Date | Reviewer | Status | Issues |
 |---------|------|----------|--------|--------|
-| v1 | 2026-02-05 | - | ⬜ PENDING | - |
+| v1 | 2026-02-05 | Claude | ✅ IMPLEMENTED | All tasks complete |

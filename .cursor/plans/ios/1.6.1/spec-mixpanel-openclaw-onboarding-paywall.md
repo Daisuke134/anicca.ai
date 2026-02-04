@@ -195,7 +195,7 @@ showPaywall = true
 // Struggles選択結果をRevenueCatに送信（Paywall表示前）
 if let struggles = AppState.shared.userProfile?.struggles {
     let topStruggle = struggles.first?.rawValue ?? "general"
-    Purchases.shared.attribution.setAttributes([
+    Purchases.shared.setAttributes([
         "top_struggle": topStruggle,
         "struggle_count": "\(struggles.count)"
     ])
@@ -216,6 +216,8 @@ showPaywall = true
 ---
 
 ## Patch C: OpenClaw日次メトリクス移行
+
+> **スコープ注意:** Patch C/Dは設計仕様のみ。詳細実装（認証情報、API呼び出し、ビルド設定）はVPSセットアップ時にOpenClawエージェントが行う。iOSアプリ変更（Patch A/B/E）を優先する。
 
 ### 目標
 
@@ -267,7 +269,7 @@ skills:
 🔄 ONBOARDING FUNNEL (Mixpanel, 過去7日)
   期間: 2026-01-28 〜 2026-02-04
 
-  app_opened:                  150 (100.0%)
+  first_app_opened:            150 (100.0%)  ← ファネル起点
   onboarding_started:          131 (87.3%)
   onboarding_welcome_completed: 108 (82.4%)
   onboarding_value_completed:   105 (97.2%)
@@ -299,7 +301,7 @@ skills:
 
 **方法1: CLIで設定**
 ```bash
-openclaw cron add daily-metrics \
+openclaw cron add daily-metrics-reporter \
   --schedule "0 9 * * *" \
   --timezone "Asia/Tokyo" \
   --command "Fetch Mixpanel funnel data, RevenueCat metrics, and ASC downloads. Post summary to #metrics Slack channel."
@@ -1109,15 +1111,17 @@ openclaw status
 | B-2 | 新Paywall作成（社会的証明追加） | ユーザー（Dashboard GUI） | ⬜ |
 | B-3 | Experiment作成・開始 | ユーザー（Dashboard GUI） | ⬜ |
 
-### Patch C/D: OpenClaw（VPS設定）
+### Patch C/D: OpenClaw（VPS設定 - 詳細実装は別途）
 
-| # | タスク | ファイル | 状態 |
-|---|--------|---------|------|
-| C-1 | schedule.yamlに`daily-metrics-reporter`追加 | `/home/anicca/openclaw/schedule.yaml` | ⬜ |
-| C-2 | daily-metrics-reporter skill作成 | `/home/anicca/openclaw/skills/daily-metrics-reporter/SKILL.md` | ⬜ |
-| C-3 | GitHub Actions daily-metrics.yml無効化 | `.github/workflows/daily-metrics.yml` | ⬜ |
-| D-1 | slack-helper skill作成 | `/home/anicca/openclaw/skills/slack-helper/SKILL.md` | ⬜ |
-| D-2 | Slack Token設定 | `/home/anicca/openclaw/.env` | ⬜ |
+> **スコープ:** 設計仕様のみ。詳細実装（認証情報、TypeScriptビルド設定、API呼び出し実装）はVPSセットアップ時にOpenClawエージェントが実施。
+
+| # | タスク | ファイル | 状態 | 備考 |
+|---|--------|---------|------|------|
+| C-1 | schedule.yaml設計 | `/home/anicca/openclaw/schedule.yaml` | ⬜ | 設計のみ |
+| C-2 | daily-metrics-reporter skill設計 | `/home/anicca/openclaw/skills/daily-metrics-reporter/SKILL.md` | ⬜ | 設計のみ |
+| C-3 | GitHub Actions無効化 | `.github/workflows/daily-metrics.yml` | ⬜ | OpenClaw稼働確認後 |
+| D-1 | slack-helper skill設計 | `/home/anicca/openclaw/skills/slack-helper/SKILL.md` | ⬜ | 設計のみ |
+| D-2 | Slack Token設定 | `/home/anicca/openclaw/.env` | ⬜ | VPSセットアップ時 |
 
 ### Patch E: オンボーディング改善（iOSコード変更）
 

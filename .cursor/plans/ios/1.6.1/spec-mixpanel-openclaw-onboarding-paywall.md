@@ -173,6 +173,47 @@ RevenueCat APIにはExperiments作成機能がないため、ダッシュボー�
 | 7日間無料が目立たない | サイズ/色を強調 | トライアル開始を促進 |
 | 個人化なし | 「あなたの○○に対応」 | Struggles選択を活用 |
 
+### B-4: Paywall個人化（Strugglesを活用）
+
+**目的:** オンボーディングで選択したStrugglesをPaywallに表示し、「このアプリは自分のためのもの」と感じさせる。
+
+**実装方法:** RevenueCat Subscriber Attributesを使用
+
+---
+
+#### ファイル: `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift`
+
+**追加位置:** Paywallを表示する前（`showPaywall = true`の直前）
+
+**Before:**
+```swift
+// Struggles選択後、すぐPaywallを表示
+showPaywall = true
+```
+
+**After:**
+```swift
+// Struggles選択結果をRevenueCatに送信（Paywall表示前）
+if let struggles = AppState.shared.userProfile?.struggles {
+    let topStruggle = struggles.first?.rawValue ?? "general"
+    Purchases.shared.attribution.setAttributes([
+        "top_struggle": topStruggle,
+        "struggle_count": "\(struggles.count)"
+    ])
+}
+showPaywall = true
+```
+
+---
+
+#### RevenueCat Dashboard設定
+
+1. Paywallテンプレートの「subtitle」または「features」に変数を使用
+2. 例: `Perfect for {{subscriber.attributes.top_struggle}}`
+3. または静的に「あなたの課題に対応」と表示（日本語の場合）
+
+**注意:** RevenueCatのPaywall変数機能は限定的。複雑な個人化はiOS側でPaywallView上書きが必要だが、1.6.1では静的なメッセージで十分。
+
 ---
 
 ## Patch C: OpenClaw日次メトリクス移行
@@ -281,11 +322,87 @@ openclaw cron add daily-metrics \
 - #meeting にラボミーティングリマインダー投稿
 ```
 
+### C-2: daily-metrics-reporter skill実装
+
+**ディレクトリ構造:**
+```
+/home/anicca/openclaw/skills/daily-metrics-reporter/
+├── SKILL.md           # スキル定義
+├── index.ts           # エントリポイント
+└── package.json       # 依存関係
+```
+
+**ファイル: `/home/anicca/openclaw/skills/daily-metrics-reporter/SKILL.md`**
+```markdown
+# Daily Metrics Reporter
+
+毎朝9:00 JSTにMixpanel/RevenueCat/ASCからデータを取得し、#metricsに投稿。
+
+## 実行条件
+- cron: "0 9 * * *" (毎朝9:00 JST)
+
+## 必要なAPI
+- Mixpanel: `run_funnels_query`
+- RevenueCat: `get_overview`
+- ASC: Sales Reports API
+
+## 出力先
+- Slack #metrics チャンネル
+```
+
+**ファイル: `/home/anicca/openclaw/skills/daily-metrics-reporter/index.ts`**
+```typescript
+import { Slack } from '@openclaw/slack';
+import { MixpanelClient } from './mixpanel';
+import { RevenueCatClient } from './revenuecat';
+
+export async function run() {
+  const funnel = await MixpanelClient.getFunnel('onboarding', { days: 7 });
+  const revenue = await RevenueCatClient.getOverview();
+  
+  const message = formatMetricsMessage(funnel, revenue);
+  
+  await Slack.postMessage({
+    channel: '#metrics',
+    text: message,
+  });
+}
+
+function formatMetricsMessage(funnel: FunnelData, revenue: RevenueData): string {
+  return `📊 Anicca Daily Metrics (${new Date().toISOString().split('T')[0]})
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+💰 REVENUE (RevenueCat)
+  MRR: $${revenue.mrr}
+  Active Subs: ${revenue.activeSubs}
+  Active Trials: ${revenue.activeTrials}
+
+🔄 ONBOARDING FUNNEL (過去7日)
+${funnel.steps.map(s => `  ${s.name}: ${s.count} (${s.rate}%)`).join('\n')}
+
+⚠️ ALERTS
+${revenue.activeTrials === 0 ? '  🔴 No trials this week\n' : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+}
+```
+
 ### C-3: GitHub Actions削除
 
 **ファイル**: `.github/workflows/daily-metrics.yml`
 
 移行完了後に削除（または`disabled`に変更）
+
+```yaml
+# Before: active
+on:
+  schedule:
+    - cron: '0 0 * * *'
+
+# After: disabled
+# on:
+#   schedule:
+#     - cron: '0 0 * * *'
+```
 
 ---
 
@@ -293,17 +410,24 @@ openclaw cron add daily-metrics \
 
 ### 必要な情報
 
-**環境変数（`.env`に保存済み、gitignored）:**
+**環境変数（VPS `/home/anicca/openclaw/.env`に保存）:**
 
-| 変数名 | 説明 |
-|-------|------|
-| `SLACK_BOT_TOKEN` | Anicca Bot Token |
-| `SLACK_APP_TOKEN` | Socket Mode Token |
+| 変数名 | 説明 | 取得方法 |
+|-------|------|---------|
+| `SLACK_BOT_TOKEN` | Anicca Bot Token | Slack App Settings → OAuth & Permissions |
+| `SLACK_APP_TOKEN` | Socket Mode Token | Slack App Settings → Basic Information → App-Level Tokens |
 
 ### D-1: OpenClaw slack-helper skill
 
-**ファイル**: VPS `/home/anicca/openclaw/skills/slack-helper/SKILL.md`
+**ディレクトリ構造:**
+```
+/home/anicca/openclaw/skills/slack-helper/
+├── SKILL.md           # スキル定義
+├── index.ts           # エントリポイント（Slack Bolt）
+└── package.json       # 依存関係
+```
 
+**ファイル: `/home/anicca/openclaw/skills/slack-helper/SKILL.md`**
 ```markdown
 # Slack Helper
 
@@ -328,19 +452,76 @@ openclaw cron add daily-metrics \
 - SLACK_APP_TOKEN
 ```
 
+**ファイル: `/home/anicca/openclaw/skills/slack-helper/index.ts`**
+```typescript
+import { App } from '@slack/bolt';
+import { OpenClawAgent } from '@openclaw/agent';
+
+const app = new App({
+  token: process.env.SLACK_BOT_TOKEN,
+  appToken: process.env.SLACK_APP_TOKEN,
+  socketMode: true,
+});
+
+// @Anicca メンションを検出
+app.event('app_mention', async ({ event, say }) => {
+  const userMessage = event.text.replace(/<@[A-Z0-9]+>/g, '').trim();
+  
+  try {
+    // OpenClawエージェントに処理を委譲
+    const response = await OpenClawAgent.process({
+      message: userMessage,
+      context: {
+        channel: event.channel,
+        user: event.user,
+        tools: ['mixpanel', 'revenuecat', 'asc'],
+      },
+    });
+    
+    await say({
+      thread_ts: event.ts,
+      text: response.text,
+    });
+  } catch (error) {
+    await say({
+      thread_ts: event.ts,
+      text: `エラーが発生しました: ${error.message}`,
+    });
+  }
+});
+
+// 起動
+(async () => {
+  await app.start();
+  console.log('⚡️ Anicca Slack bot is running!');
+})();
+```
+
 ### D-2: VPSでの設定
 
 ```bash
-# 1. Slack Boltインストール
-cd /home/anicca/openclaw
-npm install @slack/bolt
+# 1. skills ディレクトリに移動
+cd /home/anicca/openclaw/skills/slack-helper
 
-# 2. 環境変数設定
-echo 'SLACK_BOT_TOKEN=xoxb-3627470757104-...' >> .env
-echo 'SLACK_APP_TOKEN=xapp-1-A092UBRAJ1X-...' >> .env
+# 2. 依存関係インストール
+npm install @slack/bolt @openclaw/agent
 
-# 3. skill登録
-# schedule.yaml に slack-helper を追加（常駐プロセス）
+# 3. 環境変数設定（.envファイルに追記）
+# ※ 実際のトークンはプロジェクトの .env ファイル参照
+cat >> /home/anicca/openclaw/.env << 'EOF'
+SLACK_BOT_TOKEN=<your-bot-token>
+SLACK_APP_TOKEN=<your-app-token>
+EOF
+
+# 4. schedule.yaml に常駐プロセスとして追加
+cat >> /home/anicca/openclaw/schedule.yaml << 'EOF'
+  slack-helper:
+    mode: "daemon"  # 常駐プロセス
+    restart: "always"
+EOF
+
+# 5. OpenClaw再起動
+openclaw restart
 ```
 
 ---
@@ -403,6 +584,13 @@ echo 'SLACK_APP_TOKEN=xapp-1-A092UBRAJ1X-...' >> .env
 | **理由** | ユーザーは「なぜ通知が必要か」を理解しないと許可しない |
 
 ### E-2: 全ローカライズ変更一覧
+
+**対象ファイル:**
+- EN: `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings`
+- JA: `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings`
+- その他: `es.lproj/`, `fr.lproj/`, `de.lproj/`, `pt-BR.lproj/` も同様に更新
+
+---
 
 #### Welcome画面 (WelcomeStepView.swift)
 
@@ -510,9 +698,11 @@ VStack(spacing: 12) {
 
 #### NotificationPermissionStepView.swift
 
-通知プレビューカードを追加:
+**ファイル:** `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift`
+
+**追加位置:** line 30付近、説明テキストの後に追加
+
 ```swift
-// line 30付近に追加
 NotificationPreviewCard(
     title: "Anicca",
     body: String(localized: "notification_preview_example")
@@ -520,11 +710,72 @@ NotificationPreviewCard(
 .padding(.vertical, 24)
 ```
 
+---
+
+#### 新規コンポーネント: NotificationPreviewCard
+
+**ファイル（新規作成）:** `aniccaios/aniccaios/DesignSystem/Components/NotificationPreviewCard.swift`
+
+```swift
+import SwiftUI
+
+/// 通知のプレビューを表示するカード
+struct NotificationPreviewCard: View {
+    let title: String
+    let body: String
+    
+    var body: some View {
+        HStack(spacing: 12) {
+            // アプリアイコン
+            Image("AppIconSmall")
+                .resizable()
+                .frame(width: 40, height: 40)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+            
+            VStack(alignment: .leading, spacing: 4) {
+                Text(title)
+                    .font(.system(size: 14, weight: .semibold))
+                    .foregroundStyle(AppTheme.Colors.label)
+                
+                Text(body)
+                    .font(.system(size: 14))
+                    .foregroundStyle(AppTheme.Colors.secondaryLabel)
+                    .lineLimit(2)
+            }
+            
+            Spacer()
+            
+            Text("now")
+                .font(.system(size: 12))
+                .foregroundStyle(AppTheme.Colors.tertiaryLabel)
+        }
+        .padding(16)
+        .background(AppTheme.Colors.cardBackground)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.08), radius: 8, x: 0, y: 2)
+    }
+}
+
+#Preview {
+    NotificationPreviewCard(
+        title: "Anicca",
+        body: "Take a breath. You've got this."
+    )
+    .padding()
+}
+```
+
 ### E-4: `app_opened`トラッキング修正
 
 **問題:** `app_opened`は毎回のアプリ起動でトラッキング（初回だけではない）
 
-**現在のコード (AppDelegate.swift line 57-61):**
+**理由:** ファネル分析で「初回インストール→オンボーディング開始」の変換率を正確に測定するには、初回起動のみをカウントする必要がある。
+
+---
+
+#### ファイル1: `aniccaios/aniccaios/AppDelegate.swift`
+
+**Before (line 57-61):**
 ```swift
 Task {
     await ASAAttributionManager.shared.fetchAttributionIfNeeded()
@@ -532,26 +783,55 @@ Task {
 }
 ```
 
-**修正後:**
+**After:**
 ```swift
 private static let hasTrackedFirstLaunchKey = "has_tracked_first_launch"
 
 Task {
     await ASAAttributionManager.shared.fetchAttributionIfNeeded()
     
+    // 初回起動のみ first_app_opened をトラック
     let hasTracked = UserDefaults.standard.bool(forKey: AppDelegate.hasTrackedFirstLaunchKey)
     if !hasTracked {
-        AnalyticsManager.shared.track(.firstAppOpened)  // 新イベント（初回のみ）
+        AnalyticsManager.shared.track(.firstAppOpened)
         UserDefaults.standard.set(true, forKey: AppDelegate.hasTrackedFirstLaunchKey)
     }
-    AnalyticsManager.shared.track(.appOpened)  // 既存は維持（リテンション分析用）
+    
+    // 既存の app_opened は維持（リテンション分析用）
+    AnalyticsManager.shared.track(.appOpened)
 }
 ```
 
-**AnalyticsManager.swift に追加:**
+---
+
+#### ファイル2: `aniccaios/aniccaios/Services/AnalyticsManager.swift`
+
+**Before (AnalyticsEvent enum):**
 ```swift
-case firstAppOpened = "first_app_opened"  // 初回起動のみ
+enum AnalyticsEvent: String {
+    case appOpened = "app_opened"
+    // ... 他のイベント
+}
 ```
+
+**After:**
+```swift
+enum AnalyticsEvent: String {
+    case appOpened = "app_opened"
+    case firstAppOpened = "first_app_opened"  // 新規追加: 初回起動のみ
+    // ... 他のイベント
+}
+```
+
+---
+
+#### Mixpanelでの使い分け
+
+| イベント | 用途 | ファネルに使う？ |
+|---------|------|----------------|
+| `first_app_opened` | 初回インストール後の起動 | ✅ ファネルの起点に使用 |
+| `app_opened` | 全ての起動（リテンション分析） | ❌ ファネルには使わない |
+| `rc_trial_started_event` | トライアル開始 | ✅ ファネルの終点に使用 |
 
 ### E-5: 開発者テスト除外戦略
 
@@ -570,27 +850,73 @@ case firstAppOpened = "first_app_opened"  // 初回起動のみ
 
 #### 実装案1: RevenueCat Subscriber Attributes（推奨）
 
+**ファイル:** `aniccaios/aniccaios/Services/SubscriptionManager.swift`
+
+**Before:**
 ```swift
-// AppDelegate.swift または初回起動時
-// 開発者のデバイスでのみ実行
-#if DEBUG
-Purchases.shared.attribution.setAttributes(["is_developer": "true"])
-#endif
+// 現在は開発者フラグなし
+func configureRevenueCat() {
+    Purchases.configure(withAPIKey: Config.revenueCatAPIKey)
+}
 ```
 
-**効果:** RevenueCat→Mixpanelイベントに`subscriber_attributes.is_developer=true`として含まれる。
+**After:**
+```swift
+func configureRevenueCat() {
+    Purchases.configure(withAPIKey: Config.revenueCatAPIKey)
+    
+    // 開発者識別: AppConfigのdeveloperEmailsに登録されたApple IDでログインしている場合
+    // または#if DEBUGビルドの場合、開発者としてマーク
+    #if DEBUG
+    setDeveloperAttribute()
+    #else
+    // Production/TestFlightでも開発者を識別
+    if let email = AppState.shared.userProfile?.email,
+       AppConfig.developerEmails.contains(email) {
+        setDeveloperAttribute()
+    }
+    #endif
+}
+
+private func setDeveloperAttribute() {
+    Purchases.shared.attribution.setAttributes(["is_developer": "true"])
+    print("[SubscriptionManager] Developer mode enabled for analytics")
+}
+```
+
+**AppConfig.swift に追加:**
+```swift
+// 開発者のApple ID（Sign in with Appleで取得したメール）
+static let developerEmails: Set<String> = [
+    "your-apple-id@privaterelay.appleid.com",  // あなたのApple ID
+    // 他の開発者を追加
+]
+```
+
+**効果:** RevenueCat→Mixpanelイベントに`subscriber_attributes.is_developer=true`として含まれる。Production/TestFlightでも開発者を識別可能。
 
 #### 実装案2: Mixpanel User Property（補助的）
 
+**ファイル:** `aniccaios/aniccaios/Services/AnalyticsManager.swift`
+
+**追加するコード:**
 ```swift
-// AnalyticsManager.swift
+/// 開発者モードを設定（ファネル分析時にフィルタ可能）
 func setDeveloperMode() {
     Mixpanel.mainInstance().people.set(property: "is_developer", to: true)
 }
+```
 
-// 開発者のみ呼び出し（手動または特定条件で）
+**呼び出し元（AppDelegate.swift）:**
+```swift
+// configureAnalytics() 内で
 #if DEBUG
 AnalyticsManager.shared.setDeveloperMode()
+#else
+if let email = AppState.shared.userProfile?.email,
+   AppConfig.developerEmails.contains(email) {
+    AnalyticsManager.shared.setDeveloperMode()
+}
 #endif
 ```
 
@@ -756,21 +1082,47 @@ openclaw status
 
 ## 実装チェックリスト
 
-| # | パッチ | ファイル | 状態 |
+### Patch A: Mixpanelトラッキング（コード変更なし）
+
+| # | タスク | 担当 | 状態 |
+|---|--------|------|------|
+| A-1 | `onboarding_paywall_purchased`をダッシュボードから削除/無視 | エージェント（Mixpanel設定） | ⬜ |
+| A-2 | RevenueCat Sandbox Token未設定を確認 | ユーザー（Dashboard確認） | ⬜ |
+| A-3 | `rc_trial_started_event`をファネルに使用 | エージェント（Mixpanel設定） | ⬜ |
+
+**注意:** Patch Aはコード変更なし。RevenueCatの`rc_trial_started_event`を信頼し、クライアントサイドの`onboarding_paywall_purchased`は無視する。
+
+### Patch B: RevenueCat A/Bテスト（GUI操作）
+
+| # | タスク | 担当 | 状態 |
+|---|--------|------|------|
+| B-1 | 新Offering `anicca_treatment_a` 作成 | エージェント（MCP） | ✅ 完了 |
+| B-2 | 新Paywall作成（社会的証明追加） | ユーザー（Dashboard GUI） | ⬜ |
+| B-3 | Experiment作成・開始 | ユーザー（Dashboard GUI） | ⬜ |
+
+### Patch C/D: OpenClaw（VPS設定）
+
+| # | タスク | ファイル | 状態 |
 |---|--------|---------|------|
-| A-1 | `onboardingPaywallPurchased`プロパティ追加 | OnboardingFlowView.swift | ⬜ |
-| A-2 | `onboardingPaywallRestoreAttempted`追加 | OnboardingFlowView.swift + AnalyticsManager.swift | ⬜ |
-| A-3 | 通知許可状態トラッキング | NotificationPermissionStepView.swift | ⬜ |
-| B-1 | RevenueCat新Offering作成 | Dashboard (GUI) | ⬜ |
-| B-2 | RevenueCat新Paywall作成 | Dashboard (GUI) | ⬜ |
-| B-3 | RevenueCat Experiment作成 | Dashboard (GUI) | ⬜ |
-| C-1 | schedule.yamlにdaily-metrics-reporter追加 | VPS | ⬜ |
-| C-2 | daily-metrics-reporter skill作成 | VPS | ⬜ |
-| C-3 | GitHub Actions daily-metrics.yml削除 | GitHub | ⬜ |
-| D-1 | slack-helper skill作成 | VPS | ⬜ |
-| D-2 | Slack App Token設定 | VPS .env | ⬜ |
-| E-1 | ValueStepView改善 | ValueStepView.swift | ⬜ |
-| E-2 | Paywall個人化 | PaywallView or RevenueCat Dashboard | ⬜ |
+| C-1 | schedule.yamlに`daily-metrics-reporter`追加 | `/home/anicca/openclaw/schedule.yaml` | ⬜ |
+| C-2 | daily-metrics-reporter skill作成 | `/home/anicca/openclaw/skills/daily-metrics-reporter/SKILL.md` | ⬜ |
+| C-3 | GitHub Actions daily-metrics.yml無効化 | `.github/workflows/daily-metrics.yml` | ⬜ |
+| D-1 | slack-helper skill作成 | `/home/anicca/openclaw/skills/slack-helper/SKILL.md` | ⬜ |
+| D-2 | Slack Token設定 | `/home/anicca/openclaw/.env` | ⬜ |
+
+### Patch E: オンボーディング改善（iOSコード変更）
+
+| # | タスク | ファイル | 状態 |
+|---|--------|---------|------|
+| E-1 | WelcomeStepView改善 | `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift` | ⬜ |
+| E-2 | ValueStepView改善 | `aniccaios/aniccaios/Onboarding/ValueStepView.swift` | ⬜ |
+| E-3 | NotificationPermissionStepView改善 | `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift` | ⬜ |
+| E-4 | `app_opened`→`first_app_opened`修正 | `aniccaios/aniccaios/AppDelegate.swift` | ⬜ |
+| E-5 | `firstAppOpened`イベント追加 | `aniccaios/aniccaios/Services/AnalyticsManager.swift` | ⬜ |
+| E-6 | 開発者フラグ追加（RevenueCat） | `aniccaios/aniccaios/Services/SubscriptionManager.swift` | ⬜ |
+| E-7 | Localizable.strings更新（EN） | `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings` | ⬜ |
+| E-8 | Localizable.strings更新（JA） | `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings` | ⬜ |
+| E-9 | NotificationPreviewCard作成 | `aniccaios/aniccaios/DesignSystem/Components/NotificationPreviewCard.swift` | ⬜ |
 
 ---
 

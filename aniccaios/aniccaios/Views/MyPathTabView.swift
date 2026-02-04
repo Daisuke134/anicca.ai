@@ -71,10 +71,6 @@ struct MyPathTabView: View {
                             .padding(.top, 8)
                     }
 
-                    // Legal Links (Footer)
-                    LegalLinksView()
-                        .padding(.top, 24)
-
                     // DEBUG: テスト状態注入UI
                     #if DEBUG
                     debugStateInjectionSection

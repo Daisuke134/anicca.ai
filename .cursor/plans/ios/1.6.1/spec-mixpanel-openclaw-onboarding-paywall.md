@@ -52,16 +52,19 @@ RevenueCat公式ドキュメントより:
 
 **`rc_trial_started_event=1件（1ヶ月）` は正しいデータ。**
 
-### 実データ（2026-01-04 〜 2026-02-04、1ヶ月間）
+### 実データサマリー
 
-> **注意:** このデータは現行の`app_opened`イベントを使用。E-4実装後は`first_app_opened`を起点として再計測する。
+> **データソース注意:**
+> - **1ヶ月データ（2026-01-04〜02-04）:** `rc_trial_started_event=1件`（本セクション）
+> - **2週間データ（2026-01-21〜02-04）:** `rc_trial_started_event=0件`（E-0セクション）
+> - 期間が異なるため件数の差は矛盾ではない。1件のトライアルは2週間より前に発生。
 
-| イベント | 1月 | 2月（4日まで） | 合計 | 変換率 |
-|---------|-----|--------------|------|-------|
-| `app_opened` | 568 | 99 | **667** | 100% |
-| `onboarding_started` | 232 | 39 | **271** | 40.6% |
-| `onboarding_paywall_viewed` | 113 | 17 | **130** | 48.0% (from started) |
-| `rc_trial_started_event` | 0 | 1 | **1** | **0.77%** (from paywall) |
+| イベント | 1ヶ月合計 | 変換率 | 備考 |
+|---------|----------|-------|------|
+| `app_opened` | **667** | 100% | 現行イベント（E-4で`first_app_opened`に移行） |
+| `onboarding_started` | **271** | 40.6% | - |
+| `onboarding_paywall_viewed` | **130** | 48.0% (from started) | - |
+| `rc_trial_started_event` | **1** | **0.77%** (from paywall) | 本番トライアルのみ |
 
 ### 問題の核心
 
@@ -117,10 +120,13 @@ RevenueCat公式ドキュメントより:
 | 4 | `onboarding_value_completed` | iOS SDK | - |
 | 5 | `onboarding_struggles_completed` | iOS SDK | - |
 | 6 | `onboarding_notifications_completed` | iOS SDK | - |
-| 7 | `onboarding_paywall_viewed` | iOS SDK | ATTスキップ（最近追加のため） |
+| 7 | `onboarding_paywall_viewed` | iOS SDK | - |
 | 8 | `rc_trial_started_event` | **RevenueCat** | サーバーサイド（正確） |
 
-**重要:** ファネル起点は`first_app_opened`を使用。`app_opened`は毎回発火するためファネル分析に不適。
+**重要:**
+- ファネル起点は`first_app_opened`を使用。`app_opened`は毎回発火するためファネル分析に不適。
+- `onboarding_att_completed`はファネルから除外。ATTはiOSシステムダイアログで離脱率が高くないため。
+- E-0の分析表には`att`が含まれているが、最適化ファネル（A-3）では除外。
 
 ---
 
@@ -194,19 +200,27 @@ showPaywall = true
 
 **After:**
 
-> **前提:** OnboardingFlowViewには既に`import RevenueCat`がある。SubscriptionManagerがアプリ起動時にconfigureを完了しているため、Purchases.sharedは使用可能。
+> **前提:**
+> - OnboardingFlowViewには既に`import RevenueCat`がある
+> - SubscriptionManagerがアプリ起動時にconfigureを完了しているため、Purchases.sharedは使用可能
+> - `setAttributes`は非同期だがPaywall表示をブロックしない設計（属性はバックグラウンドで同期）
 
 ```swift
 // Struggles選択結果をRevenueCatに送信（Paywall表示前）
-if let struggles = AppState.shared.userProfile?.struggles {
-    let topStruggle = struggles.first?.rawValue ?? "general"
+// Note: setAttributesは非同期だが、Paywall表示を待たせない。
+//       RevenueCat Dashboard変数は初回表示では反映されない可能性があるため、
+//       1.6.1ではPaywallコピーにstatic文言を使用する。
+if let selectedStruggles = selectedStruggles {  // オンボーディング中のローカル状態を使用
+    let topStruggle = selectedStruggles.first?.rawValue ?? "general"
     Purchases.shared.setAttributes([
         "top_struggle": topStruggle,
-        "struggle_count": "\(struggles.count)"
+        "struggle_count": "\(selectedStruggles.count)"
     ])
 }
 showPaywall = true
 ```
+
+> **注意:** `AppState.shared.userProfile?.struggles`ではなく、オンボーディング中のローカル状態`selectedStruggles`を直接参照する。これによりサーバー同期前でもstafflesデータを使用可能。
 
 ---
 

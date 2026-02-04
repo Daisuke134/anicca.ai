@@ -150,9 +150,9 @@ RevenueCat APIにはExperiments作成機能がないため、ダッシュボー�
 1. Paywalls → 「+ Create Paywall」
 2. テンプレート選択またはカスタム
 3. **変更点（Treatment A）:**
-   - ヘッダーに「10,000+人が使用中」追加
+   - ヘッダーに社会的証明追加（数値なし: 「多くの人が安らぎを見つけています」）
    - 価格表示を「1日たったの¥33」に変更
-   - 「7日間無料」を強調
+   - 無料トライアルを強調（期間は製品設定依存）
 
 #### Step 3: Experimentを作成
 
@@ -175,9 +175,9 @@ RevenueCat APIにはExperiments作成機能がないため、ダッシュボー�
 
 | 問題点 | 改善案 | 根拠 |
 |--------|--------|------|
-| 社会的証明なし | 「○○人が使用中」追加 | 信頼性向上 |
+| 社会的証明なし | 社会的証明追加（数値なし） | 信頼性向上 |
 | 価格が高く見える | 「1日¥33」表示 | 価格アンカリング |
-| 7日間無料が目立たない | サイズ/色を強調 | トライアル開始を促進 |
+| トライアルが目立たない | サイズ/色を強調 | トライアル開始を促進 |
 | 個人化なし | 「あなたの○○に対応」 | Struggles選択を活用 |
 
 ### B-4: Paywall個人化（Strugglesを活用）
@@ -294,8 +294,7 @@ skills:
   onboarding_value_completed:   105 (97.2%)
   onboarding_struggles_completed: 102 (97.1%)
   onboarding_notifications_completed: 97 (95.1%)
-  onboarding_att_completed:     93 (95.9%)
-  onboarding_paywall_viewed:    81 (87.1%)
+  onboarding_paywall_viewed:    81 (83.5%)
   rc_trial_started_event:        0 (0.0%) ← ★要改善
 
 📈 WEEK OVER WEEK

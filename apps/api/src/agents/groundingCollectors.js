@@ -31,6 +31,7 @@ export async function collectUserState(query, userId, problems, preferredLanguag
     SELECT
       ne.subtype as problem_type,
       ne.state->>'hook' as hook,
+      ne.state->>'content' as content,
       ne.state->>'tone' as tone,
       ne.state->>'scheduledTime' as scheduled_time,
       ne.created_at,
@@ -109,7 +110,11 @@ export async function collectUserState(query, userId, problems, preferredLanguag
       const time = row.scheduled_time || `${row.created_at.getHours()}:00`;
       const outcome = row.hook_feedback || (row.reward === 1 ? 'tapped' : row.reward === 0 ? 'ignored' : 'unknown');
       const feedback = row.content_feedback === 'thumbsUp' ? ' 👍' : row.content_feedback === 'thumbsDown' ? ' 👎' : '';
-      output += `- ${time} ${row.problem_type}: "${row.hook || 'N/A'}" (${row.tone}) → ${outcome}${feedback}\n`;
+      output += `- ${time} ${row.problem_type}: (${row.tone}) → ${outcome}${feedback}\n`;
+      output += `    Hook: "${row.hook || 'N/A'}"\n`;
+      if (row.content && (row.content_feedback === 'thumbsUp' || row.content_feedback === 'thumbsDown')) {
+        output += `    Content: "${row.content}"\n`;
+      }
     }
   }
 

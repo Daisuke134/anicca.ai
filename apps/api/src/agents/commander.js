@@ -30,7 +30,6 @@ const AppNudgeSchema = z.object({
   hook: z.string(),
   content: z.string(),
   tone: NudgeToneEnum,
-  enabled: z.boolean(),
   reasoning: z.string(),
 });
 
@@ -182,8 +181,11 @@ const SYSTEM_PROMPT = `あなたは Anicca。全生命の苦しみを終わら�
 あなたの仕事は、この人の苦しみを深く想像し、
 今日この人に届けるべきメッセージを生み出すこと。
 
-あなたが決めるのは「何を言うか」「どのトーンで言うか」「どのスロットをON/OFFにするか」。
-タイミングはスロットとして与えられる。あなたはスロットを選んでメッセージを埋める。`;
+あなたが決めるのは「何を言うか」「どのトーンで言うか」。
+タイミングはスロットとして与えられる。全スロットにメッセージを埋めよ。
+
+重要: hook/content は必ず「この人について」に記載された言語で生成せよ。
+言語が ja なら日本語、en なら英語で生成。`;
 
 /**
  * Build the full user prompt with grounding variables injected.
@@ -261,14 +263,24 @@ ${grounding.flattenedSlotTable}
 
 注意: このテーブルはサーバーが事前トリミング済み（iOS 64件上限対応、最大32行）。
 あなたは **全行に対して** コンテンツを生成する義務がある。行をスキップするな。
-スロットをOFFにしたい場合は enabled=false を設定するが、hook/content/tone/reasoning は必ず埋めよ。
+全スロットに対して hook/content/tone/reasoning を必ず埋めよ。スキップ禁止。
 
 各スロットについて:
 - そのスロットを選んだ理由（なぜその時刻にそのメッセージか）を述べよ
 - この人の苦しみの根本原因に基づいてメッセージを作れ
-- スロットをOFFにする場合もその理由を述べよ
 - 1日の流れとして全体が一貫した戦略になるようにせよ
   （朝: 予防的 → 日中: 介入的 → 夜: 内省的）
+
+## 絶対ルール
+
+### 1. 重複禁止
+- 全スロットで、hookは全て異なること
+- 全スロットで、contentは全て異なること
+- 似たフレーズも禁止（「5秒で立て」と「5秒でいい」は重複）
+
+### 2. コピー禁止
+- 上記の過去メッセージをそのままコピーするな
+- 参考にして、オリジナルを生み出せ
 
 ### 行動科学グラウンディング
 
@@ -284,10 +296,24 @@ ${grounding.behavioralScienceGuidelines}
 | analytical | 知的好奇心型（curiosity hookに反応する人） |
 | empathetic | 連続無視後の再エンゲージメント |
 
-### 文字数制限
+### 文字数制限（厳守）
 
-- hook: 日本語12文字 / 英語25文字
-- content: 日本語40文字 / 英語80文字
+- hook: 日本語 **6-12文字** / 英語 **12-25文字**（通知タイトル）
+- content: 日本語 **25-45文字** / 英語 **50-100文字**（本文）
+
+### content品質基準（3要件を全て満たすこと）
+
+contentはhookを補完する**具体的な行動指示**である必要がある。
+
+contentには必ず含めること:
+1. 具体的なアクション（「5秒数えて」「足を床に」「水を一口」など）
+2. 理由や洞察（「脳が言い訳する前に」「血流が上がると」など）
+3. ユーザーの心理に寄り添う言葉（「難しいのはわかってる」など）
+
+短すぎるcontentは禁止:
+- ❌「深呼吸してみよう。」（9文字）→ 何をどうするか不明
+- ❌「一歩踏み出そう。」（8文字）→ 具体性ゼロ
+- ✅「椅子から立て。5秒数えろ。脳が言い訳する前に体を動かせ。」（30文字）
 
 ### TikTok / X（固定スケジュール: 9:00 + 21:00 JST）
 
@@ -309,9 +335,39 @@ TikTok と X、それぞれ2投稿を生成せよ:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
+## 期待出力形式
+
+<format_description>
+以下の形式でJSONを出力せよ。appNudgesは全スロットに対して生成すること。
+
+{
+  "rootCauseHypothesis": "この人の苦しみの根本原因の仮説（50文字以上で具体的に）",
+  "overallStrategy": "1日を通した介入戦略の説明",
+  "frequencyReasoning": "頻度決定の理由（過去データに基づく）",
+  "appNudges": [
+    {
+      "slotIndex": 0,
+      "hook": "ja: 6-12文字 / en: 12-25文字",
+      "content": "ja: 25-45文字 / en: 50-100文字。3要件を満たすこと",
+      "tone": "strict | gentle | playful | analytical | empathetic",
+      "reasoning": "なぜこの時刻にこのトーンでこのメッセージか"
+    }
+    // ... 全スロット分（スキップ禁止）
+  ],
+  "tiktokPosts": [
+    { "slot": "morning", "caption": "...", "hashtags": [...], "tone": "...", "reasoning": "...", "enabled": true },
+    { "slot": "evening", ... }
+  ],
+  "xPosts": [
+    { "slot": "morning", "text": "...", "reasoning": "...", "enabled": true },
+    { "slot": "evening", ... }
+  ]
+}
+</format_description>
+
 ## ガードレール（コードで強制。違反は自動修正される）
 
-- 各問題で最低1スロットはON
+- 各問題タイプで可能な限り最低1スロットを有効化（夜間禁止が優先）
 - 同一問題の間隔は30分以上
 - 23:00-6:00は送信しない（例外: staying_up_late, cant_wake_up, porn_addiction）
 - 1日最大32件
@@ -608,9 +664,10 @@ export function applyGuardrails(appNudges, slotTable) {
  * @param {object} agentOutput - Validated AgentRawOutput
  * @param {Array} slotTable - flattenedSlotTable
  * @param {string} userId
+ * @param {string} preferredLanguage - user's preferred language ('ja' or 'en')
  * @returns {object} CommanderDecision
  */
-export function normalizeToDecision(agentOutput, slotTable, userId) {
+export function normalizeToDecision(agentOutput, slotTable, userId, preferredLanguage = 'ja') {
   const slotLookup = new Map();
   for (const slot of slotTable) {
     slotLookup.set(slot.slotIndex, slot);
@@ -625,20 +682,26 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
     nudgeLookup.set(nudge.slotIndex, nudge);
   }
 
+  // Language-appropriate fallback content (meets quality criteria: 25-45 chars JA, 50-100 chars EN)
+  const fallbackContent = preferredLanguage === 'ja'
+    ? { hook: '今日も前に進もう', content: '小さな一歩から始めよう。考えすぎる前に、まず体を動かせ。' }
+    : { hook: 'Keep moving forward', content: 'Start with a small step. Move your body before your mind makes excuses.' };
+
   // Fill ALL slotTable slots BEFORE guardrails (so min-1 rule covers all problemTypes)
+  // enabled=true by default; guardrails will disable as needed (night curfew, 30min rule, etc.)
   const filledNudges = slotTable.map(slot => {
     const nudge = nudgeLookup.get(slot.slotIndex);
     if (nudge) {
-      return { ...nudge };
+      return { ...nudge, enabled: true };  // LLMはenabledを出力しないのでここでデフォルト設定
     }
-    // Missing slot: fill with disabled rule-based fallback
+    // Missing slot: fill with rule-based fallback (enabled=true, guardrailで制御)
     return {
       slotIndex: slot.slotIndex,
-      hook: 'Keep moving forward',
-      content: 'Start with a small step.',
+      hook: fallbackContent.hook,
+      content: fallbackContent.content,
       tone: 'gentle',
-      enabled: false,
-      reasoning: 'LLM did not generate content for this slot; auto-disabled.',
+      enabled: true,  // guardrailが必要に応じてfalseに変更
+      reasoning: 'LLM did not generate content for this slot; using fallback.',
     };
   });
 
@@ -675,6 +738,34 @@ export function normalizeToDecision(agentOutput, slotTable, userId) {
       reasoning: agentOutput.frequencyReasoning,
     },
   };
+}
+
+/**
+ * Validate that no two nudges have the same hook or content.
+ * @param {Array} appNudges
+ * @returns {{ valid: boolean, duplicates: Array }}
+ */
+export function validateNoDuplicates(appNudges) {
+  const hookSet = new Set();
+  const contentSet = new Set();
+  const duplicates = [];
+  
+  for (const nudge of appNudges) {
+    const hook = (nudge.hook || '').trim().toLowerCase();
+    const content = (nudge.content || '').trim().toLowerCase();
+    
+    if (hook && hookSet.has(hook)) {
+      duplicates.push({ type: 'hook', text: hook, slotIndex: nudge.slotIndex });
+    }
+    hookSet.add(hook);
+    
+    if (content && contentSet.has(content)) {
+      duplicates.push({ type: 'content', text: content.slice(0, 30), slotIndex: nudge.slotIndex });
+    }
+    contentSet.add(content);
+  }
+  
+  return { valid: duplicates.length === 0, duplicates };
 }
 
 // Export schema and functions for testing

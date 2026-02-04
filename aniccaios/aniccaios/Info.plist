@@ -118,6 +118,8 @@
 	<string>Anicca may record your wellness activities to track your behavioral progress.</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>Anicca may use the microphone for voice-based interactions in future updates.</string>
+	<key>NSUserTrackingUsageDescription</key>
+	<string>We use this to measure how you discovered Anicca and improve your experience. Your data is never sold.</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

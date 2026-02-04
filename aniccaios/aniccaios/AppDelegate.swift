@@ -1,10 +1,15 @@
-// v1.6.0 — Phase 5 Learning Loop
+// v1.6.1 — ATT Implementation
 import UIKit
 import UserNotifications
 import OSLog
 import BackgroundTasks
+import AppTrackingTransparency
 
 class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDelegate {
+    
+    // launchOptionsを保持（ATT後のSingular初期化に使用）
+    private var storedLaunchOptions: [UIApplication.LaunchOptionsKey: Any]?
+    private var singularInitialized = false
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]? = nil) -> Bool {
         let proxy = Bundle.main.object(forInfoDictionaryKey: "ANICCA_PROXY_BASE_URL") as? String ?? "nil"
@@ -18,12 +23,36 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             AppState.shared.resetState()
         }
 
+        // launchOptionsを保持（ATT後のSingular初期化に使用）
+        storedLaunchOptions = launchOptions
+
         UNUserNotificationCenter.current().delegate = self
         NotificationScheduler.shared.registerCategories()
         SubscriptionManager.shared.configure()
+        
+        // Mixpanelは常に初期化（ファーストパーティAnalytics、IDFAを使用しない）
         AnalyticsManager.shared.configure()
-        SingularManager.shared.configure(launchOptions: launchOptions)
-        SingularManager.shared.trackAppLaunch()
+        
+        // ATT完了通知を購読
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleATTCompleted(_:)),
+            name: .attAuthorizationCompleted,
+            object: nil
+        )
+        
+        // ATTステータスを確認し、SingularはATT許可後のみ初期化
+        if #available(iOS 14.5, *) {
+            let status = ATTrackingManager.trackingAuthorizationStatus
+            if status == .authorized {
+                initializeSingular()
+            }
+            // status == .notDetermined → オンボーディングで許可を取得してから初期化
+            // status == .denied/.restricted → Singularは初期化しない
+        } else {
+            // iOS 14.5未満 → ATT不要、即座にSingular初期化
+            initializeSingular()
+        }
 
         // ASA Attribution取得 → app_opened トラック（この順序が重要）
         Task {
@@ -40,6 +69,27 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
             await AuthHealthCheck.shared.warmBackend()
         }
         return true
+    }
+    
+    @objc private func handleATTCompleted(_ notification: Notification) {
+        guard let statusRaw = notification.userInfo?["status"] as? UInt,
+              let status = ATTrackingManager.AuthorizationStatus(rawValue: statusRaw) else {
+            return
+        }
+        
+        if status == .authorized {
+            initializeSingular()
+        }
+        // ATT非許可時はSingularを初期化しない（Mixpanelは既に初期化済み）
+    }
+    
+    private func initializeSingular() {
+        guard !singularInitialized else { return }
+        singularInitialized = true
+        
+        // storedLaunchOptionsを使用してアトリビューション/ディープリンク情報を保持
+        SingularManager.shared.configure(launchOptions: storedLaunchOptions)
+        SingularManager.shared.trackAppLaunch()
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {

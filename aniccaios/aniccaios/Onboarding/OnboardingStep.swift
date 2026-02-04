@@ -5,6 +5,7 @@ enum OnboardingStep: Int {
     case value         // 1
     case struggles     // 2
     case notifications // 3
+    case att           // 4
 }
 
 extension OnboardingStep {
@@ -23,7 +24,7 @@ extension OnboardingStep {
         case 3, 4, 5, 6, 7: return .struggles  // source〜ideals → struggles
         case 8: return .struggles
         case 9, 10: return .notifications // habitSetup, notifications → notifications
-        case 11, 12: return .notifications // att, alarmkit → notifications (ATT step removed)
+        case 11, 12: return .att          // att, alarmkit → att
         default:
             return .welcome
         }

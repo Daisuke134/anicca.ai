@@ -4,3 +4,6 @@
 /* Notification permission description */
 "NSUserNotificationsUsageDescription" = "Aniccaは起床やルーティンのタイミングで、やさしく促す通知を送ります。";
 
+/* App Tracking Transparency permission description */
+"NSUserTrackingUsageDescription" = "Aniccaを見つけた経緯を計測し、サービス改善に活用します。データが売却されることはありません。";
+

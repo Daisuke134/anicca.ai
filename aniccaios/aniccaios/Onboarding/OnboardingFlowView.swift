@@ -20,6 +20,8 @@ struct OnboardingFlowView: View {
                     StrugglesStepView(next: advance)
                 case .notifications:
                     NotificationPermissionStepView(next: advance)
+                case .att:
+                    ATTPermissionStepView(next: advance)
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -69,6 +71,9 @@ struct OnboardingFlowView: View {
             step = .notifications
         case .notifications:
             AnalyticsManager.shared.track(.onboardingNotificationsCompleted)
+            step = .att
+        case .att:
+            AnalyticsManager.shared.track(.onboardingATTCompleted)
             completeOnboarding()
             return
         }

@@ -56,19 +56,26 @@ RevenueCat公式ドキュメントより:
 
 > **データソース注意:**
 > - **1ヶ月データ（2026-01-04〜02-04）:** `rc_trial_started_event=1件`（本セクション）
-> - **2週間データ（2026-01-21〜02-04）:** `rc_trial_started_event=0件`（E-0セクション）
-> - 期間が異なるため件数の差は矛盾ではない。1件のトライアルは2週間より前に発生。
+> - **16日間データ（2026-01-21〜02-05）:** `rc_trial_started_event=0件`（E-0セクション）
+> - 期間が異なるため件数の差は矛盾ではない。1件のトライアルは16日間の範囲外（それ以前）に発生。
+
+**参考指標（ファネル外）:**
+
+| イベント | 1ヶ月合計 | 備考 |
+|---------|----------|------|
+| `app_opened` | **667** | 全アプリ起動（リピーター含む）。ファネルには使わない。 |
+
+**オンボーディングファネル（`onboarding_started`起点）:**
 
 | イベント | 1ヶ月合計 | 変換率 | 備考 |
 |---------|----------|-------|------|
-| `app_opened` | **667** | 100% | 現行イベント（E-4で`first_app_opened`に移行） |
-| `onboarding_started` | **271** | 40.6% | - |
-| `onboarding_paywall_viewed` | **130** | 48.0% (from started) | - |
+| `onboarding_started` | **271** | 100% | ファネル起点（新規ユーザーのみ） |
+| `onboarding_paywall_viewed` | **130** | 48.0% | - |
 | `rc_trial_started_event` | **1** | **0.77%** (from paywall) | 本番トライアルのみ |
 
 ### 問題の核心
 
-667人がアプリを開いて、130人がPaywallを見て、**たった1人**がトライアルを開始。
+271人がオンボーディングを開始し、130人がPaywallを見て、**たった1人**がトライアルを開始。
 
 **Paywallの変換率: 0.77%** ← これが問題。業界平均は5-10%。
 
@@ -114,19 +121,34 @@ RevenueCat公式ドキュメントより:
 
 | ステップ | イベント | ソース | 備考 |
 |---------|---------|-------|------|
-| 1 | `first_app_opened` | iOS SDK | **初回起動のみ**（E-4で追加） |
-| 2 | `onboarding_started` | iOS SDK | - |
-| 3 | `onboarding_welcome_completed` | iOS SDK | - |
-| 4 | `onboarding_value_completed` | iOS SDK | - |
-| 5 | `onboarding_struggles_completed` | iOS SDK | - |
-| 6 | `onboarding_notifications_completed` | iOS SDK | - |
-| 7 | `onboarding_paywall_viewed` | iOS SDK | - |
-| 8 | `rc_trial_started_event` | **RevenueCat** | サーバーサイド（正確） |
+| 1 | `onboarding_started` | iOS SDK | **ファネル起点**（新規ユーザーのみ発火） |
+| 2 | `onboarding_welcome_completed` | iOS SDK | - |
+| 3 | `onboarding_value_completed` | iOS SDK | - |
+| 4 | `onboarding_struggles_completed` | iOS SDK | - |
+| 5 | `onboarding_notifications_completed` | iOS SDK | - |
+| 6 | `onboarding_paywall_viewed` | iOS SDK | - |
+| 7 | `rc_trial_started_event` | **RevenueCat** | サーバーサイド（正確） |
 
 **重要:**
-- ファネル起点は`first_app_opened`を使用。`app_opened`は毎回発火するためファネル分析に不適。
+- ファネル起点は`onboarding_started`を使用。`app_opened`は既存ユーザー含むためファネル分析に不適。
+- `first_app_opened`は別用途（初回インストール数の計測）として追加するが、ファネル起点には使わない。
 - `onboarding_att_completed`はファネルから除外。ATTはiOSシステムダイアログで離脱率が高くないため。
-- E-0の分析表には`att`が含まれているが、最適化ファネル（A-3）では除外。
+
+### A-3.1: Mixpanel UIでのファネル設定手順
+
+**場所:** Mixpanel Dashboard → Funnels → Create Funnel
+
+| ステップ | 操作 |
+|---------|------|
+| 1 | 「Create Funnel」をクリック |
+| 2 | ファネル名: `Onboarding Funnel v1.6.1` |
+| 3 | Step 1: `onboarding_started` を選択 |
+| 4 | Step 2-6: 上記テーブルの順でイベント追加 |
+| 5 | Step 7: `rc_trial_started_event` を選択 |
+| 6 | Conversion Window: 14 days |
+| 7 | 「Save」をクリック |
+
+**注意:** Mixpanel MCPの`run_funnels_query`はクエリ実行用であり、ファネル定義の保存には使えない。ファネル定義はMixpanel UIで行う。
 
 ---
 
@@ -169,7 +191,7 @@ RevenueCat APIにはExperiments作成機能がないため、ダッシュボー�
 #### Step 4: 実験開始
 
 1. 設定確認後、「Start Experiment」をクリック
-2. 最低1-2週間データ収集
+2. 最低1-2週間データ収集（A/Bテスト業界標準。※上記の16日間はファネル分析期間であり、実験期間とは別）
 
 ### 現在のPaywallの問題点と改善案
 
@@ -272,30 +294,32 @@ skills:
 
 **毎朝9:00 JSTにAnicca/OpenClawが #metrics に投稿する内容:**
 
+> **注意:** 以下は**サンプルフォーマット**（実データではない）。実際の数値はMCP経由でリアルタイム取得される。
+
 ```
-📊 Anicca Daily Metrics (2026-02-04)
+📊 Anicca Daily Metrics (2026-02-04)  ← サンプル
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 💰 REVENUE (RevenueCat)
-  MRR: $0.00
-  Active Subs: 0
-  Active Trials: 0
+  MRR: $XX.XX
+  Active Subs: X
+  Active Trials: X
 
 📥 INSTALLS (App Store Connect, 過去7日)
-  合計: 85
-  国別: JP: 45 | US: 20 | Others: 20
+  合計: XX
+  国別: JP: XX | US: XX | Others: XX
+  first_app_opened: XX（初回起動数、インストール数計測用）
 
 🔄 ONBOARDING FUNNEL (Mixpanel, 過去7日)
-  期間: 2026-01-28 〜 2026-02-04
+  期間: YYYY-MM-DD 〜 YYYY-MM-DD
 
-  first_app_opened:            150 (100.0%)  ← ファネル起点
-  onboarding_started:          131 (87.3%)
-  onboarding_welcome_completed: 108 (82.4%)
-  onboarding_value_completed:   105 (97.2%)
-  onboarding_struggles_completed: 102 (97.1%)
-  onboarding_notifications_completed: 97 (95.1%)
-  onboarding_paywall_viewed:    81 (83.5%)
-  rc_trial_started_event:        0 (0.0%) ← ★要改善
+  onboarding_started:          XXX (100.0%)  ← ファネル起点
+  onboarding_welcome_completed: XXX (XX.X%)
+  onboarding_value_completed:   XXX (XX.X%)
+  onboarding_struggles_completed: XXX (XX.X%)
+  onboarding_notifications_completed: XX (XX.X%)
+  onboarding_paywall_viewed:    XX (XX.X%)
+  rc_trial_started_event:        X (X.X%) ← ★要改善
 
 📈 WEEK OVER WEEK
   Trial Starts: 0 → 0 (±0%)
@@ -552,57 +576,76 @@ openclaw restart
 
 ### E-0: 正確なファネル分析（Mixpanel Funnel Query）
 
-**期間:** 2026-01-21 〜 2026-02-04（2週間）  
-**コンバージョンウィンドウ:** 14日  
+**期間:** 2026-01-21 〜 2026-02-05（16日間）
+**コンバージョンウィンドウ:** 14日
 **カウント方式:** ユニークユーザー
+**起点:** `onboarding_started`（`app_opened`は既存ユーザー含むため使用しない）
 
-| # | ステップ | イベント | ユニークユーザー | 前ステップ変換率 | 全体変換率 | 平均時間(秒) |
-|---|---------|---------|---------------|----------------|-----------|------------|
-| 1 | アプリ起動 | `app_opened` | **135** | - | 100% | - |
-| 2 | オンボーディング開始 | `onboarding_started` | **102** | 75.6% | 75.6% | 119秒 |
-| 3 | Welcome完了 | `onboarding_welcome_completed` | **77** | 75.5% | 57.0% | 2,072秒 |
-| 4 | Value完了 | `onboarding_value_completed` | **75** | 97.4% | 55.6% | 2秒 |
-| 5 | Struggles完了 | `onboarding_struggles_completed` | **75** | 100% | 55.6% | 25秒 |
-| 6 | Notifications完了 | `onboarding_notifications_completed` | **72** | 96.0% | 53.3% | 3秒 |
-| 7 | Paywall表示 | `onboarding_paywall_viewed` | **58** | 80.6% | 43.0% | 1秒 |
-| 8 | トライアル開始 | `rc_trial_started_event` | **0** | 0% | 0% | - |
+| # | ステップ | イベント | ユニークユーザー | 前ステップ変換率 | 離脱率 | 問題度 |
+|---|---------|---------|---------------|----------------|--------|--------|
+| 1 | オンボーディング開始 | `onboarding_started` | **131** | 100% | - | - |
+| 2 | Welcome完了 | `onboarding_welcome_completed` | **105** | 80.2% | **19.8%** | 🟡 |
+| 3 | Value完了 | `onboarding_value_completed` | **103** | 98.1% | 1.9% | ✅ |
+| 4 | Struggles完了 | `onboarding_struggles_completed` | **103** | 100% | 0% | ✅ |
+| 5 | Notifications完了 | `onboarding_notifications_completed` | **99** | 96.1% | 3.9% | ✅ |
+| 6 | Paywall表示 | `onboarding_paywall_viewed` | **77** | 77.8% | **22.2%** | 🟡 |
+| 7 | トライアル開始 | `rc_trial_started_event` | **0** | 0% | **100%** | 🔴 |
+
+**課題ランキング:**
+
+| 順位 | どこで離脱 | 離脱率 | 対策 | 1.6.1実装 |
+|------|-----------|--------|------|-----------|
+| 🔴 **1位** | Paywall → トライアル | **100%** | A/Bテスト | ✅ ユーザーがRevenueCat Dashboardで設定 |
+| 🟡 **2位** | Notifications → Paywall | **22.2%** | 通知プレビュー追加 | ❌ 1.6.2で実装 |
+| 🟡 **3位** | started → welcome_completed | **19.8%** | 社会的証明（1.6.1）+ 進捗バー（1.6.2） | ✅ 社会的証明のみ |
+
+### E-0.1: `app_opened` vs `onboarding_started` の違い
+
+| イベント | いつ発火 | ファネル起点として |
+|---------|---------|-------------------|
+| `app_opened` | **毎回**アプリを開くたびに発火 | ❌ 既存ユーザー含む、ノイズが多い |
+| `onboarding_started` | オンボーディング画面が**表示された時**のみ | ✅ 新規ユーザーのみ、正確 |
+
+**結論:** ファネルは `onboarding_started` から測定する。`app_opened` は残す（リテンション分析用）。
 
 ### E-1: 問題別分析と解決策
 
-#### 🔴 P0: Paywall変換率 0%（58人中0人がトライアル開始）
+#### 🔴 P0: Paywall変換率 0%（77人中0人がトライアル開始）
 
 | 項目 | 内容 |
 |-----|------|
-| **現状** | 58人がPaywallを見て、0人がトライアル開始 |
+| **現状** | 77人がPaywallを見て、0人がトライアル開始（E-0ファネル表参照） |
 | **原因** | Paywallが価値を伝えていない。社会的証明なし、価格アンカリングなし、パーソナライズなし |
 | **解決策** | Paywall A/Bテスト（Variant B: 社会的証明、価格アンカリング追加） |
 | **理由** | 業界平均のPaywall変換率は5-10%。0%は致命的に低い。Paywallデザイン自体を改善する必要がある |
 
-#### 🟡 P1: app_opened → started（24.4%離脱）
+#### ⚪ 参考指標（ファネル外）: app_opened → started
+
+> **注意:** この指標はファネル分析には含めない。`app_opened`は既存ユーザーも含むため、新規ユーザーの離脱率として正確ではない。ファネルは`onboarding_started`から開始する。
+>
+> **期間注意:** 下記はE-0とは**別期間**のサンプルデータ（古いクエリ結果）。E-0期間（2026-01-21〜02-05）では`onboarding_started=131`。
 
 | 項目 | 内容 |
 |-----|------|
-| **現状** | 135人がアプリを起動、102人がオンボーディング開始。33人が離脱 |
-| **原因** | Welcome画面が価値を伝えていない。「Welcome to Anicca」は何も言っていない |
-| **解決策** | タイトルをペルソナの痛みに刺さるものに変更 |
-| **理由** | ユーザーは最初の数秒で「これは自分のためのアプリか」を判断する。ペルソナは「何度も失敗してきた人」なので、その痛みに共感する文言が必要 |
+| **現状（参考）** | 古いクエリでは`app_opened`=135人、`onboarding_started`=102人だった。差の33人は**既存ユーザーの再起動**または**即閉じ** |
+| **結論** | この差はファネル分析では無視する。ファネル起点は`onboarding_started`（新規ユーザーのみ発火）|
 
-#### 🟡 P2: started → welcome_completed（24.5%離脱）
+#### 🟡 P1: started → welcome_completed（19.8%離脱）
 
 | 項目 | 内容 |
 |-----|------|
-| **現状** | 102人がオンボーディング開始、77人がWelcome完了。25人が離脱 |
-| **原因** | 平均時間2,072秒（約34分）！→ ユーザーがアプリを閉じて戻ってきている可能性 |
-| **解決策** | CTAボタンをより目立たせる。進捗インジケーター追加 |
-| **理由** | ユーザーがどこを押せばいいかわからない、または興味を失っている |
+| **現状** | 131人がオンボーディング開始、105人がWelcome完了。26人が離脱 |
+| **原因** | CTAボタンが目立たない、または興味を失っている |
+| **解決策** | 社会的証明追加（1.6.1）、進捗インジケーター追加（1.6.2） |
+| **理由** | ユーザーがどこを押せばいいかわからない、または「自分のためのアプリ」と感じていない |
 
-#### 🟡 P3: notifications → paywall（19.4%離脱）
+#### 🟡 P2: notifications → paywall（22.2%離脱）
 
 | 項目 | 内容 |
 |-----|------|
-| **現状** | 72人が通知完了、58人がPaywall表示。14人が離脱 |
+| **現状** | 99人が通知完了、77人がPaywall表示。22人が離脱 |
 | **原因** | 通知許可後にアプリを閉じている可能性 |
-| **解決策** | 通知許可の理由をより明確に説明。通知プレビューを表示 |
+| **解決策** | 通知許可の理由をより明確に説明。通知プレビューを表示（1.6.2で実装予定）|
 | **理由** | ユーザーは「なぜ通知が必要か」を理解しないと許可しない |
 
 ### E-2: 全ローカライズ変更一覧
@@ -619,63 +662,91 @@ openclaw restart
 
 ---
 
-#### Welcome画面 (WelcomeStepView.swift)
+#### Welcome画面 (WelcomeStepView.swift) — ✅ 1.6.1で実装
 
-| Key | Before (EN) | After (EN) | 理由 |
+| Key | Before (EN) | After (EN) | 変更 |
 |-----|------------|-----------|------|
-| `onboarding_welcome_title` | `Welcome to\nAnicca` | `Break the cycle.\nFor real this time.` | 「Welcome」は何も伝えない。「今度こそ」はペルソナの願望に刺さる |
-| `onboarding_welcome_subtitle_line1` | `Anicca reaches out to you` | `Anicca sends you the right words` | 「reaches out」は曖昧。「right words」は具体的価値 |
-| `onboarding_welcome_subtitle_line2` | `at the moments you struggle most.` | `before you spiral—not after.` | 「before」強調。事前対処がAniccaの価値 |
-| `onboarding_welcome_cta` | `Get Started` | `Start Free Trial` | トライアル明示（全Offeringに7日間トライアル付与済み） |
-| `onboarding_welcome_social_proof` | (新規) | `Join thousands finding peace` | 社会的証明（数値なし、法的リスク回避） |
+| `onboarding_welcome_title` | `Welcome to\nAnicca` | `Welcome to\nAnicca` | **変更なし** |
+| `onboarding_welcome_subtitle_line1` | `Anicca reaches out to you` | `Anicca sends you the right words` | ✅ |
+| `onboarding_welcome_subtitle_line2` | `at the moments you struggle most.` | `before you spiral—not after.` | ✅ |
+| `onboarding_welcome_cta` | `Get Started` | `Get Started` | **変更なし** |
+| `onboarding_welcome_social_proof` | (なし) | `Join thousands finding peace` | ✅ 新規 |
 
-| Key | Before (JA) | After (JA) | 理由 |
+| Key | Before (JA) | After (JA) | 変更 |
 |-----|------------|-----------|------|
-| `onboarding_welcome_title` | `Aniccaへ\nようこそ` | `今度こそ、\n変われる。` | 「ようこそ」は無意味。「今度こそ」はペルソナの願望 |
-| `onboarding_welcome_subtitle_line1` | `Aniccaは、あなたが一番つらいときに` | `悪循環に陥る前に、` | 「つらいとき」は受動的。「悪循環に陥る前に」は能動的価値 |
-| `onboarding_welcome_subtitle_line2` | `そっと声をかけます。` | `Aniccaが声をかけます。` | 「そっと」削除。より直接的 |
-| `onboarding_welcome_cta` | `はじめる` | `無料で試す` | トライアル強調（全Offeringに7日間トライアル付与済み） |
-| `onboarding_welcome_social_proof` | (新規) | `多くの人が安らぎを見つけています` | 社会的証明（数値なし、法的リスク回避） |
+| `onboarding_welcome_title` | `Aniccaへ\nようこそ` | `Aniccaへ\nようこそ` | **変更なし** |
+| `onboarding_welcome_subtitle_line1` | `Aniccaは、あなたが一番つらいときに` | `悪循環に陥る前に、` | ✅ |
+| `onboarding_welcome_subtitle_line2` | `そっと声をかけます。` | `Aniccaが声をかけます。` | ✅ |
+| `onboarding_welcome_cta` | `はじめる` | `はじめる` | **変更なし** |
+| `onboarding_welcome_social_proof` | (なし) | `多くの人が安らぎを見つけています` | ✅ 新規 |
 
-#### Value画面 (ValueStepView.swift)
+#### Value画面 (ValueStepView.swift) — ❌ 1.6.1では実装しない（パッチは完全に用意）
 
-| Key | Before (EN) | After (EN) | 理由 |
-|-----|------------|-----------|------|
-| `onboarding_value_title` | `What Anicca Can Do` | `You've tried everything.\nNothing worked.` | 機能リストではなくペルソナの痛みに共感 |
-| `onboarding_value_subtitle` | (新規) | `That's not your fault. Here's why Anicca is different.` | 「あなたのせいじゃない」で責めない |
-| `onboarding_value_card1_title` | `Nudges at the right moment` | `We reach you first` | より人間的 |
-| `onboarding_value_card2_title` | `Learns what works for you` | `We learn what works for YOU` | 「YOU」強調 |
-| `onboarding_value_card3_title` | `Goes beyond habit tracking` | `We address the root cause` | 具体的 |
+> **注意:** A/Bテストの変数を減らすため、1.6.1ではValue画面は変更しない。1.6.2で実装予定。
 
-| Key | Before (JA) | After (JA) | 理由 |
-|-----|------------|-----------|------|
-| `onboarding_value_title` | `Aniccaができること` | `いくつ試しましたか？\n全部続かなかったでしょう？` | ペルソナの経験に直接共感 |
-| `onboarding_value_subtitle` | (新規) | `それはあなたのせいじゃない。Aniccaが違う理由。` | 責めない |
-| `onboarding_value_card1_title` | `最適なタイミングで声をかける` | `先に声をかける` | シンプル |
-| `onboarding_value_card2_title` | `あなたに効く言葉を学ぶ` | `あなただけに効く言葉を学ぶ` | パーソナライズ強調 |
-| `onboarding_value_card3_title` | `習慣トラッカーを超える` | `根本原因に向き合う` | 具体的 |
+**English:**
 
-#### Notifications画面 (NotificationPermissionStepView.swift)
+| Key | Before | After |
+|-----|--------|-------|
+| `onboarding_value_title` | `What Anicca Can Do` | `You've tried everything.\nNothing worked.` |
+| `onboarding_value_subtitle` | (なし) | `That's not your fault. Here's why Anicca is different.` |
+| `onboarding_value_card1_title` | `Nudges at the right moment` | `We reach you first` |
+| `onboarding_value_card1_body` | `Anicca sends you a message exactly when you need it — before you spiral, not after.` | `Before you spiral, not after. Anicca reaches you at the exact moment you need it.` |
+| `onboarding_value_card2_title` | `Learns what works for you` | `We learn what works for YOU` |
+| `onboarding_value_card2_body` | `Every reaction teaches Anicca. Over time, it learns which words land and which ones miss.` | `Your reactions teach us. Over time, we learn exactly which words help you.` |
+| `onboarding_value_card3_title` | `Goes beyond habit tracking` | `We address the root cause` |
+| `onboarding_value_card3_body` | `Anicca doesn't count streaks. It addresses why you stay up late, why you can't stop, why you feel stuck.` | `No streaks. No guilt. We help you understand why you stay up late, why you can't stop, why you feel stuck.` |
 
-| Key | Before (EN) | After (EN) | 理由 |
-|-----|------------|-----------|------|
-| `onboarding_notifications_title` | `Notifications` | `This is how it works` | 機能名ではなく価値説明 |
-| `onboarding_notifications_description` | `Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.` | `When you're about to spiral, Anicca sends you the right words. Turn on notifications to get the full experience.` | 具体的価値。「spiral」はペルソナの痛み |
-| `onboarding_notifications_allow` | `Allow notifications` | `Turn on notifications` | アクション指向 |
-| `notification_preview_example` | (新規) | `Take a breath. You've got this.` | 通知プレビュー用 |
-| `notification_preview_time` | (新規) | `now` | 通知プレビュー時刻 |
+**Japanese:**
 
-| Key | Before (JA) | After (JA) | 理由 |
-|-----|------------|-----------|------|
-| `onboarding_notifications_title` | `通知` | `こうやって助けます` | 機能名ではなく価値 |
-| `onboarding_notifications_description` | `Aniccaは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。` | `あなたが悪循環に陥りそうなとき、Aniccaが声をかけます。通知をオンにして、フルの体験をしてください。` | 具体的 |
-| `onboarding_notifications_allow` | `通知を許可` | `通知をオンにする` | アクション指向 |
-| `notification_preview_example` | (新規) | `深呼吸。大丈夫、できるよ。` | 通知プレビュー用 |
-| `notification_preview_time` | (新規) | `たった今` | 通知プレビュー時刻 |
+| Key | Before | After |
+|-----|--------|-------|
+| `onboarding_value_title` | `Aniccaができること` | `いろいろ試した。でも苦しいまま。` |
+| `onboarding_value_subtitle` | (なし) | `Aniccaが、そばにいる。` |
+| `onboarding_value_card1_title` | `最適なタイミングで声をかける` | `先に声をかける` |
+| `onboarding_value_card1_body` | `悪循環に陥る前に、Aniccaがメッセージを届けます。あなたが気づく前に。` | `悪循環に陥る前に。あなたが気づく前に、Aniccaが声をかける。` |
+| `onboarding_value_card2_title` | `あなたに効く言葉を学ぶ` | `あなただけに効く言葉を学ぶ` |
+| `onboarding_value_card2_body` | `あなたの反応からAniccaは学びます。日が経つほど、あなたに刺さる言葉がわかるようになります。` | `あなたの反応から学ぶ。日が経つほど、あなたに届く言葉がわかってくる。` |
+| `onboarding_value_card3_title` | `習慣トラッカーを超える` | `根本原因に向き合う` |
+| `onboarding_value_card3_body` | `Aniccaは連続記録を数えません。なぜ夜更かしするのか、なぜやめられないのか、その根本に向き合います。` | `連続記録も、罪悪感もいらない。なぜ夜更かしするのか、なぜやめられないのか、一緒に向き合う。` |
+
+#### Notifications画面 (NotificationPermissionStepView.swift) — ❌ 1.6.1では実装しない（パッチは完全に用意）
+
+> **注意:** A/Bテストの変数を減らすため、1.6.1ではNotifications画面は変更しない。1.6.2で実装予定。
+
+**English:**
+
+| Key | Before | After |
+|-----|--------|-------|
+| `onboarding_notifications_title` | `Notifications` | `This is how it works` |
+| `onboarding_notifications_description` | `Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.` | `When you're about to spiral, Anicca sends you the right words. Turn on notifications to get the full experience.` |
+| `onboarding_notifications_allow` | `Allow notifications` | `Turn on notifications` |
+| `notification_preview_example` | (なし) | `Take a breath. You've got this.` |
+| `notification_preview_time` | (なし) | `now` |
+
+**Japanese:**
+
+| Key | Before | After |
+|-----|--------|-------|
+| `onboarding_notifications_title` | `通知` | `こうやって助けます` |
+| `onboarding_notifications_description` | `Aniccaは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。` | `あなたが悪循環に陥りそうなとき、Aniccaが声をかけます。通知をオンにして、フルの体験をしてください。` |
+| `onboarding_notifications_allow` | `通知を許可` | `通知をオンにする` |
+| `notification_preview_example` | (なし) | `深呼吸。大丈夫、できるよ。` |
+| `notification_preview_time` | (なし) | `たった今` |
+
+**SwiftUIコード変更（1.6.2で実装）:**
+
+新規コンポーネント `NotificationPreviewCard.swift` を追加し、`NotificationPermissionStepView.swift` に組み込む。
 
 ### E-3: SwiftUIコード変更
 
-#### WelcomeStepView.swift
+> **スコープ注意:**
+> - **1.6.1実装:** WelcomeStepView（社会的証明 + CTAボタン強調）のみ
+> - **1.6.2実装:** 進捗インジケーター、ValueStepView、NotificationPermissionStepView、NotificationPreviewCard
+
+---
+
+#### WelcomeStepView.swift — ✅ **1.6.1で実装**
 
 **Before (line 13-33):**
 ```swift
@@ -703,11 +774,13 @@ VStack(spacing: 24) {
 
 ---
 
-#### P2対策: 進捗インジケーター追加
+#### P2対策: 進捗インジケーター追加 — ❌ **1.6.2で実装**
 
 **ファイル:** `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift`
 
 **目的:** ユーザーがオンボーディングの進捗を把握できるようにする（P2対策）
+
+> **1.6.2での実装予定。** 進捗インジケーターは全画面に影響するため、1.6.1のスコープ外。
 
 ---
 
@@ -828,7 +901,7 @@ struct OnboardingProgressIndicator: View {
 
 ---
 
-#### P2対策: CTAボタン強調
+#### P2対策: CTAボタン強調 — ✅ **1.6.1で実装**
 
 **ファイル:** `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift`
 
@@ -855,7 +928,7 @@ PrimaryButton(title: String(localized: "onboarding_welcome_cta"), style: .primar
 
 ---
 
-#### ValueStepView.swift
+#### ValueStepView.swift — ❌ **1.6.2で実装**
 
 **Before (line 8-15):**
 ```swift
@@ -879,7 +952,7 @@ VStack(spacing: 12) {
 .padding(.bottom, 24)
 ```
 
-#### NotificationPermissionStepView.swift
+#### NotificationPermissionStepView.swift — ❌ **1.6.2で実装**
 
 **ファイル:** `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift`
 
@@ -1031,7 +1104,8 @@ enum AnalyticsEvent: String {
 
 | イベント | 用途 | ファネルに使う？ |
 |---------|------|----------------|
-| `first_app_opened` | 初回インストール後の起動 | ✅ ファネルの起点に使用 |
+| `onboarding_started` | オンボーディング開始 | ✅ **ファネルの起点に使用** |
+| `first_app_opened` | 初回インストール後の起動 | ❌ ファネルには使わない（インストール数計測用） |
 | `app_opened` | 全ての起動（リテンション分析） | ❌ ファネルには使わない |
 | `rc_trial_started_event` | トライアル開始 | ✅ ファネルの終点に使用 |
 
@@ -1318,20 +1392,40 @@ openclaw status
 
 ### Patch E: オンボーディング改善（iOSコード変更）
 
+#### 1.6.1で実装するタスク（Welcome画面 + トラッキングのみ）
+
+> **スコープ注意:** 1.6.1はWelcome画面の改善とトラッキング修正のみ。進捗インジケーター（E-10/E-11）は全画面に影響するため1.6.2で実装。
+
 | # | タスク | ファイル | 状態 |
 |---|--------|---------|------|
-| E-1 | WelcomeStepView改善 | `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift` | ⬜ |
-| E-1b | CTAボタン強調（P2対策） | `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift` | ⬜ |
-| E-2 | ValueStepView改善 | `aniccaios/aniccaios/Onboarding/ValueStepView.swift` | ⬜ |
-| E-3 | NotificationPermissionStepView改善 | `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift` | ⬜ |
-| E-4 | `app_opened`→`first_app_opened`修正 | `aniccaios/aniccaios/AppDelegate.swift` | ⬜ |
-| E-5 | `firstAppOpened`イベント追加 | `aniccaios/aniccaios/Services/AnalyticsManager.swift` | ⬜ |
-| E-6 | 開発者フラグ追加（RevenueCat） | `aniccaios/aniccaios/Services/SubscriptionManager.swift` | ⬜ |
-| E-7 | Localizable.strings更新（EN） | `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings` | ⬜ |
-| E-8 | Localizable.strings更新（JA） | `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings` | ⬜ |
-| E-9 | NotificationPreviewCard作成 | `aniccaios/aniccaios/DesignSystem/Components/NotificationPreviewCard.swift` | ⬜ |
-| E-10 | OnboardingProgressIndicator作成（P2対策） | `aniccaios/aniccaios/DesignSystem/Components/OnboardingProgressIndicator.swift` | ⬜ |
-| E-11 | OnboardingFlowView進捗表示追加（P2対策） | `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift` | ⬜ |
+| E-1 | WelcomeStepView改善（サブタイトル + 社会的証明） | `aniccaios/aniccaios/Onboarding/WelcomeStepView.swift` | ⬜ |
+| E-4 | `first_app_opened`イベント追加 | `aniccaios/aniccaios/AppDelegate.swift` | ⬜ |
+| E-5 | `firstAppOpened` enum追加 | `aniccaios/aniccaios/Services/AnalyticsManager.swift` | ⬜ |
+| E-7 | Localizable.strings更新（EN）Welcomeのみ | `aniccaios/aniccaios/Resources/en.lproj/Localizable.strings` | ⬜ |
+| E-8 | Localizable.strings更新（JA）Welcomeのみ | `aniccaios/aniccaios/Resources/ja.lproj/Localizable.strings` | ⬜ |
+
+#### 1.6.2で実装するタスク（パッチは用意済み）
+
+| # | タスク | ファイル | 状態 |
+|---|--------|---------|------|
+| E-2 | ValueStepView改善 | `aniccaios/aniccaios/Onboarding/ValueStepView.swift` | 📝 パッチ用意済み |
+| E-3 | NotificationPermissionStepView改善 | `aniccaios/aniccaios/Onboarding/NotificationPermissionStepView.swift` | 📝 パッチ用意済み |
+| E-9 | NotificationPreviewCard作成 | `aniccaios/aniccaios/DesignSystem/Components/NotificationPreviewCard.swift` | 📝 パッチ用意済み |
+| E-10 | OnboardingProgressIndicator作成 | `aniccaios/aniccaios/DesignSystem/Components/OnboardingProgressIndicator.swift` | 📝 パッチ用意済み |
+| E-11 | OnboardingFlowView進捗表示追加 | `aniccaios/aniccaios/Onboarding/OnboardingFlowView.swift` | 📝 パッチ用意済み |
+
+### Patch A-4: Mixpanelファネル設定（UI操作）
+
+| # | タスク | 方法 | 状態 |
+|---|--------|------|------|
+| A-4 | 新ファネル `Onboarding Funnel v1.6.1` 作成 | Mixpanel UI（A-3.1参照） | ⬜ |
+| A-5 | `app_opened`はリテンション分析用に残す | - | ✅ |
+| A-6 | `first_app_opened`はインストール数計測用（ファネル起点ではない） | iOS実装後に自動的にMixpanelへ送信 | ⬜ |
+
+**注意:**
+- Mixpanel MCPの`run_funnels_query`はクエリ実行用。ファネル定義の作成・変更はMixpanel UIで行う。
+- ファネル起点は`onboarding_started`（新規ユーザーのみ発火）。
+- `first_app_opened`は初回インストール数の計測用であり、ファネル起点には使用しない。
 
 ---
 

@@ -606,8 +606,6 @@ And once you understand that, everything becomes simpler.
 Here's my previous Article you might wanna read to be prepare for future and build tools that can last.
 ----
 
-
-
 Feb 4th. Day 33 of building anicca to 1k mrr. $18 mrr + 1 trial. 
 
 the problem is low CVR on install/subcription.

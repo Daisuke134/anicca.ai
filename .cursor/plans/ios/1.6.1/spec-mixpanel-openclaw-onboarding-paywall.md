@@ -600,6 +600,10 @@ openclaw restart
 
 **スコープ:** 1.6.1ではEN/JAのみ対象。es/fr/de/pt-BRは1.6.2で対応。
 
+**キー配置:** 既存の`onboarding_*`グループに追加。新規キーは`// MARK: - Onboarding`セクション内に配置。
+
+**形式:** `"key" = "value";`
+
 ---
 
 #### Welcome画面 (WelcomeStepView.swift)
@@ -756,8 +760,10 @@ var body: some View {
 
 **OnboardingStep extensionに追加:**
 
+> **注意:** `OnboardingStep`は5ケースのみ（`aniccaios/Onboarding/OnboardingStep.swift`参照）。`.paywall`等の追加ケースはないため、`switch`は網羅的。
+
 ```swift
-// OnboardingStep.swift または OnboardingFlowView.swift 内
+// OnboardingStep.swift に追加
 extension OnboardingStep {
     /// 進捗インジケーター用のステップインデックス (0-4)
     var index: Int {
@@ -793,7 +799,7 @@ struct OnboardingProgressIndicator: View {
                     .fill(index <= currentStep 
                           ? AppTheme.Colors.accent 
                           : AppTheme.Colors.borderLight)
-                    .frame(height: 4)
+                    .frame(maxWidth: .infinity, minHeight: 4, maxHeight: 4)  // 均等配分
             }
         }
         .padding(.horizontal, 24)
@@ -804,6 +810,8 @@ struct OnboardingProgressIndicator: View {
     OnboardingProgressIndicator(currentStep: 2, totalSteps: 5)
 }
 ```
+
+> **既存依存:** `AppTheme.Colors.accent`/`borderLight`/`cardBackground`は`aniccaios/DesignSystem/AppTheme.swift`に定義済み。
 
 ---
 
@@ -821,6 +829,9 @@ PrimaryButton(title: String(localized: "onboarding_welcome_cta")) {
 ```
 
 **After（強調されたCTAボタン）:**
+
+> **既存API:** `PrimaryButton`は`style: ButtonStyle = .primary`パラメータを持つ（`DesignSystem/Components/PrimaryButton.swift`参照）
+
 ```swift
 PrimaryButton(title: String(localized: "onboarding_welcome_cta"), style: .primary) {
     onNext()
@@ -862,6 +873,7 @@ VStack(spacing: 12) {
 **追加位置:** line 30付近、説明テキストの後に追加
 
 ```swift
+// "Anicca"はブランド名のため固定文字列（ローカライズ不要）
 NotificationPreviewCard(
     title: "Anicca",
     body: String(localized: "notification_preview_example")
@@ -1048,6 +1060,8 @@ func configureRevenueCat() {
     setDeveloperAttribute()
     #else
     // Production/TestFlightでも開発者を識別
+    // Note: Sign in with Appleでメールが非公開の場合はnilになるため、
+    //       DEBUGビルドでのみ開発者フラグが設定される（フォールバック）
     if let email = AppState.shared.userProfile?.email,
        AppConfig.developerEmails.contains(email) {
         setDeveloperAttribute()

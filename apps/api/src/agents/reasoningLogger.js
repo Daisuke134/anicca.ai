@@ -41,17 +41,16 @@ export function formatDailyTimetable(userId, decision, mode, language) {
     const tone = `(${n.tone || '?'})`;
     const flag = n.enabled ? '' : ' [OFF]';
 
+    // Base line (always shown)
+    lines.push(`${time} [${pt}] ${tone}${flag}`);
+    
+    // Detailed content only if SHOW_CONTENT=true
     if (SHOW_CONTENT) {
-      // Detailed format with Hook, Body, Why on separate lines
-      lines.push(`${time} [${pt}] ${tone}${flag}`);
       lines.push(`    Hook: "${n.hook || ''}"`);
       lines.push(`    Body: "${n.content || ''}"`);
       if (n.reasoning) {
         lines.push(`    Why: ${n.reasoning.slice(0, 100)}`);
       }
-    } else {
-      const hookLen = `hook=${(n.hook || '').length}chars`;
-      lines.push(`${time} [${pt}] ${tone} ${hookLen}${flag}`);
     }
   }
 

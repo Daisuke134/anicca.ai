@@ -298,7 +298,7 @@ ${grounding.behavioralScienceGuidelines}
 
 ### 文字数制限（厳守）
 
-- hook: 日本語 **6-12文字** / 英語 **12-25文字**（通知タイトル）
+- hook: 日本語 **6-12文字** / 英語 **10-25文字**（通知タイトル）
 - content: 日本語 **25-45文字** / 英語 **50-100文字**（本文）
 
 ### content品質基準（3要件を全て満たすこと）
@@ -347,7 +347,7 @@ TikTok と X、それぞれ2投稿を生成せよ:
   "appNudges": [
     {
       "slotIndex": 0,
-      "hook": "ja: 6-12文字 / en: 12-25文字",
+      "hook": "ja: 6-12文字 / en: 10-25文字",
       "content": "ja: 25-45文字 / en: 50-100文字。3要件を満たすこと",
       "tone": "strict | gentle | playful | analytical | empathetic",
       "reasoning": "なぜこの時刻にこのトーンでこのメッセージか"
@@ -364,6 +364,11 @@ TikTok と X、それぞれ2投稿を生成せよ:
   ]
 }
 </format_description>
+
+重要: 
+- [...] 内は新しいオリジナルコンテンツで埋めよ
+- 例をコピーするな
+- hook/contentは全スロットで異なる内容にせよ
 
 ## ガードレール（コードで強制。違反は自動修正される）
 

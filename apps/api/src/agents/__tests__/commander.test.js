@@ -8,6 +8,7 @@ import {
   MODEL_MAX_TOKENS,
   MAX_SLOTS_PER_DAY,
   runCommanderAgent,
+  validateNoDuplicates,
 } from '../commander.js';
 
 // ===== Test fixtures =====
@@ -39,13 +40,13 @@ function makeNudges() {
 // ===== AgentRawOutputSchema =====
 
 describe('AgentRawOutputSchema', () => {
-  it('validates valid output', () => {
+  it('validates valid output (without enabled in appNudges)', () => {
     const valid = {
       rootCauseHypothesis: 'test',
       overallStrategy: 'test strategy',
       frequencyReasoning: 'test reasoning',
       appNudges: [
-        { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
+        { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', reasoning: 'r' },
       ],
       tiktokPosts: [
         { slot: 'morning', caption: 'c1', hashtags: ['#test'], tone: 't', reasoning: 'r', enabled: true },
@@ -65,7 +66,7 @@ describe('AgentRawOutputSchema', () => {
       overallStrategy: 'test',
       frequencyReasoning: 'test',
       appNudges: [
-        { slotIndex: 0, hook: 'h', content: 'c', tone: 'aggressive', enabled: true, reasoning: 'r' },
+        { slotIndex: 0, hook: 'h', content: 'c', tone: 'aggressive', reasoning: 'r' },
       ],
     };
     expect(() => AgentRawOutputSchema.parse(invalid)).toThrow();
@@ -76,7 +77,7 @@ describe('AgentRawOutputSchema', () => {
       rootCauseHypothesis: 'test',
       overallStrategy: 'test',
       frequencyReasoning: 'test',
-      appNudges: [],
+      appNudges: [],  // LLM output has no enabled field in appNudges
       tiktokPosts: [
         { slot: 'morning', caption: 'c1', hashtags: ['#anicca'], tone: 't', reasoning: 'r', enabled: true },
         { slot: 'evening', caption: 'c2', hashtags: ['#test'], tone: 't', reasoning: 'r', enabled: true },
@@ -202,13 +203,13 @@ describe('applyGuardrails', () => {
 // ===== normalizeToDecision =====
 
 describe('normalizeToDecision', () => {
-  it('enriches nudges with slot metadata', () => {
+  it('enriches nudges with slot metadata and sets enabled=true by default', () => {
     const agentOutput = {
       rootCauseHypothesis: 'hypothesis',
       overallStrategy: 'strategy',
       frequencyReasoning: 'freq reasoning',
       appNudges: [
-        { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
+        { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', reasoning: 'r' },  // no enabled (LLM output)
       ],
       tiktokPosts: [
         { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
@@ -230,17 +231,19 @@ describe('normalizeToDecision', () => {
     expect(decision.appNudges[0].scheduledTime).toBe('09:00');
     expect(decision.appNudges[0].scheduledHour).toBe(9);
     expect(decision.appNudges[0].scheduledMinute).toBe(0);
+    expect(decision.appNudges[0].enabled).toBe(true);  // Default enabled=true
   });
 
-  it('counts enabled nudges in frequencyDecision', () => {
+  it('counts enabled nudges in frequencyDecision (all enabled by default)', () => {
+    // LLM output doesn't include enabled field - normalizeToDecision sets enabled=true by default
     const agentOutput = {
       rootCauseHypothesis: 'h',
       overallStrategy: 's',
       frequencyReasoning: 'f',
       appNudges: [
-        { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
-        { slotIndex: 1, hook: 'h', content: 'c', tone: 'gentle', enabled: false, reasoning: 'r' },
-        { slotIndex: 2, hook: 'h', content: 'c', tone: 'playful', enabled: true, reasoning: 'r' },
+        { slotIndex: 0, hook: 'h', content: 'c', tone: 'strict', reasoning: 'r' },  // no enabled
+        { slotIndex: 1, hook: 'h', content: 'c', tone: 'gentle', reasoning: 'r' },  // no enabled
+        { slotIndex: 2, hook: 'h', content: 'c', tone: 'playful', reasoning: 'r' }, // no enabled
       ],
       tiktokPosts: [
         { slot: 'morning', caption: 'c1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
@@ -259,7 +262,8 @@ describe('normalizeToDecision', () => {
 
     const decision = normalizeToDecision(agentOutput, slotTable, 'u');
 
-    expect(decision.frequencyDecision.count).toBe(2);
+    // All 3 slots enabled by default (all >30min apart, daytime, same problem)
+    expect(decision.frequencyDecision.count).toBe(3);
     expect(decision.frequencyDecision.reasoning).toBe('f');
     expect(decision.tiktokPosts.length).toBe(2);
     expect(decision.xPosts.length).toBe(2);
@@ -271,8 +275,8 @@ describe('normalizeToDecision', () => {
       overallStrategy: 's',
       frequencyReasoning: 'f',
       appNudges: [
-        { slotIndex: 0, hook: 'valid', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
-        { slotIndex: 999, hook: 'invalid', content: 'c', tone: 'strict', enabled: true, reasoning: 'r' },
+        { slotIndex: 0, hook: 'valid', content: 'c', tone: 'strict', reasoning: 'r' },  // no enabled
+        { slotIndex: 999, hook: 'invalid', content: 'c', tone: 'strict', reasoning: 'r' },
       ],
     };
     const slotTable = [
@@ -285,13 +289,13 @@ describe('normalizeToDecision', () => {
     expect(decision.appNudges[0].hook).toBe('valid');
   });
 
-  it('fills missing slots with disabled fallback', () => {
+  it('fills missing slots with enabled=true by default, guardrails may disable', () => {
     const agentOutput = {
       rootCauseHypothesis: 'h',
       overallStrategy: 's',
       frequencyReasoning: 'f',
       appNudges: [
-        { slotIndex: 0, hook: 'h0', content: 'c0', tone: 'strict', enabled: true, reasoning: 'r0' },
+        { slotIndex: 0, hook: 'h0', content: 'c0', tone: 'strict', reasoning: 'r0' },  // no enabled (LLM output)
       ],
     };
     const slotTable = [
@@ -303,12 +307,13 @@ describe('normalizeToDecision', () => {
     const decision = normalizeToDecision(agentOutput, slotTable, 'u');
 
     expect(decision.appNudges.length).toBe(3);
+    // Slot 0: LLM output, enabled=true by default
     expect(decision.appNudges[0].enabled).toBe(true);
     expect(decision.appNudges[0].hook).toBe('h0');
-    // procrastination slot 1: disabled fallback (procrastination already has slot 0 enabled)
-    expect(decision.appNudges[1].enabled).toBe(false);
+    // Slot 1: Missing, filled with fallback (enabled=true), >30min from slot 0, so stays enabled
+    expect(decision.appNudges[1].enabled).toBe(true);
     expect(decision.appNudges[1].problemType).toBe('procrastination');
-    // anxiety slot 2: fallback re-enabled by min-1 rule (only slot for anxiety, daytime)
+    // Slot 2: Missing, filled with fallback (enabled=true), daytime anxiety
     expect(decision.appNudges[2].enabled).toBe(true);
     expect(decision.appNudges[2].problemType).toBe('anxiety');
   });
@@ -331,7 +336,7 @@ describe('normalizeToDecision', () => {
       rootCauseHypothesis: 'h',
       overallStrategy: 's',
       frequencyReasoning: 'f',
-      appNudges: [],
+      appNudges: [],  // no appNudges
       tiktokPosts: [
         { slot: 'morning', caption: 'cap1', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
         { slot: 'evening', caption: 'cap2', hashtags: [], tone: 't', reasoning: 'r', enabled: true },
@@ -581,5 +586,71 @@ describe('runCommanderAgent input validation', () => {
       // Should fail for OpenAI reasons, not slotCount validation
       expect(error.message).not.toContain('slotCount');
     }
+  });
+});
+
+// ===== validateNoDuplicates =====
+
+describe('validateNoDuplicates', () => {
+  it('returns valid=true for unique hooks and content', () => {
+    const nudges = [
+      { slotIndex: 0, hook: 'hook1', content: 'content1' },
+      { slotIndex: 1, hook: 'hook2', content: 'content2' },
+      { slotIndex: 2, hook: 'hook3', content: 'content3' },
+    ];
+    const result = validateNoDuplicates(nudges);
+    expect(result.valid).toBe(true);
+    expect(result.duplicates).toHaveLength(0);
+  });
+
+  it('detects duplicate hooks', () => {
+    const nudges = [
+      { slotIndex: 0, hook: 'same hook', content: 'content1' },
+      { slotIndex: 1, hook: 'same hook', content: 'content2' },
+    ];
+    const result = validateNoDuplicates(nudges);
+    expect(result.valid).toBe(false);
+    expect(result.duplicates).toHaveLength(1);
+    expect(result.duplicates[0].type).toBe('hook');
+  });
+
+  it('detects duplicate content', () => {
+    const nudges = [
+      { slotIndex: 0, hook: 'hook1', content: 'same content' },
+      { slotIndex: 1, hook: 'hook2', content: 'same content' },
+    ];
+    const result = validateNoDuplicates(nudges);
+    expect(result.valid).toBe(false);
+    expect(result.duplicates).toHaveLength(1);
+    expect(result.duplicates[0].type).toBe('content');
+  });
+
+  it('is case-insensitive', () => {
+    const nudges = [
+      { slotIndex: 0, hook: 'SAME HOOK', content: 'Content A' },
+      { slotIndex: 1, hook: 'same hook', content: 'content a' },
+    ];
+    const result = validateNoDuplicates(nudges);
+    expect(result.valid).toBe(false);
+    expect(result.duplicates.length).toBeGreaterThan(0);
+  });
+
+  it('trims whitespace before comparison', () => {
+    const nudges = [
+      { slotIndex: 0, hook: '  hook  ', content: 'content' },
+      { slotIndex: 1, hook: 'hook', content: '  content  ' },
+    ];
+    const result = validateNoDuplicates(nudges);
+    expect(result.valid).toBe(false);
+  });
+
+  it('handles empty and null values gracefully', () => {
+    const nudges = [
+      { slotIndex: 0, hook: '', content: null },
+      { slotIndex: 1, hook: null, content: '' },
+    ];
+    const result = validateNoDuplicates(nudges);
+    // Empty strings should not trigger duplicates (skipped)
+    expect(result.valid).toBe(true);
   });
 });

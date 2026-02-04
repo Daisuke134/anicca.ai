@@ -388,64 +388,12 @@ export async function runGenerateNudges() {
               // 3. Normalize to CommanderDecision (guardrails + enrichment)
               decision = normalizeToDecision(agentOutput, slotTable, user.user_id, preferredLanguage);
 
-              // 3.5 Validate and FIX duplicate hooks/content
+              // 3.5 Validate no duplicate hooks/content (non-blocking warning only)
               const dupCheck = validateNoDuplicates(decision.appNudges || []);
               if (!dupCheck.valid) {
-                console.warn(`⚠️ [GenerateNudges] Duplicate content detected for ${user.user_id}, replacing with fallbacks:`);
-                
-                // Fallback pool for duplicate replacement (meets quality criteria: hook 6-12 JA/12-25 EN, content 25-45 JA/50-100 EN)
-                const fallbackPool = preferredLanguage === 'ja' ? [
-                  { hook: '今この瞬間を', content: '過去は変えられない。未来は今の行動で決まる。まず一歩踏み出せ。' },
-                  { hook: '深呼吸してみて', content: '6秒吸って、6秒吐く。それだけで脳がリセットされる。試してみろ。' },
-                  { hook: '体を動かしてみろ', content: '考える前に立ち上がれ。血流が変われば思考も変わる。今すぐ立て。' },
-                  { hook: '水を一杯飲もう', content: 'コップ一杯の水を飲め。脱水は集中力を奪う。まず体を潤そう。' },
-                ] : [
-                  { hook: 'Live in this moment', content: 'The past is gone forever. The future is shaped by what you do now. Take one step forward.' },
-                  { hook: 'Take a deep breath', content: 'Breathe in for 6 seconds, out for 6 seconds. Your brain resets with each conscious breath.' },
-                  { hook: 'Move your body now', content: 'Stand up before your mind makes excuses. Blood flow changes your thoughts. Get up now.' },
-                  { hook: 'Drink some water', content: 'One glass of water right now. Dehydration kills your focus. Hydrate your body first.' },
-                ];
-                
-                // Track used fallbacks to avoid re-duplication
-                const seenHooks = new Set(decision.appNudges.map(n => (n.hook || '').toLowerCase().trim()));
-                const seenContents = new Set(decision.appNudges.map(n => (n.content || '').toLowerCase().trim()));
-                let fallbackIdx = 0;
-                
+                console.warn(`⚠️ [GenerateNudges] Duplicate content detected for ${user.user_id}:`);
                 for (const dup of dupCheck.duplicates) {
-                  console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}" → replacing`);
-                  
-                  // Find the nudge to replace
-                  const nudgeToFix = decision.appNudges.find(n => n.slotIndex === dup.slotIndex);
-                  if (!nudgeToFix) continue;
-                  
-                  // Find unused fallback
-                  let fallback = null;
-                  for (let i = 0; i < fallbackPool.length; i++) {
-                    const candidate = fallbackPool[(fallbackIdx + i) % fallbackPool.length];
-                    const hookLower = candidate.hook.toLowerCase().trim();
-                    const contentLower = candidate.content.toLowerCase().trim();
-                    if (!seenHooks.has(hookLower) && !seenContents.has(contentLower)) {
-                      fallback = candidate;
-                      fallbackIdx = (fallbackIdx + i + 1) % fallbackPool.length;
-                      break;
-                    }
-                  }
-                  
-                  // If all fallbacks used, create unique one
-                  if (!fallback) {
-                    fallback = preferredLanguage === 'ja'
-                      ? { hook: `スロット番号${dup.slotIndex}`, content: '深呼吸して、今に集中しよう。考えすぎる前に行動を起こせ。' }
-                      : { hook: `Message slot ${dup.slotIndex}`, content: 'Take a breath and focus on this moment. Act before overthinking takes over.' };
-                  }
-                  
-                  // Replace the duplicate
-                  nudgeToFix.hook = fallback.hook;
-                  nudgeToFix.content = fallback.content;
-                  nudgeToFix.reasoning += ' [replaced: duplicate detected]';
-                  
-                  // Update seen sets
-                  seenHooks.add(fallback.hook.toLowerCase().trim());
-                  seenContents.add(fallback.content.toLowerCase().trim());
+                  console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}"`);
                 }
               }
 
@@ -481,54 +429,12 @@ export async function runGenerateNudges() {
               const fallbackOutput = generateRuleBasedFallback(slotTable, preferredLanguage);
               decision = normalizeToDecision(fallbackOutput, slotTable, user.user_id, preferredLanguage);
 
-              // Validate and FIX duplicate hooks/content in fallback
+              // Validate no duplicate hooks/content in fallback (non-blocking warning only)
               const dupCheckFallback = validateNoDuplicates(decision.appNudges || []);
               if (!dupCheckFallback.valid) {
-                console.warn(`⚠️ [GenerateNudges] Duplicate content in fallback for ${user.user_id}, replacing:`);
-                
-                const fallbackPool = preferredLanguage === 'ja' ? [
-                  { hook: '今この瞬間を', content: '過去は変えられない。未来は今の行動で決まる。まず一歩踏み出せ。' },
-                  { hook: '深呼吸してみて', content: '6秒吸って、6秒吐く。それだけで脳がリセットされる。試してみろ。' },
-                  { hook: '体を動かしてみろ', content: '考える前に立ち上がれ。血流が変われば思考も変わる。今すぐ立て。' },
-                  { hook: '水を一杯飲もう', content: 'コップ一杯の水を飲め。脱水は集中力を奪う。まず体を潤そう。' },
-                ] : [
-                  { hook: 'Live in this moment', content: 'The past is gone forever. The future is shaped by what you do now. Take one step forward.' },
-                  { hook: 'Take a deep breath', content: 'Breathe in for 6 seconds, out for 6 seconds. Your brain resets with each conscious breath.' },
-                  { hook: 'Move your body now', content: 'Stand up before your mind makes excuses. Blood flow changes your thoughts. Get up now.' },
-                  { hook: 'Drink some water', content: 'One glass of water right now. Dehydration kills your focus. Hydrate your body first.' },
-                ];
-                
-                const seenHooks = new Set(decision.appNudges.map(n => (n.hook || '').toLowerCase().trim()));
-                const seenContents = new Set(decision.appNudges.map(n => (n.content || '').toLowerCase().trim()));
-                let fallbackIdx = 0;
-                
+                console.warn(`⚠️ [GenerateNudges] Duplicate content in fallback for ${user.user_id}:`);
                 for (const dup of dupCheckFallback.duplicates) {
-                  console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}" → replacing`);
-                  const nudgeToFix = decision.appNudges.find(n => n.slotIndex === dup.slotIndex);
-                  if (!nudgeToFix) continue;
-                  
-                  let fallback = null;
-                  for (let i = 0; i < fallbackPool.length; i++) {
-                    const candidate = fallbackPool[(fallbackIdx + i) % fallbackPool.length];
-                    if (!seenHooks.has(candidate.hook.toLowerCase().trim()) && 
-                        !seenContents.has(candidate.content.toLowerCase().trim())) {
-                      fallback = candidate;
-                      fallbackIdx = (fallbackIdx + i + 1) % fallbackPool.length;
-                      break;
-                    }
-                  }
-                  
-                  if (!fallback) {
-                    fallback = preferredLanguage === 'ja'
-                      ? { hook: `スロット番号${dup.slotIndex}`, content: '深呼吸して、今に集中しよう。考えすぎる前に行動を起こせ。' }
-                      : { hook: `Message slot ${dup.slotIndex}`, content: 'Take a breath and focus on this moment. Act before overthinking takes over.' };
-                  }
-                  
-                  nudgeToFix.hook = fallback.hook;
-                  nudgeToFix.content = fallback.content;
-                  nudgeToFix.reasoning += ' [replaced: duplicate detected]';
-                  seenHooks.add(fallback.hook.toLowerCase().trim());
-                  seenContents.add(fallback.content.toLowerCase().trim());
+                  console.warn(`  - [${dup.type}] slot ${dup.slotIndex}: "${dup.text}"`);
                 }
               }
               

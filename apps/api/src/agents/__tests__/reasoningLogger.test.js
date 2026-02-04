@@ -50,6 +50,18 @@ describe('formatDailyTimetable', () => {
     const result = formatDailyTimetable('abc', makeDecision({ appNudges: [] }), 'rule', 'en');
     expect(result).toContain('0 nudges (enabled) / 0 slots');
   });
+
+  it('includes rootCauseHypothesis when present', () => {
+    const decision = makeDecision({ rootCauseHypothesis: 'User struggles with self-worth' });
+    const result = formatDailyTimetable('abc', decision, 'llm', 'ja');
+    expect(result).toContain('RootCause: User struggles with self-worth');
+  });
+
+  it('omits RootCause line when not present', () => {
+    const decision = makeDecision();  // no rootCauseHypothesis
+    const result = formatDailyTimetable('abc', decision, 'llm', 'ja');
+    expect(result).not.toContain('RootCause:');
+  });
 });
 
 describe('buildSlackNudgeSummary', () => {

@@ -193,6 +193,9 @@ showPaywall = true
 ```
 
 **After:**
+
+> **前提:** OnboardingFlowViewには既に`import RevenueCat`がある。SubscriptionManagerがアプリ起動時にconfigureを完了しているため、Purchases.sharedは使用可能。
+
 ```swift
 // Struggles選択結果をRevenueCatに送信（Paywall表示前）
 if let struggles = AppState.shared.userProfile?.struggles {
@@ -643,6 +646,7 @@ openclaw restart
 | `onboarding_notifications_description` | `Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.` | `When you're about to spiral, Anicca sends you the right words. Turn on notifications to get the full experience.` | 具体的価値。「spiral」はペルソナの痛み |
 | `onboarding_notifications_allow` | `Allow notifications` | `Turn on notifications` | アクション指向 |
 | `notification_preview_example` | (新規) | `Take a breath. You've got this.` | 通知プレビュー用 |
+| `notification_preview_time` | (新規) | `now` | 通知プレビュー時刻 |
 
 | Key | Before (JA) | After (JA) | 理由 |
 |-----|------------|-----------|------|
@@ -650,6 +654,7 @@ openclaw restart
 | `onboarding_notifications_description` | `Aniccaは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。` | `あなたが悪循環に陥りそうなとき、Aniccaが声をかけます。通知をオンにして、フルの体験をしてください。` | 具体的 |
 | `onboarding_notifications_allow` | `通知を許可` | `通知をオンにする` | アクション指向 |
 | `notification_preview_example` | (新規) | `深呼吸。大丈夫、できるよ。` | 通知プレビュー用 |
+| `notification_preview_time` | (新規) | `たった今` | 通知プレビュー時刻 |
 
 ### E-3: SwiftUIコード変更
 
@@ -687,16 +692,87 @@ VStack(spacing: 24) {
 
 **目的:** ユーザーがオンボーディングの進捗を把握できるようにする（P2対策）
 
-**追加位置:** 各ステップの上部に追加
+---
+
+**オンボーディングステップ定義:**
+
+| ステップ | enum | インジケーター表示 |
+|---------|------|------------------|
+| 0 | `.welcome` | ●○○○○ |
+| 1 | `.value` | ●●○○○ |
+| 2 | `.struggles` | ●●●○○ |
+| 3 | `.notifications` | ●●●●○ |
+| 4 | `.att` | ●●●●● |
+| - | Paywall (fullScreenCover) | 非表示 |
+
+**totalSteps = 5** (welcome, value, struggles, notifications, att)
+**Paywall:** fullScreenCoverとして表示されるため、進捗インジケーターには含めない
+
+---
+
+**挿入位置:** ZStack内のGroupの直前（既存レイアウトと競合しない）
+
+**Before (OnboardingFlowView.swift line 10-28):**
+```swift
+var body: some View {
+    ZStack {
+        AppBackground()
+        Group {
+            switch step {
+            // ...
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+    // ...
+}
+```
+
+**After:**
+```swift
+var body: some View {
+    ZStack {
+        AppBackground()
+        
+        VStack(spacing: 0) {
+            // 進捗インジケーター（P2対策）
+            OnboardingProgressIndicator(currentStep: step.index, totalSteps: 5)
+                .padding(.top, 16)
+                .padding(.bottom, 8)
+            
+            Group {
+                switch step {
+                // ...
+                }
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        }
+    }
+    // ...
+}
+```
+
+---
+
+**OnboardingStep extensionに追加:**
 
 ```swift
-// OnboardingFlowView.swift のbody内、各ステップViewの前に追加
-OnboardingProgressIndicator(
-    currentStep: currentStepIndex,
-    totalSteps: 5  // welcome, value, struggles, notifications, paywall
-)
-.padding(.top, 16)
+// OnboardingStep.swift または OnboardingFlowView.swift 内
+extension OnboardingStep {
+    /// 進捗インジケーター用のステップインデックス (0-4)
+    var index: Int {
+        switch self {
+        case .welcome: return 0
+        case .value: return 1
+        case .struggles: return 2
+        case .notifications: return 3
+        case .att: return 4
+        }
+    }
+}
 ```
+
+---
 
 **新規コンポーネント: `OnboardingProgressIndicator.swift`**
 
@@ -873,21 +949,33 @@ Task {
 ```
 
 **After:**
-```swift
-private static let hasTrackedFirstLaunchKey = "has_tracked_first_launch"
 
-Task {
-    await ASAAttributionManager.shared.fetchAttributionIfNeeded()
+> **重要:** `hasTrackedFirstLaunchKey`は**型スコープ**（`class AppDelegate`の直下）で定義する。Task内に置くと毎回再生成されてしまう。
+
+```swift
+// AppDelegate.swift の class AppDelegate 直下に追加（型スコープ）
+class AppDelegate: UIResponder, UIApplicationDelegate {
+    // MARK: - Constants
+    private static let hasTrackedFirstLaunchKey = "has_tracked_first_launch"
     
-    // 初回起動のみ first_app_opened をトラック
-    let hasTracked = UserDefaults.standard.bool(forKey: AppDelegate.hasTrackedFirstLaunchKey)
-    if !hasTracked {
-        AnalyticsManager.shared.track(.firstAppOpened)
-        UserDefaults.standard.set(true, forKey: AppDelegate.hasTrackedFirstLaunchKey)
+    // ... 既存コード ...
+    
+    func application(...) {
+        // ...
+        Task {
+            await ASAAttributionManager.shared.fetchAttributionIfNeeded()
+            
+            // 初回起動のみ first_app_opened をトラック
+            let hasTracked = UserDefaults.standard.bool(forKey: AppDelegate.hasTrackedFirstLaunchKey)
+            if !hasTracked {
+                AnalyticsManager.shared.track(.firstAppOpened)
+                UserDefaults.standard.set(true, forKey: AppDelegate.hasTrackedFirstLaunchKey)
+            }
+            
+            // 既存の app_opened は維持（リテンション分析用）
+            AnalyticsManager.shared.track(.appOpened)
+        }
     }
-    
-    // 既存の app_opened は維持（リテンション分析用）
-    AnalyticsManager.shared.track(.appOpened)
 }
 ```
 

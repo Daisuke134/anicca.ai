@@ -601,7 +601,7 @@ openclaw restart
 | 項目 | 内容 |
 |-----|------|
 | **現状** | 72人が通知完了、58人がPaywall表示。14人が離脱 |
-| **原因** | 通知許可後にアプリを閉じている可能性。またはATTステップで離脱 |
+| **原因** | 通知許可後にアプリを閉じている可能性 |
 | **解決策** | 通知許可の理由をより明確に説明。通知プレビューを表示 |
 | **理由** | ユーザーは「なぜ通知が必要か」を理解しないと許可しない |
 
@@ -626,7 +626,7 @@ openclaw restart
 | `onboarding_welcome_title` | `Welcome to\nAnicca` | `Break the cycle.\nFor real this time.` | 「Welcome」は何も伝えない。「今度こそ」はペルソナの願望に刺さる |
 | `onboarding_welcome_subtitle_line1` | `Anicca reaches out to you` | `Anicca sends you the right words` | 「reaches out」は曖昧。「right words」は具体的価値 |
 | `onboarding_welcome_subtitle_line2` | `at the moments you struggle most.` | `before you spiral—not after.` | 「before」強調。事前対処がAniccaの価値 |
-| `onboarding_welcome_cta` | `Get Started` | `Start Free Trial` | トライアル明示。期間は製品設定依存 |
+| `onboarding_welcome_cta` | `Get Started` | `Start Free Trial` | トライアル明示（全Offeringに7日間トライアル付与済み） |
 | `onboarding_welcome_social_proof` | (新規) | `Join thousands finding peace` | 社会的証明（数値なし、法的リスク回避） |
 
 | Key | Before (JA) | After (JA) | 理由 |
@@ -634,7 +634,7 @@ openclaw restart
 | `onboarding_welcome_title` | `Aniccaへ\nようこそ` | `今度こそ、\n変われる。` | 「ようこそ」は無意味。「今度こそ」はペルソナの願望 |
 | `onboarding_welcome_subtitle_line1` | `Aniccaは、あなたが一番つらいときに` | `悪循環に陥る前に、` | 「つらいとき」は受動的。「悪循環に陥る前に」は能動的価値 |
 | `onboarding_welcome_subtitle_line2` | `そっと声をかけます。` | `Aniccaが声をかけます。` | 「そっと」削除。より直接的 |
-| `onboarding_welcome_cta` | `はじめる` | `無料で試す` | トライアル強調（期間は製品設定依存） |
+| `onboarding_welcome_cta` | `はじめる` | `無料で試す` | トライアル強調（全Offeringに7日間トライアル付与済み） |
 | `onboarding_welcome_social_proof` | (新規) | `多くの人が安らぎを見つけています` | 社会的証明（数値なし、法的リスク回避） |
 
 #### Value画面 (ValueStepView.swift)

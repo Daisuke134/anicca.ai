@@ -160,6 +160,9 @@ enum AnalyticsEvent: String {
     case onboardingPaywallViewed = "onboarding_paywall_viewed"
     case onboardingPaywallDismissed = "onboarding_paywall_dismissed"
     case onboardingPaywallPurchased = "onboarding_paywall_purchased"
+    case onboardingLiveDemoCompleted = "onboarding_live_demo_completed"
+    case onboardingPaywallDismissedFree = "onboarding_paywall_dismissed_free"
+    case upgradePaywallPurchased = "upgrade_paywall_purchased"
     
     // Subscription
     case trialStarted = "trial_started"

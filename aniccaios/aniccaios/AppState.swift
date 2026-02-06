@@ -72,13 +72,25 @@ final class AppState: ObservableObject {
     private let lastNudgeResetMonthKey = "com.anicca.lastNudgeResetMonth"
     private let lastNudgeResetYearKey = "com.anicca.lastNudgeResetYear"
 
+    // Soft Paywall: OnboardingStep version flag
+    private let onboardingStepVersionKey = "com.anicca.onboardingStepVersion"
+    private static let currentOnboardingVersion = 2  // v1.6.1 で rawValue 体系変更
+
     private init() {
         self.isOnboardingComplete = defaults.bool(forKey: onboardingKey)
 
         // オンボーディング未完了時は強制的に.welcomeから開始
         if defaults.bool(forKey: onboardingKey) {
             let rawValue = defaults.integer(forKey: onboardingStepKey)
-            self.onboardingStep = OnboardingStep.migratedFromLegacyRawValue(rawValue)
+            let savedVersion = defaults.integer(forKey: onboardingStepVersionKey)
+
+            if savedVersion >= Self.currentOnboardingVersion {
+                // v1.6.1 以降: 新rawValueをそのまま使用
+                self.onboardingStep = OnboardingStep(rawValue: rawValue) ?? .welcome
+            } else {
+                // legacy (savedVersion=0 or 1): migration関数を通す
+                self.onboardingStep = OnboardingStep.migratedFromLegacyRawValue(rawValue)
+            }
         } else {
             defaults.removeObject(forKey: onboardingStepKey)
             self.onboardingStep = .welcome
@@ -150,11 +162,8 @@ final class AppState: ObservableObject {
         isOnboardingComplete = true
         defaults.set(true, forKey: onboardingKey)
         defaults.removeObject(forKey: onboardingStepKey)
-
-        Task {
-            // Proactive Agent: 問題ベースの通知をスケジュール
-            await ProblemNotificationScheduler.shared.scheduleNotifications(for: userProfile.struggles)
-        }
+        // 通知スケジュールは呼び出し側が責任を持つ
+        // (handlePaywallSuccess / handlePaywallDismissedAsFree / completeOnboardingForExistingPro)
     }
 
     func resetState() {
@@ -169,13 +178,9 @@ final class AppState: ObservableObject {
     
     func setOnboardingStep(_ step: OnboardingStep) {
         onboardingStep = step
-        // オンボーディング未完了時のみステップを保存
-        if !isOnboardingComplete {
-            defaults.set(step.rawValue, forKey: onboardingStepKey)
-        } else {
-            // オンボーディング完了後はステップ情報を削除
-            defaults.removeObject(forKey: onboardingStepKey)
-        }
+        defaults.set(step.rawValue, forKey: onboardingStepKey)
+        // バージョンフラグを常に更新（新rawValue体系を使用中であることを記録）
+        defaults.set(Self.currentOnboardingVersion, forKey: onboardingStepVersionKey)
     }
     
     // MARK: - Authentication
@@ -518,6 +523,13 @@ final class AppState: ObservableObject {
         updateOffering(nil)
     }
     
+    /// RevenueCat CustomerInfo → SubscriptionInfo 変換 + SSOT更新を1ステップで行う convenience overload
+    /// 変換ロジックは既存の SubscriptionInfo(info:) initializer に完全委譲
+    func updateSubscriptionInfo(from customerInfo: CustomerInfo) {
+        let info = SubscriptionInfo(info: customerInfo)
+        updateSubscriptionInfo(info)
+    }
+
     func updateSubscriptionInfo(_ info: SubscriptionInfo) {
         let wasEntitled = subscriptionInfo.isEntitled
         subscriptionInfo = info

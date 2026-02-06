@@ -38,7 +38,17 @@ final class ProblemNotificationScheduler: ProblemNotificationSchedulerProtocol {
 
     /// ユーザーの選択した問題に基づいて通知をスケジュール
     func scheduleNotifications(for problems: [String]) async {
+        // Free/Pro 共通: 両方のID名前空間をクリア
+        let freeIds = (0..<3).map { "free_nudge_\($0)" }
+        center.removePendingNotificationRequests(withIdentifiers: freeIds)
         await removeAllProblemNotifications()
+
+        // Free/Pro分岐
+        let isEntitled = await MainActor.run { AppState.shared.subscriptionInfo.isEntitled }
+        if !isEntitled {
+            FreePlanService.shared.scheduleFreePlanNudges(struggles: problems)
+            return
+        }
 
         // Time Sensitive 設定チェック（計測用ログ）
         if #available(iOS 15.0, *) {

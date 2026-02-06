@@ -80,6 +80,7 @@ struct MyPathTabView: View {
                 .padding(.bottom, 0)
             }
             .navigationTitle(String(localized: "tab_mypath"))
+            .accessibilityIdentifier("mypath-root")
             .background(AppBackground())
             .toolbar {
                 ToolbarItem(placement: .topBarTrailing) {

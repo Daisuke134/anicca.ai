@@ -1,9 +1,11 @@
-# Onboarding Flow Test (Updated for 4-step flow)
-# Tests: welcome -> value -> struggles -> notifications -> My Path
+# Onboarding Flow Test (Updated for Soft Paywall - new 4-step flow)
+# Tests: welcome -> struggles -> liveDemo -> notifications
+# Value step removed, LIVE DEMO added
 # Uses accessibilityIdentifier-based selectors for reliability
+# Note: inspect_view_hierarchy で全ID確認済み
 
 appId: ai.anicca.app.ios
-name: Onboarding flow
+name: Onboarding new flow
 tags:
   - smokeTest
   - onboarding
@@ -23,51 +25,43 @@ tags:
 - tapOn:
     id: "onboarding-welcome-cta"
 
-# Step 2: Value screen
-- extendedWaitUntil:
-    visible:
-      id: "onboarding-value-next"
-    timeout: 15000
-
-- tapOn:
-    id: "onboarding-value-next"
-
-# Step 3: Struggles screen
+# Step 2: Struggles screen (value screen removed - direct transition)
 - extendedWaitUntil:
     visible:
       id: "onboarding-struggle-staying_up_late"
     timeout: 15000
 
-# Select one struggle (staying_up_late)
+# Select one struggle
 - tapOn:
     id: "onboarding-struggle-staying_up_late"
 
 - tapOn:
     id: "onboarding-struggles-next"
 
-# Step 4: Notifications screen
+# Step 3: LIVE DEMO screen (new - replaces value step)
+- extendedWaitUntil:
+    visible:
+      id: "live_demo_title"
+    timeout: 15000
+
+# Tap demo trigger button
+- tapOn:
+    id: "live_demo_trigger_button"
+
+# Wait for NudgeCard slide-in animation
+- extendedWaitUntil:
+    visible:
+      id: "nudge-card-view"
+    timeout: 5000
+
+# Tap PRIMARY action to advance to notifications
+- tapOn:
+    id: "nudge-primary-action"
+
+# Step 4: Notifications screen - verify arrival
 - extendedWaitUntil:
     visible:
       id: "onboarding-notifications-allow"
     timeout: 15000
 
-- tapOn:
-    id: "onboarding-notifications-allow"
-
-# Handle iOS notification permission dialog (Japanese: 許可, English: Allow)
-- tapOn:
-    text: "許可|Allow"
-    optional: true
-
-# Dismiss paywall if shown (tap back button)
-- tapOn:
-    point: "28,78"
-    optional: true
-
-# Verify onboarding complete - My Path screen visible (Japanese: マイパス)
-- extendedWaitUntil:
-    visible:
-      text: "マイパス|My Path"
-    timeout: 10000
-
-- takeScreenshot: "onboarding-complete"
+- takeScreenshot: "onboarding-new-flow-complete"

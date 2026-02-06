@@ -45,6 +45,10 @@
 "onboarding_notifications_allow" = "通知を許可";
 "onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→Aniccaからいつでも通知をオンにできます。";
 
+"live_demo_title" = "最初のNudgeを体験しましょう";
+"live_demo_subtitle" = "Aniccaがどのようにあなたに寄り添うか、体験してみてください。";
+"live_demo_button" = "Nudgeを受け取る";
+
 "onboarding_alarmkit_title" = "アラーム";
 "onboarding_alarmkit_description" = "確実に起床を促すために、アラームの利用許可が必要です。";
 "onboarding_alarmkit_allow" = "アラームを許可";

@@ -662,12 +662,12 @@
 "nudge_staying_up_late_notification_2" = "Combien d'années perdues à cause de « encore 5 minutes » ?";
 "nudge_staying_up_late_notification_3" = "Le toi de demain va regretter.";
 "nudge_staying_up_late_detail_1" = "Éloigne ton téléphone à 30 cm de ton visage. Baisse la luminosité au minimum. Prends 5 grandes respirations. Ton cerveau passera en mode « préparation au sommeil ».";
-"nudge_staying_up_late_detail_2" = "Un cerveau en manque de sommeil à le même jugement qu'avec 0.1% d'alcool dans le sang. 17 heures éveillé = légalement ivre. Protège les décisions de demain en dormant ce soir.";
+"nudge_staying_up_late_detail_2" = "Un cerveau en manque de sommeil a le même jugement qu'avec 0.1% d'alcool dans le sang. 17 heures éveillé = légalement ivre. Protège les décisions de demain en dormant ce soir.";
 "nudge_staying_up_late_detail_3" = "Tu te souviendras de ce contenu demain midi ? Pourtant, le manque de sommeil va baisser ta concentration, ton jugement et ton immunité. Qu'est-ce qui compte le plus ?";
 
 /* NudgeContent - staying_up_late (Midnight - Strong Messages) */
 "nudge_staying_up_late_notification_4" = "Minuit est passé. Ton corps a besoin de repos.";
-"nudge_staying_up_late_notification_5" = "Il est 1h du matin. Chaque minute éveillée te coute demain.";
+"nudge_staying_up_late_notification_5" = "Il est 1h du matin. Chaque minute éveillée te coûte demain.";
 "nudge_staying_up_late_detail_4" = "Le manque de sommeil s'accumule comme une dette. L'heure perdue ce soir volera ta concentration la semaine prochaine. Éloigne ton téléphone du lit. Ferme les yeux.";
 "nudge_staying_up_late_detail_5" = "Rester éveillé après 1h du matin cause des dommages mesurables à ton cerveau et ton cœur. Ce que tu fais est 100 fois moins important que dormir. Va te coucher.";
 
@@ -678,13 +678,13 @@
 "nudge_staying_up_late_notification_9" = "L'écran peut attendre. Tes reves, non.";
 "nudge_staying_up_late_notification_10" = "Chaque heure de sommeil = de meilleures décisions demain.";
 "nudge_staying_up_late_detail_6" = "Ta volonte est au plus bas en ce moment. Ne lutte pas contre l'envie de scroller — retire le téléphone. Mets-le dans une autre pièce.";
-"nudge_staying_up_late_detail_7" = "Imagine te reveiller repose contre te reveiller épuisé. Quelle version de demain tu veux ? Tu décides maintenant.";
-"nudge_staying_up_late_detail_8" = "Le sommeil repare ton cerveau, consolide ta mémoire et réinitialise tes émotions. Le sauter, c'est comme sauter l'entretien d'une voiture que tu conduis chaque jour.";
+"nudge_staying_up_late_detail_7" = "Imagine te réveiller reposé contre te réveiller épuisé. Quelle version de demain tu veux ? Tu décides maintenant.";
+"nudge_staying_up_late_detail_8" = "Le sommeil répare ton cerveau, consolide ta mémoire et réinitialise tes émotions. Le sauter, c'est comme sauter l'entretien d'une voiture que tu conduis chaque jour.";
 "nudge_staying_up_late_detail_9" = "La lumière bleue dit à ton cerveau qu'il est midi. Ton corps est perdu. Aide-le en posant l'écran.";
 "nudge_staying_up_late_detail_10" = "Une heure de sommeil ce soir = 3 heures de productivité demain. Le calcul est simple. Va dormir.";
 
 /* NudgeContent - cant_wake_up */
-"nudge_cant_wake_up_notification_1" = "Ta journée ne commence pas tant que tu ne te leves pas.";
+"nudge_cant_wake_up_notification_1" = "Ta journée ne commence pas tant que tu ne te lèves pas.";
 "nudge_cant_wake_up_notification_2" = "Le toi qui dit « encore 5 minutes » n'a aucune crédibilité.";
 "nudge_cant_wake_up_notification_3" = "Reste médiocre";
 "nudge_cant_wake_up_notification_4" = "Les pieds au sol. 5, 4, 3, 2, 1.";
@@ -693,7 +693,7 @@
 "nudge_cant_wake_up_notification_7" = "Gagner le matin construit la confiance.";
 "nudge_cant_wake_up_notification_8" = "Lève-toi maintenant, ou regrette à midi.";
 "nudge_cant_wake_up_detail_1" = "Compte 5, 4, 3, 2, 1 et pose tes pieds au sol. Bouge avant de réfléchir. Lève-toi avant que ton cerveau trouve des excuses. Rien ne change sous la couette.";
-"nudge_cant_wake_up_detail_2" = "Combien de fois tu as fait confiance au toi « encore 5 minutes » ? Combien de fois tu as ete trahi ? Te lever maintenant, c'est tenir une promesse envers toi-même. Tu aimeras le toi d'aujourd'hui.";
+"nudge_cant_wake_up_detail_2" = "Combien de fois tu as fait confiance au toi « encore 5 minutes » ? Combien de fois tu as été trahi ? Te lever maintenant, c'est tenir une promesse envers toi-même. Tu aimeras le toi d'aujourd'hui.";
 "nudge_cant_wake_up_detail_3" = "Encore une journée qui commence mal ? Ou tu changes maintenant ? Ton action dans les 5 prochaines secondes décide. Lève-toi.";
 "nudge_cant_wake_up_detail_4" = "Ton corps est réveillé. Ton esprit cherche des excuses. Ignore-le. Les pieds au sol. Maintenant.";
 "nudge_cant_wake_up_detail_5" = "La couette semble rassurante, mais c'est un piège. Le confort maintenant = le regret plus tard. Arrache la couette comme un pansement.";
@@ -731,7 +731,7 @@
 "nudge_rumination_detail_1" = "Dès que tu remarques la boucle, tu es à mi-chemin. Maintenant : concentre-toi sur la plante de tes pieds. La dureté du sol, sa température. 30 secondes seulement.";
 "nudge_rumination_detail_2" = "Nomme 5 choses que tu vois, 4 que tu entends, 3 que tu touches, 2 que tu sens, 1 que tu goutes. Ça te ramène au « maintenant ».";
 "nudge_rumination_detail_3" = "Le moyen le plus efficace de stopper la rumination est la méditation. Pendant 2 minutes, concentre-toi sur ta respiration. Inspire 4 sec, retiens 4 sec, expire 4 sec.";
-"nudge_rumination_detail_4" = "Tu as déjà ete dans cette boucle. Ça n'a jamais rien résolu. La seule sortie est de faire quelque chose de physique. Lève-toi. Bouge.";
+"nudge_rumination_detail_4" = "Tu as déjà été dans cette boucle. Ça n'a jamais rien résolu. La seule sortie est de faire quelque chose de physique. Lève-toi. Bouge.";
 "nudge_rumination_detail_5" = "Tes pieds sont au sol. Tes poumons respirent. Tu es ici, en ce moment, en sécurité. Le passé est terminé. Le futur n'est pas encore là.";
 "nudge_rumination_detail_6" = "La rumination, c'est ton cerveau qui essaie de résoudre un problème insoluble. Ça ne se résout pas en y pensant. Accepte-le et lâche prise.";
 "nudge_rumination_detail_7" = "Regarde autour de toi. Nomme ce que tu vois. « Chaise. Fenêtre. Lumière. Livre. » Ce simple geste te sort de ta tête et te ramène à la réalité.";
@@ -749,7 +749,7 @@
 "nudge_procrastination_detail_1" = "Si ça prend moins de 2 minutes, fais-le maintenant. Si c'est plus long, fais juste les 2 premières minutes. Une fois lancé, ton cerveau voudra continuer. C'est scientifique.";
 "nudge_procrastination_detail_2" = "Imagine-toi dans une semaine. « Si seulement je l'avais fait... » Des regrets ? Fais-le maintenant et ce regret disparaît.";
 "nudge_procrastination_detail_3" = "« Je ne peux pas » et « je ne veux pas » sont différents. Lequel c'est là ? Si tu ne veux pas, pourquoi ? Trouve la vraie raison.";
-"nudge_procrastination_detail_4" = "Le perfectionnisme est de la procrastination déguisée. Un debut bancal est infiniment mieux que pas de debut. Écris une mauvaise phrase. Fais un pas imparfait.";
+"nudge_procrastination_detail_4" = "Le perfectionnisme est de la procrastination déguisée. Un début bancal est infiniment mieux que pas de début. Écris une mauvaise phrase. Fais un pas imparfait.";
 "nudge_procrastination_detail_5" = "Ton cerveau déteste commencer. Mais après 2 minutes, l'élan prend le relais. Survie juste aux 2 premières minutes.";
 "nudge_procrastination_detail_6" = "Si ton ami repoussait sans cesse quelque chose d'important, tu lui dirais de commencer. Sois cet ami pour toi-même maintenant.";
 "nudge_procrastination_detail_7" = "Termine vaut mieux que parfait. Un projet fini avec des defauts bat un « chef-d'œuvre » inachevé à chaque fois.";
@@ -764,12 +764,12 @@
 "nudge_anxiety_notification_6" = "Ce sentiment va passer. C'est toujours le cas.";
 "nudge_anxiety_notification_7" = "Nomme-le pour l'apprivoiser. Quelle est la peur ?";
 "nudge_anxiety_notification_8" = "Tu as survécu à 100% de tes pires journées.";
-"nudge_anxiety_detail_1" = "L'anxiété, c'est la peur de ce qui n'est pas encore arrive. Là, qu'est-ce qui se passe vraiment devant toi ? Rien de dangereux.";
+"nudge_anxiety_detail_1" = "L'anxiété, c'est la peur de ce qui n'est pas encore arrivé. Là, qu'est-ce qui se passe vraiment devant toi ? Rien de dangereux.";
 "nudge_anxiety_detail_2" = "Pas « je suis anxieux » mais « je ressens de l'anxiété ». L'anxiété est comme la météo. Elle vient et elle passe.";
 "nudge_anxiety_detail_3" = "Inspire 4 sec → retiens 4 sec → expire 4 sec → retiens 4 sec. Repete 3 fois. Quand ton corps se calme, ton esprit suit. Fais-le maintenant.";
 "nudge_anxiety_detail_4" = "Ton cerveau essaie de te protéger d'une menace qui n'est pas là. Remercie-le, puis dis-lui : « Je suis en sécurité maintenant. »";
 "nudge_anxiety_detail_5" = "Appuie fermement tes pieds sur le sol. Sens le sol qui te soutient. Tu es soutenu. Tu es ici. Tu es en sécurité.";
-"nudge_anxiety_detail_6" = "Ce sentiment à un debut, un milieu et une fin. Tu es quelque part au milieu. La fin arrive. Attends-la.";
+"nudge_anxiety_detail_6" = "Ce sentiment a un début, un milieu et une fin. Tu es quelque part au milieu. La fin arrive. Attends-la.";
 "nudge_anxiety_detail_7" = "De quoi as-tu peur exactement ? Dis-le à voix haute. « J'ai peur que... » Nommer la peur lui enleve une partie de son pouvoir.";
 "nudge_anxiety_detail_8" = "Ton taux de survie aux mauvais jours est de 100%. Quoi que ce soit, tu t'en sortiras aussi.";
 
@@ -893,9 +893,9 @@
 "nudge_loneliness_detail_1" = "Des millions de personnes se sentent seules en ce moment. Tu n'es pas seul à te sentir seul. Ce sentiment est humain, et il passera.";
 "nudge_loneliness_detail_2" = "La connexion ne nécessite pas une conversation profonde. Contacte juste une personne aujourd'hui. Un simple « je pense à toi » peut changer vos deux journées.";
 "nudge_loneliness_detail_3" = "La solitude choisie, c'est être seul et content. Se sentir seul, c'est être seul et désirer une connexion. Tu peux transformer la solitude subie en solitude paisible.";
-"nudge_loneliness_detail_4" = "Envoie un message à quelqu'un a qui tu n'as pas parle depuis longtemps. Juste « salut, je pense à toi ». La plupart des gens sont contents d'avoir de tes nouvelles.";
+"nudge_loneliness_detail_4" = "Envoie un message à quelqu'un à qui tu n'as pas parlé depuis longtemps. Juste « salut, je pense à toi ». La plupart des gens sont contents d'avoir de tes nouvelles.";
 "nudge_loneliness_detail_5" = "Tu n'as pas besoin de trouver ton âme soeur aujourd'hui. Juste une petite connexion. Un sourire, un message, un appel. Commence petit.";
-"nudge_loneliness_detail_6" = "Tu peux être seul sans te sentir seul. Et tu peux te sentir seul dans une foule. La cle, c'est la qualité de la connexion, pas la quantité.";
+"nudge_loneliness_detail_6" = "Tu peux être seul sans te sentir seul. Et tu peux te sentir seul dans une foule. La clé, c'est la qualité de la connexion, pas la quantité.";
 "nudge_loneliness_detail_7" = "Quelqu'un quelque part est heureux que tu existes. Peut-être qu'on ne te l'a pas dit récemment, mais tu comptes pour quelqu'un. Toujours.";
 "nudge_loneliness_detail_8" = "Une petite interaction peut changer toute ton humeur. Sors dehors. Souris à un inconnu. Dis bonjour à un voisin. La connexion est partout.";
 
@@ -1144,7 +1144,7 @@
 "nudge_self_loathing_detail_11" = "Ne vise pas 100. Note 1 chose que tu as faite aujourd'hui. Ça suffit.";
 "nudge_self_loathing_detail_12" = "Échouer veut dire que tu as essayé. Pose ta main sur ton cœur. Dis « bravo ».";
 "nudge_self_loathing_detail_13" = "Comparer leurs meilleurs moments à tes coulisses n'a aucun sens. Ferme l'appli.";
-"nudge_self_loathing_detail_14" = "Même les choses routinières demandent de l'effort. Regarde-toi dans le miroir. Dis « bien joue ».";
+"nudge_self_loathing_detail_14" = "Même les choses routinières demandent de l'effort. Regarde-toi dans le miroir. Dis « bien joué ».";
 
 /* NudgeContent - rumination (expanded 9-14) */
 "nudge_rumination_notification_9" = "Le passé ne change pas. Change le présent.";
@@ -1153,7 +1153,7 @@
 "nudge_rumination_notification_12" = "Stoppe la boucle dans ta tête.";
 "nudge_rumination_notification_13" = "Réfléchir ne donnera pas de réponses.";
 "nudge_rumination_notification_14" = "Trop penser, c'est le cerveau qui tourne à vide.";
-"nudge_rumination_detail_9" = "Le temps passé à regretter = du temps pour agir. Choisis 1 tache. Fais-la.";
+"nudge_rumination_detail_9" = "Le temps passé à regretter = du temps pour agir. Choisis 1 tâche. Fais-la.";
 "nudge_rumination_detail_10" = "Ne réfléchis pas. Bouge. Lève-toi et respire l'air extérieur maintenant.";
 "nudge_rumination_detail_11" = "Concentre-toi sur tes sens. Nomme 5 choses que tu vois à voix haute. C'est « ici et maintenant ».";
 "nudge_rumination_detail_12" = "Écris-le. Le sortir de ta tête aide. Écris pendant 3 minutes d'affilée.";
@@ -1170,7 +1170,7 @@
 "nudge_procrastination_detail_9" = "Règle des 2 minutes. Pas la peine de reporter. Mets un minuteur. Go.";
 "nudge_procrastination_detail_10" = "La préparation parfaite n'existe pas. Ajuste en cours de route. Écris juste 1 ligne.";
 "nudge_procrastination_detail_11" = "La motivation suit l'action. Décompte : 5, 4, 3, 2, 1, GO.";
-"nudge_procrastination_detail_12" = "Tu paieras avec des intérêts. Paie maintenant. Choisis 1 tache. Commence.";
+"nudge_procrastination_detail_12" = "Tu paieras avec des intérêts. Paie maintenant. Choisis 1 tâche. Commence.";
 "nudge_procrastination_detail_13" = "Juste 1 minute. OK d'arrêter après. Mais tu ne le feras pas. Fais-moi confiance et essaie.";
 "nudge_procrastination_detail_14" = "Plus tard ? Vraiment ? Fais-le maintenant. Pose le téléphone. Commence tout de suite.";
 
@@ -1194,7 +1194,7 @@
 "nudge_lying_notification_11" = "Le courage de dire la vérité.";
 "nudge_lying_notification_12" = "Ne te déteste pas pour avoir menti.";
 "nudge_lying_notification_13" = "L'honnêteté, c'est simple. Le mensonge fatigue.";
-"nudge_lying_notification_14" = "Tu as ete honnête aujourd'hui ?";
+"nudge_lying_notification_14" = "Tu as été honnête aujourd'hui ?";
 "nudge_lying_detail_9" = "La confiance perdue est difficile à retrouver. Choisis l'honnêteté dès aujourd'hui.";
 "nudge_lying_detail_10" = "Rappelle-toi un mensonge d'aujourd'hui. La prochaine fois, dis la vérité.";
 "nudge_lying_detail_11" = "Ça fait peur, mais tu te sentiras plus léger après. Respire. Partage une vérité.";

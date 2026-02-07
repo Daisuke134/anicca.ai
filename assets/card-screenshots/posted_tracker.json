@@ -1,18 +1,10 @@
 {
   "version": 1,
   "cards": {
-    "staying_up_late_0": {
-      "en": {
-        "status": "in_flight",
-        "reserved_at": "2026-02-07T05:49:48.807Z",
-        "run_id": "21775194112",
-        "posted_at": null,
-        "blotato_post_id": null
-      }
-    }
+    "staying_up_late_0": {}
   },
   "next_index": {
-    "en": 1,
+    "en": 0,
     "ja": 0
   },
   "card_order": [

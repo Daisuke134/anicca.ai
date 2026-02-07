@@ -5,12 +5,19 @@ import Foundation
 final class SubscriptionManager: NSObject {
     static let shared = SubscriptionManager()
     private var offerings: Offerings?
-    
+    private(set) var isConfigured = false
+
     private override init() {
         super.init()
     }
-    
+
     func configure() {
+        // UIテストモード時はRevenueCat初期化をスキップ（CIシミュレータでApple IDダイアログを防止）
+        if ProcessInfo.processInfo.arguments.contains("-UITESTING") {
+            print("[RevenueCat] Skipped - UI testing mode")
+            return
+        }
+
         Purchases.logLevel = .info // .debugから変更（JWS tokenの長いログを抑制）
         let apiKey = AppConfig.revenueCatAPIKey
         print("[RevenueCat] Using API Key: \(apiKey)")
@@ -33,6 +40,8 @@ final class SubscriptionManager: NSObject {
             AppState.shared.updateOffering(preloaded)
         }
         
+        isConfigured = true
+
         // 起動直後にオファリング取得を開始（並列実行で高速化）
         Task {
             await withTaskGroup(of: Void.self) { group in
@@ -105,6 +114,7 @@ final class SubscriptionManager: NSObject {
     }
     
     func handleLogin(appUserId: String) async {
+        guard isConfigured else { return }
         if Purchases.shared.appUserID != appUserId {
             _ = try? await Purchases.shared.logIn(appUserId)
         }
@@ -112,6 +122,7 @@ final class SubscriptionManager: NSObject {
     }
     
     func handleLogout() async {
+        guard isConfigured else { return }
         // 匿名ユーザーの場合はログアウト不要
         guard !Purchases.shared.isAnonymous else {
             print("[RevenueCat] Skipping logout for anonymous user")
@@ -121,6 +132,7 @@ final class SubscriptionManager: NSObject {
     }
     
     func refreshOfferings() async {
+        guard isConfigured else { return }
         do {
             let result = try await Purchases.shared.offerings()
             print("[SubscriptionManager] Offerings loaded: current=\(result.current?.identifier ?? "nil"), all=\(result.all.keys.joined(separator: ", "))")
@@ -144,6 +156,7 @@ final class SubscriptionManager: NSObject {
     }
     
     func syncNow() async {
+        guard isConfigured else { return }
         // 1) 端末側の領収書同期
         do {
             _ = try await Purchases.shared.syncPurchases()

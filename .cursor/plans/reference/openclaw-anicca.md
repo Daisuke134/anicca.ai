@@ -1,6 +1,6 @@
 # OpenClaw Anicca — 現在の状態・ロードマップ・実装ガイド
 
-**最終更新: 2026-02-08T01:35 UTC（全タスク完了。Codex review PASS。1.6.2 ready。）**
+**最終更新: 2026-02-08T18:10 UTC（セキュリティ強化 + 二重レスポンス修正 + 全テスト再実行。Codex review: 2 advisory remaining。）**
 
 > **原始Spec (`Anicca-openclaw-spec.md`) は歴史的記録。本ドキュメントが Single Source of Truth。**
 
@@ -43,16 +43,19 @@
 
 | Phase | 状態 | 備考 |
 |-------|------|------|
-| A: セキュリティ | 完了 | mDNS off, パーミッション修正, 監査実行済み |
+| A: セキュリティ | 完了 | mDNS off, パーミッション修正, 監査実行済み。追加: chmod 600, DM allowlist, env削除, UMask=0077 |
 | B: メモリ・ハートビート | 完了 | MEMORY.md, HEARTBEAT.md, session-memory/command-logger/boot-md hook（config-based） |
 | C: 追加設定 | 完了 | BOOT.md, bestEffort, gitclaw, vector search。C6(budget)は未対応（config key非存在） |
 | D: Gateway方式 | 完了 | Docker→systemd切り戻し完了。systemd hardening適用済み |
 | E: Gmail統合 | 未着手（1.6.2以降） | Phase D不要と判明。Sandbox用にDockerは将来使用 |
 | allowBundled | 完了 | 11スキル許可。38スキルブロック（トークンコスト ~$6/月 削減） |
-| Exec Approvals | 完了 | 34バイナリ許可。bash/sh除外。allowlist + on-miss + deny |
-| スキル検証 | 完了 | 13/53 ready。全機能テストPASS。Codex review PASS (iteration 2/5) |
+| Exec Approvals | 完了 | 33バイナリ許可。bash/sh/env除外。allowlist + on-miss + deny |
+| Bindings | 完了 | `slack→anicca` 明示ルーティング。二重レスポンス防止 |
+| スキル検証 | 完了 | 14/53 ready（coding-agent追加）。全機能テストPASS（U1-U8） |
 
-## タスク実行計画（全完了）
+## タスク実行計画
+
+### Round 1（初期セットアップ — 全完了）
 
 | # | タスク | 状態 | 備考 |
 |---|--------|------|------|
@@ -61,10 +64,25 @@
 | 3 | 回帰テスト（Slack, Cron, exec, memory） | 完了 | 全テストPASS |
 | 4 | allowBundled設定（使うスキルだけ許可） | 完了 | 11スキル。summarize除外（macOS専用） |
 | 5 | Exec Approvals設定 | 完了 | 34バイナリ。Codex指摘でbash/sh削除 |
-| 6 | 全スキル動作テスト + Codex review | 完了 | weather/fs/web_search/exec/memory/slack/cron全PASS。Codex ok:true |
-| 7 | openclaw-anicca.md最終更新 + 1.6.2引き継ぎ | 完了 | 本更新 |
+| 6 | 全スキル動作テスト + Codex review | 完了 | Codex ok:true |
+| 7 | openclaw-anicca.md最終更新 | 完了 | — |
 
-**全タスク完了。1.6.2 ready。**
+### Round 2（セキュリティ強化 + 二重レスポンス修正 — 全完了）
+
+| # | タスク | 状態 | 備考 |
+|---|--------|------|------|
+| 18 | codex CLI インストール → coding-agent ready | 完了 | `npm install -g @openai/codex`。14/53 skills |
+| 19 | 二重レスポンス修正 | 完了 | bindings: slack→anicca。main agent routing除外 |
+| 20 | 全テストケース再実行 (U1-U8) | 完了 | 8項目全PASS。whatsapp stale session修正 |
+| 21 | Codex レビュー | 完了 | ok:false (2 blocking: groupPolicy=accepted, Slack検証=pending) |
+| 22 | openclaw-anicca.md 最終更新 | 完了 | 本更新 |
+| 23 | セキュリティ警告対応 | 完了 | 4→2 CRITICAL (chmod600, DM allowlist, env削除) |
+
+### 残作業（ユーザー依頼待ち）
+
+| # | タスク | 状態 | 備考 |
+|---|--------|------|------|
+| — | Slack実地検証 | 待ち | ユーザーが #metrics で @Anicca テスト→単一応答確認 |
 
 ---
 
@@ -72,7 +90,8 @@
 
 | 機能 | 状態 | 備考 |
 |------|------|------|
-| Slack 送受信 | OK | Socket Mode。全チャンネル許可（groupPolicy: open — ユーザー決定で維持） |
+| Slack 送受信 | OK | Socket Mode。全チャンネル許可（groupPolicy: open — ユーザー決定で維持）。bindings: slack→anicca |
+| DM ポリシー | 制限 | policy=allowlist, allowFrom=[]（デフォルト全拒否。必要時にユーザーIDを追加） |
 | Cron ジョブ | OK | 3 個稼働中（daily-metrics, lab-meeting x2）。全て bestEffort: true |
 | ファイル読み書き | OK | workspace 内 |
 | シェルコマンド実行 | OK | exec ツール（profile: full） |
@@ -142,7 +161,7 @@
 |------|-----|
 | 目的 | トークンコスト削減（~$6/月）+ プロンプトノイズ低減 + 攻撃面縮小 |
 | 設定方法 | `skills.allowBundled: [...]`（空配列=全無効、未設定=全有効） |
-| 結果 | 11スキル許可 / 38スキルblocked / 4スキルmissing（CLI未インストール） |
+| 結果 | 11スキル許可 / 38スキルblocked / 3スキルmissing（coding-agent now ready） |
 
 ### 許可スキル一覧（現在の `allowBundled`）
 
@@ -157,7 +176,7 @@
 | 7 | openai-image-gen | 画像生成 | ready |
 | 8 | openai-whisper-api | 音声文字起こし | ready |
 | 9 | clawhub | ClawHubスキル管理 | ready |
-| 10 | coding-agent | コード書き+PR作成 | missing（codex/claude/opencode CLI未インストール） |
+| 10 | coding-agent | コード書き+PR作成 | ready（codex CLI インストール済み） |
 | 11 | session-logs | セッションログ管理 | ready |
 
 **注意:** `exec`, `cron`, `web_search`, `memory`, `fs`, `browser` はスキルではなく**ビルトインツール**。`profile: full` で有効化済み。allowBundledとは無関係。
@@ -178,15 +197,15 @@
 |------|-----|
 | ファイル | `~/.openclaw/exec-approvals.json` |
 | モード | `security: "allowlist"` / `ask: "on-miss"` / `askFallback: "deny"` |
-| 許可バイナリ数 | 34 |
-| **重要** | `bash` / `sh` は**除外**（Codex review指摘: シェル許可はallowlist全体をバイパスする） |
+| 許可バイナリ数 | 33 |
+| **重要** | `bash` / `sh` / `env` は**除外**（シェル許可はallowlistバイパス、envは任意バイナリ実行バイパス） |
 
-### 許可バイナリ一覧（34個）
+### 許可バイナリ一覧（33個）
 
 | カテゴリ | バイナリ |
 |---------|---------|
 | ネットワーク | curl |
-| ランタイム | node, python3, env |
+| ランタイム | node, python3 |
 | バージョン管理 | git, gh |
 | テキスト処理 | jq, rg, grep, sed, awk, tr, cut, sort, uniq, diff, wc |
 | ファイル操作 | cat, ls, mkdir, cp, mv, touch, chmod, find, xargs, tee |
@@ -199,7 +218,7 @@
 
 | ルール | 理由 |
 |--------|------|
-| bash/sh 除外 | シェル経由で任意コマンド実行可能（allowlist バイパス） |
+| bash/sh/env 除外 | シェル経由で任意コマンド実行可能（allowlist バイパス）。envは任意バイナリ実行 |
 | 絶対パス指定 | PATH操作による偽装防止 |
 | on-miss + deny | 未知コマンドは自動拒否（Gateway無人運用のため） |
 | per-agent allowlist | 将来の複数エージェント対応準備 |
@@ -263,6 +282,9 @@
 | `PrivateTmp=true` | /tmp を隔離 |
 | `ProtectSystem=strict` | システムディレクトリ読み取り専用 |
 | `ReadWritePaths=/home/anicca/.openclaw /tmp` | 書き込み許可パス明示 |
+| `UMask=0077` | 新規作成ファイルをowner-onlyに制限 |
+
+**注意:** `PrivateDevices`, `ProtectKernelTunables`, `ProtectKernelModules`, `RestrictSUIDSGID` はユーザーレベル systemd (non-root) で使用不可（CAPABILITIES エラー）。これらはシステムレベル unit でのみ有効。
 
 #### Docker→systemd 切り替え手順
 
@@ -360,7 +382,7 @@ systemctl --user status openclaw-gateway  # active (running) であること
 |--------|------|
 | content-research-writer | `~/.openclaw/workspace/skills/content-research-writer/SKILL.md` |
 
-### systemd スキル状態（2026-02-08 確認済み: 13/53 ready）
+### systemd スキル状態（2026-02-08 確認済み: 14/53 ready）
 
 | # | スキル | 状態 | 備考 |
 |---|--------|------|------|
@@ -374,29 +396,30 @@ systemctl --user status openclaw-gateway  # active (running) であること
 | 8 | weather | ready | バイナリ不要 |
 | 9 | clawhub | ready | `npm install -g clawhub` で追加 |
 | 10 | session-logs | ready | jq + rg 両方必要。`apt install jq ripgrep` で追加 |
-| 11-13 | 他3スキル | ready | — |
-| — | coding-agent | missing | codex/claude/opencode CLI 未インストール（1.6.2で対応予定） |
+| 11 | coding-agent | ready | codex CLI インストール済み（`npm install -g @openai/codex`） |
+| 12-14 | 他3スキル | ready | — |
 | — | summarize | N/A | macOS専用CLI。allowBundledから除外済み |
 | — | **残り38スキル** | **blocked** | allowBundledで除外（トークンコスト削減） |
 
-**Docker→systemd切り替えでスキル数は変わらなかった（11→11）。** CLI不足が原因であり、Docker PATH問題ではなかった。jq/rg/clawhub追加で13に改善。
+**Docker→systemd切り替えでスキル数は変わらなかった（11→11）。** CLI不足が原因であり、Docker PATH問題ではなかった。jq/rg/clawhub追加で13、codex CLI追加で14に改善。
 
-### 機能テスト結果（2026-02-08）
+### 機能テスト結果（2026-02-08 再テスト）
 
 | # | テスト | 結果 | 備考 |
 |---|--------|------|------|
-| 1 | weather | PASS | +9°C 🌦 Tokyo |
-| 2 | fs（ファイル読み書き） | PASS | workspace内ファイル一覧取得 |
-| 3 | web_search | PASS | Brave Search API経由でOpenClaw検索 |
-| 4 | exec + memory | PASS | MEMORY.md読み取り成功 |
-| 5 | slack | PASS | テストメッセージ送信成功 |
-| 6 | cron | PASS | 3ジョブ一覧表示 |
+| U1 | weather (web_search) | PASS | 「東京の天気は +9°C 🌦」 |
+| U2 | 日付・曜日 | PASS | 「2026年2月8日(日曜日)」 |
+| U3 | memory (MEMORY.md) | PASS | 全セクション正確に要約 |
+| U4 | web_search (RevenueCat) | PASS | Brave Search API経由で5件取得 |
+| U5 | cron一覧 | PASS | 3ジョブ正確に列挙 |
+| U6 | fs (workspace一覧) | PASS | 14ファイル正確 |
+| U7 | cross-channel (slack) | PASS | #metricsセッション→#aiに投稿成功 |
+| U8 | coding-agent | PASS | JS配列重複除去関数（Set使用）正しく生成 |
 
 ### 推奨スキル（1.6.2で追加検討）
 
 | スキル | 推奨度 | 理由 | 前提 |
 |--------|--------|------|------|
-| coding-agent | 推奨 | コード書き + PR作成 | codex/claude/opencode CLIインストール |
 | conventional-commits | 推奨 | コミットメッセージ規約準拠 | ClawHubからインストール |
 
 ### 使用禁止
@@ -409,31 +432,53 @@ systemctl --user status openclaw-gateway  # active (running) であること
 
 ---
 
-## Codex Review 結果（2026-02-08）
+## Codex Review 結果
+
+### Round 1（2026-02-08 初回）
 
 | 項目 | 値 |
 |------|-----|
 | 対象 | openclaw.json, exec-approvals.json, systemd unit, openclaw-anicca.md |
 | Iteration 1 | `ok: false` — 7 blocking, 1 advisory |
 | Iteration 2 | `ok: true` — 全 blocking 解消 |
-| 最大 iterations | 5 |
 
-### Iteration 1 で修正した blocking issues
+### Round 2（2026-02-08 セキュリティ強化後）
+
+| 項目 | 値 |
+|------|-----|
+| 対象 | テスト結果(U1-U8) + セキュリティ修正3件 + 設定ファイル群 |
+| 結果 | `ok: false` — 2 blocking, 4 advisory |
+
+| # | Severity | Category | 問題 | 対応 |
+|---|----------|----------|------|------|
+| 1 | BLOCKING | security | groupPolicy=open がCRITICAL | **ユーザー承認済み受容リスク** |
+| 2 | BLOCKING | correctness | Slack実地での二重レスポンス未検証 | **ユーザーSlackテスト必要** |
+| 3 | advisory | security | exec-approvals が広い | 将来改善（runtime/maintenance分離） |
+| 4 | advisory | security | systemd hardening追加余地 | ユーザーレベルsystemd制限あり。UMask=0077のみ適用 |
+| 5 | advisory | maintainability | cron排他制御不足 | maxConcurrentRuns:2 + isolated で運用 |
+| 6 | advisory | testing | 異常系テスト不足 | 将来改善タスク |
+
+### 修正履歴（全ラウンド）
 
 | # | category | 問題 | 修正 |
 |---|----------|------|------|
-| 1 | security | bash/sh が exec-approvals に含まれていた | 削除（シェル許可はallowlistバイパス） |
-| 2 | security | GATEWAY_TOKEN が systemd unit に直書き | 削除（EnvironmentFile経由のみ） |
-| 3 | security | PATH が広すぎた（.local/bin等含む） | `/usr/local/bin:/usr/bin:/bin` に最小化 |
-| 4 | security | systemd hardening 未設定 | NoNewPrivileges, PrivateTmp, ProtectSystem追加 |
+| 1 | security | bash/sh が exec-approvals に含まれていた | 削除（R1） |
+| 2 | security | GATEWAY_TOKEN が systemd unit に直書き | 削除（R1） |
+| 3 | security | PATH が広すぎた | 最小化（R1） |
+| 4 | security | systemd hardening 未設定 | 追加（R1） |
+| 5 | security | Config file mode 664 | chmod 600（R2） |
+| 6 | security | DM policy=open | allowlist化（R2） |
+| 7 | security | /usr/bin/env in exec allowlist | 削除（R2） |
+| 8 | security | UMask未設定 | UMask=0077追加（R2） |
 
 ### Codex notes for next review
 
 | 項目 | 内容 |
 |------|------|
-| ドキュメント更新 | openclaw-anicca.md を最終状態に更新すること（本更新で完了） |
+| Slack実地検証 | @Anicca メンション時の単一応答を記録付き検証 |
 | hardening ログ | systemd hardening が実運用で問題を起こしていないか確認 |
 | トークンローテーション | Gateway token / Slack token の定期ローテーション検討 |
+| exec-approvals分離 | runtime用(読取系)とmaintenance用(書込系)の分離検討 |
 
 ---
 
@@ -508,7 +553,7 @@ systemctl --user status openclaw-gateway  # active (running) であること
       groupPolicy: "open",
       historyLimit: 25,
       actions: { reactions: true, messages: true },
-      dm: { enabled: true, policy: "open", allowFrom: ["*"] },
+      dm: { enabled: true, policy: "allowlist", allowFrom: [] },
       channels: {
         "C091G3PKHL2": { allow: true, requireMention: true },
         "C08RZ98SBUL": { allow: true, requireMention: true },
@@ -556,7 +601,12 @@ systemctl --user status openclaw-gateway  # active (running) であること
   },
 
   // Cron
-  cron: { enabled: true, maxConcurrentRuns: 2 }
+  cron: { enabled: true, maxConcurrentRuns: 2 },
+
+  // Bindings（二重レスポンス防止）
+  bindings: [
+    { agentId: "anicca", match: { channel: "slack" } }
+  ]
 }
 ```
 

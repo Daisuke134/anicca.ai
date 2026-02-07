@@ -19,9 +19,9 @@
 | 8 | `08-acceptance-boundaries.md` | 受け入れ条件（AC-1〜AC-10） + 境界（B-1〜B-10） + E2E判定（不要） | ~70 |
 | 9 | `09-skill-deploy.md` | スキルファイル構成（SKILL.mdのみ） + デプロイ手順 + テスト手順 | ~80 |
 | 10 | `10-thompson-sampling.md` | Thompson Sampling v2（Beta分布 + ウォームスタート + 月次減衰） + テスト #41〜#49 | ~145 |
-| 11 | `11-dlq-checklist.md` | DLQリトライロジック（指数バックオフ+ジッター） + テスト #50〜#59 + Spec完了チェックリスト | ~200 |
+| 11 | `11-dlq-checklist.md` | DLQリトライロジック（指数バックオフ+ジッター） + テスト #50〜#63 + Spec完了チェックリスト | ~245 |
 
-**合計テスト数**: 59（Pure 33 + 統合 7 + TS 9 + DLQ 10）
+**合計テスト数**: 63（Pure 33 + 統合 7 + TS 9 + DLQ 14）
 
 ---
 
@@ -57,7 +57,7 @@
 | 2. モックデータ準備 | `07-mock-data-validation.md`（5ソース分のJSON） |
 | 3. RED: テスト作成 | テスト名・入力・期待出力がマトリックスに記載済み |
 | 4. GREEN: 実装 | `03-processing-flow.md` のコード例を参考に |
-| 5. 追加テスト（TS + DLQ） | `10-thompson-sampling.md`（#41-49）+ `11-dlq-checklist.md`（#50-59） |
+| 5. 追加テスト（TS + DLQ） | `10-thompson-sampling.md`（#41-49）+ `11-dlq-checklist.md`（#50-63） |
 | 6. 受け入れ条件確認 | `08-acceptance-boundaries.md`（AC-1〜AC-10） |
 
 ---

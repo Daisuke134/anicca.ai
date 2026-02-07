@@ -337,12 +337,12 @@ step_kind ごとの output スキーマ（次ステップの input になる）:
 |-----------|---------------------|
 | `draft_content` | `content`, `hookId`, `hookText`, `platform` |
 | `verify_content` | `content`, `verificationScore`, `passed` |
-| `post_x` | `postId`, `tweetUrl` |
+| `post_x` | `postId`, `dbRecordId`, `platform` |
 | `post_tiktok` | `postId` |
 | `fetch_metrics` | `metrics`, `postId`, `platform` |
 | `analyze_engagement` | `analysis`, `isHighEngagement`, `engagementRate` |
 | `detect_suffering` | `detections[]` (各: text, severity, problemType) |
-| `diagnose` | `diagnosis`, `rootCause`, `recommendation`（input: `{ eventId }` — missionIdではなくeventIdを受け取る） |
+| `diagnose` | `diagnosis`, `failedMissionId`, `failedStepKinds`（input: `{ eventId }` — missionIdではなくeventIdを受け取る） |
 | `draft_nudge` | `nudgeContent`, `targetProblemType`, `severity` |
 | `send_nudge` | `sent`, `nudgeContent`, `targetProblemType`（skipped時: `{ sent: false, skipped: true }`） |
 | `evaluate_hook` | `shouldPost` (boolean) |

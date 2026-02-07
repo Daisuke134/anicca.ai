@@ -13,12 +13,12 @@
 | 2 | `02-data-layer.md` | §2-5 | DB Schema (Prisma) + Migration SQL + Seed Data | ~370 |
 | 3 | `03-api-services.md` | §6 | コアサービス群 (Proposal, CapGate, Policy, EventEmitter, Trigger, Reaction, StaleRecovery, Heartbeat) | ~660 |
 | 4 | `04-api-routes-security.md` | §7, 9, 10 | API Routes + Kill Switch + Auth Middleware | ~390 |
-| 5 | `05-step-executors.md` | §15-16 | 11 Step Executors + Step-to-Step Data Passing | ~890 |
+| 5 | `05-step-executors.md` | §15-16 | 11 Step Executors + SAFE-T + Step-to-Step Data Passing | ~1150 |
 | 6 | `06-slack-approval.md` | §17 | Slack Interactive 承認フロー (Block Kit + Handler) | ~260 |
 | 7 | `07-vps-worker-migration.md` | §8, 18 | VPS Worker + Cron統合 + 既存Skill移行パス | ~340 |
 | 8 | `08-event-trigger-system.md` | §19-20 | delay_min修正 + emitEvent→Reaction Matrix接続 | ~100 |
 | 9 | `09-infrastructure.md` | §22-24 | 監視・アラート + insightPromoter + Staging→Production移行 | ~300 |
-| 10 | `10-test-matrix-checklist.md` | §11-14, 21, 25-27 | テストマトリックス(T1-T43) + テスト基盤 + チェックリスト + 境界 + ファイル構成 | ~460 |
+| 10 | `10-test-matrix-checklist.md` | §11-14, 21, 25-27 | テストマトリックス(T1-T60) + テスト基盤 + チェックリスト + 境界 + ファイル構成 | ~520 |
 | 11 | `11-agent-evaluation.md` | **NEW** | エージェント性能評価テーブル（質問→期待→実際→PASS/FAIL→理由） | ~new |
 | 12 | `12-e2e-integration-tests.md` | **NEW** | E2E統合テスト マトリックス（スキル間ループ検証） | ~new |
 | 13 | `13-gui-prerequisites.md` | **NEW** | GUI必須タスク（**BLOCKING** — 実装前にユーザーが完了必須） | ~new |
@@ -50,7 +50,7 @@
 
 | ステップ | 参照先 |
 |---------|-------|
-| 1. テストマトリックス確認 | `10-test-matrix-checklist.md` (T1〜T43) |
+| 1. テストマトリックス確認 | `10-test-matrix-checklist.md` (T1〜T60) |
 | 2. テスト基盤セットアップ | `10-test-matrix-checklist.md` (Vitest + Prisma Mock) |
 | 3. RED: テスト作成 | テスト名とカバー対象がマトリックスに記載済み |
 | 4. GREEN: 実装 | 各コンポーネントファイル参照 |

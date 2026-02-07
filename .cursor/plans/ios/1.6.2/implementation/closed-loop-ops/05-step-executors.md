@@ -97,6 +97,13 @@ export async function verifyWithRegeneration(generatorFn, options) {
 }
 
 async function scoreContent(content, context) {
+  // H16解消: SAFE-T 危機検出 — コンテンツ内の危機表現を検出
+  // 「死にたい」「消えたい」等 → score=0 + crisis flag
+  const CRISIS_PATTERNS = /死にたい|消えたい|自殺|殺したい|もう終わり/;
+  if (CRISIS_PATTERNS.test(content)) {
+    return { score: 0, feedback: 'SAFE-T CRISIS: 危機表現を検出。このコンテンツは公開不可。', crisis: true };
+  }
+
   const scorePrompt = `以下のコンテンツを5項目で採点（各1点、合計5点）:
 1. ペルソナ適合性（25-35歳・挫折経験者に刺さるか）
 2. 共感トーン（責めずに寄り添っているか）
@@ -122,11 +129,11 @@ JSON形式で回答: {"score": N, "feedback": "改善点"}`;
 
 | # | テスト名 | 対象 |
 |---|---------|------|
-| T53 | `test_callLLM_returnsString` | callLLM 正常系 |
-| T54 | `test_callLLM_throwsOnFailure` | callLLM エラー系 |
-| T55 | `test_verifyWithRegeneration_passesOnFirstTry` | verifier 初回合格 |
-| T56 | `test_verifyWithRegeneration_regeneratesOnFailure` | verifier 再生成 |
-| T57 | `test_verifyWithRegeneration_failsAfterMaxRetries` | verifier 最大回数超過 |
+| T54 | `test_callLLM_returnsString` | callLLM 正常系 |
+| T55 | `test_callLLM_throwsOnFailure` | callLLM エラー系 |
+| T56 | `test_verifyWithRegeneration_passesOnFirstTry` | verifier 初回合格 |
+| T57 | `test_verifyWithRegeneration_regeneratesOnFailure` | verifier 再生成 |
+| T58 | `test_verifyWithRegeneration_failsAfterMaxRetries` | verifier 最大回数超過 |
 
 ### 15.1 Executor Registry
 
@@ -694,6 +701,10 @@ Engagement Rate: ${engagementRate}%
 
 #### detect_suffering（苦しみ検出）
 
+> **H16解消: SAFE-T 危機検出プロトコル**
+> severity >= 0.9 の検出は `crisis:detected` イベントを発行し、通常フロー（Nudge等）を中断。
+> `step/complete` ハンドラ（§16.3）で detections を走査し、crisis 判定を行う。
+
 ```javascript
 // apps/api/src/services/ops/stepExecutors/executeDetectSuffering.js
 
@@ -706,7 +717,11 @@ import { logger } from '../../../lib/logger.js';
  *
  * Input: {} (パラメータなし)
  * Output: { detections: Array<{text, severity, problemType, source}> }
- * Events: suffering_detected (severity >= 0.6)
+ * Events: suffering_detected (severity >= 0.6), crisis:detected (severity >= 0.9)
+ *
+ * SAFE-T Protocol:
+ * - severity >= 0.9 → crisis:detected イベント発行 → 通常フロー中断 + Slack #ops-approval に即時通知
+ * - crisis 判定は step/complete ハンドラ (§16.3) で自動実行される
  */
 export async function executeDetectSuffering({ skillName }) {
   // この関数は VPS Worker から呼ばれ、web_search ツールを使う
@@ -724,6 +739,7 @@ export async function executeDetectSuffering({ skillName }) {
     events: []
     // 注: 実際のイベント発行は VPS Worker が step/complete を呼ぶ際に、
     // Railway API の completeStep ハンドラが output.detections を見てイベントを発行する
+    // SAFE-T: severity >= 0.9 は crisis:detected として特別処理される（§16.3参照）
   };
 }
 ```
@@ -928,7 +944,7 @@ X Engagement Rate: ${Number(hook.xEngagementRate || 0)}
     events: shouldPost ? [{
       kind: 'hook:approved_for_post',
       tags: ['hook', 'approved'],
-      payload: { hookId: hook.id, hookText: hook.hookText }
+      payload: { hookId: hook.id, hookText: hook.text }  // スキーマ: HookCandidate.text
     }] : []
   };
 }
@@ -1111,9 +1127,22 @@ router.patch('/step/:id/complete', async (req, res) => {
   }
 
   // ★ 追加: detect_suffering の detections からイベント発行
+  // H16解消: SAFE-T 危機検出プロトコル
+  // severity >= 0.9 → crisis:detected（通常フロー中断 + 即時通知）
+  // severity >= 0.6 → suffering_detected（通常のNudgeトリガー）
   if (step.stepKind === 'detect_suffering' && output?.detections) {
     for (const detection of output.detections) {
-      if (detection.severity >= 0.6) {
+      if (detection.severity >= 0.9) {
+        // SAFE-T: 危機レベル — 通常フロー中断、即時通知
+        await emitEvent(
+          step.mission.proposal.skillName,
+          'crisis:detected',
+          ['crisis', 'detected', 'safe_t'],
+          { ...detection, protocol: 'SAFE-T', action: 'halt_normal_flow_and_alert' },
+          step.missionId
+        );
+        logger.warn(`SAFE-T CRISIS: severity=${detection.severity} — "${detection.text?.substring(0, 50)}"`);
+      } else if (detection.severity >= 0.6) {
         await emitEvent(
           step.mission.proposal.skillName,
           'suffering_detected',

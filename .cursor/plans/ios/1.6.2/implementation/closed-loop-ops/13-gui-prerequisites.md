@@ -44,7 +44,7 @@ API キー取得、OAuth設定、Slack設定はコードで自動化できない
 | # | タスク | 手順 | 取得するもの | 対象 | 推定所要時間 |
 |---|--------|------|-------------|------|------------|
 | G12 | **Mixpanel ops イベント追跡設定** | 1. Mixpanel → Events → ops関連イベント名を登録 2. Lexicon で分類 | ops レイヤーの分析基盤 | opsMonitor の外部可視化 | 20分 |
-| G13 | **VPS crontab にHeartbeat登録** | 1. `ssh anicca@46.225.70.241` 2. `crontab -e` で `*/5 * * * * curl -s -H "Authorization: Bearer $ANICCA_AGENT_TOKEN" $API_BASE_URL/api/ops/heartbeat` 追加 | 5分毎のHeartbeat自動実行 | 閉ループの心臓部 | 5分 |
+| G13 | **VPS schedule.yaml にHeartbeat・Worker登録** | 1. `ssh anicca@46.225.70.241` 2. `07-vps-worker-migration.md` の schedule.yaml を `~/.openclaw/schedule.yaml` に適用 3. Gateway再起動 | 5分毎Heartbeat + 1分毎Worker | 閉ループの心臓部 | 10分 |
 | G14 | **Railway Staging ログ監視設定** | 1. Railway Dashboard → Observability 2. Alert rules: 5xx > 5/min → Slack通知 | Staging 段階での障害検知 | デプロイ後の安定性確認 | 15分 |
 
 ---

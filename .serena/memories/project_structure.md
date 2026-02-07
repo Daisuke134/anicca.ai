@@ -1,80 +1,56 @@
-# プロジェクト構造詳細（2026-01-29 更新）
+# プロジェクト構造 (2026-02-08)
 
-## ルートディレクトリ構造
+## ルートディレクトリ
 ```
 anicca-project/
-├── aniccaios/                  # iOSアプリ本体（Swift/SwiftUI）
-│   ├── aniccaios/              # ソースコード
-│   ├── aniccaiosTests/         # ユニット・インテグレーションテスト
-│   ├── AniccaWidget/           # ウィジェットExtension
-│   ├── AniccaNotificationService/ # 通知Service Extension
-│   ├── Configs/                # xcconfig（Staging/Production）
-│   ├── fastlane/               # ビルド・デプロイ自動化
-│   ├── maestro/                # E2Eテスト（Maestro）
-│   │   ├── onboarding/         # オンボーディング・Paywallテスト
-│   │   ├── nudge/              # Nudge系テスト（phase5, phase6）
-│   │   ├── single-screen/      # シングルスクリーンレイアウトテスト
-│   │   ├── flows/              # 再利用フロー（skip-onboarding等）
-│   │   └── results/            # テスト結果XML
-│   └── scripts/                # iOS用スクリプト
-│
+├── aniccaios/              — iOSアプリ本体 (Swift/SwiftUI)
+│   ├── aniccaios/          — ソースコード
+│   │   ├── Views/          — SwiftUI画面
+│   │   ├── Services/       — ビジネスロジック
+│   │   ├── Models/         — データモデル
+│   │   ├── Onboarding/     — オンボーディング4ステップ
+│   │   ├── Notifications/  — 通知スケジューリング
+│   │   ├── Authentication/ — Apple Sign-in, DeviceID
+│   │   ├── DesignSystem/   — テーマ・UIコンポーネント
+│   │   ├── Components/     — 再利用可能UI
+│   │   ├── Extensions/     — Swift拡張
+│   │   ├── Resources/      — ローカライズ(6言語), プロンプト, 音声
+│   │   └── Security/       — Keychain
+│   ├── aniccaiosTests/     — Unit/Integration テスト
+│   └── fastlane/           — Fastfile (ビルド/テスト/リリース)
 ├── apps/
-│   ├── api/                    # バックエンドAPI（Node.js, Prisma, Railway）
-│   └── landing/                # ランディングページ（Next.js, Netlify）
-│
-├── assets/                     # メディアファイル
-│   ├── icon/                   # アプリアイコン
-│   ├── screenshots/            # App Storeスクリーンショット
-│   └── videos/                 # プロモーション動画
-│
-├── data/                       # データファイル
-│   ├── apple-ads/              # Apple Search Ads CSV
-│   └── audits/                 # Lighthouse監査JSON
-│
-├── daily-apps/                 # Daily Dhamma関連アプリ
-├── research/                   # 学術研究（NAIST、旧naistQmd/）
-├── scripts/                    # 自動化スクリプト
-│   ├── anicca-agent/           # エージェント関連
-│   └── daily-metrics/          # メトリクス収集
-│
-├── docs/                       # ドキュメント
-│   ├── notes/                  # 技術メモ
-│   ├── reports/                # PDF報告書
-│   └── naistHomework /         # NAIST宿題
-│
-├── .claude/                    # Claude Code設定（rules, skills, hooks）
-├── .cursor/plans/              # 計画・仕様書
-├── .github/workflows/          # GitHub Actions CI/CD
-├── .serena/memories/           # Serena MCPメモリ
-│
-├── CLAUDE.md                   # プロジェクトルール（全エージェント共有）
-├── netlify.toml                # Netlifyデプロイ設定
-├── .railwayignore              # Railwayデプロイ除外設定
-└── .gitignore                  # Git追跡除外（dpo/含む）
+│   ├── api/                — Node.js APIサーバー (Railway)
+│   │   ├── src/            — ソースコード
+│   │   │   ├── routes/     — エンドポイント
+│   │   │   ├── services/   — ビジネスロジック
+│   │   │   ├── jobs/       — Cronジョブ
+│   │   │   ├── agents/     — LLMエージェント(Commander)
+│   │   │   └── middleware/ — 認証・バリデーション
+│   │   └── prisma/         — スキーマ・マイグレーション
+│   └── landing/            — ランディングページ (Netlify)
+├── daily-apps/             — Daily Dhamma等
+├── maestro/                — E2Eテスト (Maestro YAML)
+├── scripts/                — ユーティリティスクリプト
+├── .claude/                — Claude Code設定
+│   ├── rules/              — 開発ルール (自動読み込み)
+│   └── skills/             — スキル定義
+├── .cursor/plans/          — 仕様書・計画
+├── .kiro/                  — ステアリング・スペック
+└── .serena/memories/       — Serenaメモリ（プロジェクト知識ベース）
 ```
 
-## 主要なエントリーポイント
+## 主要エントリーポイント
+| アプリ | ファイル |
+|--------|---------|
+| iOS | `aniccaios/aniccaios/aniccaiosApp.swift` |
+| API | `apps/api/src/server.js` |
+| Landing | `apps/landing/` |
 
-### iOSアプリ
-- `aniccaios/aniccaios/` - SwiftUIソースコード
+## DB
+- **メイン**: Railway PostgreSQL + Prisma ORM (25テーブル)
+- **補助**: Supabase (レガシー、段階的廃止中)
 
-### バックエンドAPI
-- `apps/api/src/server.js` - Expressサーバー
-- `apps/api/prisma/schema.prisma` - Prismaスキーマ
-
-### ランディングページ
-- `apps/landing/` - Next.js App Router
-
-## DB構成
-- **Railway PostgreSQL** = メインDB（Prisma ORM）
-- **Supabase SDK** = 補助サービス（Slackトークン、Worker Memory、Storage、OAuth）
-
-## テスト
+## テスト実行
 - Unit/Integration: `cd aniccaios && fastlane test`
-- API: `cd apps/api && npm test`
-- E2E: `maestro test aniccaios/maestro/`
-
-## Git管理
-- メインブランチ: `main`（Production）
-- 開発ブランチ: `dev`（Staging）
-- ワークツリー: 並列作業時に使用
+- E2E: `maestro test maestro/`
+- xcodebuild直接実行は禁止

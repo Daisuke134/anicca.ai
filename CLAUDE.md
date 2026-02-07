@@ -27,6 +27,30 @@
 
 検索手段（優先順）: `mcp__exa__web_search_exa` → `mcp__context7__query-docs` → `mcp__apple-docs__*` → `.claude/rules/`
 
+### 0.2 Serena メモリ活用ルール（絶対ルール）
+
+**プロジェクト知識は `.serena/memories/` に集約する。** CLAUDE.mdのコンテキスト圧迫を防ぐ。
+
+| 場面 | アクション |
+|------|-----------|
+| セッション開始時 | 関連するSerenaメモリを `mcp__serena__read_memory` で読む |
+| 新しい知見・設計判断が出た時 | `mcp__serena__write_memory` で記録 |
+| 実装完了後 | 関連メモリを `mcp__serena__edit_memory` で更新 |
+| ファイル編集（Swift/TS） | `mcp__serena__find_symbol` / `mcp__serena__replace_symbol_body` を活用 |
+| コード探索 | `mcp__serena__get_symbols_overview` → `mcp__serena__find_symbol` で効率的に |
+
+**主要メモリ一覧:**
+
+| メモリ名 | 内容 |
+|---------|------|
+| `ios_app_architecture` | iOS画面構成、オンボーディング、Nudge、サブスク、API連携 |
+| `api_backend_architecture` | APIエンドポイント、Prismaテーブル、Cron、Railway構成 |
+| `nudge_system` | Nudgeシステム全体設計（ルールベース+LLM、フィードバックループ） |
+| `project_overview` | プロジェクト概要、技術スタック、リポジトリ構成 |
+| `project_structure` | ディレクトリ構成、エントリーポイント |
+| `closed_loop_ops_design` | 1.6.2 Closed-Loop Ops設計 |
+| `openclaw-anicca-setup` | OpenClaw VPS設定・運用 |
+
 ### 0.4 git push ルール（絶対ルール）
 
 **push時は `git add -A` で全ファイルをステージしてpushする。** 他エージェントの変更も含めて全部。stashして除外・復元は禁止。同じリポジトリで複数エージェントが並行作業しているため、自分の担当外でも必ずステージ&pushする。
@@ -175,12 +199,15 @@
 行動変容をサポートするiOSアプリ。AIを活用したプロアクティブな通知で、ユーザーの「苦しみ」に寄り添う。
 
 ### 技術スタック
-- **iOS**: Swift, SwiftUI
+- **iOS**: Swift, SwiftUI (iOS 15+, Xcode 16+)
 - **通知**: ProblemType-based Nudge System（ルールベース + LLM生成）
-- **API**: Node.js, Railway
-- **DB**: Railway PostgreSQL + Prisma（メイン）。Supabaseは補助サービスとして残存
-- **決済**: RevenueCat, Superwall
-- **分析**: Mixpanel, Singular
+- **API**: Node.js + Express (Railway)
+- **DB**: Railway PostgreSQL + Prisma ORM（25テーブル）
+- **決済**: RevenueCat + Superwall ($9.99/月, 1週間トライアル)
+- **分析**: Mixpanel
+- **AI**: OpenAI (Commander Agent, 構造化出力)
+- **E2E**: Maestro
+- **VPS Agent**: OpenClaw (GPT-4o, Slack連携)
 
 ### 主要ディレクトリ
 ```
@@ -223,34 +250,32 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 
 **詳細:** `.claude/rules/persona.md`
 
-### iOS実装状況（2026年1月26日時点）
+### iOS実装状況（2026年2月8日時点）
 
 | 項目 | 内容 |
 |------|------|
-| App Store承認 | 1.3.0（Phase 6） |
-| 次回提出 | 1.4.0 |
-| メイン画面 | `MyPathTabView` — 問題一覧、Tell Anicca、DeepDive、課金/アカウント |
+| 現在バージョン | 1.6.2 |
+| メイン画面 | `MainTabView` → `MyPathTabView` + NudgeCard overlay + Paywall cover |
+| ローカライズ | 6言語 (ja, en, de, es, fr, pt-BR) |
 
-**オンボーディング:** welcome → value → struggles → notifications
+**オンボーディング (4ステップ):** welcome → struggles → liveDemo → notifications
 
-| ステップ | View |
-|---------|------|
-| welcome | `WelcomeStepView`（紹介 + 復元） |
-| value | `ValueStepView`（価値説明） |
-| struggles | `StrugglesStepView`（13問題選択） |
-| notifications | `NotificationPermissionStepView` |
+| ステップ | View | 内容 |
+|---------|------|------|
+| welcome | `WelcomeStepView` | 紹介 + Sign in with Apple |
+| struggles | `StrugglesStepView` | 13問題選択 |
+| liveDemo | `DemoNudgeStepView` | 例Nudge体験 → Soft Paywall |
+| notifications | `NotificationPermissionStepView` | 通知許可 |
 
-**13 ProblemTypes:** `staying_up_late, cant_wake_up, self_loathing, rumination, procrastination, anxiety, lying, bad_mouthing, porn_addiction, alcohol_dependency, anger, obsessive, loneliness`
-
-**Nudgeシステム:**
+**Nudgeシステム:** 詳細は `mcp__serena__read_memory("nudge_system")` 参照
 
 | 機能 | 担当 |
 |------|------|
-| Problem Nudge | `ProblemNotificationScheduler` |
-| Server-driven | `NotificationScheduler`（認可+サーバーNudgeのみ、約140行） |
-| LLM生成（Phase 6） | `LLMNudgeService` / `LLMNudgeCache` |
+| ルールベースNudge | `ProblemNotificationScheduler` + `NudgeContentSelector` |
+| LLM Nudge | `LLMNudgeService` / `LLMNudgeCache` (日次取得) |
+| フィードバック | `NudgeStatsManager` / `NudgeFeedbackService` |
 
-**注意:** ProblemTypeベース（HabitType削除済み）。音声機能も削除済み。LLM Nudgeは `/api/mobile/nudge/today` を日次取得。
+**注意:** ProblemTypeベース。音声機能・ATT・Singular削除済み。
 
 ---
 
@@ -260,15 +285,14 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 
 1. devブランチにいることを確認
 2. ペルソナを意識（上記参照）
-3. 関連するSerenaメモリを確認
+3. **Serenaメモリを読む**: `mcp__serena__read_memory` でタスク関連のメモリを取得
 4. MCP接続確認（必要なタスクのみ）
 
 ### 実装完了時の必須アクション
 
-**CLAUDE.mdを常に最新に保つ！** 実装完了後、以下を更新：
-- iOSアプリ現在の実装状況セクション
-- 技術スタックセクション（変更があれば）
-- 最終更新日
+**CLAUDE.md + Serenaメモリを常に最新に保つ！** 実装完了後:
+- CLAUDE.md: iOS実装状況、技術スタック、最終更新日
+- Serenaメモリ: 関連メモリを `mcp__serena__edit_memory` で更新
 
 ### 開発ワークフロー
 
@@ -436,4 +460,4 @@ systemctl --user restart openclaw-gateway
 
 ---
 
-最終更新: 2026年2月6日
+最終更新: 2026年2月8日

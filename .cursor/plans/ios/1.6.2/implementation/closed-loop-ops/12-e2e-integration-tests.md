@@ -7,7 +7,7 @@
 
 ## 目的
 
-T1-T43 は個別コンポーネントの正当性を検証する（Unit/Integration）。
+T1-T60 は個別コンポーネントの正当性を検証する（Unit/Integration）。
 このマトリックスは **スキル間の閉ループが正しく循環するか** を検証する。
 
 ---
@@ -104,7 +104,7 @@ it('should fire trigger after delay_min', async () => {
 
 | テスト種別 | 境界 | 実行タイミング | 実行環境 | 失敗時 |
 |-----------|------|-------------|---------|--------|
-| Unit (T1-T43) | B1 | PR push / merge | GitHub Actions | PR ブロック |
+| Unit (T1-T60) | B1 | PR push / merge | GitHub Actions | PR ブロック |
 | DB連鎖 (I1-I5) | B2 | PR push / merge | GitHub Actions + test DB | PR ブロック |
 | イベント連鎖 (I6-I10) | B3 | PR push / merge | GitHub Actions + test DB | PR ブロック |
 | トリガー評価 (I11-I16) | B4 | 日次 nightly | GitHub Actions + test DB | Slack通知 |

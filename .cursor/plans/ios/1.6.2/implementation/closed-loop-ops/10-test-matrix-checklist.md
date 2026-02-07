@@ -5,7 +5,7 @@
 
 ---
 
-## テストマトリックス（T1-T43）
+## テストマトリックス（T1-T60）
 
 | # | テスト対象 | テスト名 | 種別 | カバー |
 |---|-----------|---------|------|--------|
@@ -52,6 +52,23 @@
 | **T41** | **Monitor** | `test_checkOpsHealth_alertOnSpike` | **Unit** | **失敗スパイクアラート** |
 | **T42** | **Monitor** | `test_checkOpsHealth_noAlertBelowThreshold` | **Unit** | **閾値未満→アラートなし** |
 | **T43** | **Summary API** | `test_dailySummary_returns24hData` | **Integration** | **日次サマリー** |
+| **T44** | **Executor: post_x** | `test_executePostX_createsXPost` | **Unit** | **XPost DB記録 + イベント発行** |
+| **T45** | **Executor: post_tiktok** | `test_executePostTiktok_createsTiktokPost` | **Unit** | **TiktokPost DB記録 + イベント発行** |
+| **T46** | **Executor: fetch_metrics** | `test_executeFetchMetrics_xBigIntConversion` | **Unit** | **BigInt→Number変換 + メトリクス計算** |
+| **T47** | **Executor: fetch_metrics** | `test_executeFetchMetrics_tiktokMetrics` | **Unit** | **TikTokメトリクス取得** |
+| **T48** | **Executor: analyze_engagement** | `test_executeAnalyzeEngagement_highThreshold` | **Unit** | **5%閾値判定 + hookスコア更新** |
+| **T49** | **Executor: diagnose** | `test_executeDiagnose_extractsFailedSteps` | **Unit** | **失敗ステップ抽出 + LLM診断** |
+| **T50** | **Executor: detect_suffering** | `test_executeDetectSuffering_passthrough` | **Unit** | **VWSパススルー構造** |
+| **T51** | **Executor: draft_nudge** | `test_executeDraftNudge_topSeveritySelection` | **Unit** | **最高severity選択 + 50文字制限** |
+| **T52** | **Executor: send_nudge** | `test_executeSendNudge_skipsWhenNoContent` | **Unit** | **nudgeContent空→skipped=true** |
+| **T53** | **Executor: evaluate_hook** | `test_executeEvaluateHook_shouldPostDecision` | **Unit** | **LLM評価 + shouldPost判定** |
+| **T54** | **callLLM** | `test_callLLM_returnsString` | **Unit** | **LLM呼び出し正常系** |
+| **T55** | **callLLM** | `test_callLLM_throwsOnFailure` | **Unit** | **LLM呼び出しエラー系** |
+| **T56** | **verifier** | `test_verifyWithRegeneration_passesOnFirstTry` | **Unit** | **初回合格** |
+| **T57** | **verifier** | `test_verifyWithRegeneration_regeneratesOnFailure` | **Unit** | **再生成フロー** |
+| **T58** | **verifier** | `test_verifyWithRegeneration_failsAfterMaxRetries` | **Unit** | **最大回数超過→失敗** |
+| **T59** | **SAFE-T** | `test_scoreContent_crisisDetection` | **Unit** | **危機表現→score=0 + crisis flag** |
+| **T60** | **SAFE-T** | `test_detectSuffering_crisisEvent` | **Unit** | **severity>=0.9→crisis:detected イベント** |
 
 ---
 
@@ -126,7 +143,7 @@ cd apps/api && npx vitest                        # ウォッチモード
 | 12.11 | Heartbeat ルーター実装（監視込み） | T19, T41-T42 PASS | ⬜ |
 | 12.12 | Proposal/Step ルーター実装（data pass込み） | T20-T29 全PASS | ⬜ |
 | 12.13 | opsAuth ミドルウェア実装 | T26-T27 PASS | ⬜ |
-| **12.14** | **Step Executor Registry + 11個の executor** | **T34-T37 PASS** | ⬜ |
+| **12.14** | **Step Executor Registry + 11個の executor** | **T34-T37, T44-T53 PASS** | ⬜ |
 | **12.15** | **approvalNotifier + approvalHandler 実装** | **T30-T33 PASS** | ⬜ |
 | **12.16** | **Approval API ルーター実装** | **T32-T33 PASS** | ⬜ |
 | **12.17** | **insightPromoter.js 実装** | **手動テストで WisdomPattern に昇格確認** | ⬜ |
@@ -197,7 +214,9 @@ apps/api/
             │   ├── policyService.test.js
             │   ├── triggerEvaluator.test.js
             │   ├── reactionProcessor.test.js
-            │   └── staleRecovery.test.js
+            │   ├── staleRecovery.test.js
+            │   ├── approvalHandler.test.js
+            │   └── opsMonitor.test.js
             └── stepExecutors/
                 ├── registry.js
                 ├── executeDraftContent.js
@@ -210,7 +229,28 @@ apps/api/
                 ├── executeDetectSuffering.js
                 ├── executeDraftNudge.js
                 ├── executeSendNudge.js
-                └── executeEvaluateHook.js
+                ├── executeEvaluateHook.js
+                └── __tests__/
+                    ├── registry.test.js
+                    ├── executeDraftContent.test.js
+                    ├── executeVerifyContent.test.js
+                    ├── executePostX.test.js
+                    ├── executePostTiktok.test.js
+                    ├── executeFetchMetrics.test.js
+                    ├── executeAnalyzeEngagement.test.js
+                    ├── executeDiagnose.test.js
+                    ├── executeDetectSuffering.test.js
+                    ├── executeDraftNudge.test.js
+                    ├── executeSendNudge.test.js
+                    └── executeEvaluateHook.test.js
+    ├── lib/
+    │   ├── llm.js
+    │   └── __tests__/
+    │       └── llm.test.js
+    ├── services/
+    │   ├── verifier.js
+    │   └── __tests__/
+    │       └── verifier.test.js
 
 VPS (~/.openclaw/workspace/skills/):
 ├── mission-worker/

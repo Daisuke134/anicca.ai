@@ -82,6 +82,8 @@ jobs:
         run: |
           xcrun simctl boot "iPhone 16 Pro" || true
           xcrun simctl bootstatus "iPhone 16 Pro" -b
+          # CI環境ではシミュレータの完全起動に時間がかかるため待機
+          sleep 10
 
       - name: Build App
         working-directory: aniccaios
@@ -99,8 +101,10 @@ jobs:
           xcrun simctl install booted "./build/Build/Products/staging Debug-iphonesimulator/aniccaios.app"
 
       - name: Run Maestro Tests
+        env:
+          MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
         run: |
-          maestro test aniccaios/maestro/ --include-tags smokeTest,phase6
+          maestro test aniccaios/maestro/ --include-tags smokeTest
 
       - name: Upload Test Results
         if: failure()

@@ -17,10 +17,11 @@ tags:
 - launchApp
 
 # Step 1: Welcome screen - wait for app to fully load
+# CI環境ではコールドスタートに時間がかかるため60sに設定
 - extendedWaitUntil:
     visible:
       id: "onboarding-welcome-cta"
-    timeout: 30000
+    timeout: 60000
 
 - tapOn:
     id: "onboarding-welcome-cta"

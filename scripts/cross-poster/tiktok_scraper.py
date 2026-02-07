@@ -1,47 +1,83 @@
 """
 TikTok Slideshow Scraper
 
-Uses Apify clockworks~tiktok-scraper to extract slideshow images from TikTok profiles.
-Scrapes the profile once, then filters by target URLs from RSS.
+Uses Apify clockworks~tiktok-scraper to detect new slideshow posts and extract images.
+Replaces the previous RSS.app-based detection (removed due to 402 Payment Required).
 """
-import time
+from datetime import datetime, timezone
 
 import requests
 
 from config import APIFY_API_TOKEN, APIFY_ACTOR_ID, APIFY_RESULTS_PER_PAGE
 
 
-def scrape_profile_slideshows(
+def fetch_new_slideshows(
     tiktok_username: str,
-    target_urls: list[str],
-) -> dict[str, list[str]]:
-    """Scrape a TikTok profile and extract slideshow images for target URLs.
+    since: datetime,
+) -> list[dict]:
+    """Scrape a TikTok profile and return new slideshow posts with images.
 
     Args:
         tiktok_username: TikTok username without @
-        target_urls: List of TikTok video URLs to look for (from RSS)
+        since: Only return posts created after this datetime (UTC)
 
     Returns:
-        Dict mapping tiktok_url -> list of image URLs.
-        Video posts (non-slideshow) are excluded.
+        List of dicts: {"id": url, "title": text, "pub_date": iso, "link": url, "images": [url]}
     """
     scraped = _run_apify_scraper(tiktok_username)
-    target_set = set(target_urls)
-    result = {}
+    results = []
 
     for post in scraped:
         post_url = post.get("webVideoUrl") or post.get("url") or ""
-        if post_url not in target_set:
+        if not post_url:
             continue
 
+        # Filter by date
+        post_date = _parse_post_date(post)
+        if post_date and post_date <= since:
+            continue
+
+        # Only slideshows (skip videos)
         if not post.get("isSlideshow"):
             continue
 
         images = _extract_slideshow_images(post)
-        if images:
-            result[post_url] = images
+        if not images:
+            continue
 
-    return result
+        results.append({
+            "id": post_url,
+            "title": post.get("text") or "",
+            "link": post_url,
+            "pub_date": post_date.isoformat() if post_date else "",
+            "images": images,
+        })
+
+    return results
+
+
+def _parse_post_date(post: dict) -> datetime | None:
+    """Parse post creation date from Apify data."""
+    # Try ISO format first (createTimeISO)
+    iso_str = post.get("createTimeISO")
+    if iso_str:
+        try:
+            dt = datetime.fromisoformat(iso_str.replace("Z", "+00:00"))
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+            return dt
+        except (ValueError, TypeError):
+            pass
+
+    # Fall back to Unix timestamp (createTime)
+    ts = post.get("createTime")
+    if ts:
+        try:
+            return datetime.fromtimestamp(int(ts), tz=timezone.utc)
+        except (ValueError, TypeError, OSError):
+            pass
+
+    return None
 
 
 def _run_apify_scraper(username: str) -> list[dict]:

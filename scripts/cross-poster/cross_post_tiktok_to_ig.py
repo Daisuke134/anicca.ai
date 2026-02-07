@@ -1,13 +1,12 @@
 """
 TikTok → Instagram Cross-Poster
 
-Main script. Detects new TikTok slideshows via RSS, extracts images via Apify,
+Main script. Detects new TikTok slideshows via Apify, extracts images,
 uploads to Blotato storage, and schedules Instagram carousel posts.
 
 Runs via GitHub Actions: .github/workflows/cross-post-tiktok-to-ig.yml
 """
 import argparse
-import json
 import sys
 from datetime import datetime, timedelta, timezone
 
@@ -22,9 +21,8 @@ from config import (
     validate_env,
 )
 from instagram_poster import strip_tiktok_hashtags, upload_and_post_carousel
-from rss_parser import fetch_new_posts
 from state import load_processed_ids, save_processed_id
-from tiktok_scraper import scrape_profile_slideshows
+from tiktok_scraper import fetch_new_slideshows
 
 JST = timezone(timedelta(hours=9))
 
@@ -87,32 +85,30 @@ def process_account(
     force: bool = False,
     schedule_times: list[str | None] | None = None,
 ) -> dict:
-    """Process one account mapping (RSS → Apify → Instagram).
+    """Process one account mapping (Apify scrape → Instagram post).
 
     Returns:
         Stats dict: {"detected": N, "posted": N, "skipped": N, "errors": N}
     """
     stats = {"detected": 0, "posted": 0, "skipped": 0, "errors": 0}
-    rss_url = account_config["rss_url"]
     tiktok_username = account_config["tiktok_username"]
     ig_account_id = account_config["ig_account_id"]
-    lang = account_config["lang"]
 
     print(f"\n{'='*60}")
     print(f"Processing [{account_key}] TikTok @{tiktok_username} → IG {ig_account_id}")
     print(f"{'='*60}")
 
-    # 1. Fetch RSS feed
+    # 1. Fetch new slideshow posts via Apify
     since = now_utc - timedelta(hours=lookback_hours)
     try:
-        posts = fetch_new_posts(rss_url, since)
+        posts = fetch_new_slideshows(tiktok_username, since)
     except Exception as e:
-        print(f"  ERROR: RSS fetch failed: {e}")
+        print(f"  ERROR: Apify scrape failed: {e}")
         stats["errors"] += 1
         return stats
 
     stats["detected"] = len(posts)
-    print(f"  Found {len(posts)} new posts (since {since.isoformat()})")
+    print(f"  Found {len(posts)} new slideshows (since {since.isoformat()})")
 
     if not posts:
         return stats
@@ -132,29 +128,11 @@ def process_account(
 
         print(f"  {len(new_posts)} new, {stats['skipped']} already processed")
 
-    # 3. Scrape TikTok for slideshow images
-    target_urls = [p["link"] for p in new_posts]
-    try:
-        slideshows = scrape_profile_slideshows(tiktok_username, target_urls)
-    except Exception as e:
-        print(f"  ERROR: Apify scrape failed: {e}")
-        stats["errors"] += 1
-        return stats
-
-    print(f"  Apify returned {len(slideshows)} slideshows out of {len(target_urls)} targets")
-
-    # 4. Post each slideshow to Instagram
+    # 3. Post each slideshow to Instagram
     slot_index = 0
     for post in new_posts:
         tiktok_url = post["link"]
-        images = slideshows.get(tiktok_url)
-
-        if not images:
-            print(f"  SKIP (not a slideshow or scrape failed): {tiktok_url}")
-            save_processed_id(tiktok_url)
-            stats["skipped"] += 1
-            continue
-
+        images = post["images"]
         caption = strip_tiktok_hashtags(post["title"])
 
         # Use custom schedule or auto-calculate
@@ -198,7 +176,7 @@ def send_slack_summary(all_stats: dict[str, dict]) -> None:
         print("  No Slack webhook configured, skipping notification")
         return
 
-    lines = ["📸 *TikTok→IG Cross-Post Report*"]
+    lines = ["*TikTok→IG Cross-Post Report*"]
     total_posted = 0
     total_errors = 0
 

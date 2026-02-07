@@ -18,13 +18,11 @@ BLOTATO_BASE_URL = "https://backend.blotato.com/v2"
 # Instagram accounts are connected in Blotato
 ACCOUNT_MAPPING = {
     "en": {
-        "rss_url": "https://rss.app/feeds/CUB4Gu5NfxCN0ZuU.xml",
         "tiktok_username": "anicca.en",
         "ig_account_id": "28896",  # @anicca.ai (Instagram)
         "lang": "EN",
     },
     "jp": {
-        "rss_url": "https://rss.app/feeds/KaIYvKJLslBtm90o.xml",
         "tiktok_username": "anicca.jp",
         "ig_account_id": "28897",  # @anicca.japan (Instagram)
         "lang": "JP",

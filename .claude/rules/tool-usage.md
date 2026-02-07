@@ -12,6 +12,22 @@
 | RevenueCat操作 | `mcp__revenuecat__*` | - |
 | App Store Connect | `mcp__app-store-connect__*` | - |
 
+## Firecrawl CLI（Webページ取得 — 絶対ルール）
+
+**WebFetch は禁止。Webページの内容を取得する場合は Firecrawl CLI を使う。**
+
+```bash
+/opt/homebrew/bin/firecrawl scrape <url> markdown
+```
+
+| 場面 | 使うもの | 禁止 |
+|------|---------|------|
+| URLの内容を読む | Firecrawl CLI | WebFetch |
+| リサーチ・調査 | Firecrawl CLI | WebFetch |
+| ドキュメント参照 | Firecrawl CLI（MCP未対応の場合） | WebFetch |
+
+**理由:** WebFetchは内容が不完全・要約される。Firecrawlはフルマークダウンで返す。
+
 ## Maestro MCP（絶対ルール）
 
 **エージェントは Maestro CLI を直接叩くな。必ず MCP を使え。**

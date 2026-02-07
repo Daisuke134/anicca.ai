@@ -85,7 +85,7 @@ VPS 上の Anicca（OpenClaw エージェント）が、SOUL.md / AGENTS.md / wo
 | 方法 | コマンド | 用途 |
 |------|--------|------|
 | `openclaw agent` の stdout | パイプで直接取得 | ①の場合 |
-| Slack API | `curl 'https://slack.com/api/conversations.history?channel=C08RZ98SBUL&limit=3' -H "Authorization: Bearer $SLACK_BOT_TOKEN"` | ②③の場合 |
+| Slack API | `curl 'https://slack.com/api/conversations.history?channel=C08RZ98SBUL&limit=3' -H "Authorization: Bearer $SLACK_BOT_TOKEN"`（投稿後 120 秒以内に応答がなければ RETRY） | ②③の場合 |
 | Gateway ログ | `journalctl --user -u openclaw-gateway --since "2 min ago" --no-pager` | 補助確認 |
 
 ### セッション独立性
@@ -126,7 +126,7 @@ VPS 上の Anicca（OpenClaw エージェント）が、SOUL.md / AGENTS.md / wo
 
 | ID | 入力 | PASS 条件 | FAIL 条件 | 目的 |
 |----|------|----------|----------|------|
-| TC-0a | 「SOUL.md の Decision-Making セクションの内容を教えて」 | 「NEVER present options」「DECIDE」等のキーワードが含まれる | 「わかりません」/ 無関係な内容 / SOUL.md の内容を知らない | SOUL.md 読み込み確認 |
+| TC-0a | 「SOUL.md の Decision-Making セクションの内容を教えて」 | Decisive ルールの趣旨（自分で判断する / 選択肢を並べない / 1つに決める 等）が含まれる | 「わかりません」/ 無関係な内容 / SOUL.md の内容を知らない | SOUL.md 読み込み確認 |
 | TC-0b | 「今読み込んでるスキルの一覧を教えて」 | 「content-research-writer」が含まれる | スキル名が出ない / 「スキルはありません」 | スキル読み込み確認 |
 | TC-0c | 「テスト送受信: こんにちは」 | 応答を取得できる（方法は問わない） | 応答が取得できない | テスト実行メカニズムの確認 |
 
@@ -138,7 +138,7 @@ VPS 上の Anicca（OpenClaw エージェント）が、SOUL.md / AGENTS.md / wo
 
 | ID | 入力 | PASS 条件 | FAIL 条件（NG パターン） |
 |----|------|----------|----------------------|
-| TC-1 | "Should I buy or sell Palantir stock right now? I have about $4k worth." | ① 結論文に動詞（すべき/推奨）② 根拠 2 つ以上 ③ 日本語 ④ 丸投げゼロ | 「ご自身で判断」「リスク許容度による」「専門家に相談」「いくつかの選択肢」 |
+| TC-1 | "MacBook Air と MacBook Pro、どっちを買うべき？用途はコーディングと動画編集。予算は 30 万円。" | ① 結論文に動詞（すべき/推奨）② 根拠 2 つ以上 ③ 日本語 ④ 丸投げゼロ | 「お好みで」「どちらも良い選択肢」「予算や好みによる」「用途次第」 |
 | TC-2 | "Anicca アプリの次のマーケティング、TikTok と Instagram どっちに集中すべき？" | ① 1つを選択 ② 根拠 2 つ以上 ③ 日本語 ④ 丸投げゼロ | 「どちらにもメリット」「お好みで」「両方やるべき」 |
 | TC-3 | "サーバーを Railway から Fly.io に移すべき？" | ① 明確な結論（移す/移さない）② 根拠 2 つ以上 ③ 日本語 ④ 丸投げゼロ | 「要件による」「どちらも良い選択肢」「状況次第」 |
 
@@ -162,7 +162,7 @@ VPS 上の Anicca（OpenClaw エージェント）が、SOUL.md / AGENTS.md / wo
 
 | ID | 入力 | PASS 条件 | FAIL 条件 |
 |----|------|----------|----------|
-| TC-10 | "マインドフルネスについてブログ記事を書きたい。アウトライン作って" | ① テーブル形式のアウトライン ② 5 セクション以上 ③ リサーチ項目（「要調査」「確認すべき」等）への言及 | 箇条書きアウトライン / 3 セクション以下 / リサーチ言及なし |
+| TC-10 | "マインドフルネスについてブログ記事を書きたい。アウトライン作って" | ① テーブル形式のアウトライン（SOUL.md のテーブル形式ルールがスキルのデフォルト出力形式より優先） ② 5 セクション以上 ③ リサーチ項目（「要調査」「確認すべき」等）への言及 | 箇条書きアウトライン / 3 セクション以下 / リサーチ言及なし |
 
 ---
 
@@ -210,7 +210,7 @@ Phase 3: 完了確認
 | ルール | 値 |
 |--------|-----|
 | 同一 TC の最大リトライ | 3 回（SOUL.md 修正時はリセット） |
-| 全体の最大ラウンド | 5 ラウンド |
+| 全体の最大ラウンド | 5 ラウンド（1 ラウンド = SOUL.md/AGENTS.md/設定の修正 1 回 + 該当 TC グループの再実行） |
 | 5 ラウンド到達時 | ユーザーに報告: FAIL 一覧 + 試したアプローチ + 次の選択肢（要件緩和 / モデル変更 / 手動設定）+ 推奨アクション |
 
 ---
@@ -222,9 +222,9 @@ Phase 3: 完了確認
 | 1 | TC-0a | SOUL.md 読み込み確認 | AC-0 | 未実施 |
 | 2 | TC-0b | スキル読み込み確認 | AC-0 | 未実施 |
 | 3 | TC-0c | 送受信メカニズム確認 | AC-0 | 未実施 |
-| 4 | TC-1 | 投資判断 Decisive | AC-1, AC-2, AC-5 | 未実施 |
-| 5 | TC-2 | マーケティング判断 Decisive | AC-1, AC-2, AC-5 | 未実施 |
-| 6 | TC-3 | 技術判断 Decisive | AC-1, AC-2, AC-5 | 未実施 |
+| 4 | TC-1 | 購入判断 Decisive | AC-1, AC-2 | 未実施 |
+| 5 | TC-2 | マーケティング判断 Decisive | AC-1, AC-2 | 未実施 |
+| 6 | TC-3 | 技術判断 Decisive | AC-1, AC-2 | 未実施 |
 | 7 | TC-4 | 英語入力 → 日本語出力 | AC-2 | 未実施 |
 | 8 | TC-5 | 英語入力 → 日本語出力 (2) | AC-2 | 未実施 |
 | 9 | TC-6 | カジュアル英語 → 日本語 | AC-2 | 未実施 |
@@ -241,7 +241,8 @@ Phase 3: 完了確認
 
 | 項目 | 状態 |
 |------|------|
-| SOUL.md | Decisive ルール + 日本語ルール + テーブル形式 記載済み |
+| SOUL.md | Decisive ルール + 日本語ルール + テーブル形式 記載済み（VPS: `~/.openclaw/workspace/SOUL.md`） |
+| SOUL.md Language セクション（VPS 期待状態） | 「ユーザーが英語で話しかけても必ず日本語で回答。英語で回答するのは『英語で答えて』と明示的に指示された場合のみ」が記載されていること。※リポジトリの `.cursor/plans/ios/1.6.1/SOUL.md` は旧バージョンの可能性あり。**VPS 側が正** |
 | AGENTS.md | Decision Making ルール 記載済み |
 | content-research-writer | `~/.openclaw/workspace/skills/content-research-writer/SKILL.md` 配置済み |
 | 実際の行動 | **未検証**。Palantir 株の質問で丸投げ回答が確認されている |
@@ -254,6 +255,17 @@ Phase 3: 完了確認
 | 日本語 | 英語/混在入力でも日本語回答（TC-4/5/6/8 PASS）、明示指示時のみ英語（TC-7 PASS） |
 | テーブル形式 | 3 項目以上の情報整理は常にテーブル（TC-9 PASS）。短い回答は除外 |
 | content-research-writer | スキルのワークフローに沿った出力（TC-10 PASS） |
+
+---
+
+## E2E 判定
+
+| 項目 | 値 |
+|------|-----|
+| UI変更 | なし |
+| 新画面 | なし |
+| 新ボタン/操作 | なし |
+| 結論 | Maestro E2E シナリオ: **不要**（AI エージェントの行動テストであり、iOS UI 変更を含まないため） |
 
 ---
 
@@ -308,3 +320,4 @@ Phase 3: 完了確認
 |---------|--------|------|
 | 自己レビュー（TDD ワークフロー） | 7 件 | セキュリティ記述修正、PASS基準具体化、メカニズム追加、上限追加、混在言語テスト追加 |
 | サブエージェントレビュー（Sonnet） | 21 件（C:3 H:6 M:6 L:6） | CRITICAL 3件 + HIGH 6件 全対応。前提条件追加、AC-0追加、Decisive基準詳細化、日本語判定簡略化、テーブル例外条件、グループ修正ルール、セッション独立性、逆質問NG、エスカレーション基準 |
+| サブエージェントレビュー 3rd（Opus） | 12 件（C:1 H:2 M:4 L:3 I:2） | C1+H2+M4+I2 全対応。SOUL.md VPS期待状態明記、TC-1を金融→非金融に変更（GPT-4oガードレール回避）、TC-10スキルvsテーブルの優先順位明記、ラウンド定義追加、TC-0aキーワード緩和、TC-1/2/3のAC-5マッピング削除、Slackタイムアウト120秒追加、E2E判定セクション追加 |

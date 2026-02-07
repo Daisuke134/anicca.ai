@@ -573,3 +573,7 @@ describe('[OFF] reason display', () => {
 | v1 | 2026-02-05 | code-quality-reviewer | ❌ FAIL | - |
 | v2 | 2026-02-05 | code-quality-reviewer | ❌ FAIL | B1, B2, W1, W3 |
 | v3 | 2026-02-05 | code-quality-reviewer | ✅ PASS | B3, T1, T3, T4, W1(slotIndex nullish) |
+
+
+
+

@@ -40,11 +40,18 @@
         "run_id": "21778534026",
         "posted_at": "2026-02-07T10:20:19.410Z",
         "blotato_post_id": "b9e06a51-e28a-44bc-b461-5d618b4734a2"
+      },
+      "en": {
+        "status": "in_flight",
+        "reserved_at": "2026-02-07T14:25:24.456Z",
+        "run_id": "21781548553",
+        "posted_at": null,
+        "blotato_post_id": null
       }
     }
   },
   "next_index": {
-    "en": 2,
+    "en": 3,
     "ja": 3
   },
   "card_order": [

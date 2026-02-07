@@ -1,4 +1,17 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import type { Language } from './types.js';
+
+interface CaptionEntry {
+  hook: string;
+  value: string;
+  cta: string;
+}
+
+interface CaptionPool {
+  captions: CaptionEntry[];
+  hashtags: string[];
+}
 
 interface CaptionInput {
   cardId: string;
@@ -6,26 +19,43 @@ interface CaptionInput {
   problemType: string;
 }
 
-const HASHTAGS: Record<Language, string> = {
-  en: '#mentalhealth #habits #selfimprovement #anicca',
-  ja: '#メンタルヘルス #習慣 #自己改善 #anicca',
-};
+const CAPTION_DATA_DIR = resolve(
+  import.meta.dirname ?? '.',
+  './caption-data',
+);
 
-const CTA: Record<Language, string> = {
-  en: 'Download Anicca - the app that understands your struggles.',
-  ja: 'Anicca - あなたの「苦しみ」に寄り添うアプリ',
-};
+/** Load caption pool JSON for a problem type + language */
+function loadCaptionPool(problemType: string, language: Language): CaptionPool {
+  const filePath = resolve(CAPTION_DATA_DIR, language, `${problemType}.json`);
+  const raw = readFileSync(filePath, 'utf-8');
+  return JSON.parse(raw) as CaptionPool;
+}
 
-/** Generate a TikTok caption with deterministic card_key for reconciliation */
+/** Extract the numeric suffix from a cardId (e.g. "staying_up_late_3" → 3) */
+function extractCardIndex(cardId: string): number {
+  const match = cardId.match(/_(\d+)$/);
+  return match ? parseInt(match[1], 10) : 0;
+}
+
+/**
+ * Generate a TikTok caption from the pre-written caption pool.
+ * Selection is deterministic: cardIndex % poolSize ensures the same card
+ * always gets the same caption.
+ */
 export function generateCaption(input: CaptionInput): string {
   const { cardId, language, problemType } = input;
-  const cardKey = `${cardId}_${language}`;
-  const tag = problemType.replace(/_/g, '');
+  const pool = loadCaptionPool(problemType, language);
+  const cardIndex = extractCardIndex(cardId);
+  const selected = pool.captions[cardIndex % pool.captions.length]!;
 
   return [
-    `#${tag}`,
-    CTA[language],
-    HASHTAGS[language],
-    `[${cardKey}]`,
+    selected.hook,
+    selected.value,
+    selected.cta,
+    pool.hashtags.join(' '),
   ].join('\n\n');
 }
+
+// Exported for testing
+export { loadCaptionPool, extractCardIndex };
+export type { CaptionPool, CaptionEntry, CaptionInput };

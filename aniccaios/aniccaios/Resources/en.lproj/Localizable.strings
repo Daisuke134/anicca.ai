@@ -1,3 +1,8 @@
+"app_name" = "Anicca";
+"att_title" = "Help Us Improve";
+"att_description" = "We'd like to understand how you discovered Anicca to improve our service. This helps us reach more people who need support.";
+"att_continue" = "Continue";
+
 "common_continue" = "Continue";
 "common_skip" = "Skip";
 "common_next" = "Next";

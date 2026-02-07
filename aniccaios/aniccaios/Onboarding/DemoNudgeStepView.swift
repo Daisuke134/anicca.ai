@@ -19,20 +19,20 @@ struct DemoNudgeStepView: View {
             VStack(spacing: 24) {
                 Spacer()
 
-                Text("live_demo_title")
+                Text(String(localized: "live_demo_title"))
                     .font(.title2.bold())
                     .foregroundStyle(AppTheme.Colors.label)
                     .multilineTextAlignment(.center)
                     .accessibilityIdentifier("live_demo_title")
 
-                Text("live_demo_subtitle")
+                Text(String(localized: "live_demo_subtitle"))
                     .font(.body)
                     .foregroundStyle(AppTheme.Colors.secondaryLabel)
                     .multilineTextAlignment(.center)
 
                 if !showCard && !cardDismissed {
                     Button(action: triggerDemo) {
-                        Text("live_demo_button")
+                        Text(String(localized: "live_demo_button"))
                             .font(.headline)
                             .foregroundColor(.white)
                             .frame(maxWidth: .infinity)

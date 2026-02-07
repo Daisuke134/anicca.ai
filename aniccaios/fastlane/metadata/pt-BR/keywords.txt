@@ -1,1 +1,1 @@
-mindfulness,autocuidado,saúde mental,ansiedade,foco,procrastinação,autoajuda,ruminação,estresse,hábito
+mindfulness,autocuidado,saúde mental,ansiedade,foco,procrastinação,autoajuda,estresse,hábito

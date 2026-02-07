@@ -1,4 +1,4 @@
-- Notificaciones más inteligentes: nudges personalizados por IA desde el Día 2
-- Corrección de notificaciones que llegaban a las 2-3 AM
-- Rediseño del timing de notificaciones para evitar duplicados
-- Mayor variedad en el contenido de notificaciones
+- Corregido el problema del botón de cerrar del paywall
+- Flujo de incorporación mejorado con demostración en vivo
+- Localización completa al español
+- Corregidos errores de localización que mostraban texto sin traducir

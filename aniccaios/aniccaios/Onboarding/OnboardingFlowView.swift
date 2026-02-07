@@ -2,11 +2,13 @@ import SwiftUI
 import RevenueCat
 import RevenueCatUI
 import UserNotifications
+import StoreKit
 
 struct OnboardingFlowView: View {
     @EnvironmentObject private var appState: AppState
     @State private var step: OnboardingStep = .welcome
     @State private var showPaywall = false
+    @State private var didPurchaseOnPaywall = false
 
     var body: some View {
         ZStack {
@@ -15,10 +17,10 @@ struct OnboardingFlowView: View {
                 switch step {
                 case .welcome:
                     WelcomeStepView(next: advance)
-                case .value:
-                    ValueStepView(next: advance)
                 case .struggles:
                     StrugglesStepView(next: advance)
+                case .liveDemo:
+                    DemoNudgeStepView(next: advance)
                 case .notifications:
                     NotificationPermissionStepView(next: advance)
                 }
@@ -28,9 +30,6 @@ struct OnboardingFlowView: View {
         .onAppear {
             step = appState.onboardingStep
 
-            // ATTステップから移行したユーザー: 通知許可が既に決定済みなら即完了
-            // .authorized, .denied, .provisional, .ephemeral は全て「決定済み」扱い
-            // .notDetermined のみ通知画面を表示
             if step == .notifications {
                 Task {
                     let settings = await UNUserNotificationCenter.current().notificationSettings()
@@ -43,32 +42,45 @@ struct OnboardingFlowView: View {
                 }
             }
 
-            // Mixpanel: オンボーディング開始イベント
             if step == .welcome {
                 AnalyticsManager.shared.track(.onboardingStarted)
             }
 
-            // Prefetch Paywall offering
             Task {
                 await SubscriptionManager.shared.refreshOfferings()
             }
         }
-        .fullScreenCover(isPresented: $showPaywall) {
-            paywallContent(displayCloseButton: false)
-                .interactiveDismissDisabled(true)
-                .onPurchaseCompleted { customerInfo in
-                    AnalyticsManager.shared.track(.onboardingPaywallPurchased)
-                    handlePaywallSuccess()
-                }
-                .onRestoreCompleted { customerInfo in
-                    if customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true {
-                        handlePaywallSuccess()
+        .fullScreenCover(isPresented: $showPaywall, onDismiss: {
+            if !didPurchaseOnPaywall {
+                handlePaywallDismissedAsFree()
+            }
+        }) {
+            ZStack(alignment: .topTrailing) {
+                paywallContent(displayCloseButton: false)
+                    .interactiveDismissDisabled(true)
+                    .onPurchaseCompleted { customerInfo in
+                        AnalyticsManager.shared.track(.onboardingPaywallPurchased)
+                        handlePaywallSuccess(customerInfo: customerInfo)
                     }
-                    // entitlement 未付与なら Paywall 維持
+                    .onRestoreCompleted { customerInfo in
+                        if customerInfo.entitlements[AppConfig.revenueCatEntitlementId]?.isActive == true {
+                            handlePaywallSuccess(customerInfo: customerInfo)
+                        }
+                    }
+                    .onAppear {
+                        AnalyticsManager.shared.track(.onboardingPaywallViewed)
+                    }
+
+                Button { showPaywall = false } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.system(size: 28))
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.gray, Color(.systemGray5))
                 }
-                .onAppear {
-                    AnalyticsManager.shared.track(.onboardingPaywallViewed)
-                }
+                .padding(.top, 16)
+                .padding(.trailing, 16)
+                .accessibilityIdentifier("paywall-close-button")
+            }
         }
     }
 
@@ -76,12 +88,12 @@ struct OnboardingFlowView: View {
         switch step {
         case .welcome:
             AnalyticsManager.shared.track(.onboardingWelcomeCompleted)
-            step = .value
-        case .value:
-            AnalyticsManager.shared.track(.onboardingValueCompleted)
             step = .struggles
         case .struggles:
             AnalyticsManager.shared.track(.onboardingStrugglesCompleted)
+            step = .liveDemo
+        case .liveDemo:
+            AnalyticsManager.shared.track(.onboardingLiveDemoCompleted)
             step = .notifications
         case .notifications:
             AnalyticsManager.shared.track(.onboardingNotificationsCompleted)
@@ -95,22 +107,56 @@ struct OnboardingFlowView: View {
         AnalyticsManager.shared.track(.onboardingCompleted)
 
         // 既存Proユーザー（再インストール等）→ Paywall スキップ
-        #if DEBUG
-        // DEBUG: 常にPaywallを表示して確認可能にする
-        #else
         if appState.subscriptionInfo.isEntitled {
-            appState.markOnboardingComplete()
+            completeOnboardingForExistingPro()
             return
         }
-        #endif
 
-        // 未課金 → Paywall を表示（markOnboardingComplete() は呼ばない）
+        // 未課金 → Paywall を表示
         showPaywall = true
     }
 
-    private func handlePaywallSuccess() {
+    private func completeOnboardingForExistingPro() {
+        Task {
+            await ProblemNotificationScheduler.shared
+                .scheduleNotifications(for: appState.userProfile.struggles)
+            appState.markOnboardingComplete()
+        }
+    }
+
+    private func handlePaywallSuccess(customerInfo: CustomerInfo) {
+        didPurchaseOnPaywall = true
         showPaywall = false
+        Task {
+            appState.updateSubscriptionInfo(from: customerInfo)
+            await ProblemNotificationScheduler.shared
+                .scheduleNotifications(for: appState.userProfile.struggles)
+            appState.markOnboardingComplete()
+            requestReviewIfNeeded()
+        }
+    }
+
+    private func handlePaywallDismissedAsFree() {
+        guard !didPurchaseOnPaywall else { return }
+
+        AnalyticsManager.shared.track(.onboardingPaywallDismissedFree)
+
+        let problems = appState.userProfile.struggles.compactMap { ProblemType(rawValue: $0) }
+        FreePlanService.shared.scheduleFreePlanNudges(problems: problems)
+
         appState.markOnboardingComplete()
+        requestReviewIfNeeded()
+    }
+
+    private func requestReviewIfNeeded() {
+        guard !appState.hasRequestedReview else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
+            if let scene = UIApplication.shared.connectedScenes
+                .first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene {
+                SKStoreReviewController.requestReview(in: scene)
+            }
+        }
+        appState.markReviewRequested()
     }
 
     @ViewBuilder

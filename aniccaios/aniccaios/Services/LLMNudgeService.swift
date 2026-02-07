@@ -20,6 +20,13 @@ actor LLMNudgeService {
 
     /// 今日生成されたNudgeを取得
     func fetchTodaysNudges() async throws -> [LLMGeneratedNudge] {
+        // Free ユーザーは LLM Nudge 無効（APIコスト節約）
+        let isEntitled = await MainActor.run { AppState.shared.subscriptionInfo.isEntitled }
+        guard isEntitled else {
+            logger.info("ℹ️ [LLM] Free user, skipping LLM fetch")
+            return []
+        }
+
         let (url, appVersion) = await MainActor.run { (AppConfig.nudgeTodayURL, AppConfig.appVersion) }
         let deviceId = await AppState.shared.resolveDeviceId()
         logger.info("🔄 [LLM] Requesting: \(url.absoluteString) with deviceId: \(deviceId), v\(appVersion)")

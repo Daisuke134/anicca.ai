@@ -1,5 +1,5 @@
 /* Camera permission description */
-"NSCameraUsageDescription" = "The WebRTC library references camera APIs, but this app does not use the camera.";
+"NSCameraUsageDescription" = "Die WebRTC-Bibliothek verweist auf Kamera-APIs, aber diese App verwendet die Kamera nicht.";
 
 /* Notification permission description */
-"NSUserNotificationsUsageDescription" = "Anicca uses notifications to gently nudge you for waking up and routines.";
+"NSUserNotificationsUsageDescription" = "Anicca verwendet Benachrichtigungen, um dich sanft zum Aufwachen und für Routinen zu erinnern.";

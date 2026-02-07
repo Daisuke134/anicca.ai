@@ -107,7 +107,7 @@ final class NotificationScheduler {
         guard !nudgeId.isEmpty, !message.isEmpty else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Anicca"
+        content.title = localizedString("app_name")
         content.body = message
         content.categoryIdentifier = Category.nudge.rawValue
         content.userInfo = userInfo

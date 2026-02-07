@@ -4,7 +4,9 @@
 
 ### 0. 意思決定ルール（最重要）
 
+曖昧なものは『AskUserQuestionTool』を使ってヒヤリング
 **選択肢を出してユーザーに決めさせるのは禁止。**
+
 
 どんな場合でも：
 1. ベストプラクティスを調べる
@@ -25,9 +27,13 @@
 
 検索手段（優先順）: `mcp__exa__web_search_exa` → `mcp__context7__query-docs` → `mcp__apple-docs__*` → `.claude/rules/`
 
+### 0.4 git push ルール（絶対ルール）
+
+**push時は `git add -A` で全ファイルをステージしてpushする。** 他エージェントの変更も含めて全部。stashして除外・復元は禁止。同じリポジトリで複数エージェントが並行作業しているため、自分の担当外でも必ずステージ&pushする。
+
 ### 0.5 出力形式ルール
 
-**説明・チェックリスト・比較は常にテーブル形式で出力する。**
+**説明・チェックリスト・比較・タスクリストは常にテーブル形式で出力する。箇条書きやリスト形式は禁止。**
 
 ### 0.6 テスト範囲ルール
 
@@ -139,6 +145,15 @@
 - `id:` セレクター優先（`point:` 禁止）
 - `optional: true` はシステムダイアログのみ
 - タップ → 遷移待ち → 確認の流れ
+- **必ず `inspect_view_hierarchy` で実際のテキストを確認してからセレクター決定**
+
+### シミュレータ/ビルドのトラブルシューティング
+
+| 症状 | 原因 | 解決策 |
+|------|------|--------|
+| 削除した画面がまだ表示される | 古いビルドがキャッシュ | `rm -rf build/DerivedData` → 再ビルド → `xcrun simctl install` |
+| 「Could not find .app bundle」 | fastlane が install しない | 手動: `xcrun simctl install "iPhone 16 Pro" "build/DerivedData/Build/Products/Debug-iphonesimulator/aniccaios.app"` |
+| DEBUG で Paywall スキップ | sandbox の `isEntitled=true` | `#if DEBUG` で `showPaywall = true; return` を強制 |
 
 ### 自律開発モード（Ralph パターン）
 
@@ -298,6 +313,7 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 |---------|------|---------|
 | `secrets.md` | GitHub Secrets、Railway環境変数詳細、DB Proxy URL | デプロイ・Secret設定時 |
 | `infrastructure.md` | Cronジョブ構成、Railway運用、1.5.0教訓 | インフラ作業時 |
+| `openclaw-learnings.md` | OpenClaw スキル作成ルール、ツール使い分け、失敗から学んだこと | OpenClaw 作業時（必読） |
 | `daily-metrics.md` | Daily Metrics Report設定、ASC API Key、KPI目標 | メトリクス作業時 |
 
 ---
@@ -374,6 +390,49 @@ user-revenuecat-mcp_RC_attach_products_to_package: {
 - `SLACK_BOT_TOKEN` - Anicca Bot Token
 - `SLACK_APP_TOKEN` - Socket Mode Token
 
+### OpenClaw（Anicca）— VPS 稼働中
+
+**現状（2026-02-06）:**
+- Gateway: 🟢 **VPS (46.225.70.241) で24時間稼働中**
+- Profile: **full**（全ツール有効: fs, exec, memory, slack, cron, web_search, browser等）
+- エージェント: GPT-4o
+- Slack: 全チャンネル許可（groupPolicy: open）
+- Cron: 毎朝5:00 JST メトリクスレポート + ミーティングリマインダー
+
+| 項目 | 値 |
+|------|-----|
+| **VPS IP** | `46.225.70.241`（`ssh anicca@46.225.70.241`） |
+| Config | `/home/anicca/.openclaw/openclaw.json` |
+| Env | `/home/anicca/.env`（systemd EnvironmentFile経由） |
+| Skills | `/usr/lib/node_modules/openclaw/skills/` |
+| Logs | `/home/anicca/.openclaw/logs/` |
+| Cron | `/home/anicca/.openclaw/cron/jobs.json` |
+
+**Anicca への指示方法（2種類）:**
+
+| 方法 | コマンド | 用途 |
+|------|---------|------|
+| **エージェントターン** | `openclaw agent --message "..." --deliver` | Aniccaの脳を通す（思考→行動） |
+| **直接投稿** | `openclaw message send --channel slack --target "C091G3PKHL2" --message "..."` | Slack直接投稿（脳を通さない） |
+
+**Gateway 再起動（設定変更後のみ必要）:**
+```bash
+# anicca ユーザーから実行
+ssh anicca@46.225.70.241
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+systemctl --user restart openclaw-gateway
+```
+
+**重要ルール:**
+- **Gateway再起動は `openclaw.json` や `.env` 変更時のみ**（クラッシュ時はsystemd自動復帰）
+- **MCP ツール（`mcp__*`）は OpenClaw では使えない**（Claude Code専用）
+- **Slack投稿は `slack` ツール（profile:full で有効）または `exec` + CLI**
+
+**参照:**
+- **Spec:** `.cursor/plans/ios/1.6.1/openclaw/anicca-openclaw-spec.md`
+- **Secrets:** `.cursor/plans/reference/secrets.md`（VPS情報あり）
+- **学び:** `.cursor/plans/reference/openclaw-learnings.md`
+
 ---
 
-最終更新: 2026年2月4日
+最終更新: 2026年2月6日

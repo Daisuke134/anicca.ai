@@ -1,3 +1,8 @@
+"app_name" = "アニッチャ";
+"att_title" = "改善にご協力ください";
+"att_description" = "アニッチャをどこで知ったか教えていただけると、サポートを必要とする方々にもっと届けることができます。";
+"att_continue" = "続ける";
+
 "common_continue" = "続ける";
 "common_skip" = "スキップ";
 "common_next" = "次へ";
@@ -20,8 +25,8 @@
 "common_signing_in" = "サインイン中…";
 "settings_language_label" = "言語";
 
-"onboarding_welcome_title" = "Aniccaへ\nようこそ";
-"onboarding_welcome_subtitle_line1" = "Aniccaは、あなたが一番つらいときに";
+"onboarding_welcome_title" = "アニッチャへ\nようこそ";
+"onboarding_welcome_subtitle_line1" = "アニッチャは、あなたが一番つらいときに";
 "onboarding_welcome_subtitle_line2" = "そっと声をかけます。";
 "onboarding_welcome_cta" = "はじめる";
 "onboarding_welcome_social_proof" = "多くの人が安らぎを見つけています";
@@ -33,17 +38,21 @@
 
 "onboarding_microphone_title" = "マイクアクセス";
 "onboarding_microphone_card_title" = "マイクアクセス";
-"onboarding_microphone_description" = "Aniccaはマイクを通してあなたの声を聞き、自由に会話できるようにします。音声はデバイスとサーバーで安全に処理されます。";
+"onboarding_microphone_description" = "アニッチャはマイクを通してあなたの声を聞き、自由に会話できるようにします。音声はデバイスとサーバーで安全に処理されます。";
 "onboarding_microphone_allow" = "マイクを許可";
 "onboarding_permission_status_allowed" = "許可済み";
 "onboarding_permission_status_not_allowed" = "未許可";
-"onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→Aniccaでマイクをオンにし直してください。";
+"onboarding_microphone_optional_hint" = "音声体験が必要になったら、設定→アニッチャでマイクをオンにし直してください。";
 
 "onboarding_notifications_title" = "通知";
 "onboarding_notifications_card_title" = "通知アクセス";
-"onboarding_notifications_description" = "Aniccaは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。";
+"onboarding_notifications_description" = "アニッチャは、起床・スマホを置く・休憩するなど、適切なタイミングでやさしく促すために通知を使います。";
 "onboarding_notifications_allow" = "通知を許可";
-"onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→Aniccaからいつでも通知をオンにできます。";
+"onboarding_notifications_optional_hint" = "今はスキップしても構いません。設定→アニッチャからいつでも通知をオンにできます。";
+
+"live_demo_title" = "最初の通知を体験しましょう";
+"live_demo_subtitle" = "アニッチャがどのようにあなたに寄り添うか、体験してみてください。";
+"live_demo_button" = "通知を受け取る";
 
 "onboarding_alarmkit_title" = "アラーム";
 "onboarding_alarmkit_description" = "確実に起床を促すために、アラームの利用許可が必要です。";
@@ -55,11 +64,11 @@
 "onboarding_habit_time_title_format" = "時刻を設定";
 
 "onboarding_profile_title" = "あなたに合った名前を選んでください";
-"onboarding_profile_description" = "Aniccaが呼びかける際に使用します。";
+"onboarding_profile_description" = "アニッチャが呼びかける際に使用します。";
 "onboarding_profile_continue" = "続ける";
 "onboarding_profile_placeholder" = "太郎";
 
-"onboarding_source_title" = "どこでAniccaを知りましたか？";
+"onboarding_source_title" = "どこでアニッチャを知りましたか？";
 "source_instagram" = "Instagram";
 "source_tiktok" = "TikTok";
 "source_youtube" = "YouTube";
@@ -104,7 +113,7 @@
 "onboarding_completion_continue" = "つづける";
 
 "wake_setup_title" = "起床時刻を設定";
-"wake_setup_description" = "Anicca は毎日この分単位で呼びかけます。";
+"wake_setup_description" = "アニッチャ は毎日この分単位で呼びかけます。";
 
 "habit_title_wake" = "起床";
 "habit_title_training" = "トレーニング";
@@ -125,12 +134,12 @@
 "next_schedule_habit_training" = "トレーニング";
 "next_schedule_habit_bedtime" = "就寝";
 
-"session_button_talk" = "Aniccaに相談する";
+"session_button_talk" = "アニッチャに相談する";
 "session_button_end" = "セッションを終了";
 "session_button_connecting" = "接続中…";
 "session_wake_silent_notice" = "起床アラームを確実に鳴らすために、寝る前に端末左側のサイレントスイッチを上げてマナーモードを解除してください。";
 "wake_silent_modal_title" = "起床アラームとサイレントモード";
-"wake_silent_modal_message" = "Aniccaはあなたの習慣に合わせて、ちょうど良いタイミングでやさしく起床を促します。\n\nアラームを確実に聞くために、寝る前にサイレントモードをOFFにし、起きられる音量に設定してください。";
+"wake_silent_modal_message" = "アニッチャはあなたの習慣に合わせて、ちょうど良いタイミングでやさしく起床を促します。\n\nアラームを確実に聞くために、寝る前にサイレントモードをOFFにし、起きられる音量に設定してください。";
 "wake_silent_modal_ok" = "OK、わかりました";
 
 "settings_title" = "設定";
@@ -159,7 +168,7 @@
 "settings_name_placeholder" = "名前を入力";
 "settings_alarm_title" = "アラーム設定";
 "settings_sticky_mode_title" = "スティッキーモード";
-"settings_sticky_mode_description" = "ONにすると、5回応答するまでAniccaが話し続けます";
+"settings_sticky_mode_description" = "ONにすると、5回応答するまでアニッチャが話し続けます";
 "settings_problems_title" = "今抱えている問題";
 "settings_sleep_location_label" = "寝る場所";
 "settings_sleep_location_placeholder" = "3階ベッドルーム";
@@ -334,7 +343,7 @@
 "notification_custom_followup_10" = "%1$@%2$@、待ってるよ。";
 
 /* 旧キー（後方互換用） */
-"notification_wake_body" = "Aniccaが起床を促します。";
+"notification_wake_body" = "アニッチャが起床を促します。";
 "notification_training_body" = "筋トレの時間です。一緒に始めましょう。";
 "notification_bedtime_body" = "就寝準備を始めましょう。深い眠りを作ります。";
 "notification_wake_followup_body" = "そろそろ起きましょう。深呼吸からスタートです。";
@@ -371,13 +380,13 @@
 "onboarding_struggles_title" = "いま何に苦しんでいますか？";
 "onboarding_struggles_subtitle" = "当てはまるものをすべて選んでください。";
 
-"onboarding_value_title" = "Aniccaができること";
+"onboarding_value_title" = "アニッチャができること";
 "onboarding_value_card1_title" = "最適なタイミングで声をかける";
-"onboarding_value_card1_body" = "悪循環に陥る前に、Aniccaがメッセージを届けます。あなたが気づく前に。";
+"onboarding_value_card1_body" = "悪循環に陥る前に、アニッチャがメッセージを届けます。あなたが気づく前に。";
 "onboarding_value_card2_title" = "あなたに効く言葉を学ぶ";
-"onboarding_value_card2_body" = "あなたの反応からAniccaは学びます。日が経つほど、あなたに刺さる言葉がわかるようになります。";
+"onboarding_value_card2_body" = "あなたの反応からアニッチャは学びます。日が経つほど、あなたに刺さる言葉がわかるようになります。";
 "onboarding_value_card3_title" = "習慣トラッカーを超える";
-"onboarding_value_card3_body" = "Aniccaは連続記録を数えません。なぜ夜更かしするのか、なぜやめられないのか、その根本に向き合います。";
+"onboarding_value_card3_body" = "アニッチャは連続記録を数えません。なぜ夜更かしするのか、なぜやめられないのか、その根本に向き合います。";
 
 "ideal_trait_kind" = "優しい";
 "ideal_trait_honest" = "誠実";
@@ -439,9 +448,9 @@
 "profile_nudge_normal" = "標準";
 "profile_nudge_active" = "積極的";
 "profile_section_sticky_mode" = "スティッキーモード";
-"profile_sticky_description" = "ONにすると、5回応答するまでAniccaが話し続けます。";
+"profile_sticky_description" = "ONにすると、5回応答するまでアニッチャが話し続けます。";
 "profile_section_data_integration" = "データ連携";
-"profile_data_integration_hint" = "任意。データを連携すると、Aniccaがより適切に促せます。すべてOFFでも主要機能は利用できます。";
+"profile_data_integration_hint" = "任意。データを連携すると、アニッチャがより適切に促せます。すべてOFFでも主要機能は利用できます。";
 "profile_toggle_sleep" = "就寝";
 "profile_toggle_steps" = "歩数";
 "profile_toggle_movement" = "移動";
@@ -513,12 +522,12 @@
 "session_topic_free_conversation" = "自由に話す";
 
 "session_status_connecting" = "接続中…";
-"session_status_listening" = "Aniccaが聞いています…";
-"session_status_speaking" = "Aniccaが話しています…";
+"session_status_listening" = "アニッチャが聞いています…";
+"session_status_speaking" = "アニッチャが話しています…";
 "session_status_disconnected" = "セッションを終了しました";
 
 "auth_required_title" = "サインインが必要です";
-"auth_required_message" = "Aniccaを使い始めるにはサインインしてください。習慣の設定も行えます。";
+"auth_required_message" = "アニッチャを使い始めるにはサインインしてください。習慣の設定も行えます。";
 
 "feedback_thanks" = "ありがとう！";
 
@@ -536,7 +545,7 @@
 "pre_reminder_custom_body_format" = "あと%d分で「%@」の時間です。準備しておきましょう。";
 
 "session_mic_permission_title" = "マイクのアクセスが必要です";
-"session_mic_permission_message" = "Aniccaはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";
+"session_mic_permission_message" = "アニッチャはリアルタイム会話にマイクを使用します。設定アプリで許可してください。";
 "settings_subscription_syncing" = "同期中…";
 "settings_subscription_usage_syncing" = "同期中…";
 "settings_subscription_free_description" = "月30分まで利用可能。月額: 月300分、年額: 年3,600分を含みます。";
@@ -562,7 +571,7 @@
 "onboarding_alarmkit_granted" = "アラームが許可されました";
 "onboarding_alarmkit_denied_hint" = "設定からアラームを有効にできます";
 "onboarding_alarmkit_settings_needed" = "アラームの設定が必要です";
-"onboarding_alarmkit_settings_message" = "確実に起床するために、設定アプリでAniccaのアラーム許可を有効にしてください。";
+"onboarding_alarmkit_settings_message" = "確実に起床するために、設定アプリでアニッチャのアラーム許可を有効にしてください。";
 
 /* v3: Profile Name Edit */
 "profile_edit_name_title" = "名前を編集";
@@ -593,7 +602,7 @@
 /* ========== Phase 3: Proactive Agent ========== */
 
 /* My Path Tab */
-"mypath_header_description" = "Aniccaはあなたの苦しみを理解し、適切なタイミングで寄り添います。";
+"mypath_header_description" = "アニッチャはあなたの苦しみを理解し、適切なタイミングで寄り添います。";
 "mypath_section_current_struggles" = "今向き合っている課題";
 "mypath_empty_title" = "向き合いたい課題を追加してみましょう";
 "mypath_empty_action" = "課題を追加";
@@ -611,8 +620,8 @@
 "deep_dive_delete_problem" = "この問題を削除";
 "deep_dive_delete_alert_title" = "問題を削除しますか？";
 "deep_dive_delete_alert_message" = "この問題は My Path から削除されます";
-"deep_dive_tell_anicca_title" = "Aniccaに伝える";
-"deep_dive_tell_anicca_subtitle" = "この問題について、Aniccaに知っておいてほしいことを書いてください";
+"deep_dive_tell_anicca_title" = "アニッチャに伝える";
+"deep_dive_tell_anicca_subtitle" = "この問題について、アニッチャに知っておいてほしいことを書いてください";
 
 /* ProblemType Button Texts */
 "problem_staying_up_late_positive_button" = "明日を守る 💪";
@@ -1265,7 +1274,7 @@
 "profile_wake_alarm_toggle" = "フルスクリーンアラーム";
 "profile_wake_alarm_description" = "ONにすると、毎朝6:00と6:05にフルスクリーンアラームで起こします（iOS 26以上）";
 "alarmkit_permission_needed_title" = "アラームの許可が必要です";
-"alarmkit_permission_needed_message" = "設定アプリでAniccaのアラームを許可してください。";
+"alarmkit_permission_needed_message" = "設定アプリでアニッチャのアラームを許可してください。";
 "problem_cant_wake_up_alarm_title" = "起床";
 
 /* ========== Single Screen UI ========== */

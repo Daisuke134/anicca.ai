@@ -1,3 +1,8 @@
+"app_name" = "Anicca";
+"att_title" = "Help Us Improve";
+"att_description" = "We'd like to understand how you discovered Anicca to improve our service. This helps us reach more people who need support.";
+"att_continue" = "Continue";
+
 "common_continue" = "Continue";
 "common_skip" = "Skip";
 "common_next" = "Next";
@@ -44,6 +49,10 @@
 "onboarding_notifications_description" = "Anicca uses notifications to gently nudge you at the right moments — for waking up, putting your phone down, or taking a break.";
 "onboarding_notifications_allow" = "Allow notifications";
 "onboarding_notifications_optional_hint" = "Skip for now if you prefer. You can enable notifications anytime from Settings → Anicca.";
+
+"live_demo_title" = "Experience Your First Nudge";
+"live_demo_subtitle" = "See how Anicca gently nudges you at the right moment.";
+"live_demo_button" = "Receive a Nudge";
 
 "onboarding_alarmkit_title" = "Alarms";
 "onboarding_alarmkit_description" = "To make wake nudges reliable, Anicca needs permission to schedule alarms.";

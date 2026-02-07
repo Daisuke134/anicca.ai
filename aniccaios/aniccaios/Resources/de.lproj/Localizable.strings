@@ -661,12 +661,12 @@
 "nudge_staying_up_late_notification_1" = "Atme. Nicht scrollen.";
 "nudge_staying_up_late_notification_2" = "Wie viele Jahre hast du mit 'nur noch 5 Minuten' verloren?";
 "nudge_staying_up_late_notification_3" = "Dein Morgen-Ich wird das bereuen.";
-"nudge_staying_up_late_detail_1" = "Halte dein Handy 30 cm von deinem Gesicht weg. Helligkeit auf Minimum. 5 tiefe Atemzuge. Dein Gehirn schaltet in den 'Schlafvorbereitungs'-Modus.";
-"nudge_staying_up_late_detail_2" = "Ein ubermudetes Gehirn urteilt wie bei 0,1 Promille Alkohol. 17 Stunden wach = betrunken. Schutze die Entscheidungen von morgen, indem du heute schlafen gehst.";
+"nudge_staying_up_late_detail_1" = "Halte dein Handy 30 cm von deinem Gesicht weg. Helligkeit auf Minimum. 5 tiefe Atemzüge. Dein Gehirn schaltet in den 'Schlafvorbereitungs'-Modus.";
+"nudge_staying_up_late_detail_2" = "Ein übermüdetes Gehirn urteilt wie bei 0,1 Promille Alkohol. 17 Stunden wach = betrunken. Schütze die Entscheidungen von morgen, indem du heute schlafen gehst.";
 "nudge_staying_up_late_detail_3" = "Wirst du dich morgen Mittag an diesen Inhalt erinnern? Aber Schlafmangel schadet garantiert deiner Konzentration, deinem Urteil und deinem Immunsystem. Was ist wichtiger?";
 
 /* NudgeContent - staying_up_late (Mitternacht - Starke Botschaften) */
-"nudge_staying_up_late_notification_4" = "Es ist nach Mitternacht. Dein Korper braucht jetzt Ruhe.";
+"nudge_staying_up_late_notification_4" = "Es ist nach Mitternacht. Dein Körper braucht jetzt Ruhe.";
 "nudge_staying_up_late_notification_5" = "Es ist 1 Uhr nachts. Jede wache Minute kostet dich morgen.";
 "nudge_staying_up_late_detail_4" = "Schlafmangel häuft sich wie Schulden. Die verlorene Stunde heute Nacht raubt nächste Woche Fokus und Urteilskraft. Leg dein Handy weg. Mach die Augen zu.";
 "nudge_staying_up_late_detail_5" = "Nach 1 Uhr nachts wach zu bleiben schadet messbar deinem Gehirn und Herzen. Was du gerade tust, ist 100x weniger wichtig als Schlaf. Geh jetzt ins Bett.";
@@ -874,7 +874,7 @@
 "nudge_obsessive_notification_8" = "Dieses Unbehagen ist vorübergehend. Halte es aus.";
 "nudge_obsessive_detail_1" = "Gedanken sind nur mentale Ereignisse. Sie kommen und gehen. Du musst dich nicht mit ihnen beschäftigen. Lass diesen wie eine Wolke vorbeiziehen.";
 "nudge_obsessive_detail_2" = "Du hast Tausende Gedanken am Tag. Nicht alle verdienen eine Handlung. Dieser auch nicht. Lass ihn los.";
-"nudge_obsessive_detail_3" = "Die Angst, etwas unfertig zu lassen, geht vorbei. Gib ihr 10 Minuten. Wenn du den Drang dann noch spürst, überleg nochmal. Aber warte zürst.";
+"nudge_obsessive_detail_3" = "Die Angst, etwas unfertig zu lassen, geht vorbei. Gib ihr 10 Minuten. Wenn du den Drang dann noch spürst, überleg nochmal. Aber warte zuerst.";
 "nudge_obsessive_detail_4" = "Perfektion nachjagen erzeugt Angst. 'Gut genug' schafft Frieden. Das hier ist gut genug. Weiter.";
 "nudge_obsessive_detail_5" = "Du hast nachgeprüft. Es ist erledigt. Nochmal prüfen macht es nicht erledigter. Vertrau der ersten Prüfung. Weiter.";
 "nudge_obsessive_detail_6" = "Der Zwang verspricht Erleichterung, bringt aber mehr Angst. Brich den Kreislauf, indem du das Ritual nicht ausführst. Das Unbehagen geht vorbei.";
@@ -1199,7 +1199,7 @@
 "nudge_lying_detail_10" = "Erinnere dich an 1 Lüge von heute. Sag es nächstes Mal ehrlich.";
 "nudge_lying_detail_11" = "Macht Angst, aber danach fühlst du dich leichter. Atme tief. Teile 1 Wahrheit.";
 "nudge_lying_detail_12" = "Erkenne die Lüge an. Sei nächstes Mal ehrlich. Zukunft statt Vergangenheit.";
-"nudge_lying_detail_13" = "Lügen aufrechtzürhalten kostet enorm viel Energie. Ehrlichkeit ist einfacher. Sag heute 1 Sache ehrlich.";
+"nudge_lying_detail_13" = "Lügen aufrechtzuerhalten kostet enorm viel Energie. Ehrlichkeit ist einfacher. Sag heute 1 Sache ehrlich.";
 "nudge_lying_detail_14" = "Reflektiere am Tagesende. Sei morgen ehrlicher. Gib dir ein Häkchen.";
 
 /* NudgeContent - bad_mouthing (v1.6.1 added: 9-14) */

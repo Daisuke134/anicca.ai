@@ -100,11 +100,38 @@ jobs:
         run: |
           xcrun simctl install booted "./build/Build/Products/staging Debug-iphonesimulator/aniccaios.app"
 
+      - name: Verify App Launch
+        run: |
+          echo "--- Attempting manual app launch ---"
+          xcrun simctl launch booted ai.anicca.app.ios 2>&1 || echo "WARN: Manual launch failed"
+          sleep 5
+          echo "--- Taking pre-test screenshot ---"
+          xcrun simctl io booted screenshot /tmp/pre-test-screenshot.png 2>&1 || echo "WARN: Screenshot failed"
+          echo "--- Terminating app before Maestro ---"
+          xcrun simctl terminate booted ai.anicca.app.ios 2>&1 || true
+          sleep 2
+
       - name: Run Maestro Tests
         env:
           MAESTRO_DRIVER_STARTUP_TIMEOUT: 120000
         run: |
           maestro test aniccaios/maestro/ --include-tags smokeTest
+
+      - name: Debug - Simulator Crash Logs
+        if: failure()
+        run: |
+          echo "=== Recent crash logs ==="
+          find ~/Library/Logs/DiagnosticReports -name "aniccaios*" -mmin -30 2>/dev/null | head -5 | while read f; do echo "--- $f ---"; head -50 "$f"; done || echo "No crash logs found"
+          echo ""
+          echo "=== Simulator system log (last 2 min) ==="
+          xcrun simctl spawn booted log show --predicate 'processImagePath contains "aniccaios"' --last 2m --style compact 2>&1 | tail -100 || echo "Failed to get simulator logs"
+
+      - name: Upload Pre-test Screenshot
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pre-test-screenshot
+          path: /tmp/pre-test-screenshot.png
 
       - name: Upload Test Results
         if: failure()

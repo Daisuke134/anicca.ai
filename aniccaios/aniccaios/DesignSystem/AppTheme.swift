@@ -200,8 +200,17 @@ extension Color {
     
     /// Light/Dark mode対応のColor初期化
     init(light: Color, dark: Color) {
+        #if canImport(UIKit)
         self.init(uiColor: UIColor { traitCollection in
             traitCollection.userInterfaceStyle == .dark ? UIColor(dark) : UIColor(light)
         })
+        #elseif canImport(AppKit)
+        self.init(nsColor: NSColor(name: nil) { appearance in
+            appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua
+                ? NSColor(dark) : NSColor(light)
+        })
+        #else
+        self = light
+        #endif
     }
 }

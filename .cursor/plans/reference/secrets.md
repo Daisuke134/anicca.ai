@@ -85,11 +85,20 @@ mainマージ前に必ず確認:
 | 3 | Prismaマイグレーション | 既存DBなら `migrate resolve --applied` |
 | 4 | 3並列サブエージェントレビュー | Python Agent, Backend API, DB Schema |
 
+## GitHub Actions Variables（Daisuke134/anicca.ai）
+
+| Variable Name | 値 | 用途 |
+|---------------|-----|------|
+| `BLOTATO_ACCOUNT_ID_EN` | `29171` | TikTok EN カード投稿 |
+| `BLOTATO_ACCOUNT_ID_JA` | `29172` | TikTok JA カード投稿 |
+
 ## Blotato アカウント
 
-| プラットフォーム | アカウント | Blotato Account ID |
-|-----------------|-----------|-------------------|
-| TikTok EN | @anicca.self | 28152 |
+| プラットフォーム | アカウント | Blotato Account ID | 用途 |
+|-----------------|-----------|-------------------|------|
+| TikTok EN（動画） | @anicca.self | 28152 | AI動画投稿 |
+| TikTok EN（カード） | @anicca122 | 29171 | NudgeCard投稿 |
+| TikTok JA（カード） | @anicca.jp2 | 29172 | NudgeCard投稿 |
 
 ## 新しい Secret の登録方法（エージェント向け）
 

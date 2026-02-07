@@ -16,6 +16,12 @@ tags:
 - clearKeychain
 - launchApp
 
+# CI環境でclearKeychain後にStoreKitがApple IDサインインダイアログを表示する場合がある
+# ダイアログが表示されたらCancelをタップして閉じる（ローカル環境では表示されないのでoptional）
+- tapOn:
+    text: "Cancel"
+    optional: true
+
 # Step 1: Welcome screen - wait for app to fully load
 # CI環境ではコールドスタートに時間がかかるため60sに設定
 - extendedWaitUntil:

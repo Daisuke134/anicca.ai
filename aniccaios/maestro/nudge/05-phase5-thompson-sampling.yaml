@@ -1,11 +1,15 @@
 appId: ai.anicca.app.ios
+name: "Phase 5: Thompson Sampling"
+tags:
+  - phase5
+  - nudge
 ---
 # Phase 5: Thompson Sampling テスト
 - launchApp:
     clearState: true
 
 # オンボーディングをスキップ（既存フローを使用）
-- runFlow: 01-onboarding.yaml
+- runFlow: ../onboarding/01-onboarding.yaml
 
 # Profile タブに移動
 - tapOn: "Profile"

@@ -7,6 +7,15 @@
 
 ---
 
+## 開発環境
+
+| 項目 | 値 |
+|------|-----|
+| **作業ブランチ** | `dev`（直接コミット — Maestro YAML は設定ファイルであり、worktree.md の「ドキュメント変更などコード以外の変更はdev直接コミット可」に該当） |
+| **作業状態** | 未着手 |
+
+---
+
 ## 概要（What & Why）
 
 ### What
@@ -100,6 +109,7 @@ aniccaios/maestro/
 ```yaml
 # Maestro Test Suite Configuration
 # サブディレクトリのフローを認識させるための設定
+# 注意: 新しいサブディレクトリを追加した場合、flows: にパターンを追記すること
 
 executionOrder:
   continueOnFailure: false
@@ -143,14 +153,14 @@ flows:
 
 このタスクは Maestro YAML ファイル（テスト設定ファイル自体）の修正なので、通常の Swift Unit Test ではなく、**Maestro CLI の実行結果がテスト**となる。
 
-| # | To-Be | テスト方法 | テストコマンド | 期待結果 |
-|---|-------|-----------|---------------|----------|
-| T-1 | config.yaml 作成 | Maestro がフローを列挙する | `maestro test aniccaios/maestro/ --include-tags smokeTest 2>&1 \| head -20` | フロー名が表示される（"Top-level directories do not contain any Flows" エラーが出ない） |
-| T-2 | runFlow パス修正（nudge/05） | フロー実行でパスエラーなし | `maestro test aniccaios/maestro/nudge/05-phase5-thompson-sampling.yaml` | パス解決エラーなし |
-| T-3 | runFlow パス修正（nudge/15） | フロー実行でパスエラーなし | `maestro test aniccaios/maestro/nudge/15-nudge-card-loading-speed.yaml` | パス解決エラーなし |
-| T-4 | タグ追加（nudge/05, 06） | include-tags で発見される | `maestro test aniccaios/maestro/ --include-tags phase5 2>&1 \| grep -c "phase5"` | 2件ヒット |
-| T-5 | smokeTest + phase6 統合テスト | CIと同じコマンドでパス | `maestro test aniccaios/maestro/ --include-tags smokeTest,phase6` | 5フロー実行（smokeTest: 1 + phase6: 4） |
-| T-6 | CI E2E ジョブ成功 | GitHub Actions で成功 | `git push` → `gh run watch` → `gh run view --log-failed` | E2E Tests (Maestro) ジョブが緑 |
+| # | 対応 To-Be | テスト方法 | テストコマンド | 期待結果 |
+|---|-----------|-----------|---------------|----------|
+| TM-1 | T-1 (config.yaml) | Maestro がフローを列挙する | `maestro test aniccaios/maestro/ --include-tags smokeTest 2>&1 \| head -20` | フロー名が表示される（"Top-level directories do not contain any Flows" エラーが出ない） |
+| TM-2 | T-2 (nudge/05 パス) | フロー実行でパスエラーなし | `maestro test aniccaios/maestro/nudge/05-phase5-thompson-sampling.yaml` | パス解決エラーなし |
+| TM-3 | T-4 (nudge/15 パス) | フロー実行でパスエラーなし | `maestro test aniccaios/maestro/nudge/15-nudge-card-loading-speed.yaml` | パス解決エラーなし |
+| TM-4 | T-2, T-3 (タグ追加) | include-tags で発見される | `maestro test aniccaios/maestro/ --include-tags phase5 2>&1 \| grep -c "phase5"` | 2件ヒット |
+| TM-5 | 全体統合 | CIと同じコマンドでパス | `maestro test aniccaios/maestro/ --include-tags smokeTest,phase6` | 5フロー実行（smokeTest: 1 + phase6: 4） |
+| TM-6 | AC-6 (CI) | GitHub Actions で成功 | `git push` → `gh run watch` → `gh run view --log-failed` | E2E Tests (Maestro) ジョブが緑 |
 
 ### タグ別フロー一覧（修正後）
 
@@ -211,6 +221,8 @@ flows:
 ---
 
 ## 実行手順
+
+**CLI使用の例外**: 本タスクはMaestro CI基盤の修正であり、`--include-tags` フィルタリングの検証が本質的に必要。ローカル検証では MCP (`mcp__maestro__run_flow_files`) を優先するが、**タグフィルタの検証とCI再現テストに限り CLI 直接使用を許可**する。
 
 ### Phase 1: RED（テストが失敗することを確認）
 
@@ -290,6 +302,7 @@ done
 | `runFlow` の相対パス解決がMaestroバージョンで異なる | 低 | 特定フロー失敗 | Maestro公式: 呼び出し元ファイルからの相対パス。ローカル検証で確認 |
 | `nudge/05-*`, `nudge/06-*` が Phase 5 Debug UI に依存（DEBUG ビルド前提） | 中 | CI の staging ビルドで Debug セクションが非表示の場合失敗 | `--include-tags smokeTest,phase6` では phase5 タグは含まれないので CI には影響なし。phase5 フローは手動実行用 |
 | CIのシミュレータ起動が遅くタイムアウト | 低 | E2E失敗 | 既存フローは `extendedWaitUntil` + `timeout: 15000-30000` で対策済み |
+| 将来サブディレクトリ追加時に config.yaml 更新忘れ | 中 | 新フローがCIで実行されない | config.yaml にコメントで「サブディレクトリ追加時は flows: に追記すること」と注記 |
 
 ---
 

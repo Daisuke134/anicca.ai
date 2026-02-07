@@ -14,7 +14,7 @@ tags:
 - runFlow:
     when:
       notVisible: "tab-mypath"
-    file: 01-onboarding-fixed.yaml
+    file: ../onboarding/01-onboarding.yaml
 
 # Profile タブに移動（accessibilityIdentifier使用）
 - tapOn:

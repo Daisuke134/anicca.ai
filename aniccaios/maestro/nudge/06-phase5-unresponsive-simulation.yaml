@@ -1,4 +1,8 @@
 appId: ai.anicca.app.ios
+name: "Phase 5: Unresponsive Simulation"
+tags:
+  - phase5
+  - nudge
 ---
 # Phase 5: 無反応ユーザーシミュレーション テスト
 - launchApp:

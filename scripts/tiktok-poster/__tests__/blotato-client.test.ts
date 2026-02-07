@@ -7,7 +7,7 @@ describe('BlotatoClient', () => {
   // ─────────────────────────────────────────────
   it('uploadMedia dryRun returns a URL', async () => {
     const client = new BlotatoClient({ dryRun: true });
-    const result = await client.uploadMedia('base64data');
+    const result = await client.uploadMedia('https://example.com/image.png');
     expect(result.url).toBeTruthy();
     expect(typeof result.url).toBe('string');
   });
@@ -61,7 +61,7 @@ describe('BlotatoClient', () => {
     );
 
     const client = new BlotatoClient({ apiKey: API_KEY });
-    const result = await client.uploadMedia('base64imagedata');
+    const result = await client.uploadMedia('https://example.com/image.png');
 
     expect(result.url).toBe('https://cdn.blotato.com/img123.jpg');
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -70,7 +70,7 @@ describe('BlotatoClient', () => {
     expect(call[0]).toContain('/v2/media');
     expect(call[1].headers['blotato-api-key']).toBe(API_KEY);
     const body = JSON.parse(call[1].body as string);
-    expect(body.data).toBe('base64imagedata');
+    expect(body.url).toBe('https://example.com/image.png');
   });
 
   it('uploadMedia throws on HTTP error', async () => {

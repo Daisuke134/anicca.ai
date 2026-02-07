@@ -29,8 +29,8 @@ export class BlotatoClient {
     }
   }
 
-  /** Upload base64-encoded image to Blotato CDN. Returns CDN URL. */
-  async uploadMedia(base64Data: string): Promise<{ url: string }> {
+  /** Upload image to Blotato CDN via source URL. Returns CDN URL. */
+  async uploadMedia(sourceUrl: string): Promise<{ url: string }> {
     if (this.dryRun) {
       return { url: `https://dry-run-cdn.example.com/${Date.now()}.jpg` };
     }
@@ -41,7 +41,7 @@ export class BlotatoClient {
         'blotato-api-key': this.apiKey,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ data: base64Data }),
+      body: JSON.stringify({ url: sourceUrl }),
     });
 
     if (!res.ok) {

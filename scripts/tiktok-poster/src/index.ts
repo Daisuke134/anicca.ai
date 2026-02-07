@@ -137,9 +137,10 @@ program
         await saveTracker(TRACKER_PATH, freshTracker);
         console.log(`Posted (resumed): ${cardKey}`);
       } else {
-        // Phase 1: Upload image as base64 JPG
-        const base64Jpg = await loadImageAsBase64Jpg(imagePath);
-        const mediaResult = await client.uploadMedia(base64Jpg);
+        // Phase 1: Upload image via GitHub raw URL
+        const imageFileName = `${inFlightCardId}.png`;
+        const rawUrl = `https://raw.githubusercontent.com/Daisuke134/anicca.ai/dev/assets/card-screenshots/${language}/${imageFileName}`;
+        const mediaResult = await client.uploadMedia(rawUrl);
 
         // Phase 2: Post to TikTok via Blotato
         const postResult = await client.postPhoto(accountId, mediaResult.url, caption);

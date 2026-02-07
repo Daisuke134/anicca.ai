@@ -16,11 +16,27 @@
         "posted_at": "2026-02-07T06:11:11.093Z",
         "blotato_post_id": "21149896-9cbb-456e-a8a4-d5d4d47b811d"
       }
+    },
+    "staying_up_late_1": {
+      "en": {
+        "status": "posted",
+        "reserved_at": "2026-02-07T06:44:20.366Z",
+        "run_id": "21775906175",
+        "posted_at": "2026-02-07T06:44:23.654Z",
+        "blotato_post_id": "9723ca38-927c-49aa-a0b2-933e58cca2a9"
+      },
+      "ja": {
+        "status": "posted",
+        "reserved_at": "2026-02-07T06:45:19.121Z",
+        "run_id": "21775918955",
+        "posted_at": "2026-02-07T06:45:21.822Z",
+        "blotato_post_id": "6227a58c-1f6b-49a8-a8a3-41defba08a07"
+      }
     }
   },
   "next_index": {
-    "en": 1,
-    "ja": 1
+    "en": 2,
+    "ja": 2
   },
   "card_order": [
     "staying_up_late_0",

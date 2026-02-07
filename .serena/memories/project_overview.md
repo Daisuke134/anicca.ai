@@ -28,10 +28,3 @@
 
 ## 現在のバージョン
 iOS 1.6.2 (2026年2月)
-
-## 削除済み機能（歴史的経緯）
-- デスクトップアプリ (Electron) — 削除
-- 音声AI機能 (OpenAI Realtime, ElevenLabs) — 削除
-- Webアプリ (Next.js) — 削除
-- Composio MCP統合 — 削除
-- Singular/ATT トラッキング — 削除

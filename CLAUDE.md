@@ -171,14 +171,6 @@
 - タップ → 遷移待ち → 確認の流れ
 - **必ず `inspect_view_hierarchy` で実際のテキストを確認してからセレクター決定**
 
-### シミュレータ/ビルドのトラブルシューティング
-
-| 症状 | 原因 | 解決策 |
-|------|------|--------|
-| 削除した画面がまだ表示される | 古いビルドがキャッシュ | `rm -rf build/DerivedData` → 再ビルド → `xcrun simctl install` |
-| 「Could not find .app bundle」 | fastlane が install しない | 手動: `xcrun simctl install "iPhone 16 Pro" "build/DerivedData/Build/Products/Debug-iphonesimulator/aniccaios.app"` |
-| DEBUG で Paywall スキップ | sandbox の `isEntitled=true` | `#if DEBUG` で `showPaywall = true; return` を強制 |
-
 ### 自律開発モード（Ralph パターン）
 
 **「終わるまでやれ」「until done」と言われたら、Skill を読む:** `.claude/skills/ralph-autonomous-dev/SKILL.md`
@@ -263,41 +255,20 @@ $9.99/月、1週間無料トライアル、RevenueCat + Superwall。詳細: `mcp
 - Serenaメモリ: 関連メモリを `mcp__serena__edit_memory` で更新
 
 ### 開発ワークフロー
-
-**Kiroスタイル開発**（大規模機能時）:
-`/kiro:steering` → `/kiro:spec-init` → `/kiro:spec-requirements` → `/kiro:spec-design` → `/kiro:spec-tasks` → `/kiro:spec-status`
-
-パス: ステアリング `.kiro/steering/` / スペック `.kiro/specs/` / コマンド `.claude/commands/`
+**Kiroスタイル開発**（大規模機能時）: `/kiro:steering` → `/kiro:spec-init` → `/kiro:spec-requirements` → `/kiro:spec-design` → `/kiro:spec-tasks`
 
 ### ユーザー情報
-
-- 日本語ネイティブ、iOSアプリ開発者
-- App Store提出経験あり
-- TikTokでのプロモーション計画中
+日本語ネイティブ、iOSアプリ開発者、App Store提出経験あり、TikTokプロモーション計画中
 
 ### 日報
-
-開発ログは `.cursor/logs/` に日付ごとに記録（`YYYY-MM-DD.md`）。
+`.cursor/logs/YYYY-MM-DD.md` に記録。
 
 ---
 
 ## 参照先インデックス
 
 ### `.claude/rules/`（毎セッション自動読み込み）
-
-| ファイル | 内容 |
-|---------|------|
-| `coding-style.md` | イミュータビリティ、ファイル構成、FK制約パターン、リファクタリング方針 |
-| `git-workflow.md` | コミット形式、PR、semver、Gitトラブルシューティング、hotfix |
-| `testing-strategy.md` | テストピラミッド、TDDサイクル、AAA、Swift Testing、Maestro E2E |
-| `security.md` | セキュリティチェックリスト、Secret管理原則 |
-| `skill-subagent-usage.md` | Skill/Subagent使い分け、委任ルール、並列パターン |
-| `dev-workflow.md` | 3ゲート開発ワークフロー、codex-review、Feature Flag |
-| `worktree.md` | 並列開発ルール、Spec境界、Backend Worktreeデプロイ |
-| `deployment.md` | 実機デプロイ、Netlify、App Storeリンクルール |
-| `spec-writing.md` | Specコア6セクション、テストマトリックス、GUI作業、E2E判定 |
-| `tool-usage.md` | MCP優先、Maestro MCP、Fastlane、開発コマンド一覧 |
-| `persona.md` | ペルソナ詳細版（基本属性、心理特徴、コンテンツ判断基準） |
+`coding-style.md`, `git-workflow.md`, `testing-strategy.md`, `security.md`, `skill-subagent-usage.md`, `dev-workflow.md`, `worktree.md`, `deployment.md`, `spec-writing.md`, `tool-usage.md`, `persona.md`, `mcp-openclaw.md`
 
 ### `.cursor/plans/reference/`（自動読み込みなし — 必要時にReadで参照）
 

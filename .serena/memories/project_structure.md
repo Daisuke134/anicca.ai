@@ -14,7 +14,7 @@ anicca-project/
 │   │   ├── DesignSystem/   — テーマ・UIコンポーネント
 │   │   ├── Components/     — 再利用可能UI
 │   │   ├── Extensions/     — Swift拡張
-│   │   ├── Resources/      — ローカライズ(6言語), プロンプト, 音声
+│   │   ├── Resources/      — ローカライズ(6言語), プロンプト, サウンド
 │   │   └── Security/       — Keychain
 │   ├── aniccaiosTests/     — Unit/Integration テスト
 │   └── fastlane/           — Fastfile (ビルド/テスト/リリース)

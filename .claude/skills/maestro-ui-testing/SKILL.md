@@ -360,4 +360,49 @@ maestro/
 
 ---
 
+## Troubleshooting: Simulator Build Issues
+
+### 問題: 古いビルドがシミュレータに残っている
+
+**症状**:
+- 削除した画面（ATT等）がまだ表示される
+- コード変更が反映されない
+- `fastlane build_for_simulator` で「Could not find .app bundle」エラー
+
+**原因**: fastlane がビルドしても `.app` がインストールされないことがある
+
+**解決策**:
+```bash
+# 1. DerivedData をクリーン
+rm -rf aniccaios/build/DerivedData
+
+# 2. 再ビルド
+cd aniccaios && fastlane build_for_simulator
+
+# 3. 手動でインストール
+xcrun simctl install "iPhone 16 Pro" "build/DerivedData/Build/Products/Debug-iphonesimulator/aniccaios.app"
+```
+
+### 問題: DEBUG ビルドで Paywall がスキップされる
+
+**症状**: sandbox ユーザーでオンボーディング後に Paywall が表示されない
+
+**原因**: sandbox の過去トライアルで `isEntitled=true` が残っている
+
+**解決策**: DEBUG では entitlement に関係なく Paywall を強制表示
+```swift
+#if DEBUG
+showPaywall = true
+return
+#endif
+```
+
+### 問題: Maestro で要素が見つからない
+
+**症状**: `Element not found: Text matching regex: .*次へ.*`
+
+**解決策**: 必ず `inspect_view_hierarchy` で実際のテキストを確認してからセレクターを決定
+
+---
+
 **Remember**: The goal is **zero flakiness**. Every test should pass 100% of the time in CI. If a test is flaky, fix the test, not the retry count.

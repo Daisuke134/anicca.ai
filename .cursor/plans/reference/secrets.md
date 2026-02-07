@@ -92,6 +92,78 @@ mainマージ前に必ず確認:
 | `BLOTATO_ACCOUNT_ID_EN` | `29171` | TikTok EN カード投稿 |
 | `BLOTATO_ACCOUNT_ID_JA` | `29172` | TikTok JA カード投稿 |
 
+## VPS (Hetzner) — OpenClaw 稼働環境
+
+| 項目 | 値 |
+|------|-----|
+| **サーバー名** | `ubuntu-4gb-nbg1-7` |
+| **IPv4** | `46.225.70.241` |
+| **IPv6** | `2a01:4f8:1c19:985d::/64` |
+| **SSH コマンド** | `ssh anicca@46.225.70.241`（または `root@`） |
+| **OpenClaw バージョン** | 2026.2.3-1 |
+| **OpenClaw 状態** | 🟢 **稼働中**（systemd user service + lingering） |
+| **Profile** | `full`（全ツール有効） |
+
+### VPS 環境変数（/home/anicca/.env）— ✅ 設定済み
+
+| 変数名 | 用途 | 状態 |
+|--------|------|------|
+| `OPENAI_API_KEY` | OpenClaw GPT-4o | ✅ |
+| `REVENUECAT_V2_SECRET_KEY` | メトリクス取得 | ✅ |
+| `MIXPANEL_API_SECRET` | メトリクス取得 | ✅ |
+| `MIXPANEL_PROJECT_ID` | 3970220 | ✅ |
+| `SLACK_BOT_TOKEN` | Slack 接続 | ✅ |
+| `SLACK_APP_TOKEN` | Slack Socket Mode | ✅ |
+| `ASC_KEY_ID` | App Store Connect | ✅ |
+| `ASC_ISSUER_ID` | App Store Connect | ✅ |
+| `EXA_API_KEY` | Web検索（Exa） | ✅ |
+
+### VPS 確認コマンド
+
+```bash
+# SSH 接続
+ssh anicca@46.225.70.241
+
+# Gateway 状態確認（anicca ユーザーで実行）
+export XDG_RUNTIME_DIR=/run/user/$(id -u)
+systemctl --user status openclaw-gateway
+
+# Gateway 再起動（設定変更後のみ）
+systemctl --user restart openclaw-gateway
+
+# ログ確認
+journalctl --user -u openclaw-gateway -n 50
+```
+
+---
+
+## OpenClaw / Slack 設定
+
+| 項目 | 値 |
+|------|-----|
+| **Gateway Port** | 18789 |
+| **Config** | `~/.openclaw/openclaw.json` |
+| **Cron Jobs** | `~/.openclaw/cron/jobs.json` |
+| **Logs** | `~/.openclaw/logs/` |
+| **groupPolicy** | `open`（全チャンネル許可） |
+
+### Slack チャンネル ID
+
+| チャンネル | ID |
+|-----------|-----|
+| #metrics | C091G3PKHL2 |
+| #ai | C08RZ98SBUL |
+| #meeting | C03HRM5V5PD |
+
+### Slack Tokens
+
+| Token | 保存場所 |
+|-------|---------|
+| `SLACK_BOT_TOKEN` | `~/.openclaw/openclaw.json` / VPS `.env` |
+| `SLACK_APP_TOKEN` | `~/.openclaw/openclaw.json` / VPS `.env` |
+
+---
+
 ## Blotato アカウント
 
 | プラットフォーム | アカウント | Blotato Account ID | 用途 |

@@ -343,6 +343,7 @@ platform :ios do
       run_precheck_before_submit: false,
       precheck_include_in_app_purchases: false,
       overwrite_screenshots: false,
+      reject_if_possible: true,
       ignore_language_directory_validation: true,
       submission_information: {
         add_id_info_serves_ads: false,

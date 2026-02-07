@@ -121,28 +121,35 @@ closed-loop-ops: executeAnalyzeEngagement()
 Railway DB: hook_candidates テーブル更新
     ↓
 trend-hunter: 次回実行時に Railway API GET /api/agent/hooks で取得
-    ↓ 各 ProblemType の hookCandidate を集計
-    ↓ engaged = (hook.xEngagements + hook.tiktokEngagements) > 0
+    ↓ 各 hook の targetProblemTypes（配列）をイテレート
+    ↓ engaged = hook.xEngagementRate > 5.0（フラットフィールド）
     ↓
-updateBandit(banditState, hook.problemType, engaged)
+updateBandit(banditState, problemType, engaged)
 ```
 
 **ProblemType レベル集計ロジック:**
 
 ```javascript
 // trend-hunter が v2 実行時に Railway DB から Bandit 状態を再計算
+// HookFromAPI 型（06-test-matrix.md 定義）を使用
 async function syncBanditFromDB(banditState) {
   const hooks = await railwayApiClient.getHooks();
   // 各 ProblemType ごとに成功/失敗をカウント
+  // hooks.hooks は HookFromAPI[] — フラットフィールド構造
   for (const hook of hooks.hooks) {
-    const pt = hook.problemType;
-    if (!banditState[pt]) continue;
-    const totalEngagement = (hook.stats?.engagements || 0);
-    const totalImpressions = (hook.stats?.impressions || 0);
-    // impressions > 0 の hook のみ判定（未投稿 hook はスキップ）
-    if (totalImpressions > 0) {
-      const engaged = totalImpressions > 0 && (totalEngagement / totalImpressions * 100) > 5.0;
-      updateBandit(banditState, pt, engaged);
+    // hook.targetProblemTypes は配列 — 各 ProblemType に対して bandit 更新
+    for (const pt of hook.targetProblemTypes) {
+      if (!banditState[pt]) continue;
+      // xSampleSize > 0 = 投稿実績あり（未投稿 hook はスキップ）
+      const totalSamples = (hook.xSampleSize || 0) + (hook.tiktokSampleSize || 0);
+      if (totalSamples > 0) {
+        // エンゲージメント率の加重平均で判定（5.0% 閾値は executeAnalyzeEngagement と同一）
+        const weightedRate = hook.xSampleSize > 0
+          ? hook.xEngagementRate  // X のエンゲージメント率を優先
+          : hook.tiktokLikeRate;
+        const engaged = weightedRate > 5.0;
+        updateBandit(banditState, pt, engaged);
+      }
     }
   }
   return banditState;

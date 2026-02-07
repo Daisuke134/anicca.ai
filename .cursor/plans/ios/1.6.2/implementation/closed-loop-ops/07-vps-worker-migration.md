@@ -53,13 +53,16 @@ metadata: { "openclaw": { "emoji": "⚙️", "requires": { "env": ["ANICCA_AGENT
 | X API rate limit | step を failed で報告（次回Heartbeat で再スケジュール可能） |
 ```
 
-### 8.2 Cron 統合（schedule.yaml 変更）
+### 8.2 Cron 統合
 
 > **既存の個別Cronを mission-worker + heartbeat に集約**
+> **注**: 実際のVPSでは `~/.openclaw/cron/jobs.json`（JSON形式）を使用。
+> 以下はYAML形式で設計意図を記述（可読性のため）。実装時はJSON形式に変換すること。
+> 変換例: CLAUDE.md「OpenClaw VPS Quick Reference」セクション参照。
 
 ```yaml
-# ~/.openclaw/schedule.yaml（AFTER: 閉ループ対応）
-timezone: Asia/Tokyo
+# 設計意図（実装時は ~/.openclaw/cron/jobs.json にJSON形式で記述）
+# timezone: Asia/Tokyo
 
 jobs:
   # --- 閉ループ制御 ---

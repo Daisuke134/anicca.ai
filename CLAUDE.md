@@ -210,45 +210,13 @@
 - **VPS Agent**: OpenClaw (GPT-4o, Slack連携)
 
 ### 主要ディレクトリ
-```
-aniccaios/          - iOSアプリ本体
-apps/api/           - APIサーバー
-daily-apps/         - 関連アプリ（Daily Dhamma等）
-.cursor/plans/      - 計画・仕様書
-.kiro/              - ステアリング・スペック
-```
+`aniccaios/` iOS | `apps/api/` API | `apps/landing/` LP | `daily-apps/` 関連アプリ | `.cursor/plans/` 仕様書 | `.serena/memories/` メモリ
 
-### サブスクリプション & Paywall
+### サブスクリプション
+$9.99/月、1週間無料トライアル、RevenueCat + Superwall。詳細: `mcp__serena__read_memory("ios_app_architecture")`
 
-| 項目 | 内容 |
-|------|------|
-| 価格 | $9.99/月（月額のみ） |
-| Paywall種別 | ハード（無料利用不可） |
-| トライアル | 1週間無料 |
-| 決済基盤 | RevenueCat + Superwall |
-
-### 1週間トライアル戦略
-
-| 日 | 体験 | 狙い |
-|----|------|------|
-| Day 1 | ルールベースNudge（5回/日/問題） | 即座に価値体感 |
-| Day 2-6 | LLM Nudge（学習・パーソナライズ） | 行動科学 + ユーザー履歴で最適化 |
-| Day 7 | 解約判断日 | 「これなしでは無理」状態を目指す |
-
-### ペルソナ（全判断基準）
-
-**ターゲット**: 6-7年間、習慣化に失敗し続けている25-35歳
-
-| 特徴 | 詳細 |
-|------|------|
-| **コア・ペイン** | 習慣アプリ10個以上試して全部3日坊主で挫折 |
-| **自己認知** | 「自分はダメな人間だ」と信じ込んでいる |
-| **心理状態** | 諦めモードだが心の奥では変わりたい |
-| **刺さるHook** | 「6年間、何も変われなかった」「習慣アプリ10個全部挫折」 |
-| **避けるHook** | 「簡単に習慣化！」「たった○日で！」（信じない、警戒する） |
-| **UI設計** | 挫折を前提に、責めない、小さすぎるステップ |
-
-**詳細:** `.claude/rules/persona.md`
+### ペルソナ
+**ターゲット**: 6-7年間習慣化に失敗し続けている25-35歳。**詳細:** `.claude/rules/persona.md`
 
 ### iOS実装状況（2026年2月8日時点）
 
@@ -343,120 +311,15 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 
 ---
 
-## MCP（Model Context Protocol）使い方
+## MCP & OpenClaw
 
-### プロジェクトID
-
-| サービス | ID | 用途 |
-|---------|---|------|
-| **Mixpanel** | `3970220` (integer) | 分析クエリ |
-| **RevenueCat** | `projbb7b9d1b` (string) | 課金・Offering管理 |
-
-### Mixpanel MCP
-
-```
-# イベント一覧取得
-user-mixpanel-get_events: {"project_id": 3970220}
-
-# セグメンテーションクエリ（イベント数取得）
-user-mixpanel-run_segmentation_query: {
-  "project_id": 3970220,
-  "event": "rc_trial_started_event",
-  "from_date": "2026-01-04",
-  "to_date": "2026-02-04",
-  "unit": "month"
-}
-
-# ファネルクエリ
-user-mixpanel-run_funnels_query: {"project_id": 3970220, ...}
-```
-
-### RevenueCat MCP
-
-```
-# Offering一覧
-user-revenuecat-mcp_RC_list_offerings: {"project_id": "projbb7b9d1b"}
-
-# 新Offering作成
-user-revenuecat-mcp_RC_create_offering: {
-  "project_id": "projbb7b9d1b",
-  "lookup_key": "anicca_treatment_a",
-  "display_name": "Anicca Treatment A"
-}
-
-# パッケージ作成
-user-revenuecat-mcp_RC_create_package: {
-  "project_id": "projbb7b9d1b",
-  "offering_id": "ofrng...",
-  "lookup_key": "$rc_monthly",
-  "display_name": "Monthly Plan"
-}
-
-# 商品紐付け
-user-revenuecat-mcp_RC_attach_products_to_package: {
-  "project_id": "projbb7b9d1b",
-  "package_id": "pkge...",
-  "products": [{"product_id": "prod...", "eligibility_criteria": "all"}]
-}
-```
-
-### 正しいデータソース
-
-| 目的 | 使うイベント | ソース |
-|-----|------------|-------|
-| トライアル開始数 | `rc_trial_started_event` | RevenueCat→Mixpanel（正確） |
-| Paywall表示数 | `onboarding_paywall_viewed` | iOS SDK |
-
-**注意:** `onboarding_paywall_purchased`は使わない（DEBUG/サンドボックス含む）
-
-### Slack Tokens（OpenClaw/Anicca用）
-
-**シークレットは `.env` ファイルに保存済み（gitignored）:**
-- `SLACK_BOT_TOKEN` - Anicca Bot Token
-- `SLACK_APP_TOKEN` - Socket Mode Token
-
-### OpenClaw（Anicca）— VPS 稼働中
-
-**現状（2026-02-06）:**
-- Gateway: 🟢 **VPS (46.225.70.241) で24時間稼働中**
-- Profile: **full**（全ツール有効: fs, exec, memory, slack, cron, web_search, browser等）
-- エージェント: GPT-4o
-- Slack: 全チャンネル許可（groupPolicy: open）
-- Cron: 毎朝5:00 JST メトリクスレポート + ミーティングリマインダー
+**詳細は `.claude/rules/mcp-openclaw.md`（自動読み込み）を参照。**
 
 | 項目 | 値 |
 |------|-----|
-| **VPS IP** | `46.225.70.241`（`ssh anicca@46.225.70.241`） |
-| Config | `/home/anicca/.openclaw/openclaw.json` |
-| Env | `/home/anicca/.env`（systemd EnvironmentFile経由） |
-| Skills | `/usr/lib/node_modules/openclaw/skills/` |
-| Logs | `/home/anicca/.openclaw/logs/` |
-| Cron | `/home/anicca/.openclaw/cron/jobs.json` |
-
-**Anicca への指示方法（2種類）:**
-
-| 方法 | コマンド | 用途 |
-|------|---------|------|
-| **エージェントターン** | `openclaw agent --message "..." --deliver` | Aniccaの脳を通す（思考→行動） |
-| **直接投稿** | `openclaw message send --channel slack --target "C091G3PKHL2" --message "..."` | Slack直接投稿（脳を通さない） |
-
-**Gateway 再起動（設定変更後のみ必要）:**
-```bash
-# anicca ユーザーから実行
-ssh anicca@46.225.70.241
-export XDG_RUNTIME_DIR=/run/user/$(id -u)
-systemctl --user restart openclaw-gateway
-```
-
-**重要ルール:**
-- **Gateway再起動は `openclaw.json` や `.env` 変更時のみ**（クラッシュ時はsystemd自動復帰）
-- **MCP ツール（`mcp__*`）は OpenClaw では使えない**（Claude Code専用）
-- **Slack投稿は `slack` ツール（profile:full で有効）または `exec` + CLI**
-
-**参照:**
-- **Spec:** `.cursor/plans/ios/1.6.1/openclaw/anicca-openclaw-spec.md`
-- **Secrets:** `.cursor/plans/reference/secrets.md`（VPS情報あり）
-- **学び:** `.cursor/plans/reference/openclaw-learnings.md`
+| Mixpanel ID | `3970220` |
+| RevenueCat ID | `projbb7b9d1b` |
+| VPS IP | `46.225.70.241` |
 
 ---
 

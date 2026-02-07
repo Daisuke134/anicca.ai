@@ -34,7 +34,7 @@ API キー取得、OAuth設定、Slack設定はコードで自動化できない
 | G7 | **Railway Staging DB にマイグレーション適用** | 1. `02-data-layer.md` の SQL を Staging DB に適用 2. Seed データ投入 | ops_* テーブル7個 | テスト基盤 + Integration テスト | 15分 |
 | G8 | **Brave Search API キー取得** | 1. [brave.com/search/api](https://brave.com/search/api/) → API Key取得 2. VPS `~/.env` に `BRAVE_API_KEY` 追加 | `BRAVE_API_KEY` | `executeDetectSuffering` (web_search) | 10分 |
 | G9 | **Slack #ops-summary チャンネル作成** | 1. Slack → チャンネル作成 → `#ops-summary` 2. Anicca Bot をチャンネルに招待 | 日次サマリーの送信先 | `opsMonitor.js` の日次レポート | 5分 |
-| G10 | **trend-hunter データソース API キー** | 1. TwitterAPI.io → API Key取得（月額$5〜） 2. reddapi.dev → API Key取得（無料枠） 3. VPS `~/.env` に追加 | `TWITTERAPI_IO_KEY`, `REDDAPI_KEY` | `executeDetectSuffering` の4データソース | 20分 |
+| G10 | **trend-hunter データソース API キー** | 1. TwitterAPI.io → API Key取得（月額$5〜） 2. reddapi.dev → API Key取得（無料枠） 3. VPS `~/.env` に追加 | `TWITTERAPI_KEY`, `REDDAPI_API_KEY` | `executeDetectSuffering` の4データソース | 20分 |
 | G11 | **Railway Production 環境変数（本番移行時）** | 1. Railway Dashboard → Production service → Variables 2. Staging と同じ変数を設定 + `API_BASE_URL` を production に | Production 環境 | Phase A ロールアウト | 15分 |
 
 ---

@@ -61,11 +61,11 @@ interface FilteredTrend {
   skipReason: string | null;
 }
 
-// hook候補型
+// hook候補型（trend-hunter が生成する中間型 → POST /api/agent/hooks で保存）
 interface HookCandidate {
-  content: string;                     // hookテキスト（max 500 chars）
+  text: string;                        // hookテキスト（max 500 chars）— DB: hook_candidates.text
   contentType: 'empathy' | 'solution';
-  problemTypes: string[];
+  targetProblemTypes: string[];        // DB: hook_candidates.target_problem_types（配列）
   platform: 'x' | 'tiktok' | 'both';
   trendSource: {
     platform: string;
@@ -74,6 +74,21 @@ interface HookCandidate {
     metrics: Record<string, number>;
   };
   angle: string;
+}
+
+// Railway API GET /api/agent/hooks のレスポンス型
+// closed-loop-ops DB の hook_candidates テーブルと一致
+interface HookFromAPI {
+  id: string;
+  text: string;                        // hookテキスト（HookCandidate.text と同一）
+  targetProblemTypes: string[];        // ProblemType 配列
+  source: string;                      // 'trend-hunter'
+  platform: string;
+  xSampleSize: number;                 // X投稿回数（executeAnalyzeEngagement が更新）
+  xEngagementRate: number;             // X エンゲージメント率（%）
+  tiktokSampleSize: number;            // TikTok投稿回数
+  tiktokLikeRate: number;              // TikTok いいね率（%）
+  createdAt: string;
 }
 
 // --- ソース別バイラル閾値（P0 #7 解消）---

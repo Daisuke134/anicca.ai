@@ -99,7 +99,7 @@
 | 手段 | 取得範囲 | メトリクス | 実用性 |
 |------|---------|----------|--------|
 | Firecrawl | **トップ3のみ** | ハッシュタグ名+投稿数のみ | 不十分 |
-| **browser (Playwright)** | **フルリスト** | ハッシュタグ+投稿数+カテゴリ+New判定 | **採用** |
+| **browser (Playwright)** | **フルリスト** | ハッシュタグ+投稿数+カテゴリ+New判定 | **補助（将来検討）** |
 
 **Firecrawl実テスト結果（2026-02-08）:**
 - `ads.tiktok.com/business/creativecenter/inspiration/popular/hashtag/pc/en` をスクレイピング

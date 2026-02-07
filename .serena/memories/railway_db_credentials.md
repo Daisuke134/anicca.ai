@@ -1,25 +1,17 @@
-# Railway PostgreSQL Database Credentials
+# Railway DB 接続情報
 
-## Production DB (Railway)
+## 認証情報の取得方法
+- Railway Dashboard → anicca-project → PostgreSQL → Variables タブ
+- ローカル: `.cursor/plans/reference/secrets.md` に参照先記載
+- CI/CD: Railway が自動注入（`DATABASE_URL` 環境変数）
 
-| Item | Value |
-|------|-------|
-| Host | ballast.proxy.rlwy.net |
-| Port | 51992 |
-| Database | railway |
-| User | postgres |
-| Password | WgyHhBwqrEVFsXiQNOPrLaNhEayQrVdJ |
-| Connection URL | `postgresql://postgres:WgyHhBwqrEVFsXiQNOPrLaNhEayQrVdJ@ballast.proxy.rlwy.net:51992/railway` |
+## 接続方式
+| 環境 | 方法 |
+|------|------|
+| Railway内部（API/Cron） | `DATABASE_URL`（internal URL、自動設定） |
+| ローカル開発 | Railway Dashboard から Public URL を取得して使用 |
+| マイグレーション | `DATABASE_URL="<public-url>" npx prisma migrate deploy` |
 
-## psql Command
-
-```bash
-PGPASSWORD=WgyHhBwqrEVFsXiQNOPrLaNhEayQrVdJ psql -h ballast.proxy.rlwy.net -p 51992 -U postgres -d railway
-```
-
-## Notes
-
-- Railway内部URL (`postgres.railway.internal:5432`) はローカルからアクセス不可
-- `railway run` で注入される `DATABASE_URL` も内部URL
-- ローカルからDB操作する場合は上記の公開URLを使う
-- Prisma migration はローカルから直接実行不可（内部URL問題）→ 直接SQLで実行する
+## 注意
+- 内部URLはRailway外部からアクセス不可
+- 認証情報をSerenaメモリやコードに平文保存しない

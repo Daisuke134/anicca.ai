@@ -137,9 +137,12 @@ trend-hunter:
 
 | イベント kind | source | tags | いつ発行 | Reaction Matrix の反応 |
 |-------------|--------|------|---------|---------------------|
-| `hooks_saved` | `trend-hunter` | `['hook', 'saved', 'trend-hunter']` | Step 4 で hook が1件以上保存された時 | x-poster に「新hook利用可能」提案 |
+| `hooks_saved` | `trend-hunter` | `['hook_candidate', 'found']` | Step 4 で hook が1件以上保存された時 | x-poster に `evaluate_hook` 提案（probability: 0.5） |
 | `scan_completed` | `trend-hunter` | `['scan', 'completed']` | 実行完了時（hook 0件でも） | 監視ログ用（Reaction不要） |
 | `scan_failed` | `trend-hunter` | `['scan', 'failed', 'alert']` | 全ソース障害時 | Slack #alerts に通知提案 |
+
+> **タグ命名の根拠**: closed-loop-ops の `02-data-layer.md` seed data と完全一致させる。
+> `['hook_candidate', 'found']` = Reaction Matrix の `ops_reaction_matrix` パターンと正確にマッチ。
 
 ### イベント発行エンドポイント
 
@@ -151,7 +154,7 @@ Content-Type: application/json
 {
   "source": "trend-hunter",
   "kind": "hooks_saved",
-  "tags": ["hook", "saved", "trend-hunter"],
+  "tags": ["hook_candidate", "found"],
   "payload": {
     "savedCount": 3,
     "empathyCount": 2,
@@ -167,9 +170,9 @@ Content-Type: application/json
 ```json
 {
   "source": "trend-hunter",
-  "tags": ["hook", "saved"],
+  "tags": ["hook_candidate", "found"],
   "target": "x-poster",
-  "type": "schedule_post",
+  "type": "evaluate_hook",
   "probability": 1.0,
   "cooldown": 240,
   "payload_template": {

@@ -212,6 +212,8 @@ type StepExecutor = (context: {
 ```javascript
 // apps/api/src/services/ops/stepExecutors/executeDraftContent.js
 
+// hookSelector.js: apps/api/src/services/hookSelector.js（既存ファイル）
+// Thompson Sampling でhook候補を選択する。テスト: hookSelector.test.js
 import { selectHookThompson } from '../../hookSelector.js';
 import { prisma } from '../../../lib/prisma.js';
 import { callLLM } from '../../../lib/llm.js';

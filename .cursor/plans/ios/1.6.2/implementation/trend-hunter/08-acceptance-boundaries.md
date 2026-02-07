@@ -75,11 +75,12 @@
 
 | ファイル | 操作 |
 |---------|------|
-| `/usr/lib/node_modules/openclaw/skills/trend-hunter/SKILL.md` | 新規作成 |
-| `/usr/lib/node_modules/openclaw/skills/trend-hunter/index.js` | 新規作成 |
-| `/usr/lib/node_modules/openclaw/skills/trend-hunter/_meta.json` | 新規作成 |
-| `/home/anicca/.openclaw/cron/jobs.json` | 既存ファイルにジョブ追加 |
+| `/home/anicca/.openclaw/skills/trend-hunter/SKILL.md` | 新規作成（09-skill-deploy.md 参照） |
+| `/home/anicca/.openclaw/cron/jobs.json` | 既存ファイルにジョブ追加（JSON形式） |
 | `/home/anicca/.env` | `TWITTERAPI_KEY`, `REDDAPI_API_KEY` 追記（ユーザー作業） |
+
+> **注**: OpenClawスキルは SKILL.md のみ（index.js, _meta.json 不要）。
+> パスは `/home/anicca/.openclaw/skills/`（`/usr/lib/` ではない）。詳細: `09-skill-deploy.md`
 
 ### 触らないファイル
 

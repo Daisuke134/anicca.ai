@@ -187,6 +187,8 @@ export default router;
 import opsRouter from './ops/index.js';
 import approvalRouter from './ops/approval.js';
 import summaryRouter from './ops/summary.js';
+import eventsRouter from './ops/events.js';
+import agentHooksRouter from './agent/hooks.js';
 import { opsAuth } from '../middleware/opsAuth.js';
 
 // 既存のルーター（変更なし）
@@ -199,6 +201,154 @@ app.use('/api/ops', opsAuth, opsRouter);
 // Slack Interactivity URL → VPS → Railway 転送パスで Bearer Token が付与される前提
 app.use('/api/ops', opsAuth, approvalRouter);
 app.use('/api/ops', opsAuth, summaryRouter);
+app.use('/api/ops', opsAuth, eventsRouter);
+
+// Agent API（VPS → Railway hook管理）
+app.use('/api/agent', opsAuth, agentHooksRouter);
+```
+
+---
+
+## 7.1 VPS→Railway イベント受信 API（BLOCKING #1 解消）
+
+> **trend-hunter (VPS) が `emitEvent()` を HTTP 経由で呼ぶためのエンドポイント**
+
+```javascript
+// apps/api/src/routes/ops/events.js
+
+import { Router } from 'express';
+import { z } from 'zod';
+import { emitEvent } from '../../services/ops/eventEmitter.js';
+import { logger } from '../../lib/logger.js';
+
+const router = Router();
+
+const EventInputSchema = z.object({
+  source: z.string().max(50),
+  kind: z.string().max(100),
+  tags: z.array(z.string().max(50)).max(10),
+  payload: z.record(z.unknown()).default({})
+});
+
+/**
+ * POST /api/ops/events
+ * VPS (trend-hunter等) から Railway にイベントを送信
+ * 内部の emitEvent() をHTTP経由で呼び出すラッパー
+ */
+router.post('/events', async (req, res) => {
+  const parsed = EventInputSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  const { source, kind, tags, payload } = parsed.data;
+
+  try {
+    const event = await emitEvent(source, kind, tags, payload);
+    res.status(201).json({ id: event.id });
+  } catch (err) {
+    logger.error('Event creation failed:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+export default router;
+```
+
+---
+
+## 7.2 Agent Hook管理 API（BLOCKING #2 解消）
+
+> **trend-hunter (VPS) が hook候補を Railway DB に保存/取得するためのエンドポイント**
+> **注**: このエンドポイントは `hook_candidates` テーブル（02-data-layer.md）に対するCRUD。
+
+```javascript
+// apps/api/src/routes/agent/hooks.js
+
+import { Router } from 'express';
+import { z } from 'zod';
+import { prisma } from '../../lib/prisma.js';
+import { logger } from '../../lib/logger.js';
+
+const router = Router();
+
+/**
+ * GET /api/agent/hooks
+ * 全hook候補を取得（trend-hunter が重複チェック + Thompson Sampling で使用）
+ */
+router.get('/hooks', async (req, res) => {
+  const hooks = await prisma.hookCandidate.findMany({
+    orderBy: { createdAt: 'desc' },
+    take: 500  // 上限: hook数が1000超になったらページネーション追加
+  });
+
+  res.json({
+    hooks: hooks.map(h => ({
+      id: h.id,
+      text: h.text,
+      targetProblemTypes: h.targetProblemTypes,
+      source: h.source,
+      platform: h.platform,
+      xSampleSize: h.xSampleSize,
+      xEngagementRate: h.xEngagementRate,
+      tiktokSampleSize: h.tiktokSampleSize,
+      tiktokLikeRate: h.tiktokLikeRate,
+      createdAt: h.createdAt
+    }))
+  });
+});
+
+const HookSaveSchema = z.object({
+  text: z.string().max(500),
+  targetProblemTypes: z.array(z.string()).min(1),
+  source: z.string().max(50).default('trend-hunter'),
+  platform: z.enum(['x', 'tiktok', 'both']).default('both'),
+  contentType: z.enum(['empathy', 'solution']),
+  metadata: z.record(z.unknown()).optional()
+});
+
+/**
+ * POST /api/agent/hooks
+ * 新しいhook候補を保存（trend-hunter Step 4 で使用）
+ *
+ * 重複チェック: text が既存hookと Jaccard bi-gram >= 0.7 の場合は
+ * VPS側（trend-hunter）で事前にフィルタ済みの前提。
+ * サーバー側では text 完全一致のみチェック。
+ */
+router.post('/hooks', async (req, res) => {
+  const parsed = HookSaveSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({ error: parsed.error.flatten() });
+  }
+
+  const { text, targetProblemTypes, source, platform, contentType, metadata } = parsed.data;
+
+  // 完全一致の重複チェック
+  const existing = await prisma.hookCandidate.findFirst({
+    where: { text },
+    select: { id: true }
+  });
+
+  if (existing) {
+    return res.status(200).json({ status: 'duplicate', existingId: existing.id });
+  }
+
+  const hook = await prisma.hookCandidate.create({
+    data: {
+      text,
+      targetProblemTypes,
+      source,
+      platform,
+      contentType,
+      metadata: metadata || {}
+    }
+  });
+
+  logger.info(`Hook candidate saved: ${hook.id} (${contentType}, ${targetProblemTypes.join(',')})`);
+  res.status(201).json({ id: hook.id, text: hook.text, createdAt: hook.createdAt });
+});
+
+export default router;
 ```
 
 ---
@@ -233,6 +383,9 @@ app.use('/api/ops', opsAuth, summaryRouter);
 | `GET /api/ops/heartbeat` | Bearer Token (`ANICCA_AGENT_TOKEN`) | VPS crontab からのみ呼ばれる |
 | `GET /api/ops/step/next` | Bearer Token (`ANICCA_AGENT_TOKEN`) | VPS Worker からのみ呼ばれる |
 | `PATCH /api/ops/step/:id/complete` | Bearer Token (`ANICCA_AGENT_TOKEN`) | VPS Worker からのみ呼ばれる |
+| `POST /api/ops/events` | Bearer Token (`ANICCA_AGENT_TOKEN`) | VPS trend-hunter からのイベント送信 |
+| `GET /api/agent/hooks` | Bearer Token (`ANICCA_AGENT_TOKEN`) | VPS trend-hunter からの hook取得 |
+| `POST /api/agent/hooks` | Bearer Token (`ANICCA_AGENT_TOKEN`) | VPS trend-hunter からの hook保存 |
 
 ```javascript
 // apps/api/src/middleware/opsAuth.js

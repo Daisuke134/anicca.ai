@@ -306,8 +306,10 @@ export async function setPolicy(key, value) {
 
 ```javascript
 // apps/api/src/services/ops/eventEmitter.js
-// ★ 正規版は 08-event-trigger-system.md §20.1（evaluateReactionMatrix 接続済み）
-// ★ この版は構造参考のみ。実装時は 08 版を使うこと
+// ⚠️ 警告: この版は構造参考のみ — 実装禁止
+// ⚠️ 正規版: 08-event-trigger-system.md §20.1（evaluateReactionMatrix 接続済み）
+// ⚠️ この版との違い: 正規版は emitEvent 後に evaluateReactionMatrix() を自動呼び出しする
+// ⚠️ この版を実装すると Reaction が永久に発火しないサイレント不具合になる
 
 import { prisma } from '../../lib/prisma.js';
 
@@ -390,7 +392,9 @@ export default router;
 
 ```javascript
 // apps/api/src/services/ops/triggerEvaluator.js
-// ★ checkTriggerCondition の正規版は 08-event-trigger-system.md §19.3
+// ⚠️ 警告: この版は構造参考のみ — 実装禁止
+// ⚠️ 正規版: 08-event-trigger-system.md §19.3（delay_min ?? 修正済み + since 計算が異なる）
+// ⚠️ この版との違い: since 計算が5分固定窓、正規版は delay_min * 1.5 の動的窓
 
 import { prisma } from '../../lib/prisma.js';
 import { createProposalAndMaybeAutoApprove } from './proposalService.js';

@@ -97,7 +97,7 @@ jobs:
             if git push; then PUSHED=true; break; fi
             echo "Push conflict, retry $i/$MAX_RETRIES"; sleep 5
           done
-          [ "$PUSHED" = false ] && echo "ERROR: reservation push failed" && exit 1
+          if [ "$PUSHED" = false ]; then echo "ERROR: reservation push failed"; exit 1; fi
       - name: "Stage 2: Post to TikTok via Blotato"
         id: post
         run: cd scripts/tiktok-poster && npm run post -- --language ${{ steps.lang.outputs.value }}
@@ -118,4 +118,4 @@ jobs:
             if git push; then PUSHED=true; break; fi
             echo "Push conflict, retry $i/$MAX_RETRIES"; sleep 5
           done
-          [ "$PUSHED" = false ] && echo "ERROR: tracker push failed" && exit 1
+          if [ "$PUSHED" = false ]; then echo "ERROR: tracker push failed"; exit 1; fi

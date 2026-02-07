@@ -1,4 +1,4 @@
-- Smarter notifications: AI-personalized nudges now deliver from Day 2
-- Fixed notifications arriving at 2-3 AM
-- Redesigned notification timing to prevent duplicates
-- Improved notification content variety
+- Fixed paywall dismiss button issue
+- Improved onboarding flow with live demo
+- Full localization for German, Spanish, French, and Portuguese
+- Fixed localization bugs showing raw text keys

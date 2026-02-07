@@ -314,6 +314,7 @@ daily-apps/         - 関連アプリ（Daily Dhamma等）
 | `secrets.md` | GitHub Secrets、Railway環境変数詳細、DB Proxy URL | デプロイ・Secret設定時 |
 | `infrastructure.md` | Cronジョブ構成、Railway運用、1.5.0教訓 | インフラ作業時 |
 | `openclaw-learnings.md` | OpenClaw スキル作成ルール、ツール使い分け、失敗から学んだこと | OpenClaw 作業時（必読） |
+| `openclaw-anicca.md` | **Anicca OpenClaw 現在の状態・機能・スキル・壊れてるもの一覧** | **OpenClaw 作業時（必読）。変更後は必ず更新** |
 | `daily-metrics.md` | Daily Metrics Report設定、ASC API Key、KPI目標 | メトリクス作業時 |
 
 ---

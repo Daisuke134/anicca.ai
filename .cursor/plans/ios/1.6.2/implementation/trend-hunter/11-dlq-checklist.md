@@ -72,8 +72,10 @@ function writeToDLQ(hook, endpoint, error, attemptsMade = 0) {
     state: attemptsMade + 1 >= MAX_ATTEMPTS ? 'exhausted' : 'pending',
   };
 
-  // exec でファイル追記（OpenClawのexecツール経由）
-  exec(`echo '${JSON.stringify(entry)}' >> ${DLQ_PATH}`);
+  // exec でファイル追記（heredoc でシェルエスケープ問題を回避 — P0 #18 解消）
+  // 注: echo + 単一引用符だと JSON 内の ' でシェルが壊れる
+  const jsonLine = JSON.stringify(entry);
+  exec(`cat <<'DLQEOF' >> ${DLQ_PATH}\n${jsonLine}\nDLQEOF`);
 
   return entry;
 }
@@ -83,6 +85,25 @@ function calcDelay(attempt) {
   const base = BASE_DELAY_MS * Math.pow(2, attempt - 1);
   const jitter = (Math.random() * 2 - 1) * JITTER_MS; // ±30秒
   return Math.min(base + jitter, 3600000); // 上限1時間
+}
+
+// DLQエントリの状態更新（JSONL全体を読み→フィルタ→書き戻し）
+// P0 #17 解消: retryDLQ() から呼ばれる未定義関数
+function updateDLQEntry(jobId, newState) {
+  const raw = exec(`cat ${DLQ_PATH} 2>/dev/null || echo ""`);
+  if (!raw.trim()) return;
+
+  const entries = raw.trim().split('\n').map(line => JSON.parse(line));
+  const updated = entries.map(entry => {
+    if (entry.jobId === jobId) {
+      return { ...entry, state: newState, resolvedAt: newState === 'resolved' ? Date.now() : undefined };
+    }
+    return entry;
+  });
+
+  // 書き戻し（heredoc でシェルエスケープ問題を回避 — P0 #18 パターン適用）
+  const content = updated.map(e => JSON.stringify(e)).join('\n');
+  exec(`cat <<'DLQEOF' > ${DLQ_PATH}\n${content}\nDLQEOF`);
 }
 
 // DLQ読み込み + リトライ対象抽出
@@ -106,11 +127,16 @@ async function retryDLQ() {
 
   for (const entry of retryable) {
     try {
+      // P0 #18 解消: heredoc でペイロードのシェルエスケープ問題を回避
+      const payload = JSON.stringify({
+        ...entry.data.hook,
+        idempotencyKey: entry.jobId  // DLQリトライ時の重複防止
+      });
       await exec(`curl -s -X POST \
         -H "Authorization: Bearer ${ANICCA_AGENT_TOKEN}" \
         -H "Content-Type: application/json" \
         "${entry.data.endpoint}" \
-        -d '${JSON.stringify(entry.data.hook)}'`);
+        -d @- <<'CURLEOF'\n${payload}\nCURLEOF`);
 
       // 成功 → resolved に更新
       updateDLQEntry(entry.jobId, 'resolved');
@@ -154,8 +180,9 @@ function cleanupDLQ() {
     return true;
   });
 
-  // 全体を書き直し（クリーンアップ時のみ）
-  exec(`echo '${kept.map(e => JSON.stringify(e)).join('\n')}' > ${DLQ_PATH}`);
+  // 全体を書き直し（heredoc でシェルエスケープ問題を回避 — P0 #18 解消）
+  const content = kept.map(e => JSON.stringify(e)).join('\n');
+  exec(`cat <<'DLQEOF' > ${DLQ_PATH}\n${content}\nDLQEOF`);
 }
 ```
 
@@ -181,6 +208,10 @@ function cleanupDLQ() {
 | 57 | `test_retryDLQ_fail_again` | Railway APIモック再失敗 | 新DLQエントリ（attempt+1） | リトライ再失敗 |
 | 58 | `test_cleanupDLQ_removes_old` | 8日前のexhausted | 削除される | クリーンアップ |
 | 59 | `test_cleanupDLQ_keeps_pending` | 8日前のpending | 保持される | pending保護 |
+| 60 | `test_updateDLQEntry_resolves` | jobId存在 + 'resolved' | 対象エントリのstate='resolved'、他エントリは不変 | P0 #17 updateDLQEntry |
+| 61 | `test_updateDLQEntry_missing_jobId` | 存在しないjobId | 全エントリ不変（エラーなし） | 不在jobId |
+| 62 | `test_shellEscape_singleQuote` | hook.content に `it's` を含むhook | DLQファイルに正しく書き込み | P0 #18 シェルエスケープ |
+| 63 | `test_shellEscape_jsonSpecialChars` | hook.content に `{"key":"val"}` を含むhook | curl -d で正しく送信 | P0 #18 JSON in JSON |
 
 ---
 
@@ -196,9 +227,9 @@ function cleanupDLQ() {
 | 6 | 実行手順 | ✅ | デプロイ6ステップ + テスト5種 |
 | 7 | E2E判定 | ✅ | 不要（バックエンドのみ） |
 | 8 | ファイル構成 | ✅ | SKILL.mdのみ |
-| 9 | DLQリトライロジック | ✅ | 10テスト (#50-59) |
+| 9 | DLQリトライロジック | ✅ | 14テスト (#50-63) |
 | 10 | Thompson Sampling v2 | ✅ | 9テスト (#41-49) |
 | 11 | モックAPIレスポンス | ✅ | 5ソース分 |
 | 12 | LLM出力バリデーション | ✅ | JSON Schema 2種 |
 | 13 | 重複判定アルゴリズム | ✅ | Jaccard bi-gram |
-| **合計テスト数** | | | **59** |
+| **合計テスト数** | | | **63** |

@@ -15,9 +15,59 @@
 | TwitterAPI.io 失敗/停止 | TikTok + Reddit の結果のみで続行。Slack #alerts に通知 |
 | Apify TikTok Scraper 失敗 | X + Reddit の結果のみで続行 |
 | reddapi API失敗 | X + TikTok の結果のみで続行 |
-| LLMフィルタ/生成失敗 | Fallback Chain（gpt-4o → gpt-4o-mini → claude-3-5-haiku → llama-3.3-70b） |
+| LLMフィルタ/生成失敗 | Fallback Chain（下記詳細参照） |
 | Railway API保存失敗 | DLQ に書き込み、次回実行時にリトライ |
 | 全ソース失敗 | Slack #alerts に通知、DLQに記録 |
+
+### LLM Fallback Chain 詳細契約
+
+OpenClawエージェントのLLM呼び出し（`exec` 内のプロンプト処理）に対するフォールバック戦略。
+
+| 順位 | モデル | タイムアウト | リトライ | 用途 |
+|------|--------|------------|---------|------|
+| 1 | gpt-4o | 30秒 | 1回 | 高品質フィルタ + hook生成 |
+| 2 | gpt-4o-mini | 20秒 | 1回 | コスト効率の高いフォールバック |
+| 3 | claude-3-5-haiku | 20秒 | 1回 | プロバイダ多様性（OpenAI障害対策） |
+| 4 | — | — | — | DLQに記録してスキップ |
+
+**フォールバック発火条件:**
+
+| エラー種別 | 判定方法 | アクション |
+|-----------|---------|-----------|
+| タイムアウト | レスポンスなし（上記秒数超過） | 次のモデルにフォールバック |
+| 不正JSON | `JSON.parse()` 失敗 | 同じモデルで1回リトライ（プロンプト末尾に `必ず有効なJSONで返してください` 追加）|
+| スキーマ不適合 | JSON Schema バリデーション失敗 | 同じモデルで1回リトライ（エラー箇所をフィードバック） |
+| トークン超過 | 入力が長すぎるエラー | 入力を50%に truncate して同じモデルでリトライ |
+| 全モデル失敗 | 順位4到達 | 当該バッチをDLQに記録、Slack #alertsに通知 |
+
+**スキーマバリデーション:**
+フィルタ出力 → `07-mock-data-validation.md` の「フィルタ出力スキーマ」で検証。
+hook生成出力 → `07-mock-data-validation.md` の「hook生成出力スキーマ」で検証。
+
+```javascript
+// LLM呼び出し + バリデーション疑似コード
+async function callLLMWithFallback(prompt, schema, models = LLM_CHAIN) {
+  for (const model of models) {
+    for (let retry = 0; retry < 2; retry++) {
+      try {
+        const raw = await callLLM(model, prompt, { timeout: model.timeout });
+        const parsed = JSON.parse(raw);
+        validateSchema(parsed, schema); // throws on failure
+        return parsed;
+      } catch (err) {
+        if (err.type === 'schema_validation' && retry === 0) {
+          prompt += `\n\n前回の出力でスキーマエラー: ${err.message}\n修正して再出力してください。`;
+          continue; // 同じモデルでリトライ
+        }
+        break; // 次のモデルへ
+      }
+    }
+  }
+  throw new LLMExhaustedError('All models failed');
+}
+```
+
+---
 
 ## Cron設定
 
@@ -65,7 +115,7 @@ trend-hunter:
 
 | 流用するもの | 内容 |
 |------------|------|
-| **スキル構造** | SKILL.md + index.js + _meta.json の3ファイル構成 |
+| **スキル構造** | SKILL.md のみ（`index.js` / `_meta.json` はカスタムツール実装時のみ必要、今回不要） |
 | **HTTPリクエスト関数** | `httpRequest()` — タイムアウト付き、Node.js標準のみ |
 | **HTMLパーサーパターン** | `parseTrendingHTML()` — GitHub Trending用。TikTok Creative Center にも応用 |
 | **カテゴリフィルタ方式** | キーワード辞書 → 13 ProblemType辞書に置き換え |
@@ -78,6 +128,60 @@ trend-hunter:
 | **セマンティック検索パターン** | `"I wish there was an app that"` 系のクエリ設計 |
 | **トレンドAPI** | `growth_rate` によるトレンド急成長検出 |
 | **curlベースの実装** | OpenClaw exec ツールとの親和性が高い |
+
+## イベント接続仕様（trend-hunter → closed-loop-ops）
+
+> **C2/C3解消**: trend-hunter が closed-loop-ops の Reaction Matrix に接続するためのイベント契約
+
+### イベント種別（Event Vocabulary）
+
+| イベント kind | source | tags | いつ発行 | Reaction Matrix の反応 |
+|-------------|--------|------|---------|---------------------|
+| `hooks_saved` | `trend-hunter` | `['hook', 'saved', 'trend-hunter']` | Step 4 で hook が1件以上保存された時 | x-poster に「新hook利用可能」提案 |
+| `scan_completed` | `trend-hunter` | `['scan', 'completed']` | 実行完了時（hook 0件でも） | 監視ログ用（Reaction不要） |
+| `scan_failed` | `trend-hunter` | `['scan', 'failed', 'alert']` | 全ソース障害時 | Slack #alerts に通知提案 |
+
+### イベント発行エンドポイント
+
+```
+POST /api/ops/events
+Authorization: Bearer ${ANICCA_AGENT_TOKEN}
+Content-Type: application/json
+
+{
+  "source": "trend-hunter",
+  "kind": "hooks_saved",
+  "tags": ["hook", "saved", "trend-hunter"],
+  "payload": {
+    "savedCount": 3,
+    "empathyCount": 2,
+    "solutionCount": 1,
+    "targetTypes": ["staying_up_late", "cant_wake_up", ...],
+    "hookIds": ["hook_123", "hook_456", "hook_789"]
+  }
+}
+```
+
+### Reaction Matrix パターン（closed-loop-ops 側で定義）
+
+```json
+{
+  "source": "trend-hunter",
+  "tags": ["hook", "saved"],
+  "target": "x-poster",
+  "type": "schedule_post",
+  "probability": 1.0,
+  "cooldown": 240,
+  "payload_template": {
+    "hookIds": "{{payload.hookIds}}",
+    "action": "select_and_post"
+  }
+}
+```
+
+**cooldown: 240** = 240分（4時間）。trend-hunterの実行間隔と同じ。
+
+---
 
 ## x-poster との連携（データフロー）
 

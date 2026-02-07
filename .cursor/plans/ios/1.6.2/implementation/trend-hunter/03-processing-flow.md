@@ -66,7 +66,27 @@ for (const region of regions) {
   })));
 }
 
+// P1 #1 解消: TikTok region merge strategy
+// 同じハッシュタグが複数リージョンに出現した場合の統合ルール:
+// 1. hashtag 名で dedup（大文字小文字無視）
+// 2. 重複ハッシュタグは viewCount 最大のリージョンのデータを採用
+// 3. regions 配列は多い方を残す（JP優先ではなくメトリクス優先）
+const deduped = Object.values(
+  trends.reduce((acc, t) => {
+    const key = t.hashtag.toLowerCase();
+    if (!acc[key] || t.viewCount > acc[key].viewCount) {
+      acc[key] = t;
+    }
+    return acc;
+  }, {})
+);
+
 // ProblemType関連キーワード（ハッシュタグ名のフィルタ用）
+// マッチングロジック: ハッシュタグ名を lowercase → 各キーワードで substring match
+// 例: "#sleepschedule" → "sleep" にマッチ → 通過
+// 例: "#habitica" → "habit" にマッチ → 通過（false positive許容 — LLMフィルタで除外）
+// 設計判断: false positive は Step 2 LLMフィルタで除外されるため、
+//           ここでは recall 重視（取りこぼし防止）。precision は LLM に委ねる。
 const PROBLEM_TYPE_KEYWORDS = [
   'sleep', 'insomnia', 'nightowl', 'wakeup', 'morning',     // staying_up_late, cant_wake_up
   'selfcare', 'selflove', 'selfworth', 'mentalhealth',       // self_loathing
@@ -112,6 +132,23 @@ for (const problemType of targetTypes) {
   // score（upvote）が高いものだけ取得（バイラル判定）
   trends.push(...parseRedditResults(empathyResult, { problemType, type: 'empathy', minScore: 100 }));
   trends.push(...parseRedditResults(solutionResult, { problemType, type: 'solution', minScore: 100 }));
+
+// --- parseRedditResults 関数シグネチャ ---
+/**
+ * reddapi.dev セマンティック検索の生JSONを NormalizedTrend[] に変換する
+ *
+ * @param {string} rawJson - exec(curl) の出力（JSON文字列）
+ * @param {Object} meta
+ * @param {string} meta.problemType - 検索時のProblemType
+ * @param {'empathy'|'solution'} meta.type - contentType
+ * @param {number} meta.minScore - 最低upvote数フィルタ（これ未満はスキップ）
+ *   P1 #3 解消: reddapi.dev APIにはスコアフィルタパラメータがない。
+ *   minScore はローカルフィルタ（取得後に results.filter(r => r.upvotes >= minScore) で適用）。
+ *   APIは limit パラメータのみサポート（デフォルト20件/リクエスト）。
+ * @returns {NormalizedTrend[]} 正規化済みトレンド配列
+ * @throws {Error} JSONパース失敗 or success=false の場合
+ */
+// function parseRedditResults(rawJson: string, meta: { problemType: string, type: 'empathy'|'solution', minScore: number }): NormalizedTrend[]
 }
 
 // 加えて、トレンドAPI で急成長トピックも取得
@@ -162,9 +199,19 @@ for (const problemType of targetTypes) {
   );
 }
 
-// レスポンスパーサー
+// P1 #13 解消: エラーハンドリング追加（JSON parse失敗、API error）
 function parseTweetsWithMetrics(response, meta) {
-  const data = JSON.parse(response);
+  let data;
+  try {
+    data = JSON.parse(response);
+  } catch (parseErr) {
+    logger.warn(`Twitter parse failed for ${meta.problemType}/${meta.type}: ${parseErr.message}`);
+    return []; // parse失敗は空配列（他ソースの処理を止めない）
+  }
+  if (data.error || data.errors) {
+    logger.warn(`Twitter API error for ${meta.problemType}/${meta.type}: ${JSON.stringify(data.error || data.errors)}`);
+    return [];
+  }
   return (data.tweets || []).map(tweet => ({
     source: 'x',
     problemType: meta.problemType,
@@ -218,6 +265,14 @@ trends.push(...relevant.map(r => ({
 ### Step 2: Aniccaフィルタ（LLM判定）
 
 収集したトレンドをLLMに渡して、hook候補としての価値を判定する。
+
+> **P1 #15 解消: LLMフィルタ API コスト見積もり**
+> - 1実行あたり: TikTok ~50件 + Reddit ~40件 + X ~320件 = ~410件
+> - PROBLEM_TYPE_KEYWORDS の false positive 率: 推定30% → フィルタ前 ~410件
+> - LLM フィルタは全件をバッチで処理（10件/リクエスト → ~41リクエスト/実行）
+> - gpt-4o-mini: ~500 input tokens + ~200 output tokens/件 → ~0.3M tokens/実行
+> - コスト: ~$0.045/実行 × 6回/日 × 30日 = **~$8.1/月**（gpt-4o-mini）
+> - gpt-4o フォールバック時: ~$0.90/実行（10倍）→ 月$162 → **極力 mini で処理**
 
 ```javascript
 const FILTER_PROMPT = `
@@ -318,10 +373,34 @@ const existingHooks = await exec(`curl -s \
   -H "Authorization: Bearer ${ANICCA_AGENT_TOKEN}" \
   "https://anicca-proxy-staging.up.railway.app/api/agent/hooks"`);
 
-// 2. 各候補に対して重複チェック
+// 2. Jaccard bi-gram 類似度関数（07-mock-data-validation.md「重複判定アルゴリズム」と同一実装）
+// VPS skill 内で自己完結させるためインライン定義
+const SIMILARITY_THRESHOLD = 0.7;
+function jaccardBigram(text1, text2) {
+  const bigrams = (s) => {
+    const normalized = s.replace(/\s+/g, ' ').trim().toLowerCase();
+    const set = new Set();
+    for (let i = 0; i < normalized.length - 1; i++) {
+      set.add(normalized.substring(i, i + 2));
+    }
+    return set;
+  };
+  const a = bigrams(text1);
+  const b = bigrams(text2);
+  const intersection = new Set([...a].filter(x => b.has(x)));
+  const union = new Set([...a, ...b]);
+  return union.size === 0 ? 0 : intersection.size / union.size;
+}
+
+// 3. 各候補に対して重複チェック
 for (const candidate of hookCandidates) {
-  // テキスト類似度チェック（LLMに判定させる）
-  const isDuplicate = await checkSimilarity(candidate.content, existingHooks, threshold=0.8);
+  // テキスト類似度チェック: Jaccard bi-gram（LLM呼び出しなし、最速）
+  // 閾値 0.7 以上 = 重複とみなす（既存hookの content フィールドと比較）
+  // hook数が1000件超になったらコサイン類似度（TF-IDF）に移行を検討
+  const maxSimilarity = existingHooks.hooks
+    .map(h => jaccardBigram(candidate.content, h.content))
+    .reduce((max, s) => Math.max(max, s), 0);
+  const isDuplicate = maxSimilarity >= 0.7; // SIMILARITY_THRESHOLD
 
   if (!isDuplicate) {
     // 3. Railway DB に保存
@@ -344,7 +423,29 @@ for (const candidate of hookCandidates) {
   }
 }
 
-// 4. Slack #trends に結果サマリー
+// 4. イベント発行（closed-loop-ops Reaction Matrix との接続点）
+// → closed-loop-ops/08-event-trigger-system.md の Reaction Matrix が
+//   source='trend-hunter', kind='hooks_saved' を監視し、
+//   x-poster や app-nudge-sender への提案を自動生成する
+// イベント発行はRailway API POST /api/ops/events 経由
+await exec(`curl -s -X POST \
+  -H "Authorization: Bearer ${ANICCA_AGENT_TOKEN}" \
+  -H "Content-Type: application/json" \
+  "https://anicca-proxy-staging.up.railway.app/api/ops/events" \
+  -d '${JSON.stringify({
+    source: "trend-hunter",
+    kind: "hooks_saved",
+    tags: ["hook", "saved", "trend-hunter"],
+    payload: {
+      savedCount,
+      empathyCount,
+      solutionCount,
+      targetTypes,
+      hookIds: savedHookIds, // 保存したhookのID配列
+    }
+  })}'`);
+
+// 5. Slack #trends に結果サマリー
 await slack.send('#trends',
   `🔍 トレンドスキャン完了\n` +
   `対象: ${targetTypes.join(', ')}\n` +

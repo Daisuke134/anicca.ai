@@ -19,8 +19,8 @@ v2: [staying_up_late, anxiety, procrastination, self_loathing] → 次回はス�
 |------|-----|
 | 分布 | Beta(α, β) |
 | 初期値 | Beta(1, 1) = 一様分布（全ProblemType平等） |
-| 成功定義 | 投稿hookがエンゲージメント閾値を超えた |
-| 失敗定義 | 投稿hookが表示されたがエンゲージメントなし |
+| 成功定義 | 投稿hookの `engagementRate > 5.0%`（closed-loop-ops `executeAnalyzeEngagement` の `isHighEngagement` 判定と同一） |
+| 失敗定義 | 投稿hookが表示されたが `engagementRate <= 5.0%` |
 | α更新 | 成功時: `α += 1` |
 | β更新 | 失敗時: `β += 1` |
 | 選択 | 各ProblemTypeのBeta分布からサンプリング → 上位4-5個を選択 |
@@ -106,6 +106,50 @@ function decayAll(banditState, factor = 0.9) {
 | **OpenClaw memory ツール** | `~/.openclaw/memory/trend-hunter-bandit.json` | `memory.read("trend-hunter-bandit")` / `memory.write(...)` |
 
 **なぜ memory か**: OpenClawのmemoryツールはセッション横断で永続化される。ファイルベースでagent turnごとに自動保存。DBアクセス不要。
+
+### フィードバック経路（x-poster → trend-hunter）
+
+> **P0 #16 解消**: trend-hunter の Bandit 状態を更新するデータソースと経路を定義
+
+```
+x-poster が hook を投稿
+    ↓
+closed-loop-ops: executeAnalyzeEngagement()
+    ↓ engagementRate > 5.0% → isHighEngagement = true
+    ↓ hookCandidate.xEngagements += 1 (or tiktokEngagements)
+    ↓
+Railway DB: hook_candidates テーブル更新
+    ↓
+trend-hunter: 次回実行時に Railway API GET /api/agent/hooks で取得
+    ↓ 各 ProblemType の hookCandidate を集計
+    ↓ engaged = (hook.xEngagements + hook.tiktokEngagements) > 0
+    ↓
+updateBandit(banditState, hook.problemType, engaged)
+```
+
+**ProblemType レベル集計ロジック:**
+
+```javascript
+// trend-hunter が v2 実行時に Railway DB から Bandit 状態を再計算
+async function syncBanditFromDB(banditState) {
+  const hooks = await railwayApiClient.getHooks();
+  // 各 ProblemType ごとに成功/失敗をカウント
+  for (const hook of hooks.hooks) {
+    const pt = hook.problemType;
+    if (!banditState[pt]) continue;
+    const totalEngagement = (hook.stats?.engagements || 0);
+    const totalImpressions = (hook.stats?.impressions || 0);
+    // impressions > 0 の hook のみ判定（未投稿 hook はスキップ）
+    if (totalImpressions > 0) {
+      const engaged = totalImpressions > 0 && (totalEngagement / totalImpressions * 100) > 5.0;
+      updateBandit(banditState, pt, engaged);
+    }
+  }
+  return banditState;
+}
+```
+
+**実行タイミング**: v2 モード時、トレンド収集の前に `syncBanditFromDB()` を呼ぶ。
 
 ### v1 → v2 切り替え判定
 

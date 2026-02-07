@@ -264,11 +264,16 @@ CREATE INDEX idx_ops_reactions_created_at ON ops_reactions (created_at DESC);
 
 ```sql
 -- seed: 20260208_seed_ops_policy.sql
+--
+-- P0 #21 解消: cooldown の単位は「分」（evaluateReactionMatrix で `cooldown * 60 * 1000` → ms に変換）
+-- 例: cooldown=120 → 120分 = 2時間
+-- 例: cooldown=480 → 480分 = 8時間
+-- cooldown_min（OpsTriggerRule）も同じ単位（分）
 
 INSERT INTO ops_policy (key, value) VALUES
   ('auto_approve', '{
     "enabled": true,
-    "allowed_step_kinds": ["draft_content", "verify_content", "detect_suffering", "analyze_engagement", "fetch_metrics"]
+    "allowed_step_kinds": ["draft_content", "verify_content", "detect_suffering", "analyze_engagement", "fetch_metrics", "diagnose", "draft_nudge", "evaluate_hook"]
   }'),
   ('x_daily_quota', '{ "limit": 3 }'),
   ('tiktok_daily_quota', '{ "limit": 1 }'),
@@ -292,13 +297,13 @@ INSERT INTO ops_policy (key, value) VALUES
         "source": "trend-hunter",
         "tags": ["suffering", "detected"],
         "target": "app-nudge-sender",
-        "type": "send_relevant_nudge",
+        "type": "draft_nudge",
         "probability": 0.5,
         "cooldown": 60
       },
       {
         "source": "*",
-        "tags": ["mission:failed"],
+        "tags": ["mission", "failed"],
         "target": "x-poster",
         "type": "diagnose",
         "probability": 1.0,
@@ -316,7 +321,7 @@ INSERT INTO ops_policy (key, value) VALUES
         "source": "x-poster",
         "tags": ["engagement", "high"],
         "target": "tiktok-poster",
-        "type": "cross_post",
+        "type": "draft_content",
         "probability": 0.4,
         "cooldown": 480
       }

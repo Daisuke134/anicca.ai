@@ -28,7 +28,7 @@ Mockable Interfaces（外部API・LLM呼び出し）
 | `tiktokApiClient` | Mockable | Apify Actor 実行 + 結果取得 | `(region, options)` | `Promise<RawTikTokResponse>` |
 | `llmClient` | Mockable | LLMフィルタ + hook生成 | `(prompt, data)` | `Promise<LlmResponse>` |
 | `railwayApiClient` | Mockable | Railway API GET/POST hooks | `(method, data?)` | `Promise<ApiResponse>` |
-| `orchestrator` | 統合 | 全モジュールを繋いで実行 | `(config)` | `Promise<ExecutionResult>` |
+| `orchestrator` | 統合 | 全モジュールを繋いで実行 | `(config: OrchestratorConfig)` | `Promise<ExecutionResult>` |
 
 ### 正規化データ型
 
@@ -74,6 +74,91 @@ interface HookCandidate {
     metrics: Record<string, number>;
   };
   angle: string;
+}
+
+// --- ソース別バイラル閾値（P0 #7 解消）---
+// 各ソースの engagement 指標が異なるため、ソース別に閾値を定義
+const VIRALITY_THRESHOLDS: Record<NormalizedTrend['source'], number> = {
+  x: 1000,        // likeCount >= 1000
+  reddit: 100,    // upvotes >= 100
+  tiktok: 10000,  // viewCount >= 10,000
+  github: 50,     // stars >= 50（補助データ）
+};
+// viralityFilter はこの定数を使って判定する:
+// trend.metrics.engagement >= VIRALITY_THRESHOLDS[trend.source]
+
+// --- Orchestrator Config（P0 #8 解消）---
+interface OrchestratorConfig {
+  executionCount: number;           // 現在の実行回数（ローテーション決定用）
+  targetTypes?: ProblemType[];      // 明示指定時はローテーションを上書き
+  enabledSources: {
+    x: boolean;                     // TwitterAPI.io
+    tiktok: boolean;                // Apify
+    reddit: boolean;                // reddapi
+    github: boolean;                // GitHub Trending
+  };
+  llmChain: Array<{
+    model: string;
+    timeout: number;
+  }>;
+  dryRun?: boolean;                 // true: API保存をスキップ（テスト用）
+  similarityThreshold?: number;     // デフォルト 0.7
+}
+
+interface ExecutionResult {
+  scannedCount: number;             // 収集したトレンド総数
+  filteredCount: number;            // LLMフィルタ通過数
+  savedCount: number;               // Railway API に保存した hook 数
+  skippedDuplicates: number;        // 重複スキップ数
+  errors: Array<{
+    source: string;
+    error: string;
+  }>;
+  targetTypes: ProblemType[];       // 今回検索したProblemType
+  duration: number;                 // 実行時間（ms）
+}
+
+// --- Railway API Client 詳細（P0 #9 解消）---
+// Mockable Interfaces の railwayApiClient を詳細化
+interface RailwayApiClient {
+  getHooks(): Promise<{ hooks: Hook[] }>;
+  saveHook(hook: HookSavePayload): Promise<{ id: string; createdAt: string }>;
+  emitEvent(event: EventPayload): Promise<{ id: string }>;
+}
+
+interface HookSavePayload {
+  content: string;
+  problemType: ProblemType;
+  source: 'trend-hunter';
+  metadata: {
+    contentType: 'empathy' | 'solution';
+    trendSource: HookCandidate['trendSource'];
+    allProblemTypes: ProblemType[];
+    platform: 'x' | 'tiktok' | 'both';
+    angle: string;
+  };
+  idempotencyKey: string;           // DLQリトライ時の重複防止キー（JSON body に含める）
+}
+
+interface Hook {
+  id: string;
+  content: string;
+  problemType: ProblemType;
+  source: string;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  stats: {
+    impressions: number;
+    engagements: number;
+    score: number;
+  };
+}
+
+interface EventPayload {
+  source: string;
+  kind: string;
+  tags: string[];
+  payload: Record<string, unknown>;
 }
 ```
 

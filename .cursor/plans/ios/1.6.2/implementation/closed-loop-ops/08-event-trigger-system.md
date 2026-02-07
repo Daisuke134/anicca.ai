@@ -22,11 +22,14 @@
 const since = rule.lastFiredAt || new Date(Date.now() - 5 * 60 * 1000);
 
 // 修正後:
-// delay_min がある場合、検索範囲を delay_min × 1.5 に広げる（バッファ付き）
-const delayMin = rule.condition?.delay_min || 0;
+// P0 #25 解消: delay_min の値ごとの挙動を明示
+// delay_min=undefined or null → デフォルト5分検索窓（即時トリガー）
+// delay_min=0               → 明示的に0分 = 即時トリガー（デフォルト5分検索窓）
+// delay_min=1440            → 1440×1.5=2160分=36時間検索窓（24時間後に発火）
+const delayMin = rule.condition?.delay_min ?? 0;  // ?? を使用（|| だと 0 が falsy）
 const searchWindowMs = delayMin > 0
   ? delayMin * 1.5 * 60 * 1000     // delay_min × 1.5（バッファ）
-  : 5 * 60 * 1000;                   // デフォルト5分
+  : 5 * 60 * 1000;                   // デフォルト5分（delay_min=0 or 未設定）
 const since = rule.lastFiredAt || new Date(Date.now() - searchWindowMs);
 ```
 
@@ -35,13 +38,17 @@ const since = rule.lastFiredAt || new Date(Date.now() - searchWindowMs);
 ```javascript
 // 修正後: delay_min は「イベント発生からN分経過したか」をチェック
 function checkTriggerCondition(condition, event) {
-  // delay_min: イベント発生からN分経過して初めて発火
-  if (condition.delay_min) {
+  // P0 #25 解消: delay_min の挙動を明確化
+  // delay_min=undefined → チェックスキップ（即時発火）
+  // delay_min=0         → チェックスキップ（明示的即時発火 — 0は「遅延なし」の意味）
+  // delay_min=1440      → 1440分（24時間）経過後に発火、2880分（48時間）超は古すぎて拒否
+  const delayMin = condition.delay_min ?? null;  // undefined/null → null
+  if (delayMin != null && delayMin > 0) {
     const eventAgeMin = (Date.now() - event.createdAt.getTime()) / (1000 * 60);
     // N分未満なら「まだ早い」→ false
-    if (eventAgeMin < condition.delay_min) return false;
+    if (eventAgeMin < delayMin) return false;
     // N分 × 2 以上なら「古すぎる」→ false（二重発火防止）
-    if (eventAgeMin > condition.delay_min * 2) return false;
+    if (eventAgeMin > delayMin * 2) return false;
   }
 
   // min_severity: ペイロードの severity が閾値以上

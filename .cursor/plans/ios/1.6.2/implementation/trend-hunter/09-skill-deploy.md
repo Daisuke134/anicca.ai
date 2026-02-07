@@ -47,6 +47,11 @@ metadata:
 
 **採用**: VPS `.env` 方式。既に `APIFY_API_TOKEN`, `ANICCA_AGENT_TOKEN` がこの方式で動作中。
 
+> **P1 #5 解消: 優先順位**: VPS `.env`（systemd EnvironmentFile）が `openclaw.json` の skill env より優先される。
+> 理由: systemd はプロセス起動時に `.env` を環境変数として注入 → `process.env` に設定済み。
+> `openclaw.json` の skill env はホスト実行時（`openclaw skill run`）のみ適用され、VPS Gateway では無視される。
+> **結論**: VPS では `.env` のみ管理すればよい。`openclaw.json` にスキル固有の env を設定する必要はない。
+
 ### スキルの自動リロード
 
 | 設定 | デフォルト値 | 意味 |

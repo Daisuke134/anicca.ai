@@ -35,7 +35,7 @@
 |---|---------|------|
 | 1 | `APIFY_API_TOKEN` がVPSの `.env` にもあるか | `ssh anicca@46.225.70.241` → `grep APIFY ~/.env` |
 | 2 | TwitterAPI.io の無料クレジット($0.10 = 666件)でテスト実行可能か | APIキー取得後に `curl` でテスト |
-| 3 | reddapi.dev Liteプラン(500 calls/月)で十分か | 月間推定: 6回/日 × 3クエリ × 30日 = 540回 → **ギリギリ。要モニタリング** |
+| 3 | reddapi.dev Liteプラン(500 calls/月)で十分か | 月間推定: 6回/日 × 3クエリ × 30日 = 540回 → **ギリギリ。要モニタリング**。P1 #4: 超過時は HTTP 429 返却。対策: reddapi レスポンスヘッダー `X-RateLimit-Remaining` を確認 → 残10以下で Reddit 検索スキップ + Slack #alerts に「reddapi quota低下: 残N件」警告。翌月1日にリセット。 |
 
 ### VPS .env に追記するキー
 

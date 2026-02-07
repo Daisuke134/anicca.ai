@@ -482,18 +482,85 @@ systemctl --user status openclaw-gateway  # active (running) であること
 
 ---
 
-## 1.6.2 ロードマップ（将来）
+## 1.6.2 ロードマップ
+
+### 閉ループ制御層（VoxYZ アーキテクチャ）
+
+> **設計完了**: `.cursor/plans/ios/1.6.2/implementation/closed-loop-ops/`（13ファイル）
+> **元設計**: `1.6.2-buddha-software-closed-loop-architecture-spec.md` + VoxYZ リサーチ
+
+| # | タスク | 状態 | 備考 |
+|---|--------|------|------|
+| 1 | **Prisma スキーマ追加** (7テーブル) | 設計完了 | `OpsProposal`, `OpsMission`, `OpsMissionStep`, `OpsPolicy`, `OpsEvent`, `OpsTrigger`, `OpsReaction` |
+| 2 | **API サービス実装** (8サービス) | 設計完了 | proposalService, capGates, policyService, eventEmitter, heartbeat, triggerEvaluator, reactionProcessor, staleRecovery |
+| 3 | **API ルート + 認証** | 設計完了 | `POST /api/ops/proposal`, `GET /api/ops/step/next`, `PATCH /api/ops/step/:id/complete`, `GET /api/ops/heartbeat` |
+| 4 | **Step Executor Registry** (11種) | 設計完了 | draft_content, verify_content, post_x, post_tiktok, fetch_metrics, analyze_engagement, detect_suffering, diagnose, draft_nudge, send_nudge, evaluate_hook |
+| 5 | **Slack 承認フロー** | 設計完了 | Block Kit Approve/Reject ボタン → Railway API |
+| 6 | **mission-worker スキル** | 設計完了 | VPS 1分ポーリング、queued ステップ取得→実行→完了報告 |
+| 7 | **Cron 統合** | 設計完了 | ops-heartbeat (5分), ops-worker (1分), x-poster, tiktok-poster, trend-hunter |
+| 8 | **テスト** (T1-T43 + E1-E9) | 設計完了 | Vitest + vitest-mock-extended |
+
+### 追加が必要な環境変数（閉ループ用）
+
+| 変数 | 用途 | 状態 |
+|------|------|------|
+| `ANICCA_AGENT_TOKEN` | Ops API Bearer 認証（VPS Worker → Railway） | **未設定** |
+
+### 追加が必要な Cron ジョブ（閉ループ用）
+
+| ジョブ | スケジュール | 用途 | 状態 |
+|--------|------------|------|------|
+| ops-heartbeat | `*/5 * * * *` | 制御プレーン（トリガー評価、リアクション処理、stale回復） | **未作成** |
+| ops-worker | `* * * * *` | mission-worker スキル実行 | **未作成** |
+| x-poster-morning | `0 9 * * *` JST | X朝投稿提案生成 | **未作成** |
+| x-poster-evening | `0 21 * * *` JST | X夜投稿提案生成 | **未作成** |
+| tiktok-poster | `0 20 * * *` JST | TikTok日次投稿提案 | **未作成** |
+| trend-hunter | `0 */4 * * *` | トレンド検出（4時間毎） | **未作成** |
+
+### 追加が必要なスキル（閉ループ用）
+
+| スキル | 種類 | 用途 | 状態 |
+|--------|------|------|------|
+| mission-worker | カスタム | Ops閉ループ実行エンジン | **未作成** |
+| x-poster | カスタム | X投稿提案→Proposal生成 | **未作成** |
+| tiktok-poster | カスタム | TikTok投稿提案→Proposal生成 | **未作成** |
+| trend-hunter | カスタム | トレンド検出→Proposal生成 | **未作成** |
+| suffering-detector | カスタム | 苦しみ検出 | **未作成** |
+| app-nudge-sender | カスタム | App Push通知 | **未作成** |
+
+### Kill Switch（自動承認禁止）
+
+| step_kind | 理由 |
+|-----------|------|
+| `post_x` | 公開投稿。人間承認必須 |
+| `post_tiktok` | 公開投稿 |
+| `send_nudge` | ユーザー直接介入。仏教原則: ehipassiko |
+| `deploy` | インフラ変更。永久禁止 |
+| `reply_dm` | テーラヴァーダ不請法則違反。永久禁止 |
+
+### Phase 2-3 タスク
 
 | # | タスク | 備考 |
 |---|--------|------|
-| 1 | **1.6.2 Ultimate Spec Phase 2** | SOUL.md/USER.md/HEARTBEAT.md の本格運用 |
-| 2 | **1.6.2 Ultimate Spec Phase 3** | VPSスキルデプロイ: x-poster, trend-hunter, suffering-detector, tiktok-poster, app-nudge-sender |
+| 1 | **Phase 2: proactive-agent** | SOUL.md/USER.md/HEARTBEAT.md の本格運用 |
+| 2 | **Phase 3: VPSスキルデプロイ** | 上記スキル群をskill-creatorで作成→VPSに配置→cronで起動 |
 | 3 | **LINE統合** | LINE Official Account Manager → Messaging API |
 | 4 | **Twitter/X統合** | 公式OAuth 2.0（birdスキルは使わない） |
 | 5 | **system-monitor** | CPU/RAM/ディスク監視 |
 | 6 | **ブラウザ** | Chromium + Playwright インストール |
 
-**Phase 3 の前提: skill-creator + exec + slack + web_search + cron が全て動作すること。**
+**Phase 3 の前提: skill-creator + exec + slack + web_search + cron が全て動作すること（✅ 全て確認済み）。加えて `ANICCA_AGENT_TOKEN` の設定と Railway Ops API の実装が必要。**
+
+### 設計ドキュメント参照先
+
+| ドキュメント | パス | 内容 |
+|-------------|------|------|
+| 閉ループ制御層（分割版） | `.cursor/plans/ios/1.6.2/implementation/closed-loop-ops/` | 13ファイル（README含む） |
+| 閉ループ制御層（アーカイブ） | `.cursor/plans/ios/1.6.2/implementation/closed-loop-ops.md` | 3670行の元ファイル |
+| マスター設計書 | `.cursor/plans/ios/1.6.2/implementation/1.6.2-ultimate-spec.md` | ~3700行 |
+| スキル詳細設計 | `.cursor/plans/ios/1.6.2/implementation/1.6.2-ultimate-spec2.md` | ~1920行 |
+| trend-hunter 設計 | `.cursor/plans/ios/1.6.2/implementation/trend-hunter/` | 11ファイル |
+| Buddha アーキテクチャ | `.cursor/plans/ios/1.6.2/1.6.2-buddha-software-closed-loop-architecture-spec.md` | Wisdom Engine + One-Flesh |
 
 ---
 

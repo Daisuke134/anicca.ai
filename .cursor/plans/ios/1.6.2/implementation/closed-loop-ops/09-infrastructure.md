@@ -131,10 +131,16 @@ const CITATION_THRESHOLD = 3;
 const AGE_THRESHOLD_DAYS = 7;
 
 export async function promoteInsights() {
-  const ageThreshold = new Date(Date.now() - AGE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000);
+  // H1修正: 前回昇格時刻を policy から取得（無限ループ防止）
+  // 前回昇格後のイベントのみ対象にすることで、同じイベントを繰り返し処理しない
+  const { getPolicy, setPolicy } = await import('./policyService.js');
+  const lastPromotion = await getPolicy('last_insight_promotion');
+  const since = lastPromotion?.promotedAt
+    ? new Date(lastPromotion.promotedAt)
+    : new Date(Date.now() - AGE_THRESHOLD_DAYS * 24 * 60 * 60 * 1000);
 
   const analysisEvents = await prisma.opsEvent.findMany({
-    where: { kind: { in: ['engagement:high', 'engagement:low'] }, createdAt: { gte: ageThreshold } },
+    where: { kind: { in: ['engagement:high', 'engagement:low'] }, createdAt: { gt: since } },
     orderBy: { createdAt: 'desc' }, take: 100
   });
 
@@ -150,14 +156,29 @@ export async function promoteInsights() {
   const patternAnalysis = await callLLM(`以下の高エンゲージメント分析から共通パターンを3つ抽出:
 ${highEngagementEvents.map(e => e.payload?.analysis || '').filter(Boolean).join('\n---\n')}`);
 
+  // H11-H12修正: WisdomPattern の実スキーマに合わせる
+  // 実スキーマ: patternName(unique), description, targetUserTypes, effectiveTone,
+  //   effectiveHookPattern, effectiveContentLength, appEvidence(JsonB), tiktokEvidence(JsonB),
+  //   confidence(Decimal), verifiedAt
+  // ※ content, source, tags, metadata フィールドは存在しない
+  const patternName = `auto_insight_${Date.now()}`;
   const pattern = await prisma.wisdomPattern.create({
     data: {
-      content: patternAnalysis,
-      source: 'ops_insight_promotion',
-      tags: ['auto_promoted', 'engagement_pattern'],
-      metadata: { basedOn: highEngagementEvents.length, promotedAt: new Date().toISOString() }
+      patternName,
+      description: patternAnalysis,
+      targetUserTypes: [],
+      appEvidence: {
+        basedOn: highEngagementEvents.length,
+        promotedAt: new Date().toISOString(),
+        source: 'ops_insight_promotion'
+      },
+      tiktokEvidence: {},
+      confidence: 0.5
     }
   });
+
+  // H1修正: 昇格時刻を更新（次回は以降のイベントのみ対象にする）
+  await setPolicy('last_insight_promotion', { promotedAt: new Date().toISOString() });
 
   logger.info(`Insight promoted: ${pattern.id} (based on ${highEngagementEvents.length} events)`);
   return { promoted: 1, checked: analysisEvents.length };
@@ -174,7 +195,7 @@ ${highEngagementEvents.map(e => e.payload?.analysis || '').filter(Boolean).join(
 |---|---------|---------------------|---------|
 | 1 | Staging で全テスト PASS | `cd apps/api && npx vitest run` | 全テスト緑 |
 | 2 | Staging で E2E 動作確認 | 手動: Proposal→Mission→Step→Complete | Slack通知 + DB確認 |
-| 3 | Production DB マイグレーション | `psql -f sql/20260208_add_ops_tables.sql` | `\dt ops_*` で7テーブル |
+| 3 | Production DB マイグレーション | P1 #14: Railway Variables から `DATABASE_URL` をコピー → `DATABASE_URL="postgresql://..." psql -f sql/20260208_add_ops_tables.sql`（または Railway CLI: `railway run psql -f sql/20260208_add_ops_tables.sql`） | `\dt ops_*` で7テーブル |
 | 4 | Production Seed データ | `psql -f sql/20260208_seed_ops_policy.sql && psql -f ...trigger_rules.sql` | ops_policy=9行 |
 | 5 | Prisma スキーマ同期 | `npx prisma db pull` | schema.prisma にops反映 |
 | 6 | dev → main マージ | `git checkout main && git merge dev` | CI通過 |

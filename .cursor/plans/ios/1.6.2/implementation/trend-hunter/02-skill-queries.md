@@ -73,6 +73,75 @@ Aniccaの13 ProblemType に関連するコンテンツで、既にバイラル�
 }
 ```
 
+## 状態管理（executionCount）
+
+### 永続化方式: OpenClaw memory ツール
+
+| 項目 | 値 |
+|------|-----|
+| **方式** | OpenClaw memory ツール（セッション横断で永続化） |
+| **パス** | `~/.openclaw/memory/trend-hunter-state.json` |
+| **読み書き** | `memory.read('trend-hunter-state')` / `memory.write('trend-hunter-state', data)` |
+| **フォールバック** | ファイル不存在 or 破損時 → `{ executionCount: 0 }` で初期化 |
+
+```typescript
+// 状態管理インターフェース
+interface TrendHunterState {
+  executionCount: number;       // 累計実行回数（ローテーション + TS切替に使用）
+  lastExecutedAt: string;       // ISO 8601 タイムスタンプ
+  lastGroup: number;            // 最後に実行したグループインデックス (0|1|2)
+}
+
+// 読み込み（実行開始時）
+const state: TrendHunterState = memory.read('trend-hunter-state') ?? {
+  executionCount: 0,
+  lastExecutedAt: new Date(0).toISOString(),
+  lastGroup: -1,
+};
+
+// 書き込み（実行完了時）
+memory.write('trend-hunter-state', {
+  ...state,
+  executionCount: state.executionCount + 1,
+  lastExecutedAt: new Date().toISOString(),
+  lastGroup: groupIndex,
+});
+```
+
+**なぜ memory か（他の選択肢との比較）:**
+
+| 方式 | ACID | セッション横断 | 追加依存 | 判定 |
+|------|------|-------------|---------|------|
+| **OpenClaw memory** | ファイルベース（非ACID） | ✅ | なし | **採用** |
+| Railway DB | ✅ | ✅ | APIコール必要 | 不採用（オーバーヘッド） |
+| ローカルファイル（fs） | ❌ | ✅ | なし | 不採用（memory と同等だがAPI不統一） |
+
+---
+
+## QUERY_DICT 型定義
+
+```typescript
+// 各ProblemTypeの検索クエリ構造
+interface QueryEntry {
+  empathy_ja: string;   // 日本語 共感系（当事者の叫び）
+  empathy_en: string;   // 英語 共感系
+  solution_ja: string;  // 日本語 問題解決系（対処法バズ）
+  solution_en: string;  // 英語 問題解決系
+}
+
+// 13 ProblemType → クエリマッピング
+type QueryDict = Record<ProblemType, QueryEntry>;
+
+// ProblemType enum（iOSアプリと同一）
+type ProblemType =
+  | 'staying_up_late' | 'cant_wake_up' | 'self_loathing' | 'rumination'
+  | 'procrastination' | 'anxiety' | 'lying' | 'bad_mouthing'
+  | 'porn_addiction' | 'alcohol_dependency' | 'anger' | 'obsessive'
+  | 'loneliness';
+```
+
+---
+
 ## 13 ProblemType とクエリマッピング
 
 ### ProblemType別 検索クエリ辞書

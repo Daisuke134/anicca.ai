@@ -277,8 +277,55 @@
 }
 ```
 
-> **注意**: Railway API `/api/agent/hooks` エンドポイントの実装状況は要確認（P1）。
-> 存在しない場合、trend-hunter実装前にAPI側で作成が必要。
+### Railway API — POST /api/agent/hooks リクエスト仕様（C3解消）
+
+> **エンドポイント契約**: trend-hunter が hook を保存する際の POST リクエスト仕様
+
+```json
+{
+  "endpoint": "POST /api/agent/hooks",
+  "auth": "Authorization: Bearer ${ANICCA_AGENT_TOKEN}",
+  "content_type": "application/json",
+  "request_body_example": {
+    "content": "毎晩同じ約束を自分にして、毎晩破る。6年間ずっとこれ。",
+    "problemType": "staying_up_late",
+    "source": "trend-hunter",
+    "idempotencyKey": "hook-1707300000000-a1b2c3",
+    "metadata": {
+      "contentType": "empathy",
+      "trendSource": {
+        "platform": "x",
+        "url": "https://x.com/testuser/status/1846987139428634858",
+        "hashtags": ["夜更かし", "寝れない"],
+        "metrics": { "likes": 50000, "retweets": 12000 }
+      },
+      "allProblemTypes": ["staying_up_late"],
+      "platform": "x",
+      "angle": "夜更かしの当事者共感"
+    }
+  },
+  "response_201_created": {
+    "id": "hook_abc123",
+    "content": "...",
+    "createdAt": "2026-02-08T05:00:00Z"
+  },
+  "response_200_duplicate": {
+    "status": "duplicate",
+    "existingId": "hook_abc123",
+    "message": "Hook with idempotencyKey already exists"
+  },
+  "response_400_validation": {
+    "error": "validation",
+    "message": "content is required and must be <= 500 characters"
+  }
+}
+```
+
+**idempotencyKey**: JSON bodyに含める（ヘッダーではない）。同一キーの2回目以降は200 + duplicate（エラーではない）。
+**必須フィールド**: `content`, `problemType`, `source`
+**任意フィールド**: `idempotencyKey`, `metadata`
+
+> **実装**: trend-hunter 実装前に Railway API 側でこのエンドポイントを作成する必要がある。
 
 ---
 
@@ -338,6 +385,86 @@
 ```
 
 **LLM出力がスキーマに適合しない場合**: パースエラーとして処理 → 1回リトライ → 失敗なら当該バッチをスキップしてDLQに記録。
+
+### LLM出力の合格サンプル（P0 #11 解消）
+
+**フィルタ出力 — 合格例:**
+
+```json
+[
+  {
+    "trend_id": "1846987139428634858",
+    "relevance_score": 9,
+    "virality": "high",
+    "content_type": "empathy",
+    "problemTypes": ["staying_up_late"],
+    "angle": "夜更かしの当事者が大量共感を得ている — 「あなただけじゃない」系hookに最適",
+    "skip_reason": null
+  },
+  {
+    "trend_id": "1846987139428634999",
+    "relevance_score": 8,
+    "virality": "high",
+    "content_type": "solution",
+    "problemTypes": ["staying_up_late", "cant_wake_up"],
+    "angle": "睡眠科学ベースの対処法スレッド — Aniccaの機能紹介hookに変換可能",
+    "skip_reason": null
+  },
+  {
+    "trend_id": "5e6f7g8h",
+    "relevance_score": 3,
+    "virality": "medium",
+    "content_type": "solution",
+    "problemTypes": ["staying_up_late"],
+    "angle": "",
+    "skip_reason": "一般的な睡眠知識で、ペルソナの「挫折6年」に刺さらない"
+  }
+]
+```
+
+**hook生成出力 — 合格例:**
+
+```json
+[
+  {
+    "content": "毎晩「今日こそ早く寝る」って決めて、気づいたら3時。\n6年間ずっとこれ。習慣アプリ5個試した。全部3日で消した。\n方法の問題じゃなかった。 #夜更かし #寝れない",
+    "contentType": "empathy",
+    "problemTypes": ["staying_up_late"],
+    "platform": "x",
+    "trendSource": {
+      "platform": "x",
+      "url": "https://x.com/testuser/status/1846987139428634858",
+      "hashtags": ["夜更かし", "寝れない"],
+      "metrics": { "likes": 50000, "retweets": 12000 }
+    },
+    "angle": "夜更かしバズ投稿の共感を活用、6年間の挫折を強調"
+  },
+  {
+    "content": "How to fix your sleep schedule — I've read every thread.\nTried every tip. Light exposure, no screens, melatonin.\nAll lasted 3 days. The problem wasn't the method.\nIt was me. Until I changed one thing. #sleepschedule",
+    "contentType": "solution",
+    "problemTypes": ["staying_up_late", "cant_wake_up"],
+    "platform": "x",
+    "trendSource": {
+      "platform": "x",
+      "url": "https://x.com/sleepexpert/status/1846987139428634999",
+      "hashtags": [],
+      "metrics": { "likes": 35000, "retweets": 8000 }
+    },
+    "angle": "科学的スレッドの人気に乗り、「方法は知ってるけど続かない」ペルソナを狙う"
+  }
+]
+```
+
+**不合格パターン（テスト用）:**
+
+| パターン | 入力 | 期待エラー |
+|---------|------|----------|
+| 空配列 | `[]` | スキーマ合格だが0件 — 正常扱い |
+| 必須フィールド欠落 | `[{"trend_id": "x"}]` | `relevance_score` missing |
+| 範囲外スコア | `[{"relevance_score": 15, ...}]` | `maximum: 10` 違反 |
+| 不正 virality | `[{"virality": "super", ...}]` | `enum` 違反 |
+| 不正 JSON | `"これはJSONではない"` | JSON.parse 失敗 |
+| 混合（一部不正） | `[{valid}, {invalid}]` | 配列全体がスキーマ不適合（部分合格なし） |
 
 ---
 

@@ -74,11 +74,11 @@
         "blotato_post_id": "a3caddfa-ab22-433a-8ac5-7a1e75893533"
       },
       "en": {
-        "status": "in_flight",
+        "status": "posted",
         "reserved_at": "2026-02-08T14:27:13.548Z",
         "run_id": "21799748812",
-        "posted_at": null,
-        "blotato_post_id": null
+        "posted_at": "2026-02-08T14:27:15.811Z",
+        "blotato_post_id": "7f538cb6-020e-46ec-a065-1d032ec5ff1a"
       }
     }
   },

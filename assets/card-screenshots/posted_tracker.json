@@ -67,11 +67,11 @@
     },
     "staying_up_late_4": {
       "ja": {
-        "status": "in_flight",
+        "status": "posted",
         "reserved_at": "2026-02-08T10:20:33.774Z",
         "run_id": "21796536868",
-        "posted_at": null,
-        "blotato_post_id": null
+        "posted_at": "2026-02-08T10:20:36.233Z",
+        "blotato_post_id": "a3caddfa-ab22-433a-8ac5-7a1e75893533"
       }
     }
   },
